@@ -269,13 +269,13 @@ Outputs:
 
 # Note: Do not add new tests here !
 class TestCloudFormation:
-    def test_validate_template(self, cfn_client):
+    def test_validate_template(self, aws_client):
         template = template_preparer.template_to_json(
             load_file(
                 os.path.join(os.path.dirname(__file__), "../../templates/valid_template.json")
             )
         )
-        resp = cfn_client.validate_template(TemplateBody=template)
+        resp = aws_client.cloudformation.validate_template(TemplateBody=template)
 
         assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert len(resp["Parameters"]) == 1
@@ -285,21 +285,21 @@ class TestCloudFormation:
             == "The EC2 Key Pair to allow SSH access to the instance"
         )
 
-    def test_validate_invalid_json_template_should_fail(self, cfn_client):
+    def test_validate_invalid_json_template_should_fail(self, aws_client):
         invalid_json = '{"this is invalid JSON"="bobbins"}'
 
         with pytest.raises((ClientError, ResponseParserError)) as ctx:
-            cfn_client.validate_template(TemplateBody=invalid_json)
+            aws_client.cloudformation.validate_template(TemplateBody=invalid_json)
         if isinstance(ctx.value, ClientError):
             assert ctx.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
             assert ctx.value.response["Error"]["Message"] == "Template Validation Error"
 
-    def test_cfn_handle_log_group_resource(self, deploy_cfn_template, logs_client):
+    def test_cfn_handle_log_group_resource(self, deploy_cfn_template, aws_client):
         log_group_prefix = "/aws/lambda/AWS_DUB_LAM_10000000"
 
         stack = deploy_cfn_template(template=TEST_TEMPLATE_9)
 
-        rs = logs_client.describe_log_groups(logGroupNamePrefix=log_group_prefix)
+        rs = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_prefix)
         assert len(rs["logGroups"]) == 1
         assert (
             rs["logGroups"][0]["logGroupName"]
@@ -308,10 +308,10 @@ class TestCloudFormation:
 
         # clean up and assert deletion
         stack.destroy()
-        rs = logs_client.describe_log_groups(logGroupNamePrefix=log_group_prefix)
+        rs = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_prefix)
         assert len(rs["logGroups"]) == 0
 
-    def test_cfn_handle_iam_role_resource(self, deploy_cfn_template, iam_client):
+    def test_cfn_handle_iam_role_resource(self, deploy_cfn_template, aws_client):
         role_name = f"role-{short_uid()}"
         policy_name = f"policy-{short_uid()}"
         role_path_prefix = f"/role-prefix-{short_uid()}/"
@@ -319,38 +319,38 @@ class TestCloudFormation:
         template_body = TEST_TEMPLATE_13 % (role_name, role_path_prefix, policy_name)
         stack = deploy_cfn_template(template=template_body)
 
-        rs = iam_client.list_roles(PathPrefix=role_path_prefix)
+        rs = aws_client.iam.list_roles(PathPrefix=role_path_prefix)
 
         assert len(rs["Roles"]) == 1
         role = rs["Roles"][0]
         assert role["RoleName"] == role_name
 
-        result = iam_client.get_policy(PolicyArn=arns.policy_arn(policy_name))
+        result = aws_client.iam.get_policy(PolicyArn=arns.policy_arn(policy_name))
         assert result["Policy"]["PolicyName"] == policy_name
 
         # clean up
         stack.destroy()
 
-        rs = iam_client.list_roles(PathPrefix=role_path_prefix)
+        rs = aws_client.iam.list_roles(PathPrefix=role_path_prefix)
         assert not rs["Roles"]
 
-    def test_cfn_handle_iam_role_resource_no_role_name(self, iam_client, deploy_cfn_template):
+    def test_cfn_handle_iam_role_resource_no_role_name(self, deploy_cfn_template, aws_client):
         role_path_prefix = f"/role-prefix-{short_uid()}/"
         stack = deploy_cfn_template(template=TEST_TEMPLATE_14 % role_path_prefix)
 
-        rs = iam_client.list_roles(PathPrefix=role_path_prefix)
+        rs = aws_client.iam.list_roles(PathPrefix=role_path_prefix)
         assert len(rs["Roles"]) == 1
 
         stack.destroy()
 
-        rs = iam_client.list_roles(PathPrefix=role_path_prefix)
+        rs = aws_client.iam.list_roles(PathPrefix=role_path_prefix)
         assert not rs["Roles"]
 
-    def test_cfn_conditional_deployment(self, s3_client, deploy_cfn_template):
+    def test_cfn_conditional_deployment(self, deploy_cfn_template, aws_client):
         bucket_id = short_uid()
         deploy_cfn_template(template=TEST_TEMPLATE_19.format(id=bucket_id))
 
-        buckets = s3_client.list_buckets()["Buckets"]
+        buckets = aws_client.s3.list_buckets()["Buckets"]
         dev_bucket = f"cf-dev-{bucket_id}"
         prd_bucket = f"cf-prd-{bucket_id}"
         dev_bucket = [b for b in buckets if b["Name"] == dev_bucket]
@@ -363,11 +363,7 @@ class TestCloudFormation:
         "create_bucket_first, region", [(True, "eu-west-1"), (False, "us-east-1")]
     )
     def test_cfn_handle_s3_notification_configuration(
-        self,
-        region,
-        create_boto_client,
-        deploy_cfn_template,
-        create_bucket_first,
+        self, region, create_boto_client, deploy_cfn_template, create_bucket_first
     ):
         s3_client = create_boto_client("s3", region_name=region)
         bucket_name = f"target-{short_uid()}"
@@ -394,12 +390,12 @@ class TestCloudFormation:
             s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
         exc.match("NoSuchBucket")
 
-    def test_cfn_handle_serverless_api_resource(
-        self, deploy_cfn_template, cfn_client, apigateway_client
-    ):
+    def test_cfn_handle_serverless_api_resource(self, deploy_cfn_template, aws_client):
         stack = deploy_cfn_template(template=TEST_TEMPLATE_22)
 
-        res = cfn_client.list_stack_resources(StackName=stack.stack_name)["StackResourceSummaries"]
+        res = aws_client.cloudformation.list_stack_resources(StackName=stack.stack_name)[
+            "StackResourceSummaries"
+        ]
         rest_api_ids = [
             r["PhysicalResourceId"] for r in res if r["ResourceType"] == "AWS::ApiGateway::RestApi"
         ]
@@ -410,7 +406,7 @@ class TestCloudFormation:
         assert len(rest_api_ids) == 1
         assert len(lambda_func_names) == 1
 
-        rs = apigateway_client.get_resources(restApiId=rest_api_ids[0])
+        rs = aws_client.apigateway.get_resources(restApiId=rest_api_ids[0])
         assert len(rs["items"]) == 1
         resource = rs["items"][0]
 
@@ -420,9 +416,7 @@ class TestCloudFormation:
 
     # TODO: refactor
     @pytest.mark.xfail(condition=is_new_provider(), reason="fails/times out")
-    def test_update_lambda_function(
-        self, lambda_client, cfn_client, s3_client, s3_create_bucket, deploy_cfn_template
-    ):
+    def test_update_lambda_function(self, s3_create_bucket, deploy_cfn_template, aws_client):
         bucket_name = f"bucket-{short_uid()}"
         key_name = "lambda-package"
         role_name = f"role-{short_uid()}"
@@ -445,7 +439,7 @@ class TestCloudFormation:
         props["FunctionName"] = function_name
 
         s3_create_bucket(Bucket=bucket_name, ACL="public-read")
-        s3_client.put_object(
+        aws_client.s3.put_object(
             Bucket=bucket_name,
             Key=key_name,
             Body=create_zip_file(package_path, get_content=True),
@@ -458,14 +452,14 @@ class TestCloudFormation:
             stack_name=stack.stack_name, template=json.dumps(template), is_update=True
         )
 
-        rs = lambda_client.get_function(FunctionName=function_name)
+        rs = aws_client.awslambda.get_function(FunctionName=function_name)
         assert rs["Configuration"]["FunctionName"] == function_name
         assert (
             "AWS_NODEJS_CONNECTION_REUSE_ENABLED" in rs["Configuration"]["Environment"]["Variables"]
         )
 
     # TODO: evaluate
-    def test_update_conditions(self, s3_client, cfn_client, deploy_cfn_template):
+    def test_update_conditions(self, deploy_cfn_template, aws_client):
         stack = deploy_cfn_template(template=TEST_TEMPLATE_3)
         template = yaml.load(TEST_TEMPLATE_3)
 
@@ -491,17 +485,19 @@ class TestCloudFormation:
             "TrueCondition": {"Fn::Equals": ["same", "same"]},
             "FalseCondition": {"Fn::Equals": ["this", "other"]},
         }
-        cfn_client.update_stack(StackName=stack.stack_name, TemplateBody=json.dumps(template))
-        cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
+        aws_client.cloudformation.update_stack(
+            StackName=stack.stack_name, TemplateBody=json.dumps(template)
+        )
+        aws_client.cloudformation.get_waiter("stack_update_complete").wait(
+            StackName=stack.stack_name
+        )
 
         # bucket1 should have been created, bucket2 not
-        s3_client.head_bucket(Bucket=bucket1)
+        aws_client.s3.head_bucket(Bucket=bucket1)
         with pytest.raises(Exception):
-            s3_client.head_bucket(Bucket=bucket2)
+            aws_client.s3.head_bucket(Bucket=bucket2)
 
-    def test_cfn_template_with_short_form_fn_sub(
-        self, iam_client, deploy_cfn_template, stepfunctions_client
-    ):
+    def test_cfn_template_with_short_form_fn_sub(self, deploy_cfn_template, aws_client):
         environment = f"env-{short_uid()}"
 
         stack = deploy_cfn_template(
@@ -512,26 +508,24 @@ class TestCloudFormation:
         )
 
         # 2 roles created successfully
-        rs = iam_client.list_roles()
+        rs = aws_client.iam.list_roles()
         roles = [role for role in rs["Roles"] if stack.stack_name in role["RoleName"]]
         assert len(roles) == 2
 
-        state_machines_after = stepfunctions_client.list_state_machines()["stateMachines"]
+        state_machines_after = aws_client.stepfunctions.list_state_machines()["stateMachines"]
         state_machines = [
             sm for sm in state_machines_after if f"{stack.stack_name}-StateMachine-" in sm["name"]
         ]
         assert len(state_machines) == 1
 
-        rs = stepfunctions_client.describe_state_machine(
+        rs = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=state_machines[0]["stateMachineArn"]
         )
         definition = json.loads(rs["definition"].replace("\n", ""))
         payload = definition["States"]["time-series-update"]["Parameters"]["Payload"]
         assert payload == {"key": "12345"}
 
-    def test_sub_in_lambda_function_name(
-        self, s3_client, lambda_client, rg_client, deploy_cfn_template, s3_create_bucket
-    ):
+    def test_sub_in_lambda_function_name(self, deploy_cfn_template, s3_create_bucket, aws_client):
         environment = f"env-{short_uid()}"
         bucket = f"bucket-{short_uid()}"
         key = f"key-{short_uid()}"
@@ -541,7 +535,7 @@ class TestCloudFormation:
         )
 
         s3_create_bucket(Bucket=bucket, ACL="public-read")
-        s3_client.put_object(
+        aws_client.s3.put_object(
             Bucket=bucket, Key=key, Body=create_zip_file(package_path, get_content=True)
         )
         time.sleep(1)  # TODO: ? what is this waiting for
@@ -556,7 +550,7 @@ class TestCloudFormation:
         )
         deploy_cfn_template(template=template, parameters={"Environment": environment})
 
-        functions = lambda_client.list_functions()["Functions"]
+        functions = aws_client.awslambda.list_functions()["Functions"]
         # assert Lambda functions created with expected name and ARN
         func_prefix = f"test-{environment}-connectionHandler"
         functions = [func for func in functions if func["FunctionName"].startswith(func_prefix)]
@@ -567,22 +561,22 @@ class TestCloudFormation:
         assert func2["FunctionArn"].endswith(func2["FunctionName"])
 
         # assert buckets which reference Lambda names have been created
-        buckets = s3_client.list_buckets()["Buckets"]
+        buckets = aws_client.s3.list_buckets()["Buckets"]
         buckets = [b for b in buckets if b["Name"].startswith(func_prefix.lower())]
         # assert buckets are created correctly
         assert len(functions) == 2
-        tags1 = s3_client.get_bucket_tagging(Bucket=buckets[0]["Name"])
-        tags2 = s3_client.get_bucket_tagging(Bucket=buckets[1]["Name"])
+        tags1 = aws_client.s3.get_bucket_tagging(Bucket=buckets[0]["Name"])
+        tags2 = aws_client.s3.get_bucket_tagging(Bucket=buckets[1]["Name"])
         # assert correct tags - they reference the function names and should equal the bucket names (lower case)
         assert buckets[0]["Name"] == tags1["TagSet"][0]["Value"].lower()
         assert buckets[1]["Name"] == tags2["TagSet"][0]["Value"].lower()
 
         # assert additional resources are present
         rg_name = "cf-rg-6427"
-        groups = rg_client.list_groups().get("Groups", [])
+        groups = aws_client.resource_groups.list_groups().get("Groups", [])
         assert [g for g in groups if g["Name"] == rg_name]
 
-    def test_functions_in_output_export_name(self, cfn_client, sns_client, deploy_cfn_template):
+    def test_functions_in_output_export_name(self, deploy_cfn_template, aws_client):
         environment = f"env-{short_uid()}"
 
         stack = deploy_cfn_template(
@@ -592,7 +586,7 @@ class TestCloudFormation:
             parameters={"Environment": environment},
         )
 
-        resp = cfn_client.describe_stacks(StackName=stack.stack_name)
+        resp = aws_client.cloudformation.describe_stacks(StackName=stack.stack_name)
         stack_outputs = [s["Outputs"] for s in resp["Stacks"] if s["StackName"] == stack.stack_name]
         assert len(stack_outputs) == 1
 
@@ -611,32 +605,25 @@ class TestCloudFormation:
         # clean up
         stack.destroy()
 
-        topic_arns = [t["TopicArn"] for t in sns_client.list_topics()["Topics"]]
+        topic_arns = [t["TopicArn"] for t in aws_client.sns.list_topics()["Topics"]]
         assert topic_arn not in topic_arns
 
     # TODO: refactor
     @pytest.mark.xfail(reason="fails due to / depending on other tests")
     def test_deploy_stack_with_sub_select_and_sub_getaz(
-        self,
-        cfn_client,
-        sns_client,
-        cloudwatch_client,
-        ec2_client,
-        iam_client,
-        deploy_cfn_template,
-        cleanups,
+        self, deploy_cfn_template, cleanups, aws_client
     ):
         key_name = f"key-pair-foo123-{short_uid()}"
-        key_pair = ec2_client.create_key_pair(KeyName=key_name)
+        key_pair = aws_client.ec2.create_key_pair(KeyName=key_name)
         cleanups.append(
-            lambda: ec2_client.delete_key_pair(
+            lambda: aws_client.ec2.delete_key_pair(
                 KeyName=key_pair["KeyName"], KeyPairId=key_pair["KeyPairId"]
             )
         )
 
         # list resources before stack deployment
-        metric_alarms = cloudwatch_client.describe_alarms().get("MetricAlarms", [])
-        composite_alarms = cloudwatch_client.describe_alarms().get("CompositeAlarms", [])
+        metric_alarms = aws_client.cloudwatch.describe_alarms().get("MetricAlarms", [])
+        composite_alarms = aws_client.cloudwatch.describe_alarms().get("CompositeAlarms", [])
 
         # deploy stack
         deploy_cfn_template(
@@ -645,7 +632,7 @@ class TestCloudFormation:
             ),
             parameters={"Ec2KeyPairName": key_name},
         )
-        exports = cfn_client.list_exports()["Exports"]
+        exports = aws_client.cloudformation.list_exports()["Exports"]
 
         subnets = [export for export in exports if export["Name"] == "public-sn-a"]
         instances = [export for export in exports if export["Name"] == "RegmonEc2InstanceId"]
@@ -656,31 +643,31 @@ class TestCloudFormation:
         subnet_id = subnets[0]["Value"]
         instance_id = instances[0]["Value"]
 
-        resp = ec2_client.describe_subnets(SubnetIds=[subnet_id])
+        resp = aws_client.ec2.describe_subnets(SubnetIds=[subnet_id])
         assert len(resp["Subnets"]) == 1
 
-        resp = ec2_client.describe_instances(InstanceIds=[instance_id])
+        resp = aws_client.ec2.describe_instances(InstanceIds=[instance_id])
         assert len(resp["Reservations"][0]["Instances"]) == 1
 
         # assert creation of further resources
-        resp = sns_client.list_topics()
+        resp = aws_client.sns.list_topics()
         topic_arns = [tp["TopicArn"] for tp in resp["Topics"]]
         assert arns.sns_topic_arn("companyname-slack-topic") in topic_arns  # TODO: manual ARN
         # TODO: fix assertions, to make tests parallelizable!
-        metric_alarms_after = cloudwatch_client.describe_alarms().get("MetricAlarms", [])
-        composite_alarms_after = cloudwatch_client.describe_alarms().get("CompositeAlarms", [])
+        metric_alarms_after = aws_client.cloudwatch.describe_alarms().get("MetricAlarms", [])
+        composite_alarms_after = aws_client.cloudwatch.describe_alarms().get("CompositeAlarms", [])
         assert len(metric_alarms_after) == len(metric_alarms) + 1
         assert len(composite_alarms_after) == len(composite_alarms) + 1
 
-        profiles = iam_client.list_instance_profiles().get("InstanceProfiles", [])
+        profiles = aws_client.iam.list_instance_profiles().get("InstanceProfiles", [])
         assert len(profiles) > 0
         profile = profiles[0]
         assert len(profile["Roles"]) > 0
 
     # TODO: refactor
     @pytest.mark.skip(reason="update doesn't change value for instancetype")
-    def test_cfn_update_ec2_instance_type(self, cfn_client, ec2_client, deploy_cfn_template):
-        if cfn_client.meta.region_name not in [
+    def test_cfn_update_ec2_instance_type(self, deploy_cfn_template, aws_client):
+        if aws_client.cloudformation.meta.region_name not in [
             "ap-northeast-1",
             "eu-central-1",
             "eu-south-1",
@@ -689,7 +676,7 @@ class TestCloudFormation:
             "us-east-1",
         ]:
             pytest.skip()
-        ec2_client.create_key_pair(KeyName="testkey")  # TODO: cleanup
+        aws_client.ec2.create_key_pair(KeyName="testkey")  # TODO: cleanup
 
         stack = deploy_cfn_template(
             template_path=os.path.join(os.path.dirname(__file__), "templates/template30.yaml"),
@@ -697,7 +684,7 @@ class TestCloudFormation:
         )
 
         def get_instance_id():
-            resources = cfn_client.list_stack_resources(StackName=stack.stack_name)[
+            resources = aws_client.cloudformation.list_stack_resources(StackName=stack.stack_name)[
                 "StackResourceSummaries"
             ]
             instances = [res for res in resources if res["ResourceType"] == "AWS::EC2::Instance"]
@@ -705,7 +692,7 @@ class TestCloudFormation:
             return instances[0]["PhysicalResourceId"]
 
         instance_id = get_instance_id()
-        resp = ec2_client.describe_instances(InstanceIds=[instance_id])
+        resp = aws_client.ec2.describe_instances(InstanceIds=[instance_id])
         assert len(resp["Reservations"][0]["Instances"]) == 1
         assert resp["Reservations"][0]["Instances"][0]["InstanceType"] == "t2.nano"
 
@@ -716,21 +703,21 @@ class TestCloudFormation:
         )
 
         instance_id = get_instance_id()  # get ID of updated instance (may have changed!)
-        resp = ec2_client.describe_instances(InstanceIds=[instance_id])
+        resp = aws_client.ec2.describe_instances(InstanceIds=[instance_id])
         reservations = resp["Reservations"]
         assert len(reservations) == 1
         assert reservations[0]["Instances"][0]["InstanceType"] == "t2.medium"
 
-    def test_cfn_with_exports(self, cfn_client, deploy_cfn_template):
+    def test_cfn_with_exports(self, deploy_cfn_template, aws_client):
         # fetch initial list of exports
-        exports_before = cfn_client.list_exports()["Exports"]
+        exports_before = aws_client.cloudformation.list_exports()["Exports"]
 
         stack = deploy_cfn_template(
             template_path=os.path.join(os.path.dirname(__file__), "../../templates/template32.yaml")
         )
         stack_name = stack.stack_name
 
-        exports = cfn_client.list_exports()["Exports"]
+        exports = aws_client.cloudformation.list_exports()["Exports"]
         # TODO: fix assertion, to make tests parallelizable!
         assert len(exports) == len(exports_before) + 6
         export_names = [e["Name"] for e in exports]
@@ -742,19 +729,21 @@ class TestCloudFormation:
         assert f"{stack_name}-cc-schedules-stream" in export_names
 
     # TODO: refactor
-    def test_cfn_with_route_table(self, ec2_client, deploy_cfn_template, cfn_client):
-        resp = ec2_client.describe_vpcs()
+    def test_cfn_with_route_table(self, deploy_cfn_template, aws_client):
+        resp = aws_client.ec2.describe_vpcs()
         # TODO: fix assertion, to make tests parallelizable!
         vpcs_before = [vpc["VpcId"] for vpc in resp["Vpcs"]]
 
         stack = deploy_cfn_template(
             template_path=os.path.join(os.path.dirname(__file__), "../../templates/template33.yaml")
         )
-        resp = ec2_client.describe_vpcs()
+        resp = aws_client.ec2.describe_vpcs()
         vpcs = [vpc["VpcId"] for vpc in resp["Vpcs"] if vpc["VpcId"] not in vpcs_before]
         assert len(vpcs) == 1
 
-        resp = ec2_client.describe_route_tables(Filters=[{"Name": "vpc-id", "Values": [vpcs[0]]}])
+        resp = aws_client.ec2.describe_route_tables(
+            Filters=[{"Name": "vpc-id", "Values": [vpcs[0]]}]
+        )
         # Each VPC always have 1 default RouteTable
         assert len(resp["RouteTables"]) == 2
 
@@ -770,19 +759,19 @@ class TestCloudFormation:
         # The 2nd Route was created by cfn template
         assert routes[1]["DestinationCidrBlock"] == "0.0.0.0/0"
 
-        exports = cfn_client.list_exports()["Exports"]
+        exports = aws_client.cloudformation.list_exports()["Exports"]
         export_values = {ex["Name"]: ex["Value"] for ex in exports}
         assert "publicRoute-identify" in export_values
         assert export_values["publicRoute-identify"] == f"{route_table_id}~0.0.0.0/0"
 
         stack.destroy()
 
-        resp = ec2_client.describe_vpcs()
+        resp = aws_client.ec2.describe_vpcs()
         vpcs = [vpc["VpcId"] for vpc in resp["Vpcs"] if vpc["VpcId"] not in vpcs_before]
         assert not vpcs
 
     # TODO: evaluate (can we drop this?)
-    def test_updating_stack_with_iam_role(self, deploy_cfn_template, iam_client, lambda_client):
+    def test_updating_stack_with_iam_role(self, deploy_cfn_template, aws_client):
 
         # Initialization
         lambda_role_name = f"lambda-role-{short_uid()}"
@@ -802,12 +791,12 @@ class TestCloudFormation:
 
         # Checking required values for Lambda function and IAM Role
         list_functions = list_all_resources(
-            lambda kwargs: lambda_client.list_functions(**kwargs),
+            lambda kwargs: aws_client.awslambda.list_functions(**kwargs),
             last_token_attr_name="nextToken",
             list_attr_name="Functions",
         )
         list_roles = list_all_resources(
-            lambda kwargs: iam_client.list_roles(**kwargs),
+            lambda kwargs: aws_client.iam.list_roles(**kwargs),
             last_token_attr_name="nextToken",
             list_attr_name="Roles",
         )
@@ -843,13 +832,13 @@ class TestCloudFormation:
         # Checking new required values for Lambda function and IAM Role
 
         list_functions = list_all_resources(
-            lambda kwargs: lambda_client.list_functions(**kwargs),
+            lambda kwargs: aws_client.awslambda.list_functions(**kwargs),
             last_token_attr_name="nextToken",
             list_attr_name="Functions",
         )
 
         list_roles = list_all_resources(
-            lambda kwargs: iam_client.list_roles(**kwargs),
+            lambda kwargs: aws_client.iam.list_roles(**kwargs),
             last_token_attr_name="nextToken",
             list_attr_name="Roles",
         )
@@ -864,14 +853,14 @@ class TestCloudFormation:
         new_role = [role for role in list_roles if role.get("RoleName") == lambda_role_name_new]
         assert len(new_role) == 1
 
-    def test_resolve_transitive_placeholders_in_strings(self, sqs_client, deploy_cfn_template):
+    def test_resolve_transitive_placeholders_in_strings(self, deploy_cfn_template, aws_client):
         queue_name = f"q-{short_uid()}"
         stack_name = f"stack-{short_uid()}"
         stack = deploy_cfn_template(
             stack_name=stack_name, template=TEST_TEMPLATE_29 % queue_name, max_wait=500
         )
 
-        tags = sqs_client.list_queue_tags(QueueUrl=stack.outputs["QueueURL"])
+        tags = aws_client.sqs.list_queue_tags(QueueUrl=stack.outputs["QueueURL"])
         test_tag = tags["Tags"]["test"]
         assert test_tag == arns.ssm_parameter_arn("cdk-bootstrap/q123/version")
 

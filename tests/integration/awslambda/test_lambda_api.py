@@ -69,9 +69,7 @@ class TestLambdaFunction:
         paths=["$..RuntimeVersionConfig.RuntimeVersionArn"]
     )
     @pytest.mark.aws_validated
-    def test_function_lifecycle(
-        self, lambda_client, snapshot, create_lambda_function, lambda_su_role
-    ):
+    def test_function_lifecycle(self, snapshot, create_lambda_function, lambda_su_role, aws_client):
         """Tests CRUD for the lifecycle of a Lambda function and its config"""
         function_name = f"fn-{short_uid()}"
         create_response = create_lambda_function(
@@ -83,12 +81,12 @@ class TestLambdaFunction:
             Timeout=5,
         )
         snapshot.match("create_response", create_response)
-        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=function_name)
 
-        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        get_function_response = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_function_response", get_function_response)
 
-        update_func_conf_response = lambda_client.update_function_configuration(
+        update_func_conf_response = aws_client.awslambda.update_function_configuration(
             FunctionName=function_name,
             Runtime=Runtime.python3_8,
             Description="Changed-Description",
@@ -98,34 +96,36 @@ class TestLambdaFunction:
         )
         snapshot.match("update_func_conf_response", update_func_conf_response)
 
-        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=function_name)
 
-        get_function_response_postupdate = lambda_client.get_function(FunctionName=function_name)
+        get_function_response_postupdate = aws_client.awslambda.get_function(
+            FunctionName=function_name
+        )
         snapshot.match("get_function_response_postupdate", get_function_response_postupdate)
 
         zip_f = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_VERSION), get_content=True)
-        update_code_response = lambda_client.update_function_code(
+        update_code_response = aws_client.awslambda.update_function_code(
             FunctionName=function_name,
             ZipFile=zip_f,
         )
         snapshot.match("update_code_response", update_code_response)
 
-        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=function_name)
 
-        get_function_response_postcodeupdate = lambda_client.get_function(
+        get_function_response_postcodeupdate = aws_client.awslambda.get_function(
             FunctionName=function_name
         )
         snapshot.match("get_function_response_postcodeupdate", get_function_response_postcodeupdate)
 
-        delete_response = lambda_client.delete_function(FunctionName=function_name)
+        delete_response = aws_client.awslambda.delete_function(FunctionName=function_name)
         snapshot.match("delete_response", delete_response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.delete_function(FunctionName=function_name)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.delete_function(FunctionName=function_name)
         snapshot.match("delete_postdelete", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_redundant_updates(self, lambda_client, create_lambda_function, snapshot):
+    def test_redundant_updates(self, create_lambda_function, snapshot, aws_client):
         """validates that redundant updates work (basically testing idempotency)"""
         function_name = f"fn-{short_uid()}"
 
@@ -137,25 +137,27 @@ class TestLambdaFunction:
         )
         snapshot.match("create_response", create_response)
 
-        first_update_result = lambda_client.update_function_configuration(
+        first_update_result = aws_client.awslambda.update_function_configuration(
             FunctionName=function_name, Description="1st update description"
         )
         snapshot.match("first_update_result", first_update_result)
 
-        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=function_name)
 
-        get_fn_config_result = lambda_client.get_function_configuration(FunctionName=function_name)
+        get_fn_config_result = aws_client.awslambda.get_function_configuration(
+            FunctionName=function_name
+        )
         snapshot.match("get_fn_config_result", get_fn_config_result)
 
-        get_fn_result = lambda_client.get_function(FunctionName=function_name)
+        get_fn_result = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_fn_result", get_fn_result)
 
-        redundant_update_result = lambda_client.update_function_configuration(
+        redundant_update_result = aws_client.awslambda.update_function_configuration(
             FunctionName=function_name, Description="1st update description"
         )
         snapshot.match("redundant_update_result", redundant_update_result)
-        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
-        get_fn_result_after_redundant_update = lambda_client.get_function(
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        get_fn_result_after_redundant_update = aws_client.awslambda.get_function(
             FunctionName=function_name
         )
         snapshot.match("get_fn_result_after_redundant_update", get_fn_result_after_redundant_update)
@@ -170,20 +172,20 @@ class TestLambdaFunction:
     )
     @pytest.mark.aws_validated
     def test_ops_with_arn_qualifier_mismatch(
-        self, lambda_client, create_lambda_function, snapshot, account_id, clientfn
+        self, create_lambda_function, snapshot, account_id, clientfn, aws_client
     ):
         function_name = "some-function"
-        method = getattr(lambda_client, clientfn)
+        method = getattr(aws_client.awslambda, clientfn)
         with pytest.raises(ClientError) as e:
             method(
-                FunctionName=f"arn:aws:lambda:{lambda_client.meta.region_name}:{account_id}:function:{function_name}:1",
+                FunctionName=f"arn:aws:lambda:{aws_client.awslambda.meta.region_name}:{account_id}:function:{function_name}:1",
                 Qualifier="$LATEST",
             )
         snapshot.match("not_match_exception", e.value.response)
         # check if it works if it matches - still no function there
         with pytest.raises(ClientError) as e:
             method(
-                FunctionName=f"arn:aws:lambda:{lambda_client.meta.region_name}:{account_id}:function:{function_name}:$LATEST",
+                FunctionName=f"arn:aws:lambda:{aws_client.awslambda.meta.region_name}:{account_id}:function:{function_name}:$LATEST",
                 Qualifier="$LATEST",
             )
         snapshot.match("match_exception", e.value.response)
@@ -198,7 +200,7 @@ class TestLambdaFunction:
     )
     @pytest.mark.aws_validated
     def test_ops_on_nonexisting_version(
-        self, lambda_client, create_lambda_function, snapshot, clientfn
+        self, create_lambda_function, snapshot, clientfn, aws_client
     ):
         """Test API responses on existing function names, but not existing versions"""
         function_name = f"i-exist-{short_uid()}"
@@ -209,13 +211,13 @@ class TestLambdaFunction:
             runtime=Runtime.python3_9,
             Description="Initial description",
         )
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            method = getattr(lambda_client, clientfn)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            method = getattr(aws_client.awslambda, clientfn)
             method(FunctionName=function_name, Qualifier="1221")
         snapshot.match("version_not_found_exception", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_delete_on_nonexisting_version(self, lambda_client, create_lambda_function, snapshot):
+    def test_delete_on_nonexisting_version(self, create_lambda_function, snapshot, aws_client):
         """Test API responses on existing function names, but not existing versions"""
         function_name = f"i-exist-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(function_name, "<fn-name>"))
@@ -226,14 +228,14 @@ class TestLambdaFunction:
             Description="Initial description",
         )
         # it seems delete function on a random qualifier is idempotent
-        lambda_client.delete_function(FunctionName=function_name, Qualifier="1233")
-        lambda_client.delete_function(FunctionName=function_name, Qualifier="1233")
-        lambda_client.delete_function(FunctionName=function_name)
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.delete_function(FunctionName=function_name)
+        aws_client.awslambda.delete_function(FunctionName=function_name, Qualifier="1233")
+        aws_client.awslambda.delete_function(FunctionName=function_name, Qualifier="1233")
+        aws_client.awslambda.delete_function(FunctionName=function_name)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.delete_function(FunctionName=function_name)
         snapshot.match("delete_function_response_non_existent", e.value.response)
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.delete_function(FunctionName=function_name, Qualifier="1233")
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.delete_function(FunctionName=function_name, Qualifier="1233")
         snapshot.match("delete_function_response_non_existent_with_qualifier", e.value.response)
 
     @pytest.mark.parametrize(
@@ -249,13 +251,13 @@ class TestLambdaFunction:
         ],
     )
     @pytest.mark.aws_validated
-    def test_ops_on_nonexisting_fn(self, lambda_client, snapshot, clientfn):
+    def test_ops_on_nonexisting_fn(self, snapshot, clientfn, aws_client):
         """Test API responses on non-existing function names"""
         # technically the short_uid isn't really required but better safe than sorry
         function_name = f"i-dont-exist-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(function_name, "<nonexisting-fn-name>"))
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            method = getattr(lambda_client, clientfn)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            method = getattr(aws_client.awslambda, clientfn)
             method(FunctionName=function_name)
         snapshot.match("not_found_exception", e.value.response)
 
@@ -274,7 +276,7 @@ class TestLambdaFunction:
     )
     @pytest.mark.aws_validated
     def test_get_function_wrong_region(
-        self, lambda_client, create_lambda_function, account_id, snapshot, clientfn
+        self, create_lambda_function, account_id, snapshot, clientfn, aws_client
     ):
         function_name = f"i-exist-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(function_name, "<fn-name>"))
@@ -285,17 +287,17 @@ class TestLambdaFunction:
             Description="Initial description",
         )
         wrong_region = (
-            "us-east-1" if lambda_client.meta.region_name != "us-east-1" else "eu-central-1"
+            "us-east-1" if aws_client.awslambda.meta.region_name != "us-east-1" else "eu-central-1"
         )
         snapshot.add_transformer(snapshot.transform.regex(wrong_region, "<wrong-region>"))
         wrong_region_arn = f"arn:aws:lambda:{wrong_region}:{account_id}:function:{function_name}"
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            method = getattr(lambda_client, clientfn)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            method = getattr(aws_client.awslambda, clientfn)
             method(FunctionName=wrong_region_arn)
         snapshot.match("wrong_region_exception", e.value.response)
 
     def test_lambda_code_location_zipfile(
-        self, lambda_client, snapshot, create_lambda_function_aws, lambda_su_role
+        self, snapshot, create_lambda_function_aws, lambda_su_role, aws_client
     ):
         function_name = f"code-function-{short_uid()}"
         zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
@@ -308,7 +310,7 @@ class TestLambdaFunction:
             Runtime=Runtime.python3_9,
         )
         snapshot.match("create-response-zip-file", create_response)
-        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        get_function_response = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get-function-response", get_function_response)
         code_location = get_function_response["Code"]["Location"]
         response = requests.get(code_location)
@@ -320,11 +322,13 @@ class TestLambdaFunction:
         zip_file_bytes_updated = create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON_VERSION), get_content=True
         )
-        update_function_response = lambda_client.update_function_code(
+        update_function_response = aws_client.awslambda.update_function_code(
             FunctionName=function_name, ZipFile=zip_file_bytes_updated
         )
         snapshot.match("update-function-response", update_function_response)
-        get_function_response_updated = lambda_client.get_function(FunctionName=function_name)
+        get_function_response_updated = aws_client.awslambda.get_function(
+            FunctionName=function_name
+        )
         snapshot.match("get-function-response-updated", get_function_response_updated)
         code_location_updated = get_function_response_updated["Code"]["Location"]
         response = requests.get(code_location_updated)
@@ -339,18 +343,12 @@ class TestLambdaFunction:
         )
 
     def test_lambda_code_location_s3(
-        self,
-        lambda_client,
-        s3_bucket,
-        s3_client,
-        snapshot,
-        create_lambda_function_aws,
-        lambda_su_role,
+        self, s3_bucket, snapshot, create_lambda_function_aws, lambda_su_role, aws_client
     ):
         function_name = f"code-function-{short_uid()}"
         bucket_key = "code/code-function.zip"
         zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
-        s3_client.upload_fileobj(
+        aws_client.s3.upload_fileobj(
             Fileobj=io.BytesIO(zip_file_bytes), Bucket=s3_bucket, Key=bucket_key
         )
         create_response = create_lambda_function_aws(
@@ -362,7 +360,7 @@ class TestLambdaFunction:
             Runtime=Runtime.python3_9,
         )
         snapshot.match("create_response_s3", create_response)
-        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        get_function_response = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get-function-response", get_function_response)
         code_location = get_function_response["Code"]["Location"]
         response = requests.get(code_location)
@@ -375,14 +373,16 @@ class TestLambdaFunction:
             load_file(TEST_LAMBDA_PYTHON_VERSION), get_content=True
         )
         # TODO check bucket addressing with version id as well?
-        s3_client.upload_fileobj(
+        aws_client.s3.upload_fileobj(
             Fileobj=io.BytesIO(zip_file_bytes_updated), Bucket=s3_bucket, Key=bucket_key
         )
-        update_function_response = lambda_client.update_function_code(
+        update_function_response = aws_client.awslambda.update_function_code(
             FunctionName=function_name, S3Bucket=s3_bucket, S3Key=bucket_key
         )
         snapshot.match("update-function-response", update_function_response)
-        get_function_response_updated = lambda_client.get_function(FunctionName=function_name)
+        get_function_response_updated = aws_client.awslambda.get_function(
+            FunctionName=function_name
+        )
         snapshot.match("get-function-response-updated", get_function_response_updated)
         code_location_updated = get_function_response_updated["Code"]["Location"]
         response = requests.get(code_location_updated)
@@ -397,12 +397,12 @@ class TestLambdaFunction:
         )
 
     @pytest.mark.aws_validated
-    def test_create_lambda_exceptions(self, lambda_client, lambda_su_role, snapshot):
+    def test_create_lambda_exceptions(self, lambda_su_role, snapshot, aws_client):
         function_name = f"invalid-function-{short_uid()}"
         zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
         # test invalid role arn
         with pytest.raises(ClientError) as e:
-            lambda_client.create_function(
+            aws_client.awslambda.create_function(
                 FunctionName=function_name,
                 Handler="index.handler",
                 Code={"ZipFile": zip_file_bytes},
@@ -413,7 +413,7 @@ class TestLambdaFunction:
         snapshot.match("invalid_role_arn_exc", e.value.response)
         # test invalid runtimes
         with pytest.raises(ClientError) as e:
-            lambda_client.create_function(
+            aws_client.awslambda.create_function(
                 FunctionName=function_name,
                 Handler="index.handler",
                 Code={"ZipFile": zip_file_bytes},
@@ -423,7 +423,7 @@ class TestLambdaFunction:
             )
         snapshot.match("invalid_runtime_exc", e.value.response)
         with pytest.raises(ClientError) as e:
-            lambda_client.create_function(
+            aws_client.awslambda.create_function(
                 FunctionName=function_name,
                 Handler="index.handler",
                 Code={"ZipFile": zip_file_bytes},
@@ -435,7 +435,7 @@ class TestLambdaFunction:
 
         # test empty architectures
         with pytest.raises(ParamValidationError) as e:
-            lambda_client.create_function(
+            aws_client.awslambda.create_function(
                 FunctionName=function_name,
                 Handler="index.handler",
                 Code={"ZipFile": zip_file_bytes},
@@ -448,7 +448,7 @@ class TestLambdaFunction:
 
         # test multiple architectures
         with pytest.raises(ClientError) as e:
-            lambda_client.create_function(
+            aws_client.awslambda.create_function(
                 FunctionName=function_name,
                 Handler="index.handler",
                 Code={"ZipFile": zip_file_bytes},
@@ -461,7 +461,7 @@ class TestLambdaFunction:
 
         # test invalid architecture: capital "X" instead of "x"
         with pytest.raises(ClientError) as e:
-            lambda_client.create_function(
+            aws_client.awslambda.create_function(
                 FunctionName=function_name,
                 Handler="index.handler",
                 Code={"ZipFile": zip_file_bytes},
@@ -474,7 +474,7 @@ class TestLambdaFunction:
 
         # test what happens with an invalid zip file
         with pytest.raises(ClientError) as e:
-            lambda_client.create_function(
+            aws_client.awslambda.create_function(
                 FunctionName=function_name,
                 Handler="index.handler",
                 Code={"ZipFile": b"this is not a zipfile, just a random string"},
@@ -486,7 +486,7 @@ class TestLambdaFunction:
 
     @pytest.mark.aws_validated
     def test_update_lambda_exceptions(
-        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
+        self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
     ):
         function_name = f"invalid-function-{short_uid()}"
         zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
@@ -499,19 +499,19 @@ class TestLambdaFunction:
             Runtime=Runtime.python3_9,
         )
         with pytest.raises(ClientError) as e:
-            lambda_client.update_function_configuration(
+            aws_client.awslambda.update_function_configuration(
                 FunctionName=function_name,
                 Role="r1",
             )
         snapshot.match("invalid_role_arn_exc", e.value.response)
         with pytest.raises(ClientError) as e:
-            lambda_client.update_function_configuration(
+            aws_client.awslambda.update_function_configuration(
                 FunctionName=function_name,
                 Runtime="non-existent-runtime",
             )
         snapshot.match("invalid_runtime_exc", e.value.response)
         with pytest.raises(ClientError) as e:
-            lambda_client.update_function_configuration(
+            aws_client.awslambda.update_function_configuration(
                 FunctionName=function_name,
                 Runtime="PYTHON3.9",
             )
@@ -523,7 +523,7 @@ class TestLambdaFunction:
         ]
     )
     @pytest.mark.aws_validated
-    def test_list_functions(self, lambda_client, create_lambda_function, lambda_su_role, snapshot):
+    def test_list_functions(self, create_lambda_function, lambda_su_role, snapshot, aws_client):
         snapshot.add_transformer(SortingTransformer("Functions", lambda x: x["FunctionArn"]))
 
         function_name_1 = f"list-fn-1-{short_uid()}"
@@ -546,11 +546,11 @@ class TestLambdaFunction:
         )
         snapshot.match("create_response_2", create_response)
 
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.list_functions(FunctionVersion="invalid")
+        with pytest.raises(aws_client.awslambda.exceptions.ClientError) as e:
+            aws_client.awslambda.list_functions(FunctionVersion="invalid")
         snapshot.match("list_functions_invalid_functionversion", e.value.response)
 
-        list_paginator = lambda_client.get_paginator("list_functions")
+        list_paginator = aws_client.awslambda.get_paginator("list_functions")
         # ALL means it should also return all published versions for the functions
         test_fn = [function_name_1, function_name_2]
         list_all = list_paginator.paginate(
@@ -593,14 +593,14 @@ class TestLambdaImages:
             )
 
     @pytest.fixture(scope="class")
-    def test_image(self, ecr_client, login_docker_client):
+    def test_image(self, aws_client):
         repository_names = []
         image_names = []
 
         def _create_test_image(base_image: str):
             if is_aws_cloud():
                 repository_name = f"test-repo-{short_uid()}"
-                repository_uri = ecr_client.create_repository(repositoryName=repository_name)[
+                repository_uri = aws_client.ecr.create_repository(repositoryName=repository_name)[
                     "repository"
                 ]["repositoryUri"]
                 image_name = f"{repository_uri}:latest"
@@ -625,21 +625,21 @@ class TestLambdaImages:
 
         for repository_name in repository_names:
             try:
-                image_ids = ecr_client.list_images(repositoryName=repository_name).get(
+                image_ids = aws_client.ecr.list_images(repositoryName=repository_name).get(
                     "imageIds", []
                 )
                 if image_ids:
                     call_safe(
-                        ecr_client.batch_delete_image,
+                        aws_client.ecr.batch_delete_image,
                         kwargs={"repositoryName": repository_name, "imageIds": image_ids},
                     )
-                ecr_client.delete_repository(repositoryName=repository_name)
+                aws_client.ecr.delete_repository(repositoryName=repository_name)
             except Exception as e:
                 LOG.debug("Error cleaning up repository %s: %s", repository_name, e)
 
     @pytest.mark.aws_validated
     def test_lambda_image_crud(
-        self, lambda_client, create_lambda_function_aws, lambda_su_role, test_image, snapshot
+        self, create_lambda_function_aws, lambda_su_role, test_image, snapshot, aws_client
     ):
         """Test lambda crud with package type image"""
         image = test_image("alpine")
@@ -654,17 +654,17 @@ class TestLambdaImages:
             Environment={"Variables": {"CUSTOM_ENV": "test"}},
         )
         snapshot.match("create-image-response", create_image_response)
-        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
-        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        get_function_response = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get-function-code-response", get_function_response)
-        get_function_config_response = lambda_client.get_function_configuration(
+        get_function_config_response = aws_client.awslambda.get_function_configuration(
             FunctionName=function_name
         )
         snapshot.match("get-function-config-response", get_function_config_response)
 
         # try update to a zip file - should fail
         with pytest.raises(ClientError) as e:
-            lambda_client.update_function_code(
+            aws_client.awslambda.update_function_code(
                 FunctionName=function_name,
                 ZipFile=create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True),
             )
@@ -673,22 +673,22 @@ class TestLambdaImages:
         image_2 = test_image("debian")
         repo_uri_2 = image_2.rpartition(":")[0]
         snapshot.add_transformer(snapshot.transform.regex(repo_uri_2, "<repo_uri_2>"))
-        update_function_code_response = lambda_client.update_function_code(
+        update_function_code_response = aws_client.awslambda.update_function_code(
             FunctionName=function_name, ImageUri=image_2
         )
         snapshot.match("update-function-code-response", update_function_code_response)
-        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=function_name)
 
-        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        get_function_response = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get-function-code-response-after-update", get_function_response)
-        get_function_config_response = lambda_client.get_function_configuration(
+        get_function_config_response = aws_client.awslambda.get_function_configuration(
             FunctionName=function_name
         )
         snapshot.match("get-function-config-response-after-update", get_function_config_response)
 
     @pytest.mark.aws_validated
     def test_lambda_zip_file_to_image(
-        self, lambda_client, create_lambda_function_aws, lambda_su_role, test_image, snapshot
+        self, create_lambda_function_aws, lambda_su_role, test_image, snapshot, aws_client
     ):
         """Test that verifies conversion from zip file lambda to image lambda is not possible"""
         image = test_image("alpine")
@@ -707,28 +707,28 @@ class TestLambdaImages:
             },
         )
         snapshot.match("create-image-response", create_image_response)
-        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
-        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        get_function_response = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get-function-code-response", get_function_response)
-        get_function_config_response = lambda_client.get_function_configuration(
+        get_function_config_response = aws_client.awslambda.get_function_configuration(
             FunctionName=function_name
         )
         snapshot.match("get-function-config-response", get_function_config_response)
 
         with pytest.raises(ClientError) as e:
-            lambda_client.update_function_code(FunctionName=function_name, ImageUri=image)
+            aws_client.awslambda.update_function_code(FunctionName=function_name, ImageUri=image)
         snapshot.match("zipfile-to-image-error", e.value.response)
 
-        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        get_function_response = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get-function-code-response-after-update", get_function_response)
-        get_function_config_response = lambda_client.get_function_configuration(
+        get_function_config_response = aws_client.awslambda.get_function_configuration(
             FunctionName=function_name
         )
         snapshot.match("get-function-config-response-after-update", get_function_config_response)
 
     @pytest.mark.aws_validated
     def test_lambda_image_and_image_config_crud(
-        self, lambda_client, create_lambda_function_aws, lambda_su_role, test_image, snapshot
+        self, create_lambda_function_aws, lambda_su_role, test_image, snapshot, aws_client
     ):
         """Test lambda crud with packagetype image and image configs"""
         image = test_image("alpine")
@@ -750,10 +750,10 @@ class TestLambdaImages:
             Environment={"Variables": {"CUSTOM_ENV": "test"}},
         )
         snapshot.match("create-image-with-config-response", create_image_response)
-        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
-        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        get_function_response = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get-function-code-with-config-response", get_function_response)
-        get_function_config_response = lambda_client.get_function_configuration(
+        get_function_config_response = aws_client.awslambda.get_function_configuration(
             FunctionName=function_name
         )
         snapshot.match("get-function-config-with-config-response", get_function_config_response)
@@ -763,31 +763,31 @@ class TestLambdaImages:
             "Command": ["-c", "echo test1"],
             "WorkingDirectory": "/app1",
         }
-        update_function_config_response = lambda_client.update_function_configuration(
+        update_function_config_response = aws_client.awslambda.update_function_configuration(
             FunctionName=function_name, ImageConfig=new_image_config
         )
         snapshot.match("update-function-code-response", update_function_config_response)
-        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=function_name)
 
-        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        get_function_response = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get-function-code-response-after-update", get_function_response)
-        get_function_config_response = lambda_client.get_function_configuration(
+        get_function_config_response = aws_client.awslambda.get_function_configuration(
             FunctionName=function_name
         )
         snapshot.match("get-function-config-response-after-update", get_function_config_response)
 
         # update to empty image config
-        update_function_config_response = lambda_client.update_function_configuration(
+        update_function_config_response = aws_client.awslambda.update_function_configuration(
             FunctionName=function_name, ImageConfig={}
         )
         snapshot.match(
             "update-function-code-delete-imageconfig-response", update_function_config_response
         )
-        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=function_name)
 
-        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        get_function_response = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get-function-code-response-after-delete-imageconfig", get_function_response)
-        get_function_config_response = lambda_client.get_function_configuration(
+        get_function_config_response = aws_client.awslambda.get_function_configuration(
             FunctionName=function_name
         )
         snapshot.match(
@@ -799,7 +799,7 @@ class TestLambdaImages:
 class TestLambdaVersions:
     @pytest.mark.aws_validated
     def test_publish_version_on_create(
-        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
+        self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
     ):
         function_name = f"fn-{short_uid()}"
 
@@ -818,40 +818,42 @@ class TestLambdaVersions:
         )
         snapshot.match("create_response", create_response)
 
-        get_function_result = lambda_client.get_function(FunctionName=function_name)
+        get_function_result = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_function_result", get_function_result)
 
-        get_function_version_result = lambda_client.get_function(
+        get_function_version_result = aws_client.awslambda.get_function(
             FunctionName=function_name, Qualifier="1"
         )
         snapshot.match("get_function_version_result", get_function_version_result)
 
-        get_function_latest_result = lambda_client.get_function(
+        get_function_latest_result = aws_client.awslambda.get_function(
             FunctionName=function_name, Qualifier="$LATEST"
         )
         snapshot.match("get_function_latest_result", get_function_latest_result)
 
-        list_versions_result = lambda_client.list_versions_by_function(FunctionName=function_name)
+        list_versions_result = aws_client.awslambda.list_versions_by_function(
+            FunctionName=function_name
+        )
         snapshot.match("list_versions_result", list_versions_result)
 
         # rerelease just published function, should not release new version
-        repeated_publish_response = lambda_client.publish_version(
+        repeated_publish_response = aws_client.awslambda.publish_version(
             FunctionName=function_name, Description="Repeated version description :)"
         )
         snapshot.match("repeated_publish_response", repeated_publish_response)
-        list_versions_result_after_publish = lambda_client.list_versions_by_function(
+        list_versions_result_after_publish = aws_client.awslambda.list_versions_by_function(
             FunctionName=function_name
         )
         snapshot.match("list_versions_result_after_publish", list_versions_result_after_publish)
 
     @pytest.mark.aws_validated
     def test_version_lifecycle(
-        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
+        self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
     ):
         """
         Test the function version "lifecycle" (there are no deletes)
         """
-        waiter = lambda_client.get_waiter("function_updated_v2")
+        waiter = aws_client.awslambda.get_waiter("function_updated_v2")
         function_name = f"fn-{short_uid()}"
         create_response = create_lambda_function_aws(
             FunctionName=function_name,
@@ -868,41 +870,43 @@ class TestLambdaVersions:
         )
         snapshot.match("create_response", create_response)
 
-        get_function_result = lambda_client.get_function(FunctionName=function_name)
+        get_function_result = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_function_result", get_function_result)
 
-        list_versions_result = lambda_client.list_versions_by_function(FunctionName=function_name)
+        list_versions_result = aws_client.awslambda.list_versions_by_function(
+            FunctionName=function_name
+        )
         snapshot.match("list_versions_result", list_versions_result)
 
-        first_update_response = lambda_client.update_function_configuration(
+        first_update_response = aws_client.awslambda.update_function_configuration(
             FunctionName=function_name, Description="First version :)"
         )
         snapshot.match("first_update_response", first_update_response)
         waiter.wait(FunctionName=function_name)
-        first_update_get_function = lambda_client.get_function(FunctionName=function_name)
+        first_update_get_function = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("first_update_get_function", first_update_get_function)
 
-        first_publish_response = lambda_client.publish_version(
+        first_publish_response = aws_client.awslambda.publish_version(
             FunctionName=function_name, Description="First version description :)"
         )
         snapshot.match("first_publish_response", first_publish_response)
 
-        first_publish_get_function = lambda_client.get_function(
+        first_publish_get_function = aws_client.awslambda.get_function(
             FunctionName=function_name, Qualifier=first_publish_response["Version"]
         )
         snapshot.match("first_publish_get_function", first_publish_get_function)
-        first_publish_get_function_config = lambda_client.get_function_configuration(
+        first_publish_get_function_config = aws_client.awslambda.get_function_configuration(
             FunctionName=function_name, Qualifier=first_publish_response["Version"]
         )
         snapshot.match("first_publish_get_function_config", first_publish_get_function_config)
 
-        second_update_response = lambda_client.update_function_configuration(
+        second_update_response = aws_client.awslambda.update_function_configuration(
             FunctionName=function_name, Description="Second version :))"
         )
         snapshot.match("second_update_response", second_update_response)
         waiter.wait(FunctionName=function_name)
         # check if first publish get function changed:
-        first_publish_get_function_after_update = lambda_client.get_function(
+        first_publish_get_function_after_update = aws_client.awslambda.get_function(
             FunctionName=function_name, Qualifier=first_publish_response["Version"]
         )
         snapshot.match(
@@ -911,21 +915,21 @@ class TestLambdaVersions:
 
         # Same state published as two different versions.
         # The publish_version api is idempotent, so the second publish_version will *NOT* create a new version because $LATEST hasn't been updated!
-        second_publish_response = lambda_client.publish_version(FunctionName=function_name)
+        second_publish_response = aws_client.awslambda.publish_version(FunctionName=function_name)
         snapshot.match("second_publish_response", second_publish_response)
-        third_publish_response = lambda_client.publish_version(
+        third_publish_response = aws_client.awslambda.publish_version(
             FunctionName=function_name, Description="Third version description :)))"
         )
         snapshot.match("third_publish_response", third_publish_response)
 
-        list_versions_result_end = lambda_client.list_versions_by_function(
+        list_versions_result_end = aws_client.awslambda.list_versions_by_function(
             FunctionName=function_name
         )
         snapshot.match("list_versions_result_end", list_versions_result_end)
 
     @pytest.mark.aws_validated
     def test_publish_with_wrong_sha256(
-        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
+        self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
     ):
         function_name = f"fn-{short_uid()}"
         create_response = create_lambda_function_aws(
@@ -942,25 +946,25 @@ class TestLambdaVersions:
         )
         snapshot.match("create_response", create_response)
 
-        get_fn_response = lambda_client.get_function(FunctionName=function_name)
+        get_fn_response = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_fn_response", get_fn_response)
 
         # publish_versions fails for the wrong revision id
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.publish_version(
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.publish_version(
                 FunctionName=function_name, CodeSha256="somenonexistentsha256"
             )
         snapshot.match("publish_wrong_sha256_exc", e.value.response)
 
         # but with the proper rev id, it should work
-        publish_result = lambda_client.publish_version(
+        publish_result = aws_client.awslambda.publish_version(
             FunctionName=function_name, CodeSha256=get_fn_response["Configuration"]["CodeSha256"]
         )
         snapshot.match("publish_result", publish_result)
 
     @pytest.mark.aws_validated
     def test_publish_with_update(
-        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
+        self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
     ):
         function_name = f"fn-{short_uid()}"
 
@@ -978,22 +982,22 @@ class TestLambdaVersions:
         )
         snapshot.match("create_response", create_response)
 
-        get_function_result = lambda_client.get_function(FunctionName=function_name)
+        get_function_result = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_function_result", get_function_result)
         update_zip_file = create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON_VERSION), get_content=True
         )
-        update_function_code_result = lambda_client.update_function_code(
+        update_function_code_result = aws_client.awslambda.update_function_code(
             FunctionName=function_name, ZipFile=update_zip_file, Publish=True
         )
         snapshot.match("update_function_code_result", update_function_code_result)
 
-        get_function_version_result = lambda_client.get_function(
+        get_function_version_result = aws_client.awslambda.get_function(
             FunctionName=function_name, Qualifier="1"
         )
         snapshot.match("get_function_version_result", get_function_version_result)
 
-        get_function_latest_result = lambda_client.get_function(
+        get_function_latest_result = aws_client.awslambda.get_function(
             FunctionName=function_name, Qualifier="$LATEST"
         )
         snapshot.match("get_function_latest_result", get_function_latest_result)
@@ -1003,7 +1007,7 @@ class TestLambdaVersions:
 class TestLambdaAlias:
     @pytest.mark.aws_validated
     def test_alias_lifecycle(
-        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
+        self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
     ):
         """
         The function has 2 (excl. $LATEST) versions:
@@ -1033,19 +1037,19 @@ class TestLambdaAlias:
         )
         snapshot.match("create_response", create_response)
 
-        publish_v1 = lambda_client.publish_version(FunctionName=function_name)
+        publish_v1 = aws_client.awslambda.publish_version(FunctionName=function_name)
         snapshot.match("publish_v1", publish_v1)
 
-        lambda_client.update_function_configuration(
+        aws_client.awslambda.update_function_configuration(
             FunctionName=function_name, Environment={"Variables": {"testenv": "prod"}}
         )
-        waiter = lambda_client.get_waiter("function_updated_v2")
+        waiter = aws_client.awslambda.get_waiter("function_updated_v2")
         waiter.wait(FunctionName=function_name)
 
-        publish_v2 = lambda_client.publish_version(FunctionName=function_name)
+        publish_v2 = aws_client.awslambda.publish_version(FunctionName=function_name)
         snapshot.match("publish_v2", publish_v2)
 
-        create_alias_1_1 = lambda_client.create_alias(
+        create_alias_1_1 = aws_client.awslambda.create_alias(
             FunctionName=function_name,
             Name="aliasname1_1",
             FunctionVersion="1",
@@ -1053,92 +1057,100 @@ class TestLambdaAlias:
             RoutingConfig={"AdditionalVersionWeights": {"2": 0.2}},
         )
         snapshot.match("create_alias_1_1", create_alias_1_1)
-        get_alias_1_1 = lambda_client.get_alias(FunctionName=function_name, Name="aliasname1_1")
+        get_alias_1_1 = aws_client.awslambda.get_alias(
+            FunctionName=function_name, Name="aliasname1_1"
+        )
         snapshot.match("get_alias_1_1", get_alias_1_1)
-        get_function_alias_1_1 = lambda_client.get_function(
+        get_function_alias_1_1 = aws_client.awslambda.get_function(
             FunctionName=function_name, Qualifier="aliasname1_1"
         )
         snapshot.match("get_function_alias_1_1", get_function_alias_1_1)
-        get_function_byarn_alias_1_1 = lambda_client.get_function(
+        get_function_byarn_alias_1_1 = aws_client.awslambda.get_function(
             FunctionName=create_alias_1_1["AliasArn"]
         )
         snapshot.match("get_function_byarn_alias_1_1", get_function_byarn_alias_1_1)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_function(FunctionName=function_name, Qualifier="aliasdoesnotexist")
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_function(
+                FunctionName=function_name, Qualifier="aliasdoesnotexist"
+            )
         snapshot.match("get_function_alias_notfound_exc", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_function(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_function(
                 FunctionName=create_alias_1_1["AliasArn"].replace(
                     "aliasname1_1", "aliasdoesnotexist"
                 )
             )
         snapshot.match("get_function_alias_byarn_notfound_exc", e.value.response)
 
-        create_alias_1_2 = lambda_client.create_alias(
+        create_alias_1_2 = aws_client.awslambda.create_alias(
             FunctionName=function_name,
             Name="aliasname1_2",
             FunctionVersion="1",
             Description="custom-alias",
         )
         snapshot.match("create_alias_1_2", create_alias_1_2)
-        get_alias_1_2 = lambda_client.get_alias(FunctionName=function_name, Name="aliasname1_2")
+        get_alias_1_2 = aws_client.awslambda.get_alias(
+            FunctionName=function_name, Name="aliasname1_2"
+        )
         snapshot.match("get_alias_1_2", get_alias_1_2)
 
-        create_alias_1_3 = lambda_client.create_alias(
+        create_alias_1_3 = aws_client.awslambda.create_alias(
             FunctionName=function_name,
             Name="aliasname1_3",
             FunctionVersion="1",
         )
         snapshot.match("create_alias_1_3", create_alias_1_3)
-        get_alias_1_3 = lambda_client.get_alias(FunctionName=function_name, Name="aliasname1_3")
+        get_alias_1_3 = aws_client.awslambda.get_alias(
+            FunctionName=function_name, Name="aliasname1_3"
+        )
         snapshot.match("get_alias_1_3", get_alias_1_3)
 
-        create_alias_2 = lambda_client.create_alias(
+        create_alias_2 = aws_client.awslambda.create_alias(
             FunctionName=function_name,
             Name="aliasname2",
             FunctionVersion="2",
             Description="custom-alias",
         )
         snapshot.match("create_alias_2", create_alias_2)
-        get_alias_2 = lambda_client.get_alias(FunctionName=function_name, Name="aliasname2")
+        get_alias_2 = aws_client.awslambda.get_alias(FunctionName=function_name, Name="aliasname2")
         snapshot.match("get_alias_2", get_alias_2)
 
         # list_aliases can be optionally called with a FunctionVersion to filter only aliases for this version
-        list_alias_paginator = lambda_client.get_paginator("list_aliases")
+        list_alias_paginator = aws_client.awslambda.get_paginator("list_aliases")
         list_aliases_for_fnname = list_alias_paginator.paginate(
             FunctionName=function_name, PaginationConfig={"PageSize": 1}
         ).build_full_result()  # 4 aliases
         snapshot.match("list_aliases_for_fnname", list_aliases_for_fnname)
         assert len(list_aliases_for_fnname["Aliases"]) == 4
         # update alias 1_1 to remove routing config
-        update_alias_1_1 = lambda_client.update_alias(
+        update_alias_1_1 = aws_client.awslambda.update_alias(
             FunctionName=function_name,
             Name="aliasname1_1",
             RoutingConfig={"AdditionalVersionWeights": {}},
         )
         snapshot.match("update_alias_1_1", update_alias_1_1)
-        get_alias_1_1_after_update = lambda_client.get_alias(
+        get_alias_1_1_after_update = aws_client.awslambda.get_alias(
             FunctionName=function_name, Name="aliasname1_1"
         )
         snapshot.match("get_alias_1_1_after_update", get_alias_1_1_after_update)
-        list_aliases_for_fnname_after_update = lambda_client.list_aliases(
+        list_aliases_for_fnname_after_update = aws_client.awslambda.list_aliases(
             FunctionName=function_name
         )  # 4 aliases
         snapshot.match("list_aliases_for_fnname_after_update", list_aliases_for_fnname_after_update)
         assert len(list_aliases_for_fnname_after_update["Aliases"]) == 4
         # check update without changes
-        update_alias_1_2 = lambda_client.update_alias(
+        update_alias_1_2 = aws_client.awslambda.update_alias(
             FunctionName=function_name,
             Name="aliasname1_2",
         )
         snapshot.match("update_alias_1_2", update_alias_1_2)
-        get_alias_1_2_after_update = lambda_client.get_alias(
+        get_alias_1_2_after_update = aws_client.awslambda.get_alias(
             FunctionName=function_name, Name="aliasname1_2"
         )
         snapshot.match("get_alias_1_2_after_update", get_alias_1_2_after_update)
-        list_aliases_for_fnname_after_update_2 = lambda_client.list_aliases(
+        list_aliases_for_fnname_after_update_2 = aws_client.awslambda.list_aliases(
             FunctionName=function_name
         )  # 4 aliases
         snapshot.match(
@@ -1146,25 +1158,25 @@ class TestLambdaAlias:
         )
         assert len(list_aliases_for_fnname_after_update["Aliases"]) == 4
 
-        list_aliases_for_version = lambda_client.list_aliases(
+        list_aliases_for_version = aws_client.awslambda.list_aliases(
             FunctionName=function_name, FunctionVersion="1"
         )  # 3 aliases
         snapshot.match("list_aliases_for_version", list_aliases_for_version)
         assert len(list_aliases_for_version["Aliases"]) == 3
 
-        delete_alias_response = lambda_client.delete_alias(
+        delete_alias_response = aws_client.awslambda.delete_alias(
             FunctionName=function_name, Name="aliasname1_1"
         )
         snapshot.match("delete_alias_response", delete_alias_response)
 
-        list_aliases_for_fnname_afterdelete = lambda_client.list_aliases(
+        list_aliases_for_fnname_afterdelete = aws_client.awslambda.list_aliases(
             FunctionName=function_name
         )  # 3 aliases
         snapshot.match("list_aliases_for_fnname_afterdelete", list_aliases_for_fnname_afterdelete)
 
     @pytest.mark.aws_validated
     def test_notfound_and_invalid_routingconfigs(
-        self, create_boto_client, create_lambda_function_aws, snapshot, lambda_su_role
+        self, create_boto_client, create_lambda_function_aws, snapshot, lambda_su_role, aws_client
     ):
         lambda_client = create_boto_client(
             "lambda", additional_config=Config(parameter_validation=False)
@@ -1338,7 +1350,7 @@ class TestLambdaRevisions:
         ]
     )
     @pytest.mark.aws_validated
-    def test_function_revisions_basic(self, lambda_client, create_lambda_function, snapshot):
+    def test_function_revisions_basic(self, create_lambda_function, snapshot, aws_client):
         """Tests basic revision id lifecycle for creating and updating functions"""
         function_name = f"fn-{short_uid()}"
         zip_file_content = load_file(TEST_LAMBDA_PYTHON_ECHO_ZIP, mode="rb")
@@ -1355,15 +1367,15 @@ class TestLambdaRevisions:
         rev1_create_function = create_function_response["CreateFunctionResponse"]["RevisionId"]
 
         # rev2: created function becomes active (the fixture does the waiting)
-        get_function_response_rev2 = lambda_client.get_function(FunctionName=function_name)
+        get_function_response_rev2 = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_function_response_rev2", get_function_response_rev2)
         rev2_active_state = get_function_response_rev2["Configuration"]["RevisionId"]
         # State change from Pending to Active causes revision id change!
         # Lambda function states: https://docs.aws.amazon.com/lambda/latest/dg/functions-states.html
         assert rev1_create_function != rev2_active_state
 
-        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
-            lambda_client.update_function_code(
+        with pytest.raises(aws_client.awslambda.exceptions.PreconditionFailedException) as e:
+            aws_client.awslambda.update_function_code(
                 FunctionName=function_name,
                 ZipFile=zip_file_content,
                 RevisionId="wrong",
@@ -1371,7 +1383,7 @@ class TestLambdaRevisions:
         snapshot.match("update_function_revision_exception", e.value.response)
 
         # rev3: update function code
-        update_fn_code_response = lambda_client.update_function_code(
+        update_fn_code_response = aws_client.awslambda.update_function_code(
             FunctionName=function_name,
             ZipFile=zip_file_content,
             RevisionId=rev2_active_state,
@@ -1381,20 +1393,20 @@ class TestLambdaRevisions:
         assert rev2_active_state != rev3_update_fn_code
 
         # rev4: function code update completed
-        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
-        get_function_response_rev4 = lambda_client.get_function(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        get_function_response_rev4 = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_function_response_rev4", get_function_response_rev4)
         rev4_fn_code_updated = get_function_response_rev4["Configuration"]["RevisionId"]
         assert rev3_update_fn_code != rev4_fn_code_updated
 
-        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
-            lambda_client.update_function_configuration(
+        with pytest.raises(aws_client.awslambda.exceptions.PreconditionFailedException) as e:
+            aws_client.awslambda.update_function_configuration(
                 FunctionName=function_name, Runtime=Runtime.python3_8, RevisionId="wrong"
             )
         snapshot.match("update_function_configuration_revision_exception", e.value.response)
 
         # rev5: update function configuration
-        update_fn_config_response = lambda_client.update_function_configuration(
+        update_fn_config_response = aws_client.awslambda.update_function_configuration(
             FunctionName=function_name, Runtime=Runtime.python3_8, RevisionId=rev4_fn_code_updated
         )
         snapshot.match("update_function_configuration_response_rev5", update_fn_config_response)
@@ -1402,15 +1414,15 @@ class TestLambdaRevisions:
         assert rev4_fn_code_updated != rev5_fn_config_update
 
         # rev6: function configuration updated completed
-        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
-        get_function_response_rev6 = lambda_client.get_function(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        get_function_response_rev6 = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_function_response_rev6", get_function_response_rev6)
         rev6_fn_config_update_done = get_function_response_rev6["Configuration"]["RevisionId"]
         assert rev5_fn_config_update != rev6_fn_config_update_done
 
     @pytest.mark.aws_validated
     def test_function_revisions_version_and_alias(
-        self, create_lambda_function, lambda_client, snapshot
+        self, create_lambda_function, snapshot, aws_client
     ):
         """Tests revision id lifecycle for 1) publishing function versions and 2) creating and updating aliases
         Shortcut notation to clarify branching:
@@ -1429,17 +1441,17 @@ class TestLambdaRevisions:
         rev1_create_function = create_function_response["CreateFunctionResponse"]["RevisionId"]
 
         # rev2: created function becomes active
-        get_function_response_rev2 = lambda_client.get_function(FunctionName=function_name)
+        get_function_response_rev2 = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_function_active_rev2", get_function_response_rev2)
         rev2_active_state = get_function_response_rev2["Configuration"]["RevisionId"]
         assert rev1_create_function != rev2_active_state
 
-        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
-            lambda_client.publish_version(FunctionName=function_name, RevisionId="wrong")
+        with pytest.raises(aws_client.awslambda.exceptions.PreconditionFailedException) as e:
+            aws_client.awslambda.publish_version(FunctionName=function_name, RevisionId="wrong")
         snapshot.match("publish_version_revision_exception", e.value.response)
 
         # rev_v1: publish version
-        fn_version_response = lambda_client.publish_version(
+        fn_version_response = aws_client.awslambda.publish_version(
             FunctionName=function_name, RevisionId=rev2_active_state
         )
         snapshot.match("publish_version_response_rev_v1", fn_version_response)
@@ -1448,8 +1460,8 @@ class TestLambdaRevisions:
         assert rev2_active_state != rev_v1_publish_version
 
         # rev_v2: published version becomes active does NOT change revision
-        lambda_client.get_waiter("published_version_active").wait(FunctionName=function_name)
-        get_function_response_rev_v2 = lambda_client.get_function(
+        aws_client.awslambda.get_waiter("published_version_active").wait(FunctionName=function_name)
+        get_function_response_rev_v2 = aws_client.awslambda.get_function(
             FunctionName=function_name, Qualifier=function_version
         )
         snapshot.match("get_function_published_version_rev_v2", get_function_response_rev_v2)
@@ -1457,14 +1469,14 @@ class TestLambdaRevisions:
         assert rev_v1_publish_version == rev_v2_publish_version_done
 
         # publish_version changes the revision id of $LATEST
-        get_function_response_rev3 = lambda_client.get_function(FunctionName=function_name)
+        get_function_response_rev3 = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_function_latest_rev3", get_function_response_rev3)
         rev3_publish_version = get_function_response_rev3["Configuration"]["RevisionId"]
         assert rev2_active_state != rev3_publish_version
 
         # rev_a1: create alias
         alias_name = "revision_alias"
-        create_alias_response = lambda_client.create_alias(
+        create_alias_response = aws_client.awslambda.create_alias(
             FunctionName=function_name,
             Name=alias_name,
             FunctionVersion=function_version,
@@ -1474,21 +1486,21 @@ class TestLambdaRevisions:
         assert rev_v2_publish_version_done != rev_a1_create_alias
 
         # create_alias does NOT change the revision id of $LATEST
-        get_function_response_rev4 = lambda_client.get_function(FunctionName=function_name)
+        get_function_response_rev4 = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_function_latest_rev4", get_function_response_rev4)
         rev4_create_alias = get_function_response_rev4["Configuration"]["RevisionId"]
         assert rev3_publish_version == rev4_create_alias
 
         # create_alias does NOT change the revision id of versions
-        get_function_response_rev_v3 = lambda_client.get_function(
+        get_function_response_rev_v3 = aws_client.awslambda.get_function(
             FunctionName=function_name, Qualifier=function_version
         )
         snapshot.match("get_function_published_version_rev_v3", get_function_response_rev_v3)
         rev_v3_create_alias = get_function_response_rev_v3["Configuration"]["RevisionId"]
         assert rev_v2_publish_version_done == rev_v3_create_alias
 
-        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
-            lambda_client.update_alias(
+        with pytest.raises(aws_client.awslambda.exceptions.PreconditionFailedException) as e:
+            aws_client.awslambda.update_alias(
                 FunctionName=function_name,
                 Name=alias_name,
                 RevisionId="wrong",
@@ -1496,7 +1508,7 @@ class TestLambdaRevisions:
         snapshot.match("update_alias_revision_exception", e.value.response)
 
         # rev_a2: update alias
-        update_alias_response = lambda_client.update_alias(
+        update_alias_response = aws_client.awslambda.update_alias(
             FunctionName=function_name,
             Name=alias_name,
             Description="something changed",
@@ -1507,7 +1519,7 @@ class TestLambdaRevisions:
         assert rev_a1_create_alias != rev_a2_update_alias
 
     @pytest.mark.aws_validated
-    def test_function_revisions_permissions(self, create_lambda_function, lambda_client, snapshot):
+    def test_function_revisions_permissions(self, create_lambda_function, snapshot, aws_client):
         """Tests revision id lifecycle for adding and removing permissions"""
         # rev1: create function
         function_name = f"fn-{short_uid()}"
@@ -1518,12 +1530,12 @@ class TestLambdaRevisions:
         )
 
         # rev2: created function becomes active
-        get_function_response_rev2 = lambda_client.get_function(FunctionName=function_name)
+        get_function_response_rev2 = aws_client.awslambda.get_function(FunctionName=function_name)
         rev2_active_state = get_function_response_rev2["Configuration"]["RevisionId"]
 
         sid = "s3"
-        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
-            lambda_client.add_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.PreconditionFailedException) as e:
+            aws_client.awslambda.add_permission(
                 FunctionName=function_name,
                 StatementId=sid,
                 Action="lambda:InvokeFunction",
@@ -1533,7 +1545,7 @@ class TestLambdaRevisions:
         snapshot.match("add_permission_revision_exception", e.value.response)
 
         # rev3: add permission
-        add_permission_response = lambda_client.add_permission(
+        add_permission_response = aws_client.awslambda.add_permission(
             FunctionName=function_name,
             StatementId=sid,
             Action="lambda:InvokeFunction",
@@ -1542,28 +1554,28 @@ class TestLambdaRevisions:
         )
         snapshot.match("add_permission_response", add_permission_response)
 
-        get_policy_response_rev3 = lambda_client.get_policy(FunctionName=function_name)
+        get_policy_response_rev3 = aws_client.awslambda.get_policy(FunctionName=function_name)
         snapshot.match("get_policy_response_rev3", get_policy_response_rev3)
         rev3policy_added_permission = get_policy_response_rev3["RevisionId"]
         assert rev2_active_state != rev3policy_added_permission
         # function revision is the same as policy revision
-        get_function_response_rev3 = lambda_client.get_function(FunctionName=function_name)
+        get_function_response_rev3 = aws_client.awslambda.get_function(FunctionName=function_name)
         rev3_added_permission = get_function_response_rev3["Configuration"]["RevisionId"]
         assert rev3_added_permission == rev3policy_added_permission
 
-        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
-            lambda_client.remove_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.PreconditionFailedException) as e:
+            aws_client.awslambda.remove_permission(
                 FunctionName=function_name, StatementId=sid, RevisionId="wrong"
             )
         snapshot.match("remove_permission_revision_exception", e.value.response)
 
         # rev4: remove permission
-        remove_permission_response = lambda_client.remove_permission(
+        remove_permission_response = aws_client.awslambda.remove_permission(
             FunctionName=function_name, StatementId=sid, RevisionId=rev3_added_permission
         )
         snapshot.match("remove_permission_response", remove_permission_response)
 
-        get_function_response_rev4 = lambda_client.get_function(FunctionName=function_name)
+        get_function_response_rev4 = aws_client.awslambda.get_function(FunctionName=function_name)
         rev4_removed_permission = get_function_response_rev4["Configuration"]["RevisionId"]
         assert rev3_added_permission != rev4_removed_permission
 
@@ -1583,7 +1595,7 @@ class TestLambdaTag:
         yield lambda_client.get_function(FunctionName=function_name)["Configuration"]["FunctionArn"]
 
     @pytest.mark.aws_validated
-    def test_create_tag_on_fn_create(self, lambda_client, create_lambda_function, snapshot):
+    def test_create_tag_on_fn_create(self, create_lambda_function, snapshot, aws_client):
         function_name = f"fn-{short_uid()}"
         custom_tag = f"tag-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(custom_tag, "<custom-tag>"))
@@ -1593,54 +1605,70 @@ class TestLambdaTag:
             runtime=Runtime.python3_9,
             Tags={"testtag": custom_tag},
         )
-        get_function_result = lambda_client.get_function(FunctionName=function_name)
+        get_function_result = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_function_result", get_function_result)
         fn_arn = get_function_result["Configuration"]["FunctionArn"]
 
-        list_tags_result = lambda_client.list_tags(Resource=fn_arn)
+        list_tags_result = aws_client.awslambda.list_tags(Resource=fn_arn)
         snapshot.match("list_tags_result", list_tags_result)
 
     @pytest.mark.aws_validated
-    def test_tag_lifecycle(self, lambda_client, create_lambda_function, snapshot, fn_arn):
+    def test_tag_lifecycle(self, create_lambda_function, snapshot, fn_arn, aws_client):
 
         # 1. add tag
-        tag_single_response = lambda_client.tag_resource(Resource=fn_arn, Tags={"A": "tag-a"})
+        tag_single_response = aws_client.awslambda.tag_resource(
+            Resource=fn_arn, Tags={"A": "tag-a"}
+        )
         snapshot.match("tag_single_response", tag_single_response)
-        snapshot.match("tag_single_response_listtags", lambda_client.list_tags(Resource=fn_arn))
+        snapshot.match(
+            "tag_single_response_listtags", aws_client.awslambda.list_tags(Resource=fn_arn)
+        )
 
         # 2. add multiple tags
-        tag_multiple_response = lambda_client.tag_resource(
+        tag_multiple_response = aws_client.awslambda.tag_resource(
             Resource=fn_arn, Tags={"B": "tag-b", "C": "tag-c"}
         )
         snapshot.match("tag_multiple_response", tag_multiple_response)
-        snapshot.match("tag_multiple_response_listtags", lambda_client.list_tags(Resource=fn_arn))
+        snapshot.match(
+            "tag_multiple_response_listtags", aws_client.awslambda.list_tags(Resource=fn_arn)
+        )
 
         # 3. add overlapping tags
-        tag_overlap_response = lambda_client.tag_resource(
+        tag_overlap_response = aws_client.awslambda.tag_resource(
             Resource=fn_arn, Tags={"C": "tag-c-newsuffix", "D": "tag-d"}
         )
         snapshot.match("tag_overlap_response", tag_overlap_response)
-        snapshot.match("tag_overlap_response_listtags", lambda_client.list_tags(Resource=fn_arn))
+        snapshot.match(
+            "tag_overlap_response_listtags", aws_client.awslambda.list_tags(Resource=fn_arn)
+        )
 
         # 3. remove tag
-        untag_single_response = lambda_client.untag_resource(Resource=fn_arn, TagKeys=["A"])
+        untag_single_response = aws_client.awslambda.untag_resource(Resource=fn_arn, TagKeys=["A"])
         snapshot.match("untag_single_response", untag_single_response)
-        snapshot.match("untag_single_response_listtags", lambda_client.list_tags(Resource=fn_arn))
+        snapshot.match(
+            "untag_single_response_listtags", aws_client.awslambda.list_tags(Resource=fn_arn)
+        )
 
         # 4. remove multiple tags
-        untag_multiple_response = lambda_client.untag_resource(Resource=fn_arn, TagKeys=["B", "C"])
+        untag_multiple_response = aws_client.awslambda.untag_resource(
+            Resource=fn_arn, TagKeys=["B", "C"]
+        )
         snapshot.match("untag_multiple_response", untag_multiple_response)
-        snapshot.match("untag_multiple_response_listtags", lambda_client.list_tags(Resource=fn_arn))
+        snapshot.match(
+            "untag_multiple_response_listtags", aws_client.awslambda.list_tags(Resource=fn_arn)
+        )
 
         # 5. try to remove only tags that don't exist
-        untag_nonexisting_response = lambda_client.untag_resource(Resource=fn_arn, TagKeys=["F"])
+        untag_nonexisting_response = aws_client.awslambda.untag_resource(
+            Resource=fn_arn, TagKeys=["F"]
+        )
         snapshot.match("untag_nonexisting_response", untag_nonexisting_response)
         snapshot.match(
-            "untag_nonexisting_response_listtags", lambda_client.list_tags(Resource=fn_arn)
+            "untag_nonexisting_response_listtags", aws_client.awslambda.list_tags(Resource=fn_arn)
         )
 
         # 6. remove a mix of tags that exist & don't exist
-        untag_existing_and_nonexisting_response = lambda_client.untag_resource(
+        untag_existing_and_nonexisting_response = aws_client.awslambda.untag_resource(
             Resource=fn_arn, TagKeys=["D", "F"]
         )
         snapshot.match(
@@ -1648,25 +1676,25 @@ class TestLambdaTag:
         )
         snapshot.match(
             "untag_existing_and_nonexisting_response_listtags",
-            lambda_client.list_tags(Resource=fn_arn),
+            aws_client.awslambda.list_tags(Resource=fn_arn),
         )
 
     @pytest.mark.aws_validated
-    def test_tag_nonexisting_resource(self, lambda_client, snapshot, fn_arn):
-        get_result = lambda_client.get_function(FunctionName=fn_arn)
+    def test_tag_nonexisting_resource(self, snapshot, fn_arn, aws_client):
+        get_result = aws_client.awslambda.get_function(FunctionName=fn_arn)
         snapshot.match("pre_delete_get_function", get_result)
-        lambda_client.delete_function(FunctionName=fn_arn)
+        aws_client.awslambda.delete_function(FunctionName=fn_arn)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.tag_resource(Resource=fn_arn, Tags={"A": "B"})
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.tag_resource(Resource=fn_arn, Tags={"A": "B"})
         snapshot.match("not_found_exception_tag", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.untag_resource(Resource=fn_arn, TagKeys=["A"])
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.untag_resource(Resource=fn_arn, TagKeys=["A"])
         snapshot.match("not_found_exception_untag", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.list_tags(Resource=fn_arn)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.list_tags(Resource=fn_arn)
         snapshot.match("not_found_exception_list", e.value.response)
 
 
@@ -1698,7 +1726,7 @@ class TestLambdaEventInvokeConfig:
 
     @pytest.mark.aws_validated
     def test_lambda_eventinvokeconfig_lifecycle(
-        self, create_lambda_function, lambda_su_role, lambda_client, snapshot
+        self, create_lambda_function, lambda_su_role, snapshot, aws_client
     ):
         function_name = f"fn-eventinvoke-{short_uid()}"
         create_lambda_function(
@@ -1708,71 +1736,73 @@ class TestLambdaEventInvokeConfig:
             role=lambda_su_role,
         )
 
-        put_invokeconfig_retries_0 = lambda_client.put_function_event_invoke_config(
+        put_invokeconfig_retries_0 = aws_client.awslambda.put_function_event_invoke_config(
             FunctionName=function_name,
             MaximumRetryAttempts=0,
         )
         snapshot.match("put_invokeconfig_retries_0", put_invokeconfig_retries_0)
 
-        put_invokeconfig_eventage_60 = lambda_client.put_function_event_invoke_config(
+        put_invokeconfig_eventage_60 = aws_client.awslambda.put_function_event_invoke_config(
             FunctionName=function_name, MaximumEventAgeInSeconds=60
         )
         snapshot.match("put_invokeconfig_eventage_60", put_invokeconfig_eventage_60)
 
-        update_invokeconfig_eventage_nochange = lambda_client.update_function_event_invoke_config(
-            FunctionName=function_name, MaximumEventAgeInSeconds=60
+        update_invokeconfig_eventage_nochange = (
+            aws_client.awslambda.update_function_event_invoke_config(
+                FunctionName=function_name, MaximumEventAgeInSeconds=60
+            )
         )
         snapshot.match(
             "update_invokeconfig_eventage_nochange", update_invokeconfig_eventage_nochange
         )
 
-        update_invokeconfig_retries = lambda_client.update_function_event_invoke_config(
+        update_invokeconfig_retries = aws_client.awslambda.update_function_event_invoke_config(
             FunctionName=function_name, MaximumRetryAttempts=1
         )
         snapshot.match("update_invokeconfig_retries", update_invokeconfig_retries)
 
-        get_invokeconfig = lambda_client.get_function_event_invoke_config(
+        get_invokeconfig = aws_client.awslambda.get_function_event_invoke_config(
             FunctionName=function_name
         )
         snapshot.match("get_invokeconfig", get_invokeconfig)
 
-        get_invokeconfig_latest = lambda_client.get_function_event_invoke_config(
+        get_invokeconfig_latest = aws_client.awslambda.get_function_event_invoke_config(
             FunctionName=function_name, Qualifier="$LATEST"
         )
         snapshot.match("get_invokeconfig_latest", get_invokeconfig_latest)
 
-        list_single_invokeconfig = lambda_client.list_function_event_invoke_configs(
+        list_single_invokeconfig = aws_client.awslambda.list_function_event_invoke_configs(
             FunctionName=function_name
         )
         snapshot.match("list_single_invokeconfig", list_single_invokeconfig)
 
         # publish a version so we can have more than one entries for list ops
-        publish_version_result = lambda_client.publish_version(FunctionName=function_name)
+        publish_version_result = aws_client.awslambda.publish_version(FunctionName=function_name)
         snapshot.match("publish_version_result", publish_version_result)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_function_event_invoke_config(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_function_event_invoke_config(
                 FunctionName=function_name, Qualifier=publish_version_result["Version"]
             )
         snapshot.match("get_invokeconfig_postpublish", e.value.response)
 
-        put_published_invokeconfig = lambda_client.put_function_event_invoke_config(
+        put_published_invokeconfig = aws_client.awslambda.put_function_event_invoke_config(
             FunctionName=function_name,
             Qualifier=publish_version_result["Version"],
             MaximumEventAgeInSeconds=120,
         )
         snapshot.match("put_published_invokeconfig", put_published_invokeconfig)
 
-        get_published_invokeconfig = lambda_client.get_function_event_invoke_config(
+        get_published_invokeconfig = aws_client.awslambda.get_function_event_invoke_config(
             FunctionName=function_name, Qualifier=publish_version_result["Version"]
         )
         snapshot.match("get_published_invokeconfig", get_published_invokeconfig)
 
         # list paging
-        list_paging_single = lambda_client.list_function_event_invoke_configs(
+        list_paging_single = aws_client.awslambda.list_function_event_invoke_configs(
             FunctionName=function_name, MaxItems=1
         )
-        list_paging_nolimit = lambda_client.list_function_event_invoke_configs(
+        list_paging_nolimit = aws_client.awslambda.list_function_event_invoke_configs(
             FunctionName=function_name
         )
         assert len(list_paging_single["FunctionEventInvokeConfigs"]) == 1
@@ -1780,7 +1810,7 @@ class TestLambdaEventInvokeConfig:
 
         all_arns = {a["FunctionArn"] for a in list_paging_nolimit["FunctionEventInvokeConfigs"]}
 
-        list_paging_remaining = lambda_client.list_function_event_invoke_configs(
+        list_paging_remaining = aws_client.awslambda.list_function_event_invoke_configs(
             FunctionName=function_name, Marker=list_paging_single["NextMarker"], MaxItems=1
         )
         assert len(list_paging_remaining["FunctionEventInvokeConfigs"]) == 1
@@ -1789,15 +1819,21 @@ class TestLambdaEventInvokeConfig:
             list_paging_remaining["FunctionEventInvokeConfigs"][0]["FunctionArn"],
         }
 
-        lambda_client.delete_function_event_invoke_config(FunctionName=function_name)
-        list_paging_nolimit_postdelete = lambda_client.list_function_event_invoke_configs(
+        aws_client.awslambda.delete_function_event_invoke_config(FunctionName=function_name)
+        list_paging_nolimit_postdelete = aws_client.awslambda.list_function_event_invoke_configs(
             FunctionName=function_name
         )
         snapshot.match("list_paging_nolimit_postdelete", list_paging_nolimit_postdelete)
 
     @pytest.mark.aws_validated
     def test_lambda_eventinvokeconfig_exceptions(
-        self, create_lambda_function, snapshot, lambda_su_role, account_id, create_boto_client
+        self,
+        create_lambda_function,
+        snapshot,
+        lambda_su_role,
+        account_id,
+        create_boto_client,
+        aws_client,
     ):
         """some parts could probably be split apart (e.g. overwriting with update)"""
         lambda_client = create_boto_client(
@@ -2140,8 +2176,8 @@ class TestLambdaEventInvokeConfig:
 class TestLambdaReservedConcurrency:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
-    def test_function_concurrency_exceptions(self, lambda_client, create_lambda_function, snapshot):
-        acc_settings = lambda_client.get_account_settings()
+    def test_function_concurrency_exceptions(self, create_lambda_function, snapshot, aws_client):
+        acc_settings = aws_client.awslambda.get_account_settings()
         reserved_limit = acc_settings["AccountLimit"]["UnreservedConcurrentExecutions"]
         min_capacity = 100
         # actual needed capacity on AWS is 101+ (!)
@@ -2158,48 +2194,50 @@ class TestLambdaReservedConcurrency:
             runtime=Runtime.python3_9,
         )
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.put_function_concurrency(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.put_function_concurrency(
                 FunctionName="unknown", ReservedConcurrentExecutions=1
             )
         snapshot.match("put_concurrency_unknown_fn", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.put_function_concurrency(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.put_function_concurrency(
                 FunctionName="unknown", ReservedConcurrentExecutions=0
             )
         snapshot.match("put_concurrency_unknown_fn_invalid_concurrency", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.put_function_concurrency(
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.put_function_concurrency(
                 FunctionName=function_name,
                 ReservedConcurrentExecutions=reserved_limit - min_capacity + 1,
             )
         snapshot.match("put_concurrency_known_fn_concurrency_limit_exceeded", e.value.response)
 
         # positive references
-        put_0_response = lambda_client.put_function_concurrency(
+        put_0_response = aws_client.awslambda.put_function_concurrency(
             FunctionName=function_name, ReservedConcurrentExecutions=0
         )  # This kind of "disables" a function since it can never exceed 0.
         snapshot.match("put_0_response", put_0_response)
-        put_1_response = lambda_client.put_function_concurrency(
+        put_1_response = aws_client.awslambda.put_function_concurrency(
             FunctionName=function_name, ReservedConcurrentExecutions=1
         )
         snapshot.match("put_1_response", put_1_response)
-        delete_response = lambda_client.delete_function_concurrency(FunctionName=function_name)
+        delete_response = aws_client.awslambda.delete_function_concurrency(
+            FunctionName=function_name
+        )
         snapshot.match("delete_response", delete_response)
 
         # maximum limit
-        lambda_client.put_function_concurrency(
+        aws_client.awslambda.put_function_concurrency(
             FunctionName=function_name, ReservedConcurrentExecutions=reserved_limit - min_capacity
         )
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
-    def test_function_concurrency(self, lambda_client, create_lambda_function, snapshot):
+    def test_function_concurrency(self, create_lambda_function, snapshot, aws_client):
         """Testing the api of the put function concurrency action"""
 
-        acc_settings = lambda_client.get_account_settings()
+        acc_settings = aws_client.awslambda.get_account_settings()
         if acc_settings["AccountLimit"]["UnreservedConcurrentExecutions"] <= 100:
             pytest.skip(
                 "Account limits are too low. You'll need to request a quota increase on AWS for UnreservedConcurrentExecution."
@@ -2212,16 +2250,16 @@ class TestLambdaReservedConcurrency:
             runtime=Runtime.python3_9,
         )
         #  An error occurred (InvalidParameterValueException) when calling the PutFunctionConcurrency operation: Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [50].
-        response = lambda_client.put_function_concurrency(
+        response = aws_client.awslambda.put_function_concurrency(
             FunctionName=function_name, ReservedConcurrentExecutions=1
         )
         snapshot.match("put_function_concurrency", response)
-        response = lambda_client.get_function_concurrency(FunctionName=function_name)
+        response = aws_client.awslambda.get_function_concurrency(FunctionName=function_name)
         snapshot.match("get_function_concurrency", response)
-        response = lambda_client.delete_function_concurrency(FunctionName=function_name)
+        response = aws_client.awslambda.delete_function_concurrency(FunctionName=function_name)
         snapshot.match("delete_function_concurrency", response)
 
-        response = lambda_client.get_function_concurrency(FunctionName=function_name)
+        response = aws_client.awslambda.get_function_concurrency(FunctionName=function_name)
         snapshot.match("get_function_concurrency_postdelete", response)
 
 
@@ -2232,7 +2270,7 @@ class TestLambdaProvisionedConcurrency:
     # TODO: test shorthand ARN
     @pytest.mark.aws_validated
     def test_provisioned_concurrency_exceptions(
-        self, create_boto_client, create_lambda_function, snapshot
+        self, create_boto_client, create_lambda_function, snapshot, aws_client
     ):
         lambda_client = create_boto_client(
             "lambda", additional_config=Config(parameter_validation=False)
@@ -2370,8 +2408,8 @@ class TestLambdaProvisionedConcurrency:
         snapshot.match("put_provisioned_latest", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_lambda_provisioned_lifecycle(self, lambda_client, create_lambda_function, snapshot):
-        acc_settings = lambda_client.get_account_settings()
+    def test_lambda_provisioned_lifecycle(self, create_lambda_function, snapshot, aws_client):
+        acc_settings = aws_client.awslambda.get_account_settings()
         reserved_limit = acc_settings["AccountLimit"]["UnreservedConcurrentExecutions"]
         min_capacity = 10
         extra_provisioned_concurrency = 1
@@ -2386,20 +2424,20 @@ class TestLambdaProvisionedConcurrency:
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
-        publish_version_result = lambda_client.publish_version(FunctionName=function_name)
+        publish_version_result = aws_client.awslambda.publish_version(FunctionName=function_name)
         function_version = publish_version_result["Version"]
         snapshot.match("publish_version_result", publish_version_result)
 
-        lambda_client.get_waiter("function_active_v2").wait(
+        aws_client.awslambda.get_waiter("function_active_v2").wait(
             FunctionName=function_name, Qualifier=function_version
         )
-        lambda_client.get_waiter("function_updated_v2").wait(
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(
             FunctionName=function_name, Qualifier=function_version
         )
 
         alias_name = f"alias-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(alias_name, "<alias-name>"))
-        create_alias_result = lambda_client.create_alias(
+        create_alias_result = aws_client.awslambda.create_alias(
             FunctionName=function_name, Name=alias_name, FunctionVersion=function_version
         )
         snapshot.match("create_alias_result", create_alias_result)
@@ -2408,41 +2446,41 @@ class TestLambdaProvisionedConcurrency:
 
         # attempt to set up provisioned concurrency for an alias that is pointing to a version that already has a provisioned concurrency setup
 
-        put_provisioned_on_version = lambda_client.put_provisioned_concurrency_config(
+        put_provisioned_on_version = aws_client.awslambda.put_provisioned_concurrency_config(
             FunctionName=function_name,
             Qualifier=function_version,
             ProvisionedConcurrentExecutions=extra_provisioned_concurrency,
         )
         snapshot.match("put_provisioned_on_version", put_provisioned_on_version)
-        with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
-            lambda_client.put_provisioned_concurrency_config(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceConflictException) as e:
+            aws_client.awslambda.put_provisioned_concurrency_config(
                 FunctionName=function_name, Qualifier=alias_name, ProvisionedConcurrentExecutions=1
             )
         snapshot.match("put_provisioned_on_alias_versionconflict", e.value.response)
 
-        delete_provisioned_version = lambda_client.delete_provisioned_concurrency_config(
+        delete_provisioned_version = aws_client.awslambda.delete_provisioned_concurrency_config(
             FunctionName=function_name, Qualifier=function_version
         )
         snapshot.match("delete_provisioned_version", delete_provisioned_version)
 
         with pytest.raises(
-            lambda_client.exceptions.ProvisionedConcurrencyConfigNotFoundException
+            aws_client.awslambda.exceptions.ProvisionedConcurrencyConfigNotFoundException
         ) as e:
-            lambda_client.get_provisioned_concurrency_config(
+            aws_client.awslambda.get_provisioned_concurrency_config(
                 FunctionName=function_name, Qualifier=function_version
             )
         snapshot.match("get_provisioned_version_postdelete", e.value.response)
 
         # now the other way around
 
-        put_provisioned_on_alias = lambda_client.put_provisioned_concurrency_config(
+        put_provisioned_on_alias = aws_client.awslambda.put_provisioned_concurrency_config(
             FunctionName=function_name,
             Qualifier=alias_name,
             ProvisionedConcurrentExecutions=extra_provisioned_concurrency,
         )
         snapshot.match("put_provisioned_on_alias", put_provisioned_on_alias)
-        with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
-            lambda_client.put_provisioned_concurrency_config(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceConflictException) as e:
+            aws_client.awslambda.put_provisioned_concurrency_config(
                 FunctionName=function_name,
                 Qualifier=function_version,
                 ProvisionedConcurrentExecutions=extra_provisioned_concurrency,
@@ -2450,18 +2488,18 @@ class TestLambdaProvisionedConcurrency:
         snapshot.match("put_provisioned_on_version_conflict", e.value.response)
 
         # deleting the alias will also delete the provisioned concurrency config that points to it
-        delete_alias_result = lambda_client.delete_alias(
+        delete_alias_result = aws_client.awslambda.delete_alias(
             FunctionName=function_name, Name=alias_name
         )
         snapshot.match("delete_alias_result", delete_alias_result)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_provisioned_concurrency_config(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_provisioned_concurrency_config(
                 FunctionName=function_name, Qualifier=alias_name
             )
         snapshot.match("get_provisioned_alias_postaliasdelete", e.value.response)
 
-        list_response_postdeletes = lambda_client.list_provisioned_concurrency_configs(
+        list_response_postdeletes = aws_client.awslambda.list_provisioned_concurrency_configs(
             FunctionName=function_name
         )
         assert len(list_response_postdeletes["ProvisionedConcurrencyConfigs"]) == 0
@@ -2483,9 +2521,7 @@ class TestLambdaProvisionedConcurrency:
 class TestLambdaPermissions:
     @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @pytest.mark.aws_validated
-    def test_permission_exceptions(
-        self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
-    ):
+    def test_permission_exceptions(self, create_lambda_function, account_id, snapshot, aws_client):
         function_name = f"lambda_func-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(function_name, "<function-name>"))
         create_lambda_function(
@@ -2495,8 +2531,8 @@ class TestLambdaPermissions:
         )
 
         # invalid statement id
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.add_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ClientError) as e:
+            aws_client.awslambda.add_permission(
                 FunctionName=function_name,
                 Action="lambda:InvokeFunction",
                 StatementId="example.com",
@@ -2505,8 +2541,8 @@ class TestLambdaPermissions:
         snapshot.match("add_permission_invalid_statement_id", e.value.response)
 
         # qualifier mismatch between specified Qualifier and derived ARN from FunctionName
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.add_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.add_permission(
                 FunctionName=f"{function_name}:alias-not-42",
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
@@ -2516,8 +2552,8 @@ class TestLambdaPermissions:
             )
         snapshot.match("add_permission_fn_qualifier_mismatch", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.add_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.add_permission(
                 FunctionName=f"{function_name}:$LATEST",
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
@@ -2527,8 +2563,8 @@ class TestLambdaPermissions:
             )
         snapshot.match("add_permission_fn_qualifier_latest", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.add_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.add_permission(
                 FunctionName=function_name,
                 Action="lambda:InvokeFunction",
                 StatementId="lambda",
@@ -2539,17 +2575,19 @@ class TestLambdaPermissions:
             )
         snapshot.match("add_permission_principal_invalid", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_policy(FunctionName="doesnotexist")
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_policy(FunctionName="doesnotexist")
         snapshot.match("get_policy_fn_doesnotexist", e.value.response)
 
         non_existing_version = "77"
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_policy(FunctionName=function_name, Qualifier=non_existing_version)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_policy(
+                FunctionName=function_name, Qualifier=non_existing_version
+            )
         snapshot.match("get_policy_fn_version_doesnotexist", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.add_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.add_permission(
                 FunctionName="doesnotexist",
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
@@ -2558,15 +2596,15 @@ class TestLambdaPermissions:
             )
         snapshot.match("add_permission_fn_doesnotexist", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.remove_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.remove_permission(
                 FunctionName=function_name,
                 StatementId="s3",
             )
         snapshot.match("remove_permission_policy_doesnotexist", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.add_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.add_permission(
                 FunctionName=f"{function_name}:alias-doesnotexist",
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
@@ -2575,8 +2613,8 @@ class TestLambdaPermissions:
             )
         snapshot.match("add_permission_fn_alias_doesnotexist", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.add_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.add_permission(
                 FunctionName=function_name,  # same behavior with version postfix :42
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
@@ -2586,8 +2624,8 @@ class TestLambdaPermissions:
             )
         snapshot.match("add_permission_fn_version_doesnotexist", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.add_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ClientError) as e:
+            aws_client.awslambda.add_permission(
                 FunctionName=function_name,
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
@@ -2597,8 +2635,8 @@ class TestLambdaPermissions:
             )
         snapshot.match("add_permission_fn_qualifier_invalid", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.add_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.add_permission(
                 FunctionName=function_name,
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
@@ -2609,7 +2647,7 @@ class TestLambdaPermissions:
             )
         snapshot.match("add_permission_fn_qualifier_valid_doesnotexist", e.value.response)
 
-        lambda_client.add_permission(
+        aws_client.awslambda.add_permission(
             FunctionName=function_name,
             Action="lambda:InvokeFunction",
             StatementId="s3",
@@ -2618,8 +2656,8 @@ class TestLambdaPermissions:
         )
 
         sid = "s3"
-        with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
-            lambda_client.add_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceConflictException) as e:
+            aws_client.awslambda.add_permission(
                 FunctionName=function_name,
                 Action="lambda:InvokeFunction",
                 StatementId=sid,
@@ -2628,23 +2666,23 @@ class TestLambdaPermissions:
             )
         snapshot.match("add_permission_conflicting_statement_id", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.remove_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.remove_permission(
                 FunctionName="doesnotexist",
                 StatementId=sid,
             )
         snapshot.match("remove_permission_fn_doesnotexist", e.value.response)
 
         non_existing_alias = "alias-doesnotexist"
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.remove_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.remove_permission(
                 FunctionName=function_name, StatementId=sid, Qualifier=non_existing_alias
             )
         snapshot.match("remove_permission_fn_alias_doesnotexist", e.value.response)
 
     @pytest.mark.aws_validated
     def test_add_lambda_permission_aws(
-        self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
+        self, create_lambda_function, account_id, snapshot, aws_client
     ):
         """Testing the add_permission call on lambda, by adding a new resource-based policy to a lambda function"""
 
@@ -2659,7 +2697,7 @@ class TestLambdaPermissions:
         action = "lambda:InvokeFunction"
         sid = "s3"
         principal = "s3.amazonaws.com"
-        resp = lambda_client.add_permission(
+        resp = aws_client.awslambda.add_permission(
             FunctionName=function_name,
             Action=action,
             StatementId=sid,
@@ -2669,13 +2707,13 @@ class TestLambdaPermissions:
         snapshot.match("add_permission", resp)
 
         # fetch lambda policy
-        get_policy_result = lambda_client.get_policy(FunctionName=function_name)
+        get_policy_result = aws_client.awslambda.get_policy(FunctionName=function_name)
         snapshot.match("get_policy", get_policy_result)
 
     @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @pytest.mark.aws_validated
     def test_lambda_permission_fn_versioning(
-        self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
+        self, create_lambda_function, account_id, snapshot, aws_client
     ):
         """Testing how lambda permissions behave when publishing different function versions and using qualifiers"""
         function_name = f"lambda_func-{short_uid()}"
@@ -2689,7 +2727,7 @@ class TestLambdaPermissions:
         action = "lambda:InvokeFunction"
         sid = "s3"
         principal = "s3.amazonaws.com"
-        resp = lambda_client.add_permission(
+        resp = aws_client.awslambda.add_permission(
             FunctionName=function_name,
             Action=action,
             StatementId=sid,
@@ -2699,26 +2737,30 @@ class TestLambdaPermissions:
         snapshot.match("add_permission", resp)
 
         # fetch lambda policy
-        get_policy_result_base = lambda_client.get_policy(FunctionName=function_name)
+        get_policy_result_base = aws_client.awslambda.get_policy(FunctionName=function_name)
         snapshot.match("get_policy", get_policy_result_base)
 
         # publish version
-        fn_version_result = lambda_client.publish_version(FunctionName=function_name)
+        fn_version_result = aws_client.awslambda.publish_version(FunctionName=function_name)
         snapshot.match("publish_version_result", fn_version_result)
         fn_version = fn_version_result["Version"]
-        lambda_client.get_waiter("published_version_active").wait(FunctionName=function_name)
-        get_function_result_after_publish = lambda_client.get_function(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("published_version_active").wait(FunctionName=function_name)
+        get_function_result_after_publish = aws_client.awslambda.get_function(
+            FunctionName=function_name
+        )
         snapshot.match("get_function_result_after_publishing", get_function_result_after_publish)
-        get_policy_result_after_publishing = lambda_client.get_policy(FunctionName=function_name)
+        get_policy_result_after_publishing = aws_client.awslambda.get_policy(
+            FunctionName=function_name
+        )
         snapshot.match("get_policy_after_publishing_latest", get_policy_result_after_publishing)
 
         # permissions apply per function unless providing a specific version or alias
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_policy(FunctionName=function_name, Qualifier=fn_version)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_policy(FunctionName=function_name, Qualifier=fn_version)
         snapshot.match("get_policy_after_publishing_new_version", e.value.response)
 
         # create lambda permission with the same sid for specific function version
-        lambda_client.add_permission(
+        aws_client.awslambda.add_permission(
             FunctionName=f"{function_name}:{fn_version}",  # version suffix matching Qualifier
             Action=action,
             StatementId=sid,
@@ -2726,26 +2768,28 @@ class TestLambdaPermissions:
             SourceArn=arns.s3_bucket_arn("test-bucket"),
             Qualifier=fn_version,
         )
-        get_policy_result_version = lambda_client.get_policy(
+        get_policy_result_version = aws_client.awslambda.get_policy(
             FunctionName=function_name, Qualifier=fn_version
         )
         snapshot.match("get_policy_version", get_policy_result_version)
 
         alias_name = "permission-alias"
-        create_alias_response = lambda_client.create_alias(
+        create_alias_response = aws_client.awslambda.create_alias(
             FunctionName=function_name,
             Name=alias_name,
             FunctionVersion=fn_version,
         )
         snapshot.match("create_alias_response", create_alias_response)
 
-        get_alias_response = lambda_client.get_alias(FunctionName=function_name, Name=alias_name)
+        get_alias_response = aws_client.awslambda.get_alias(
+            FunctionName=function_name, Name=alias_name
+        )
         snapshot.match("get_alias", get_alias_response)
         assert get_alias_response["RevisionId"] == create_alias_response["RevisionId"]
 
         sid = "s3"
-        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
-            lambda_client.add_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.PreconditionFailedException) as e:
+            aws_client.awslambda.add_permission(
                 FunctionName=function_name,
                 Action=action,
                 StatementId=sid,
@@ -2757,7 +2801,7 @@ class TestLambdaPermissions:
         snapshot.match("add_permission_alias_revision_exception", e.value.response)
 
         # create lambda permission with the same sid for specific alias
-        lambda_client.add_permission(
+        aws_client.awslambda.add_permission(
             FunctionName=f"{function_name}:{alias_name}",  # alias suffix matching Qualifier
             Action=action,
             StatementId=sid,
@@ -2766,16 +2810,16 @@ class TestLambdaPermissions:
             Qualifier=alias_name,
             RevisionId=create_alias_response["RevisionId"],
         )
-        get_policy_result_alias = lambda_client.get_policy(
+        get_policy_result_alias = aws_client.awslambda.get_policy(
             FunctionName=function_name, Qualifier=alias_name
         )
         snapshot.match("get_policy_alias", get_policy_result_alias)
 
-        get_policy_result = lambda_client.get_policy(FunctionName=function_name)
+        get_policy_result = aws_client.awslambda.get_policy(FunctionName=function_name)
         snapshot.match("get_policy_after_adding_to_new_version", get_policy_result)
 
         # create lambda permission with other sid and correct revision id
-        lambda_client.add_permission(
+        aws_client.awslambda.add_permission(
             FunctionName=function_name,
             Action=action,
             StatementId=f"{sid}_2",
@@ -2784,13 +2828,13 @@ class TestLambdaPermissions:
             RevisionId=get_policy_result["RevisionId"],
         )
 
-        get_policy_result_adding_2 = lambda_client.get_policy(FunctionName=function_name)
+        get_policy_result_adding_2 = aws_client.awslambda.get_policy(FunctionName=function_name)
         snapshot.match("get_policy_after_adding_2", get_policy_result_adding_2)
 
     @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @pytest.mark.aws_validated
     def test_add_lambda_permission_fields(
-        self, lambda_client, iam_client, create_lambda_function, account_id, sts_client, snapshot
+        self, create_lambda_function, account_id, snapshot, aws_client
     ):
         # prevent resource transformer from matching the LS default username "root", which collides with other resources
         snapshot.add_transformer(
@@ -2809,7 +2853,7 @@ class TestLambdaPermissions:
             runtime=Runtime.python3_9,
         )
 
-        resp = lambda_client.add_permission(
+        resp = aws_client.awslambda.add_permission(
             FunctionName=function_name,
             Action="lambda:InvokeFunction",
             StatementId="wilcard",
@@ -2818,7 +2862,7 @@ class TestLambdaPermissions:
         )
         snapshot.match("add_permission_principal_wildcard", resp)
 
-        resp = lambda_client.add_permission(
+        resp = aws_client.awslambda.add_permission(
             FunctionName=function_name,
             Action="lambda:InvokeFunction",
             StatementId="lambda",
@@ -2827,7 +2871,7 @@ class TestLambdaPermissions:
         )
         snapshot.match("add_permission_principal_service", resp)
 
-        resp = lambda_client.add_permission(
+        resp = aws_client.awslambda.add_permission(
             FunctionName=function_name,
             Action="lambda:InvokeFunction",
             StatementId="account-id",
@@ -2835,8 +2879,8 @@ class TestLambdaPermissions:
         )
         snapshot.match("add_permission_principal_account", resp)
 
-        user_arn = sts_client.get_caller_identity()["Arn"]
-        resp = lambda_client.add_permission(
+        user_arn = aws_client.sts.get_caller_identity()["Arn"]
+        resp = aws_client.awslambda.add_permission(
             FunctionName=function_name,
             Action="lambda:InvokeFunction",
             StatementId="user-arn",
@@ -2846,7 +2890,7 @@ class TestLambdaPermissions:
         snapshot.match("add_permission_principal_arn", resp)
         assert json.loads(resp["Statement"])["Principal"]["AWS"] == user_arn
 
-        resp = lambda_client.add_permission(
+        resp = aws_client.awslambda.add_permission(
             FunctionName=function_name,
             StatementId="urlPermission",
             Action="lambda:InvokeFunctionUrl",
@@ -2862,7 +2906,7 @@ class TestLambdaPermissions:
 
         # create alexa skill lambda permission:
         # https://developer.amazon.com/en-US/docs/alexa/custom-skills/host-a-custom-skill-as-an-aws-lambda-function.html#use-aws-cli
-        response = lambda_client.add_permission(
+        response = aws_client.awslambda.add_permission(
             FunctionName=function_name,
             StatementId="alexaSkill",
             Action="lambda:InvokeFunction",
@@ -2874,7 +2918,7 @@ class TestLambdaPermissions:
 
     @pytest.mark.skip_snapshot_verify(paths=["$..Message"], condition=is_old_provider)
     @pytest.mark.aws_validated
-    def test_remove_multi_permissions(self, lambda_client, create_lambda_function, snapshot):
+    def test_remove_multi_permissions(self, create_lambda_function, snapshot, aws_client):
         """Tests creation and subsequent removal of multiple permissions, including the changes in the policy"""
 
         function_name = f"lambda_func-{short_uid()}"
@@ -2887,7 +2931,7 @@ class TestLambdaPermissions:
         action = "lambda:InvokeFunction"
         sid = "s3"
         principal = "s3.amazonaws.com"
-        permission_1_add = lambda_client.add_permission(
+        permission_1_add = aws_client.awslambda.add_permission(
             FunctionName=function_name,
             Action=action,
             StatementId=sid,
@@ -2897,7 +2941,7 @@ class TestLambdaPermissions:
 
         sid_2 = "sqs"
         principal_2 = "sqs.amazonaws.com"
-        permission_2_add = lambda_client.add_permission(
+        permission_2_add = aws_client.awslambda.add_permission(
             FunctionName=function_name,
             Action=action,
             StatementId=sid_2,
@@ -2905,47 +2949,45 @@ class TestLambdaPermissions:
             SourceArn=arns.s3_bucket_arn("test-bucket"),
         )
         snapshot.match("add_permission_2", permission_2_add)
-        policy_response = lambda_client.get_policy(
+        policy_response = aws_client.awslambda.get_policy(
             FunctionName=function_name,
         )
         snapshot.match("policy_after_2_add", policy_response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.remove_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.remove_permission(
                 FunctionName=function_name,
                 StatementId="non-existent",
             )
         snapshot.match("remove_permission_exception_nonexisting_sid", e.value.response)
 
-        lambda_client.remove_permission(
+        aws_client.awslambda.remove_permission(
             FunctionName=function_name,
             StatementId=sid_2,
         )
 
-        policy_response_removal = lambda_client.get_policy(
+        policy_response_removal = aws_client.awslambda.get_policy(
             FunctionName=function_name,
         )
         snapshot.match("policy_after_removal", policy_response_removal)
 
-        policy_response_removal_attempt = lambda_client.get_policy(
+        policy_response_removal_attempt = aws_client.awslambda.get_policy(
             FunctionName=function_name,
         )
         snapshot.match("policy_after_removal_attempt", policy_response_removal_attempt)
 
-        lambda_client.remove_permission(
+        aws_client.awslambda.remove_permission(
             FunctionName=function_name,
             StatementId=sid,
             RevisionId=policy_response_removal_attempt["RevisionId"],
         )
         # get_policy raises an exception after removing all permissions
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as ctx:
-            lambda_client.get_policy(FunctionName=function_name)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as ctx:
+            aws_client.awslambda.get_policy(FunctionName=function_name)
         snapshot.match("get_policy_exception_removed_all", ctx.value.response)
 
     @pytest.mark.aws_validated
-    def test_create_multiple_lambda_permissions(
-        self, lambda_client, create_lambda_function, snapshot
-    ):
+    def test_create_multiple_lambda_permissions(self, create_lambda_function, snapshot, aws_client):
         """Test creating multiple lambda permissions and checking the policy"""
 
         function_name = f"test-function-{short_uid()}"
@@ -2958,7 +3000,7 @@ class TestLambdaPermissions:
 
         action = "lambda:InvokeFunction"
         sid = "logs"
-        resp = lambda_client.add_permission(
+        resp = aws_client.awslambda.add_permission(
             FunctionName=function_name,
             Action=action,
             StatementId=sid,
@@ -2967,7 +3009,7 @@ class TestLambdaPermissions:
         snapshot.match("add_permission_response_1", resp)
 
         sid = "kinesis"
-        resp = lambda_client.add_permission(
+        resp = aws_client.awslambda.add_permission(
             FunctionName=function_name,
             Action=action,
             StatementId=sid,
@@ -2975,7 +3017,7 @@ class TestLambdaPermissions:
         )
         snapshot.match("add_permission_response_2", resp)
 
-        policy_response = lambda_client.get_policy(
+        policy_response = aws_client.awslambda.get_policy(
             FunctionName=function_name,
         )
         snapshot.match("policy_after_2_add", policy_response)
@@ -2984,7 +3026,7 @@ class TestLambdaPermissions:
 class TestLambdaUrl:
     @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @pytest.mark.aws_validated
-    def test_url_config_exceptions(self, lambda_client, create_lambda_function, snapshot):
+    def test_url_config_exceptions(self, create_lambda_function, snapshot, aws_client):
         """
         note: list order is not defined
         """
@@ -3013,12 +3055,12 @@ class TestLambdaUrl:
             runtime=Runtime.nodejs14_x,
             handler="lambda_handler.handler",
         )
-        fn_arn = lambda_client.get_function(FunctionName=function_name)["Configuration"][
+        fn_arn = aws_client.awslambda.get_function(FunctionName=function_name)["Configuration"][
             "FunctionArn"
         ]
-        fn_version_result = lambda_client.publish_version(FunctionName=function_name)
+        fn_version_result = aws_client.awslambda.publish_version(FunctionName=function_name)
         snapshot.match("fn_version_result", fn_version_result)
-        create_alias_result = lambda_client.create_alias(
+        create_alias_result = aws_client.awslambda.create_alias(
             FunctionName=function_name,
             Name=alias_name,
             FunctionVersion=fn_version_result["Version"],
@@ -3038,32 +3080,32 @@ class TestLambdaUrl:
             {
                 "args": {"FunctionName": "doesnotexist"},
                 "SnapshotName": "name_doesnotexist",
-                "exc": lambda_client.exceptions.ResourceNotFoundException,
+                "exc": aws_client.awslambda.exceptions.ResourceNotFoundException,
             },
             {
                 "args": {"FunctionName": fn_arn_doesnotexist},
                 "SnapshotName": "arn_doesnotexist",
-                "exc": lambda_client.exceptions.ResourceNotFoundException,
+                "exc": aws_client.awslambda.exceptions.ResourceNotFoundException,
             },
             {
                 "args": {"FunctionName": "doesnotexist", "Qualifier": "1"},
                 "SnapshotName": "name_doesnotexist_qualifier",
-                "exc": lambda_client.exceptions.ClientError,
+                "exc": aws_client.awslambda.exceptions.ClientError,
             },
             {
                 "args": {"FunctionName": function_name, "Qualifier": "1"},
                 "SnapshotName": "qualifier_version",
-                "exc": lambda_client.exceptions.ClientError,
+                "exc": aws_client.awslambda.exceptions.ClientError,
             },
             {
                 "args": {"FunctionName": function_name, "Qualifier": "2"},
                 "SnapshotName": "qualifier_version_doesnotexist",
-                "exc": lambda_client.exceptions.ClientError,
+                "exc": aws_client.awslambda.exceptions.ClientError,
             },
             {
                 "args": {"FunctionName": function_name, "Qualifier": "v1"},
                 "SnapshotName": "qualifier_alias_doesnotexist",
-                "exc": lambda_client.exceptions.ResourceNotFoundException,
+                "exc": aws_client.awslambda.exceptions.ResourceNotFoundException,
             },
             {
                 "args": {
@@ -3071,7 +3113,7 @@ class TestLambdaUrl:
                     "Qualifier": alias_name,
                 },
                 "SnapshotName": "qualifier_alias_doesnotmatch_arn",
-                "exc": lambda_client.exceptions.ClientError,
+                "exc": aws_client.awslambda.exceptions.ClientError,
             },
             {
                 "args": {
@@ -3079,35 +3121,35 @@ class TestLambdaUrl:
                     "Qualifier": "$LATEST",
                 },
                 "SnapshotName": "qualifier_latest",
-                "exc": lambda_client.exceptions.ClientError,
+                "exc": aws_client.awslambda.exceptions.ClientError,
             },
         ]
         config_doesnotexist_tests = [
             {
                 "args": {"FunctionName": function_name},
                 "SnapshotName": "config_doesnotexist",
-                "exc": lambda_client.exceptions.ResourceNotFoundException,
+                "exc": aws_client.awslambda.exceptions.ResourceNotFoundException,
             },
         ]
 
         test_name_and_qualifier(
-            lambda_client.create_function_url_config,
+            aws_client.awslambda.create_function_url_config,
             "create_function_url_config",
             tests,
             AuthType="NONE",
         )
         test_name_and_qualifier(
-            lambda_client.get_function_url_config,
+            aws_client.awslambda.get_function_url_config,
             "get_function_url_config",
             tests + config_doesnotexist_tests,
         )
         test_name_and_qualifier(
-            lambda_client.delete_function_url_config,
+            aws_client.awslambda.delete_function_url_config,
             "delete_function_url_config",
             tests + config_doesnotexist_tests,
         )
         test_name_and_qualifier(
-            lambda_client.update_function_url_config,
+            aws_client.awslambda.update_function_url_config,
             "update_function_url_config",
             tests + config_doesnotexist_tests,
             AuthType="AWS_IAM",
@@ -3115,7 +3157,7 @@ class TestLambdaUrl:
 
     @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @pytest.mark.aws_validated
-    def test_url_config_list_paging(self, lambda_client, create_lambda_function, snapshot):
+    def test_url_config_list_paging(self, create_lambda_function, snapshot, aws_client):
         snapshot.add_transformer(
             snapshot.transform.key_value("FunctionUrl", "lambda-url", reference_replacement=False)
         )
@@ -3132,50 +3174,50 @@ class TestLambdaUrl:
             handler="lambda_handler.handler",
         )
 
-        fn_version_result = lambda_client.publish_version(FunctionName=function_name)
+        fn_version_result = aws_client.awslambda.publish_version(FunctionName=function_name)
         snapshot.match("fn_version_result", fn_version_result)
-        create_alias_result = lambda_client.create_alias(
+        create_alias_result = aws_client.awslambda.create_alias(
             FunctionName=function_name,
             Name=alias_name,
             FunctionVersion=fn_version_result["Version"],
         )
         snapshot.match("create_alias_result", create_alias_result)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.list_function_url_configs(FunctionName="doesnotexist")
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.list_function_url_configs(FunctionName="doesnotexist")
         snapshot.match("list_function_notfound", e.value.response)
 
-        list_all_empty = lambda_client.list_function_url_configs(FunctionName=function_name)
+        list_all_empty = aws_client.awslambda.list_function_url_configs(FunctionName=function_name)
         snapshot.match("list_all_empty", list_all_empty)
 
-        url_config_fn = lambda_client.create_function_url_config(
+        url_config_fn = aws_client.awslambda.create_function_url_config(
             FunctionName=function_name, AuthType="NONE"
         )
         snapshot.match("url_config_fn", url_config_fn)
-        url_config_alias = lambda_client.create_function_url_config(
+        url_config_alias = aws_client.awslambda.create_function_url_config(
             FunctionName=f"{function_name}:{alias_name}", Qualifier=alias_name, AuthType="NONE"
         )
         snapshot.match("url_config_alias", url_config_alias)
 
-        list_all = lambda_client.list_function_url_configs(FunctionName=function_name)
+        list_all = aws_client.awslambda.list_function_url_configs(FunctionName=function_name)
         snapshot.match("list_all", list_all)
 
         total_configs = [url_config_fn["FunctionUrl"], url_config_alias["FunctionUrl"]]
 
-        list_max_1_item = lambda_client.list_function_url_configs(
+        list_max_1_item = aws_client.awslambda.list_function_url_configs(
             FunctionName=function_name, MaxItems=1
         )
         assert len(list_max_1_item["FunctionUrlConfigs"]) == 1
         assert list_max_1_item["FunctionUrlConfigs"][0]["FunctionUrl"] in total_configs
 
-        list_max_2_item = lambda_client.list_function_url_configs(
+        list_max_2_item = aws_client.awslambda.list_function_url_configs(
             FunctionName=function_name, MaxItems=2
         )
         assert len(list_max_2_item["FunctionUrlConfigs"]) == 2
         assert list_max_2_item["FunctionUrlConfigs"][0]["FunctionUrl"] in total_configs
         assert list_max_2_item["FunctionUrlConfigs"][1]["FunctionUrl"] in total_configs
 
-        list_max_1_item_marker = lambda_client.list_function_url_configs(
+        list_max_1_item_marker = aws_client.awslambda.list_function_url_configs(
             FunctionName=function_name, MaxItems=1, Marker=list_max_1_item["NextMarker"]
         )
         assert len(list_max_1_item_marker["FunctionUrlConfigs"]) == 1
@@ -3186,7 +3228,7 @@ class TestLambdaUrl:
         )
 
     @pytest.mark.aws_validated
-    def test_url_config_lifecycle(self, lambda_client, create_lambda_function, snapshot):
+    def test_url_config_lifecycle(self, create_lambda_function, snapshot, aws_client):
         snapshot.add_transformer(
             snapshot.transform.key_value("FunctionUrl", "lambda-url", reference_replacement=False)
         )
@@ -3199,31 +3241,33 @@ class TestLambdaUrl:
             handler="lambda_handler.handler",
         )
 
-        url_config_created = lambda_client.create_function_url_config(
+        url_config_created = aws_client.awslambda.create_function_url_config(
             FunctionName=function_name,
             AuthType="NONE",
         )
         snapshot.match("url_creation", url_config_created)
 
-        with pytest.raises(lambda_client.exceptions.ResourceConflictException) as ex:
-            lambda_client.create_function_url_config(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceConflictException) as ex:
+            aws_client.awslambda.create_function_url_config(
                 FunctionName=function_name,
                 AuthType="NONE",
             )
         snapshot.match("failed_duplication", ex.value.response)
 
-        url_config_obtained = lambda_client.get_function_url_config(FunctionName=function_name)
+        url_config_obtained = aws_client.awslambda.get_function_url_config(
+            FunctionName=function_name
+        )
         snapshot.match("get_url_config", url_config_obtained)
 
-        url_config_updated = lambda_client.update_function_url_config(
+        url_config_updated = aws_client.awslambda.update_function_url_config(
             FunctionName=function_name,
             AuthType="AWS_IAM",
         )
         snapshot.match("updated_url_config", url_config_updated)
 
-        lambda_client.delete_function_url_config(FunctionName=function_name)
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as ex:
-            lambda_client.get_function_url_config(FunctionName=function_name)
+        aws_client.awslambda.delete_function_url_config(FunctionName=function_name)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as ex:
+            aws_client.awslambda.get_function_url_config(FunctionName=function_name)
         snapshot.match("failed_getter", ex.value.response)
 
 
@@ -3237,7 +3281,7 @@ class TestLambdaSizeLimits:
 
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
     @pytest.mark.aws_validated
-    def test_oversized_request_create_lambda(self, lambda_client, lambda_su_role, snapshot):
+    def test_oversized_request_create_lambda(self, lambda_su_role, snapshot, aws_client):
         function_name = f"test_lambda_{short_uid()}"
         code_str = self._generate_sized_python_str(TEST_LAMBDA_PYTHON_ECHO, 50 * 1024 * 1024)
 
@@ -3248,7 +3292,7 @@ class TestLambdaSizeLimits:
 
         # create lambda function
         with pytest.raises(ClientError) as e:
-            lambda_client.create_function(
+            aws_client.awslambda.create_function(
                 FunctionName=function_name,
                 Runtime=Runtime.python3_9,
                 Handler="handler.handler",
@@ -3259,9 +3303,7 @@ class TestLambdaSizeLimits:
         snapshot.match("invalid_param_exc", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_oversized_unzipped_lambda(
-        self, lambda_client, s3_client, s3_bucket, lambda_su_role, snapshot
-    ):
+    def test_oversized_unzipped_lambda(self, s3_bucket, lambda_su_role, snapshot, aws_client):
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"
         code_str = self._generate_sized_python_str(
@@ -3272,11 +3314,11 @@ class TestLambdaSizeLimits:
         zip_file = testutil.create_lambda_archive(
             code_str, get_content=True, runtime=Runtime.python3_9
         )
-        s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
+        aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
         # create lambda function
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.create_function(
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.create_function(
                 FunctionName=function_name,
                 Runtime=Runtime.python3_9,
                 Handler="handler.handler",
@@ -3288,11 +3330,9 @@ class TestLambdaSizeLimits:
 
     @pytest.mark.skip(reason="breaks CI")  # TODO: investigate why this leads to timeouts
     @pytest.mark.aws_validated
-    def test_large_lambda(
-        self, lambda_client, s3_client, s3_bucket, lambda_su_role, snapshot, cleanups
-    ):
+    def test_large_lambda(self, s3_bucket, lambda_su_role, snapshot, cleanups, aws_client):
         function_name = f"test_lambda_{short_uid()}"
-        cleanups.append(lambda: lambda_client.delete_function(FunctionName=function_name))
+        cleanups.append(lambda: aws_client.awslambda.delete_function(FunctionName=function_name))
         bucket_key = "test_lambda.zip"
         code_str = self._generate_sized_python_str(
             TEST_LAMBDA_PYTHON_ECHO, FUNCTION_MAX_UNZIPPED_SIZE - 1000
@@ -3302,10 +3342,10 @@ class TestLambdaSizeLimits:
         zip_file = testutil.create_lambda_archive(
             code_str, get_content=True, runtime=Runtime.python3_9
         )
-        s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
+        aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
         # create lambda function
-        result = lambda_client.create_function(
+        result = aws_client.awslambda.create_function(
             FunctionName=function_name,
             Runtime=Runtime.python3_9,
             Handler="handler.handler",
@@ -3316,9 +3356,7 @@ class TestLambdaSizeLimits:
         snapshot.match("create_function_large_zip", result)
 
     @pytest.mark.aws_validated
-    def test_large_environment_variables_fails(
-        self, lambda_client, create_lambda_function, snapshot
-    ):
+    def test_large_environment_variables_fails(self, create_lambda_function, snapshot, aws_client):
         """Lambda functions with environment variables larger than 4 KB should fail to create."""
         snapshot.add_transformer(snapshot.transform.lambda_api())
 
@@ -3334,7 +3372,7 @@ class TestLambdaSizeLimits:
 
         function_name = f"large-envvar-lambda-{short_uid()}"
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as ex:
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as ex:
             create_lambda_function(
                 handler_file=TEST_LAMBDA_PYTHON_ECHO,
                 func_name=function_name,
@@ -3346,13 +3384,13 @@ class TestLambdaSizeLimits:
 
         snapshot.match("failed_create_fn_result", ex.value.response)
         with pytest.raises(ClientError) as ex:
-            lambda_client.get_function(FunctionName=function_name)
+            aws_client.awslambda.get_function(FunctionName=function_name)
 
         assert ex.match("ResourceNotFoundException")
 
     @pytest.mark.aws_validated
     def test_large_environment_fails_multiple_keys(
-        self, lambda_client, create_lambda_function, snapshot
+        self, create_lambda_function, snapshot, aws_client
     ):
         """Lambda functions with environment mappings larger than 4 KB should fail to create"""
         snapshot.add_transformer(snapshot.transform.lambda_api())
@@ -3369,7 +3407,7 @@ class TestLambdaSizeLimits:
 
         function_name = f"large-envvar-lambda-{short_uid()}"
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as ex:
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as ex:
             create_lambda_function(
                 handler_file=TEST_LAMBDA_PYTHON_ECHO,
                 func_name=function_name,
@@ -3380,7 +3418,7 @@ class TestLambdaSizeLimits:
         snapshot.match("failured_create_fn_result_multi_key", ex.value.response)
 
         with pytest.raises(ClientError) as exc:
-            lambda_client.get_function(FunctionName=function_name)
+            aws_client.awslambda.get_function(FunctionName=function_name)
 
         assert exc.match("ResourceNotFoundException")
 
@@ -3399,9 +3437,7 @@ class TestLambdaSizeLimits:
             "$..VpcConfig",
         ],
     )
-    def test_lambda_envvars_near_limit_succeeds(
-        self, lambda_client, create_lambda_function, snapshot
-    ):
+    def test_lambda_envvars_near_limit_succeeds(self, create_lambda_function, snapshot, aws_client):
         """Lambda functions with environments less than or equal to 4 KB can be created."""
         snapshot.add_transformer(snapshot.transform.lambda_api())
 
@@ -3424,7 +3460,7 @@ class TestLambdaSizeLimits:
         )
 
         snapshot.match("successful_create_fn_result", res)
-        lambda_client.get_function(FunctionName=function_name)
+        aws_client.awslambda.get_function(FunctionName=function_name)
 
 
 # TODO: test paging
@@ -3433,7 +3469,7 @@ class TestLambdaSizeLimits:
 class TestCodeSigningConfig:
     @pytest.mark.aws_validated
     def test_function_code_signing_config(
-        self, lambda_client, create_lambda_function, snapshot, account_id
+        self, create_lambda_function, snapshot, account_id, aws_client
     ):
         """Testing the API of code signing config"""
 
@@ -3445,11 +3481,11 @@ class TestCodeSigningConfig:
             runtime=Runtime.python3_9,
         )
 
-        response = lambda_client.create_code_signing_config(
+        response = aws_client.awslambda.create_code_signing_config(
             Description="Testing CodeSigning Config",
             AllowedPublishers={
                 "SigningProfileVersionArns": [
-                    f"arn:aws:signer:{lambda_client.meta.region_name}:{account_id}:/signing-profiles/test",
+                    f"arn:aws:signer:{aws_client.awslambda.meta.region_name}:{account_id}:/signing-profiles/test",
                 ]
             },
             CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Enforce"},
@@ -3457,39 +3493,45 @@ class TestCodeSigningConfig:
         snapshot.match("create_code_signing_config", response)
 
         code_signing_arn = response["CodeSigningConfig"]["CodeSigningConfigArn"]
-        response = lambda_client.update_code_signing_config(
+        response = aws_client.awslambda.update_code_signing_config(
             CodeSigningConfigArn=code_signing_arn,
             CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Warn"},
         )
         snapshot.match("update_code_signing_config", response)
 
-        response = lambda_client.get_code_signing_config(CodeSigningConfigArn=code_signing_arn)
+        response = aws_client.awslambda.get_code_signing_config(
+            CodeSigningConfigArn=code_signing_arn
+        )
         snapshot.match("get_code_signing_config", response)
 
-        response = lambda_client.put_function_code_signing_config(
+        response = aws_client.awslambda.put_function_code_signing_config(
             CodeSigningConfigArn=code_signing_arn, FunctionName=function_name
         )
         snapshot.match("put_function_code_signing_config", response)
 
-        response = lambda_client.get_function_code_signing_config(FunctionName=function_name)
+        response = aws_client.awslambda.get_function_code_signing_config(FunctionName=function_name)
         snapshot.match("get_function_code_signing_config", response)
 
-        response = lambda_client.list_code_signing_configs()
+        response = aws_client.awslambda.list_code_signing_configs()
         snapshot.match("list_code_signing_configs", response)
 
-        response = lambda_client.list_functions_by_code_signing_config(
+        response = aws_client.awslambda.list_functions_by_code_signing_config(
             CodeSigningConfigArn=code_signing_arn
         )
         snapshot.match("list_functions_by_code_signing_config", response)
 
-        response = lambda_client.delete_function_code_signing_config(FunctionName=function_name)
+        response = aws_client.awslambda.delete_function_code_signing_config(
+            FunctionName=function_name
+        )
         snapshot.match("delete_function_code_signing_config", response)
 
-        response = lambda_client.delete_code_signing_config(CodeSigningConfigArn=code_signing_arn)
+        response = aws_client.awslambda.delete_code_signing_config(
+            CodeSigningConfigArn=code_signing_arn
+        )
         snapshot.match("delete_code_signing_config", response)
 
     def test_code_signing_not_found_excs(
-        self, snapshot, lambda_client, create_lambda_function, account_id
+        self, snapshot, create_lambda_function, account_id, aws_client
     ):
         """tests for exceptions on missing resources and related corner cases"""
 
@@ -3501,11 +3543,11 @@ class TestCodeSigningConfig:
             runtime=Runtime.python3_9,
         )
 
-        response = lambda_client.create_code_signing_config(
+        response = aws_client.awslambda.create_code_signing_config(
             Description="Testing CodeSigning Config",
             AllowedPublishers={
                 "SigningProfileVersionArns": [
-                    f"arn:aws:signer:{lambda_client.meta.region_name}:{account_id}:/signing-profiles/test",
+                    f"arn:aws:signer:{aws_client.awslambda.meta.region_name}:{account_id}:/signing-profiles/test",
                 ]
             },
             CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Enforce"},
@@ -3519,76 +3561,78 @@ class TestCodeSigningConfig:
         nonexisting_fn_name = "csc-test-doesnotexist"
 
         # deletes
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.delete_code_signing_config(CodeSigningConfigArn=csc_arn_invalid)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.delete_code_signing_config(CodeSigningConfigArn=csc_arn_invalid)
         snapshot.match("delete_csc_notfound", e.value.response)
 
-        nothing_to_delete_response = lambda_client.delete_function_code_signing_config(
+        nothing_to_delete_response = aws_client.awslambda.delete_function_code_signing_config(
             FunctionName=function_name
         )
         snapshot.match("nothing_to_delete_response", nothing_to_delete_response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.delete_function_code_signing_config(FunctionName="csc-test-doesnotexist")
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.delete_function_code_signing_config(
+                FunctionName="csc-test-doesnotexist"
+            )
         snapshot.match("delete_function_csc_fnnotfound", e.value.response)
 
         # put
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.put_function_code_signing_config(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.put_function_code_signing_config(
                 FunctionName=nonexisting_fn_name, CodeSigningConfigArn=csc_arn
             )
         snapshot.match("put_function_csc_invalid_fnname", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.CodeSigningConfigNotFoundException) as e:
-            lambda_client.put_function_code_signing_config(
+        with pytest.raises(aws_client.awslambda.exceptions.CodeSigningConfigNotFoundException) as e:
+            aws_client.awslambda.put_function_code_signing_config(
                 FunctionName=function_name, CodeSigningConfigArn=csc_arn_invalid
             )
         snapshot.match("put_function_csc_invalid_csc_arn", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.CodeSigningConfigNotFoundException) as e:
-            lambda_client.put_function_code_signing_config(
+        with pytest.raises(aws_client.awslambda.exceptions.CodeSigningConfigNotFoundException) as e:
+            aws_client.awslambda.put_function_code_signing_config(
                 FunctionName=nonexisting_fn_name, CodeSigningConfigArn=csc_arn_invalid
             )
         snapshot.match("put_function_csc_invalid_both", e.value.response)
 
         # update csc
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.update_code_signing_config(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.update_code_signing_config(
                 CodeSigningConfigArn=csc_arn_invalid, Description="new-description"
             )
         snapshot.match("update_csc_invalid_csc_arn", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.update_code_signing_config(CodeSigningConfigArn=csc_arn_invalid)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.update_code_signing_config(CodeSigningConfigArn=csc_arn_invalid)
         snapshot.match("update_csc_noupdates", e.value.response)
 
-        update_csc_noupdate_response = lambda_client.update_code_signing_config(
+        update_csc_noupdate_response = aws_client.awslambda.update_code_signing_config(
             CodeSigningConfigArn=csc_arn
         )
         snapshot.match("update_csc_noupdate_response", update_csc_noupdate_response)
 
         # get
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_code_signing_config(CodeSigningConfigArn=csc_arn_invalid)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_code_signing_config(CodeSigningConfigArn=csc_arn_invalid)
         snapshot.match("get_csc_invalid", e.value.response)
 
-        get_function_csc_fnwithoutcsc = lambda_client.get_function_code_signing_config(
+        get_function_csc_fnwithoutcsc = aws_client.awslambda.get_function_code_signing_config(
             FunctionName=function_name
         )
         snapshot.match("get_function_csc_fnwithoutcsc", get_function_csc_fnwithoutcsc)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_function_code_signing_config(FunctionName=nonexisting_fn_name)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_function_code_signing_config(FunctionName=nonexisting_fn_name)
         snapshot.match("get_function_csc_nonexistingfn", e.value.response)
 
         # list
-        list_functions_by_csc_fnwithoutcsc = lambda_client.list_functions_by_code_signing_config(
-            CodeSigningConfigArn=csc_arn
+        list_functions_by_csc_fnwithoutcsc = (
+            aws_client.awslambda.list_functions_by_code_signing_config(CodeSigningConfigArn=csc_arn)
         )
         snapshot.match("list_functions_by_csc_fnwithoutcsc", list_functions_by_csc_fnwithoutcsc)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.list_functions_by_code_signing_config(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.list_functions_by_code_signing_config(
                 CodeSigningConfigArn=csc_arn_invalid
             )
         snapshot.match("list_functions_by_csc_invalid_cscarn", e.value.response)
@@ -3597,7 +3641,7 @@ class TestCodeSigningConfig:
 @pytest.mark.skipif(is_old_provider(), reason="not implemented")
 class TestLambdaAccountSettings:
     @pytest.mark.aws_validated
-    def test_account_settings(self, lambda_client, snapshot):
+    def test_account_settings(self, snapshot, aws_client):
         """Limitation: only checks keys because AccountLimits are specific to AWS accounts. Example limits (2022-12-05):
 
         "AccountLimit": {
@@ -3607,7 +3651,7 @@ class TestLambdaAccountSettings:
             "ConcurrentExecutions": 10,
             "UnreservedConcurrentExecutions": 10
         }"""
-        acc_settings = lambda_client.get_account_settings()
+        acc_settings = aws_client.awslambda.get_account_settings()
         acc_settings_modded = acc_settings
         acc_settings_modded["AccountLimit"] = sorted(list(acc_settings["AccountLimit"].keys()))
         acc_settings_modded["AccountUsage"] = sorted(list(acc_settings["AccountUsage"].keys()))
@@ -3615,13 +3659,13 @@ class TestLambdaAccountSettings:
 
     @pytest.mark.aws_validated
     def test_account_settings_total_code_size(
-        self, lambda_client, create_lambda_function, dummylayer, cleanups, snapshot
+        self, create_lambda_function, dummylayer, cleanups, snapshot, aws_client
     ):
         """Caveat: Could be flaky if another test simultaneously deletes a lambda function or layer in the same region.
         Hence, testing for monotonically increasing `TotalCodeSize` rather than matching exact differences.
         However, the parity tests use exact matching based on zip files with deterministic size.
         """
-        acc_settings0 = lambda_client.get_account_settings()
+        acc_settings0 = aws_client.awslambda.get_account_settings()
 
         # 1) create a new function
         function_name = f"lambda_func-{short_uid()}"
@@ -3632,7 +3676,7 @@ class TestLambdaAccountSettings:
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
-        acc_settings1 = lambda_client.get_account_settings()
+        acc_settings1 = aws_client.awslambda.get_account_settings()
         assert (
             acc_settings1["AccountUsage"]["TotalCodeSize"]
             > acc_settings0["AccountUsage"]["TotalCodeSize"]
@@ -3648,11 +3692,11 @@ class TestLambdaAccountSettings:
         )
 
         # 2) update the function
-        lambda_client.update_function_code(
+        aws_client.awslambda.update_function_code(
             FunctionName=function_name, ZipFile=zip_file_content, Publish=True
         )
         # there is no need to wait until function_updated_v2 here because TotalCodeSize changes upon publishing
-        acc_settings2 = lambda_client.get_account_settings()
+        acc_settings2 = aws_client.awslambda.get_account_settings()
         assert (
             acc_settings2["AccountUsage"]["TotalCodeSize"]
             > acc_settings1["AccountUsage"]["TotalCodeSize"]
@@ -3665,15 +3709,15 @@ class TestLambdaAccountSettings:
 
         # 3) publish a new layer
         layer_name = f"testlayer-{short_uid()}"
-        publish_result1 = lambda_client.publish_layer_version(
+        publish_result1 = aws_client.awslambda.publish_layer_version(
             LayerName=layer_name, Content={"ZipFile": dummylayer}
         )
         cleanups.append(
-            lambda: lambda_client.delete_layer_version(
+            lambda: aws_client.awslambda.delete_layer_version(
                 LayerName=layer_name, VersionNumber=publish_result1["Version"]
             )
         )
-        acc_settings3 = lambda_client.get_account_settings()
+        acc_settings3 = aws_client.awslambda.get_account_settings()
         assert (
             acc_settings3["AccountUsage"]["TotalCodeSize"]
             > acc_settings2["AccountUsage"]["TotalCodeSize"]
@@ -3685,15 +3729,15 @@ class TestLambdaAccountSettings:
         )
 
         # 4) publish a new layer version
-        publish_result2 = lambda_client.publish_layer_version(
+        publish_result2 = aws_client.awslambda.publish_layer_version(
             LayerName=layer_name, Content={"ZipFile": dummylayer}
         )
         cleanups.append(
-            lambda: lambda_client.delete_layer_version(
+            lambda: aws_client.awslambda.delete_layer_version(
                 LayerName=layer_name, VersionNumber=publish_result2["Version"]
             )
         )
-        acc_settings4 = lambda_client.get_account_settings()
+        acc_settings4 = aws_client.awslambda.get_account_settings()
         assert (
             acc_settings4["AccountUsage"]["TotalCodeSize"]
             > acc_settings3["AccountUsage"]["TotalCodeSize"]
@@ -3706,11 +3750,11 @@ class TestLambdaAccountSettings:
 
     @pytest.mark.aws_validated
     def test_account_settings_total_code_size_config_update(
-        self, lambda_client, create_lambda_function, snapshot
+        self, create_lambda_function, snapshot, aws_client
     ):
         """TotalCodeSize always changes when publishing a new lambda function,
         even after config updates without code changes."""
-        acc_settings0 = lambda_client.get_account_settings()
+        acc_settings0 = aws_client.awslambda.get_account_settings()
 
         # 1) create a new function
         function_name = f"lambda_func-{short_uid()}"
@@ -3719,7 +3763,7 @@ class TestLambdaAccountSettings:
             func_name=function_name,
             runtime=Runtime.nodejs16_x,
         )
-        acc_settings1 = lambda_client.get_account_settings()
+        acc_settings1 = aws_client.awslambda.get_account_settings()
         assert (
             acc_settings1["AccountUsage"]["TotalCodeSize"]
             > acc_settings0["AccountUsage"]["TotalCodeSize"]
@@ -3735,11 +3779,11 @@ class TestLambdaAccountSettings:
         )
 
         # 2) update function configuration (i.e., code remains identical)
-        lambda_client.update_function_configuration(
+        aws_client.awslambda.update_function_configuration(
             FunctionName=function_name, Runtime=Runtime.nodejs18_x
         )
-        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
-        acc_settings2 = lambda_client.get_account_settings()
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        acc_settings2 = aws_client.awslambda.get_account_settings()
         assert (
             acc_settings2["AccountUsage"]["TotalCodeSize"]
             == acc_settings1["AccountUsage"]["TotalCodeSize"]
@@ -3751,11 +3795,11 @@ class TestLambdaAccountSettings:
         )
 
         # 3) publish updated function config
-        lambda_client.publish_version(
+        aws_client.awslambda.publish_version(
             FunctionName=function_name, Description="actually publish the config update"
         )
-        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
-        acc_settings3 = lambda_client.get_account_settings()
+        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        acc_settings3 = aws_client.awslambda.get_account_settings()
         assert (
             acc_settings3["AccountUsage"]["TotalCodeSize"]
             > acc_settings2["AccountUsage"]["TotalCodeSize"]
@@ -3773,33 +3817,33 @@ class TestLambdaAccountSettings:
 class TestLambdaEventSourceMappings:
     @pytest.mark.skipif(is_old_provider(), reason="new provider only")
     @pytest.mark.aws_validated
-    def test_event_source_mapping_exceptions(self, lambda_client, snapshot):
+    def test_event_source_mapping_exceptions(self, snapshot, aws_client):
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_event_source_mapping(UUID=long_uid())
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_event_source_mapping(UUID=long_uid())
         snapshot.match("get_unknown_uuid", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.delete_event_source_mapping(UUID=long_uid())
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.delete_event_source_mapping(UUID=long_uid())
         snapshot.match("delete_unknown_uuid", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.update_event_source_mapping(UUID=long_uid(), Enabled=False)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.update_event_source_mapping(UUID=long_uid(), Enabled=False)
         snapshot.match("update_unknown_uuid", e.value.response)
 
         # note: list doesn't care about the resource filters existing
-        lambda_client.list_event_source_mappings()
-        lambda_client.list_event_source_mappings(FunctionName="doesnotexist")
-        lambda_client.list_event_source_mappings(
+        aws_client.awslambda.list_event_source_mappings()
+        aws_client.awslambda.list_event_source_mappings(FunctionName="doesnotexist")
+        aws_client.awslambda.list_event_source_mappings(
             EventSourceArn="arn:aws:sqs:us-east-1:111111111111:somequeue"
         )
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.create_event_source_mapping(FunctionName="doesnotexist")
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.create_event_source_mapping(FunctionName="doesnotexist")
         snapshot.match("create_no_event_source_arn", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.create_event_source_mapping(
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.create_event_source_mapping(
                 FunctionName="doesnotexist",
                 EventSourceArn="arn:aws:sqs:us-east-1:111111111111:somequeue",
             )
@@ -3832,27 +3876,24 @@ class TestLambdaEventSourceMappings:
     def test_event_source_mapping_lifecycle(
         self,
         create_lambda_function,
-        lambda_client,
         snapshot,
         sqs_create_queue,
-        sqs_client,
         cleanups,
         lambda_su_role,
-        dynamodb_client,
-        dynamodbstreams_client,
         dynamodb_create_table,
+        aws_client,
     ):
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"teststreamtable-{short_uid()}"
 
         destination_queue_url = sqs_create_queue()
-        destination_queue_arn = sqs_client.get_queue_attributes(
+        destination_queue_arn = aws_client.sqs.get_queue_attributes(
             QueueUrl=destination_queue_url, AttributeNames=["QueueArn"]
         )["Attributes"]["QueueArn"]
 
         dynamodb_create_table(table_name=table_name, partition_key="id")
-        _await_dynamodb_table_active(dynamodb_client, table_name)
-        update_table_response = dynamodb_client.update_table(
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        update_table_response = aws_client.dynamodb.update_table(
             TableName=table_name,
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
         )
@@ -3866,7 +3907,7 @@ class TestLambdaEventSourceMappings:
             role=lambda_su_role,
         )
         # "minimal"
-        create_response = lambda_client.create_event_source_mapping(
+        create_response = aws_client.awslambda.create_event_source_mapping(
             FunctionName=function_name,
             EventSourceArn=stream_arn,
             DestinationConfig={"OnFailure": {"Destination": destination_queue_arn}},
@@ -3876,19 +3917,19 @@ class TestLambdaEventSourceMappings:
             MaximumRetryAttempts=1,
         )
         uuid = create_response["UUID"]
-        cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=uuid))
+        cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=uuid))
         snapshot.match("create_response", create_response)
 
         # the stream might not be active immediately(!)
         def check_esm_active():
-            return lambda_client.get_event_source_mapping(UUID=uuid)["State"] != "Creating"
+            return aws_client.awslambda.get_event_source_mapping(UUID=uuid)["State"] != "Creating"
 
         assert wait_until(check_esm_active)
 
-        get_response = lambda_client.get_event_source_mapping(UUID=uuid)
+        get_response = aws_client.awslambda.get_event_source_mapping(UUID=uuid)
         snapshot.match("get_response", get_response)
         #
-        delete_response = lambda_client.delete_event_source_mapping(UUID=uuid)
+        delete_response = aws_client.awslambda.delete_event_source_mapping(UUID=uuid)
         snapshot.match("delete_response", delete_response)
 
         # TODO: continue here after initial CRUD PR
@@ -3906,13 +3947,7 @@ class TestLambdaEventSourceMappings:
 
     @pytest.mark.skipif(is_old_provider(), reason="new provider only")
     def test_create_event_source_validation(
-        self,
-        create_lambda_function,
-        lambda_su_role,
-        dynamodb_client,
-        dynamodb_create_table,
-        lambda_client,
-        snapshot,
+        self, create_lambda_function, lambda_su_role, dynamodb_create_table, snapshot, aws_client
     ):
         function_name = f"function-{short_uid()}"
         create_lambda_function(
@@ -3924,15 +3959,15 @@ class TestLambdaEventSourceMappings:
 
         table_name = f"table-{short_uid()}"
         dynamodb_create_table(table_name=table_name, partition_key="id")
-        _await_dynamodb_table_active(dynamodb_client, table_name)
-        update_table_response = dynamodb_client.update_table(
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        update_table_response = aws_client.dynamodb.update_table(
             TableName=table_name,
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
         )
         stream_arn = update_table_response["TableDescription"]["LatestStreamArn"]
 
         with pytest.raises(ClientError) as e:
-            lambda_client.create_event_source_mapping(
+            aws_client.awslambda.create_event_source_mapping(
                 FunctionName=function_name, EventSourceArn=stream_arn
             )
 
@@ -3942,63 +3977,71 @@ class TestLambdaEventSourceMappings:
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not correctly supported")
 class TestLambdaTags:
-    def test_tag_exceptions(self, lambda_client, create_lambda_function, snapshot, account_id):
+    def test_tag_exceptions(self, create_lambda_function, snapshot, account_id, aws_client):
         function_name = f"fn-tag-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
-        function_arn = lambda_client.get_function(FunctionName=function_name)["Configuration"][
-            "FunctionArn"
-        ]
-        arn_prefix = f"arn:aws:lambda:{lambda_client.meta.region_name}:{account_id}:function:"
+        function_arn = aws_client.awslambda.get_function(FunctionName=function_name)[
+            "Configuration"
+        ]["FunctionArn"]
+        arn_prefix = (
+            f"arn:aws:lambda:{aws_client.awslambda.meta.region_name}:{account_id}:function:"
+        )
 
         # invalid ARN
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.tag_resource(Resource="arn:aws:something", Tags={"key_a": "value_a"})
+        with pytest.raises(aws_client.awslambda.exceptions.ClientError) as e:
+            aws_client.awslambda.tag_resource(
+                Resource="arn:aws:something", Tags={"key_a": "value_a"}
+            )
         snapshot.match("tag_lambda_invalidarn", e.value.response)
 
         # ARN valid but lambda function doesn't exist
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.tag_resource(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.tag_resource(
                 Resource=f"{arn_prefix}doesnotexist", Tags={"key_a": "value_a"}
             )
         snapshot.match("tag_lambda_doesnotexist", e.value.response)
 
         # function exists but the qualifier in the ARN doesn't
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.tag_resource(Resource=f"{function_arn}:v1", Tags={"key_a": "value_a"})
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.tag_resource(
+                Resource=f"{function_arn}:v1", Tags={"key_a": "value_a"}
+            )
         snapshot.match("tag_lambda_qualifier_doesnotexist", e.value.response)
 
         # get tags for resource that never had tags
-        list_tags_response = lambda_client.list_tags(Resource=function_arn)
+        list_tags_response = aws_client.awslambda.list_tags(Resource=function_arn)
         snapshot.match("list_tag_lambda_empty", list_tags_response)
 
         # delete non-existing tag key
-        untag_nomatch = lambda_client.untag_resource(Resource=function_arn, TagKeys=["somekey"])
+        untag_nomatch = aws_client.awslambda.untag_resource(
+            Resource=function_arn, TagKeys=["somekey"]
+        )
         snapshot.match("untag_nomatch", untag_nomatch)
 
         # delete empty tags
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.untag_resource(Resource=function_arn, TagKeys=[])
+        with pytest.raises(aws_client.awslambda.exceptions.ClientError) as e:
+            aws_client.awslambda.untag_resource(Resource=function_arn, TagKeys=[])
         snapshot.match("untag_empty_keys", e.value.response)
 
         # add empty tags
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.tag_resource(Resource=function_arn, Tags={})
+        with pytest.raises(aws_client.awslambda.exceptions.ClientError) as e:
+            aws_client.awslambda.tag_resource(Resource=function_arn, Tags={})
         snapshot.match("tag_empty_tags", e.value.response)
 
         # partial delete (one exists, one doesn't)
-        lambda_client.tag_resource(
+        aws_client.awslambda.tag_resource(
             Resource=function_arn, Tags={"a_key": "a_value", "b_key": "b_value"}
         )
-        lambda_client.untag_resource(Resource=function_arn, TagKeys=["a_key", "c_key"])
-        assert "a_key" not in lambda_client.list_tags(Resource=function_arn)["Tags"]
-        assert "b_key" in lambda_client.list_tags(Resource=function_arn)["Tags"]
+        aws_client.awslambda.untag_resource(Resource=function_arn, TagKeys=["a_key", "c_key"])
+        assert "a_key" not in aws_client.awslambda.list_tags(Resource=function_arn)["Tags"]
+        assert "b_key" in aws_client.awslambda.list_tags(Resource=function_arn)["Tags"]
 
     @pytest.mark.aws_validated
-    def test_tag_limits(self, lambda_client, create_lambda_function, snapshot):
+    def test_tag_limits(self, create_lambda_function, snapshot, aws_client):
         """test the limit of 50 tags per resource"""
         function_name = f"fn-tag-{short_uid()}"
         create_lambda_function(
@@ -4006,35 +4049,35 @@ class TestLambdaTags:
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
-        function_arn = lambda_client.get_function(FunctionName=function_name)["Configuration"][
-            "FunctionArn"
-        ]
+        function_arn = aws_client.awslambda.get_function(FunctionName=function_name)[
+            "Configuration"
+        ]["FunctionArn"]
 
         # invalid
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.tag_resource(
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.tag_resource(
                 Resource=function_arn, Tags={f"{k}_key": f"{k}_value" for k in range(51)}
             )
         snapshot.match("tag_lambda_too_many_tags", e.value.response)
 
         # valid
-        tag_response = lambda_client.tag_resource(
+        tag_response = aws_client.awslambda.tag_resource(
             Resource=function_arn, Tags={f"{k}_key": f"{k}_value" for k in range(50)}
         )
         snapshot.match("tag_response", tag_response)
 
-        list_tags_response = lambda_client.list_tags(Resource=function_arn)
+        list_tags_response = aws_client.awslambda.list_tags(Resource=function_arn)
         snapshot.match("list_tags_response", list_tags_response)
 
-        get_fn_response = lambda_client.get_function(FunctionName=function_name)
+        get_fn_response = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_fn_response", get_fn_response)
 
         # try to add one more :)
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.tag_resource(Resource=function_arn, Tags={"a_key": "a_value"})
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.tag_resource(Resource=function_arn, Tags={"a_key": "a_value"})
         snapshot.match("tag_lambda_too_many_tags_additional", e.value.response)
 
-    def test_tag_versions(self, lambda_client, create_lambda_function, snapshot):
+    def test_tag_versions(self, create_lambda_function, snapshot, aws_client):
         function_name = f"fn-tag-{short_uid()}"
         create_function_result = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -4043,10 +4086,10 @@ class TestLambdaTags:
             Tags={"key_a": "value_a"},
         )
         function_arn = create_function_result["CreateFunctionResponse"]["FunctionArn"]
-        publish_version_response = lambda_client.publish_version(FunctionName=function_name)
+        publish_version_response = aws_client.awslambda.publish_version(FunctionName=function_name)
         version_arn = publish_version_response["FunctionArn"]
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.tag_resource(
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.tag_resource(
                 Resource=version_arn,
                 Tags={
                     "key_b": "value_b",
@@ -4057,8 +4100,8 @@ class TestLambdaTags:
             )
         snapshot.match("tag_resource_exception", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.tag_resource(
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.tag_resource(
                 Resource=f"{function_arn}:$LATEST",
                 Tags={
                     "key_b": "value_b",
@@ -4070,13 +4113,13 @@ class TestLambdaTags:
         snapshot.match("tag_resource_latest_exception", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_tag_lifecycle(self, lambda_client, create_lambda_function, snapshot):
+    def test_tag_lifecycle(self, create_lambda_function, snapshot, aws_client):
         function_name = f"fn-tag-{short_uid()}"
 
         def snapshot_tags_for_resource(resource_arn: str, snapshot_suffix: str):
-            list_tags_response = lambda_client.list_tags(Resource=resource_arn)
+            list_tags_response = aws_client.awslambda.list_tags(Resource=resource_arn)
             snapshot.match(f"list_tags_response_{snapshot_suffix}", list_tags_response)
-            get_fn_response = lambda_client.get_function(FunctionName=resource_arn)
+            get_fn_response = aws_client.awslambda.get_function(FunctionName=resource_arn)
             snapshot.match(f"get_fn_response_{snapshot_suffix}", get_fn_response)
 
         create_lambda_function(
@@ -4085,12 +4128,12 @@ class TestLambdaTags:
             runtime=Runtime.python3_9,
             Tags={"key_a": "value_a"},
         )
-        fn_arn = lambda_client.get_function(FunctionName=function_name)["Configuration"][
+        fn_arn = aws_client.awslambda.get_function(FunctionName=function_name)["Configuration"][
             "FunctionArn"
         ]
         snapshot_tags_for_resource(fn_arn, "postfncreate")
 
-        tag_resource_response = lambda_client.tag_resource(
+        tag_resource_response = aws_client.awslambda.tag_resource(
             Resource=fn_arn,
             Tags={
                 "key_b": "value_b",
@@ -4102,7 +4145,7 @@ class TestLambdaTags:
         snapshot.match("tag_resource_response", tag_resource_response)
         snapshot_tags_for_resource(fn_arn, "postaddtags")
 
-        tag_resource_response = lambda_client.tag_resource(
+        tag_resource_response = aws_client.awslambda.tag_resource(
             Resource=fn_arn,
             Tags={
                 "key_b": "value_b",
@@ -4113,16 +4156,16 @@ class TestLambdaTags:
         snapshot_tags_for_resource(fn_arn, "overwrite")
 
         # remove two tags
-        lambda_client.untag_resource(Resource=fn_arn, TagKeys=["key_c", "key_d"])
+        aws_client.awslambda.untag_resource(Resource=fn_arn, TagKeys=["key_c", "key_d"])
         snapshot_tags_for_resource(fn_arn, "postuntag")
 
         # remove all tags
-        lambda_client.untag_resource(Resource=fn_arn, TagKeys=["key_a", "key_b", "key_e"])
+        aws_client.awslambda.untag_resource(Resource=fn_arn, TagKeys=["key_a", "key_b", "key_e"])
         snapshot_tags_for_resource(fn_arn, "postuntagall")
 
-        lambda_client.delete_function(FunctionName=function_name)
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.list_tags(Resource=fn_arn)
+        aws_client.awslambda.delete_function(FunctionName=function_name)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.list_tags(Resource=fn_arn)
         snapshot.match("list_tags_postdelete", e.value.response)
 
 
@@ -4132,108 +4175,110 @@ class TestLambdaTags:
 class TestLambdaLayer:
     @pytest.mark.aws_validated
     def test_layer_exceptions(
-        self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
+        self, create_lambda_function, snapshot, dummylayer, cleanups, aws_client
     ):
         """
         API-level exceptions and edge cases for lambda layers
         """
         layer_name = f"testlayer-{short_uid()}"
 
-        publish_result = lambda_client.publish_layer_version(
+        publish_result = aws_client.awslambda.publish_layer_version(
             LayerName=layer_name,
             CompatibleRuntimes=[Runtime.python3_9],
             Content={"ZipFile": dummylayer},
             CompatibleArchitectures=[Architecture.x86_64],
         )
         cleanups.append(
-            lambda: lambda_client.delete_layer_version(
+            lambda: aws_client.awslambda.delete_layer_version(
                 LayerName=layer_name, VersionNumber=publish_result["Version"]
             )
         )
         snapshot.match("publish_result", publish_result)
 
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.list_layers(CompatibleRuntime="runtimedoesnotexist")
+        with pytest.raises(aws_client.awslambda.exceptions.ClientError) as e:
+            aws_client.awslambda.list_layers(CompatibleRuntime="runtimedoesnotexist")
         snapshot.match("list_layers_exc_compatibleruntime_invalid", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.list_layers(CompatibleArchitecture="archdoesnotexist")
+        with pytest.raises(aws_client.awslambda.exceptions.ClientError) as e:
+            aws_client.awslambda.list_layers(CompatibleArchitecture="archdoesnotexist")
         snapshot.match("list_layers_exc_compatiblearchitecture_invalid", e.value.response)
 
-        list_nonexistent_layer = lambda_client.list_layer_versions(LayerName="layerdoesnotexist")
+        list_nonexistent_layer = aws_client.awslambda.list_layer_versions(
+            LayerName="layerdoesnotexist"
+        )
         snapshot.match("list_nonexistent_layer", list_nonexistent_layer)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_layer_version(LayerName="layerdoesnotexist", VersionNumber=1)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_layer_version(LayerName="layerdoesnotexist", VersionNumber=1)
         snapshot.match("get_layer_version_exc_layer_doesnotexist", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.get_layer_version(LayerName=layer_name, VersionNumber=-1)
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.get_layer_version(LayerName=layer_name, VersionNumber=-1)
         snapshot.match(
             "get_layer_version_exc_layer_version_doesnotexist_negative", e.value.response
         )
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.get_layer_version(LayerName=layer_name, VersionNumber=0)
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.get_layer_version(LayerName=layer_name, VersionNumber=0)
         snapshot.match("get_layer_version_exc_layer_version_doesnotexist_zero", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_layer_version(LayerName=layer_name, VersionNumber=2)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_layer_version(LayerName=layer_name, VersionNumber=2)
         snapshot.match("get_layer_version_exc_layer_version_doesnotexist_2", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.get_layer_version_by_arn(
+        with pytest.raises(aws_client.awslambda.exceptions.ClientError) as e:
+            aws_client.awslambda.get_layer_version_by_arn(
                 Arn=publish_result["LayerArn"]
             )  # doesn't include version in the arn
         snapshot.match("get_layer_version_by_arn_exc_invalidarn", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_layer_version_by_arn(Arn=f"{publish_result['LayerArn']}:2")
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_layer_version_by_arn(Arn=f"{publish_result['LayerArn']}:2")
         snapshot.match("get_layer_version_by_arn_exc_nonexistentversion", e.value.response)
 
         # delete seem to be "idempotent"
-        delete_nonexistent_response = lambda_client.delete_layer_version(
+        delete_nonexistent_response = aws_client.awslambda.delete_layer_version(
             LayerName="layerdoesnotexist", VersionNumber=1
         )
         snapshot.match("delete_nonexistent_response", delete_nonexistent_response)
 
-        delete_nonexistent_version_response = lambda_client.delete_layer_version(
+        delete_nonexistent_version_response = aws_client.awslambda.delete_layer_version(
             LayerName=layer_name, VersionNumber=2
         )
         snapshot.match("delete_nonexistent_version_response", delete_nonexistent_version_response)
 
         # this delete has an actual side effect (deleting the published layer)
-        delete_layer_response = lambda_client.delete_layer_version(
+        delete_layer_response = aws_client.awslambda.delete_layer_version(
             LayerName=layer_name, VersionNumber=1
         )
         snapshot.match("delete_layer_response", delete_layer_response)
-        delete_layer_again_response = lambda_client.delete_layer_version(
+        delete_layer_again_response = aws_client.awslambda.delete_layer_version(
             LayerName=layer_name, VersionNumber=1
         )
         snapshot.match("delete_layer_again_response", delete_layer_again_response)
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.delete_layer_version(LayerName=layer_name, VersionNumber=-1)
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.delete_layer_version(LayerName=layer_name, VersionNumber=-1)
         snapshot.match("delete_layer_version_exc_layerversion_invalid_version", e.value.response)
 
         # note: empty CompatibleRuntimes and CompatibleArchitectures are actually valid (!)
         layer_empty_name = f"testlayer-empty-{short_uid()}"
-        publish_empty_result = lambda_client.publish_layer_version(
+        publish_empty_result = aws_client.awslambda.publish_layer_version(
             LayerName=layer_empty_name,
             Content={"ZipFile": dummylayer},
             CompatibleRuntimes=[],
             CompatibleArchitectures=[],
         )
         cleanups.append(
-            lambda: lambda_client.delete_layer_version(
+            lambda: aws_client.awslambda.delete_layer_version(
                 LayerName=layer_empty_name, VersionNumber=publish_empty_result["Version"]
             )
         )
         snapshot.match("publish_empty_result", publish_empty_result)
 
         # TODO: test list_layers with invalid filter values
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.publish_layer_version(
+        with pytest.raises(aws_client.awslambda.exceptions.ClientError) as e:
+            aws_client.awslambda.publish_layer_version(
                 LayerName=f"testlayer-2-{short_uid()}",
                 Content={"ZipFile": dummylayer},
                 CompatibleRuntimes=["invalidruntime"],
@@ -4241,8 +4286,8 @@ class TestLambdaLayer:
             )
         snapshot.match("publish_layer_version_exc_invalid_runtime_arch", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.publish_layer_version(
+        with pytest.raises(aws_client.awslambda.exceptions.ClientError) as e:
+            aws_client.awslambda.publish_layer_version(
                 LayerName=f"testlayer-2-{short_uid()}",
                 Content={"ZipFile": dummylayer},
                 CompatibleRuntimes=["invalidruntime", "invalidruntime2", Runtime.nodejs16_x],
@@ -4252,52 +4297,46 @@ class TestLambdaLayer:
 
     @pytest.mark.aws_validated
     def test_layer_function_exceptions(
-        self,
-        lambda_client,
-        create_lambda_function,
-        snapshot,
-        dummylayer,
-        cleanups,
-        aws_client_factory,
+        self, create_lambda_function, snapshot, dummylayer, cleanups, aws_client_factory, aws_client
     ):
         """Test interaction of layers when adding them to the function"""
         function_name = f"fn-layer-{short_uid()}"
         layer_name = f"testlayer-{short_uid()}"
 
-        publish_result = lambda_client.publish_layer_version(
+        publish_result = aws_client.awslambda.publish_layer_version(
             LayerName=layer_name,
             CompatibleRuntimes=[],
             Content={"ZipFile": dummylayer},
             CompatibleArchitectures=[Architecture.x86_64],
         )
         cleanups.append(
-            lambda: lambda_client.delete_layer_version(
+            lambda: aws_client.awslambda.delete_layer_version(
                 LayerName=layer_name, VersionNumber=publish_result["Version"]
             )
         )
         snapshot.match("publish_result", publish_result)
 
-        publish_result_2 = lambda_client.publish_layer_version(
+        publish_result_2 = aws_client.awslambda.publish_layer_version(
             LayerName=layer_name,
             CompatibleRuntimes=[],
             Content={"ZipFile": dummylayer},
             CompatibleArchitectures=[Architecture.x86_64],
         )
         cleanups.append(
-            lambda: lambda_client.delete_layer_version(
+            lambda: aws_client.awslambda.delete_layer_version(
                 LayerName=layer_name, VersionNumber=publish_result_2["Version"]
             )
         )
         snapshot.match("publish_result_2", publish_result_2)
 
-        publish_result_3 = lambda_client.publish_layer_version(
+        publish_result_3 = aws_client.awslambda.publish_layer_version(
             LayerName=layer_name,
             CompatibleRuntimes=[],
             Content={"ZipFile": dummylayer},
             CompatibleArchitectures=[Architecture.x86_64],
         )
         cleanups.append(
-            lambda: lambda_client.delete_layer_version(
+            lambda: aws_client.awslambda.delete_layer_version(
                 LayerName=layer_name, VersionNumber=publish_result_3["Version"]
             )
         )
@@ -4308,11 +4347,11 @@ class TestLambdaLayer:
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
-        get_fn_result = lambda_client.get_function(FunctionName=function_name)
+        get_fn_result = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_fn_result", get_fn_result)
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.update_function_configuration(
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.update_function_configuration(
                 FunctionName=function_name,
                 Layers=[
                     publish_result["LayerVersionArn"],
@@ -4321,8 +4360,8 @@ class TestLambdaLayer:
             )
         snapshot.match("two_layer_versions_single_function_exc", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.update_function_configuration(
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.update_function_configuration(
                 FunctionName=function_name,
                 Layers=[
                     publish_result["LayerVersionArn"],
@@ -4332,8 +4371,8 @@ class TestLambdaLayer:
             )
         snapshot.match("three_layer_versions_single_function_exc", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.update_function_configuration(
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.update_function_configuration(
                 FunctionName=function_name,
                 Layers=[
                     publish_result["LayerVersionArn"],
@@ -4342,8 +4381,8 @@ class TestLambdaLayer:
             )
         snapshot.match("two_identical_layer_versions_single_function_exc", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.update_function_configuration(
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.update_function_configuration(
                 FunctionName=function_name,
                 Layers=[
                     f"{publish_result['LayerArn'].replace(layer_name, 'doesnotexist')}:1",
@@ -4351,8 +4390,8 @@ class TestLambdaLayer:
             )
         snapshot.match("add_nonexistent_layer_exc", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.update_function_configuration(
+        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
+            aws_client.awslambda.update_function_configuration(
                 FunctionName=function_name,
                 Layers=[
                     f"{publish_result['LayerArn']}:9",
@@ -4360,8 +4399,8 @@ class TestLambdaLayer:
             )
         snapshot.match("add_nonexistent_layer_version_exc", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.update_function_configuration(
+        with pytest.raises(aws_client.awslambda.exceptions.ClientError) as e:
+            aws_client.awslambda.update_function_configuration(
                 FunctionName=function_name, Layers=[publish_result["LayerArn"]]
             )
         snapshot.match("add_layer_arn_without_version_exc", e.value.response)
@@ -4380,7 +4419,7 @@ class TestLambdaLayer:
                 LayerName=layer_name, VersionNumber=other_region_layer_result["Version"]
             )
         )
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+        with pytest.raises(aws_client.awslambda.exceptions.ClientError) as e:
             create_lambda_function(
                 func_name=function_name,
                 handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -4389,7 +4428,7 @@ class TestLambdaLayer:
         snapshot.match("create_function_with_layer_in_different_region", e.value.response)
 
     def test_layer_function_quota_exception(
-        self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
+        self, create_lambda_function, snapshot, dummylayer, cleanups, aws_client
     ):
         """Test lambda quota of "up to five layers"
         Layer docs: https://docs.aws.amazon.com/lambda/latest/dg/invocation-layers.html#invocation-layers-using
@@ -4398,21 +4437,21 @@ class TestLambdaLayer:
         layer_arns = []
         for n in range(6):
             layer_name_N = f"testlayer-{n+1}-{short_uid()}"
-            publish_result_N = lambda_client.publish_layer_version(
+            publish_result_N = aws_client.awslambda.publish_layer_version(
                 LayerName=layer_name_N,
                 CompatibleRuntimes=[],
                 Content={"ZipFile": dummylayer},
                 CompatibleArchitectures=[Architecture.x86_64],
             )
             cleanups.append(
-                lambda: lambda_client.delete_layer_version(
+                lambda: aws_client.awslambda.delete_layer_version(
                     LayerName=layer_name_N, VersionNumber=publish_result_N["Version"]
                 )
             )
             layer_arns.append(publish_result_N["LayerVersionArn"])
 
         function_name = f"fn-layer-{short_uid()}"
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+        with pytest.raises(aws_client.awslambda.exceptions.ClientError) as e:
             create_lambda_function(
                 func_name=function_name,
                 handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -4422,7 +4461,7 @@ class TestLambdaLayer:
 
     @pytest.mark.aws_validated
     def test_layer_lifecycle(
-        self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
+        self, create_lambda_function, snapshot, dummylayer, cleanups, aws_client
     ):
         """
         Tests the general lifecycle of a Lambda layer
@@ -4448,13 +4487,15 @@ class TestLambdaLayer:
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
-        get_fn_result = lambda_client.get_function(FunctionName=function_name)
+        get_fn_result = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_fn_result", get_fn_result)
 
-        get_fn_config_result = lambda_client.get_function_configuration(FunctionName=function_name)
+        get_fn_config_result = aws_client.awslambda.get_function_configuration(
+            FunctionName=function_name
+        )
         snapshot.match("get_fn_config_result", get_fn_config_result)
 
-        publish_result = lambda_client.publish_layer_version(
+        publish_result = aws_client.awslambda.publish_layer_version(
             LayerName=layer_name,
             CompatibleRuntimes=[Runtime.python3_9],
             LicenseInfo=license_info,
@@ -4463,14 +4504,14 @@ class TestLambdaLayer:
             CompatibleArchitectures=[Architecture.x86_64],
         )
         cleanups.append(
-            lambda: lambda_client.delete_layer_version(
+            lambda: aws_client.awslambda.delete_layer_version(
                 LayerName=layer_name, VersionNumber=publish_result["Version"]
             )
         )
         snapshot.match("publish_result", publish_result)
 
         # note: we don't even need to change anything for a second version to be published
-        publish_result_2 = lambda_client.publish_layer_version(
+        publish_result_2 = aws_client.awslambda.publish_layer_version(
             LayerName=layer_name,
             CompatibleRuntimes=[Runtime.python3_9],
             LicenseInfo=license_info,
@@ -4479,7 +4520,7 @@ class TestLambdaLayer:
             CompatibleArchitectures=[Architecture.x86_64],
         )
         cleanups.append(
-            lambda: lambda_client.delete_layer_version(
+            lambda: aws_client.awslambda.delete_layer_version(
                 LayerName=layer_name, VersionNumber=publish_result_2["Version"]
             )
         )
@@ -4489,48 +4530,56 @@ class TestLambdaLayer:
         assert publish_result_2["Version"] == 2
         assert publish_result["Content"]["CodeSha256"] == publish_result_2["Content"]["CodeSha256"]
 
-        update_fn_config = lambda_client.update_function_configuration(
+        update_fn_config = aws_client.awslambda.update_function_configuration(
             FunctionName=function_name, Layers=[publish_result["LayerVersionArn"]]
         )
         snapshot.match("update_fn_config", update_fn_config)
 
         # wait for update to be finished
-        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
-        get_fn_config = lambda_client.get_function_configuration(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        get_fn_config = aws_client.awslambda.get_function_configuration(FunctionName=function_name)
         snapshot.match("get_fn_config", get_fn_config)
 
-        get_layer_ver_result = lambda_client.get_layer_version(
+        get_layer_ver_result = aws_client.awslambda.get_layer_version(
             LayerName=layer_name, VersionNumber=publish_result["Version"]
         )
         snapshot.match("get_layer_ver_result", get_layer_ver_result)
 
-        get_layer_by_arn_version = lambda_client.get_layer_version_by_arn(
+        get_layer_by_arn_version = aws_client.awslambda.get_layer_version_by_arn(
             Arn=publish_result["LayerVersionArn"]
         )
         snapshot.match("get_layer_by_arn_version", get_layer_by_arn_version)
 
-        list_layer_versions_predelete = lambda_client.list_layer_versions(LayerName=layer_name)
+        list_layer_versions_predelete = aws_client.awslambda.list_layer_versions(
+            LayerName=layer_name
+        )
         snapshot.match("list_layer_versions_predelete", list_layer_versions_predelete)
 
         # scenario: what happens if we remove the layer when it's still associated with a function?
-        delete_layer_1 = lambda_client.delete_layer_version(LayerName=layer_name, VersionNumber=1)
+        delete_layer_1 = aws_client.awslambda.delete_layer_version(
+            LayerName=layer_name, VersionNumber=1
+        )
         snapshot.match("delete_layer_1", delete_layer_1)
 
         # still there
-        get_fn_config_postdelete = lambda_client.get_function_configuration(
+        get_fn_config_postdelete = aws_client.awslambda.get_function_configuration(
             FunctionName=function_name
         )
         snapshot.match("get_fn_config_postdelete", get_fn_config_postdelete)
-        delete_layer_2 = lambda_client.delete_layer_version(LayerName=layer_name, VersionNumber=2)
+        delete_layer_2 = aws_client.awslambda.delete_layer_version(
+            LayerName=layer_name, VersionNumber=2
+        )
         snapshot.match("delete_layer_2", delete_layer_2)
 
         # now there's no layer version left for <layer_name>
-        list_layer_versions_postdelete = lambda_client.list_layer_versions(LayerName=layer_name)
+        list_layer_versions_postdelete = aws_client.awslambda.list_layer_versions(
+            LayerName=layer_name
+        )
         snapshot.match("list_layer_versions_postdelete", list_layer_versions_postdelete)
         assert len(list_layer_versions_postdelete["LayerVersions"]) == 0
 
         # creating a new layer version should still increment the previous version
-        publish_result_3 = lambda_client.publish_layer_version(
+        publish_result_3 = aws_client.awslambda.publish_layer_version(
             LayerName=layer_name,
             CompatibleRuntimes=[Runtime.python3_9],
             LicenseInfo=license_info,
@@ -4539,7 +4588,7 @@ class TestLambdaLayer:
             CompatibleArchitectures=[Architecture.x86_64],
         )
         cleanups.append(
-            lambda: lambda_client.delete_layer_version(
+            lambda: aws_client.awslambda.delete_layer_version(
                 LayerName=layer_name, VersionNumber=publish_result_3["Version"]
             )
         )
@@ -4548,14 +4597,7 @@ class TestLambdaLayer:
 
     @pytest.mark.aws_validated
     def test_layer_s3_content(
-        self,
-        lambda_client,
-        s3_client,
-        s3_create_bucket,
-        create_lambda_function,
-        snapshot,
-        dummylayer,
-        cleanups,
+        self, s3_create_bucket, create_lambda_function, snapshot, dummylayer, cleanups, aws_client
     ):
         """Publish a layer by referencing an s3 bucket instead of uploading the content directly"""
         bucket = s3_create_bucket()
@@ -4563,15 +4605,15 @@ class TestLambdaLayer:
         layer_name = f"bucket-layer-{short_uid()}"
 
         bucket_key = "/layercontent.zip"
-        s3_client.upload_fileobj(Fileobj=io.BytesIO(dummylayer), Bucket=bucket, Key=bucket_key)
+        aws_client.s3.upload_fileobj(Fileobj=io.BytesIO(dummylayer), Bucket=bucket, Key=bucket_key)
 
-        publish_layer_result = lambda_client.publish_layer_version(
+        publish_layer_result = aws_client.awslambda.publish_layer_version(
             LayerName=layer_name, Content={"S3Bucket": bucket, "S3Key": bucket_key}
         )
         snapshot.match("publish_layer_result", publish_layer_result)
 
     @pytest.mark.aws_validated
-    def test_layer_policy_exceptions(self, lambda_client, snapshot, dummylayer, cleanups):
+    def test_layer_policy_exceptions(self, snapshot, dummylayer, cleanups, aws_client):
         """
         API-level exceptions and edge cases for lambda layer permissions
 
@@ -4579,26 +4621,26 @@ class TestLambdaLayer:
         """
         layer_name = f"layer4policy-{short_uid()}"
 
-        publish_result = lambda_client.publish_layer_version(
+        publish_result = aws_client.awslambda.publish_layer_version(
             LayerName=layer_name,
             CompatibleRuntimes=[Runtime.python3_9],
             Content={"ZipFile": dummylayer},
             CompatibleArchitectures=[Architecture.x86_64],
         )
         cleanups.append(
-            lambda: lambda_client.delete_layer_version(
+            lambda: aws_client.awslambda.delete_layer_version(
                 LayerName=layer_name, VersionNumber=publish_result["Version"]
             )
         )
         snapshot.match("publish_result", publish_result)
 
         # we didn't add any permissions yet, so the policy does not exist
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_layer_version_policy(LayerName=layer_name, VersionNumber=1)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_layer_version_policy(LayerName=layer_name, VersionNumber=1)
         snapshot.match("layer_permission_nopolicy_get", e.value.response)
 
         # add a policy with statement id "s1"
-        add_layer_permission_result = lambda_client.add_layer_version_permission(
+        add_layer_permission_result = aws_client.awslambda.add_layer_version_permission(
             LayerName=layer_name,
             VersionNumber=1,
             Action="lambda:GetLayerVersion",
@@ -4608,8 +4650,8 @@ class TestLambdaLayer:
         snapshot.match("add_layer_permission_result", add_layer_permission_result)
 
         # action can only be lambda:GetLayerVersion
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.add_layer_version_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ClientError) as e:
+            aws_client.awslambda.add_layer_version_permission(
                 LayerName=layer_name,
                 VersionNumber=1,
                 Action="*",
@@ -4619,8 +4661,8 @@ class TestLambdaLayer:
         snapshot.match("layer_permission_action_invalid", e.value.response)
 
         # duplicate statement Id (s1)
-        with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
-            lambda_client.add_layer_version_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceConflictException) as e:
+            aws_client.awslambda.add_layer_version_permission(
                 LayerName=layer_name,
                 VersionNumber=1,
                 Action="lambda:GetLayerVersion",
@@ -4630,8 +4672,8 @@ class TestLambdaLayer:
         snapshot.match("layer_permission_duplicate_statement", e.value.response)
 
         # wrong revision id
-        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
-            lambda_client.add_layer_version_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.PreconditionFailedException) as e:
+            aws_client.awslambda.add_layer_version_permission(
                 LayerName=layer_name,
                 VersionNumber=1,
                 Action="lambda:GetLayerVersion",
@@ -4642,8 +4684,8 @@ class TestLambdaLayer:
         snapshot.match("layer_permission_wrong_revision", e.value.response)
 
         # layer does not exist
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.add_layer_version_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.add_layer_version_permission(
                 LayerName=f"{layer_name}-doesnotexist",
                 VersionNumber=1,
                 Action="lambda:GetLayerVersion",
@@ -4652,21 +4694,21 @@ class TestLambdaLayer:
             )
         snapshot.match("layer_permission_layername_doesnotexist_add", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_layer_version_policy(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_layer_version_policy(
                 LayerName=f"{layer_name}-doesnotexist", VersionNumber=1
             )
         snapshot.match("layer_permission_layername_doesnotexist_get", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.remove_layer_version_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.remove_layer_version_permission(
                 LayerName=f"{layer_name}-doesnotexist", VersionNumber=1, StatementId="s1"
             )
         snapshot.match("layer_permission_layername_doesnotexist_remove", e.value.response)
 
         # layer with given version does not exist
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.add_layer_version_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.add_layer_version_permission(
                 LayerName=layer_name,
                 VersionNumber=2,
                 Action="lambda:GetLayerVersion",
@@ -4675,33 +4717,33 @@ class TestLambdaLayer:
             )
         snapshot.match("layer_permission_layerversion_doesnotexist_add", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_layer_version_policy(LayerName=layer_name, VersionNumber=2)
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.get_layer_version_policy(LayerName=layer_name, VersionNumber=2)
         snapshot.match("layer_permission_layerversion_doesnotexist_get", e.value.response)
 
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.remove_layer_version_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.remove_layer_version_permission(
                 LayerName=layer_name, VersionNumber=2, StatementId="s1"
             )
         snapshot.match("layer_permission_layerversion_doesnotexist_remove", e.value.response)
 
         # statement id does not exist for given layer version
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.remove_layer_version_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
+            aws_client.awslambda.remove_layer_version_permission(
                 LayerName=layer_name, VersionNumber=1, StatementId="doesnotexist"
             )
         snapshot.match("layer_permission_statementid_doesnotexist_remove", e.value.response)
 
         # wrong revision id
-        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
-            lambda_client.remove_layer_version_permission(
+        with pytest.raises(aws_client.awslambda.exceptions.PreconditionFailedException) as e:
+            aws_client.awslambda.remove_layer_version_permission(
                 LayerName=layer_name, VersionNumber=1, StatementId="s1", RevisionId="wrong"
             )
         snapshot.match("layer_permission_wrong_revision_remove", e.value.response)
 
     @pytest.mark.aws_validated
     def test_layer_policy_lifecycle(
-        self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
+        self, create_lambda_function, snapshot, dummylayer, cleanups, aws_client
     ):
         """
         Simple lifecycle tests for lambda layer policies
@@ -4710,21 +4752,21 @@ class TestLambdaLayer:
         """
         layer_name = f"testlayer-{short_uid()}"
 
-        publish_result = lambda_client.publish_layer_version(
+        publish_result = aws_client.awslambda.publish_layer_version(
             LayerName=layer_name,
             CompatibleRuntimes=[Runtime.python3_9],
             Content={"ZipFile": dummylayer},
             CompatibleArchitectures=[Architecture.x86_64],
         )
         cleanups.append(
-            lambda: lambda_client.delete_layer_version(
+            lambda: aws_client.awslambda.delete_layer_version(
                 LayerName=layer_name, VersionNumber=publish_result["Version"]
             )
         )
 
         snapshot.match("publish_result", publish_result)
 
-        add_policy_s1 = lambda_client.add_layer_version_permission(
+        add_policy_s1 = aws_client.awslambda.add_layer_version_permission(
             LayerName=layer_name,
             VersionNumber=1,
             StatementId="s1",
@@ -4733,12 +4775,12 @@ class TestLambdaLayer:
         )
         snapshot.match("add_policy_s1", add_policy_s1)
 
-        get_layer_version_policy = lambda_client.get_layer_version_policy(
+        get_layer_version_policy = aws_client.awslambda.get_layer_version_policy(
             LayerName=layer_name, VersionNumber=1
         )
         snapshot.match("get_layer_version_policy", get_layer_version_policy)
 
-        add_policy_s2 = lambda_client.add_layer_version_permission(
+        add_policy_s2 = aws_client.awslambda.add_layer_version_permission(
             LayerName=layer_name,
             VersionNumber=1,
             StatementId="s2",
@@ -4748,12 +4790,12 @@ class TestLambdaLayer:
         )
         snapshot.match("add_policy_s2", add_policy_s2)
 
-        get_layer_version_policy_postadd2 = lambda_client.get_layer_version_policy(
+        get_layer_version_policy_postadd2 = aws_client.awslambda.get_layer_version_policy(
             LayerName=layer_name, VersionNumber=1
         )
         snapshot.match("get_layer_version_policy_postadd2", get_layer_version_policy_postadd2)
 
-        remove_s2 = lambda_client.remove_layer_version_permission(
+        remove_s2 = aws_client.awslambda.remove_layer_version_permission(
             LayerName=layer_name,
             VersionNumber=1,
             StatementId="s2",
@@ -4761,7 +4803,7 @@ class TestLambdaLayer:
         )
         snapshot.match("remove_s2", remove_s2)
 
-        get_layer_version_policy_postdeletes2 = lambda_client.get_layer_version_policy(
+        get_layer_version_policy_postdeletes2 = aws_client.awslambda.get_layer_version_policy(
             LayerName=layer_name, VersionNumber=1
         )
         snapshot.match(
@@ -4772,7 +4814,7 @@ class TestLambdaLayer:
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaSnapStart:
     @pytest.mark.aws_validated
-    def test_snapstart_lifecycle(self, lambda_client, create_lambda_function, snapshot):
+    def test_snapstart_lifecycle(self, create_lambda_function, snapshot, aws_client):
         """Test the API of the SnapStart feature. The optimization behavior is not supported in LocalStack.
         Slow (~1-2min) against AWS.
         """
@@ -4786,27 +4828,27 @@ class TestLambdaSnapStart:
             SnapStart={"ApplyOn": "PublishedVersions"},
         )
         snapshot.match("create_function_response", create_response)
-        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=function_name)
 
-        publish_response = lambda_client.publish_version(
+        publish_response = aws_client.awslambda.publish_version(
             FunctionName=function_name, Description="version1"
         )
         version_1 = publish_response["Version"]
-        lambda_client.get_waiter("published_version_active").wait(
+        aws_client.awslambda.get_waiter("published_version_active").wait(
             FunctionName=function_name, Qualifier=version_1
         )
 
-        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        get_function_response = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_function_response_latest", get_function_response)
 
-        get_function_response = lambda_client.get_function(
+        get_function_response = aws_client.awslambda.get_function(
             FunctionName=f"{function_name}:{version_1}"
         )
         snapshot.match("get_function_response_version_1", get_function_response)
 
     @pytest.mark.aws_validated
     def test_snapstart_update_function_configuration(
-        self, lambda_client, create_lambda_function, snapshot
+        self, create_lambda_function, snapshot, aws_client
     ):
         """Test enabling SnapStart when updating a function."""
         function_name = f"fn-{short_uid()}"
@@ -4818,22 +4860,22 @@ class TestLambdaSnapStart:
             handler="cloud.localstack.sample.LambdaHandlerWithLib",
         )
         snapshot.match("create_function_response", create_response)
-        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=function_name)
 
-        update_function_response = lambda_client.update_function_configuration(
+        update_function_response = aws_client.awslambda.update_function_configuration(
             FunctionName=function_name,
             SnapStart={"ApplyOn": "PublishedVersions"},
         )
         snapshot.match("update_function_response", update_function_response)
 
     @pytest.mark.aws_validated
-    def test_snapstart_exceptions(self, lambda_client, lambda_su_role, snapshot):
+    def test_snapstart_exceptions(self, lambda_su_role, snapshot, aws_client):
         function_name = f"invalid-function-{short_uid()}"
         zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
         # Test unsupported runtime
         # Only supports java11 (2023-02-15): https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
         with pytest.raises(ClientError) as e:
-            lambda_client.create_function(
+            aws_client.awslambda.create_function(
                 FunctionName=function_name,
                 Handler="index.handler",
                 Code={"ZipFile": zip_file_bytes},
@@ -4845,7 +4887,7 @@ class TestLambdaSnapStart:
         snapshot.match("create_function_unsupported_snapstart_runtime", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            lambda_client.create_function(
+            aws_client.awslambda.create_function(
                 FunctionName=function_name,
                 Handler="cloud.localstack.sample.LambdaHandlerWithLib",
                 Code={"ZipFile": zip_file_bytes},

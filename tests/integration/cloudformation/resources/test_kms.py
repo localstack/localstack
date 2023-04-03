@@ -3,7 +3,7 @@ import os.path
 from localstack.utils.strings import short_uid
 
 
-def test_kms_key_disabled(sqs_client, kms_client, deploy_cfn_template):
+def test_kms_key_disabled(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/kms_key_disabled.yaml"
@@ -12,11 +12,11 @@ def test_kms_key_disabled(sqs_client, kms_client, deploy_cfn_template):
 
     key_id = stack.outputs["KeyIdOutput"]
     assert key_id
-    my_key = kms_client.describe_key(KeyId=key_id)
+    my_key = aws_client.kms.describe_key(KeyId=key_id)
     assert not my_key["KeyMetadata"]["Enabled"]
 
 
-def test_cfn_with_kms_resources(deploy_cfn_template, kms_client):
+def test_cfn_with_kms_resources(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "../../templates/template34.yaml")
     )
@@ -25,7 +25,7 @@ def test_cfn_with_kms_resources(deploy_cfn_template, kms_client):
     assert stack.outputs.get("KeyAlias") == alias_name
 
     def _get_matching_aliases():
-        aliases = kms_client.list_aliases()["Aliases"]
+        aliases = aws_client.kms.list_aliases()["Aliases"]
         return [alias for alias in aliases if alias["AliasName"] == alias_name]
 
     assert len(_get_matching_aliases()) == 1
@@ -35,7 +35,7 @@ def test_cfn_with_kms_resources(deploy_cfn_template, kms_client):
     assert not _get_matching_aliases()
 
 
-def test_deploy_stack_with_kms(kms_client, deploy_cfn_template, cfn_client):
+def test_deploy_stack_with_kms(deploy_cfn_template, aws_client):
     environment = f"env-{short_uid()}"
 
     stack = deploy_cfn_template(
@@ -45,7 +45,7 @@ def test_deploy_stack_with_kms(kms_client, deploy_cfn_template, cfn_client):
         parameters={"Environment": environment},
     )
 
-    resources = cfn_client.list_stack_resources(StackName=stack.stack_name)[
+    resources = aws_client.cloudformation.list_stack_resources(StackName=stack.stack_name)[
         "StackResourceSummaries"
     ]
     kmskeys = [res for res in resources if res["ResourceType"] == "AWS::KMS::Key"]
@@ -56,5 +56,5 @@ def test_deploy_stack_with_kms(kms_client, deploy_cfn_template, cfn_client):
 
     stack.destroy()
 
-    resp = kms_client.describe_key(KeyId=key_id)["KeyMetadata"]
+    resp = aws_client.kms.describe_key(KeyId=key_id)["KeyMetadata"]
     assert resp["KeyState"] == "PendingDeletion"

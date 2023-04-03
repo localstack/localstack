@@ -209,12 +209,7 @@ class TestEdgeAPI:
         relay_proxy.stop()
 
     def test_invoke_sns_sqs_integration_using_edge_port(
-        self,
-        sqs_create_queue,
-        sqs_client,
-        sns_client,
-        sns_create_topic,
-        sns_create_sqs_subscription,
+        self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, aws_client
     ):
         topic_name = f"topic-{short_uid()}"
         queue_name = f"queue-{short_uid()}"
@@ -222,14 +217,14 @@ class TestEdgeAPI:
         region_original = os.environ.get("DEFAULT_REGION")
         os.environ["DEFAULT_REGION"] = "us-southeast-2"
 
-        topic = sns_client.create_topic(Name=topic_name)
+        topic = aws_client.sns.create_topic(Name=topic_name)
         topic_arn = topic["TopicArn"]
         queue_url = sqs_create_queue(QueueName=queue_name)
-        sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])
+        aws_client.sqs.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])
         sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
-        sns_client.publish(TargetArn=topic_arn, Message="Test msg")
+        aws_client.sns.publish(TargetArn=topic_arn, Message="Test msg")
 
-        response = sqs_client.receive_message(
+        response = aws_client.sqs.receive_message(
             QueueUrl=queue_url,
             AttributeNames=["SentTimestamp"],
             MaxNumberOfMessages=1,
@@ -246,7 +241,7 @@ class TestEdgeAPI:
     @pytest.mark.skipif(
         condition=not config.LEGACY_S3_PROVIDER, reason="S3 ASF provider does not use ProxyListener"
     )
-    def test_message_modifying_handler(self, s3_client, monkeypatch):
+    def test_message_modifying_handler(self, monkeypatch, aws_client):
         class MessageModifier(MessageModifyingProxyListener):
             def forward_request(self, method, path: str, data, headers):
                 if method != "HEAD":
@@ -264,24 +259,24 @@ class TestEdgeAPI:
 
         # create S3 bucket, assert that patched bucket name is used
         bucket_name = f"b-{short_uid()}"
-        s3_client.create_bucket(Bucket=bucket_name)
-        buckets = [b["Name"] for b in s3_client.list_buckets()["Buckets"]]
+        aws_client.s3.create_bucket(Bucket=bucket_name)
+        buckets = [b["Name"] for b in aws_client.s3.list_buckets()["Buckets"]]
         assert f"{bucket_name}-patched" in buckets
         assert f"{bucket_name}" not in buckets
-        result = s3_client.head_bucket(Bucket=f"{bucket_name}-patched")
+        result = aws_client.s3.head_bucket(Bucket=f"{bucket_name}-patched")
         assert result["ResponseMetadata"]["HTTPStatusCode"] == 201
 
         # put content, assert that patched content is returned
         key = "test/1/2/3"
-        s3_client.put_object(Bucket=bucket_name, Key=key, Body=b"test content 123")
-        result = s3_client.get_object(Bucket=bucket_name, Key=key)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=b"test content 123")
+        result = aws_client.s3.get_object(Bucket=bucket_name, Key=key)
         content = to_str(result["Body"].read())
         assert " patched" in content
 
     @pytest.mark.skipif(
         condition=not config.LEGACY_S3_PROVIDER, reason="S3 ASF provider does not use ProxyListener"
     )
-    def test_handler_returning_none_method(self, s3_client, monkeypatch):
+    def test_handler_returning_none_method(self, monkeypatch, aws_client):
         class MessageModifier(ProxyListener):
             def forward_request(self, method, path: str, data, headers):
                 # simple heuristic to determine whether we are in the context of an edge call, or service request
@@ -297,11 +292,11 @@ class TestEdgeAPI:
         # prepare bucket and test object
         bucket_name = f"b-{short_uid()}"
         key = "test/1/2/3"
-        s3_client.create_bucket(Bucket=bucket_name)
-        s3_client.put_object(Bucket=bucket_name, Key=key, Body=b"test content 123")
+        aws_client.s3.create_bucket(Bucket=bucket_name)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=b"test content 123")
 
         # get content, assert that content has been patched
-        result = s3_client.get_object(Bucket=bucket_name, Key=key)
+        result = aws_client.s3.get_object(Bucket=bucket_name, Key=key)
         content = to_str(result["Body"].read())
         assert " patched" in content
 

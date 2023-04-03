@@ -81,7 +81,7 @@ def scheduled_test_lambda(lambda_client, events_client):
 @pytest.mark.usefixtures("scheduled_test_lambda")
 class TestIntegration:
     def test_firehose_s3(
-        self, s3_resource, firehose_client, firehose_create_delivery_stream, s3_create_bucket
+        self, s3_resource, firehose_create_delivery_stream, s3_create_bucket, aws_client
     ):
         stream_name = f"fh-stream-{short_uid()}"
         bucket_name = s3_create_bucket()
@@ -99,14 +99,14 @@ class TestIntegration:
             Tags=TEST_TAGS,
         )
         assert stream
-        assert stream_name in firehose_client.list_delivery_streams()["DeliveryStreamNames"]
-        tags = firehose_client.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
+        assert stream_name in aws_client.firehose.list_delivery_streams()["DeliveryStreamNames"]
+        tags = aws_client.firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
         assert TEST_TAGS == tags["Tags"]
         # create target S3 bucket
         s3_resource.create_bucket(Bucket=bucket_name)
 
         # put records
-        firehose_client.put_record(
+        aws_client.firehose.put_record(
             DeliveryStreamName=stream_name, Record={"Data": to_bytes(test_data)}
         )
         # check records in target bucket
@@ -118,7 +118,7 @@ class TestIntegration:
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
     def test_firehose_extended_s3(
-        self, firehose_client, firehose_create_delivery_stream, s3_create_bucket
+        self, firehose_create_delivery_stream, s3_create_bucket, aws_client
     ):
         stream_name = f"fh-stream-{short_uid()}"
         bucket_name = s3_create_bucket()
@@ -137,12 +137,12 @@ class TestIntegration:
         )
 
         assert stream
-        assert stream_name in firehose_client.list_delivery_streams()["DeliveryStreamNames"]
-        tags = firehose_client.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
+        assert stream_name in aws_client.firehose.list_delivery_streams()["DeliveryStreamNames"]
+        tags = aws_client.firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
         assert tags["Tags"] == TEST_TAGS
 
         # put records
-        firehose_client.put_record(
+        aws_client.firehose.put_record(
             DeliveryStreamName=stream_name, Record={"Data": to_bytes(test_data)}
         )
         # check records in target bucket
@@ -153,9 +153,7 @@ class TestIntegration:
         for key in all_objects.keys():
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
-    def test_firehose_kinesis_to_s3(
-        self, kinesis_client, s3_resource, firehose_client, kinesis_create_stream
-    ):
+    def test_firehose_kinesis_to_s3(self, s3_resource, kinesis_create_stream, aws_client):
         stream_name = f"fh-stream-{short_uid()}"
 
         kinesis_stream_name = kinesis_create_stream()
@@ -164,7 +162,7 @@ class TestIntegration:
         test_data = '{"test": "firehose_data_%s"}' % short_uid()
 
         # create Firehose stream
-        stream = firehose_client.create_delivery_stream(
+        stream = aws_client.firehose.create_delivery_stream(
             DeliveryStreamType="KinesisStreamAsSource",
             KinesisStreamSourceConfiguration={
                 "RoleARN": arns.iam_resource_arn("firehose"),
@@ -178,11 +176,13 @@ class TestIntegration:
             },
         )
         assert stream
-        assert stream_name in firehose_client.list_delivery_streams()["DeliveryStreamNames"]
+        assert stream_name in aws_client.firehose.list_delivery_streams()["DeliveryStreamNames"]
 
         # wait for stream to become ACTIVE
         def _assert_active():
-            stream_info = firehose_client.describe_delivery_stream(DeliveryStreamName=stream_name)
+            stream_info = aws_client.firehose.describe_delivery_stream(
+                DeliveryStreamName=stream_name
+            )
             assert stream_info["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
 
         retry(_assert_active, sleep=1, retries=30)
@@ -191,7 +191,7 @@ class TestIntegration:
         s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
 
         # put records
-        kinesis_client.put_record(
+        aws_client.kinesis.put_record(
             Data=to_bytes(test_data), PartitionKey="testId", StreamName=kinesis_stream_name
         )
 
@@ -203,17 +203,15 @@ class TestIntegration:
         retry(_assert_objects_created, sleep=1, retries=4)
 
         # clean up
-        firehose_client.delete_delivery_stream(DeliveryStreamName=stream_name)
+        aws_client.firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
 
     def test_lambda_streams_batch_and_transactions(
         self,
-        dynamodb_client,
-        lambda_client,
-        dynamodbstreams_client,
         kinesis_create_stream,
         dynamodb_create_table,
         create_lambda_function,
         cleanups,
+        aws_client,
     ):
         ddb_lease_table_suffix = "-kclapp2"
         table_name = short_uid() + "lsbat" + ddb_lease_table_suffix
@@ -244,7 +242,7 @@ class TestIntegration:
             )
 
             # list DDB streams and make sure the table stream is there
-            streams = dynamodbstreams_client.list_streams()
+            streams = aws_client.dynamodbstreams.list_streams()
             ddb_event_source_arn = None
             for stream in streams["Streams"]:
                 if stream["TableName"] == table_name:
@@ -257,15 +255,15 @@ class TestIntegration:
                 func_name=lambda_ddb_name,
                 envvars={"KINESIS_STREAM_NAME": stream_name},
             )
-            uuid = lambda_client.create_event_source_mapping(
+            uuid = aws_client.awslambda.create_event_source_mapping(
                 FunctionName=lambda_ddb_name,
                 EventSourceArn=ddb_event_source_arn,
                 StartingPosition="TRIM_HORIZON",
             )["UUID"]
-            cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=uuid))
+            cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=uuid))
 
             # submit a batch with writes
-            dynamodb_client.batch_write_item(
+            aws_client.dynamodb.batch_write_item(
                 RequestItems={
                     table_name: [
                         {
@@ -297,7 +295,7 @@ class TestIntegration:
             )
 
             # submit a batch with writes and deletes
-            dynamodb_client.batch_write_item(
+            aws_client.dynamodb.batch_write_item(
                 RequestItems={
                     table_name: [
                         {
@@ -332,7 +330,7 @@ class TestIntegration:
             )
 
             # submit a transaction with writes and delete
-            dynamodb_client.transact_write_items(
+            aws_client.dynamodb.transact_write_items(
                 TransactItems=[
                     {
                         "Put": {
@@ -383,7 +381,7 @@ class TestIntegration:
             )
 
             # submit a batch with a put over existing item
-            dynamodb_client.transact_write_items(
+            aws_client.dynamodb.transact_write_items(
                 TransactItems=[
                     {
                         "Put": {
@@ -398,7 +396,7 @@ class TestIntegration:
             )
 
             # submit a transaction with a put over existing item
-            dynamodb_client.transact_write_items(
+            aws_client.dynamodb.transact_write_items(
                 TransactItems=[
                     {
                         "Put": {
@@ -413,7 +411,7 @@ class TestIntegration:
             )
 
             # submit a transaction with updates
-            dynamodb_client.transact_write_items(
+            aws_client.dynamodb.transact_write_items(
                 TransactItems=[
                     {
                         "Update": {
@@ -543,18 +541,13 @@ class TestIntegration:
 
 
 def test_kinesis_lambda_forward_chain(
-    kinesis_client,
-    s3_client,
-    lambda_client,
-    kinesis_create_stream,
-    create_lambda_function,
-    cleanups,
+    kinesis_create_stream, create_lambda_function, cleanups, aws_client
 ):
     stream1_name = kinesis_create_stream()
     stream2_name = kinesis_create_stream()
     lambda1_name = f"function-{short_uid()}"
     lambda2_name = f"function-{short_uid()}"
-    s3_client.create_bucket(Bucket=TEST_BUCKET_NAME)
+    aws_client.s3.create_bucket(Bucket=TEST_BUCKET_NAME)
 
     # deploy test lambdas connected to Kinesis streams
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True)
@@ -566,7 +559,7 @@ def test_kinesis_lambda_forward_chain(
     )
     lambda_1_event_source_uuid = lambda_1_resp["CreateEventSourceMappingResponse"]["UUID"]
     cleanups.append(
-        lambda: lambda_client.delete_event_source_mapping(UUID=lambda_1_event_source_uuid)
+        lambda: aws_client.awslambda.delete_event_source_mapping(UUID=lambda_1_event_source_uuid)
     )
     lambda_2_resp = create_lambda_function(
         func_name=lambda2_name,
@@ -576,7 +569,7 @@ def test_kinesis_lambda_forward_chain(
     )
     lambda_2_event_source_uuid = lambda_2_resp["CreateEventSourceMappingResponse"]["UUID"]
     cleanups.append(
-        lambda: lambda_client.delete_event_source_mapping(UUID=lambda_2_event_source_uuid)
+        lambda: aws_client.awslambda.delete_event_source_mapping(UUID=lambda_2_event_source_uuid)
     )
 
     # publish test record
@@ -584,7 +577,7 @@ def test_kinesis_lambda_forward_chain(
     data = clone(test_data)
     data[lambda_integration.MSG_BODY_MESSAGE_TARGET] = "kinesis:%s" % stream2_name
     LOGGER.debug("put record")
-    kinesis_client.put_record(
+    aws_client.kinesis.put_record(
         Data=to_bytes(json.dumps(data)),
         PartitionKey="testId",
         StreamName=stream1_name,
@@ -605,13 +598,7 @@ parametrize_python_runtimes = pytest.mark.parametrize("runtime", PYTHON_TEST_RUN
 class TestLambdaOutgoingSdkCalls:
     @parametrize_python_runtimes
     def test_lambda_send_message_to_sqs(
-        self,
-        lambda_client,
-        create_lambda_function,
-        sqs_client,
-        sqs_create_queue,
-        runtime,
-        lambda_su_role,
+        self, create_lambda_function, sqs_create_queue, runtime, lambda_su_role, aws_client
     ):
         """Send sqs message to sqs queue inside python lambda"""
         function_name = f"test-function-{short_uid()}"
@@ -628,14 +615,14 @@ class TestLambdaOutgoingSdkCalls:
         event = {
             "message": f"message-from-test-lambda-{short_uid()}",
             "queue_name": queue_name,
-            "region_name": sqs_client.meta.region_name,
+            "region_name": aws_client.sqs.meta.region_name,
         }
 
-        lambda_client.invoke(FunctionName=function_name, Payload=json.dumps(event))
+        aws_client.awslambda.invoke(FunctionName=function_name, Payload=json.dumps(event))
 
         # assert that message has been received on the Queue
         def receive_message():
-            rs = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=["All"])
+            rs = aws_client.sqs.receive_message(QueueUrl=queue_url, MessageAttributeNames=["All"])
             assert len(rs["Messages"]) > 0
             return rs["Messages"][0]
 
@@ -645,13 +632,12 @@ class TestLambdaOutgoingSdkCalls:
     @parametrize_python_runtimes
     def test_lambda_put_item_to_dynamodb(
         self,
-        lambda_client,
         create_lambda_function,
         dynamodb_create_table,
         runtime,
         dynamodb_resource,
         lambda_su_role,
-        dynamodb_client,
+        aws_client,
     ):
         """Put item into dynamodb from python lambda"""
         table_name = f"ddb-table-{short_uid()}"
@@ -670,19 +656,19 @@ class TestLambdaOutgoingSdkCalls:
 
         event = {
             "table_name": table_name,
-            "region_name": dynamodb_client.meta.region_name,
+            "region_name": aws_client.dynamodb.meta.region_name,
             "items": [{"id": k, "data": v} for k, v in data.items()],
         }
 
         def wait_for_table_created():
             return (
-                dynamodb_client.describe_table(TableName=table_name)["Table"]["TableStatus"]
+                aws_client.dynamodb.describe_table(TableName=table_name)["Table"]["TableStatus"]
                 == "ACTIVE"
             )
 
         assert poll_condition(wait_for_table_created, timeout=30)
 
-        lambda_client.invoke(FunctionName=function_name, Payload=json.dumps(event))
+        aws_client.awslambda.invoke(FunctionName=function_name, Payload=json.dumps(event))
 
         rs = dynamodb_resource.Table(table_name).scan()
 
@@ -694,13 +680,7 @@ class TestLambdaOutgoingSdkCalls:
 
     @parametrize_python_runtimes
     def test_lambda_start_stepfunctions_execution(
-        self,
-        lambda_client,
-        stepfunctions_client,
-        create_lambda_function,
-        runtime,
-        lambda_su_role,
-        cleanups,
+        self, create_lambda_function, runtime, lambda_su_role, cleanups, aws_client
     ):
         """Start stepfunctions machine execution from lambda"""
         function_name = f"test-function-{short_uid()}"
@@ -733,27 +713,29 @@ class TestLambdaOutgoingSdkCalls:
             },
         }
 
-        rs = stepfunctions_client.create_state_machine(
+        rs = aws_client.stepfunctions.create_state_machine(
             name=state_machine_name,
             definition=json.dumps(state_machine_def),
             roleArn=lambda_su_role,
         )
         sm_arn = rs["stateMachineArn"]
-        cleanups.append(lambda: stepfunctions_client.delete_state_machine(stateMachineArn=sm_arn))
+        cleanups.append(
+            lambda: aws_client.stepfunctions.delete_state_machine(stateMachineArn=sm_arn)
+        )
 
-        lambda_client.invoke(
+        aws_client.awslambda.invoke(
             FunctionName=function_name,
             Payload=json.dumps(
                 {
                     "state_machine_arn": sm_arn,
-                    "region_name": stepfunctions_client.meta.region_name,
+                    "region_name": aws_client.stepfunctions.meta.region_name,
                     "input": {},
                 }
             ),
         )
         time.sleep(1)
 
-        rs = stepfunctions_client.list_executions(stateMachineArn=sm_arn)
+        rs = aws_client.stepfunctions.list_executions(stateMachineArn=sm_arn)
 
         # assert that state machine got executed 1 time
         assert 1 == len([ex for ex in rs["executions"] if ex["stateMachineArn"] == sm_arn])

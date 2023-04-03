@@ -59,12 +59,12 @@ class TestLambdaRuntimesCommon:
 
     @pytest.mark.aws_validated
     @pytest.mark.multiruntime(scenario="echo")
-    def test_echo_invoke(self, lambda_client, multiruntime_lambda):
+    def test_echo_invoke(self, multiruntime_lambda, aws_client):
         # provided lambdas take a little longer for large payloads, hence timeout to 5s
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024, Timeout=5)
 
         def _invoke_with_payload(payload):
-            invoke_result = lambda_client.invoke(
+            invoke_result = aws_client.awslambda.invoke(
                 FunctionName=create_function_result["FunctionName"],
                 Payload=to_bytes(json.dumps(payload)),
             )
@@ -100,7 +100,9 @@ class TestLambdaRuntimesCommon:
         payload = 1
         _invoke_with_payload(payload)
         # no payload at all
-        invoke_result = lambda_client.invoke(FunctionName=create_function_result["FunctionName"])
+        invoke_result = aws_client.awslambda.invoke(
+            FunctionName=create_function_result["FunctionName"]
+        )
         assert invoke_result["StatusCode"] == 200
         assert json.loads(invoke_result["Payload"].read()) == {}
         assert not invoke_result.get("FunctionError")
@@ -136,14 +138,14 @@ class TestLambdaRuntimesCommon:
     )
     @pytest.mark.aws_validated
     @pytest.mark.multiruntime(scenario="introspection")
-    def test_introspection_invoke(self, lambda_client, multiruntime_lambda, snapshot):
+    def test_introspection_invoke(self, multiruntime_lambda, snapshot, aws_client):
         create_function_result = multiruntime_lambda.create_function(
             MemorySize=1024, Environment={"Variables": {"TEST_KEY": "TEST_VAL"}}
         )
         snapshot.match("create_function_result", create_function_result)
 
         # simple payload
-        invoke_result = lambda_client.invoke(
+        invoke_result = aws_client.awslambda.invoke(
             FunctionName=create_function_result["FunctionName"],
             Payload=b'{"simple": "payload"}',
         )
@@ -157,7 +159,7 @@ class TestLambdaRuntimesCommon:
         snapshot.match("invocation_result_payload", invocation_result_payload)
 
         # Check again with a qualified arn as function name
-        invoke_result_qualified = lambda_client.invoke(
+        invoke_result_qualified = aws_client.awslambda.invoke(
             FunctionName=f"{create_function_result['FunctionArn']}:$LATEST",
             Payload=b'{"simple": "payload"}',
         )
@@ -174,7 +176,7 @@ class TestLambdaRuntimesCommon:
     )
     @pytest.mark.aws_validated
     @pytest.mark.multiruntime(scenario="uncaughtexception")
-    def test_uncaught_exception_invoke(self, lambda_client, multiruntime_lambda, snapshot):
+    def test_uncaught_exception_invoke(self, multiruntime_lambda, snapshot, aws_client):
         # unfortunately the stack trace is quite unreliable and changes when AWS updates the runtime transparently
         # since the stack trace contains references to internal runtime code.
         snapshot.add_transformer(
@@ -188,7 +190,7 @@ class TestLambdaRuntimesCommon:
         snapshot.match("create_function_result", create_function_result)
 
         # simple payload
-        invocation_result = lambda_client.invoke(
+        invocation_result = aws_client.awslambda.invoke(
             FunctionName=create_function_result["FunctionName"],
             Payload=b'{"error_msg": "some_error_msg"}',
         )
@@ -208,7 +210,7 @@ class TestLambdaRuntimesCommon:
         runtimes=["nodejs"],
         # runtimes=["nodejs", "python3.8", "python3.9", "java8.al2", "java11", "dotnet", "ruby"],
     )
-    def test_runtime_wrapper_invoke(self, lambda_client, multiruntime_lambda, snapshot, tmp_path):
+    def test_runtime_wrapper_invoke(self, multiruntime_lambda, snapshot, tmp_path, aws_client):
         # copy and modify zip file, pretty dirty hack to reuse scenario and reduce CI test runtime
         modified_zip = str(tmp_path / f"temp-zip-{short_uid()}.zip")
         cp_r(multiruntime_lambda.zip_file_path, modified_zip)
@@ -232,7 +234,7 @@ class TestLambdaRuntimesCommon:
         snapshot.match("create_function_result", create_function_result)
 
         # simple payload
-        invoke_result = lambda_client.invoke(
+        invoke_result = aws_client.awslambda.invoke(
             FunctionName=create_function_result["FunctionName"],
             Payload=b'{"simple": "payload"}',
         )
@@ -269,13 +271,13 @@ class TestLambdaCallingLocalstack:
             "dotnetcore3.1",  # TODO: does not yet support transparent endpoint injection
         ],
     )
-    def test_calling_localstack_from_lambda(self, lambda_client, multiruntime_lambda, tmp_path):
+    def test_calling_localstack_from_lambda(self, multiruntime_lambda, tmp_path, aws_client):
         create_function_result = multiruntime_lambda.create_function(
             MemorySize=1024,
             Environment={"Variables": {"CONFIGURE_CLIENT": "1"}},
         )
 
-        invocation_result = lambda_client.invoke(
+        invocation_result = aws_client.awslambda.invoke(
             FunctionName=create_function_result["FunctionName"],
             Payload=b"{}",
         )

@@ -27,22 +27,22 @@ class TestOpenSearch:
     """
 
     def test_default_strategy(
-        self, opensearch_client, opensearch_wait_for_cluster, assert_host_customisation
+        self, opensearch_wait_for_cluster, assert_host_customisation, aws_client
     ):
         domain_name = f"domain-{short_uid()}"
-        res = opensearch_client.create_domain(DomainName=domain_name)
+        res = aws_client.opensearch.create_domain(DomainName=domain_name)
         opensearch_wait_for_cluster(domain_name)
         endpoint = res["DomainStatus"]["Endpoint"]
 
         assert_host_customisation(endpoint, use_localstack_cloud=True)
 
     def test_port_strategy(
-        self, monkeypatch, opensearch_client, opensearch_wait_for_cluster, assert_host_customisation
+        self, monkeypatch, opensearch_wait_for_cluster, assert_host_customisation, aws_client
     ):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
 
         domain_name = f"domain-{short_uid()}"
-        res = opensearch_client.create_domain(DomainName=domain_name)
+        res = aws_client.opensearch.create_domain(DomainName=domain_name)
         opensearch_wait_for_cluster(domain_name)
         endpoint = res["DomainStatus"]["Endpoint"]
 
@@ -52,12 +52,12 @@ class TestOpenSearch:
             assert_host_customisation(endpoint, custom_host="127.0.0.1")
 
     def test_path_strategy(
-        self, monkeypatch, opensearch_client, opensearch_wait_for_cluster, assert_host_customisation
+        self, monkeypatch, opensearch_wait_for_cluster, assert_host_customisation, aws_client
     ):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "path")
 
         domain_name = f"domain-{short_uid()}"
-        res = opensearch_client.create_domain(DomainName=domain_name)
+        res = aws_client.opensearch.create_domain(DomainName=domain_name)
         opensearch_wait_for_cluster(domain_name)
         endpoint = res["DomainStatus"]["Endpoint"]
 
@@ -69,10 +69,10 @@ class TestS3:
         condition=config.LEGACY_S3_PROVIDER, reason="Not implemented for legacy provider"
     )
     def test_non_us_east_1_location(
-        self, s3_resource, s3_client, cleanups, assert_host_customisation
+        self, s3_resource, cleanups, assert_host_customisation, aws_client
     ):
         bucket_name = f"bucket-{short_uid()}"
-        res = s3_client.create_bucket(
+        res = aws_client.s3.create_bucket(
             Bucket=bucket_name,
             CreateBucketConfiguration={
                 "LocationConstraint": "eu-west-1",
@@ -89,13 +89,15 @@ class TestS3:
 
         assert_host_customisation(res["Location"], use_hostname_external=True)
 
-    def test_multipart_upload(self, s3_bucket, s3_client, assert_host_customisation):
+    def test_multipart_upload(self, s3_bucket, assert_host_customisation, aws_client):
         key_name = f"key-{short_uid()}"
-        upload_id = s3_client.create_multipart_upload(Bucket=s3_bucket, Key=key_name)["UploadId"]
-        part_etag = s3_client.upload_part(
+        upload_id = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)[
+            "UploadId"
+        ]
+        part_etag = aws_client.s3.upload_part(
             Bucket=s3_bucket, Key=key_name, Body=b"bytes", PartNumber=1, UploadId=upload_id
         )["ETag"]
-        res = s3_client.complete_multipart_upload(
+        res = aws_client.s3.complete_multipart_upload(
             Bucket=s3_bucket,
             Key=key_name,
             MultipartUpload={"Parts": [{"ETag": part_etag, "PartNumber": 1}]},
@@ -104,10 +106,10 @@ class TestS3:
 
         assert_host_customisation(res["Location"], use_hostname_external=True)
 
-    def test_201_response(self, s3_bucket, s3_client, assert_host_customisation):
+    def test_201_response(self, s3_bucket, assert_host_customisation, aws_client):
         key_name = f"key-{short_uid()}"
         body = "body"
-        presigned_request = s3_client.generate_presigned_post(
+        presigned_request = aws_client.s3.generate_presigned_post(
             Bucket=s3_bucket,
             Key=key_name,
             Fields={"success_action_status": "201"},
@@ -181,7 +183,7 @@ class TestSQS:
 
 class TestLambda:
     @pytest.mark.skipif(condition=is_old_provider(), reason="Not implemented for legacy provider")
-    def test_function_url(self, assert_host_customisation, lambda_client, create_lambda_function):
+    def test_function_url(self, assert_host_customisation, create_lambda_function, aws_client):
         function_name = f"function-{short_uid()}"
         handler_code = ""
         handler_file = new_tmp_file()
@@ -193,7 +195,7 @@ class TestLambda:
             runtime=Runtime.python3_9,
         )
 
-        function_url = lambda_client.create_function_url_config(
+        function_url = aws_client.awslambda.create_function_url_config(
             FunctionName=function_name,
             AuthType="NONE",
         )["FunctionUrl"]

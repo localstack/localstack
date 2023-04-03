@@ -18,13 +18,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestHashCalculations:
-    def test_hash(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
-    ):
+    def test_hash(self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client):
         hash_bindings = [
             ("input data", "MD5"),
             ("input data", "SHA-1"),
@@ -34,7 +28,7 @@ class TestHashCalculations:
         ]
         input_values = [{"fst": inp, "snd": algo} for inp, algo in hash_bindings]
         create_and_test_on_inputs(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,

@@ -100,9 +100,7 @@ class TestNodeJSRuntimes:
         reason="ES6 support is only guaranteed when using the docker executor",
     )
     @pytest.mark.aws_validated
-    def test_invoke_nodejs_es6_lambda(
-        self, lambda_client, create_lambda_function, logs_client, snapshot, runtime
-    ):
+    def test_invoke_nodejs_es6_lambda(self, create_lambda_function, snapshot, runtime, aws_client):
         """Test simple nodejs lambda invocation"""
 
         function_name = f"test-function-{short_uid()}"
@@ -114,7 +112,7 @@ class TestNodeJSRuntimes:
         )
         snapshot.match("creation-result", result)
 
-        rs = lambda_client.invoke(
+        rs = aws_client.awslambda.invoke(
             FunctionName=function_name,
             Payload=json.dumps({"event_type": "test_lambda"}),
         )
@@ -127,7 +125,7 @@ class TestNodeJSRuntimes:
         assert "response from localstack lambda" in response["body"]
 
         def assert_events():
-            events = get_lambda_log_events(function_name, logs_client=logs_client)
+            events = get_lambda_log_events(function_name, logs_client=aws_client.logs)
             assert len(events) > 0
 
         retry(assert_events, retries=10)
@@ -162,7 +160,7 @@ class TestJavaRuntimes:
         condition=is_old_provider, paths=["$..Payload"]
     )  # newline at end
     @pytest.mark.aws_validated
-    def test_java_runtime_with_lib(self, lambda_client, create_lambda_function, snapshot):
+    def test_java_runtime_with_lib(self, create_lambda_function, snapshot, aws_client):
         """Test lambda creation/invocation with different deployment package types (jar, zip, zip-with-gradle)"""
 
         java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode="rb")
@@ -199,7 +197,9 @@ class TestJavaRuntimes:
             )
             snapshot.match(f"create-result-{archive_desc}", create_result)
 
-            result = lambda_client.invoke(FunctionName=lambda_name, Payload=b'{"echo":"echo"}')
+            result = aws_client.awslambda.invoke(
+                FunctionName=lambda_name, Payload=b'{"echo":"echo"}'
+            )
             result = read_streams(result)
             snapshot.match(f"invoke-result-{archive_desc}", result)
             result_data = result["Payload"]
@@ -210,7 +210,7 @@ class TestJavaRuntimes:
     @parametrize_java_runtimes
     @pytest.mark.aws_validated
     def test_stream_handler(
-        self, lambda_client, create_lambda_function, test_java_jar, runtime, snapshot
+        self, create_lambda_function, test_java_jar, runtime, snapshot, aws_client
     ):
         function_name = f"test-lambda-{short_uid()}"
         create_lambda_function(
@@ -219,7 +219,7 @@ class TestJavaRuntimes:
             runtime=runtime,
             handler="cloud.localstack.awssdkv1.sample.LambdaStreamHandler",
         )
-        result = lambda_client.invoke(
+        result = aws_client.awslambda.invoke(
             FunctionName=function_name,
             Payload=b'{"echo":"echo"}',
         )
@@ -228,7 +228,7 @@ class TestJavaRuntimes:
     @parametrize_java_runtimes
     @pytest.mark.aws_validated
     def test_serializable_input_object(
-        self, lambda_client, create_lambda_function, test_java_zip, runtime, snapshot
+        self, create_lambda_function, test_java_zip, runtime, snapshot, aws_client
     ):
         # deploy lambda - Java with serializable input object
         function_name = f"test-lambda-{short_uid()}"
@@ -239,7 +239,7 @@ class TestJavaRuntimes:
             handler="cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
         )
         snapshot.match("create-result", create_result)
-        result = lambda_client.invoke(
+        result = aws_client.awslambda.invoke(
             FunctionName=function_name,
             Payload=b'{"bucket": "test_bucket", "key": "test_key"}',
         )
@@ -275,12 +275,12 @@ class TestJavaRuntimes:
     # this test is only compiled against java 11
     def test_java_custom_handler_method_specification(
         self,
-        lambda_client,
         create_lambda_function,
         handler,
         expected_result,
         check_lambda_logs,
         snapshot,
+        aws_client,
     ):
         java_handler_multiple_handlers = load_file(TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS, mode="rb")
         expected = ['.*"echo": "echo".*']
@@ -294,7 +294,7 @@ class TestJavaRuntimes:
         )
         snapshot.match("create-result", create_result)
 
-        result = lambda_client.invoke(FunctionName=function_name, Payload=b'{"echo":"echo"}')
+        result = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b'{"echo":"echo"}')
         result = read_streams(result)
         snapshot.match("invoke-result", result)
         result_data = result["Payload"]
@@ -320,16 +320,13 @@ class TestJavaRuntimes:
     # TODO maybe snapshot payload as well
     def test_java_lambda_subscribe_sns_topic(
         self,
-        lambda_client,
-        s3_client,
-        sns_client,
         sns_subscription,
         s3_bucket,
         sns_create_topic,
-        logs_client,
         snapshot,
         create_lambda_function,
         test_java_zip,
+        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(snapshot.transform.key_value("Sid"))
@@ -342,7 +339,7 @@ class TestJavaRuntimes:
             runtime=Runtime.java11,
             handler="cloud.localstack.sample.LambdaHandler",
         )
-        function_result = lambda_client.get_function(FunctionName=function_name)
+        function_result = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get-function", function_result)
         function_arn = function_result["Configuration"]["FunctionArn"]
         permission_id = f"test-statement-{short_uid()}"
@@ -372,18 +369,18 @@ class TestJavaRuntimes:
             ]
         }}
         """
-        sns_client.set_topic_attributes(
+        aws_client.sns.set_topic_attributes(
             TopicArn=topic_arn, AttributeName="Policy", AttributeValue=s3_sns_policy
         )
 
-        s3_client.put_bucket_notification_configuration(
+        aws_client.s3.put_bucket_notification_configuration(
             Bucket=s3_bucket,
             NotificationConfiguration={
                 "TopicConfigurations": [{"TopicArn": topic_arn, "Events": ["s3:ObjectCreated:*"]}]
             },
         )
 
-        add_permission_response = lambda_client.add_permission(
+        add_permission_response = aws_client.awslambda.add_permission(
             FunctionName=function_name,
             StatementId=permission_id,
             Action="lambda:InvokeFunction",
@@ -404,12 +401,12 @@ class TestJavaRuntimes:
                 get_lambda_log_events,
                 function_name,
                 regex_filter="Records",
-                logs_client=logs_client,
+                logs_client=aws_client.logs,
             )
             or []
         )
 
-        s3_client.put_object(Bucket=s3_bucket, Key=key, Body="something")
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="something")
 
         # We got an event that confirm lambda invoked
         retry(
@@ -419,17 +416,17 @@ class TestJavaRuntimes:
             expected_length=len(events_before) + 1,
             function_name=function_name,
             regex_filter="Records",
-            logs_client=logs_client,
+            logs_client=aws_client.logs,
         )
 
         # clean up
-        s3_client.delete_objects(Bucket=s3_bucket, Delete={"Objects": [{"Key": key}]})
+        aws_client.s3.delete_objects(Bucket=s3_bucket, Delete={"Objects": [{"Key": key}]})
 
 
 class TestPythonRuntimes:
     @parametrize_python_runtimes
     @pytest.mark.aws_validated
-    def test_handler_in_submodule(self, lambda_client, create_lambda_function, runtime):
+    def test_handler_in_submodule(self, create_lambda_function, runtime, aws_client):
         """Test invocation of a lambda handler which resides in a submodule (= not root module)"""
         function_name = f"test-function-{short_uid()}"
         zip_file = testutil.create_lambda_archive(
@@ -446,7 +443,7 @@ class TestPythonRuntimes:
         )
 
         # invoke function and assert result
-        result = lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+        result = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
         result_data = json.loads(result["Payload"].read())
         assert 200 == result["StatusCode"]
         assert json.loads("{}") == result_data["event"]
@@ -456,7 +453,7 @@ class TestPythonRuntimes:
     )
     @parametrize_python_runtimes
     @pytest.mark.aws_validated
-    def test_python_runtime_correct_versions(self, lambda_client, create_lambda_function, runtime):
+    def test_python_runtime_correct_versions(self, create_lambda_function, runtime, aws_client):
         """Test different versions of python runtimes to report back the correct python version"""
         function_name = f"test_python_executor_{short_uid()}"
         create_lambda_function(
@@ -464,7 +461,7 @@ class TestPythonRuntimes:
             handler_file=TEST_LAMBDA_PYTHON_VERSION,
             runtime=runtime,
         )
-        result = lambda_client.invoke(
+        result = aws_client.awslambda.invoke(
             FunctionName=function_name,
             Payload=b"{}",
         )
@@ -479,7 +476,7 @@ class TestPythonRuntimes:
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..Payload.requestId"])
     @pytest.mark.aws_validated
     def test_python_runtime_unhandled_errors(
-        self, lambda_client, create_lambda_function, runtime, snapshot
+        self, create_lambda_function, runtime, snapshot, aws_client
     ):
         """Test unhandled errors during python lambda invocation"""
         function_name = f"test_python_executor_{short_uid()}"
@@ -489,7 +486,7 @@ class TestPythonRuntimes:
             runtime=runtime,
         )
         snapshot.match("creation_response", creation_response)
-        result = lambda_client.invoke(
+        result = aws_client.awslambda.invoke(
             FunctionName=function_name,
             Payload=b"{}",
         )

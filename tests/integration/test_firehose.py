@@ -128,21 +128,14 @@ def test_firehose_http(
 class TestFirehoseIntegration:
     @pytest.mark.skip_offline
     def test_kinesis_firehose_elasticsearch_s3_backup(
-        self,
-        firehose_client,
-        kinesis_client,
-        es_client,
-        s3_client,
-        s3_bucket,
-        kinesis_create_stream,
-        cleanups,
+        self, s3_bucket, kinesis_create_stream, cleanups, aws_client
     ):
         domain_name = f"test-domain-{short_uid()}"
         stream_name = f"test-stream-{short_uid()}"
         role_arn = "arn:aws:iam::000000000000:role/Firehose-Role"
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
-        es_create_response = es_client.create_elasticsearch_domain(DomainName=domain_name)
-        cleanups.append(lambda: es_client.delete_elasticsearch_domain(DomainName=domain_name))
+        es_create_response = aws_client.es.create_elasticsearch_domain(DomainName=domain_name)
+        cleanups.append(lambda: aws_client.es.delete_elasticsearch_domain(DomainName=domain_name))
         es_url = f"http://{es_create_response['DomainStatus']['Endpoint']}"
         es_arn = es_create_response["DomainStatus"]["ARN"]
 
@@ -151,7 +144,7 @@ class TestFirehoseIntegration:
 
         # create kinesis stream
         kinesis_create_stream(StreamName=stream_name, ShardCount=2)
-        stream_info = kinesis_client.describe_stream(StreamName=stream_name)
+        stream_info = aws_client.kinesis.describe_stream(StreamName=stream_name)
         stream_arn = stream_info["StreamDescription"]["StreamARN"]
 
         kinesis_stream_source_def = {
@@ -169,19 +162,19 @@ class TestFirehoseIntegration:
                 "BucketARN": bucket_arn,
             },
         }
-        firehose_client.create_delivery_stream(
+        aws_client.firehose.create_delivery_stream(
             DeliveryStreamName=delivery_stream_name,
             DeliveryStreamType="KinesisStreamAsSource",
             KinesisStreamSourceConfiguration=kinesis_stream_source_def,
             ElasticsearchDestinationConfiguration=elasticsearch_destination_configuration,
         )
         cleanups.append(
-            lambda: firehose_client.delete_delivery_stream(DeliveryStreamName=stream_name)
+            lambda: aws_client.firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
         )
 
         # wait for delivery stream to be ready
         def check_stream_state():
-            stream = firehose_client.describe_delivery_stream(
+            stream = aws_client.firehose.describe_delivery_stream(
                 DeliveryStreamName=delivery_stream_name
             )
             return stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
@@ -190,7 +183,7 @@ class TestFirehoseIntegration:
 
         # wait for ES cluster to be ready
         def check_domain_state():
-            result = es_client.describe_elasticsearch_domain(DomainName=domain_name)
+            result = aws_client.es.describe_elasticsearch_domain(DomainName=domain_name)
             return not result["DomainStatus"]["Processing"]
 
         # if ElasticSearch is not yet installed, it might take some time to download the package before starting the domain
@@ -198,12 +191,12 @@ class TestFirehoseIntegration:
 
         # put kinesis stream record
         kinesis_record = {"target": "hello"}
-        kinesis_client.put_record(
+        aws_client.kinesis.put_record(
             StreamName=stream_name, Data=to_bytes(json.dumps(kinesis_record)), PartitionKey="1"
         )
 
         firehose_record = {"target": "world"}
-        firehose_client.put_record(
+        aws_client.firehose.put_record(
             DeliveryStreamName=delivery_stream_name,
             Record={"Data": to_bytes(json.dumps(firehose_record))},
         )
@@ -223,10 +216,10 @@ class TestFirehoseIntegration:
         retry(assert_elasticsearch_contents)
 
         def assert_s3_contents():
-            result = s3_client.list_objects(Bucket=s3_bucket)
+            result = aws_client.s3.list_objects(Bucket=s3_bucket)
             contents = []
             for o in result.get("Contents"):
-                data = s3_client.get_object(Bucket=s3_bucket, Key=o.get("Key"))
+                data = aws_client.s3.get_object(Bucket=s3_bucket, Key=o.get("Key"))
                 content = data["Body"].read()
                 contents.append(content)
             assert len(contents) == 2
@@ -237,12 +230,7 @@ class TestFirehoseIntegration:
 
     @pytest.mark.skip_offline
     def test_kinesis_firehose_incompatible_with_opensearch_2_3(
-        self,
-        firehose_client,
-        opensearch_client,
-        opensearch_create_domain,
-        kinesis_client,
-        kinesis_create_stream,
+        self, opensearch_create_domain, kinesis_create_stream, aws_client
     ):
         # Kinesis Firehose does not support OpenSearch 2.3
         domain_name = f"test-domain-{short_uid()}"
@@ -252,15 +240,15 @@ class TestFirehoseIntegration:
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
 
         opensearch_create_domain(DomainName=domain_name, EngineVersion="OpenSearch_2.3")
-        opensearch_arn = opensearch_client.describe_domain(DomainName=domain_name)["DomainStatus"][
-            "ARN"
-        ]
+        opensearch_arn = aws_client.opensearch.describe_domain(DomainName=domain_name)[
+            "DomainStatus"
+        ]["ARN"]
 
         # create kinesis stream
         kinesis_create_stream(StreamName=stream_name, ShardCount=2)
-        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
-            "StreamARN"
-        ]
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
 
         kinesis_stream_source_def = {
             "KinesisStreamARN": stream_arn,
@@ -278,7 +266,7 @@ class TestFirehoseIntegration:
             },
         }
         with pytest.raises(ClientError) as exc:
-            firehose_client.create_delivery_stream(
+            aws_client.firehose.create_delivery_stream(
                 DeliveryStreamName=delivery_stream_name,
                 DeliveryStreamType="KinesisStreamAsSource",
                 KinesisStreamSourceConfiguration=kinesis_stream_source_def,
@@ -291,14 +279,11 @@ class TestFirehoseIntegration:
     @pytest.mark.parametrize("opensearch_endpoint_strategy", ["domain", "path", "port"])
     def test_kinesis_firehose_opensearch_s3_backup(
         self,
-        firehose_client,
-        kinesis_client,
-        opensearch_client,
-        s3_client,
         s3_bucket,
         kinesis_create_stream,
         monkeypatch,
         opensearch_endpoint_strategy,
+        aws_client,
     ):
         domain_name = f"test-domain-{short_uid()}"
         stream_name = f"test-stream-{short_uid()}"
@@ -306,7 +291,7 @@ class TestFirehoseIntegration:
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", opensearch_endpoint_strategy)
         try:
-            opensearch_create_response = opensearch_client.create_domain(
+            opensearch_create_response = aws_client.opensearch.create_domain(
                 DomainName=domain_name, EngineVersion="OpenSearch_1.3"
             )
             opensearch_url = f"http://{opensearch_create_response['DomainStatus']['Endpoint']}"
@@ -317,7 +302,7 @@ class TestFirehoseIntegration:
 
             # create kinesis stream
             kinesis_create_stream(StreamName=stream_name, ShardCount=2)
-            stream_arn = kinesis_client.describe_stream(StreamName=stream_name)[
+            stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
                 "StreamDescription"
             ]["StreamARN"]
 
@@ -336,7 +321,7 @@ class TestFirehoseIntegration:
                     "BucketARN": bucket_arn,
                 },
             }
-            firehose_client.create_delivery_stream(
+            aws_client.firehose.create_delivery_stream(
                 DeliveryStreamName=delivery_stream_name,
                 DeliveryStreamType="KinesisStreamAsSource",
                 KinesisStreamSourceConfiguration=kinesis_stream_source_def,
@@ -345,7 +330,7 @@ class TestFirehoseIntegration:
 
             # wait for delivery stream to be ready
             def check_stream_state():
-                stream = firehose_client.describe_delivery_stream(
+                stream = aws_client.firehose.describe_delivery_stream(
                     DeliveryStreamName=delivery_stream_name
                 )
                 return stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
@@ -354,9 +339,9 @@ class TestFirehoseIntegration:
 
             # wait for opensearch cluster to be ready
             def check_domain_state():
-                result = opensearch_client.describe_domain(DomainName=domain_name)["DomainStatus"][
-                    "Processing"
-                ]
+                result = aws_client.opensearch.describe_domain(DomainName=domain_name)[
+                    "DomainStatus"
+                ]["Processing"]
                 return not result
 
             # if OpenSearch is not yet installed, it might take some time to download the package before starting the domain
@@ -364,12 +349,12 @@ class TestFirehoseIntegration:
 
             # put kinesis stream record
             kinesis_record = {"target": "hello"}
-            kinesis_client.put_record(
+            aws_client.kinesis.put_record(
                 StreamName=stream_name, Data=to_bytes(json.dumps(kinesis_record)), PartitionKey="1"
             )
 
             firehose_record = {"target": "world"}
-            firehose_client.put_record(
+            aws_client.firehose.put_record(
                 DeliveryStreamName=delivery_stream_name,
                 Record={"Data": to_bytes(json.dumps(firehose_record))},
             )
@@ -389,10 +374,10 @@ class TestFirehoseIntegration:
             retry(assert_opensearch_contents)
 
             def assert_s3_contents():
-                result = s3_client.list_objects(Bucket=s3_bucket)
+                result = aws_client.s3.list_objects(Bucket=s3_bucket)
                 contents = []
                 for o in result.get("Contents"):
-                    data = s3_client.get_object(Bucket=s3_bucket, Key=o.get("Key"))
+                    data = aws_client.s3.get_object(Bucket=s3_bucket, Key=o.get("Key"))
                     content = data["Body"].read()
                     contents.append(content)
                 assert len(contents) == 2
@@ -402,17 +387,11 @@ class TestFirehoseIntegration:
             retry(assert_s3_contents)
 
         finally:
-            firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
-            opensearch_client.delete_domain(DomainName=domain_name)
+            aws_client.firehose.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
+            aws_client.opensearch.delete_domain(DomainName=domain_name)
 
     def test_delivery_stream_with_kinesis_as_source(
-        self,
-        firehose_client,
-        kinesis_client,
-        s3_client,
-        s3_bucket,
-        kinesis_create_stream,
-        cleanups,
+        self, s3_bucket, kinesis_create_stream, cleanups, aws_client
     ):
 
         bucket_arn = arns.s3_bucket_arn(s3_bucket)
@@ -422,11 +401,11 @@ class TestFirehoseIntegration:
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
 
         kinesis_create_stream(StreamName=stream_name, ShardCount=2)
-        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
-            "StreamARN"
-        ]
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
 
-        response = firehose_client.create_delivery_stream(
+        response = aws_client.firehose.create_delivery_stream(
             DeliveryStreamName=delivery_stream_name,
             DeliveryStreamType="KinesisStreamAsSource",
             KinesisStreamSourceConfiguration={
@@ -464,13 +443,15 @@ class TestFirehoseIntegration:
             },
         )
         cleanups.append(
-            lambda: firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
+            lambda: aws_client.firehose.delete_delivery_stream(
+                DeliveryStreamName=delivery_stream_name
+            )
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         # make sure the stream will come up at some point, for cleaner cleanup
         def check_stream_state():
-            stream = firehose_client.describe_delivery_stream(
+            stream = aws_client.firehose.describe_delivery_stream(
                 DeliveryStreamName=delivery_stream_name
             )
             return stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"

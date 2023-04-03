@@ -400,7 +400,7 @@ class TestLocalExecutors(unittest.TestCase):
 
 
 class TestFunctionStates:
-    def test_invoke_failure_when_state_pending(self, lambda_client, lambda_su_role, monkeypatch):
+    def test_invoke_failure_when_state_pending(self, lambda_su_role, monkeypatch, aws_client):
         """Tests if a lambda invocation fails if state is pending"""
         function_name = f"test-function-{short_uid()}"
         zip_file = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
@@ -416,7 +416,7 @@ class TestFunctionStates:
             localstack.services.awslambda.lambda_api, "do_set_function_code", _do_set_function_code
         )
         try:
-            response = lambda_client.create_function(
+            response = aws_client.awslambda.create_function(
                 FunctionName=function_name,
                 Runtime="python3.9",
                 Handler="handler.handler",
@@ -427,7 +427,7 @@ class TestFunctionStates:
             assert response["State"] == "Pending"
 
             with pytest.raises(ClientError) as e:
-                lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+                aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
 
             assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 409
             assert e.match("ResourceConflictException")
@@ -440,14 +440,14 @@ class TestFunctionStates:
 
             # lambda has to get active at some point
             def _check_lambda_state():
-                response = lambda_client.get_function(FunctionName=function_name)
+                response = aws_client.awslambda.get_function(FunctionName=function_name)
                 assert response["Configuration"]["State"] == "Active"
                 return response
 
             retry(_check_lambda_state)
-            lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+            aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
         finally:
             try:
-                lambda_client.delete_function(FunctionName=function_name)
+                aws_client.awslambda.delete_function(FunctionName=function_name)
             except Exception:
                 LOG.debug("Unable to delete function %s", function_name)

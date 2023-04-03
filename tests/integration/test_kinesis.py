@@ -48,11 +48,11 @@ class TestKinesis:
 
     @pytest.mark.aws_validated
     def test_create_stream_without_shard_count(
-        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready, snapshot
+        self, kinesis_create_stream, wait_for_stream_ready, snapshot, aws_client
     ):
         stream_name = kinesis_create_stream()
         wait_for_stream_ready(stream_name)
-        describe_stream = kinesis_client.describe_stream(StreamName=stream_name)
+        describe_stream = aws_client.kinesis.describe_stream(StreamName=stream_name)
 
         shards = describe_stream["StreamDescription"]["Shards"]
         shards.sort(key=lambda k: k.get("ShardId"))
@@ -62,72 +62,78 @@ class TestKinesis:
     @pytest.mark.aws_validated
     def test_stream_consumers(
         self,
-        kinesis_client,
         kinesis_create_stream,
         wait_for_stream_ready,
         wait_for_consumer_ready,
         snapshot,
+        aws_client,
     ):
         # create stream and assert 0 consumers
         stream_name = kinesis_create_stream(ShardCount=1)
-        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
-            "StreamARN"
-        ]
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
         wait_for_stream_ready(stream_name)
 
         # no consumer snapshot
-        consumer_list = kinesis_client.list_stream_consumers(StreamARN=stream_arn).get("Consumers")
+        consumer_list = aws_client.kinesis.list_stream_consumers(StreamARN=stream_arn).get(
+            "Consumers"
+        )
         assert len(consumer_list) == 0
 
         # create consumer and snapshot 1 consumer by list_stream_consumers
         consumer_name = "consumer"
-        response = kinesis_client.register_stream_consumer(
+        response = aws_client.kinesis.register_stream_consumer(
             StreamARN=stream_arn, ConsumerName=consumer_name
         )
         consumer_arn = response["Consumer"]["ConsumerARN"]
         wait_for_consumer_ready(consumer_arn=consumer_arn)
 
-        consumer_list = kinesis_client.list_stream_consumers(StreamARN=stream_arn).get("Consumers")
+        consumer_list = aws_client.kinesis.list_stream_consumers(StreamARN=stream_arn).get(
+            "Consumers"
+        )
         snapshot.match("One_consumer_by_list_stream", consumer_list)
 
         # lookup stream consumer by describe_stream_consumer
-        consumer_description_by_arn = kinesis_client.describe_stream_consumer(
+        consumer_description_by_arn = aws_client.kinesis.describe_stream_consumer(
             StreamARN=stream_arn, ConsumerARN=consumer_arn
         )["ConsumerDescription"]
 
         snapshot.match("One_consumer_by_describe_stream", consumer_description_by_arn)
 
         # delete existing consumer and assert 0 remaining consumers
-        kinesis_client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
+        aws_client.kinesis.deregister_stream_consumer(
+            StreamARN=stream_arn, ConsumerName=consumer_name
+        )
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
     def test_subscribe_to_shard(
         self,
-        kinesis_client,
         kinesis_create_stream,
         wait_for_stream_ready,
         wait_for_consumer_ready,
         snapshot,
+        aws_client,
     ):
         # create stream and consumer
         stream_name = kinesis_create_stream(ShardCount=1)
-        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
-            "StreamARN"
-        ]
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
         wait_for_stream_ready(stream_name)
 
-        result = kinesis_client.register_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")[
-            "Consumer"
-        ]
+        result = aws_client.kinesis.register_stream_consumer(
+            StreamARN=stream_arn, ConsumerName="c1"
+        )["Consumer"]
         consumer_arn = result["ConsumerARN"]
         wait_for_consumer_ready(consumer_arn=consumer_arn)
 
         # subscribe to shard
-        response = kinesis_client.describe_stream(StreamName=stream_name)
+        response = aws_client.kinesis.describe_stream(StreamName=stream_name)
 
         shard_id = response.get("StreamDescription").get("Shards")[0].get("ShardId")
-        result = kinesis_client.subscribe_to_shard(
+        result = aws_client.kinesis.subscribe_to_shard(
             ConsumerARN=result["ConsumerARN"],
             ShardId=shard_id,
             StartingPosition={"Type": "TRIM_HORIZON"},
@@ -138,7 +144,7 @@ class TestKinesis:
         num_records = 5
         msg = "Hello world"
         for i in range(num_records):
-            kinesis_client.put_records(
+            aws_client.kinesis.put_records(
                 StreamName=stream_name, Records=[{"Data": f"{msg}_{i}", "PartitionKey": "1"}]
             )
 
@@ -154,32 +160,32 @@ class TestKinesis:
         snapshot.match("Records", results)
 
         # clean up
-        kinesis_client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
+        aws_client.kinesis.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
     def test_subscribe_to_shard_with_sequence_number_as_iterator(
         self,
-        kinesis_client,
         kinesis_create_stream,
         wait_for_stream_ready,
         wait_for_consumer_ready,
         snapshot,
+        aws_client,
     ):
         # create stream and consumer
         stream_name = kinesis_create_stream(ShardCount=1)
-        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
-            "StreamARN"
-        ]
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
         wait_for_stream_ready(stream_name)
 
-        result = kinesis_client.register_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")[
-            "Consumer"
-        ]
+        result = aws_client.kinesis.register_stream_consumer(
+            StreamARN=stream_arn, ConsumerName="c1"
+        )["Consumer"]
         consumer_arn = result["ConsumerARN"]
         wait_for_consumer_ready(consumer_arn=consumer_arn)
         # get starting sequence number
-        response = kinesis_client.describe_stream(StreamName=stream_name)
+        response = aws_client.kinesis.describe_stream(StreamName=stream_name)
         sequence_number = (
             response.get("StreamDescription")
             .get("Shards")[0]
@@ -187,9 +193,9 @@ class TestKinesis:
             .get("StartingSequenceNumber")
         )
         # subscribe to shard with iterator type as AT_SEQUENCE_NUMBER
-        response = kinesis_client.describe_stream(StreamName=stream_name)
+        response = aws_client.kinesis.describe_stream(StreamName=stream_name)
         shard_id = response.get("StreamDescription").get("Shards")[0].get("ShardId")
-        result = kinesis_client.subscribe_to_shard(
+        result = aws_client.kinesis.subscribe_to_shard(
             ConsumerARN=result["ConsumerARN"],
             ShardId=shard_id,
             StartingPosition={
@@ -203,7 +209,7 @@ class TestKinesis:
         num_records = 5
         msg = "Hello world"
         for i in range(num_records):
-            kinesis_client.put_records(
+            aws_client.kinesis.put_records(
                 StreamName=stream_name, Records=[{"Data": f"{msg}_{i}", "PartitionKey": "1"}]
             )
 
@@ -219,27 +225,27 @@ class TestKinesis:
         snapshot.match("Records", results)
 
         # clean up
-        kinesis_client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
+        aws_client.kinesis.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
 
-    def test_get_records(self, kinesis_client, kinesis_create_stream, wait_for_stream_ready):
+    def test_get_records(self, kinesis_create_stream, wait_for_stream_ready, aws_client):
         # create stream
         stream_name = kinesis_create_stream(ShardCount=1)
         wait_for_stream_ready(stream_name)
 
-        kinesis_client.put_records(
+        aws_client.kinesis.put_records(
             StreamName=stream_name,
             Records=[{"Data": "SGVsbG8gd29ybGQ=", "PartitionKey": "1"}],
         )
 
         # get records with JSON encoding
-        iterator = get_shard_iterator(stream_name, kinesis_client)
-        response = kinesis_client.get_records(ShardIterator=iterator)
+        iterator = get_shard_iterator(stream_name, aws_client.kinesis)
+        response = aws_client.kinesis.get_records(ShardIterator=iterator)
         json_records = response.get("Records")
         assert 1 == len(json_records)
         assert "Data" in json_records[0]
 
         # get records with CBOR encoding
-        iterator = get_shard_iterator(stream_name, kinesis_client)
+        iterator = get_shard_iterator(stream_name, aws_client.kinesis)
         url = config.get_edge_url()
         headers = aws_stack.mock_aws_request_headers("kinesis")
         headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
@@ -259,14 +265,14 @@ class TestKinesis:
         )
 
     def test_get_records_empty_stream(
-        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready
+        self, kinesis_create_stream, wait_for_stream_ready, aws_client
     ):
         stream_name = kinesis_create_stream(ShardCount=1)
         wait_for_stream_ready(stream_name)
 
         # empty get records with JSON encoding
-        iterator = get_shard_iterator(stream_name, kinesis_client)
-        json_response = kinesis_client.get_records(ShardIterator=iterator)
+        iterator = get_shard_iterator(stream_name, aws_client.kinesis)
+        json_response = aws_client.kinesis.get_records(ShardIterator=iterator)
         json_records = json_response.get("Records")
         assert 0 == len(json_records)
 
@@ -285,7 +291,7 @@ class TestKinesis:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
     def test_record_lifecycle_data_integrity(
-        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready, snapshot
+        self, kinesis_create_stream, wait_for_stream_ready, snapshot, aws_client
     ):
         """
         kinesis records should contain the same data from when they are sent to when they are received
@@ -294,16 +300,16 @@ class TestKinesis:
         stream_name = kinesis_create_stream(ShardCount=1)
         wait_for_stream_ready(stream_name)
 
-        iterator = get_shard_iterator(stream_name, kinesis_client)
+        iterator = get_shard_iterator(stream_name, aws_client.kinesis)
 
         for record_data in records_data:
-            kinesis_client.put_record(
+            aws_client.kinesis.put_record(
                 StreamName=stream_name,
                 Data=record_data,
                 PartitionKey="1",
             )
 
-        response = kinesis_client.get_records(ShardIterator=iterator)
+        response = aws_client.kinesis.get_records(ShardIterator=iterator)
         response_records = response.get("Records")
         response_records.sort(key=lambda k: k.get("Data"))
         snapshot.match("Records", response_records)
@@ -311,29 +317,25 @@ class TestKinesis:
     @pytest.mark.aws_validated
     @patch.object(kinesis_provider, "MAX_SUBSCRIPTION_SECONDS", 3)
     def test_subscribe_to_shard_timeout(
-        self,
-        kinesis_client,
-        kinesis_create_stream,
-        wait_for_stream_ready,
-        wait_for_consumer_ready,
+        self, kinesis_create_stream, wait_for_stream_ready, wait_for_consumer_ready, aws_client
     ):
         # create stream and consumer
         stream_name = kinesis_create_stream(ShardCount=1)
-        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
-            "StreamARN"
-        ]
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
         wait_for_stream_ready(stream_name)
         # create consumer
-        result = kinesis_client.register_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")[
-            "Consumer"
-        ]
+        result = aws_client.kinesis.register_stream_consumer(
+            StreamARN=stream_arn, ConsumerName="c1"
+        )["Consumer"]
         consumer_arn = result["ConsumerARN"]
         wait_for_consumer_ready(consumer_arn=consumer_arn)
 
         # subscribe to shard
-        response = kinesis_client.describe_stream(StreamName=stream_name)
+        response = aws_client.kinesis.describe_stream(StreamName=stream_name)
         shard_id = response.get("StreamDescription").get("Shards")[0].get("ShardId")
-        result = kinesis_client.subscribe_to_shard(
+        result = aws_client.kinesis.subscribe_to_shard(
             ConsumerARN=result["ConsumerARN"],
             ShardId=shard_id,
             StartingPosition={"Type": "TRIM_HORIZON"},
@@ -345,7 +347,7 @@ class TestKinesis:
 
         # put records
         msg = b"Hello world"
-        kinesis_client.put_records(
+        aws_client.kinesis.put_records(
             StreamName=stream_name, Records=[{"Data": msg, "PartitionKey": "1"}]
         )
 
@@ -358,11 +360,11 @@ class TestKinesis:
         assert len(results) == 0
 
         # clean up
-        kinesis_client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
+        aws_client.kinesis.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
 
     @pytest.mark.aws_validated
     def test_add_tags_to_stream(
-        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready, snapshot
+        self, kinesis_create_stream, wait_for_stream_ready, snapshot, aws_client
     ):
         test_tags = {"foo": "bar"}
 
@@ -371,34 +373,34 @@ class TestKinesis:
         wait_for_stream_ready(stream_name)
 
         # adding tags
-        kinesis_client.add_tags_to_stream(StreamName=stream_name, Tags=test_tags)
+        aws_client.kinesis.add_tags_to_stream(StreamName=stream_name, Tags=test_tags)
 
         # reading stream tags
-        stream_tags_response = kinesis_client.list_tags_for_stream(StreamName=stream_name)
+        stream_tags_response = aws_client.kinesis.list_tags_for_stream(StreamName=stream_name)
 
         snapshot.match("Tags", stream_tags_response["Tags"][0])
         assert not stream_tags_response["HasMoreTags"]
 
     @pytest.mark.aws_validated
     def test_get_records_next_shard_iterator(
-        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready
+        self, kinesis_create_stream, wait_for_stream_ready, aws_client
     ):
         stream_name = kinesis_create_stream()
         wait_for_stream_ready(stream_name)
 
-        first_stream_shard_data = kinesis_client.describe_stream(StreamName=stream_name)[
+        first_stream_shard_data = aws_client.kinesis.describe_stream(StreamName=stream_name)[
             "StreamDescription"
         ]["Shards"][0]
         shard_id = first_stream_shard_data["ShardId"]
 
-        shard_iterator = kinesis_client.get_shard_iterator(
+        shard_iterator = aws_client.kinesis.get_shard_iterator(
             StreamName=stream_name, ShardIteratorType="LATEST", ShardId=shard_id
         )["ShardIterator"]
 
-        get_records_response = kinesis_client.get_records(ShardIterator=shard_iterator)
+        get_records_response = aws_client.kinesis.get_records(ShardIterator=shard_iterator)
         new_shard_iterator = get_records_response["NextShardIterator"]
         assert shard_iterator != new_shard_iterator
-        get_records_response = kinesis_client.get_records(ShardIterator=new_shard_iterator)
+        get_records_response = aws_client.kinesis.get_records(ShardIterator=new_shard_iterator)
         assert shard_iterator != get_records_response["NextShardIterator"]
         assert new_shard_iterator != get_records_response["NextShardIterator"]
 

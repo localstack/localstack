@@ -68,7 +68,7 @@ def match_headers(snapshot, snapshot_headers):
 @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="Tests are for new ASF provider")
 class TestS3Cors:
     @pytest.mark.aws_validated
-    def test_cors_http_options_no_config(self, s3_client, s3_bucket, snapshot):
+    def test_cors_http_options_no_config(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("HostId", reference_replacement=False),
@@ -77,7 +77,7 @@ class TestS3Cors:
         )
         key = "test-cors-options-no-config"
         body = "cors-test"
-        response = s3_client.put_object(Bucket=s3_bucket, Key=key, Body=body, ACL="public-read")
+        response = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=body, ACL="public-read")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
@@ -97,7 +97,7 @@ class TestS3Cors:
         snapshot.match("options-with-origin", parsed_response)
 
     @pytest.mark.aws_validated
-    def test_cors_http_get_no_config(self, s3_client, s3_bucket, snapshot):
+    def test_cors_http_get_no_config(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("HostId", reference_replacement=False),
@@ -106,7 +106,7 @@ class TestS3Cors:
         )
         key = "test-cors-get-no-config"
         body = "cors-test"
-        response = s3_client.put_object(Bucket=s3_bucket, Key=key, Body=body, ACL="public-read")
+        response = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=body, ACL="public-read")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         # key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
@@ -124,10 +124,10 @@ class TestS3Cors:
         assert not any("access-control" in header.lower() for header in response.headers)
 
     @pytest.mark.only_localstack
-    def test_cors_no_config_localstack_allowed(self, s3_client, s3_bucket):
+    def test_cors_no_config_localstack_allowed(self, s3_bucket, aws_client):
         key = "test-cors-get-no-config"
         body = "cors-test"
-        response = s3_client.put_object(Bucket=s3_bucket, Key=key, Body=body, ACL="public-read")
+        response = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=body, ACL="public-read")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
         origin = ALLOWED_CORS_ORIGINS[0]
@@ -167,7 +167,7 @@ class TestS3Cors:
         assert b"<ListAllMyBuckets" in response.content
 
     @pytest.mark.aws_validated
-    def test_cors_http_options_non_existent_bucket(self, s3_client, s3_bucket, snapshot):
+    def test_cors_http_options_non_existent_bucket(self, s3_bucket, snapshot):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("HostId", reference_replacement=False),
@@ -190,7 +190,7 @@ class TestS3Cors:
         snapshot.match("options-with-origin", parsed_response)
 
     @pytest.mark.only_localstack
-    def test_cors_http_options_non_existent_bucket_ls_allowed(self, s3_client, s3_bucket):
+    def test_cors_http_options_non_existent_bucket_ls_allowed(self, s3_bucket):
         key = "test-cors-options-no-bucket"
         key_url = f'{_bucket_url_vhost(bucket_name=f"fake-bucket-{short_uid()}")}/{key}'
         origin = ALLOWED_CORS_ORIGINS[0]
@@ -208,7 +208,7 @@ class TestS3Cors:
             "$..Headers.Transfer-Encoding",  # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
         ]
     )
-    def test_cors_match_origins(self, s3_client, s3_bucket, match_headers, monkeypatch):
+    def test_cors_match_origins(self, s3_bucket, match_headers, monkeypatch, aws_client):
         # monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_S3", False)
         bucket_cors_config = {
             "CORSRules": [
@@ -222,12 +222,12 @@ class TestS3Cors:
         }
 
         object_key = "test-cors-123"
-        response = s3_client.put_object(
+        response = aws_client.s3.put_object(
             Bucket=s3_bucket, Key=object_key, Body="test-cors", ACL="public-read"
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        s3_client.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
+        aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
 
         # key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{object_key}"
         # TODO: replace with vhost again: investigate
@@ -268,7 +268,7 @@ class TestS3Cors:
                 }
             ]
         }
-        s3_client.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
+        aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
         # random origin
         opt_req = requests.options(
             key_url,
@@ -290,7 +290,7 @@ class TestS3Cors:
             "$.put-op.Headers.Content-Type",  # issue with default Response values
         ]
     )
-    def test_cors_match_methods(self, s3_client, s3_create_bucket, match_headers, monkeypatch):
+    def test_cors_match_methods(self, s3_create_bucket, match_headers, monkeypatch, aws_client):
         # monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_S3", False)
         origin = "https://localhost:4200"
         bucket_cors_config = {
@@ -306,12 +306,12 @@ class TestS3Cors:
 
         object_key = "test-cors-method"
         bucket_name = s3_create_bucket(ACL="public-read-write")
-        response = s3_client.put_object(
+        response = aws_client.s3.put_object(
             Bucket=bucket_name, Key=object_key, Body="test-cors", ACL="public-read"
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+        aws_client.s3.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
 
         # key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}"
         # TODO: replace with vhost again: investigate
@@ -357,7 +357,7 @@ class TestS3Cors:
             "$.put-op.Headers.Content-Type",  # issue with default Response values
         ]
     )
-    def test_cors_match_headers(self, s3_client, s3_create_bucket, match_headers, monkeypatch):
+    def test_cors_match_headers(self, s3_create_bucket, match_headers, monkeypatch, aws_client):
         # monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_S3", False)
         origin = "https://localhost:4200"
         bucket_cors_config = {
@@ -373,12 +373,12 @@ class TestS3Cors:
 
         object_key = "test-cors-method"
         bucket_name = s3_create_bucket(ACL="public-read-write")
-        response = s3_client.put_object(
+        response = aws_client.s3.put_object(
             Bucket=bucket_name, Key=object_key, Body="test-cors", ACL="public-read"
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+        aws_client.s3.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
 
         key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}"
 
@@ -420,7 +420,7 @@ class TestS3Cors:
                 }
             ]
         }
-        s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+        aws_client.s3.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
 
         # test with a specific header: x-amz-request-payer, but not allowed in the config
         opt_req = requests.options(
@@ -475,10 +475,10 @@ class TestS3Cors:
             "$.opt-get.Headers.Content-Type",  # issue with default Response values
         ]
     )
-    def test_cors_expose_headers(self, s3_client, s3_create_bucket, match_headers):
+    def test_cors_expose_headers(self, s3_create_bucket, match_headers, aws_client):
         object_key = "test-cors-expose"
         bucket_name = s3_create_bucket(ACL="public-read-write")
-        response = s3_client.put_object(
+        response = aws_client.s3.put_object(
             Bucket=bucket_name, Key=object_key, Body="test-cors", ACL="public-read"
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -493,7 +493,7 @@ class TestS3Cors:
                 }
             ]
         }
-        s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+        aws_client.s3.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
 
         key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}"
 
@@ -508,10 +508,10 @@ class TestS3Cors:
         match_headers("opt-get", opt_req)
 
     @pytest.mark.aws_validated
-    def test_get_cors(self, s3_client, s3_bucket, snapshot):
+    def test_get_cors(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         with pytest.raises(ClientError) as e:
-            s3_client.get_bucket_cors(Bucket=s3_bucket)
+            aws_client.s3.get_bucket_cors(Bucket=s3_bucket)
 
         snapshot.match("get-cors-no-set", e.value.response)
 
@@ -523,13 +523,13 @@ class TestS3Cors:
                 }
             ]
         }
-        s3_client.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
+        aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
 
-        response = s3_client.get_bucket_cors(Bucket=s3_bucket)
+        response = aws_client.s3.get_bucket_cors(Bucket=s3_bucket)
         snapshot.match("get-cors-after-set", response)
 
     @pytest.mark.aws_validated
-    def test_put_cors(self, s3_client, s3_bucket, snapshot):
+    def test_put_cors(self, s3_bucket, snapshot, aws_client):
         bucket_cors_config = {
             "CORSRules": [
                 {
@@ -547,12 +547,12 @@ class TestS3Cors:
                 }
             ]
         }
-        put_response = s3_client.put_bucket_cors(
+        put_response = aws_client.s3.put_bucket_cors(
             Bucket=s3_bucket, CORSConfiguration=bucket_cors_config
         )
         snapshot.match("put-cors", put_response)
 
-        response = s3_client.get_bucket_cors(Bucket=s3_bucket)
+        response = aws_client.s3.get_bucket_cors(Bucket=s3_bucket)
         snapshot.match("get-cors", response)
 
     @pytest.mark.aws_validated
@@ -564,10 +564,10 @@ class TestS3Cors:
             "$..Headers.Transfer-Encoding",
         ]
     )
-    def test_put_cors_default_values(self, s3_client, s3_create_bucket, match_headers):
+    def test_put_cors_default_values(self, s3_create_bucket, match_headers, aws_client):
         object_key = "test-cors-default"
         bucket_name = s3_create_bucket(ACL="public-read-write")
-        response = s3_client.put_object(
+        response = aws_client.s3.put_object(
             Bucket=bucket_name, Key=object_key, Body="test-cors", ACL="public-read"
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -581,7 +581,7 @@ class TestS3Cors:
                 }
             ]
         }
-        s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+        aws_client.s3.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
 
         key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}"
 
@@ -607,7 +607,7 @@ class TestS3Cors:
         match_headers("opt-get-headers", opt_req)
 
     @pytest.mark.aws_validated
-    def test_put_cors_invalid_rules(self, s3_client, s3_bucket, snapshot):
+    def test_put_cors_invalid_rules(self, s3_bucket, snapshot, aws_client):
         bucket_cors_config = {
             "CORSRules": [
                 {
@@ -617,17 +617,17 @@ class TestS3Cors:
             ]
         }
         with pytest.raises(ClientError) as e:
-            s3_client.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
+            aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
 
         snapshot.match("put-cors-exc", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            s3_client.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration={"CORSRules": []})
+            aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration={"CORSRules": []})
 
         snapshot.match("put-cors-exc-empty", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_put_cors_empty_origin(self, s3_client, s3_bucket, snapshot):
+    def test_put_cors_empty_origin(self, s3_bucket, snapshot, aws_client):
         # derived from TestAccS3Bucket_Security_corsEmptyOrigin TF test
         bucket_cors_config = {
             "CORSRules": [
@@ -637,16 +637,16 @@ class TestS3Cors:
                 }
             ]
         }
-        s3_client.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
+        aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
 
-        response = s3_client.get_bucket_cors(Bucket=s3_bucket)
+        response = aws_client.s3.get_bucket_cors(Bucket=s3_bucket)
 
         snapshot.match("get-cors-empty", response)
 
     @pytest.mark.aws_validated
-    def test_delete_cors(self, s3_client, s3_bucket, snapshot):
+    def test_delete_cors(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
-        response = s3_client.delete_bucket_cors(Bucket=s3_bucket)
+        response = aws_client.s3.delete_bucket_cors(Bucket=s3_bucket)
         snapshot.match("delete-cors-before-set", response)
 
         bucket_cors_config = {
@@ -657,18 +657,18 @@ class TestS3Cors:
                 }
             ]
         }
-        put_response = s3_client.put_bucket_cors(
+        put_response = aws_client.s3.put_bucket_cors(
             Bucket=s3_bucket, CORSConfiguration=bucket_cors_config
         )
         snapshot.match("put-cors", put_response)
 
-        response = s3_client.get_bucket_cors(Bucket=s3_bucket)
+        response = aws_client.s3.get_bucket_cors(Bucket=s3_bucket)
         snapshot.match("get-cors", response)
 
-        response = s3_client.delete_bucket_cors(Bucket=s3_bucket)
+        response = aws_client.s3.delete_bucket_cors(Bucket=s3_bucket)
         snapshot.match("delete-cors", response)
 
         with pytest.raises(ClientError) as e:
-            s3_client.get_bucket_cors(Bucket=s3_bucket)
+            aws_client.s3.get_bucket_cors(Bucket=s3_bucket)
 
         snapshot.match("get-cors-deleted", e.value.response)

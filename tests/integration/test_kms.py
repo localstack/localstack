@@ -71,10 +71,10 @@ class TestKMS:
         snapshot.match("create_alias", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_create_key(self, kms_client_for_region, kms_create_key, sts_client, snapshot):
+    def test_create_key(self, kms_client_for_region, kms_create_key, snapshot, aws_client):
         region = "us-east-1"
         kms_client = kms_client_for_region(region)
-        account_id = sts_client.get_caller_identity()["Account"]
+        account_id = aws_client.sts.get_caller_identity()["Account"]
 
         key_ids_before = _get_all_key_ids(kms_client)
 
@@ -121,7 +121,7 @@ class TestKMS:
         snapshot.match("describe-key-same-specific-region-with-arn", response)
 
     @pytest.mark.aws_validated
-    def test_get_key_does_not_exist(self, kms_client, kms_create_key, snapshot):
+    def test_get_key_does_not_exist(self, kms_create_key, snapshot, aws_client):
         # we create a real key to base our fake key ARN on, so we have real account ID and same region
         response = kms_create_key(Description="test key 123")
         key_id = response["KeyId"]
@@ -132,12 +132,12 @@ class TestKMS:
         fake_key_arn = key_arn.replace(key_id, fake_key_uuid)
 
         with pytest.raises(ClientError) as e:
-            kms_client.describe_key(KeyId=fake_key_uuid)
+            aws_client.kms.describe_key(KeyId=fake_key_uuid)
 
         snapshot.match("describe-nonexistent-key-with-id", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            kms_client.describe_key(KeyId=fake_key_arn)
+            aws_client.kms.describe_key(KeyId=fake_key_arn)
 
         snapshot.match("describe-nonexistent-with-arn", e.value.response)
 
@@ -145,37 +145,37 @@ class TestKMS:
         fake_mr_key_uuid = "mrk-d3b95762d3b95762d3b95762d3b95762"
 
         with pytest.raises(ClientError) as e:
-            kms_client.describe_key(KeyId=fake_mr_key_uuid)
+            aws_client.kms.describe_key(KeyId=fake_mr_key_uuid)
 
         snapshot.match("describe-key-with-valid-id-mrk", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_get_key_invalid_uuid(self, kms_client, snapshot):
+    def test_get_key_invalid_uuid(self, snapshot, aws_client):
         # valid regular KeyId format
         # "134f2428-cec1-4b25-a1ae-9048164dba47"
         with pytest.raises(ClientError) as e:
-            kms_client.describe_key(KeyId="fake-key-id")
+            aws_client.kms.describe_key(KeyId="fake-key-id")
         snapshot.match("describe-key-with-invalid-uuid", e.value.response)
 
         # this UUID is valid for python
         # "134f2428cec14b25a1ae9048164dba47"
         with pytest.raises(ClientError) as e:
-            kms_client.describe_key(KeyId="134f2428cec14b25a1ae9048164dba47")
+            aws_client.kms.describe_key(KeyId="134f2428cec14b25a1ae9048164dba47")
         snapshot.match("describe-key-with-invalid-uuid-2", e.value.response)
 
         # valid MultiRegionKey KeyId format
         # "mrk-e4b2ea8ffcd4461e9821c9b9521a8896"
         with pytest.raises(ClientError) as e:
-            kms_client.describe_key(KeyId="mrk-fake-key-id")
+            aws_client.kms.describe_key(KeyId="mrk-fake-key-id")
         snapshot.match("describe-key-with-invalid-uuid-mrk", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_list_keys(self, kms_client, kms_create_key):
+    def test_list_keys(self, kms_create_key, aws_client):
         created_key = kms_create_key()
         next_token = None
         while True:
             kwargs = {"nextToken": next_token} if next_token else {}
-            response = kms_client.list_keys(**kwargs)
+            response = aws_client.kms.list_keys(**kwargs)
             for key in response["Keys"]:
                 assert key["KeyId"]
                 assert key["KeyArn"]
@@ -186,43 +186,43 @@ class TestKMS:
             next_token = response["nextToken"]
 
     @pytest.mark.aws_validated
-    def test_schedule_and_cancel_key_deletion(self, kms_client, kms_create_key):
+    def test_schedule_and_cancel_key_deletion(self, kms_create_key, aws_client):
         key_id = kms_create_key()["KeyId"]
-        kms_client.schedule_key_deletion(KeyId=key_id)
-        result = kms_client.describe_key(KeyId=key_id)
+        aws_client.kms.schedule_key_deletion(KeyId=key_id)
+        result = aws_client.kms.describe_key(KeyId=key_id)
         assert result["KeyMetadata"]["Enabled"] is False
         assert result["KeyMetadata"]["KeyState"] == "PendingDeletion"
         assert result["KeyMetadata"]["DeletionDate"]
 
-        kms_client.cancel_key_deletion(KeyId=key_id)
-        result = kms_client.describe_key(KeyId=key_id)
+        aws_client.kms.cancel_key_deletion(KeyId=key_id)
+        result = aws_client.kms.describe_key(KeyId=key_id)
         assert result["KeyMetadata"]["Enabled"] is False
         assert result["KeyMetadata"]["KeyState"] == "Disabled"
         assert not result["KeyMetadata"].get("DeletionDate")
 
     @pytest.mark.aws_validated
-    def test_disable_and_enable_key(self, kms_client, kms_create_key):
+    def test_disable_and_enable_key(self, kms_create_key, aws_client):
         key_id = kms_create_key()["KeyId"]
-        result = kms_client.describe_key(KeyId=key_id)
+        result = aws_client.kms.describe_key(KeyId=key_id)
         assert result["KeyMetadata"]["Enabled"] is True
         assert result["KeyMetadata"]["KeyState"] == "Enabled"
 
-        kms_client.disable_key(KeyId=key_id)
-        result = kms_client.describe_key(KeyId=key_id)
+        aws_client.kms.disable_key(KeyId=key_id)
+        result = aws_client.kms.describe_key(KeyId=key_id)
         assert result["KeyMetadata"]["Enabled"] is False
         assert result["KeyMetadata"]["KeyState"] == "Disabled"
 
-        kms_client.enable_key(KeyId=key_id)
-        result = kms_client.describe_key(KeyId=key_id)
+        aws_client.kms.enable_key(KeyId=key_id)
+        result = aws_client.kms.describe_key(KeyId=key_id)
         assert result["KeyMetadata"]["Enabled"] is True
         assert result["KeyMetadata"]["KeyState"] == "Enabled"
 
     # Not sure how useful this test is, as it just fails during key validation, before grant-specific logic kicks in.
     @pytest.mark.aws_validated
-    def test_create_grant_with_invalid_key(self, kms_client, user_arn):
+    def test_create_grant_with_invalid_key(self, user_arn, aws_client):
 
         with pytest.raises(ClientError) as e:
-            kms_client.create_grant(
+            aws_client.kms.create_grant(
                 KeyId="invalid",
                 GranteePrincipal=user_arn,
                 Operations=["Decrypt", "Encrypt"],
@@ -231,20 +231,20 @@ class TestKMS:
 
     # Not sure how useful this test is, as it just fails during key validation, before grant-specific logic kicks in.
     @pytest.mark.aws_validated
-    def test_list_grants_with_invalid_key(self, kms_client):
+    def test_list_grants_with_invalid_key(self, aws_client):
         with pytest.raises(ClientError) as e:
-            kms_client.list_grants(
+            aws_client.kms.list_grants(
                 KeyId="invalid",
             )
         e.match("NotFoundException")
 
     @pytest.mark.aws_validated
-    def test_create_grant_with_valid_key(self, kms_client, kms_key, user_arn):
+    def test_create_grant_with_valid_key(self, kms_key, user_arn, aws_client):
         key_id = kms_key["KeyId"]
 
-        grants_before = kms_client.list_grants(KeyId=key_id)["Grants"]
+        grants_before = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
 
-        grant = kms_client.create_grant(
+        grant = aws_client.kms.create_grant(
             KeyId=key_id,
             GranteePrincipal=user_arn,
             Operations=["Decrypt", "Encrypt"],
@@ -252,17 +252,17 @@ class TestKMS:
         assert "GrantId" in grant
         assert "GrantToken" in grant
 
-        grants_after = kms_client.list_grants(KeyId=key_id)["Grants"]
+        grants_after = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
         assert len(grants_after) == len(grants_before) + 1
 
     @pytest.mark.aws_validated
-    def test_create_grant_with_same_name_two_keys(self, kms_client, kms_create_key, user_arn):
+    def test_create_grant_with_same_name_two_keys(self, kms_create_key, user_arn, aws_client):
         first_key_id = kms_create_key()["KeyId"]
         second_key_id = kms_create_key()["KeyId"]
 
         grant_name = "TestGrantName"
 
-        first_grant = kms_client.create_grant(
+        first_grant = aws_client.kms.create_grant(
             KeyId=first_key_id,
             GranteePrincipal=user_arn,
             Name=grant_name,
@@ -271,7 +271,7 @@ class TestKMS:
         assert "GrantId" in first_grant
         assert "GrantToken" in first_grant
 
-        second_grant = kms_client.create_grant(
+        second_grant = aws_client.kms.create_grant(
             KeyId=second_key_id,
             GranteePrincipal=user_arn,
             Name=grant_name,
@@ -280,37 +280,37 @@ class TestKMS:
         assert "GrantId" in second_grant
         assert "GrantToken" in second_grant
 
-        first_grants_after = kms_client.list_grants(KeyId=first_key_id)["Grants"]
+        first_grants_after = aws_client.kms.list_grants(KeyId=first_key_id)["Grants"]
         assert len(first_grants_after) == 1
 
-        second_grants_after = kms_client.list_grants(KeyId=second_key_id)["Grants"]
+        second_grants_after = aws_client.kms.list_grants(KeyId=second_key_id)["Grants"]
         assert len(second_grants_after) == 1
 
     @pytest.mark.aws_validated
-    def test_revoke_grant(self, kms_client, kms_grant_and_key):
+    def test_revoke_grant(self, kms_grant_and_key, aws_client):
         grant = kms_grant_and_key[0]
         key_id = kms_grant_and_key[1]["KeyId"]
-        grants_before = kms_client.list_grants(KeyId=key_id)["Grants"]
+        grants_before = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
 
-        kms_client.revoke_grant(KeyId=key_id, GrantId=grant["GrantId"])
+        aws_client.kms.revoke_grant(KeyId=key_id, GrantId=grant["GrantId"])
 
-        grants_after = kms_client.list_grants(KeyId=key_id)["Grants"]
+        grants_after = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
         assert len(grants_after) == len(grants_before) - 1
 
     @pytest.mark.aws_validated
-    def test_retire_grant(self, kms_client, kms_grant_and_key):
+    def test_retire_grant(self, kms_grant_and_key, aws_client):
         grant = kms_grant_and_key[0]
         key_id = kms_grant_and_key[1]["KeyId"]
-        grants_before = kms_client.list_grants(KeyId=key_id)["Grants"]
+        grants_before = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
 
-        kms_client.retire_grant(GrantToken=grant["GrantToken"])
+        aws_client.kms.retire_grant(GrantToken=grant["GrantToken"])
 
-        grants_after = kms_client.list_grants(KeyId=key_id)["Grants"]
+        grants_after = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
         assert len(grants_after) == len(grants_before) - 1
 
     # Fails against AWS, as the retiring_principal_arn_prefix is invalid there.
     @pytest.mark.only_localstack
-    def test_list_retirable_grants(self, kms_client, kms_create_key, kms_create_grant):
+    def test_list_retirable_grants(self, kms_create_key, kms_create_grant, aws_client):
         retiring_principal_arn_prefix = (
             "arn:aws:kms:eu-central-1:123456789876:key/198a5a78-52c3-489f-ac70-"
         )
@@ -331,7 +331,7 @@ class TestKMS:
         wrong_grant_found = False
         while True:
             kwargs = {"nextToken": next_token} if next_token else {}
-            response = kms_client.list_retirable_grants(
+            response = aws_client.kms.list_retirable_grants(
                 RetiringPrincipal=right_retiring_principal, **kwargs
             )
             for grant in response["Grants"]:
@@ -347,9 +347,9 @@ class TestKMS:
         assert not wrong_grant_found
 
     @pytest.mark.aws_validated
-    def test_generate_data_key_pair_without_plaintext(self, kms_client, kms_key):
+    def test_generate_data_key_pair_without_plaintext(self, kms_key, aws_client):
         key_id = kms_key["KeyId"]
-        result = kms_client.generate_data_key_pair_without_plaintext(
+        result = aws_client.kms.generate_data_key_pair_without_plaintext(
             KeyId=key_id, KeyPairSpec="RSA_2048"
         )
         assert result.get("PrivateKeyCiphertextBlob")
@@ -357,23 +357,23 @@ class TestKMS:
         assert result.get("PublicKey")
 
     @pytest.mark.aws_validated
-    def test_generate_data_key_pair(self, kms_client, kms_key):
+    def test_generate_data_key_pair(self, kms_key, aws_client):
         key_id = kms_key["KeyId"]
-        result = kms_client.generate_data_key_pair(KeyId=key_id, KeyPairSpec="RSA_2048")
+        result = aws_client.kms.generate_data_key_pair(KeyId=key_id, KeyPairSpec="RSA_2048")
         assert result.get("PrivateKeyCiphertextBlob")
         assert result.get("PrivateKeyPlaintext")
         assert result.get("PublicKey")
 
         # assert correct value of encrypted key
-        decrypted = kms_client.decrypt(
+        decrypted = aws_client.kms.decrypt(
             CiphertextBlob=result["PrivateKeyCiphertextBlob"], KeyId=key_id
         )
         assert decrypted["Plaintext"] == result["PrivateKeyPlaintext"]
 
     @pytest.mark.parametrize("number_of_bytes", [12, 44, 91, 1, 1024])
     @pytest.mark.aws_validated
-    def test_generate_random(self, kms_client, snapshot, number_of_bytes):
-        result = kms_client.generate_random(NumberOfBytes=number_of_bytes)
+    def test_generate_random(self, snapshot, number_of_bytes, aws_client):
+        result = aws_client.kms.generate_random(NumberOfBytes=number_of_bytes)
 
         plain_text = result.get("Plaintext")
 
@@ -395,23 +395,23 @@ class TestKMS:
         snapshot.match("generate-random-exc", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_generate_data_key(self, kms_client, kms_key):
+    def test_generate_data_key(self, kms_key, aws_client):
         key_id = kms_key["KeyId"]
         # LocalStack currently doesn't act on KeySpec or on NumberOfBytes params, but one of them has to be set.
-        result = kms_client.generate_data_key(KeyId=key_id, KeySpec="AES_256")
+        result = aws_client.kms.generate_data_key(KeyId=key_id, KeySpec="AES_256")
         assert result.get("CiphertextBlob")
         assert result.get("Plaintext")
         assert result.get("KeyId")
 
         # assert correct value of encrypted key
-        decrypted = kms_client.decrypt(CiphertextBlob=result["CiphertextBlob"], KeyId=key_id)
+        decrypted = aws_client.kms.decrypt(CiphertextBlob=result["CiphertextBlob"], KeyId=key_id)
         assert decrypted["Plaintext"] == result["Plaintext"]
 
     @pytest.mark.aws_validated
-    def test_generate_data_key_without_plaintext(self, kms_client, kms_key):
+    def test_generate_data_key_without_plaintext(self, kms_key, aws_client):
         key_id = kms_key["KeyId"]
         # LocalStack currently doesn't act on KeySpec or on NumberOfBytes params, but one of them has to be set.
-        result = kms_client.generate_data_key_without_plaintext(KeyId=key_id, KeySpec="AES_256")
+        result = aws_client.kms.generate_data_key_without_plaintext(KeyId=key_id, KeySpec="AES_256")
         assert result.get("CiphertextBlob")
         assert "Plaintext" not in result
         assert result.get("KeyId")
@@ -438,7 +438,7 @@ class TestKMS:
             ("ECC_SECG_P256K1", "ECDSA_SHA_256"),
         ],
     )
-    def test_sign_verify(self, kms_client, kms_create_key, snapshot, key_spec, sign_algo):
+    def test_sign_verify(self, kms_create_key, snapshot, key_spec, sign_algo, aws_client):
         hash_algo = get_hash_algorithm(sign_algo)
         hasher = getattr(hashlib, hash_algo.replace("_", "").lower())
 
@@ -449,34 +449,34 @@ class TestKMS:
 
         kwargs = {"KeyId": key_id, "SigningAlgorithm": sign_algo}
 
-        bad_signature = kms_client.sign(MessageType="RAW", Message="bad", **kwargs)["Signature"]
+        bad_signature = aws_client.kms.sign(MessageType="RAW", Message="bad", **kwargs)["Signature"]
         bad_message = b"bad message 321"
 
         # Ensure raw messages can be signed and verified
-        signature = kms_client.sign(MessageType="RAW", Message=plaintext, **kwargs)
+        signature = aws_client.kms.sign(MessageType="RAW", Message=plaintext, **kwargs)
         snapshot.match("signature", signature)
-        verification = kms_client.verify(
+        verification = aws_client.kms.verify(
             MessageType="RAW", Signature=signature["Signature"], Message=plaintext, **kwargs
         )
         snapshot.match("verification", verification)
         assert verification["SignatureValid"]
 
         # Ensure pre-hashed messages can be signed and verified
-        signature = kms_client.sign(MessageType="DIGEST", Message=digest, **kwargs)
-        verification = kms_client.verify(
+        signature = aws_client.kms.sign(MessageType="DIGEST", Message=digest, **kwargs)
+        verification = aws_client.kms.verify(
             MessageType="DIGEST", Signature=signature["Signature"], Message=digest, **kwargs
         )
         assert verification["SignatureValid"]
 
         # Ensure bad digest raises during signing
         with pytest.raises(ClientError) as exc:
-            kms_client.sign(MessageType="DIGEST", Message=plaintext, **kwargs)
+            aws_client.kms.sign(MessageType="DIGEST", Message=plaintext, **kwargs)
         assert exc.match("ValidationException")
         snapshot.match("bad-digest", exc.value.response)
 
         # Ensure bad signature raises during verify
         with pytest.raises(ClientError) as exc:
-            kms_client.verify(
+            aws_client.kms.verify(
                 MessageType="RAW", Signature=bad_signature, Message=plaintext, **kwargs
             )
         assert exc.match("KMSInvalidSignatureException")
@@ -484,14 +484,14 @@ class TestKMS:
 
         # Ensure bad message raises during verify
         with pytest.raises(ClientError) as exc:
-            kms_client.verify(
+            aws_client.kms.verify(
                 MessageType="RAW", Signature=signature["Signature"], Message=bad_message, **kwargs
             )
         assert exc.match("KMSInvalidSignatureException")
 
         # Ensure bad digest raises during verify
         with pytest.raises(ClientError) as exc:
-            kms_client.verify(
+            aws_client.kms.verify(
                 MessageType="DIGEST",
                 Signature=signature["Signature"],
                 Message=bad_message,
@@ -499,10 +499,10 @@ class TestKMS:
             )
         assert exc.match("ValidationException")
 
-    def test_invalid_key_usage(self, kms_client, kms_create_key):
+    def test_invalid_key_usage(self, kms_create_key, aws_client):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_4096")["KeyId"]
         with pytest.raises(ClientError) as exc:
-            kms_client.sign(
+            aws_client.kms.sign(
                 MessageType="RAW",
                 Message="hello",
                 KeyId=key_id,
@@ -512,7 +512,7 @@ class TestKMS:
 
         key_id = kms_create_key(KeyUsage="SIGN_VERIFY", KeySpec="RSA_4096")["KeyId"]
         with pytest.raises(ClientError) as exc:
-            kms_client.encrypt(
+            aws_client.kms.encrypt(
                 Plaintext="hello",
                 KeyId=key_id,
                 EncryptionAlgorithm="RSAES_OAEP_SHA_256",
@@ -526,42 +526,42 @@ class TestKMS:
             ("RSA_2048", "RSAES_OAEP_SHA_256"),
         ],
     )
-    def test_encrypt_decrypt(self, kms_client, kms_create_key, key_spec, algo):
+    def test_encrypt_decrypt(self, kms_create_key, key_spec, algo, aws_client):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=key_spec)["KeyId"]
         message = b"test message 123 !%$@ 1234567890"
-        ciphertext = kms_client.encrypt(
+        ciphertext = aws_client.kms.encrypt(
             KeyId=key_id, Plaintext=base64.b64encode(message), EncryptionAlgorithm=algo
         )["CiphertextBlob"]
-        plaintext = kms_client.decrypt(
+        plaintext = aws_client.kms.decrypt(
             KeyId=key_id, CiphertextBlob=ciphertext, EncryptionAlgorithm=algo
         )["Plaintext"]
         assert base64.b64decode(plaintext) == message
 
     @pytest.mark.aws_validated
-    def test_get_public_key(self, kms_client, kms_create_key):
+    def test_get_public_key(self, kms_create_key, aws_client):
         key = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_2048")
-        response = kms_client.get_public_key(KeyId=key["KeyId"])
+        response = aws_client.kms.get_public_key(KeyId=key["KeyId"])
         assert response.get("KeyId") == key["Arn"]
         assert response.get("KeySpec") == key["KeySpec"]
         assert response.get("KeyUsage") == key["KeyUsage"]
         assert response.get("PublicKey")
 
     @pytest.mark.aws_validated
-    def test_describe_and_list_sign_key(self, kms_client, kms_create_key):
+    def test_describe_and_list_sign_key(self, kms_create_key, aws_client):
         response = kms_create_key(KeyUsage="SIGN_VERIFY", CustomerMasterKeySpec="ECC_NIST_P256")
 
         key_id = response["KeyId"]
-        describe_response = kms_client.describe_key(KeyId=key_id)["KeyMetadata"]
+        describe_response = aws_client.kms.describe_key(KeyId=key_id)["KeyMetadata"]
         assert describe_response["KeyId"] == key_id
-        assert key_id in _get_all_key_ids(kms_client)
+        assert key_id in _get_all_key_ids(aws_client.kms)
 
     @pytest.mark.aws_validated
-    def test_import_key(self, kms_client, kms_create_key):
+    def test_import_key(self, kms_create_key, aws_client):
         key = kms_create_key(Origin="EXTERNAL")
         key_id = key["KeyId"]
 
         # get key import params
-        params = kms_client.get_parameters_for_import(
+        params = aws_client.kms.get_parameters_for_import(
             KeyId=key_id, WrappingAlgorithm="RSAES_PKCS1_V1_5", WrappingKeySpec="RSA_2048"
         )
         assert params["KeyId"] == key["Arn"]
@@ -576,7 +576,7 @@ class TestKMS:
         # import symmetric key (key material) into KMS
         public_key = load_der_public_key(params["PublicKey"])
         encrypted_key = public_key.encrypt(symmetric_key, PKCS1v15())
-        kms_client.import_key_material(
+        aws_client.kms.import_key_material(
             KeyId=key_id,
             ImportToken=params["ImportToken"],
             EncryptedKeyMaterial=encrypted_key,
@@ -585,26 +585,26 @@ class TestKMS:
 
         # use key to encrypt/decrypt data
         plaintext = b"test content 123 !#"
-        encrypt_result = kms_client.encrypt(Plaintext=plaintext, KeyId=key_id)
-        api_decrypted = kms_client.decrypt(
+        encrypt_result = aws_client.kms.encrypt(Plaintext=plaintext, KeyId=key_id)
+        api_decrypted = aws_client.kms.decrypt(
             CiphertextBlob=encrypt_result["CiphertextBlob"], KeyId=key_id
         )
         assert api_decrypted["Plaintext"] == plaintext
 
     @pytest.mark.aws_validated
-    def test_list_aliases_of_key(self, kms_client, kms_create_key, kms_create_alias):
+    def test_list_aliases_of_key(self, kms_create_key, kms_create_alias, aws_client):
         aliased_key_id = kms_create_key()["KeyId"]
         comparison_key_id = kms_create_key()["KeyId"]
 
         alias_name = f"alias/{short_uid()}"
         kms_create_alias(AliasName=alias_name, TargetKeyId=aliased_key_id)
 
-        assert _get_alias(kms_client, alias_name, aliased_key_id) is not None
-        assert _get_alias(kms_client, alias_name, comparison_key_id) is None
+        assert _get_alias(aws_client.kms, alias_name, aliased_key_id) is not None
+        assert _get_alias(aws_client.kms, alias_name, comparison_key_id) is None
 
     @pytest.mark.aws_validated
     def test_all_types_of_key_id_can_be_used_for_encryption(
-        self, kms_client, kms_create_key, kms_create_alias
+        self, kms_create_key, kms_create_alias, aws_client
     ):
         def get_alias_arn_by_alias_name(kms_client, alias_name):
             for response in kms_client.get_paginator("list_aliases").paginate(KeyId=key_id):
@@ -617,12 +617,12 @@ class TestKMS:
         key_arn = key_metadata["Arn"]
         key_id = key_metadata["KeyId"]
         alias_name = kms_create_alias(TargetKeyId=key_id)
-        alias_arn = get_alias_arn_by_alias_name(kms_client, alias_name)
+        alias_arn = get_alias_arn_by_alias_name(aws_client.kms, alias_name)
         assert alias_arn
-        kms_client.encrypt(KeyId=key_arn, Plaintext="encrypt-me")
-        kms_client.encrypt(KeyId=key_id, Plaintext="encrypt-me")
-        kms_client.encrypt(KeyId=alias_arn, Plaintext="encrypt-me")
-        kms_client.encrypt(KeyId=alias_name, Plaintext="encrypt-me")
+        aws_client.kms.encrypt(KeyId=key_arn, Plaintext="encrypt-me")
+        aws_client.kms.encrypt(KeyId=key_id, Plaintext="encrypt-me")
+        aws_client.kms.encrypt(KeyId=alias_arn, Plaintext="encrypt-me")
+        aws_client.kms.encrypt(KeyId=alias_name, Plaintext="encrypt-me")
 
     @pytest.mark.aws_validated
     def test_create_multi_region_key(self, kms_create_key):
@@ -679,58 +679,60 @@ class TestKMS:
         snapshot.match("describe-replicated-key", response)
 
     @pytest.mark.aws_validated
-    def test_update_key_description(self, kms_client, kms_create_key):
+    def test_update_key_description(self, kms_create_key, aws_client):
         old_description = "old_description"
         new_description = "new_description"
         key = kms_create_key(Description=old_description)
         key_id = key["KeyId"]
         assert (
-            kms_client.describe_key(KeyId=key_id)["KeyMetadata"]["Description"] == old_description
+            aws_client.kms.describe_key(KeyId=key_id)["KeyMetadata"]["Description"]
+            == old_description
         )
-        result = kms_client.update_key_description(KeyId=key_id, Description=new_description)
+        result = aws_client.kms.update_key_description(KeyId=key_id, Description=new_description)
         assert "ResponseMetadata" in result
         assert (
-            kms_client.describe_key(KeyId=key_id)["KeyMetadata"]["Description"] == new_description
+            aws_client.kms.describe_key(KeyId=key_id)["KeyMetadata"]["Description"]
+            == new_description
         )
 
     @pytest.mark.aws_validated
-    def test_key_rotation_status(self, kms_client, kms_key):
+    def test_key_rotation_status(self, kms_key, aws_client):
         key_id = kms_key["KeyId"]
         # According to AWS docs, supposed to be False by default.
-        assert kms_client.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
-        kms_client.enable_key_rotation(KeyId=key_id)
-        assert kms_client.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is True
-        kms_client.disable_key_rotation(KeyId=key_id)
-        assert kms_client.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
+        assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
+        aws_client.kms.enable_key_rotation(KeyId=key_id)
+        assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is True
+        aws_client.kms.disable_key_rotation(KeyId=key_id)
+        assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
 
     @pytest.mark.aws_validated
-    def test_create_list_delete_alias(self, kms_client, kms_create_alias):
+    def test_create_list_delete_alias(self, kms_create_alias, aws_client):
         alias_name = f"alias/{short_uid()}"
-        assert _get_alias(kms_client, alias_name) is None
+        assert _get_alias(aws_client.kms, alias_name) is None
         kms_create_alias(AliasName=alias_name)
-        assert _get_alias(kms_client, alias_name) is not None
-        kms_client.delete_alias(AliasName=alias_name)
-        assert _get_alias(kms_client, alias_name) is None
+        assert _get_alias(aws_client.kms, alias_name) is not None
+        aws_client.kms.delete_alias(AliasName=alias_name)
+        assert _get_alias(aws_client.kms, alias_name) is None
 
     @pytest.mark.aws_validated
-    def test_update_alias(self, kms_client, kms_create_key, kms_create_alias):
+    def test_update_alias(self, kms_create_key, kms_create_alias, aws_client):
         alias_name = f"alias/{short_uid()}"
         old_key_id = kms_create_key()["KeyId"]
         kms_create_alias(AliasName=alias_name, TargetKeyId=old_key_id)
-        alias = _get_alias(kms_client, alias_name, old_key_id)
+        alias = _get_alias(aws_client.kms, alias_name, old_key_id)
         assert alias is not None
         assert alias["TargetKeyId"] == old_key_id
 
         new_key_id = kms_create_key()["KeyId"]
-        kms_client.update_alias(AliasName=alias_name, TargetKeyId=new_key_id)
-        alias = _get_alias(kms_client, alias_name, new_key_id)
+        aws_client.kms.update_alias(AliasName=alias_name, TargetKeyId=new_key_id)
+        alias = _get_alias(aws_client.kms, alias_name, new_key_id)
         assert alias is not None
         assert alias["TargetKeyId"] == new_key_id
 
     # Fails in AWS, as the principal is invalid there.
     # Maybe would work if get_aws_account_id() starts returning an actual AWS account ID.
     @pytest.mark.only_localstack
-    def test_get_put_list_key_policies(self, kms_client, kms_create_key):
+    def test_get_put_list_key_policies(self, kms_create_key, aws_client):
         base_policy = {
             "Version": "2012-10-17",
             "Id": "key-default-1",
@@ -760,15 +762,21 @@ class TestKMS:
 
         key_id = kms_create_key(Policy=policy_one)["KeyId"]
         # AWS currently supports only the default policy, so just a fixed response.
-        response = kms_client.list_key_policies(KeyId=key_id)
+        response = aws_client.kms.list_key_policies(KeyId=key_id)
         assert response.get("PolicyNames") == ["default"]
         assert response.get("Truncated") is False
-        assert kms_client.get_key_policy(KeyId=key_id, PolicyName="default")["Policy"] == policy_one
-        kms_client.put_key_policy(KeyId=key_id, PolicyName="default", Policy=policy_two)
-        assert kms_client.get_key_policy(KeyId=key_id, PolicyName="default")["Policy"] == policy_two
+        assert (
+            aws_client.kms.get_key_policy(KeyId=key_id, PolicyName="default")["Policy"]
+            == policy_one
+        )
+        aws_client.kms.put_key_policy(KeyId=key_id, PolicyName="default", Policy=policy_two)
+        assert (
+            aws_client.kms.get_key_policy(KeyId=key_id, PolicyName="default")["Policy"]
+            == policy_two
+        )
 
     @pytest.mark.aws_validated
-    def test_tag_untag_list_tags(self, kms_client, kms_create_key):
+    def test_tag_untag_list_tags(self, kms_create_key, aws_client):
         def _create_tag(key):
             return {"TagKey": key, "TagValue": short_uid()}
 
@@ -778,7 +786,7 @@ class TestKMS:
             next_token = None
             while True:
                 kwargs = {"nextToken": next_token} if next_token else {}
-                response = kms_client.list_resource_tags(KeyId=key_id, **kwargs)
+                response = aws_client.kms.list_resource_tags(KeyId=key_id, **kwargs)
                 for response_tag in response["Tags"]:
                     for i in range(len(tags)):
                         if response_tag.get("TagKey") == tags[i].get("TagKey") and response_tag.get(
@@ -801,33 +809,33 @@ class TestKMS:
         key_id = kms_create_key(Tags=[old_tag_one, tag_two])["KeyId"]
         assert _are_tags_there([old_tag_one, tag_two], key_id) is True
         # Going to rewrite one of the tags and then add a new one.
-        kms_client.tag_resource(KeyId=key_id, Tags=[new_tag_one, tag_three])
+        aws_client.kms.tag_resource(KeyId=key_id, Tags=[new_tag_one, tag_three])
         assert _are_tags_there([new_tag_one, tag_two, tag_three], key_id) is True
         assert _are_tags_there([old_tag_one], key_id) is False
-        kms_client.untag_resource(KeyId=key_id, TagKeys=[new_tag_one.get("TagKey")])
+        aws_client.kms.untag_resource(KeyId=key_id, TagKeys=[new_tag_one.get("TagKey")])
         assert _are_tags_there([tag_two, tag_three], key_id) is True
         assert _are_tags_there([new_tag_one], key_id) is False
 
     @pytest.mark.aws_validated
-    def test_cant_use_disabled_or_deleted_keys(self, kms_client, kms_create_key):
+    def test_cant_use_disabled_or_deleted_keys(self, kms_create_key, aws_client):
         key_id = kms_create_key(KeySpec="SYMMETRIC_DEFAULT", KeyUsage="ENCRYPT_DECRYPT")["KeyId"]
-        kms_client.generate_data_key(KeyId=key_id, KeySpec="AES_256")
+        aws_client.kms.generate_data_key(KeyId=key_id, KeySpec="AES_256")
 
-        kms_client.disable_key(KeyId=key_id)
+        aws_client.kms.disable_key(KeyId=key_id)
         with pytest.raises(ClientError) as e:
-            kms_client.generate_data_key(KeyId=key_id, KeySpec="AES_256")
+            aws_client.kms.generate_data_key(KeyId=key_id, KeySpec="AES_256")
         e.match("DisabledException")
 
-        kms_client.schedule_key_deletion(KeyId=key_id)
+        aws_client.kms.schedule_key_deletion(KeyId=key_id)
         with pytest.raises(ClientError) as e:
-            kms_client.generate_data_key(KeyId=key_id, KeySpec="AES_256")
+            aws_client.kms.generate_data_key(KeyId=key_id, KeySpec="AES_256")
         e.match("KMSInvalidStateException")
 
     @pytest.mark.aws_validated
-    def test_cant_delete_deleted_key(self, kms_client, kms_create_key):
+    def test_cant_delete_deleted_key(self, kms_create_key, aws_client):
         key_id = kms_create_key()["KeyId"]
-        kms_client.schedule_key_deletion(KeyId=key_id)
+        aws_client.kms.schedule_key_deletion(KeyId=key_id)
 
         with pytest.raises(ClientError) as e:
-            kms_client.schedule_key_deletion(KeyId=key_id)
+            aws_client.kms.schedule_key_deletion(KeyId=key_id)
         e.match("KMSInvalidStateException")
