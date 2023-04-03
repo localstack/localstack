@@ -1372,6 +1372,32 @@ class DeleteObjectTaggingRequest(ServiceRequest):
     ExpectedBucketOwner: Optional[AccountId]
 
 
+class Error(TypedDict, total=False):
+    Key: Optional[ObjectKey]
+    VersionId: Optional[ObjectVersionId]
+    Code: Optional[Code]
+    Message: Optional[Message]
+
+
+Errors = List[Error]
+
+
+class DeletedObject(TypedDict, total=False):
+    Key: Optional[ObjectKey]
+    VersionId: Optional[ObjectVersionId]
+    DeleteMarker: Optional[DeleteMarker]
+    DeleteMarkerVersionId: Optional[DeleteMarkerVersionId]
+
+
+DeletedObjects = List[DeletedObject]
+
+
+class DeleteObjectsOutput(TypedDict, total=False):
+    Deleted: Optional[DeletedObjects]
+    RequestCharged: Optional[RequestCharged]
+    Errors: Optional[Errors]
+
+
 class DeleteObjectsRequest(ServiceRequest):
     Bucket: BucketName
     Delete: Delete
@@ -1385,16 +1411,6 @@ class DeleteObjectsRequest(ServiceRequest):
 class DeletePublicAccessBlockRequest(ServiceRequest):
     Bucket: BucketName
     ExpectedBucketOwner: Optional[AccountId]
-
-
-class DeletedObject(TypedDict, total=False):
-    Key: Optional[ObjectKey]
-    VersionId: Optional[ObjectVersionId]
-    DeleteMarker: Optional[DeleteMarker]
-    DeleteMarkerVersionId: Optional[DeleteMarkerVersionId]
-
-
-DeletedObjects = List[DeletedObject]
 
 
 class ReplicationTimeValue(TypedDict, total=False):
@@ -1438,18 +1454,8 @@ class EndEvent(TypedDict, total=False):
     pass
 
 
-class Error(TypedDict, total=False):
-    Key: Optional[ObjectKey]
-    VersionId: Optional[ObjectVersionId]
-    Code: Optional[Code]
-    Message: Optional[Message]
-
-
 class ErrorDocument(TypedDict, total=False):
     Key: ObjectKey
-
-
-Errors = List[Error]
 
 
 class EventBridgeConfiguration(TypedDict, total=False):
@@ -2262,6 +2268,39 @@ class ListBucketMetricsConfigurationsRequest(ServiceRequest):
     ExpectedBucketOwner: Optional[AccountId]
 
 
+class ListBucketsOutput(TypedDict, total=False):
+    Buckets: Optional[Buckets]
+    Owner: Optional[Owner]
+
+
+class MultipartUpload(TypedDict, total=False):
+    UploadId: Optional[MultipartUploadId]
+    Key: Optional[ObjectKey]
+    Initiated: Optional[Initiated]
+    StorageClass: Optional[StorageClass]
+    Owner: Optional[Owner]
+    Initiator: Optional[Initiator]
+    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+
+
+MultipartUploadList = List[MultipartUpload]
+
+
+class ListMultipartUploadsOutput(TypedDict, total=False):
+    Bucket: Optional[BucketName]
+    KeyMarker: Optional[KeyMarker]
+    UploadIdMarker: Optional[UploadIdMarker]
+    NextKeyMarker: Optional[NextKeyMarker]
+    Prefix: Optional[Prefix]
+    Delimiter: Optional[Delimiter]
+    NextUploadIdMarker: Optional[NextUploadIdMarker]
+    MaxUploads: Optional[MaxUploads]
+    IsTruncated: Optional[IsTruncated]
+    Uploads: Optional[MultipartUploadList]
+    CommonPrefixes: Optional[CommonPrefixList]
+    EncodingType: Optional[EncodingType]
+
+
 class ListMultipartUploadsRequest(ServiceRequest):
     Bucket: BucketName
     Delimiter: Optional[Delimiter]
@@ -2315,6 +2354,33 @@ class ListObjectVersionsRequest(ServiceRequest):
     ExpectedBucketOwner: Optional[AccountId]
 
 
+class Object(TypedDict, total=False):
+    Key: Optional[ObjectKey]
+    LastModified: Optional[LastModified]
+    ETag: Optional[ETag]
+    ChecksumAlgorithm: Optional[ChecksumAlgorithmList]
+    Size: Optional[Size]
+    StorageClass: Optional[ObjectStorageClass]
+    Owner: Optional[Owner]
+
+
+ObjectList = List[Object]
+
+
+class ListObjectsOutput(TypedDict, total=False):
+    IsTruncated: Optional[IsTruncated]
+    Marker: Optional[Marker]
+    NextMarker: Optional[NextMarker]
+    Contents: Optional[ObjectList]
+    Name: Optional[BucketName]
+    Prefix: Optional[Prefix]
+    Delimiter: Optional[Delimiter]
+    MaxKeys: Optional[MaxKeys]
+    CommonPrefixes: Optional[CommonPrefixList]
+    EncodingType: Optional[EncodingType]
+    BucketRegion: Optional[BucketRegion]
+
+
 class ListObjectsRequest(ServiceRequest):
     Bucket: BucketName
     Delimiter: Optional[Delimiter]
@@ -2324,6 +2390,22 @@ class ListObjectsRequest(ServiceRequest):
     Prefix: Optional[Prefix]
     RequestPayer: Optional[RequestPayer]
     ExpectedBucketOwner: Optional[AccountId]
+
+
+class ListObjectsV2Output(TypedDict, total=False):
+    IsTruncated: Optional[IsTruncated]
+    Contents: Optional[ObjectList]
+    Name: Optional[BucketName]
+    Prefix: Optional[Prefix]
+    Delimiter: Optional[Delimiter]
+    MaxKeys: Optional[MaxKeys]
+    CommonPrefixes: Optional[CommonPrefixList]
+    EncodingType: Optional[EncodingType]
+    KeyCount: Optional[KeyCount]
+    ContinuationToken: Optional[Token]
+    NextContinuationToken: Optional[NextToken]
+    StartAfter: Optional[StartAfter]
+    BucketRegion: Optional[BucketRegion]
 
 
 class ListObjectsV2Request(ServiceRequest):
@@ -2389,19 +2471,6 @@ class MetadataEntry(TypedDict, total=False):
     Value: Optional[MetadataValue]
 
 
-class MultipartUpload(TypedDict, total=False):
-    UploadId: Optional[MultipartUploadId]
-    Key: Optional[ObjectKey]
-    Initiated: Optional[Initiated]
-    StorageClass: Optional[StorageClass]
-    Owner: Optional[Owner]
-    Initiator: Optional[Initiator]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-
-
-MultipartUploadList = List[MultipartUpload]
-
-
 class QueueConfiguration(TypedDict, total=False):
     Id: Optional[NotificationId]
     QueueArn: QueueArn
@@ -2449,17 +2518,6 @@ class NotificationConfigurationDeprecated(TypedDict, total=False):
     CloudFunctionConfiguration: Optional[CloudFunctionConfiguration]
 
 
-class Object(TypedDict, total=False):
-    Key: Optional[ObjectKey]
-    LastModified: Optional[LastModified]
-    ETag: Optional[ETag]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithmList]
-    Size: Optional[Size]
-    StorageClass: Optional[ObjectStorageClass]
-    Owner: Optional[Owner]
-
-
-ObjectList = List[Object]
 UserMetadata = List[MetadataEntry]
 
 
@@ -3020,12 +3078,6 @@ class HeadBucketOutput(TypedDict, total=False):
     BucketContentType: Optional[BucketContentType]
 
 
-class DeleteResult(TypedDict, total=False):
-    Deleted: Optional[DeletedObjects]
-    RequestCharged: Optional[RequestCharged]
-    Errors: Optional[Errors]
-
-
 class PostObjectRequest(ServiceRequest):
     Body: Optional[IO[Body]]
     Bucket: BucketName
@@ -3052,44 +3104,6 @@ class PostResponse(TypedDict, total=False):
     SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
     BucketKeyEnabled: Optional[BucketKeyEnabled]
     RequestCharged: Optional[RequestCharged]
-
-
-class ListAllMyBucketsResult(TypedDict, total=False):
-    Buckets: Optional[Buckets]
-    Owner: Optional[Owner]
-
-
-class ListBucketResult(TypedDict, total=False):
-    IsTruncated: Optional[IsTruncated]
-    Contents: Optional[ObjectList]
-    Name: Optional[BucketName]
-    Prefix: Optional[Prefix]
-    Delimiter: Optional[Delimiter]
-    MaxKeys: Optional[MaxKeys]
-    CommonPrefixes: Optional[CommonPrefixList]
-    EncodingType: Optional[EncodingType]
-    KeyCount: Optional[KeyCount]
-    ContinuationToken: Optional[Token]
-    NextContinuationToken: Optional[NextToken]
-    StartAfter: Optional[StartAfter]
-    Marker: Optional[Marker]
-    NextMarker: Optional[NextMarker]
-    BucketRegion: Optional[BucketRegion]
-
-
-class ListMultipartUploadsResult(TypedDict, total=False):
-    Bucket: Optional[BucketName]
-    KeyMarker: Optional[KeyMarker]
-    UploadIdMarker: Optional[UploadIdMarker]
-    NextKeyMarker: Optional[NextKeyMarker]
-    Prefix: Optional[Prefix]
-    Delimiter: Optional[Delimiter]
-    NextUploadIdMarker: Optional[NextUploadIdMarker]
-    MaxUploads: Optional[MaxUploads]
-    IsTruncated: Optional[IsTruncated]
-    Uploads: Optional[MultipartUploadList]
-    CommonPrefixes: Optional[CommonPrefixList]
-    EncodingType: Optional[EncodingType]
 
 
 class S3Api:
@@ -3357,7 +3371,7 @@ class S3Api:
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
-    ) -> DeleteResult:
+    ) -> DeleteObjectsOutput:
         raise NotImplementedError
 
     @handler("DeletePublicAccessBlock")
@@ -3495,7 +3509,7 @@ class S3Api:
     @handler("GetBucketTagging")
     def get_bucket_tagging(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
-    ) -> Tagging:
+    ) -> GetBucketTaggingOutput:
         raise NotImplementedError
 
     @handler("GetBucketVersioning")
@@ -3607,7 +3621,7 @@ class S3Api:
         version_id: ObjectVersionId = None,
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
-    ) -> Tagging:
+    ) -> GetObjectTaggingOutput:
         raise NotImplementedError
 
     @handler("GetObjectTorrent")
@@ -3695,7 +3709,7 @@ class S3Api:
     def list_buckets(
         self,
         context: RequestContext,
-    ) -> ListAllMyBucketsResult:
+    ) -> ListBucketsOutput:
         raise NotImplementedError
 
     @handler("ListMultipartUploads")
@@ -3710,7 +3724,7 @@ class S3Api:
         prefix: Prefix = None,
         upload_id_marker: UploadIdMarker = None,
         expected_bucket_owner: AccountId = None,
-    ) -> ListMultipartUploadsResult:
+    ) -> ListMultipartUploadsOutput:
         raise NotImplementedError
 
     @handler("ListObjectVersions")
@@ -3740,7 +3754,7 @@ class S3Api:
         prefix: Prefix = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
-    ) -> ListBucketResult:
+    ) -> ListObjectsOutput:
         raise NotImplementedError
 
     @handler("ListObjectsV2")
@@ -3757,7 +3771,7 @@ class S3Api:
         start_after: StartAfter = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
-    ) -> ListBucketResult:
+    ) -> ListObjectsV2Output:
         raise NotImplementedError
 
     @handler("ListParts")

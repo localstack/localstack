@@ -30,9 +30,9 @@ from localstack.aws.api.s3 import (
     Delete,
     DeleteObjectOutput,
     DeleteObjectRequest,
+    DeleteObjectsOutput,
     DeleteObjectTaggingOutput,
     DeleteObjectTaggingRequest,
-    DeleteResult,
     ETag,
     GetBucketAclOutput,
     GetBucketCorsOutput,
@@ -56,10 +56,11 @@ from localstack.aws.api.s3 import (
     InvalidBucketName,
     InvalidPartOrder,
     InvalidStorageClass,
-    ListBucketResult,
+    ListMultipartUploadsOutput,
     ListMultipartUploadsRequest,
-    ListMultipartUploadsResult,
+    ListObjectsOutput,
     ListObjectsRequest,
+    ListObjectsV2Output,
     ListObjectsV2Request,
     MissingSecurityHeader,
     MultipartUpload,
@@ -286,8 +287,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self,
         context: RequestContext,
         request: ListObjectsRequest,
-    ) -> ListBucketResult:
-        response: ListBucketResult = call_moto(context)
+    ) -> ListObjectsOutput:
+        response: ListObjectsOutput = call_moto(context)
 
         if "Marker" not in response:
             response["Marker"] = request.get("Marker") or ""
@@ -307,15 +308,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
             response["BucketRegion"] = bucket.region_name
 
-        return ListBucketResult(**response)
+        return response
 
     @handler("ListObjectsV2", expand=False)
     def list_objects_v2(
         self,
         context: RequestContext,
         request: ListObjectsV2Request,
-    ) -> ListBucketResult:
-        response: ListBucketResult = call_moto(context)
+    ) -> ListObjectsV2Output:
+        response: ListObjectsV2Output = call_moto(context)
 
         encoding_type = request.get("EncodingType")
         if "EncodingType" not in response and encoding_type:
@@ -487,7 +488,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
-    ) -> DeleteResult:
+    ) -> DeleteObjectsOutput:
         # TODO: implement DeleteMarker response
         objects: List[ObjectIdentifier] = delete.get("Objects")
         deleted_objects = {}
@@ -504,7 +505,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
             deleted_objects[key] = s3_notification_ctx
-        result: DeleteResult = call_moto(context)
+        result: DeleteObjectsOutput = call_moto(context)
         for deleted in result.get("Deleted"):
             if deleted_objects.get(deleted["Key"]):
                 self._notify(context, deleted_objects.get(deleted["Key"]))
@@ -566,7 +567,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self,
         context: RequestContext,
         request: ListMultipartUploadsRequest,
-    ) -> ListMultipartUploadsResult:
+    ) -> ListMultipartUploadsOutput:
 
         # TODO: implement KeyMarker and UploadIdMarker (using sort)
         # implement Delimiter and MaxUploads
@@ -599,7 +600,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             for upload in multiparts
         ]
 
-        response = ListMultipartUploadsResult(
+        response = ListMultipartUploadsOutput(
             Bucket=request["Bucket"],
             MaxUploads=request.get("MaxUploads") or 1000,
             IsTruncated=False,
