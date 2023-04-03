@@ -83,7 +83,7 @@ def test_policy_attachments(
 
 
 @pytest.mark.aws_validated
-def test_iam_policy_role_attachments(deploy_cfn_template, snapshot, iam_client):
+def test_update_inline_policy(deploy_cfn_template, snapshot, iam_client):
 
     snapshot.add_transformer(snapshot.transform.iam_api())
     policy_name = f"policy-{short_uid()}"
