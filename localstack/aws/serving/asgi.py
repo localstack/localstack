@@ -1,10 +1,11 @@
+import asyncio
 import concurrent.futures.thread
 from asyncio import AbstractEventLoop
 from typing import Optional
 
 from localstack.aws.gateway import Gateway
 from localstack.aws.serving.wsgi import WsgiGateway
-from localstack.http.asgi import ASGIAdapter
+from localstack.http.asgi import ASGIAdapter, ASGILifespanListener
 
 
 class _ThreadPool(concurrent.futures.thread.ThreadPoolExecutor):
@@ -34,12 +35,22 @@ class AsgiGateway:
     gateway: Gateway
 
     def __init__(
-        self, gateway: Gateway, event_loop: Optional[AbstractEventLoop] = None, threads: int = 1000
+        self,
+        gateway: Gateway,
+        event_loop: Optional[AbstractEventLoop] = None,
+        threads: int = 1000,
+        lifespan_listener: Optional[ASGILifespanListener] = None,
     ) -> None:
         self.gateway = gateway
 
+        self.event_loop = event_loop or asyncio.get_event_loop()
         self.executor = _ThreadPool(threads, thread_name_prefix="asgi_gw")
-        self.wsgi = ASGIAdapter(WsgiGateway(gateway), event_loop=event_loop, executor=self.executor)
+        self.wsgi = ASGIAdapter(
+            WsgiGateway(gateway),
+            event_loop=event_loop,
+            executor=self.executor,
+            lifespan_listener=lifespan_listener,
+        )
         self._closed = False
 
     async def __call__(self, scope, receive, send) -> None:
@@ -53,10 +64,7 @@ class AsgiGateway:
         if self._closed:
             raise RuntimeError("Cannot except new request on closed ASGIGateway")
 
-        if scope["type"] == "http":
-            return await self.wsgi(scope, receive, send)
-
-        raise NotImplementedError(f"{scope['type']} protocol is not implemented")
+        return await self.wsgi(scope, receive, send)
 
     def close(self):
         """

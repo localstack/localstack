@@ -309,6 +309,19 @@ class WsgiStartResponse:
             await self.send({"type": "http.response.body", "body": b"", "more_body": False})
 
 
+class ASGILifespanListener:
+    """
+    Simple event handler that is attached to the ASGIAdapter and called on ASGI lifespan events. See
+    https://asgi.readthedocs.io/en/latest/specs/lifespan.html.
+    """
+
+    def on_startup(self):
+        pass
+
+    def on_shutdown(self):
+        pass
+
+
 class ASGIAdapter:
     """
     Adapter to expose a WSGIApplication as an ASGI3Application. This allows you to serve synchronous WSGI applications
@@ -325,10 +338,12 @@ class ASGIAdapter:
         wsgi_app: "WSGIApplication",
         event_loop: AbstractEventLoop = None,
         executor: Executor = None,
+        lifespan_listener: ASGILifespanListener = None,
     ):
         self.wsgi_app = wsgi_app
         self.event_loop = event_loop or asyncio.get_event_loop()
         self.executor = executor
+        self.lifespan_listener = lifespan_listener or ASGILifespanListener()
 
     async def __call__(
         self, scope: "Scope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
@@ -342,6 +357,9 @@ class ASGIAdapter:
         """
         if scope["type"] == "http":
             return await self.handle_http(scope, receive, send)
+
+        if scope["type"] == "lifespan":
+            return await self.handle_lifespan(scope, receive, send)
 
         raise NotImplementedError("Unhandled protocol %s" % scope["type"])
 
@@ -400,6 +418,32 @@ class ASGIAdapter:
                         await response.write(packet)
         finally:
             await response.close()
+
+    async def handle_lifespan(
+        self, scope: "HTTPScope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
+    ):
+        while True:
+            message = await receive()
+            if message["type"] == "lifespan.startup":
+                try:
+                    await self.event_loop.run_in_executor(
+                        self.executor, self.lifespan_listener.on_startup
+                    )
+                    await send({"type": "lifespan.startup.complete"})
+                except Exception as e:
+                    await send({"type": "lifespan.startup.failed", "message": f"{e}"})
+
+            elif message["type"] == "lifespan.shutdown":
+                try:
+                    await self.event_loop.run_in_executor(
+                        self.executor, self.lifespan_listener.on_shutdown
+                    )
+                    await send({"type": "lifespan.shutdown.complete"})
+                except Exception as e:
+                    await send({"type": "lifespan.shutdown.failed", "message": f"{e}"})
+                return
+            else:
+                return
 
 
 def patch_werkzeug():
