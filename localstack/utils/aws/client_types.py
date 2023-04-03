@@ -192,3 +192,23 @@ class TypedServiceClientFactory(abc.ABC):
     ]
     transcribe: Union["TranscribeServiceClient", "MetadataRequestInjector[TranscribeServiceClient]"]
     xray: Union["XRayClient", "MetadataRequestInjector[XRayClient]"]
+
+
+class ServicePrincipal(str):
+    """
+    Class containing defined service principals.
+    To add to this list, please look up the correct service principal name for the service.
+    They are in the format `<service-name>.amazonaws.com`, and can be found in the AWS IAM documentation.
+    It is usually found under the `Service linked Roles` link for the respective service.
+    https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_aws-services-that-work-with-iam.html
+
+    You can also find a list of service principals here:
+    https://gist.github.com/shortjared/4c1e3fe52bdfa47522cfe5b41e5d6f22
+
+    To save some space in our DTOs, we only add the `<service-name>` part of the service principal here.
+    """
+
+    awslambda = "lambda"
+    apigateway = "apigateway"
+    sqs = "sqs"
+    sns = "sns"

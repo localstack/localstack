@@ -11,9 +11,6 @@ from _pytest.reports import TestReport
 from _pytest.runner import CallInfo
 from pluggy.callers import _Result
 
-from localstack.testing.pytest.fixtures import (  # TODO(!) fix. shouldn't import from a plugin module
-    _client,
-)
 from localstack.testing.snapshots import SnapshotAssertionError, SnapshotSession
 from localstack.testing.snapshots.report import render_report
 from localstack.testing.snapshots.transformer import RegexTransformer
@@ -103,9 +100,8 @@ def pytest_runtest_call(item: Item) -> None:
 
 
 @pytest.fixture(name="region", scope="session")
-def fixture_region():
-    sts_client = _client("sts")  # TODO: extract client factory from fixtures plugin
-    yield sts_client.meta.region_name
+def fixture_region(aws_client):
+    return aws_client.sts.meta.region_name
 
 
 @pytest.fixture(name="snapshot", scope="function")

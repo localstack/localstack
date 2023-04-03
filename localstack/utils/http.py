@@ -2,7 +2,7 @@ import logging
 import os
 import re
 import traceback
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 from urllib.parse import parse_qs, parse_qsl, urlencode, urlparse, urlunparse
 
 import requests
@@ -174,7 +174,13 @@ def get_proxies() -> Dict[str, str]:
     return proxy_map
 
 
-def download(url: str, path: str, verify_ssl: bool = True, timeout: float = None):
+def download(
+    url: str,
+    path: str,
+    verify_ssl: bool = True,
+    timeout: float = None,
+    request_headers: Optional[dict] = None,
+):
     """Downloads file at url to the given path. Raises TimeoutError if the optional timeout (in secs) is reached."""
 
     # make sure we're creating a new session here to enable parallel file downloads
@@ -189,7 +195,7 @@ def download(url: str, path: str, verify_ssl: bool = True, timeout: float = None
 
     r = None
     try:
-        r = s.get(url, stream=True, verify=_verify, timeout=timeout)
+        r = s.get(url, stream=True, verify=_verify, timeout=timeout, headers=request_headers)
         # check status code before attempting to read body
         if not r.ok:
             raise Exception("Failed to download %s, response code %s" % (url, r.status_code))
@@ -234,9 +240,11 @@ def download_github_artifact(url: str, target_file: str, timeout: int = None):
     """Download file from main URL or fallback URL (to avoid firewall errors if github.com is blocked).
     Optionally allows to define a timeout in seconds."""
 
-    def do_download(url, print_error=False):
+    def do_download(
+        download_url: str, request_headers: Optional[dict] = None, print_error: bool = False
+    ):
         try:
-            download(url, target_file, timeout=timeout)
+            download(download_url, target_file, timeout=timeout, request_headers=request_headers)
             return True
         except Exception as e:
             if print_error:
@@ -245,13 +253,19 @@ def download_github_artifact(url: str, target_file: str, timeout: int = None):
                     % (url, target_file, e, traceback.format_exc())
                 )
 
-    result = do_download(url)
+    # if a GitHub API token is set, use it to avoid rate limiting issues
+    gh_token = os.environ.get("GITHUB_API_TOKEN")
+    gh_auth_headers = None
+    if gh_token:
+        gh_auth_headers = {"authorization": f"Bearer {gh_token}"}
+    result = do_download(url, request_headers=gh_auth_headers)
     if not result:
         # TODO: use regex below to allow different branch names than "master"
         url = url.replace("https://github.com", "https://cdn.jsdelivr.net/gh")
         # The URL structure is https://cdn.jsdelivr.net/gh/user/repo@branch/file.js
         url = url.replace("/raw/master/", "@master/")
-        do_download(url, True)
+        # Do not send the GitHub auth token to the CDN
+        do_download(url, print_error=True)
 
 
 # TODO move to aws_responses.py?

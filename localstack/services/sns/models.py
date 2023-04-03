@@ -1,3 +1,5 @@
+import itertools
+import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Literal, Optional, TypedDict, Union
 
@@ -8,6 +10,7 @@ from localstack.aws.api.sns import (
     topicARN,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
+from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import long_uid
 
 SnsProtocols = Literal[
@@ -19,6 +22,19 @@ SnsApplicationPlatforms = Literal[
 ]
 
 SnsMessageProtocols = Literal[SnsProtocols, SnsApplicationPlatforms]
+
+
+@singleton_factory
+def global_sns_message_sequence():
+    # creates a 20-digit number used as the start for the global sequence, adds 100 for it to be different from SQS's
+    # mostly for testing purpose, both global sequence would be initialized at the same and be identical
+    start = int(time.time() + 100) << 33
+    # itertools.count is thread safe over the GIL since its getAndIncrement operation is a single python bytecode op
+    return itertools.count(start)
+
+
+def get_next_sequence_number():
+    return next(global_sns_message_sequence())
 
 
 @dataclass
@@ -34,10 +50,14 @@ class SnsMessage:
     message_group_id: Optional[str] = None
     token: Optional[str] = None
     message_id: str = field(default_factory=long_uid)
+    is_fifo: Optional[bool] = False
+    sequencer_number: Optional[str] = None
 
     def __post_init__(self):
         if self.message_attributes is None:
             self.message_attributes = {}
+        if self.is_fifo:
+            self.sequencer_number = str(get_next_sequence_number())
 
     def message_content(self, protocol: SnsMessageProtocols) -> str:
         """
@@ -53,7 +73,7 @@ class SnsMessage:
         return self.message
 
     @classmethod
-    def from_batch_entry(cls, entry: PublishBatchRequestEntry) -> "SnsMessage":
+    def from_batch_entry(cls, entry: PublishBatchRequestEntry, is_fifo=False) -> "SnsMessage":
         return cls(
             type="Notification",
             message=entry["Message"],
@@ -62,6 +82,7 @@ class SnsMessage:
             message_attributes=entry.get("MessageAttributes"),
             message_deduplication_id=entry.get("MessageDeduplicationId"),
             message_group_id=entry.get("MessageGroupId"),
+            is_fifo=is_fifo,
         )
 
 

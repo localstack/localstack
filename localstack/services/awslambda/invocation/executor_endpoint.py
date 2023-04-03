@@ -14,6 +14,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     ServiceEndpoint,
 )
 from localstack.services.edge import ROUTER
+from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
 INVOCATION_PORT = 9563
@@ -77,6 +78,7 @@ class ExecutorEndpoint:
             return Response(status=HTTPStatus.ACCEPTED)
 
         def status_error(request: Request, executor_id: str) -> Response:
+            LOG.warning("Execution environment startup failed: %s", to_str(request.data))
             self.service_endpoint.status_error(executor_id=executor_id)
             return Response(status=HTTPStatus.ACCEPTED)
 

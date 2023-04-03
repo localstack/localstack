@@ -6,6 +6,7 @@ LocalStack providers.
 """
 import json
 import logging
+import re
 import threading
 from abc import ABC, abstractmethod
 from functools import cache, partial
@@ -15,15 +16,18 @@ from boto3.session import Session
 from botocore.client import BaseClient
 from botocore.config import Config
 
-from localstack import config
+from localstack import config as localstack_config
 from localstack.constants import (
     INTERNAL_AWS_ACCESS_KEY_ID,
     INTERNAL_AWS_SECRET_ACCESS_KEY,
     MAX_POOL_CONNECTIONS,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_SECRET_ACCESS_KEY,
 )
-from localstack.utils.aws.aws_stack import get_local_service_url
-from localstack.utils.aws.client_types import TypedServiceClientFactory
+from localstack.utils.aws.aws_stack import get_local_service_url, get_s3_hostname
+from localstack.utils.aws.client_types import ServicePrincipal, TypedServiceClientFactory
 from localstack.utils.aws.request_context import get_region_from_request_context
+from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -212,6 +216,51 @@ class ClientFactory(ABC):
         }
         return ServiceLevelClientFactory(factory=self, client_creation_params=params)
 
+    def with_assumed_role(
+        self,
+        *,
+        role_arn: str,
+        service_principal: Optional[ServicePrincipal] = None,
+        session_name: Optional[str] = None,
+        region_name: Optional[str] = None,
+        endpoint_url: Optional[str] = None,
+        config: Optional[Config] = None,
+    ) -> ServiceLevelClientFactory:
+        """
+        Create a service level client factory with credentials from assuming the given role ARN.
+        The service_principal will only be used for the assume_role call, for all succeeding calls it has to be provided
+        separately, either as call attribute or using request_metadata()
+
+        :param role_arn: Role to assume
+        :param service_principal: Service the role should be assumed as
+        :param session_name: Session name for the role session
+        :param region_name: Region for the returned client
+        :param endpoint_url: Endpoint for both the assume_role call and the returned client
+        :param config: Config for both the assume_role call and the returned client
+        :return: Service Level Client Factory
+        """
+        session_name = session_name or f"session-{short_uid()}"
+        sts_client = self(endpoint_url=endpoint_url, config=config).sts
+
+        metadata = {}
+        # TODO enable once IAM resource based policies are available
+        # if service_principal:
+        #     metadata["service_principal"] = service_principal
+
+        sts_client = sts_client.request_metadata(**metadata)
+        credentials = sts_client.assume_role(RoleArn=role_arn, RoleSessionName=session_name)[
+            "Credentials"
+        ]
+
+        return self(
+            region_name=region_name,
+            aws_access_key_id=credentials["AccessKeyId"],
+            aws_secret_access_key=credentials["SecretAccessKey"],
+            aws_session_token=credentials["SessionToken"],
+            endpoint_url=endpoint_url,
+            config=config,
+        )
+
     @abstractmethod
     def get_client(
         self,
@@ -243,11 +292,11 @@ class ClientFactory(ABC):
         service_name: str,
         region_name: str,
         use_ssl: bool,
-        verify: bool,
-        endpoint_url: str,
-        aws_access_key_id: str,
-        aws_secret_access_key: str,
-        aws_session_token: str,
+        verify: Optional[bool],
+        endpoint_url: Optional[str],
+        aws_access_key_id: Optional[str],
+        aws_secret_access_key: Optional[str],
+        aws_session_token: Optional[str],
         config: Config,
     ) -> BaseClient:
         """
@@ -302,7 +351,9 @@ class ClientFactory(ABC):
         - Boto session
         """
         return (
-            get_region_from_request_context() or self._get_session_region() or config.DEFAULT_REGION
+            get_region_from_request_context()
+            or self._get_session_region()
+            or localstack_config.DEFAULT_REGION
         )
 
 
@@ -350,16 +401,26 @@ class InternalClientFactory(ClientFactory):
         :param config: Boto config for advanced use.
         """
 
+        if config is None:
+            config = self._config
+        else:
+            config = self._config.merge(config)
+
+        endpoint_url = endpoint_url or get_local_service_url(service_name)
+        if service_name == "s3":
+            if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
+                endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
+
         return self._get_client(
             service_name=service_name,
             region_name=region_name or self._get_region(),
             use_ssl=self._use_ssl,
             verify=self._verify,
-            endpoint_url=endpoint_url or get_local_service_url(service_name),
+            endpoint_url=endpoint_url,
             aws_access_key_id=aws_access_key_id or INTERNAL_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=aws_secret_access_key or INTERNAL_AWS_SECRET_ACCESS_KEY,
             aws_session_token=aws_session_token,
-            config=config or self._config,
+            config=config,
         )
 
 
@@ -375,7 +436,63 @@ class ExternalClientFactory(ClientFactory):
         config: Config = None,
     ) -> BaseClient:
         """
-        Build and return client for connections originating outside LocalStack.
+        Build and return client for connections originating outside LocalStack and targeting Localstack.
+
+        If the region is set to None, it is loaded from following
+        locations:
+        - AWS environment variables
+        - Credentials file `~/.aws/credentials`
+        - Config file `~/.aws/config`
+
+        :param service_name: Service to build the client for, eg. `s3`
+        :param region_name: Name of the AWS region to be associated with the client
+            If set to None, loads from botocore session.
+        :param aws_access_key_id: Access key to use for the client.
+            Defaults to dummy value ("test")
+        :param aws_secret_access_key: Secret key to use for the client.
+            Defaults to "dummy value ("test")
+        :param aws_session_token: Session token to use for the client.
+            Not being used if not set.
+        :param endpoint_url: Full endpoint URL to be used by the client.
+            Defaults to appropriate LocalStack endpoint.
+        :param config: Boto config for advanced use.
+        """
+        if config is None:
+            config = self._config
+        else:
+            config = self._config.merge(config)
+
+        endpoint_url = endpoint_url or get_local_service_url(service_name)
+        if service_name == "s3":
+            if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
+                endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
+
+        return self._get_client(
+            service_name=service_name,
+            region_name=region_name or self._get_region(),
+            use_ssl=self._use_ssl,
+            verify=self._verify,
+            endpoint_url=endpoint_url,
+            aws_access_key_id=aws_access_key_id or TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=aws_secret_access_key or TEST_AWS_SECRET_ACCESS_KEY,
+            aws_session_token=aws_session_token,
+            config=config,
+        )
+
+
+class ExternalAwsClientFactory(ClientFactory):
+    def get_client(
+        self,
+        service_name: str,
+        region_name: Optional[str],
+        aws_access_key_id: Optional[str] = None,
+        aws_secret_access_key: Optional[str] = None,
+        aws_session_token: Optional[str] = None,
+        endpoint_url: str = None,
+        config: Config = None,
+    ) -> BaseClient:
+        """
+        Build and return client for connections originating outside LocalStack and targeting AWS.
 
         If either of the access keys or region are set to None, they are loaded from following
         locations:
@@ -393,20 +510,24 @@ class ExternalClientFactory(ClientFactory):
         :param aws_session_token: Session token to use for the client.
             Not being used if not set.
         :param endpoint_url: Full endpoint URL to be used by the client.
-            Defaults to appropriate LocalStack endpoint.
+            Defaults to appropriate AWS endpoint.
         :param config: Boto config for advanced use.
         """
+        if config is None:
+            config = self._config
+        else:
+            config = self._config.merge(config)
 
         return self._get_client(
+            config=config,
             service_name=service_name,
-            region_name=region_name or self._get_region(),
-            use_ssl=self._use_ssl,
-            verify=self._verify,
-            endpoint_url=endpoint_url or get_local_service_url(service_name),
+            region_name=region_name or self._get_session_region(),
+            endpoint_url=endpoint_url,
+            use_ssl=True,
+            verify=True,
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             aws_session_token=aws_session_token,
-            config=config or self._config,
         )
 
 

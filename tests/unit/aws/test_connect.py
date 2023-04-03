@@ -1,10 +1,12 @@
 from unittest.mock import ANY, MagicMock, patch
 
+import boto3
 import pytest
 
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import Handler, HandlerChain
 from localstack.aws.connect import (
+    ExternalAwsClientFactory,
     ExternalClientFactory,
     InternalClientFactory,
     attribute_name_to_service_name,
@@ -14,6 +16,7 @@ from localstack.aws.handlers import add_internal_request_params, add_region_from
 from localstack.http import Response
 from localstack.http.hypercorn import GatewayServer
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
+from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.net import get_free_tcp_port
 
 
@@ -55,7 +58,9 @@ class TestClientFactory:
         mock.meta.events.register.assert_not_called()
 
     @patch.object(ExternalClientFactory, "_get_client")
-    def test_external_client_credentials_loaded_from_env_if_set_to_none(self, mock, monkeypatch):
+    def test_external_client_credentials_not_loaded_from_env_if_set_to_none(
+        self, mock, monkeypatch
+    ):
         connect_to = ExternalClientFactory(use_ssl=True)
         connect_to.get_client(
             "abc", region_name="xx-south-1", aws_access_key_id="foo", aws_secret_access_key="bar"
@@ -85,6 +90,46 @@ class TestClientFactory:
             use_ssl=True,
             verify=False,
             endpoint_url="http://localhost:4566",
+            aws_access_key_id="test",
+            aws_secret_access_key="test",
+            aws_session_token=None,
+            config=connect_to._config,
+        )
+
+    @patch.object(ExternalAwsClientFactory, "_get_client")
+    def test_external_aws_client_credentials_loaded_from_env_if_set_to_none(
+        self, mock, monkeypatch
+    ):
+        session = boto3.Session()
+        connect_to = ExternalAwsClientFactory(use_ssl=True, session=session)
+        connect_to.get_client(
+            "abc", region_name="xx-south-1", aws_access_key_id="foo", aws_secret_access_key="bar"
+        )
+        mock.assert_called_once_with(
+            service_name="abc",
+            region_name="xx-south-1",
+            use_ssl=True,
+            verify=True,
+            endpoint_url=None,
+            aws_access_key_id="foo",
+            aws_secret_access_key="bar",
+            aws_session_token=None,
+            config=connect_to._config,
+        )
+
+        mock.reset_mock()
+        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "lorem")
+        monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "ipsum")
+
+        connect_to.get_client(
+            "def", region_name=None, aws_secret_access_key=None, aws_access_key_id=None
+        )
+        mock.assert_called_once_with(
+            service_name="def",
+            region_name="us-east-1",
+            use_ssl=True,
+            verify=True,
+            endpoint_url=None,
             aws_access_key_id=None,
             aws_secret_access_key=None,
             aws_session_token=None,
@@ -282,25 +327,17 @@ class TestClientFactory:
 
         endpoint_url = create_dummy_request_parameter_gateway([echo_request_handler])
 
-        # TODO this should be extracted into a utility for the next iteration
-        response = (
-            factory(endpoint_url=endpoint_url)
-            .sts.request_metadata(service_principal="apigateway")
-            .assume_role(
-                RoleArn="arn:aws:iam::000000000000:role/test-role",
-                RoleSessionName="test-session",
-            )
+        client = factory.with_assumed_role(
+            role_arn="arn:aws:iam::000000000000:role/test-role",
+            service_principal=ServicePrincipal.apigateway,
+            endpoint_url=endpoint_url,
         )
-        assert test_params == {"is_internal": True, "service_principal": "apigateway"}
-        credentials = response["Credentials"]
+        # TODO should be {"is_internal": True, "service_principal": "apigateway"} once IAM role resource policies
+        # are working
+        assert test_params == {"is_internal": True}
         test_params = {}
 
-        factory(
-            endpoint_url=endpoint_url,
-            aws_access_key_id=credentials["AccessKeyId"],
-            aws_secret_access_key=credentials["SecretAccessKey"],
-            aws_session_token=credentials["SessionToken"],
-        ).awslambda.list_functions()
+        client.awslambda.list_functions()
 
         assert test_params == {"is_internal": True, "access_key_id": "ASIAQAAAAAAAKZ4L3POJ"}
 

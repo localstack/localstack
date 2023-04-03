@@ -41,7 +41,6 @@ from localstack.services.awslambda.lambda_utils import (
 )
 from localstack.services.s3 import constants as s3_constants
 from localstack.testing.aws.util import is_aws_cloud
-from localstack.testing.pytest.fixtures import _client
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -117,16 +116,6 @@ def is_asf_provider():
 @pytest.fixture(scope="function")
 def patch_s3_skip_signature_validation_false(monkeypatch):
     monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
-
-
-@pytest.fixture(scope="class")
-def s3_client_for_region():
-    def _s3_client(
-        region_name: str = None,
-    ):
-        return _client("s3", region_name=region_name)
-
-    return _s3_client
 
 
 @pytest.fixture
@@ -661,6 +650,26 @@ class TestS3:
             snapshot.match(f"list-object-version-{param['Id']}", response)
 
     @pytest.mark.aws_validated
+    def test_list_objects_v2_with_prefix(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        keys = ["test/foo/bar/123" "test/foo/bar/456", "test/bar/foo/123"]
+        for key in keys:
+            s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"content 123")
+
+        response = s3_client.list_objects_v2(Bucket=s3_bucket, Prefix="test/", EncodingType="url")
+        snapshot.match("list-objects-v2-1", response)
+
+        response = s3_client.list_objects_v2(
+            Bucket=s3_bucket, Prefix="test/foo", EncodingType="url"
+        )
+        snapshot.match("list-objects-v2-2", response)
+
+        response = s3_client.list_objects_v2(
+            Bucket=s3_bucket, Prefix="test/foo/bar", EncodingType="url"
+        )
+        snapshot.match("list-objects-v2-3", response)
+
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_get_object_no_such_bucket(self, s3_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
@@ -770,6 +779,13 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..ServerSideEncryption",  # missing from the response as it's default in AWS now
+            "$..NextKeyMarker",  # not returned by LocalStack yet
+            "$..NextUploadIdMarker",
+        ]
+    )
+    @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..Error.RequestID"]
     )
     def test_multipart_and_list_parts(self, s3_client, s3_bucket, snapshot):
@@ -793,6 +809,9 @@ class TestS3:
         list_part = s3_client.list_parts(Bucket=s3_bucket, Key=key_name, UploadId=upload_id)
         snapshot.match("list-part-after-created", list_part)
 
+        list_multipart_uploads = s3_client.list_multipart_uploads(Bucket=s3_bucket)
+        snapshot.match("list-all-uploads", list_multipart_uploads)
+
         # Write contents to memory rather than a file.
         data = "upload-part-1" * 5
         data = to_bytes(data)
@@ -809,6 +828,9 @@ class TestS3:
         list_part = s3_client.list_parts(Bucket=s3_bucket, Key=key_name, UploadId=upload_id)
         snapshot.match("list-part-after-upload", list_part)
 
+        list_multipart_uploads = s3_client.list_multipart_uploads(Bucket=s3_bucket)
+        snapshot.match("list-all-uploads-after", list_multipart_uploads)
+
         multipart_upload_parts = [{"ETag": response["ETag"], "PartNumber": 1}]
 
         response = s3_client.complete_multipart_upload(
@@ -821,6 +843,9 @@ class TestS3:
         with pytest.raises(ClientError) as e:
             s3_client.list_parts(Bucket=s3_bucket, Key=key_name, UploadId=upload_id)
         snapshot.match("list-part-after-complete-exc", e.value.response)
+
+        list_multipart_uploads = s3_client.list_multipart_uploads(Bucket=s3_bucket)
+        snapshot.match("list-all-uploads-completed", list_multipart_uploads)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -931,6 +956,7 @@ class TestS3:
         snapshot.match("deleted-object-tags", object_tags)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER,
         reason="see https://github.com/localstack/localstack/issues/6218",
@@ -940,6 +966,10 @@ class TestS3:
         s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"abcdefgh")
         response = s3_client.head_object(Bucket=s3_bucket, Key=key)
         snapshot.match("head-object", response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.head_object(Bucket=s3_bucket, Key="doesnotexist")
+        snapshot.match("head-object-404", e.value.response)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -1515,7 +1545,7 @@ class TestS3:
         self,
         s3_client,
         s3_create_bucket,
-        s3_client_for_region,
+        aws_client_factory,
         s3_create_bucket_with_client,
         snapshot,
     ):
@@ -1529,7 +1559,7 @@ class TestS3:
         snapshot.match("get_bucket_location_bucket_1", response)
 
         region_2 = "us-east-2"
-        client_2 = s3_client_for_region(region_name=region_2)
+        client_2 = aws_client_factory(region_name=region_2).s3
         bucket_2_name = f"bucket-{short_uid()}"
         s3_create_bucket_with_client(
             client_2,
@@ -3306,7 +3336,7 @@ class TestS3:
         snapshot.match("create-multipart-outposts-exc", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_response_structure(self, aws_http_client_factory, s3_bucket):
+    def test_response_structure(self, aws_http_client_factory, s3_client, s3_bucket):
         """
         Test that the response structure is correct for the S3 API
         """
@@ -3335,9 +3365,44 @@ class TestS3:
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
 
+        # Lists all objects V2 in a bucket
+        list_objects_v2_url = f"{bucket_url}?list-type=2"
+        resp = s3_http_client.get(list_objects_v2_url, headers=headers)
+        assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
+        resp_dict = xmltodict.parse(resp.content)
+        assert "ListBucketResult" in resp_dict
+
+        # Lists all multipart uploads in a bucket
+        list_multipart_uploads_url = f"{bucket_url}?uploads"
+        resp = s3_http_client.get(list_multipart_uploads_url, headers=headers)
+        assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
+        resp_dict = xmltodict.parse(resp.content)
+        assert "ListMultipartUploadsResult" in resp_dict
+
+        # GetBucketLocation
         location_constraint_url = f"{bucket_url}?location"
         resp = s3_http_client.get(location_constraint_url, headers=headers)
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
+
+        tagging = {"TagSet": [{"Key": "tag1", "Value": "tag1"}]}
+        # put some tags on the bucket
+        s3_client.put_bucket_tagging(Bucket=s3_bucket, Tagging=tagging)
+
+        # GetBucketTagging
+        get_bucket_tagging_url = f"{bucket_url}?tagging"
+        resp = s3_http_client.get(get_bucket_tagging_url, headers=headers)
+        resp_dict = xmltodict.parse(resp.content)
+        assert resp_dict["Tagging"]["TagSet"] == {"Tag": {"Key": "tag1", "Value": "tag1"}}
+
+        # put an object to tests the next requests
+        key_name = "test-key"
+        s3_client.put_object(Bucket=s3_bucket, Key=key_name, Tagging="tag1=tag1")
+
+        # GetObjectTagging
+        get_object_tagging_url = f"{bucket_url}/{key_name}?tagging"
+        resp = s3_http_client.get(get_object_tagging_url, headers=headers)
+        resp_dict = xmltodict.parse(resp.content)
+        assert resp_dict["Tagging"]["TagSet"] == {"Tag": {"Key": "tag1", "Value": "tag1"}}
 
     @pytest.mark.aws_validated
     def test_s3_delete_objects_trailing_slash(self, s3_client, aws_http_client_factory, s3_bucket):
@@ -3531,6 +3596,51 @@ class TestS3:
                 UploadId=upload_id,
             )
         snapshot.match("upload-part-no-checksum-exc", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..ServerSideEncryption",
+            "$..NextKeyMarker",
+            "$..NextUploadIdMarker",
+        ]
+    )
+    def test_list_multipart_uploads_parameters(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+            ]
+        )
+        key_name = "test-multipart-uploads-parameters"
+        response = s3_client.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("create-multipart", response)
+        upload_id = response["UploadId"]
+
+        # Write contents to memory rather than a file.
+        upload_file_object = BytesIO(to_bytes("test"))
+
+        upload_resp = s3_client.upload_part(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=upload_file_object,
+            PartNumber=1,
+            UploadId=upload_id,
+        )
+        snapshot.match("upload-part", upload_resp)
+
+        response = s3_client.list_multipart_uploads(Bucket=s3_bucket)
+        snapshot.match("list-uploads-basic", response)
+
+        # TODO: not applied yet, just check that the status is the same (not raising NotImplemented)
+        response = s3_client.list_multipart_uploads(Bucket=s3_bucket, MaxUploads=1)
+        snapshot.match("list-uploads-max-uploads", response)
+
+        # TODO: not applied yet, just check that the status is the same (not raising NotImplemented)
+        response = s3_client.list_multipart_uploads(Bucket=s3_bucket, Delimiter="/")
+        snapshot.match("list-uploads-delimiter", response)
 
 
 class TestS3TerraformRawRequests:

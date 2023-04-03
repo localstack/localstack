@@ -90,24 +90,6 @@
     },
     {
       "op": "add",
-      "path": "/shapes/ListObjectsOutput/members/BucketRegion",
-      "value": {
-        "shape": "BucketRegion",
-        "location": "header",
-        "locationName": "x-amz-bucket-region"
-      }
-    },
-    {
-      "op": "add",
-      "path": "/shapes/ListObjectsV2Output/members/BucketRegion",
-      "value": {
-        "shape": "BucketRegion",
-        "location": "header",
-        "locationName": "x-amz-bucket-region"
-      }
-    },
-    {
-      "op": "add",
       "path": "/operations/PutBucketPolicy/http/responseCode",
       "value": 204
     },
@@ -208,38 +190,6 @@
         "location": "header",
         "locationName": "expires"
       }
-    },
-    {
-      "op": "remove",
-      "path": "/shapes/DeleteObjectsOutput"
-    },
-    {
-      "op": "add",
-      "path": "/shapes/DeleteResult",
-      "value": {
-        "type": "structure",
-        "members": {
-          "Deleted": {
-            "shape": "DeletedObjects",
-            "documentation": "<p>Container element for a successful delete. It identifies the object that was successfully deleted.</p>"
-          },
-          "RequestCharged": {
-            "shape": "RequestCharged",
-            "location": "header",
-            "locationName": "x-amz-request-charged"
-          },
-          "Errors": {
-            "shape": "Errors",
-            "documentation": "<p>Container for a failed delete action that describes the object that Amazon S3 attempted to delete and the error it encountered.</p>",
-            "locationName": "Error"
-          }
-        }
-      }
-    },
-    {
-      "op": "replace",
-      "path": "/operations/DeleteObjects/output/shape",
-      "value": "DeleteResult"
     },
     {
       "op": "add",
@@ -773,24 +723,22 @@
       }
     },
     {
-      "op": "move",
-      "from": "/shapes/ListBucketsOutput",
-      "path": "/shapes/ListAllMyBucketsResult"
+      "op": "add",
+      "path": "/shapes/ListObjectsOutput/members/BucketRegion",
+      "value": {
+        "shape": "BucketRegion",
+        "location": "header",
+        "locationName": "x-amz-bucket-region"
+      }
     },
     {
-        "op": "replace",
-        "path": "/operations/ListBuckets/output/shape",
-        "value": "ListAllMyBucketsResult"
-    },
-    {
-      "op": "replace",
-      "path": "/operations/ListObjects/output/shape",
-      "value": "ListBucketResult"
-    },
-    {
-      "op": "move",
-      "from": "/shapes/ListObjectsOutput",
-      "path": "/shapes/ListBucketResult"
+      "op": "add",
+      "path": "/shapes/ListObjectsV2Output/members/BucketRegion",
+      "value": {
+        "shape": "BucketRegion",
+        "location": "header",
+        "locationName": "x-amz-bucket-region"
+      }
     },
     {
       "op": "add",

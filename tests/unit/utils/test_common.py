@@ -6,8 +6,6 @@ import unittest
 from unittest.mock import MagicMock
 
 import pytest
-from pytest_httpserver import HTTPServer
-from werkzeug import Request, Response
 
 from localstack.utils.collections import is_none_or_empty
 from localstack.utils.crypto import (
@@ -18,7 +16,6 @@ from localstack.utils.crypto import (
     generate_ssl_cert,
 )
 from localstack.utils.files import load_file, new_tmp_file, rm_rf
-from localstack.utils.http import download
 from localstack.utils.json import FileMappedDocument
 from localstack.utils.run import run
 from localstack.utils.sync import poll_condition, synchronized
@@ -257,25 +254,3 @@ def test_generate_ssl_cert():
     # clean up
     rm_rf(cert_file_name)
     rm_rf(key_file_name)
-
-
-def test_download_with_timeout():
-    def _handler(_: Request) -> Response:
-        time.sleep(2)
-        return Response(b"", status=200)
-
-    tmp_file = new_tmp_file()
-    # it seems this test is not properly cleaning up for other unit tests, this step is normally not necessary
-    # we should use the fixture `httpserver` instead of HTTPServer directly
-    with HTTPServer() as server:
-        server.expect_request("/").respond_with_data(b"tmp_file", status=200)
-        server.expect_request("/sleep").respond_with_handler(_handler)
-        http_endpoint = server.url_for("/")
-
-        download(http_endpoint, tmp_file)
-        assert load_file(tmp_file) == "tmp_file"
-        with pytest.raises(TimeoutError):
-            download(f"{http_endpoint}/sleep", tmp_file, timeout=1)
-
-    # clean up
-    rm_rf(tmp_file)

@@ -40,8 +40,9 @@ from localstack.services.awslambda.invocation.runtime_environment import (
 from localstack.services.awslambda.invocation.runtime_executor import get_runtime_executor
 from localstack.services.awslambda.lambda_executors import InvocationException
 from localstack.utils.aws import dead_letter_queue
+from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.message_forwarding import send_event_to_target
-from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
+from localstack.utils.cloudwatch.cloudwatch_util import publish_lambda_metric, store_cloudwatch_logs
 from localstack.utils.strings import to_str, truncate
 from localstack.utils.threads import FuncThread, start_thread
 from localstack.utils.time import timestamp_millis
@@ -96,14 +97,26 @@ class LogHandler:
         self._thread = None
 
     def run_log_loop(self, *args, **kwargs) -> None:
-        logs_client = connect_to(region_name=self.region).logs
+        logs_client = connect_to.with_assumed_role(
+            region_name=self.region,
+            role_arn=self.role_arn,
+            service_principal=ServicePrincipal.awslambda,
+        ).logs
         while not self._shutdown_event.is_set():
             log_item = self.log_queue.get()
             if log_item is QUEUE_SHUTDOWN:
                 return
-            store_cloudwatch_logs(
-                log_item.log_group, log_item.log_stream, log_item.logs, logs_client=logs_client
-            )
+            try:
+                store_cloudwatch_logs(
+                    log_item.log_group, log_item.log_stream, log_item.logs, logs_client=logs_client
+                )
+            except Exception as e:
+                LOG.warning(
+                    "Error saving logs to group %s in region %s: %s",
+                    log_item.log_group,
+                    self.region,
+                    e,
+                )
 
     def start_subscriber(self) -> None:
         self._thread = FuncThread(self.run_log_loop, name="log_handler")
@@ -527,14 +540,20 @@ class LambdaVersionManager(ServiceEndpoint):
             isinstance(invocation_result, InvocationError)
             and self.function_version.config.dead_letter_arn
         ):
-            dead_letter_queue._send_to_dead_letter_queue(
-                source_arn=self.function_arn,
-                dlq_arn=self.function_version.config.dead_letter_arn,
-                event=json.loads(to_str(original_payload)),
-                error=InvocationException(
-                    message="hi", result=to_str(invocation_result.payload)
-                ),  # TODO: check message
-            )
+            try:
+                dead_letter_queue._send_to_dead_letter_queue(
+                    source_arn=self.function_arn,
+                    dlq_arn=self.function_version.config.dead_letter_arn,
+                    event=json.loads(to_str(original_payload)),
+                    error=InvocationException(
+                        message="hi", result=to_str(invocation_result.payload)
+                    ),  # TODO: check message
+                    role=self.function_version.config.role,
+                )
+            except Exception as e:
+                LOG.warning(
+                    "Error sending to DLQ %s: %s", self.function_version.config.dead_letter_arn, e
+                )
 
         # 2. Handle actual destination setup
         event_invoke_config = self.function.event_invoke_configs.get(
@@ -568,10 +587,17 @@ class LambdaVersionManager(ServiceEndpoint):
                 "responsePayload": json.loads(to_str(invocation_result.payload or {})),
             }
 
-            send_event_to_target(
-                target_arn=event_invoke_config.destination_config["OnSuccess"]["Destination"],
-                event=destination_payload,
-            )
+            target_arn = event_invoke_config.destination_config["OnSuccess"]["Destination"]
+            try:
+                send_event_to_target(
+                    target_arn=target_arn,
+                    event=destination_payload,
+                    role=self.function_version.config.role,
+                    source_arn=self.function_version.id.unqualified_arn(),
+                    source_service="lambda",
+                )
+            except Exception as e:
+                LOG.warning("Error sending invocation result to %s: %s", target_arn, e)
 
         elif isinstance(invocation_result, InvocationError):
             LOG.debug("Handling error destination for %s", self.function_arn)
@@ -648,10 +674,17 @@ class LambdaVersionManager(ServiceEndpoint):
             if response_payload:
                 destination_payload["responsePayload"] = response_payload
 
-            send_event_to_target(
-                target_arn=event_invoke_config.destination_config["OnFailure"]["Destination"],
-                event=destination_payload,
-            )
+            target_arn = event_invoke_config.destination_config["OnFailure"]["Destination"]
+            try:
+                send_event_to_target(
+                    target_arn=target_arn,
+                    event=destination_payload,
+                    role=self.function_version.config.role,
+                    source_arn=self.function_version.id.unqualified_arn(),
+                    source_service="lambda",
+                )
+            except Exception as e:
+                LOG.warning("Error sending invocation result to %s: %s", target_arn, e)
         else:
             raise ValueError("Unknown type for invocation result received.")
 
@@ -690,10 +723,12 @@ class LambdaVersionManager(ServiceEndpoint):
     # Service Endpoint implementation
     def invocation_result(self, invoke_id: str, invocation_result: InvocationResult) -> None:
         LOG.debug("Got invocation result for invocation '%s'", invoke_id)
+        start_thread(self.record_cw_metric_invocation)
         self.invocation_response(invoke_id=invoke_id, invocation_result=invocation_result)
 
     def invocation_error(self, invoke_id: str, invocation_error: InvocationError) -> None:
         LOG.debug("Got invocation error for invocation '%s'", invoke_id)
+        start_thread(self.record_cw_metric_error)
         self.invocation_response(invoke_id=invoke_id, invocation_result=invocation_error)
 
     def invocation_logs(self, invoke_id: str, invocation_logs: InvocationLogs) -> None:
@@ -710,3 +745,33 @@ class LambdaVersionManager(ServiceEndpoint):
 
     def status_error(self, executor_id: str) -> None:
         self.set_environment_failed(executor_id=executor_id)
+
+    # Cloud Watch reporting
+    # TODO: replace this with a custom metric handler using a thread pool
+    def record_cw_metric_invocation(self, *args, **kwargs):
+        try:
+            publish_lambda_metric(
+                "Invocations",
+                1,
+                {"func_name": self.function.function_name},
+                region_name=self.function_version.id.region,
+            )
+        except Exception as e:
+            LOG.debug("Failed to send CloudWatch metric for Lambda invocation: %s", e)
+
+    def record_cw_metric_error(self, *args, **kwargs):
+        try:
+            publish_lambda_metric(
+                "Invocations",
+                1,
+                {"func_name": self.function.function_name},
+                region_name=self.function_version.id.region,
+            )
+            publish_lambda_metric(
+                "Errors",
+                1,
+                {"func_name": self.function.function_name},
+                region_name=self.function_version.id.region,
+            )
+        except Exception as e:
+            LOG.debug("Failed to send CloudWatch metric for Lambda invocation error: %s", e)

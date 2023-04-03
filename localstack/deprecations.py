@@ -177,6 +177,67 @@ DEPRECATIONS = [
         "2.0.0",
         "This configuration will be migrated to GATEWAY_LISTEN",
     ),
+    EnvVarDeprecation(
+        "LAMBDA_EXECUTOR",
+        "2.0.0",
+        "This configuration is obsolete with the new lambda provider "
+        "https://docs.localstack.cloud/references/lambda-provider-v2/\n"
+        "Please mount the Docker socket /var/run/docker.sock as a volume when starting LocalStack.",
+    ),
+    EnvVarDeprecation(
+        "LAMBDA_STAY_OPEN_MODE",
+        "2.0.0",
+        "Stay open mode is the default behavior in the new lambda provider "
+        "https://docs.localstack.cloud/references/lambda-provider-v2/",
+    ),
+    EnvVarDeprecation(
+        "LAMBDA_REMOTE_DOCKER",
+        "2.0.0",
+        "The new lambda provider copies zip files by default and automatically configures hot reloading "
+        "https://docs.localstack.cloud/references/lambda-provider-v2/",
+    ),
+    EnvVarDeprecation(
+        "LAMBDA_CODE_EXTRACT_TIME",
+        "2.0.0",
+        "Function creation now happens asynchronously in the new lambda provider "
+        "https://docs.localstack.cloud/references/lambda-provider-v2/",
+    ),
+    EnvVarDeprecation(
+        "LAMBDA_DOCKER_DNS",
+        "2.0.0",
+        "This feature is currently not supported in the new lambda provider "
+        "https://docs.localstack.cloud/references/lambda-provider-v2/",
+    ),
+    EnvVarDeprecation(
+        "LAMBDA_CONTAINER_REGISTRY",
+        "2.0.0",
+        "The new lambda provider uses LAMBDA_RUNTIME_IMAGE_MAPPING instead "
+        "https://docs.localstack.cloud/references/lambda-provider-v2/",
+    ),
+    EnvVarDeprecation(
+        "LAMBDA_FALLBACK_URL",
+        "2.0.0",
+        "This feature is not supported in the new lambda provider "
+        "https://docs.localstack.cloud/references/lambda-provider-v2/",
+    ),
+    EnvVarDeprecation(
+        "LAMBDA_FORWARD_URL",
+        "2.0.0",
+        "This feature is not supported in the new lambda provider "
+        "https://docs.localstack.cloud/references/lambda-provider-v2/",
+    ),
+    EnvVarDeprecation(
+        "HOSTNAME_FROM_LAMBDA",
+        "2.0.0",
+        "This feature is currently not supported in the new lambda provider "
+        "https://docs.localstack.cloud/references/lambda-provider-v2/",
+    ),
+    EnvVarDeprecation(
+        "LAMBDA_XRAY_INIT",
+        "2.0.0",
+        "The X-Ray daemon is always initialized in the new lambda provider "
+        "https://docs.localstack.cloud/references/lambda-provider-v2/",
+    ),
 ]
 
 
