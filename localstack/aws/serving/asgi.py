@@ -1,14 +1,11 @@
 import asyncio
 import concurrent.futures.thread
 from asyncio import AbstractEventLoop
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from localstack.aws.gateway import Gateway
 from localstack.aws.serving.wsgi import WsgiGateway
 from localstack.http.asgi import ASGIAdapter, ASGILifespanListener
-
-if TYPE_CHECKING:
-    from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, HTTPScope
 
 
 class _ThreadPool(concurrent.futures.thread.ThreadPoolExecutor):
@@ -48,8 +45,12 @@ class AsgiGateway:
 
         self.event_loop = event_loop or asyncio.get_event_loop()
         self.executor = _ThreadPool(threads, thread_name_prefix="asgi_gw")
-        self.wsgi = ASGIAdapter(WsgiGateway(gateway), event_loop=event_loop, executor=self.executor)
-        self.lifespan_listener = lifespan_listener or ASGILifespanListener()
+        self.wsgi = ASGIAdapter(
+            WsgiGateway(gateway),
+            event_loop=event_loop,
+            executor=self.executor,
+            lifespan_listener=lifespan_listener,
+        )
         self._closed = False
 
     async def __call__(self, scope, receive, send) -> None:
@@ -63,13 +64,7 @@ class AsgiGateway:
         if self._closed:
             raise RuntimeError("Cannot except new request on closed ASGIGateway")
 
-        if scope["type"] == "http":
-            return await self.wsgi(scope, receive, send)
-
-        if scope["type"] == "lifespan":
-            return await self.handle_lifespan(scope, receive, send)
-
-        raise NotImplementedError(f"{scope['type']} protocol is not implemented")
+        return await self.wsgi(scope, receive, send)
 
     def close(self):
         """
@@ -77,29 +72,3 @@ class AsgiGateway:
         """
         self._closed = True
         self.executor.shutdown(wait=False, cancel_futures=True)
-
-    async def handle_lifespan(
-        self, scope: "HTTPScope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
-    ):
-        while True:
-            message = await receive()
-            if message["type"] == "lifespan.startup":
-                try:
-                    await self.event_loop.run_in_executor(
-                        self.executor, self.lifespan_listener.on_startup
-                    )
-                    await send({"type": "lifespan.startup.complete"})
-                except Exception as e:
-                    await send({"type": "lifespan.startup.failed", "message": f"{e}"})
-
-            elif message["type"] == "lifespan.shutdown":
-                try:
-                    await self.event_loop.run_in_executor(
-                        self.executor, self.lifespan_listener.on_shutdown
-                    )
-                    await send({"type": "lifespan.shutdown.complete"})
-                except Exception as e:
-                    await send({"type": "lifespan.shutdown.failed", "message": f"{e}"})
-                return
-            else:
-                return
