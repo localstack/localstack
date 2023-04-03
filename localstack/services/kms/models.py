@@ -449,7 +449,7 @@ class KmsKey:
         # The two main usages for KMS keys are encryption/decryption and signing/verification.
         # Doesn't make sense to populate fields related to encryption/decryption unless the key is created with that
         # goal in mind.
-        if key_usage != "ENCRYPT_DECRYPT" or key_usage != "GENERATE_VERIFY_MAC":
+        if key_usage != "ENCRYPT_DECRYPT":
             return
         if key_spec == "SYMMETRIC_DEFAULT":
             self.metadata["EncryptionAlgorithms"] = ["SYMMETRIC_DEFAULT"]
