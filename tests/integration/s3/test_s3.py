@@ -144,14 +144,16 @@ def s3_create_bucket_with_client(s3_resource):
 
 
 @pytest.fixture
-def s3_multipart_upload(s3_client):
+def s3_multipart_upload(aws_client):
     def perform_multipart_upload(
         bucket, key, data=None, zipped=False, acl=None, parts: int = 1, **kwargs
     ):
         # beware, the last part can be under 5 MiB, but previous parts needs to be between 5MiB and 5GiB
         if acl:
             kwargs["ACL"] = acl
-        multipart_upload_dict = s3_client.create_multipart_upload(Bucket=bucket, Key=key, **kwargs)
+        multipart_upload_dict = aws_client.s3.create_multipart_upload(
+            Bucket=bucket, Key=key, **kwargs
+        )
         upload_id = multipart_upload_dict["UploadId"]
         data = data or (5 * short_uid())
         multipart_upload_parts = []
@@ -172,7 +174,7 @@ def s3_multipart_upload(s3_client):
                 with gzip.GzipFile(fileobj=upload_file_object, mode="w") as filestream:
                     filestream.write(part_data)
 
-            response = s3_client.upload_part(
+            response = aws_client.s3.upload_part(
                 Bucket=bucket,
                 Key=key,
                 Body=upload_file_object,
@@ -185,7 +187,7 @@ def s3_multipart_upload(s3_client):
             if zipped:
                 break
 
-        return s3_client.complete_multipart_upload(
+        return aws_client.s3.complete_multipart_upload(
             Bucket=bucket,
             Key=key,
             MultipartUpload={"Parts": multipart_upload_parts},
@@ -196,18 +198,20 @@ def s3_multipart_upload(s3_client):
 
 
 @pytest.fixture
-def s3_multipart_upload_with_snapshot(s3_client, snapshot):
+def s3_multipart_upload_with_snapshot(aws_client, snapshot):
     def perform_multipart_upload(
         bucket: str, key: str, data: bytes, snapshot_prefix: str, **kwargs
     ):
-        create_multipart_resp = s3_client.create_multipart_upload(Bucket=bucket, Key=key, **kwargs)
+        create_multipart_resp = aws_client.s3.create_multipart_upload(
+            Bucket=bucket, Key=key, **kwargs
+        )
         snapshot.match(f"{snapshot_prefix}-create-multipart", create_multipart_resp)
         upload_id = create_multipart_resp["UploadId"]
 
         # Write contents to memory rather than a file.
         upload_file_object = BytesIO(data)
 
-        response = s3_client.upload_part(
+        response = aws_client.s3.upload_part(
             Bucket=bucket,
             Key=key,
             Body=upload_file_object,
@@ -216,7 +220,7 @@ def s3_multipart_upload_with_snapshot(s3_client, snapshot):
         )
         snapshot.match(f"{snapshot_prefix}-upload-part", response)
 
-        response = s3_client.complete_multipart_upload(
+        response = aws_client.s3.complete_multipart_upload(
             Bucket=bucket,
             Key=key,
             MultipartUpload={"Parts": [{"ETag": response["ETag"], "PartNumber": 1}]},
@@ -3672,17 +3676,17 @@ class TestS3:
         snapshot.match("list-uploads-delimiter", response)
 
     @pytest.mark.aws_validated
-    # there is currently no server side encryption is place in LS, ETag will be different
     @pytest.mark.skip(
         reason="Behaviour not implemented yet: https://github.com/localstack/localstack/issues/6882"
     )
+    # there is currently no server side encryption is place in LS, ETag will be different
     @pytest.mark.skip_snapshot_verify(paths=["$..ETag"])
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..ContentLanguage", "$..SSEKMSKeyId", "$..VersionId"]
     )
     def test_s3_multipart_upload_sse(
         self,
-        s3_client,
+        aws_client,
         s3_bucket,
         s3_multipart_upload_with_snapshot,
         kms_create_key,
@@ -3716,7 +3720,7 @@ class TestS3:
             ServerSideEncryption="aws:kms",
         )
 
-        response = s3_client.get_object(Bucket=s3_bucket, Key=key_name)
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
         snapshot.match("get-obj", response)
 
     @pytest.mark.aws_validated
@@ -3731,7 +3735,7 @@ class TestS3:
     )
     def test_s3_sse_bucket_key_default(
         self,
-        s3_client,
+        aws_client,
         s3_bucket,
         kms_create_key,
         snapshot,
@@ -3749,13 +3753,13 @@ class TestS3:
         key_after_set = "test-sse-bucket-after"
         data = b"test-sse"
         key_id = kms_create_key()["KeyId"]
-        response = s3_client.put_object(Bucket=s3_bucket, Key=key_before_set, Body=data)
+        response = aws_client.s3.put_object(Bucket=s3_bucket, Key=key_before_set, Body=data)
         snapshot.match("put-obj-default-before-setting", response)
 
-        response = s3_client.get_object(Bucket=s3_bucket, Key=key_before_set)
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_before_set)
         snapshot.match("get-obj-default-before-setting", response)
 
-        response = s3_client.put_bucket_encryption(
+        response = aws_client.s3.put_bucket_encryption(
             Bucket=s3_bucket,
             ServerSideEncryptionConfiguration={
                 "Rules": [
@@ -3771,18 +3775,18 @@ class TestS3:
         )
         snapshot.match("put-bucket-encryption", response)
 
-        response = s3_client.get_bucket_encryption(Bucket=s3_bucket)
+        response = aws_client.s3.get_bucket_encryption(Bucket=s3_bucket)
         snapshot.match("get-bucket-encryption", response)
 
         # verify that setting BucketKeyEnabled didn't affect existing keys
-        response = s3_client.get_object(Bucket=s3_bucket, Key=key_before_set)
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_before_set)
         snapshot.match("get-obj-default-after-setting", response)
 
         # set a new key and see the configuration is in effect
-        response = s3_client.put_object(Bucket=s3_bucket, Key=key_after_set, Body=data)
+        response = aws_client.s3.put_object(Bucket=s3_bucket, Key=key_after_set, Body=data)
         snapshot.match("put-obj-after-setting", response)
 
-        response = s3_client.get_object(Bucket=s3_bucket, Key=key_after_set)
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_after_set)
         snapshot.match("get-obj-after-setting", response)
 
     @pytest.mark.aws_validated
@@ -3797,7 +3801,7 @@ class TestS3:
     )
     def test_s3_sse_default_kms_key(
         self,
-        s3_client,
+        aws_client,
         s3_create_bucket,
         snapshot,
     ):
@@ -3815,24 +3819,24 @@ class TestS3:
         bucket_2 = s3_create_bucket()
         key_name = "test-sse-default-key"
         data = b"test-sse"
-        response = s3_client.put_object(
+        response = aws_client.s3.put_object(
             Bucket=bucket_1, Key=key_name, Body=data, ServerSideEncryption="aws:kms"
         )
         snapshot.match("put-obj-default-kms-s3-key", response)
 
-        response = s3_client.get_object(Bucket=bucket_1, Key=key_name)
+        response = aws_client.s3.get_object(Bucket=bucket_1, Key=key_name)
         snapshot.match("get-obj-default-kms-s3-key", response)
 
         # validate that the AWS managed key is the same between buckets
-        response = s3_client.put_object(
+        response = aws_client.s3.put_object(
             Bucket=bucket_2, Key=key_name, Body=data, ServerSideEncryption="aws:kms"
         )
         snapshot.match("put-obj-default-kms-s3-key-bucket-2", response)
 
-        response = s3_client.get_object(Bucket=bucket_2, Key=key_name)
+        response = aws_client.s3.get_object(Bucket=bucket_2, Key=key_name)
         snapshot.match("get-obj-default-kms-s3-key-bucket-2", response)
 
-        response = s3_client.put_bucket_encryption(
+        response = aws_client.s3.put_bucket_encryption(
             Bucket=bucket_1,
             ServerSideEncryptionConfiguration={
                 "Rules": [
@@ -3847,16 +3851,16 @@ class TestS3:
         )
         snapshot.match("put-bucket-encryption-default-kms-s3-key", response)
 
-        response = s3_client.get_bucket_encryption(Bucket=bucket_1)
+        response = aws_client.s3.get_bucket_encryption(Bucket=bucket_1)
         snapshot.match("get-bucket-encryption-default-kms-s3-key", response)
 
         key_name = "test-sse-default-key-from-bucket"
-        response = s3_client.put_object(
+        response = aws_client.s3.put_object(
             Bucket=bucket_1, Key=key_name, Body=data, ServerSideEncryption="aws:kms"
         )
         snapshot.match("put-obj-default-kms-s3-key-from-bucket", response)
 
-        response = s3_client.get_object(Bucket=bucket_1, Key=key_name)
+        response = aws_client.s3.get_object(Bucket=bucket_1, Key=key_name)
         snapshot.match("get-obj-default-kms-s3-key-from-bucket", response)
 
 
