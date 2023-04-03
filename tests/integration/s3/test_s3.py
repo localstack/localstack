@@ -3382,7 +3382,7 @@ class TestS3:
 
         tagging = {"TagSet": [{"Key": "tag1", "Value": "tag1"}]}
         # put some tags on the bucket
-        s3_client.put_bucket_tagging(Bucket=s3_bucket, Tagging=tagging)
+        aws_client.s3.put_bucket_tagging(Bucket=s3_bucket, Tagging=tagging)
 
         # GetBucketTagging
         get_bucket_tagging_url = f"{bucket_url}?tagging"
@@ -3392,7 +3392,7 @@ class TestS3:
 
         # put an object to tests the next requests
         key_name = "test-key"
-        s3_client.put_object(Bucket=s3_bucket, Key=key_name, Tagging="tag1=tag1")
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key_name, Tagging="tag1=tag1")
 
         # GetObjectTagging
         get_object_tagging_url = f"{bucket_url}/{key_name}?tagging"
