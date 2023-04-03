@@ -13,6 +13,7 @@ AddressMaxResults = int
 AllocationId = str
 AllowedInstanceType = str
 AutoRecoveryFlag = bool
+AvailabilityZoneName = str
 BareMetalFlag = bool
 BaselineBandwidthInMbps = int
 BaselineIops = int
@@ -8043,7 +8044,7 @@ class CreateVolumePermissionModifications(TypedDict, total=False):
 
 
 class CreateVolumeRequest(ServiceRequest):
-    AvailabilityZone: String
+    AvailabilityZone: AvailabilityZoneName
     Encrypted: Optional[Boolean]
     Iops: Optional[Integer]
     KmsKeyId: Optional[KmsKeyId]
@@ -8307,6 +8308,7 @@ class VpnTunnelOptionsSpecification(TypedDict, total=False):
     IKEVersions: Optional[IKEVersionsRequestList]
     StartupAction: Optional[String]
     LogOptions: Optional[VpnTunnelLogOptionsSpecification]
+    EnableTunnelLifecycleControl: Optional[Boolean]
 
 
 VpnTunnelOptionsSpecificationsList = List[VpnTunnelOptionsSpecification]
@@ -8430,6 +8432,7 @@ class TunnelOption(TypedDict, total=False):
     IkeVersions: Optional[IKEVersionsList]
     StartupAction: Optional[String]
     LogOptions: Optional[VpnTunnelLogOptions]
+    EnableTunnelLifecycleControl: Optional[Boolean]
 
 
 TunnelOptionsList = List[TunnelOption]
@@ -14857,6 +14860,27 @@ class GetVpnConnectionDeviceTypesResult(TypedDict, total=False):
     NextToken: Optional[NextToken]
 
 
+class GetVpnTunnelReplacementStatusRequest(ServiceRequest):
+    VpnConnectionId: VpnConnectionId
+    VpnTunnelOutsideIpAddress: String
+    DryRun: Optional[Boolean]
+
+
+class MaintenanceDetails(TypedDict, total=False):
+    PendingMaintenance: Optional[String]
+    MaintenanceAutoAppliedAfter: Optional[MillisecondDateTime]
+    LastMaintenanceApplied: Optional[MillisecondDateTime]
+
+
+class GetVpnTunnelReplacementStatusResult(TypedDict, total=False):
+    VpnConnectionId: Optional[VpnConnectionId]
+    TransitGatewayId: Optional[TransitGatewayId]
+    CustomerGatewayId: Optional[CustomerGatewayId]
+    VpnGatewayId: Optional[VpnGatewayId]
+    VpnTunnelOutsideIpAddress: Optional[String]
+    MaintenanceDetails: Optional[MaintenanceDetails]
+
+
 class HibernationOptionsRequest(TypedDict, total=False):
     Configured: Optional[Boolean]
 
@@ -16164,6 +16188,7 @@ class ModifyVpnTunnelOptionsSpecification(TypedDict, total=False):
     IKEVersions: Optional[IKEVersionsRequestList]
     StartupAction: Optional[String]
     LogOptions: Optional[VpnTunnelLogOptionsSpecification]
+    EnableTunnelLifecycleControl: Optional[Boolean]
 
 
 class ModifyVpnTunnelOptionsRequest(ServiceRequest):
@@ -16171,6 +16196,7 @@ class ModifyVpnTunnelOptionsRequest(ServiceRequest):
     VpnTunnelOutsideIpAddress: String
     TunnelOptions: ModifyVpnTunnelOptionsSpecification
     DryRun: Optional[Boolean]
+    SkipTunnelReplacement: Optional[Boolean]
 
 
 class ModifyVpnTunnelOptionsResult(TypedDict, total=False):
@@ -16543,6 +16569,17 @@ class ReplaceTransitGatewayRouteRequest(ServiceRequest):
 
 class ReplaceTransitGatewayRouteResult(TypedDict, total=False):
     Route: Optional[TransitGatewayRoute]
+
+
+class ReplaceVpnTunnelRequest(ServiceRequest):
+    VpnConnectionId: VpnConnectionId
+    VpnTunnelOutsideIpAddress: String
+    ApplyPendingMaintenance: Optional[Boolean]
+    DryRun: Optional[Boolean]
+
+
+class ReplaceVpnTunnelResult(TypedDict, total=False):
+    Return: Optional[Boolean]
 
 
 class ReportInstanceStatusRequest(ServiceRequest):
@@ -18681,7 +18718,7 @@ class Ec2Api:
     def create_volume(
         self,
         context: RequestContext,
-        availability_zone: String,
+        availability_zone: AvailabilityZoneName,
         encrypted: Boolean = None,
         iops: Integer = None,
         kms_key_id: KmsKeyId = None,
@@ -22044,6 +22081,16 @@ class Ec2Api:
     ) -> GetVpnConnectionDeviceTypesResult:
         raise NotImplementedError
 
+    @handler("GetVpnTunnelReplacementStatus")
+    def get_vpn_tunnel_replacement_status(
+        self,
+        context: RequestContext,
+        vpn_connection_id: VpnConnectionId,
+        vpn_tunnel_outside_ip_address: String,
+        dry_run: Boolean = None,
+    ) -> GetVpnTunnelReplacementStatusResult:
+        raise NotImplementedError
+
     @handler("ImportClientVpnClientCertificateRevocationList")
     def import_client_vpn_client_certificate_revocation_list(
         self,
@@ -22943,6 +22990,7 @@ class Ec2Api:
         vpn_tunnel_outside_ip_address: String,
         tunnel_options: ModifyVpnTunnelOptionsSpecification,
         dry_run: Boolean = None,
+        skip_tunnel_replacement: Boolean = None,
     ) -> ModifyVpnTunnelOptionsResult:
         raise NotImplementedError
 
@@ -23259,6 +23307,17 @@ class Ec2Api:
         blackhole: Boolean = None,
         dry_run: Boolean = None,
     ) -> ReplaceTransitGatewayRouteResult:
+        raise NotImplementedError
+
+    @handler("ReplaceVpnTunnel")
+    def replace_vpn_tunnel(
+        self,
+        context: RequestContext,
+        vpn_connection_id: VpnConnectionId,
+        vpn_tunnel_outside_ip_address: String,
+        apply_pending_maintenance: Boolean = None,
+        dry_run: Boolean = None,
+    ) -> ReplaceVpnTunnelResult:
         raise NotImplementedError
 
     @handler("ReportInstanceStatus")

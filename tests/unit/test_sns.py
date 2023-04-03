@@ -525,3 +525,57 @@ class TestSns:
 
         del subscriber["RawMessageDelivery"]
         assert not is_raw_message_delivery(subscriber)
+
+    def test_filter_policy_on_message_body(self):
+        test_data = [
+            (
+                {"f1": ["v1", "v2"]},  # f1 must be v1 OR v2 (f1=v1 OR f1=v2)
+                (
+                    ({"f1": "v1", "f2": "v4"}, True),
+                    ({"f1": "v2", "f2": "v5"}, True),
+                    ({"f1": "v3", "f2": "v5"}, False),
+                ),
+            ),
+            (
+                {"f1": ["v1"]},  # f1 must be v1 (f1=v1)
+                (
+                    ({"f1": "v1", "f2": "v4"}, True),
+                    ({"f1": "v2", "f2": "v5"}, False),
+                    ({"f1": "v3", "f2": "v5"}, False),
+                ),
+            ),
+            (
+                {"f1": ["v1"], "f2": ["v4"]},  # f1 must be v1 AND f2 must be v4 (f1=v1 AND f2=v4)
+                (
+                    ({"f1": "v1", "f2": "v4"}, True),
+                    ({"f1": "v2", "f2": "v5"}, False),
+                    ({"f1": "v3", "f2": "v5"}, False),
+                ),
+            ),
+            (
+                {"f2": ["v5"]},  # f2 must be v5 (f2=v5)
+                (
+                    ({"f1": "v1", "f2": "v4"}, False),
+                    ({"f1": "v2", "f2": "v5"}, True),
+                    ({"f1": "v3", "f2": "v5"}, True),
+                ),
+            ),
+            (
+                {
+                    "f1": ["v1", "v2"],
+                    "f2": ["v4"],
+                },  # f1 must be v1 or v2 AND f2 must be v4 ((f1=v1 OR f1=v2) AND f2=v4)
+                (
+                    ({"f1": "v1", "f2": "v4"}, True),
+                    ({"f1": "v2", "f2": "v5"}, False),
+                    ({"f1": "v3", "f2": "v5"}, False),
+                ),
+            ),
+        ]
+
+        sub_filter = SubscriptionFilter()
+        for filter_policy, messages in test_data:
+            for message_body, expected in messages:
+                assert expected == sub_filter.check_filter_policy_on_message_body(
+                    filter_policy, message_body=json.dumps(message_body)
+                ), (filter_policy, message_body)

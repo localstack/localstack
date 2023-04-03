@@ -497,7 +497,7 @@ class TestApigatewayEvents:
                     "isBase64Encoded": False,
                     "httpMethod": "GET",
                     "queryStringParameters": {"foo": "bar"},
-                    "multiValueQueryStringParameters": {"foo": ("bar",)},
+                    "multiValueQueryStringParameters": {"foo": ["bar"]},
                 },
             },
             {
@@ -515,7 +515,7 @@ class TestApigatewayEvents:
                     "isBase64Encoded": False,
                     "httpMethod": "GET",
                     "queryStringParameters": {"foo": "bar"},
-                    "multiValueQueryStringParameters": {"foo": ("bar",)},
+                    "multiValueQueryStringParameters": {"foo": ["bar"]},
                 },
             },
         ]

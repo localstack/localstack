@@ -1362,10 +1362,51 @@ class RestJSONResponseSerializer(BaseRestResponseSerializer, JSONResponseSeriali
 class S3ResponseSerializer(RestXMLResponseSerializer):
     """
     The ``S3ResponseSerializer`` adds some minor logic to handle S3 specific peculiarities with the error response
-    serialization.
+    serialization and the root node tag.
     """
 
     SUPPORTED_MIME_TYPES = [APPLICATION_XML, TEXT_XML]
+    _RESPONSE_ROOT_TAGS = {
+        "CompleteMultipartUploadOutput": "CompleteMultipartUploadResult",
+        "CopyObjectOutput": "CopyObjectResult",
+        "CreateMultipartUploadOutput": "InitiateMultipartUploadResult",
+        "DeleteObjectsOutput": "DeleteResult",
+        "GetBucketAccelerateConfigurationOutput": "AccelerateConfiguration",
+        "GetBucketAclOutput": "AccessControlPolicy",
+        "GetBucketAnalyticsConfigurationOutput": "AnalyticsConfiguration",
+        "GetBucketCorsOutput": "CORSConfiguration",
+        "GetBucketEncryptionOutput": "ServerSideEncryptionConfiguration",
+        "GetBucketIntelligentTieringConfigurationOutput": "IntelligentTieringConfiguration",
+        "GetBucketInventoryConfigurationOutput": "InventoryConfiguration",
+        "GetBucketLifecycleOutput": "LifecycleConfiguration",
+        "GetBucketLifecycleConfigurationOutput": "LifecycleConfiguration",
+        "GetBucketLoggingOutput": "BucketLoggingStatus",
+        "GetBucketMetricsConfigurationOutput": "MetricsConfiguration",
+        "NotificationConfigurationDeprecated": "NotificationConfiguration",
+        "GetBucketOwnershipControlsOutput": "OwnershipControls",
+        "GetBucketPolicyStatusOutput": "PolicyStatus",
+        "GetBucketReplicationOutput": "ReplicationConfiguration",
+        "GetBucketRequestPaymentOutput": "RequestPaymentConfiguration",
+        "GetBucketTaggingOutput": "Tagging",
+        "GetBucketVersioningOutput": "VersioningConfiguration",
+        "GetBucketWebsiteOutput": "WebsiteConfiguration",
+        "GetObjectAclOutput": "AccessControlPolicy",
+        "GetObjectLegalHoldOutput": "LegalHold",
+        "GetObjectLockConfigurationOutput": "ObjectLockConfiguration",
+        "GetObjectRetentionOutput": "Retention",
+        "GetObjectTaggingOutput": "Tagging",
+        "GetPublicAccessBlockOutput": "PublicAccessBlockConfiguration",
+        "ListBucketAnalyticsConfigurationsOutput": "ListBucketAnalyticsConfigurationResult",
+        "ListBucketInventoryConfigurationsOutput": "ListInventoryConfigurationsResult",
+        "ListBucketMetricsConfigurationsOutput": "ListMetricsConfigurationsResult",
+        "ListBucketsOutput": "ListAllMyBucketsResult",
+        "ListMultipartUploadsOutput": "ListMultipartUploadsResult",
+        "ListObjectsOutput": "ListBucketResult",
+        "ListObjectsV2Output": "ListBucketResult",
+        "ListObjectVersionsOutput": "ListVersionsResult",
+        "ListPartsOutput": "ListPartsResult",
+        "UploadPartCopyOutput": "CopyPartResult",
+    }
 
     def _serialize_response(
         self,
@@ -1408,6 +1449,19 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         self._add_additional_error_tags(error, root, shape, mime_type)
 
         response.set_response(self._encode_payload(self._node_to_string(root, mime_type)))
+
+    def _serialize_body_params(
+        self,
+        params: dict,
+        shape: Shape,
+        operation_model: OperationModel,
+        mime_type: str,
+    ) -> Optional[str]:
+        root = self._serialize_body_params_to_xml(params, shape, operation_model, mime_type)
+        # S3 does not follow the specs on the root tag name for 41 of 44 operations
+        root.tag = self._RESPONSE_ROOT_TAGS.get(root.tag, root.tag)
+        self._prepare_additional_traits_in_xml(root)
+        return self._node_to_string(root, mime_type)
 
     def _prepare_additional_traits_in_response(
         self, response: HttpResponse, operation_model: OperationModel
