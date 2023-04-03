@@ -265,7 +265,7 @@ class ClientFactory(ABC):
     def get_client(
         self,
         service_name: str,
-        region_name: Optional[str],
+        region_name: Optional[str] = None,
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
         aws_session_token: Optional[str] = None,
@@ -373,7 +373,7 @@ class InternalClientFactory(ClientFactory):
     def get_client(
         self,
         service_name: str,
-        region_name: Optional[str],
+        region_name: Optional[str] = None,
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
         aws_session_token: Optional[str] = None,
@@ -428,7 +428,7 @@ class ExternalClientFactory(ClientFactory):
     def get_client(
         self,
         service_name: str,
-        region_name: Optional[str],
+        region_name: Optional[str] = None,
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
         aws_session_token: Optional[str] = None,
@@ -484,12 +484,12 @@ class ExternalAwsClientFactory(ClientFactory):
     def get_client(
         self,
         service_name: str,
-        region_name: Optional[str],
+        region_name: Optional[str] = None,
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
         aws_session_token: Optional[str] = None,
-        endpoint_url: str = None,
-        config: Config = None,
+        endpoint_url: Optional[str] = None,
+        config: Optional[Config] = None,
     ) -> BaseClient:
         """
         Build and return client for connections originating outside LocalStack and targeting AWS.
