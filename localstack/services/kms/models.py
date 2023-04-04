@@ -502,6 +502,8 @@ class KmsKey:
                     f"failed to satisfy constraint: Member must satisfy enum value set: "
                     f"[ENCRYPT_DECRYPT, SIGN_VERIFY, GENERATE_VERIFY_MAC]"
                 )
+            else:
+                return request_key_usage
         else:
             return request_key_usage or "ENCRYPT_DECRYPT"
 
