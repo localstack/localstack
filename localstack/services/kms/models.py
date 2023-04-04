@@ -3,6 +3,7 @@ import io
 import json
 import logging
 import os
+import random
 import re
 import struct
 import uuid
@@ -11,7 +12,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
 
@@ -24,8 +25,10 @@ from localstack.aws.api.kms import (
     DisabledException,
     EncryptionContextType,
     KeyMetadata,
+    KMSInvalidMacException,
     KMSInvalidSignatureException,
     KMSInvalidStateException,
+    MacAlgorithmSpec,
     MessageType,
     NotFoundException,
     SigningAlgorithmSpec,
@@ -56,6 +59,13 @@ ECC_CURVES = {
     "ECC_NIST_P384": ec.SECP384R1(),
     "ECC_NIST_P521": ec.SECP521R1(),
     "ECC_SECG_P256K1": ec.SECP256K1(),
+}
+
+HMAC_RANGE_KEY_LENGTHS = {
+    "HMAC_224": (28, 64),
+    "HMAC_256": (32, 64),
+    "HMAC_384": (48, 128),
+    "HMAC_512": (64, 128),
 }
 
 
@@ -162,9 +172,19 @@ class KmsCryptoKey:
         elif key_spec.startswith("ECC"):
             curve = ECC_CURVES.get(key_spec)
             self.key = ec.generate_private_key(curve)
+        elif key_spec.startswith("HMAC"):
+            if key_spec not in HMAC_RANGE_KEY_LENGTHS:
+                raise ValidationException(
+                    f"1 validation error detected: Value '{key_spec}' at 'keySpec' "
+                    f"failed to satisfy constraint: Member must satisfy enum value set: "
+                    f"[RSA_2048, ECC_NIST_P384, ECC_NIST_P256, ECC_NIST_P521, HMAC_384, RSA_3072, "
+                    f"ECC_SECG_P256K1, RSA_4096, SYMMETRIC_DEFAULT, HMAC_256, HMAC_224, HMAC_512]"
+                )
+            minimum_length, maximum_length = HMAC_RANGE_KEY_LENGTHS.get(key_spec)
+            self.key_material = os.urandom(random.randint(minimum_length, maximum_length))
+            return
         else:
-            # Currently we do not support HMAC keys - symmetric keys that are used for GenerateMac / VerifyMac.
-            # We also do not support SM2 - asymmetric keys both suitable for ENCRYPT_DECRYPT and SIGN_VERIFY,
+            # We do not support SM2 - asymmetric keys both suitable for ENCRYPT_DECRYPT and SIGN_VERIFY,
             # but only used in China AWS regions.
             raise UnsupportedOperationException(f"KeySpec {key_spec} is not supported")
 
@@ -212,6 +232,20 @@ class KmsKey:
     def calculate_and_set_arn(self, account_id, region):
         self.metadata["Arn"] = kms_key_arn(self.metadata.get("KeyId"), account_id, region)
 
+    def generate_mac(self, msg: bytes, mac_algorithm: MacAlgorithmSpec) -> bytes:
+        h = self._get_hmac_context(mac_algorithm)
+        h.update(msg)
+        return h.finalize()
+
+    def verify_mac(self, msg: bytes, mac: bytes, mac_algorithm: MacAlgorithmSpec) -> bool:
+        h = self._get_hmac_context(mac_algorithm)
+        h.update(msg)
+        try:
+            h.verify(mac)
+            return True
+        except InvalidSignature:
+            raise KMSInvalidMacException()
+
     # Encrypt is a method of KmsKey and not of KmsCryptoKey only because it requires KeyId, and KmsCryptoKeys do not
     # hold KeyIds. Maybe it would be possible to remodel this better.
     def encrypt(self, plaintext: bytes) -> bytes:
@@ -253,6 +287,23 @@ class KmsKey:
         except InvalidSignature:
             # AWS itself raises this exception without any additional message.
             raise KMSInvalidSignatureException()
+
+    def _get_hmac_context(self, mac_algorithm: MacAlgorithmSpec) -> hmac.HMAC:
+        if mac_algorithm == "HMAC_SHA_224":
+            h = hmac.HMAC(self.crypto_key.key_material, hashes.SHA224())
+        elif mac_algorithm == "HMAC_SHA_256":
+            h = hmac.HMAC(self.crypto_key.key_material, hashes.SHA256())
+        elif mac_algorithm == "HMAC_SHA_384":
+            h = hmac.HMAC(self.crypto_key.key_material, hashes.SHA384())
+        elif mac_algorithm == "HMAC_SHA_512":
+            h = hmac.HMAC(self.crypto_key.key_material, hashes.SHA512())
+        else:
+            raise ValidationException(
+                f"1 validation error detected: Value '{mac_algorithm}' at 'macAlgorithm' "
+                f"failed to satisfy constraint: Member must satisfy enum value set: "
+                f"[HMAC_SHA_384, HMAC_SHA_256, HMAC_SHA_224, HMAC_SHA_512]"
+            )
+        return h
 
     def _construct_sign_verify_kwargs(
         self, signing_algorithm: SigningAlgorithmSpec, message_type: MessageType
@@ -318,7 +369,6 @@ class KmsKey:
         # "DescribeKey does not return the following information: ... Tags on the KMS key."
 
         self.metadata["Description"] = create_key_request.get("Description") or ""
-        self.metadata["KeyUsage"] = create_key_request.get("KeyUsage") or "ENCRYPT_DECRYPT"
         self.metadata["MultiRegion"] = create_key_request.get("MultiRegion") or False
         self.metadata["Origin"] = create_key_request.get("Origin") or "AWS_KMS"
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_CreateKey.html#KMS-CreateKey-request-CustomerMasterKeySpec
@@ -330,6 +380,9 @@ class KmsKey:
             or "SYMMETRIC_DEFAULT"
         )
         self.metadata["CustomerMasterKeySpec"] = self.metadata.get("KeySpec")
+        self.metadata["KeyUsage"] = self._get_key_usage(
+            create_key_request.get("KeyUsage"), self.metadata.get("KeySpec")
+        )
 
         # Metadata fields AWS introduces automatically
         self.metadata["AWSAccountId"] = account_id or get_aws_account_id()
@@ -353,6 +406,7 @@ class KmsKey:
         self._populate_signing_algorithms(
             self.metadata.get("KeyUsage"), self.metadata.get("KeySpec")
         )
+        self._populate_mac_algorithms(self.metadata.get("KeyUsage"), self.metadata.get("KeySpec"))
 
     def add_tags(self, tags: List) -> None:
         # Just in case we get None from somewhere.
@@ -429,6 +483,35 @@ class KmsKey:
                 "RSASSA_PSS_SHA_384",
                 "RSASSA_PSS_SHA_512",
             ]
+
+    def _populate_mac_algorithms(self, key_usage: str, key_spec: str) -> None:
+        if key_usage != "GENERATE_VERIFY_MAC":
+            return
+        if key_spec == "HMAC_224":
+            self.metadata["MacAlgorithms"] = ["HMAC_SHA_224"]
+        elif key_spec == "HMAC_256":
+            self.metadata["MacAlgorithms"] = ["HMAC_SHA_256"]
+        elif key_spec == "HMAC_384":
+            self.metadata["MacAlgorithms"] = ["HMAC_SHA_384"]
+        elif key_spec == "HMAC_512":
+            self.metadata["MacAlgorithms"] = ["HMAC_SHA_512"]
+
+    def _get_key_usage(self, request_key_usage: str, key_spec: str) -> str:
+        if key_spec in HMAC_RANGE_KEY_LENGTHS:
+            if request_key_usage is None:
+                raise ValidationException(
+                    "You must specify a KeyUsage value for all KMS keys except for symmetric encryption keys."
+                )
+            elif request_key_usage != "GENERATE_VERIFY_MAC":
+                raise ValidationException(
+                    f"1 validation error detected: Value '{request_key_usage}' at 'keyUsage' "
+                    f"failed to satisfy constraint: Member must satisfy enum value set: "
+                    f"[ENCRYPT_DECRYPT, SIGN_VERIFY, GENERATE_VERIFY_MAC]"
+                )
+            else:
+                return "GENERATE_VERIFY_MAC"
+        else:
+            return request_key_usage or "ENCRYPT_DECRYPT"
 
 
 class KmsGrant:

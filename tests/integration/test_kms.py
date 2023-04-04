@@ -839,3 +839,167 @@ class TestKMS:
         with pytest.raises(ClientError) as e:
             aws_client.kms.schedule_key_deletion(KeyId=key_id)
         e.match("KMSInvalidStateException")
+
+    @pytest.mark.aws_validated
+    def test_hmac_create_key(self, kms_client_for_region, kms_create_key, snapshot):
+        region = "us-east-1"
+        kms_client = kms_client_for_region(region)
+        key_ids_before = _get_all_key_ids(kms_client)
+
+        response = kms_create_key(
+            region=region,
+            Description="test key",
+            KeySpec="HMAC_256",
+            KeyUsage="GENERATE_VERIFY_MAC",
+        )
+        key_id = response["KeyId"]
+        snapshot.match("create-hmac-key", response)
+
+        assert key_id not in key_ids_before
+        key_ids_after = _get_all_key_ids(kms_client)
+        assert key_id in key_ids_after
+
+        response = kms_client.describe_key(KeyId=key_id)["KeyMetadata"]
+        snapshot.match("describe-key", response)
+
+    @pytest.mark.aws_validated
+    def test_hmac_create_key_invalid_operations(self, kms_create_key, snapshot):
+        with pytest.raises(ClientError) as e:
+            kms_create_key(Description="test HMAC key without key usage", KeySpec="HMAC_256")
+        snapshot.match("create-hmac-key-without-key-usage", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            kms_create_key(Description="test invalid HMAC spec", KeySpec="HMAC_random")
+        snapshot.match("create-hmac-key-invalid-spec", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            kms_create_key(
+                region="us-east-1",
+                Description="test invalid HMAC spec",
+                KeySpec="HMAC_256",
+                KeyUsage="RANDOM",
+            )
+        snapshot.match("create-hmac-key-invalid-key-usage", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..KeyId",
+            "$..Mac",
+        ]
+    )
+    @pytest.mark.parametrize(
+        "key_spec,mac_algo",
+        [
+            ("HMAC_224", "HMAC_SHA_224"),
+            ("HMAC_256", "HMAC_SHA_256"),
+            ("HMAC_384", "HMAC_SHA_384"),
+            ("HMAC_512", "HMAC_SHA_512"),
+        ],
+    )
+    def test_generate_and_verify_mac(
+        self, kms_client, kms_create_key, key_spec, mac_algo, snapshot
+    ):
+        key_id = kms_create_key(
+            Description="test hmac key",
+            KeySpec=key_spec,
+            KeyUsage="GENERATE_VERIFY_MAC",
+        )["KeyId"]
+
+        generate_mac_response = kms_client.generate_mac(
+            KeyId=key_id,
+            Message="some important message",
+            MacAlgorithm=mac_algo,
+        )
+        snapshot.match("generate-mac", generate_mac_response)
+
+        verify_mac_response = kms_client.verify_mac(
+            KeyId=key_id,
+            Message="some important message",
+            MacAlgorithm=mac_algo,
+            Mac=generate_mac_response["Mac"],
+        )
+        snapshot.match("verify-mac", verify_mac_response)
+
+        # test generate mac with invalid key-id
+        with pytest.raises(ClientError) as e:
+            kms_client.generate_mac(
+                KeyId="key_id",
+                Message="some important message",
+                MacAlgorithm=mac_algo,
+            )
+        snapshot.match("generate-mac-invalid-key-id", e.value.response)
+
+        # test verify mac with invalid key-id
+        with pytest.raises(ClientError) as e:
+            kms_client.verify_mac(
+                KeyId="key_id",
+                Message="some important message",
+                MacAlgorithm=mac_algo,
+                Mac=generate_mac_response["Mac"],
+            )
+        snapshot.match("verify-mac-invalid-key-id", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..KeyId",
+            "$..Mac",
+        ]
+    )
+    @pytest.mark.parametrize(
+        "key_spec,mac_algo",
+        [
+            ("HMAC_224", "HMAC_SHA_256"),
+            ("HMAC_256", "INVALID"),
+        ],
+    )
+    def test_invalid_generate_mac(self, kms_client, kms_create_key, key_spec, mac_algo, snapshot):
+        key_id = kms_create_key(
+            Description="test hmac key",
+            KeySpec=key_spec,
+            KeyUsage="GENERATE_VERIFY_MAC",
+        )["KeyId"]
+
+        with pytest.raises(ClientError) as e:
+            kms_client.generate_mac(
+                KeyId=key_id,
+                Message="some important message",
+                MacAlgorithm=mac_algo,
+            )
+        snapshot.match("generate-mac", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..KeyId", "$..Mac", "$..message"])
+    @pytest.mark.parametrize(
+        "key_spec,mac_algo,verify_msg",
+        [
+            ("HMAC_256", "HMAC_SHA_256", "some different important message"),
+            ("HMAC_256", "HMAC_SHA_512", "some important message"),
+            ("HMAC_256", "INVALID", "some important message"),
+        ],
+    )
+    def test_invalid_verify_mac(
+        self, kms_client, kms_create_key, key_spec, mac_algo, verify_msg, snapshot
+    ):
+        key_id = kms_create_key(
+            Description="test hmac key",
+            KeySpec=key_spec,
+            KeyUsage="GENERATE_VERIFY_MAC",
+        )["KeyId"]
+
+        generate_mac_response = kms_client.generate_mac(
+            KeyId=key_id,
+            Message="some important message",
+            MacAlgorithm="HMAC_SHA_256",
+        )
+        snapshot.match("generate-mac", generate_mac_response)
+
+        with pytest.raises(ClientError) as e:
+            kms_client.verify_mac(
+                KeyId=key_id,
+                Message=verify_msg,
+                MacAlgorithm=mac_algo,
+                Mac=generate_mac_response["Mac"],
+            )
+        snapshot.match("verify-mac", e.value.response)
