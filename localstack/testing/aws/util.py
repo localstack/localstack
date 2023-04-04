@@ -3,6 +3,7 @@ import os
 from typing import Callable, Dict, TypeVar
 
 import boto3
+import botocore
 from botocore.awsrequest import AWSPreparedRequest, AWSResponse
 from botocore.client import BaseClient
 from botocore.compat import HTTPHeaders
@@ -11,6 +12,12 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.api import RequestContext
+from localstack.aws.connect import (
+    ClientFactory,
+    ExternalAwsClientFactory,
+    ExternalClientFactory,
+    ServiceLevelClientFactory,
+)
 from localstack.aws.forwarder import create_http_request
 from localstack.aws.protocol.parser import create_parser
 from localstack.aws.proxy import get_account_id_from_request
@@ -160,3 +167,27 @@ T = TypeVar("T", bound=BaseClient)
 
 def RequestContextClient(client: T) -> T:
     return _RequestContextClient(client)  # noqa
+
+
+# used for the aws_session, aws_client_factory and aws_client pytest fixtures
+
+
+def base_aws_session() -> boto3.Session:
+    return boto3.Session()
+
+
+def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
+    config = None
+    if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS"):
+        config = botocore.config.Config(
+            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+        )
+
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return ExternalAwsClientFactory(session=session, config=config)
+    else:
+        return ExternalClientFactory(session=session, config=config)
+
+
+def base_aws_client(client_factory: ClientFactory) -> ServiceLevelClientFactory:
+    return client_factory()

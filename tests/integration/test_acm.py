@@ -24,17 +24,17 @@ JjZ91eQ0hjkCMHw2U/Aw5WJjOpnitqM7mzT6HtoQknFekROn3aRukswy1vUhZscv
 
 
 class TestACM:
-    def test_import_certificate(self, acm_client):
-        certs_before = acm_client.list_certificates().get("CertificateSummaryList", [])
+    def test_import_certificate(self, aws_client):
+        certs_before = aws_client.acm.list_certificates().get("CertificateSummaryList", [])
 
         with pytest.raises(Exception) as exec_info:
-            acm_client.import_certificate(Certificate=b"CERT123", PrivateKey=b"KEY123")
+            aws_client.acm.import_certificate(Certificate=b"CERT123", PrivateKey=b"KEY123")
         assert "PEM" in str(exec_info)
 
         private_key = ec2_utils.random_key_pair()["material"]
         result = None
         try:
-            result = acm_client.import_certificate(
+            result = aws_client.acm.import_certificate(
                 Certificate=DIGICERT_ROOT_CERT, PrivateKey=private_key
             )
             assert "CertificateArn" in result
@@ -46,19 +46,19 @@ class TestACM:
             acm_cert_arn = result["CertificateArn"].split("/")[0]
             assert expected_arn == acm_cert_arn
 
-            certs_after = acm_client.list_certificates().get("CertificateSummaryList", [])
+            certs_after = aws_client.acm.list_certificates().get("CertificateSummaryList", [])
             assert len(certs_before) + 1 == len(certs_after)
         finally:
             if result is not None:
-                acm_client.delete_certificate(CertificateArn=result["CertificateArn"])
+                aws_client.acm.delete_certificate(CertificateArn=result["CertificateArn"])
 
-    def test_domain_validation(self, acm_client, acm_request_certificate):
+    def test_domain_validation(self, acm_request_certificate, aws_client):
         certificate_arn = acm_request_certificate()
-        result = acm_client.describe_certificate(CertificateArn=certificate_arn)
+        result = aws_client.acm.describe_certificate(CertificateArn=certificate_arn)
         options = result["Certificate"]["DomainValidationOptions"]
         assert len(options) == 1
 
-    def test_boto_wait_for_certificate_validation(self, acm_client, acm_request_certificate):
+    def test_boto_wait_for_certificate_validation(self, acm_request_certificate, aws_client):
         certificate_arn = acm_request_certificate()
-        waiter = acm_client.get_waiter("certificate_validated")
+        waiter = aws_client.acm.get_waiter("certificate_validated")
         waiter.wait(CertificateArn=certificate_arn, WaiterConfig={"Delay": 0, "MaxAttempts": 1})

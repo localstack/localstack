@@ -243,12 +243,12 @@ class ParametrizedLambda:
 
 
 @pytest.fixture
-def multiruntime_lambda(lambda_client, request, lambda_su_role) -> ParametrizedLambda:
+def multiruntime_lambda(aws_client, request, lambda_su_role) -> ParametrizedLambda:
     scenario, runtime, handler = request.param
 
     zip_file_path = package_for_lang(scenario=scenario, runtime=runtime)
     param_lambda = ParametrizedLambda(
-        lambda_client=lambda_client,
+        lambda_client=aws_client.awslambda,
         scenario=scenario,
         runtime=runtime,
         handler=handler,

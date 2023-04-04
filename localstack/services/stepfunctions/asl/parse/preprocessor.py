@@ -111,6 +111,9 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.comparis
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_func import (
     ComparisonFunc,
 )
+from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_operator_type import (
+    ComparisonOperatorType,
+)
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_props import (
     ComparisonProps,
 )
@@ -325,17 +328,15 @@ class Preprocessor(ASLParserVisitor):
         value: str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return Variable(value=value)
 
-    def visitComparison_op(
-        self, ctx: ASLParser.Comparison_opContext
-    ) -> ComparisonFunc.ComparisonOperator:
+    def visitComparison_op(self, ctx: ASLParser.Comparison_opContext) -> ComparisonOperatorType:
         try:
             operator_type: int = ctx.children[0].symbol.type
-            return ComparisonFunc.ComparisonOperator(operator_type)
+            return ComparisonOperatorType(operator_type)
         except Exception:
             raise ValueError(f"Could not derive ComparisonOperator from context '{ctx.getText()}'.")
 
     def visitComparison_func(self, ctx: ASLParser.Comparison_funcContext) -> ComparisonFunc:
-        comparison_op: ComparisonFunc.ComparisonOperator = self.visit(ctx.comparison_op())
+        comparison_op: ComparisonOperatorType = self.visit(ctx.comparison_op())
 
         json_decl = ctx.json_value_decl()
         json_str: str = json_decl.getText()

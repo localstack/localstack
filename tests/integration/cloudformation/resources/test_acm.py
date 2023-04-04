@@ -16,10 +16,10 @@ Resources:
 
 
 @pytest.mark.only_localstack
-def test_cfn_acm_certificate(deploy_cfn_template, acm_client):
+def test_cfn_acm_certificate(deploy_cfn_template, aws_client):
     domain = f"domain-{short_uid()}.com"
     deploy_cfn_template(template=TEST_TEMPLATE, template_mapping={"domain": domain})
 
-    result = acm_client.list_certificates()["CertificateSummaryList"]
+    result = aws_client.acm.list_certificates()["CertificateSummaryList"]
     result = [cert for cert in result if cert["DomainName"] == domain]
     assert result

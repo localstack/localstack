@@ -8,23 +8,20 @@ PUBLICATION_RETRIES = 20
 
 class TestNotifications:
     @pytest.mark.aws_validated
-    def test_sqs_queue_names(self, sqs_client):
+    def test_sqs_queue_names(self, aws_client):
         queue_name = f"{short_uid()}.fifo"
 
         # make sure we can create *.fifo queues
         try:
-            queue = sqs_client.create_queue(QueueName=queue_name, Attributes={"FifoQueue": "true"})
+            queue = aws_client.sqs.create_queue(
+                QueueName=queue_name, Attributes={"FifoQueue": "true"}
+            )
             assert queue_name in queue["QueueUrl"]
         finally:
-            sqs_client.delete_queue(QueueUrl=queue["QueueUrl"])
+            aws_client.sqs.delete_queue(QueueUrl=queue["QueueUrl"])
 
     def test_sns_to_sqs(
-        self,
-        sqs_client,
-        sns_client,
-        sqs_create_queue,
-        sns_create_topic,
-        sqs_receive_num_messages,
+        self, sqs_create_queue, sns_create_topic, sqs_receive_num_messages, aws_client
     ):
 
         # create topic and queue
@@ -32,22 +29,22 @@ class TestNotifications:
         topic_info = sns_create_topic()
         topic_arn = topic_info["TopicArn"]
         # subscribe SQS to SNS, publish message
-        queue_arn = sqs_client.get_queue_attributes(
+        queue_arn = aws_client.sqs.get_queue_attributes(
             QueueUrl=queue_url, AttributeNames=["QueueArn"]
         )["Attributes"]["QueueArn"]
-        subscription = sns_client.subscribe(
+        subscription = aws_client.sns.subscribe(
             TopicArn=topic_arn,
             Protocol="sqs",
             Endpoint=queue_arn,
         )
         test_value = short_uid()
-        sns_client.publish(
+        aws_client.sns.publish(
             TopicArn=topic_arn,
             Message="test message for SQS",
             MessageAttributes={"attr1": {"DataType": "String", "StringValue": test_value}},
         )
         # cleanup
-        sns_client.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
+        aws_client.sns.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
 
         def assert_message():
             # receive, and delete message from SQS

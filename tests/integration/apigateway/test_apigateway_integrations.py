@@ -25,18 +25,18 @@ from tests.integration.awslambda.test_lambda import TEST_LAMBDA_LIBS
 
 
 @pytest.mark.skip_offline
-def test_http_integration(apigateway_client, create_rest_apigw):
+def test_http_integration(create_rest_apigw, aws_client):
     api_id, _, root_id = create_rest_apigw(name="my_api", description="this is my api")
 
-    apigateway_client.put_method(
+    aws_client.apigateway.put_method(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="none"
     )
 
-    apigateway_client.put_method_response(
+    aws_client.apigateway.put_method_response(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
     )
 
-    apigateway_client.put_integration(
+    aws_client.apigateway.put_integration(
         restApiId=api_id,
         resourceId=root_id,
         httpMethod="GET",
@@ -47,7 +47,7 @@ def test_http_integration(apigateway_client, create_rest_apigw):
     )
 
     stage_name = "staging"
-    apigateway_client.create_deployment(restApiId=api_id, stageName=stage_name)
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
 
     url = path_based_url(api_id=api_id, stage_name=stage_name, path="/")
     response = requests.get(url)
@@ -55,22 +55,22 @@ def test_http_integration(apigateway_client, create_rest_apigw):
     assert response.status_code == 200
 
 
-def test_put_integration_responses(apigateway_client):
-    response = apigateway_client.create_rest_api(name="my_api", description="this is my api")
+def test_put_integration_responses(aws_client):
+    response = aws_client.apigateway.create_rest_api(name="my_api", description="this is my api")
     api_id = response["id"]
 
-    resources = apigateway_client.get_resources(restApiId=api_id)
+    resources = aws_client.apigateway.get_resources(restApiId=api_id)
     root_id = [resource for resource in resources["items"] if resource["path"] == "/"][0]["id"]
 
-    apigateway_client.put_method(
+    aws_client.apigateway.put_method(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="none"
     )
 
-    apigateway_client.put_method_response(
+    aws_client.apigateway.put_method_response(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
     )
 
-    apigateway_client.put_integration(
+    aws_client.apigateway.put_integration(
         restApiId=api_id,
         resourceId=root_id,
         httpMethod="GET",
@@ -80,7 +80,7 @@ def test_put_integration_responses(apigateway_client):
         integrationHttpMethod="POST",
     )
 
-    response = apigateway_client.put_integration_response(
+    response = aws_client.apigateway.put_integration_response(
         restApiId=api_id,
         resourceId=root_id,
         httpMethod="GET",
@@ -102,7 +102,7 @@ def test_put_integration_responses(apigateway_client):
         }
     )
 
-    response = apigateway_client.get_integration_response(
+    response = aws_client.apigateway.get_integration_response(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
     )
     # this is hard to match against, so remove it
@@ -118,7 +118,9 @@ def test_put_integration_responses(apigateway_client):
         }
     )
 
-    response = apigateway_client.get_method(restApiId=api_id, resourceId=root_id, httpMethod="GET")
+    response = aws_client.apigateway.get_method(
+        restApiId=api_id, resourceId=root_id, httpMethod="GET"
+    )
     # this is hard to match against, so remove it
     response["ResponseMetadata"].pop("HTTPHeaders", None)
     response["ResponseMetadata"].pop("RetryAttempts", None)
@@ -137,23 +139,25 @@ def test_put_integration_responses(apigateway_client):
     response = requests.get(url, data=json.dumps({"egg": "ham"}))
     assert response.ok
 
-    apigateway_client.delete_integration_response(
+    aws_client.apigateway.delete_integration_response(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
     )
 
-    response = apigateway_client.get_method(restApiId=api_id, resourceId=root_id, httpMethod="GET")
+    response = aws_client.apigateway.get_method(
+        restApiId=api_id, resourceId=root_id, httpMethod="GET"
+    )
     assert response["methodIntegration"]["integrationResponses"] == {}
 
     # adding a new method and performing put integration with contentHandling as CONVERT_TO_BINARY
-    apigateway_client.put_method(
+    aws_client.apigateway.put_method(
         restApiId=api_id, resourceId=root_id, httpMethod="PUT", authorizationType="none"
     )
 
-    apigateway_client.put_method_response(
+    aws_client.apigateway.put_method_response(
         restApiId=api_id, resourceId=root_id, httpMethod="PUT", statusCode="200"
     )
 
-    apigateway_client.put_integration(
+    aws_client.apigateway.put_integration(
         restApiId=api_id,
         resourceId=root_id,
         httpMethod="PUT",
@@ -163,7 +167,7 @@ def test_put_integration_responses(apigateway_client):
         integrationHttpMethod="POST",
     )
 
-    response = apigateway_client.put_integration_response(
+    response = aws_client.apigateway.put_integration_response(
         restApiId=api_id,
         resourceId=root_id,
         httpMethod="PUT",
@@ -187,7 +191,7 @@ def test_put_integration_responses(apigateway_client):
         }
     )
 
-    response = apigateway_client.get_integration_response(
+    response = aws_client.apigateway.get_integration_response(
         restApiId=api_id, resourceId=root_id, httpMethod="PUT", statusCode="200"
     )
     # this is hard to match against, so remove it
@@ -205,19 +209,19 @@ def test_put_integration_responses(apigateway_client):
     )
 
 
-def test_put_integration_response_with_response_template(apigateway_client):
-    response = apigateway_client.create_rest_api(name="my_api", description="this is my api")
+def test_put_integration_response_with_response_template(aws_client):
+    response = aws_client.apigateway.create_rest_api(name="my_api", description="this is my api")
     api_id = response["id"]
-    resources = apigateway_client.get_resources(restApiId=api_id)
+    resources = aws_client.apigateway.get_resources(restApiId=api_id)
     root_id = [resource for resource in resources["items"] if resource["path"] == "/"][0]["id"]
 
-    apigateway_client.put_method(
+    aws_client.apigateway.put_method(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
     )
-    apigateway_client.put_method_response(
+    aws_client.apigateway.put_method_response(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
     )
-    apigateway_client.put_integration(
+    aws_client.apigateway.put_integration(
         restApiId=api_id,
         resourceId=root_id,
         httpMethod="GET",
@@ -227,7 +231,7 @@ def test_put_integration_response_with_response_template(apigateway_client):
         integrationHttpMethod="POST",
     )
 
-    apigateway_client.put_integration_response(
+    aws_client.apigateway.put_integration_response(
         restApiId=api_id,
         resourceId=root_id,
         httpMethod="GET",
@@ -236,7 +240,7 @@ def test_put_integration_response_with_response_template(apigateway_client):
         responseTemplates={"application/json": json.dumps({"data": "test"})},
     )
 
-    response = apigateway_client.get_integration_response(
+    response = aws_client.apigateway.get_integration_response(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
     )
 
@@ -253,16 +257,16 @@ def test_put_integration_response_with_response_template(apigateway_client):
 
 
 # TODO: add snapshot test!
-def test_put_integration_validation(apigateway_client):
-    response = apigateway_client.create_rest_api(name="my_api", description="this is my api")
+def test_put_integration_validation(aws_client):
+    response = aws_client.apigateway.create_rest_api(name="my_api", description="this is my api")
     api_id = response["id"]
-    resources = apigateway_client.get_resources(restApiId=api_id)
+    resources = aws_client.apigateway.get_resources(restApiId=api_id)
     root_id = [resource for resource in resources["items"] if resource["path"] == "/"][0]["id"]
 
-    apigateway_client.put_method(
+    aws_client.apigateway.put_method(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
     )
-    apigateway_client.put_method_response(
+    aws_client.apigateway.put_method_response(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
     )
 
@@ -276,7 +280,7 @@ def test_put_integration_validation(apigateway_client):
     for _type in types_requiring_integration_method:
         # Ensure that integrations of these types fail if no integrationHttpMethod is provided
         with pytest.raises(ClientError) as ex:
-            apigateway_client.put_integration(
+            aws_client.apigateway.put_integration(
                 restApiId=api_id,
                 resourceId=root_id,
                 httpMethod="GET",
@@ -291,7 +295,7 @@ def test_put_integration_validation(apigateway_client):
 
     for _type in types_not_requiring_integration_method:
         # Ensure that integrations of these types do not need the integrationHttpMethod
-        apigateway_client.put_integration(
+        aws_client.apigateway.put_integration(
             restApiId=api_id,
             resourceId=root_id,
             httpMethod="GET",
@@ -300,7 +304,7 @@ def test_put_integration_validation(apigateway_client):
         )
     for _type in http_types:
         # Ensure that it works fine when providing the integrationHttpMethod-argument
-        apigateway_client.put_integration(
+        aws_client.apigateway.put_integration(
             restApiId=api_id,
             resourceId=root_id,
             httpMethod="GET",
@@ -310,7 +314,7 @@ def test_put_integration_validation(apigateway_client):
         )
     for _type in ["AWS"]:
         # Ensure that it works fine when providing the integrationHttpMethod + credentials
-        apigateway_client.put_integration(
+        aws_client.apigateway.put_integration(
             restApiId=api_id,
             resourceId=root_id,
             credentials="arn:aws:iam::{}:role/service-role/testfunction-role-oe783psq".format(
@@ -323,7 +327,7 @@ def test_put_integration_validation(apigateway_client):
         )
     for _type in aws_types:
         # Ensure that credentials are not required when URI points to a Lambda stream
-        apigateway_client.put_integration(
+        aws_client.apigateway.put_integration(
             restApiId=api_id,
             resourceId=root_id,
             httpMethod="GET",
@@ -335,7 +339,7 @@ def test_put_integration_validation(apigateway_client):
     for _type in ["AWS_PROXY"]:
         # Ensure that aws_proxy does not support S3
         with pytest.raises(ClientError) as ex:
-            apigateway_client.put_integration(
+            aws_client.apigateway.put_integration(
                 restApiId=api_id,
                 resourceId=root_id,
                 credentials="arn:aws:iam::{}:role/service-role/testfunction-role-oe783psq".format(
@@ -355,7 +359,7 @@ def test_put_integration_validation(apigateway_client):
     for _type in http_types:
         # Ensure that the URI is valid HTTP
         with pytest.raises(ClientError) as ex:
-            apigateway_client.put_integration(
+            aws_client.apigateway.put_integration(
                 restApiId=api_id,
                 resourceId=root_id,
                 httpMethod="GET",
@@ -368,7 +372,7 @@ def test_put_integration_validation(apigateway_client):
 
     # Ensure that the URI is an ARN
     with pytest.raises(ClientError) as ex:
-        apigateway_client.put_integration(
+        aws_client.apigateway.put_integration(
             restApiId=api_id,
             resourceId=root_id,
             httpMethod="GET",
@@ -381,7 +385,7 @@ def test_put_integration_validation(apigateway_client):
 
     # Ensure that the URI is a valid ARN
     with pytest.raises(ClientError) as ex:
-        apigateway_client.put_integration(
+        aws_client.apigateway.put_integration(
             restApiId=api_id,
             resourceId=root_id,
             httpMethod="GET",
@@ -432,11 +436,9 @@ def test_create_execute_api_vpc_endpoint(
     default_vpc,
     create_lambda_function,
     ec2_create_security_group,
-    ec2_client,
-    apigateway_client,
     dynamodb_resource,
-    lambda_client,
     snapshot,
+    aws_client,
 ):
     poll_sleep = 5 if is_aws_cloud() else 1
     # TODO: create a re-usable ec2_api() transformer
@@ -464,7 +466,7 @@ def test_create_execute_api_vpc_endpoint(
     request_templates = {APPLICATION_JSON: json.dumps({"TableName": table_name})}
 
     # deploy REST API with integration
-    region_name = apigateway_client.meta.region_name
+    region_name = aws_client.apigateway.meta.region_name
     integration_uri = f"arn:aws:apigateway:{region_name}:dynamodb:action/Scan"
     api_id = create_rest_api_with_integration(
         integration_uri=integration_uri,
@@ -474,7 +476,7 @@ def test_create_execute_api_vpc_endpoint(
 
     # get service names
     service_name = f"com.amazonaws.{region_name}.execute-api"
-    service_names = ec2_client.describe_vpc_endpoint_services()["ServiceNames"]
+    service_names = aws_client.ec2.describe_vpc_endpoint_services()["ServiceNames"]
     assert service_name in service_names
 
     # create security group
@@ -483,11 +485,11 @@ def test_create_execute_api_vpc_endpoint(
         VpcId=vpc_id, Description="Test SG for API GW", ports=[443]
     )
     security_group = security_group["GroupId"]
-    subnets = ec2_client.describe_subnets(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])
+    subnets = aws_client.ec2.describe_subnets(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])
     subnets = [sub["SubnetId"] for sub in subnets["Subnets"]]
 
     # get or create execute-api VPC endpoint
-    endpoints = ec2_client.describe_vpc_endpoints(MaxResults=1000)["VpcEndpoints"]
+    endpoints = aws_client.ec2.describe_vpc_endpoints(MaxResults=1000)["VpcEndpoints"]
     matching = [ep for ep in endpoints if ep["ServiceName"] == service_name]
     if matching:
         endpoint_id = matching[0]["VpcEndpointId"]
@@ -502,7 +504,7 @@ def test_create_execute_api_vpc_endpoint(
 
     # wait until VPC endpoint is in state "available"
     def _check_available():
-        result = ec2_client.describe_vpc_endpoints(VpcEndpointIds=[endpoint_id])
+        result = aws_client.ec2.describe_vpc_endpoints(VpcEndpointIds=[endpoint_id])
         endpoint_details = result["VpcEndpoints"][0]
         # may have multiple entries in AWS
         endpoint_details["DnsEntries"] = endpoint_details["DnsEntries"][:1]
@@ -518,7 +520,7 @@ def test_create_execute_api_vpc_endpoint(
         {"op": "replace", "path": "/endpointConfiguration/types/EDGE", "value": "PRIVATE"},
         {"op": "add", "path": "/endpointConfiguration/vpcEndpointIds", "value": endpoint_id},
     ]
-    apigateway_client.update_rest_api(restApiId=api_id, patchOperations=patches)
+    aws_client.apigateway.update_rest_api(restApiId=api_id, patchOperations=patches)
 
     # create Lambda that invokes API via VPC endpoint (required as the endpoint is only accessible within the VPC)
     subdomain = f"{api_id}-{endpoint_id}"
@@ -568,15 +570,17 @@ def test_create_execute_api_vpc_endpoint(
         ],
     }
     patches = [{"op": "replace", "path": "/policy", "value": json.dumps(statement)}]
-    result = apigateway_client.update_rest_api(restApiId=api_id, patchOperations=patches)
+    result = aws_client.apigateway.update_rest_api(restApiId=api_id, patchOperations=patches)
     result["policy"] = json.loads(to_bytes(result["policy"]).decode("unicode_escape"))
     snapshot.match("api-details", result)
 
     # re-deploy API
-    create_rest_api_deployment(apigateway_client, restApiId=api_id, stageName=DEFAULT_STAGE_NAME)
+    create_rest_api_deployment(
+        aws_client.apigateway, restApiId=api_id, stageName=DEFAULT_STAGE_NAME
+    )
 
     def _invoke_api():
-        result = lambda_client.invoke(FunctionName=func_name, Payload="{}")
+        result = aws_client.awslambda.invoke(FunctionName=func_name, Payload="{}")
         result = json.loads(to_str(result["Payload"].read()))
         items = json.loads(result["content"])["Items"]
         assert len(items) == len(item_ids)

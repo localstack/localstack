@@ -90,8 +90,8 @@ class TestOpensearchProvider:
     OPENSEARCH_MULTI_CLUSTER=True, regardless of changes in the config value.
     """
 
-    def test_list_versions(self, opensearch_client):
-        response = opensearch_client.list_versions()
+    def test_list_versions(self, aws_client):
+        response = aws_client.opensearch.list_versions()
 
         assert "Versions" in response
         versions = response["Versions"]
@@ -124,8 +124,8 @@ class TestOpensearchProvider:
         for expected_version in expected_versions:
             assert expected_version in versions
 
-    def test_get_compatible_versions(self, opensearch_client):
-        response = opensearch_client.get_compatible_versions()
+    def test_get_compatible_versions(self, aws_client):
+        response = aws_client.opensearch.get_compatible_versions()
 
         assert "CompatibleVersions" in response
 
@@ -293,9 +293,9 @@ class TestOpensearchProvider:
         for expected_compatible_version in expected_compatible_versions:
             assert expected_compatible_version in compatible_versions
 
-    def test_get_compatible_version_for_domain(self, opensearch_client, opensearch_create_domain):
+    def test_get_compatible_version_for_domain(self, opensearch_create_domain, aws_client):
         opensearch_domain = opensearch_create_domain(EngineVersion="OpenSearch_1.0")
-        response = opensearch_client.get_compatible_versions(DomainName=opensearch_domain)
+        response = aws_client.opensearch.get_compatible_versions(DomainName=opensearch_domain)
         assert "CompatibleVersions" in response
         compatible_versions = response["CompatibleVersions"]
 
@@ -305,12 +305,14 @@ class TestOpensearchProvider:
         # Just check if 1.1 is contained (not equality) to avoid breaking the test if new versions are supported
         assert "OpenSearch_1.1" in compatibility["TargetVersions"]
 
-    def test_create_domain(self, opensearch_client, opensearch_wait_for_cluster):
+    def test_create_domain(self, opensearch_wait_for_cluster, aws_client):
         domain_name = f"opensearch-domain-{short_uid()}"
         try:
-            domain_status = opensearch_client.create_domain(DomainName=domain_name)["DomainStatus"]
+            domain_status = aws_client.opensearch.create_domain(DomainName=domain_name)[
+                "DomainStatus"
+            ]
 
-            response = opensearch_client.list_domain_names(EngineType="OpenSearch")
+            response = aws_client.opensearch.list_domain_names(EngineType="OpenSearch")
             domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
 
             assert domain_name in domain_names
@@ -326,14 +328,14 @@ class TestOpensearchProvider:
             requested_plugins = set(OPENSEARCH_PLUGIN_LIST)
             assert requested_plugins.issubset(installed_plugins)
         finally:
-            opensearch_client.delete_domain(DomainName=domain_name)
+            aws_client.opensearch.delete_domain(DomainName=domain_name)
 
     @pytest.mark.only_localstack
     @pytest.mark.parametrize(
         "engine_version",
         ["OpenSearch_1.0", "OpenSearch_1.1", "OpenSearch_1.2", "OpenSearch_1.3", "OpenSearch_2.3"],
     )
-    def test_security_plugin(self, opensearch_create_domain, opensearch_client, engine_version):
+    def test_security_plugin(self, opensearch_create_domain, engine_version, aws_client):
         master_user_auth = ("master-user", "12345678Aa!")
 
         # enable the security plugin for this test
@@ -348,7 +350,7 @@ class TestOpensearchProvider:
         domain_name = opensearch_create_domain(
             EngineVersion=engine_version, AdvancedSecurityOptions=advanced_security_options
         )
-        endpoint = opensearch_client.describe_domain(DomainName=domain_name)["DomainStatus"][
+        endpoint = aws_client.opensearch.describe_domain(DomainName=domain_name)["DomainStatus"][
             "Endpoint"
         ]
 
@@ -427,65 +429,65 @@ class TestOpensearchProvider:
         test_user_client.index(test_index_name, body={"test-key1": "test-value1"})
 
     @pytest.mark.aws_validated
-    def test_create_domain_with_invalid_name(self, opensearch_client):
+    def test_create_domain_with_invalid_name(self, aws_client):
         with pytest.raises(botocore.exceptions.ClientError) as e:
-            opensearch_client.create_domain(
+            aws_client.opensearch.create_domain(
                 DomainName="123abc"
             )  # domain needs to start with characters
         assert e.value.response["Error"]["Code"] == "ValidationException"
 
         with pytest.raises(botocore.exceptions.ClientError) as e:
-            opensearch_client.create_domain(DomainName="abc#")  # no special characters allowed
+            aws_client.opensearch.create_domain(DomainName="abc#")  # no special characters allowed
         assert e.value.response["Error"]["Code"] == "ValidationException"
 
     @pytest.mark.aws_validated
-    def test_exception_header_field(self, opensearch_client):
+    def test_exception_header_field(self, aws_client):
         """Test if the error response correctly sets the error code in the headers (see #6304)."""
         with pytest.raises(botocore.exceptions.ClientError) as e:
             # use an invalid domain name to provoke an exception
-            opensearch_client.create_domain(DomainName="123")
+            aws_client.opensearch.create_domain(DomainName="123")
         assert (
             e.value.response["ResponseMetadata"]["HTTPHeaders"]["x-amzn-errortype"]
             == "ValidationException"
         )
 
-    def test_create_existing_domain_causes_exception(
-        self, opensearch_client, opensearch_wait_for_cluster
-    ):
+    def test_create_existing_domain_causes_exception(self, opensearch_wait_for_cluster, aws_client):
         domain_name = f"opensearch-domain-{short_uid()}"
         try:
-            opensearch_client.create_domain(DomainName=domain_name)
+            aws_client.opensearch.create_domain(DomainName=domain_name)
             with pytest.raises(botocore.exceptions.ClientError) as e:
-                opensearch_client.create_domain(DomainName=domain_name)
+                aws_client.opensearch.create_domain(DomainName=domain_name)
             assert e.value.response["Error"]["Code"] == "ResourceAlreadyExistsException"
             opensearch_wait_for_cluster(domain_name=domain_name)
         finally:
-            opensearch_client.delete_domain(DomainName=domain_name)
+            aws_client.opensearch.delete_domain(DomainName=domain_name)
 
-    def test_describe_domains(self, opensearch_client, opensearch_domain):
-        response = opensearch_client.describe_domains(DomainNames=[opensearch_domain])
+    def test_describe_domains(self, opensearch_domain, aws_client):
+        response = aws_client.opensearch.describe_domains(DomainNames=[opensearch_domain])
         assert len(response["DomainStatusList"]) == 1
         assert response["DomainStatusList"][0]["DomainName"] == opensearch_domain
 
-    def test_domain_version(self, opensearch_client, opensearch_domain, opensearch_create_domain):
-        response = opensearch_client.describe_domain(DomainName=opensearch_domain)
+    def test_domain_version(self, opensearch_domain, opensearch_create_domain, aws_client):
+        response = aws_client.opensearch.describe_domain(DomainName=opensearch_domain)
         assert "DomainStatus" in response
         status = response["DomainStatus"]
         assert "EngineVersion" in status
         assert status["EngineVersion"] == OPENSEARCH_DEFAULT_VERSION
         domain_name = opensearch_create_domain(EngineVersion="OpenSearch_1.0")
-        response = opensearch_client.describe_domain(DomainName=domain_name)
+        response = aws_client.opensearch.describe_domain(DomainName=domain_name)
         assert "DomainStatus" in response
         status = response["DomainStatus"]
         assert "EngineVersion" in status
         assert status["EngineVersion"] == "OpenSearch_1.0"
 
-    def test_update_domain_config(self, opensearch_client, opensearch_domain):
-        initial_response = opensearch_client.describe_domain_config(DomainName=opensearch_domain)
-        update_response = opensearch_client.update_domain_config(
+    def test_update_domain_config(self, opensearch_domain, aws_client):
+        initial_response = aws_client.opensearch.describe_domain_config(
+            DomainName=opensearch_domain
+        )
+        update_response = aws_client.opensearch.update_domain_config(
             DomainName=opensearch_domain, ClusterConfig={"InstanceType": "r4.16xlarge.search"}
         )
-        final_response = opensearch_client.describe_domain_config(DomainName=opensearch_domain)
+        final_response = aws_client.opensearch.describe_domain_config(DomainName=opensearch_domain)
 
         assert (
             initial_response["DomainConfig"]["ClusterConfig"]["Options"]["InstanceType"]
@@ -531,25 +533,25 @@ class TestOpensearchProvider:
             "I'm just a simple man" in response.text
         ), f"search unsuccessful({response.status_code}): {response.text}"
 
-    def test_endpoint_strategy_path(self, monkeypatch, opensearch_create_domain, opensearch_client):
+    def test_endpoint_strategy_path(self, monkeypatch, opensearch_create_domain, aws_client):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "path")
 
         domain_name = f"opensearch-domain-{short_uid()}"
 
         opensearch_create_domain(DomainName=domain_name)
-        status = opensearch_client.describe_domain(DomainName=domain_name)["DomainStatus"]
+        status = aws_client.opensearch.describe_domain(DomainName=domain_name)["DomainStatus"]
 
         assert "Endpoint" in status
         endpoint = status["Endpoint"]
         assert endpoint.endswith(f"/{domain_name}")
 
-    def test_endpoint_strategy_port(self, monkeypatch, opensearch_create_domain, opensearch_client):
+    def test_endpoint_strategy_port(self, monkeypatch, opensearch_create_domain, aws_client):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
 
         domain_name = f"opensearch-domain-{short_uid()}"
 
         opensearch_create_domain(DomainName=domain_name)
-        status = opensearch_client.describe_domain(DomainName=domain_name)["DomainStatus"]
+        status = aws_client.opensearch.describe_domain(DomainName=domain_name)["DomainStatus"]
 
         assert "Endpoint" in status
         endpoint = status["Endpoint"]
@@ -560,7 +562,7 @@ class TestOpensearchProvider:
         )
 
     # testing CloudFormation deployment here to make sure OpenSearch is installed
-    def test_cloudformation_deployment(self, deploy_cfn_template, opensearch_client):
+    def test_cloudformation_deployment(self, deploy_cfn_template, aws_client):
         domain_name = f"domain-{short_uid()}"
         deploy_cfn_template(
             template_path=os.path.join(
@@ -569,7 +571,7 @@ class TestOpensearchProvider:
             parameters={"OpenSearchDomainName": domain_name},
         )
 
-        response = opensearch_client.list_domain_names(EngineType="OpenSearch")
+        response = aws_client.opensearch.list_domain_names(EngineType="OpenSearch")
         domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
         assert domain_name in domain_names
 
@@ -607,7 +609,7 @@ class TestEdgeProxiedOpensearchCluster:
         ), "gave up waiting for cluster to shut down"
 
     def test_custom_endpoint(
-        self, opensearch_client, opensearch_wait_for_cluster, opensearch_create_domain
+        self, opensearch_wait_for_cluster, opensearch_create_domain, aws_client
     ):
         domain_name = f"opensearch-domain-{short_uid()}"
         custom_endpoint = "http://localhost:4566/my-custom-endpoint"
@@ -620,7 +622,7 @@ class TestEdgeProxiedOpensearchCluster:
             DomainName=domain_name, DomainEndpointOptions=domain_endpoint_options
         )
 
-        response = opensearch_client.list_domain_names(EngineType="OpenSearch")
+        response = aws_client.opensearch.list_domain_names(EngineType="OpenSearch")
         domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
 
         assert domain_name in domain_names
@@ -631,7 +633,7 @@ class TestEdgeProxiedOpensearchCluster:
         assert response.status_code == 200
 
     def test_custom_endpoint_disabled(
-        self, opensearch_client, opensearch_wait_for_cluster, opensearch_create_domain
+        self, opensearch_wait_for_cluster, opensearch_create_domain, aws_client
     ):
         domain_name = f"opensearch-domain-{short_uid()}"
         custom_endpoint = "http://localhost:4566/my-custom-endpoint"
@@ -644,7 +646,7 @@ class TestEdgeProxiedOpensearchCluster:
             DomainName=domain_name, DomainEndpointOptions=domain_endpoint_options
         )
 
-        response = opensearch_client.describe_domain(DomainName=domain_name)
+        response = aws_client.opensearch.describe_domain(DomainName=domain_name)
         response_domain_name = response["DomainStatus"]["DomainName"]
         assert domain_name == response_domain_name
 
@@ -871,9 +873,9 @@ class TestCustomBackendManager:
         self,
         httpserver,
         monkeypatch,
-        opensearch_client,
         opensearch_wait_for_cluster,
         opensearch_create_domain,
+        aws_client,
     ):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_CUSTOM_BACKEND", httpserver.url_for("/"))
@@ -903,7 +905,7 @@ class TestCustomBackendManager:
         opensearch_create_domain(
             DomainName=domain_name, DomainEndpointOptions=domain_endpoint_options
         )
-        response = opensearch_client.list_domain_names(EngineType="OpenSearch")
+        response = aws_client.opensearch.list_domain_names(EngineType="OpenSearch")
         domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
 
         assert domain_name in domain_names

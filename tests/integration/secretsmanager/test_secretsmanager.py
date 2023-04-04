@@ -47,18 +47,16 @@ TEST_LAMBDA_ROTATE_SECRET = os.path.join(THIS_FOLDER, "functions", "lambda_rotat
 
 class TestSecretsManager:
     @pytest.fixture
-    def sm_client(self, secretsmanager_client):
-        return secretsmanager_client
-
-    @pytest.fixture
-    def secret_name(self, sm_client, cleanups) -> str:
+    def secret_name(self, aws_client, cleanups) -> str:
         """
         Returns a new unique SecretId, and schedules its deletion though the cleanups mechanism.
         :return: a new and automatically deleted unique SecretId.
         """
         secret_name = f"s-{short_uid()}"
         cleanups.append(
-            lambda: sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+            lambda: aws_client.secretsmanager.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
         )
         return secret_name
 
@@ -108,13 +106,15 @@ class TestSecretsManager:
         ],
     )
     def test_create_and_update_secret(
-        self, sm_client, secret_name: str, is_valid_partial_arn: bool, sm_snapshot, cleanups
+        self, secret_name: str, is_valid_partial_arn: bool, sm_snapshot, cleanups, aws_client
     ):
         cleanups.append(
-            lambda: sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+            lambda: aws_client.secretsmanager.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
         )
         description = "Testing secret creation."
-        create_secret_rs_1 = sm_client.create_secret(
+        create_secret_rs_1 = aws_client.secretsmanager.create_secret(
             Name=secret_name,
             SecretString="my_secret",
             Description=description,
@@ -127,72 +127,78 @@ class TestSecretsManager:
         secret_arn = create_secret_rs_1["ARN"]
         assert len(secret_arn.rpartition("-")[-1]) == 6
 
-        get_secret_value_rs_1 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_rs_1 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_rs_1", get_secret_value_rs_1)
 
-        describe_secret_rs_1 = sm_client.describe_secret(SecretId=secret_name)
+        describe_secret_rs_1 = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
         sm_snapshot.match("describe_secret_rs_1", describe_secret_rs_1)
 
-        get_secret_value_rs_2 = sm_client.get_secret_value(SecretId=secret_arn)
+        get_secret_value_rs_2 = aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
         sm_snapshot.match("get_secret_value_rs_2", get_secret_value_rs_2)
 
         if is_valid_partial_arn:
-            get_secret_value_rs_3 = sm_client.get_secret_value(SecretId=secret_arn[:-7])
+            get_secret_value_rs_3 = aws_client.secretsmanager.get_secret_value(
+                SecretId=secret_arn[:-7]
+            )
             sm_snapshot.match("get_secret_value_rs_3", get_secret_value_rs_3)
         else:
             with pytest.raises(Exception) as resource_not_found:
-                sm_client.get_secret_value(SecretId=secret_arn[:-7])
+                aws_client.secretsmanager.get_secret_value(SecretId=secret_arn[:-7])
             sm_snapshot.match("resource_not_found_dict_1", resource_not_found.value.response)
 
-        put_secret_value_rs_1 = sm_client.put_secret_value(
+        put_secret_value_rs_1 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name, SecretString="new_secret"
         )
         sm_snapshot.match("put_secret_value_rs_1", put_secret_value_rs_1)
 
-        get_secret_value_rs_4 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_rs_4 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_rs_4", get_secret_value_rs_4)
 
         # update secret by ARN
-        update_secret_res_1 = sm_client.update_secret(
+        update_secret_res_1 = aws_client.secretsmanager.update_secret(
             SecretId=secret_arn, SecretString="test123", Description="d1"
         )
         sm_snapshot.match("update_secret_res_1", update_secret_res_1)
 
         # clean up
-        delete_secret_res_1 = sm_client.delete_secret(
+        delete_secret_res_1 = aws_client.secretsmanager.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
-    def test_secret_not_found(self, sm_client, sm_snapshot):
+    def test_secret_not_found(self, sm_snapshot, aws_client):
         with pytest.raises(Exception) as not_found:
-            sm_client.get_secret_value(SecretId=f"s-{short_uid()}")
+            aws_client.secretsmanager.get_secret_value(SecretId=f"s-{short_uid()}")
         sm_snapshot.match("get_secret_value_not_found_ex", not_found.value.response)
 
         with pytest.raises(Exception) as not_found:
-            sm_client.list_secret_version_ids(SecretId=f"s-{short_uid()}")
+            aws_client.secretsmanager.list_secret_version_ids(SecretId=f"s-{short_uid()}")
         sm_snapshot.match("list_secret_version_ids_not_found_ex", not_found.value.response)
 
-    def test_call_lists_secrets_multiple_times(self, sm_client, secret_name):
-        sm_client.create_secret(
+    def test_call_lists_secrets_multiple_times(self, secret_name, aws_client):
+        aws_client.secretsmanager.create_secret(
             Name=secret_name,
             SecretString="my_secret",
             Description="testing creation of secrets",
         )
-        self._wait_created_is_listed(sm_client, secret_id=secret_name)
+        self._wait_created_is_listed(aws_client.secretsmanager, secret_id=secret_name)
 
         # call list_secrets multiple times
         for i in range(3):
-            rs = sm_client.list_secrets()
+            rs = aws_client.secretsmanager.list_secrets()
             secrets = [secret for secret in rs["SecretList"] if secret["Name"] == secret_name]
             assert len(secrets) == 1
 
         # clean up
-        sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+        aws_client.secretsmanager.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
+        )
 
     @pytest.mark.skip("In CI transformers are not applied for this test.")
-    def test_call_lists_secrets_multiple_times_snapshots(self, sm_client, sm_snapshot, secret_name):
-        create_secret_rs_1 = sm_client.create_secret(
+    def test_call_lists_secrets_multiple_times_snapshots(
+        self, sm_snapshot, secret_name, aws_client
+    ):
+        create_secret_rs_1 = aws_client.secretsmanager.create_secret(
             Name=secret_name,
             SecretString="my_secret",
             Description="testing creation of secrets",
@@ -202,37 +208,37 @@ class TestSecretsManager:
         )
         sm_snapshot.match("create_secret_rs_1", create_secret_rs_1)
 
-        self._wait_created_is_listed(sm_client, secret_id=secret_name)
+        self._wait_created_is_listed(aws_client.secretsmanager, secret_id=secret_name)
 
         # call list_secrets multiple times
         for i in range(3):
-            list_secrets_res = sm_client.list_secrets()
+            list_secrets_res = aws_client.secretsmanager.list_secrets()
             sm_snapshot.match(f"list_secrets_res_{i}", list_secrets_res)
 
         # clean up
-        delete_secret_res_1 = sm_client.delete_secret(
+        delete_secret_res_1 = aws_client.secretsmanager.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
-    def test_create_multi_secrets(self, sm_client, cleanups):
+    def test_create_multi_secrets(self, cleanups, aws_client):
         secret_names = [short_uid(), short_uid(), short_uid()]
         arns = []
         for secret_name in secret_names:
             cleanups.append(
-                lambda: sm_client.delete_secret(
+                lambda: aws_client.secretsmanager.delete_secret(
                     SecretId=secret_name, ForceDeleteWithoutRecovery=True
                 )
             )
-            rs = sm_client.create_secret(
+            rs = aws_client.secretsmanager.create_secret(
                 Name=secret_name,
                 SecretString="my_secret_{}".format(secret_name),
                 Description="testing creation of secrets",
             )
             arns.append(rs["ARN"])
-            self._wait_created_is_listed(sm_client, secret_id=secret_name)
+            self._wait_created_is_listed(aws_client.secretsmanager, secret_id=secret_name)
 
-        rs = sm_client.list_secrets()
+        rs = aws_client.secretsmanager.list_secrets()
         secrets = {
             secret["Name"]: secret["ARN"]
             for secret in rs["SecretList"]
@@ -245,18 +251,20 @@ class TestSecretsManager:
 
         # clean up
         for secret_name in secret_names:
-            sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+            aws_client.secretsmanager.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
 
     @pytest.mark.skip("In CI transformers are not applied for this test.")
-    def test_create_multi_secrets_snapshot(self, sm_client, sm_snapshot, cleanups):
+    def test_create_multi_secrets_snapshot(self, sm_snapshot, cleanups, aws_client):
         secret_names = [short_uid() for _ in range(3)]
         for i, secret_name in enumerate(secret_names):
             cleanups.append(
-                lambda: sm_client.delete_secret(
+                lambda: aws_client.secretsmanager.delete_secret(
                     SecretId=secret_name, ForceDeleteWithoutRecovery=True
                 )
             )
-            create_secret_rs_1 = sm_client.create_secret(
+            create_secret_rs_1 = aws_client.secretsmanager.create_secret(
                 Name=secret_name,
                 SecretString=f"my_secret_{secret_name}",
                 Description="Testing secrets creation.",
@@ -265,53 +273,55 @@ class TestSecretsManager:
                 sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_1, i)
             )
 
-            self._wait_created_is_listed(sm_client, secret_name)
+            self._wait_created_is_listed(aws_client.secretsmanager, secret_name)
 
-        list_secrets_res = sm_client.list_secrets()
+        list_secrets_res = aws_client.secretsmanager.list_secrets()
         sm_snapshot.match("list_secrets_res", list_secrets_res)
 
         # clean up
         for i, secret_name in enumerate(secret_names):
-            delete_secret_res = sm_client.delete_secret(
+            delete_secret_res = aws_client.secretsmanager.delete_secret(
                 SecretId=secret_name, ForceDeleteWithoutRecovery=True
             )
             sm_snapshot.match(f"delete_secret_res{i}", delete_secret_res)
 
-    def test_get_random_exclude_characters_and_symbols(self, sm_client):
-        random_password = sm_client.get_random_password(
+    def test_get_random_exclude_characters_and_symbols(self, aws_client):
+        random_password = aws_client.secretsmanager.get_random_password(
             PasswordLength=120, ExcludeCharacters="xyzDje@?!."
         )
 
         assert len(random_password["RandomPassword"]) == 120
         assert all(c not in "xyzDje@?!." for c in random_password["RandomPassword"])
 
-    def test_resource_policy(self, sm_client, secret_name):
-        sm_client.create_secret(
+    def test_resource_policy(self, secret_name, aws_client):
+        aws_client.secretsmanager.create_secret(
             Name=secret_name,
             SecretString="my_secret",
             Description="testing creation of secrets",
         )
 
-        sm_client.put_resource_policy(
+        aws_client.secretsmanager.put_resource_policy(
             SecretId=secret_name, ResourcePolicy=json.dumps(RESOURCE_POLICY)
         )
 
-        rs = sm_client.get_resource_policy(SecretId=secret_name)
+        rs = aws_client.secretsmanager.get_resource_policy(SecretId=secret_name)
 
         policy = json.loads(rs["ResourcePolicy"])
 
         assert policy["Version"] == RESOURCE_POLICY["Version"]
         assert policy["Statement"] == RESOURCE_POLICY["Statement"]
 
-        rs = sm_client.delete_resource_policy(SecretId=secret_name)
+        rs = aws_client.secretsmanager.delete_resource_policy(SecretId=secret_name)
         assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         # clean up
-        sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+        aws_client.secretsmanager.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
+        )
 
     @pytest.mark.skip(condition=is_new_provider(), reason="needs lambda usage rework")
     def test_rotate_secret_with_lambda_1(
-        self, sm_client, lambda_client, secret_name, create_secret, create_lambda_function
+        self, secret_name, create_secret, create_lambda_function, aws_client
     ):
         create_secret(
             Name=secret_name,
@@ -326,7 +336,7 @@ class TestSecretsManager:
             runtime=Runtime.python3_9,
         )["CreateFunctionResponse"]["FunctionArn"]
 
-        response = sm_client.rotate_secret(
+        response = aws_client.secretsmanager.rotate_secret(
             SecretId=secret_name,
             RotationLambdaARN=function_arn,
             RotationRules={
@@ -339,7 +349,7 @@ class TestSecretsManager:
 
     @pytest.mark.skipif(condition=is_new_provider(), reason="needs lambda usage rework")
     def test_rotate_secret_with_lambda_2(
-        self, sm_client, secret_name, create_lambda_function, create_secret
+        self, secret_name, create_lambda_function, create_secret, aws_client
     ):
         cre_res = create_secret(
             Name=secret_name,
@@ -355,7 +365,7 @@ class TestSecretsManager:
             runtime=Runtime.python3_9,
         )["CreateFunctionResponse"]["FunctionArn"]
 
-        rot_res = sm_client.rotate_secret(
+        rot_res = aws_client.secretsmanager.rotate_secret(
             SecretId=secret_name,
             RotationLambdaARN=function_arn,
             RotationRules={
@@ -371,33 +381,37 @@ class TestSecretsManager:
         sig_rnfe_1 = lambda_rotate_secret.secret_signal_resource_not_found_exception_on_create(
             version_id_1
         )
-        get_sig_rnfe_1 = sm_client.get_secret_value(SecretId=sig_rnfe_1)
+        get_sig_rnfe_1 = aws_client.secretsmanager.get_secret_value(SecretId=sig_rnfe_1)
         assert get_sig_rnfe_1["Name"] == sig_rnfe_1
         assert get_sig_rnfe_1["SecretString"] == sig_rnfe_1
 
-        des = sm_client.describe_secret(SecretId=secret_name)
+        des = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
         assert des["RotationEnabled"]
         assert des["RotationRules"] == {"AutomaticallyAfterDays": 1}
         assert des["RotationLambdaARN"] == function_arn
 
-        lst_res = sm_client.list_secret_version_ids(SecretId=secret_name)
+        lst_res = aws_client.secretsmanager.list_secret_version_ids(SecretId=secret_name)
         versions = lst_res["Versions"]
         assert len(versions) == 2
 
-        get_res_v0 = sm_client.get_secret_value(SecretId=secret_name, VersionId=version_id_0)
+        get_res_v0 = aws_client.secretsmanager.get_secret_value(
+            SecretId=secret_name, VersionId=version_id_0
+        )
         assert get_res_v0["VersionId"] == version_id_0
         assert get_res_v0["SecretString"] == "init"
 
-        get_res_v1 = sm_client.get_secret_value(SecretId=secret_name, VersionId=version_id_1)
+        get_res_v1 = aws_client.secretsmanager.get_secret_value(
+            SecretId=secret_name, VersionId=version_id_1
+        )
         assert get_res_v1["VersionId"] == version_id_1
         secret_string_1 = lambda_rotate_secret.secret_of_rotation_from_version_id(version_id_1)
         assert get_res_v1["SecretString"] == secret_string_1
 
-        get_res = sm_client.get_secret_value(SecretId=secret_name)
+        get_res = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         assert get_res["VersionId"] == version_id_1
         assert get_res["SecretString"] == secret_string_1
 
-        rot_2_res = sm_client.rotate_secret(
+        rot_2_res = aws_client.secretsmanager.rotate_secret(
             SecretId=secret_name,
             RotationLambdaARN=function_arn,
             RotationRules={
@@ -413,22 +427,22 @@ class TestSecretsManager:
         sig_rnfe_2 = lambda_rotate_secret.secret_signal_resource_not_found_exception_on_create(
             version_id_2
         )
-        get_sig_rnfe_2 = sm_client.get_secret_value(SecretId=sig_rnfe_2)
+        get_sig_rnfe_2 = aws_client.secretsmanager.get_secret_value(SecretId=sig_rnfe_2)
         assert get_sig_rnfe_2["Name"] == sig_rnfe_2
         assert get_sig_rnfe_2["SecretString"] == sig_rnfe_2
 
-        get_res = sm_client.get_secret_value(SecretId=secret_name)
+        get_res = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         assert get_res["VersionId"] == version_id_2
         secret_string_2 = lambda_rotate_secret.secret_of_rotation_from_version_id(version_id_2)
         assert get_res["SecretString"] == secret_string_2
 
-    def test_rotate_secret_invalid_lambda_arn(self, sm_client, secret_name):
-        sm_client.create_secret(Name=secret_name, SecretString="init")
+    def test_rotate_secret_invalid_lambda_arn(self, secret_name, aws_client):
+        aws_client.secretsmanager.create_secret(Name=secret_name, SecretString="init")
         invalid_arn = (
             "arn:aws:lambda:sa-east-1:000000000000:function:rotate_secret_invalid_lambda_arn"
         )
         with pytest.raises(Exception) as res_not_found_ex:
-            sm_client.rotate_secret(
+            aws_client.secretsmanager.rotate_secret(
                 SecretId=secret_name,
                 RotationLambdaARN=invalid_arn,
                 RotationRules={
@@ -441,15 +455,15 @@ class TestSecretsManager:
             == "Lambda does not exist or could not be accessed"
         )
 
-        des = sm_client.describe_secret(SecretId=secret_name)
+        des = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
         assert "RotationEnabled" not in des
         assert "RotationRules" not in des
         assert "RotationLambdaARN" not in des
 
-    def test_put_secret_value_with_version_stages(self, sm_client, sm_snapshot, secret_name):
+    def test_put_secret_value_with_version_stages(self, sm_snapshot, secret_name, aws_client):
         secret_string_v0: str = "secret_string_v0"
 
-        create_secret_rs_0 = sm_client.create_secret(
+        create_secret_rs_0 = aws_client.secretsmanager.create_secret(
             Name=secret_name, SecretString=secret_string_v0
         )
         sm_snapshot.add_transformers_list(
@@ -457,14 +471,14 @@ class TestSecretsManager:
         )
         sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
 
-        get_secret_value_res_0 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_0 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_0", get_secret_value_res_0)
 
         secret_string_v1: str = "secret_string_v1"
         version_stages_v1: list[str] = ["SAMPLESTAGE1", "SAMPLESTAGE0"]
         pv_v1_vid: str = str(uuid.uuid4())
         #
-        put_secret_value_res_1 = sm_client.put_secret_value(
+        put_secret_value_res_1 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name,
             SecretString=secret_string_v1,
             VersionStages=version_stages_v1,
@@ -472,14 +486,14 @@ class TestSecretsManager:
         )
         sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
 
-        get_secret_value_res_1 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_1 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_1", get_secret_value_res_1)
 
         secret_string_v2: str = "secret_string_v2"
         version_stages_v2: list[str] = version_stages_v1
         pv_v2_vid: str = str(uuid.uuid4())
         #
-        put_secret_value_res_2 = sm_client.put_secret_value(
+        put_secret_value_res_2 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name,
             SecretString=secret_string_v2,
             VersionStages=version_stages_v2,
@@ -487,14 +501,14 @@ class TestSecretsManager:
         )
         sm_snapshot.match("put_secret_value_res_2", put_secret_value_res_2)
 
-        get_secret_value_res_2 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_2 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_2", get_secret_value_res_2)
 
         secret_string_v3: str = "secret_string_v3"
         version_stages_v3: ["str"] = ["AWSPENDING"]
         pv_v3_vid: str = str(uuid.uuid4())
         #
-        put_secret_value_res_3 = sm_client.put_secret_value(
+        put_secret_value_res_3 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name,
             SecretString=secret_string_v3,
             VersionStages=version_stages_v3,
@@ -502,21 +516,21 @@ class TestSecretsManager:
         )
         sm_snapshot.match("put_secret_value_res_3", put_secret_value_res_3)
 
-        get_secret_value_res_3 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_3 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_3", get_secret_value_res_3)
 
         secret_string_v4: str = "secret_string_v4"
         pv_v4_vid: str = str(uuid.uuid4())
         #
-        put_secret_value_res_4 = sm_client.put_secret_value(
+        put_secret_value_res_4 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name, SecretString=secret_string_v4, ClientRequestToken=pv_v4_vid
         )
         sm_snapshot.match("put_secret_value_res_4", put_secret_value_res_4)
 
-        get_secret_value_res_4 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_4 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_4", get_secret_value_res_4)
 
-        delete_secret_res_1 = sm_client.delete_secret(
+        delete_secret_res_1 = aws_client.secretsmanager.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_1", delete_secret_res_1)
@@ -525,80 +539,90 @@ class TestSecretsManager:
         "secret_name", ["Inv Name", " Inv Name", " Inv*Name? ", " Inv *?!]Name\\-"]
     )
     @pytest.mark.aws_validated
-    def test_invalid_secret_name(self, sm_client, sm_snapshot, cleanups, secret_name: str):
+    def test_invalid_secret_name(self, sm_snapshot, cleanups, secret_name: str, aws_client):
         cleanups.append(
-            lambda: sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+            lambda: aws_client.secretsmanager.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
         )
         # The secret name can contain ASCII letters, numbers, and the following characters: /_+=.@-
         with pytest.raises(Exception) as validation_exception:
-            sm_client.create_secret(Name=secret_name, SecretString="MySecretString")
+            aws_client.secretsmanager.create_secret(Name=secret_name, SecretString="MySecretString")
         sm_snapshot.match("ex_log_1", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
-            sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+            aws_client.secretsmanager.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
         sm_snapshot.match("ex_log_2", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
-            sm_client.describe_secret(SecretId=secret_name)
+            aws_client.secretsmanager.describe_secret(SecretId=secret_name)
         sm_snapshot.match("ex_log_3", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
-            sm_client.get_secret_value(SecretId=secret_name)
+            aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("ex_log_4", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
-            sm_client.list_secret_version_ids(SecretId=secret_name, IncludeDeprecated=True)
+            aws_client.secretsmanager.list_secret_version_ids(
+                SecretId=secret_name, IncludeDeprecated=True
+            )
         sm_snapshot.match("ex_log_5", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
-            sm_client.put_secret_value(SecretId=secret_name, SecretString="MySecretString")
+            aws_client.secretsmanager.put_secret_value(
+                SecretId=secret_name, SecretString="MySecretString"
+            )
         sm_snapshot.match("ex_log_6", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
-            sm_client.tag_resource(
+            aws_client.secretsmanager.tag_resource(
                 SecretId=secret_name, Tags=[{"Key": "FirstTag", "Value": "SomeValue"}]
             )
         sm_snapshot.match("ex_log_7", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
-            sm_client.untag_resource(SecretId=secret_name, TagKeys=["FirstTag"])
+            aws_client.secretsmanager.untag_resource(SecretId=secret_name, TagKeys=["FirstTag"])
         sm_snapshot.match("ex_log_8", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
-            sm_client.update_secret(SecretId=secret_name, Description="MyNewDescription")
+            aws_client.secretsmanager.update_secret(
+                SecretId=secret_name, Description="MyNewDescription"
+            )
         sm_snapshot.match("ex_log_9", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
-            sm_client.validate_resource_policy(
+            aws_client.secretsmanager.validate_resource_policy(
                 SecretId=secret_name,
                 ResourcePolicy='{\n"Version":"2012-10-17",\n"Statement":[{\n"Effect":"Allow",\n"Principal":{\n"AWS":"arn:aws:iam::123456789012:root"\n},\n"Action":"secretsmanager:GetSecretValue",\n"Resource":"*"\n}]\n}',
             )
         sm_snapshot.match("ex_log_10", validation_exception.value.response)
 
-    def test_last_accessed_date(self, sm_client, cleanups):
+    def test_last_accessed_date(self, cleanups, aws_client):
         def last_accessed_scenario_1(fail_if_days_overlap: bool) -> bool:
             secret_name = f"s-{short_uid()}"
             cleanups.append(
-                lambda: sm_client.delete_secret(
+                lambda: aws_client.secretsmanager.delete_secret(
                     SecretId=secret_name, ForceDeleteWithoutRecovery=True
                 )
             )
 
-            sm_client.create_secret(Name=secret_name, SecretString="MySecretValue")
+            aws_client.secretsmanager.create_secret(Name=secret_name, SecretString="MySecretValue")
 
-            des = sm_client.describe_secret(SecretId=secret_name)
+            des = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
             assert "LastAccessedDate" not in des
 
             t0 = today_no_time()
 
-            sm_client.get_secret_value(SecretId=secret_name)
-            des = sm_client.describe_secret(SecretId=secret_name)
+            aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
+            des = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
             assert "LastAccessedDate" in des
             lad_v0 = des["LastAccessedDate"]
             assert isinstance(lad_v0, datetime)
 
-            sm_client.get_secret_value(SecretId=secret_name)
-            des = sm_client.describe_secret(SecretId=secret_name)
+            aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
+            des = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
             assert "LastAccessedDate" in des
             lad_v1 = des["LastAccessedDate"]
             assert isinstance(lad_v1, datetime)
@@ -616,43 +640,49 @@ class TestSecretsManager:
                 True
             )  # Replay today or allow failure (this should never take longer than a day).
 
-    def test_last_updated_date(self, sm_client, secret_name):
-        sm_client.create_secret(Name=secret_name, SecretString="MySecretValue")
+    def test_last_updated_date(self, secret_name, aws_client):
+        aws_client.secretsmanager.create_secret(Name=secret_name, SecretString="MySecretValue")
 
-        res = sm_client.describe_secret(SecretId=secret_name)
+        res = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
         assert "LastChangedDate" in res
         create_date = res["LastChangedDate"]
         assert isinstance(create_date, datetime)
 
-        res = sm_client.get_secret_value(SecretId=secret_name)
+        res = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         assert create_date == res["CreatedDate"]
 
-        res = sm_client.describe_secret(SecretId=secret_name)
+        res = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
         assert "LastChangedDate" in res
         assert create_date == res["LastChangedDate"]
 
-        sm_client.update_secret(SecretId=secret_name, SecretString="MyNewSecretValue")
+        aws_client.secretsmanager.update_secret(
+            SecretId=secret_name, SecretString="MyNewSecretValue"
+        )
 
-        res = sm_client.describe_secret(SecretId=secret_name)
+        res = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
         assert "LastChangedDate" in res
         assert create_date < res["LastChangedDate"]
         last_changed = res["LastChangedDate"]
 
-        sm_client.update_secret(SecretId=secret_name, SecretString="MyNewSecretValue")
+        aws_client.secretsmanager.update_secret(
+            SecretId=secret_name, SecretString="MyNewSecretValue"
+        )
 
-        res = sm_client.describe_secret(SecretId=secret_name)
+        res = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
         assert "LastChangedDate" in res
         assert last_changed < res["LastChangedDate"]
 
-        sm_client.update_secret(SecretId=secret_name, SecretString="MyVeryNewSecretValue")
+        aws_client.secretsmanager.update_secret(
+            SecretId=secret_name, SecretString="MyVeryNewSecretValue"
+        )
 
-        res = sm_client.describe_secret(SecretId=secret_name)
+        res = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
         assert "LastChangedDate" in res
         assert create_date < res["LastChangedDate"]
 
-    def test_update_secret_description(self, sm_client, sm_snapshot, secret_name):
+    def test_update_secret_description(self, sm_snapshot, secret_name, aws_client):
         secret_string_v0 = "MySecretString"
-        create_secret_rs_0 = sm_client.create_secret(
+        create_secret_rs_0 = aws_client.secretsmanager.create_secret(
             Name=secret_name, SecretString=secret_string_v0
         )
         sm_snapshot.add_transformers_list(
@@ -660,51 +690,53 @@ class TestSecretsManager:
         )
         sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
 
-        describe_secret_res_0 = sm_client.describe_secret(SecretId=secret_name)
+        describe_secret_res_0 = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
         sm_snapshot.match("describe_secret_res_0", describe_secret_res_0)
 
         description_v1 = "MyDescription"
         #
-        update_secret_res_0 = sm_client.update_secret(
+        update_secret_res_0 = aws_client.secretsmanager.update_secret(
             SecretId=secret_name, Description=description_v1
         )
         sm_snapshot.match("update_secret_res_0", update_secret_res_0)
 
-        describe_secret_res_1 = sm_client.describe_secret(SecretId=secret_name)
+        describe_secret_res_1 = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
         sm_snapshot.match("describe_secret_res_1", describe_secret_res_1)
 
         description_v2 = "MyNewDescription"
         secret_string_v1 = "MyNewSecretString"
         #
-        update_secret_res_1 = sm_client.update_secret(
+        update_secret_res_1 = aws_client.secretsmanager.update_secret(
             SecretId=secret_name, SecretString=secret_string_v1, Description=description_v2
         )
         sm_snapshot.match("update_secret_res_1", update_secret_res_1)
 
-        describe_secret_res_2 = sm_client.describe_secret(SecretId=secret_name)
+        describe_secret_res_2 = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
         sm_snapshot.match("describe_secret_res_2", describe_secret_res_2)
 
-        update_secret_res_2 = sm_client.update_secret(
+        update_secret_res_2 = aws_client.secretsmanager.update_secret(
             SecretId=secret_name, SecretString=secret_string_v1 * 2
         )
         sm_snapshot.match("update_secret_res_2", update_secret_res_2)
 
-        describe_secret_res_3 = sm_client.describe_secret(SecretId=secret_name)
+        describe_secret_res_3 = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
         sm_snapshot.match("describe_secret_res_3", describe_secret_res_3)
 
-        update_secret_res_3 = sm_client.update_secret(SecretId=secret_name)
+        update_secret_res_3 = aws_client.secretsmanager.update_secret(SecretId=secret_name)
         sm_snapshot.match("update_secret_res_3", update_secret_res_3)
 
-        describe_secret_res_4 = sm_client.describe_secret(SecretId=secret_name)
+        describe_secret_res_4 = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
         sm_snapshot.match("describe_secret_res_4", describe_secret_res_4)
 
-        delete_secret_res_0 = sm_client.delete_secret(
+        delete_secret_res_0 = aws_client.secretsmanager.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    def test_update_secret_version_stages_return_type(self, sm_client, sm_snapshot, secret_name):
-        create_secret_rs_0 = sm_client.create_secret(Name=secret_name, SecretString="Something1")
+    def test_update_secret_version_stages_return_type(self, sm_snapshot, secret_name, aws_client):
+        create_secret_rs_0 = aws_client.secretsmanager.create_secret(
+            Name=secret_name, SecretString="Something1"
+        )
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
@@ -712,7 +744,7 @@ class TestSecretsManager:
 
         version_id_v0: str = create_secret_rs_0["VersionId"]
 
-        put_secret_value_res_0 = sm_client.put_secret_value(
+        put_secret_value_res_0 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name, SecretString="Something2", VersionStages=["AWSPENDING"]
         )
         sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
@@ -720,7 +752,7 @@ class TestSecretsManager:
         version_id_v1 = put_secret_value_res_0["VersionId"]
         assert version_id_v1 != version_id_v0
 
-        update_secret_version_stage_res_0 = sm_client.update_secret_version_stage(
+        update_secret_version_stage_res_0 = aws_client.secretsmanager.update_secret_version_stage(
             SecretId=secret_name,
             RemoveFromVersionId=version_id_v0,
             MoveToVersionId=version_id_v1,
@@ -728,17 +760,17 @@ class TestSecretsManager:
         )
         sm_snapshot.match("update_secret_version_stage_res_0", update_secret_version_stage_res_0)
 
-        delete_secret_res_0 = sm_client.delete_secret(
+        delete_secret_res_0 = aws_client.secretsmanager.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     def test_update_secret_version_stages_current_previous(
-        self, sm_client, sm_snapshot, secret_name
+        self, sm_snapshot, secret_name, aws_client
     ):
         secret_string_v0 = "secret_string_v0"
-        create_secret_rs_0 = sm_client.create_secret(
+        create_secret_rs_0 = aws_client.secretsmanager.create_secret(
             Name=secret_name, SecretString=secret_string_v0
         )
         sm_snapshot.add_transformers_list(
@@ -746,31 +778,37 @@ class TestSecretsManager:
         )
         sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
 
-        self._wait_created_is_listed(sm_client, secret_name)
+        self._wait_created_is_listed(aws_client.secretsmanager, secret_name)
 
-        list_secret_version_ids_res_0 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_0 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
         secret_string_v1 = "secret_string_v1"
         #
-        update_secret_res_0 = sm_client.update_secret(
+        update_secret_res_0 = aws_client.secretsmanager.update_secret(
             SecretId=secret_name, SecretString=secret_string_v1
         )
         sm_snapshot.match("update_secret_res_0", update_secret_res_0)
 
-        list_secret_version_ids_res_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_1 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
 
-        delete_secret_res_0 = sm_client.delete_secret(
+        delete_secret_res_0 = aws_client.secretsmanager.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     def test_update_secret_version_stages_current_pending(
-        self, sm_client, sm_snapshot, secret_name
+        self, sm_snapshot, secret_name, aws_client
     ):
-        create_secret_rs_0 = sm_client.create_secret(Name=secret_name, SecretString="Something1")
+        create_secret_rs_0 = aws_client.secretsmanager.create_secret(
+            Name=secret_name, SecretString="Something1"
+        )
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
@@ -778,17 +816,19 @@ class TestSecretsManager:
 
         version_id_v0 = create_secret_rs_0["VersionId"]
 
-        put_secret_value_res_0 = sm_client.put_secret_value(
+        put_secret_value_res_0 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name, SecretString="Something2", VersionStages=["AWSPENDING"]
         )
         sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
 
         version_id_v1 = put_secret_value_res_0["VersionId"]
 
-        list_secret_version_ids_res_0 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_0 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
-        update_secret_version_stage_res_0 = sm_client.update_secret_version_stage(
+        update_secret_version_stage_res_0 = aws_client.secretsmanager.update_secret_version_stage(
             SecretId=secret_name,
             RemoveFromVersionId=version_id_v0,
             MoveToVersionId=version_id_v1,
@@ -796,27 +836,33 @@ class TestSecretsManager:
         )
         sm_snapshot.match("update_secret_version_stage_res_0", update_secret_version_stage_res_0)
 
-        list_secret_version_ids_res_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_1 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
 
-        put_secret_value_res_1 = sm_client.put_secret_value(
+        put_secret_value_res_1 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name, SecretString="SS3"
         )
         sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
 
-        list_secret_version_ids_res_2 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_2 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_2", list_secret_version_ids_res_2)
 
-        delete_secret_res_0 = sm_client.delete_secret(
+        delete_secret_res_0 = aws_client.secretsmanager.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     def test_update_secret_version_stages_current_pending_cycle(
-        self, sm_client, sm_snapshot, secret_name
+        self, sm_snapshot, secret_name, aws_client
     ):
-        create_secret_rs_0 = sm_client.create_secret(Name=secret_name, SecretString="S1")
+        create_secret_rs_0 = aws_client.secretsmanager.create_secret(
+            Name=secret_name, SecretString="S1"
+        )
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
@@ -824,20 +870,22 @@ class TestSecretsManager:
 
         vid_0 = create_secret_rs_0["VersionId"]
 
-        put_secret_value_res_0 = sm_client.put_secret_value(
+        put_secret_value_res_0 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name, SecretString="S2", VersionStages=["AWSPENDING"]
         )
         sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
 
         vid_1 = put_secret_value_res_0["VersionId"]
 
-        list_secret_version_ids_res_0 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_0 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
-        get_secret_value_res_0 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_0 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_0", get_secret_value_res_0)
 
-        update_secret_version_stage_res_0 = sm_client.update_secret_version_stage(
+        update_secret_version_stage_res_0 = aws_client.secretsmanager.update_secret_version_stage(
             SecretId=secret_name,
             RemoveFromVersionId=vid_0,
             MoveToVersionId=vid_1,
@@ -845,26 +893,30 @@ class TestSecretsManager:
         )
         sm_snapshot.match("update_secret_version_stage_res_0", update_secret_version_stage_res_0)
 
-        list_secret_version_ids_res_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_1 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
 
-        get_secret_value_res_1 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_1 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_1", get_secret_value_res_1)
 
-        put_secret_value_res_1 = sm_client.put_secret_value(
+        put_secret_value_res_1 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name, SecretString="S3", VersionStages=["AWSPENDING"]
         )
         sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
 
         vid_2 = put_secret_value_res_1["VersionId"]
 
-        list_secret_version_ids_res_2 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_2 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_2", list_secret_version_ids_res_2)
 
-        get_secret_value_res_2 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_2 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_2", get_secret_value_res_2)
 
-        put_secret_value_res_2 = sm_client.update_secret_version_stage(
+        put_secret_value_res_2 = aws_client.secretsmanager.update_secret_version_stage(
             SecretId=secret_name,
             RemoveFromVersionId=vid_1,
             MoveToVersionId=vid_2,
@@ -872,29 +924,33 @@ class TestSecretsManager:
         )
         sm_snapshot.match("put_secret_value_res_2", put_secret_value_res_2)
 
-        list_secret_version_ids_res_3 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_3 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_3", list_secret_version_ids_res_3)
 
-        get_secret_value_res_3 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_3 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_3", get_secret_value_res_3)
 
-        delete_secret_res_0 = sm_client.delete_secret(
+        delete_secret_res_0 = aws_client.secretsmanager.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     def test_update_secret_version_stages_current_pending_cycle_custom_stages_1(
-        self, sm_client, sm_snapshot, secret_name
+        self, sm_snapshot, secret_name, aws_client
     ):
-        create_secret_rs_0 = sm_client.create_secret(Name=secret_name, SecretString="S1")
+        create_secret_rs_0 = aws_client.secretsmanager.create_secret(
+            Name=secret_name, SecretString="S1"
+        )
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
         sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
         vid_0 = create_secret_rs_0["VersionId"]
 
-        put_secret_value_res_0 = sm_client.put_secret_value(
+        put_secret_value_res_0 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name,
             SecretString="S2",
             VersionStages=["AWSSOMETHING", "AWSPENDING", "PUT1"],
@@ -902,13 +958,15 @@ class TestSecretsManager:
         sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
         vid_1 = put_secret_value_res_0["VersionId"]
 
-        list_secret_version_ids_res_0 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_0 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
-        get_secret_value_res_0 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_0 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_0", get_secret_value_res_0)
 
-        update_secret_version_stage_res_0 = sm_client.update_secret_version_stage(
+        update_secret_version_stage_res_0 = aws_client.secretsmanager.update_secret_version_stage(
             SecretId=secret_name,
             RemoveFromVersionId=vid_0,
             MoveToVersionId=vid_1,
@@ -916,25 +974,29 @@ class TestSecretsManager:
         )
         sm_snapshot.match("update_secret_version_stage_res_0", update_secret_version_stage_res_0)
 
-        list_secret_version_ids_res_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_1 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
 
-        get_secret_value_res_1 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_1 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_1", get_secret_value_res_1)
 
-        put_secret_value_res_1 = sm_client.put_secret_value(
+        put_secret_value_res_1 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name, SecretString="S3", VersionStages=["AWSPENDING", "PUT2"]
         )
         sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
         vid_2 = put_secret_value_res_1["VersionId"]
 
-        list_secret_version_ids_res_2 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_2 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_2", list_secret_version_ids_res_2)
 
-        get_secret_value_res_2 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_2 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_2", get_secret_value_res_2)
 
-        update_secret_version_stage_res_1 = sm_client.update_secret_version_stage(
+        update_secret_version_stage_res_1 = aws_client.secretsmanager.update_secret_version_stage(
             SecretId=secret_name,
             RemoveFromVersionId=vid_1,
             MoveToVersionId=vid_2,
@@ -942,51 +1004,59 @@ class TestSecretsManager:
         )
         sm_snapshot.match("update_secret_version_stage_res_1", update_secret_version_stage_res_1)
 
-        list_secret_version_ids_res_3 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_3 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_3", list_secret_version_ids_res_3)
 
-        get_secret_value_res_3 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_3 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_3", get_secret_value_res_3)
 
-        delete_secret_res_0 = sm_client.delete_secret(
+        delete_secret_res_0 = aws_client.secretsmanager.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     def test_update_secret_version_stages_current_pending_cycle_custom_stages_2(
-        self, sm_client, sm_snapshot, secret_name
+        self, sm_snapshot, secret_name, aws_client
     ):
-        create_secret_rs_0 = sm_client.create_secret(Name=secret_name, SecretString="SS")
+        create_secret_rs_0 = aws_client.secretsmanager.create_secret(
+            Name=secret_name, SecretString="SS"
+        )
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
         sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
 
-        put_secret_value_res_0 = sm_client.put_secret_value(
+        put_secret_value_res_0 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name, SecretString="S1", VersionStages=["AWSCURRENT", "PUT0"]
         )
         sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
         #
         vid_0 = put_secret_value_res_0["VersionId"]
 
-        list_secret_version_ids_res_0 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_0 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
-        put_secret_value_res_1 = sm_client.put_secret_value(
+        put_secret_value_res_1 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name, SecretString="S2", VersionStages=["AWSPENDING", "PUT1"]
         )
         sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
         #
         vid_1 = put_secret_value_res_1["VersionId"]
 
-        list_secret_version_ids_res_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_1 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
 
-        get_secret_value_res_0 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_0 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_0", get_secret_value_res_0)
 
-        update_secret_version_stage_res_0 = sm_client.update_secret_version_stage(
+        update_secret_version_stage_res_0 = aws_client.secretsmanager.update_secret_version_stage(
             SecretId=secret_name,
             RemoveFromVersionId=vid_0,
             MoveToVersionId=vid_1,
@@ -994,26 +1064,30 @@ class TestSecretsManager:
         )
         sm_snapshot.match("update_secret_version_stage_res_0", update_secret_version_stage_res_0)
 
-        list_secret_version_ids_res_2 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_2 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_2", list_secret_version_ids_res_2)
 
-        get_secret_value_res_1 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_1 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_1", get_secret_value_res_1)
 
-        put_secret_value_res_2 = sm_client.put_secret_value(
+        put_secret_value_res_2 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name, SecretString="S3", VersionStages=["AWSPENDING", "PUT2"]
         )
         sm_snapshot.match("put_secret_value_res_2", put_secret_value_res_2)
         #
         vid_2 = put_secret_value_res_2["VersionId"]
 
-        list_secret_version_ids_res_3 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_3 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_3", list_secret_version_ids_res_3)
 
-        get_secret_value_res_2 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_2 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_2", get_secret_value_res_2)
 
-        update_secret_version_stage_res_1 = sm_client.update_secret_version_stage(
+        update_secret_version_stage_res_1 = aws_client.secretsmanager.update_secret_version_stage(
             SecretId=secret_name,
             RemoveFromVersionId=vid_1,
             MoveToVersionId=vid_2,
@@ -1021,75 +1095,89 @@ class TestSecretsManager:
         )
         sm_snapshot.match("update_secret_version_stage_res_1", update_secret_version_stage_res_1)
 
-        list_secret_version_ids_res_4 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_4 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_4", list_secret_version_ids_res_4)
 
-        get_secret_value_res_3 = sm_client.get_secret_value(SecretId=secret_name)
+        get_secret_value_res_3 = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_3", get_secret_value_res_3)
 
-        delete_secret_res_0 = sm_client.delete_secret(
+        delete_secret_res_0 = aws_client.secretsmanager.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
-    def test_non_versioning_version_stages_replacement(self, sm_client, sm_snapshot, secret_name):
-        create_secret_rs_0 = sm_client.create_secret(Name=secret_name, SecretString="S0")
+    def test_non_versioning_version_stages_replacement(self, sm_snapshot, secret_name, aws_client):
+        create_secret_rs_0 = aws_client.secretsmanager.create_secret(
+            Name=secret_name, SecretString="S0"
+        )
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
         sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
 
-        put_secret_value_res_0 = sm_client.put_secret_value(
+        put_secret_value_res_0 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name, SecretString="S1", VersionStages=["one", "two", "three"]
         )
         sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
 
-        list_secret_version_ids_res_0 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_0 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
-        put_secret_value_res_1 = sm_client.put_secret_value(
+        put_secret_value_res_1 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name,
             SecretString="S2",
             VersionStages=["one", "two", "three", "four"],
         )
         sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
 
-        list_secret_version_ids_res_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_1 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
 
-        delete_secret_res_0 = sm_client.delete_secret(
+        delete_secret_res_0 = aws_client.secretsmanager.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     def test_non_versioning_version_stages_no_replacement(
-        self, sm_client, sm_snapshot, secret_name
+        self, sm_snapshot, secret_name, aws_client
     ):
-        create_secret_rs_0 = sm_client.create_secret(Name=secret_name, SecretString="S0")
+        create_secret_rs_0 = aws_client.secretsmanager.create_secret(
+            Name=secret_name, SecretString="S0"
+        )
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
         sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
 
-        put_secret_value_res_0 = sm_client.put_secret_value(
+        put_secret_value_res_0 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name, SecretString="S1", VersionStages=["one", "two", "three"]
         )
         sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
 
-        list_secret_version_ids_res_0 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_0 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
-        put_secret_value_res_1 = sm_client.put_secret_value(
+        put_secret_value_res_1 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name, SecretString="S2", VersionStages=["one", "two", "four"]
         )
         sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
 
-        list_secret_version_ids_res_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
+        list_secret_version_ids_res_1 = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name
+        )
         sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
 
-        delete_secret_res_0 = sm_client.delete_secret(
+        delete_secret_res_0 = aws_client.secretsmanager.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
@@ -1707,16 +1795,18 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
-    def test_delete_non_existent_secret_returns_as_if_secret_exists(self, sm_client, secret_name):
+    def test_delete_non_existent_secret_returns_as_if_secret_exists(self, secret_name, aws_client):
         """When ForceDeleteWithoutRecovery=True, AWS responds as if the non-existent secret was successfully deleted."""
-        response = sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+        response = aws_client.secretsmanager.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
+        )
 
         assert response["Name"] == secret_name
         assert response["ARN"] is not None
         assert response["DeletionDate"] is not None
 
     def test_exp_raised_on_creation_of_secret_scheduled_for_deletion(
-        self, sm_client, sm_snapshot, secret_name
+        self, sm_snapshot, secret_name, aws_client
     ):
         create_secret_req: CreateSecretRequest = CreateSecretRequest(
             Name=secret_name, SecretString=f"secretstr-{short_uid()}"
@@ -1725,21 +1815,21 @@ class TestSecretsManager:
             SecretId=create_secret_req["Name"], RecoveryWindowInDays=7
         )
 
-        res = sm_client.create_secret(**create_secret_req)
+        res = aws_client.secretsmanager.create_secret(**create_secret_req)
         create_secret_res: CreateSecretResponse = select_from_typed_dict(CreateSecretResponse, res)
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_res, 0)
         )
 
-        res = sm_client.delete_secret(**stage_deletion_req)
+        res = aws_client.secretsmanager.delete_secret(**stage_deletion_req)
         delete_res: DeleteSecretResponse = select_from_typed_dict(DeleteSecretResponse, res)
         sm_snapshot.match("delete_res", delete_res)
 
         with pytest.raises(Exception) as invalid_req_ex:
-            sm_client.create_secret(**create_secret_req)
+            aws_client.secretsmanager.create_secret(**create_secret_req)
         sm_snapshot.match("invalid_req_ex", invalid_req_ex.value.response)
 
-    def test_can_recreate_delete_secret(self, sm_client, sm_snapshot, secret_name):
+    def test_can_recreate_delete_secret(self, sm_snapshot, secret_name, aws_client):
         # NOTE: AWS will behave as staged deletion for a small number of seconds (<10).
         # We assume forced deletion is instantaneous, until the precise behaviour is understood.
 
@@ -1750,7 +1840,7 @@ class TestSecretsManager:
             SecretId=create_secret_req["Name"], ForceDeleteWithoutRecovery=True
         )
 
-        res = sm_client.create_secret(**create_secret_req)
+        res = aws_client.secretsmanager.create_secret(**create_secret_req)
         create_secret_res_0: CreateSecretResponse = select_from_typed_dict(
             CreateSecretResponse, res
         )
@@ -1759,13 +1849,15 @@ class TestSecretsManager:
         )
         sm_snapshot.match("create_secret_res_0", create_secret_res_0)
 
-        res = sm_client.delete_secret(**stage_deletion_req)
+        res = aws_client.secretsmanager.delete_secret(**stage_deletion_req)
         delete_res_1: DeleteSecretResponse = select_from_typed_dict(DeleteSecretResponse, res)
         sm_snapshot.match("delete_res_1", delete_res_1)
 
-        self._wait_force_deletion_completed(sm_client, stage_deletion_req["SecretId"])
+        self._wait_force_deletion_completed(
+            aws_client.secretsmanager, stage_deletion_req["SecretId"]
+        )
 
-        res = sm_client.create_secret(**create_secret_req)
+        res = aws_client.secretsmanager.create_secret(**create_secret_req)
         create_secret_res_1: CreateSecretResponse = select_from_typed_dict(
             CreateSecretResponse, res
         )
@@ -1774,26 +1866,28 @@ class TestSecretsManager:
         )
         sm_snapshot.match("create_secret_res_1", create_secret_res_1)
 
-        sm_client.delete_secret(**stage_deletion_req)
+        aws_client.secretsmanager.delete_secret(**stage_deletion_req)
 
     @pytest.mark.aws_validated
-    def test_secret_exists(self, sm_client, cleanups):
+    def test_secret_exists(self, cleanups, aws_client):
         secret_name = short_uid()
         cleanups.append(
-            lambda: sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+            lambda: aws_client.secretsmanager.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
         )
         description = "Testing secret already exists."
-        rs = sm_client.create_secret(
+        rs = aws_client.secretsmanager.create_secret(
             Name=secret_name,
             SecretString="my_secret_{}".format(secret_name),
             Description=description,
         )
-        self._wait_created_is_listed(sm_client, secret_id=secret_name)
+        self._wait_created_is_listed(aws_client.secretsmanager, secret_id=secret_name)
         secret_arn = rs["ARN"]
         secret_id = rs["Name"]
         assert len(secret_arn.rpartition("-")[-1]) == 6
 
-        ls = sm_client.list_secrets()
+        ls = aws_client.secretsmanager.list_secrets()
         secrets = {
             secret["Name"]: secret["ARN"]
             for secret in ls["SecretList"]
@@ -1802,8 +1896,10 @@ class TestSecretsManager:
         assert len(secrets.keys()) == 1
         assert secret_arn in secrets.values()
 
-        with pytest.raises(sm_client.exceptions.ResourceExistsException) as res_exists_ex:
-            sm_client.create_secret(
+        with pytest.raises(
+            aws_client.secretsmanager.exceptions.ResourceExistsException
+        ) as res_exists_ex:
+            aws_client.secretsmanager.create_secret(
                 Name=secret_name,
                 SecretString="my_secret_{}".format(secret_name),
                 Description=description,
@@ -1816,26 +1912,32 @@ class TestSecretsManager:
         )
 
         # clean up
-        sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+        aws_client.secretsmanager.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
+        )
 
     @pytest.mark.aws_validated
-    def test_secret_exists_snapshots(self, sm_client, sm_snapshot, cleanups):
+    def test_secret_exists_snapshots(self, sm_snapshot, cleanups, aws_client):
         secret_name = short_uid()
         cleanups.append(
-            lambda: sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+            lambda: aws_client.secretsmanager.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
         )
 
         description = "Snapshot testing secret already exists."
-        rs = sm_client.create_secret(
+        rs = aws_client.secretsmanager.create_secret(
             Name=secret_name,
             SecretString="my_secret_{}".format(secret_name),
             Description=description,
         )
-        self._wait_created_is_listed(sm_client, secret_id=secret_name)
+        self._wait_created_is_listed(aws_client.secretsmanager, secret_id=secret_name)
         sm_snapshot.add_transformers_list(sm_snapshot.transform.secretsmanager_secret_id_arn(rs, 0))
 
-        with pytest.raises(sm_client.exceptions.ResourceExistsException) as res_exists_ex:
-            sm_client.create_secret(
+        with pytest.raises(
+            aws_client.secretsmanager.exceptions.ResourceExistsException
+        ) as res_exists_ex:
+            aws_client.secretsmanager.create_secret(
                 Name=secret_name,
                 SecretString="my_secret_{}".format(secret_name),
                 Description=description,
@@ -1843,7 +1945,7 @@ class TestSecretsManager:
         sm_snapshot.match("ex_log", res_exists_ex.value.response)
 
         # clean up
-        delete_secret_res = sm_client.delete_secret(
+        delete_secret_res = aws_client.secretsmanager.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res", delete_secret_res)

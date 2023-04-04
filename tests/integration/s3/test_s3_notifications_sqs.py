@@ -153,12 +153,11 @@ class TestS3NotificationsToSQS:
     )
     def test_object_created_put(
         self,
-        s3_client,
-        sqs_client,
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
         snapshot,
+        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -168,15 +167,15 @@ class TestS3NotificationsToSQS:
         queue_url = sqs_create_queue()
         s3_create_sqs_bucket_notification(bucket_name, queue_url, ["s3:ObjectCreated:Put"])
 
-        s3_client.put_bucket_versioning(
+        aws_client.s3.put_bucket_versioning(
             Bucket=bucket_name, VersioningConfiguration={"Status": "Enabled"}
         )
 
-        obj0 = s3_client.put_object(Bucket=bucket_name, Key="my_key_0", Body="something")
-        obj1 = s3_client.put_object(Bucket=bucket_name, Key="my_key_1", Body="something else")
+        obj0 = aws_client.s3.put_object(Bucket=bucket_name, Key="my_key_0", Body="something")
+        obj1 = aws_client.s3.put_object(Bucket=bucket_name, Key="my_key_1", Body="something else")
 
         # collect s3 events from SQS queue
-        events = sqs_collect_s3_events(sqs_client, queue_url, min_events=2)
+        events = sqs_collect_s3_events(aws_client.sqs, queue_url, min_events=2)
 
         assert len(events) == 2, f"unexpected number of events in {events}"
         # order seems not be guaranteed - sort so we can rely on the order
@@ -205,12 +204,11 @@ class TestS3NotificationsToSQS:
     )
     def test_object_created_copy(
         self,
-        s3_client,
-        sqs_client,
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
         snapshot,
+        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -224,19 +222,19 @@ class TestS3NotificationsToSQS:
         src_key = "src-dest-%s" % short_uid()
         dest_key = "key-dest-%s" % short_uid()
 
-        s3_client.put_object(Bucket=bucket_name, Key=src_key, Body="something")
+        aws_client.s3.put_object(Bucket=bucket_name, Key=src_key, Body="something")
 
         assert not sqs_collect_s3_events(
-            sqs_client, queue_url, 0, timeout=1
+            aws_client.sqs, queue_url, 0, timeout=1
         ), "unexpected event triggered for put_object"
 
-        s3_client.copy_object(
+        aws_client.s3.copy_object(
             Bucket=bucket_name,
             CopySource={"Bucket": bucket_name, "Key": src_key},
             Key=dest_key,
         )
 
-        events = sqs_collect_s3_events(sqs_client, queue_url, 1)
+        events = sqs_collect_s3_events(aws_client.sqs, queue_url, 1)
         assert len(events) == 1, f"unexpected number of events in {events}"
         snapshot.match("receive_messages", {"messages": events})
         assert events[0]["eventSource"] == "aws:s3"
@@ -251,12 +249,11 @@ class TestS3NotificationsToSQS:
     )
     def test_object_created_and_object_removed(
         self,
-        s3_client,
-        sqs_client,
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
         snapshot,
+        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -273,18 +270,18 @@ class TestS3NotificationsToSQS:
         dest_key = "key-dest-%s" % short_uid()
 
         # event0 = PutObject
-        s3_client.put_object(Bucket=bucket_name, Key=src_key, Body="something")
+        aws_client.s3.put_object(Bucket=bucket_name, Key=src_key, Body="something")
         # event1 = CopyObject
-        s3_client.copy_object(
+        aws_client.s3.copy_object(
             Bucket=bucket_name,
             CopySource={"Bucket": bucket_name, "Key": src_key},
             Key=dest_key,
         )
         # event3 = DeleteObject
-        s3_client.delete_object(Bucket=bucket_name, Key=src_key)
+        aws_client.s3.delete_object(Bucket=bucket_name, Key=src_key)
 
         # collect events
-        events = sqs_collect_s3_events(sqs_client, queue_url, 3)
+        events = sqs_collect_s3_events(aws_client.sqs, queue_url, 3)
         assert len(events) == 3, f"unexpected number of events in {events}"
 
         # order seems not be guaranteed - sort so we can rely on the order
@@ -308,12 +305,11 @@ class TestS3NotificationsToSQS:
     @pytest.mark.aws_validated
     def test_delete_objects(
         self,
-        s3_client,
-        sqs_client,
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
         snapshot,
+        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -326,10 +322,10 @@ class TestS3NotificationsToSQS:
 
         key = "key-%s" % short_uid()
 
-        s3_client.put_object(Bucket=bucket_name, Key=key, Body="something")
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body="something")
 
         # event3 = DeleteObject
-        s3_client.delete_objects(
+        aws_client.s3.delete_objects(
             Bucket=bucket_name,
             Delete={
                 "Objects": [{"Key": key}, {"Key": "dummy1"}, {"Key": "dummy2"}],
@@ -338,7 +334,7 @@ class TestS3NotificationsToSQS:
         )
 
         # delete_objects behaves like it deletes non-existing objects as well -> also events are triggered
-        events = sqs_collect_s3_events(sqs_client, queue_url, 3)
+        events = sqs_collect_s3_events(aws_client.sqs, queue_url, 3)
         assert len(events) == 3, f"unexpected number of events in {events}"
         events.sort(key=lambda x: x["s3"]["object"]["key"])
 
@@ -353,13 +349,12 @@ class TestS3NotificationsToSQS:
     )
     def test_object_created_complete_multipart_upload(
         self,
-        s3_client,
-        sqs_client,
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
         tmpdir,
         snapshot,
+        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -377,11 +372,11 @@ class TestS3NotificationsToSQS:
         file = tmpdir / "test-file.bin"
         data = b"1" * (6 * KB)  # create 6 kilobytes of ones
         file.write(data=data, mode="w")
-        s3_client.upload_file(
+        aws_client.s3.upload_file(
             Bucket=bucket_name, Key=key, Filename=str(file.realpath()), Config=config
         )
 
-        events = sqs_collect_s3_events(sqs_client, queue_url, 1)
+        events = sqs_collect_s3_events(aws_client.sqs, queue_url, 1)
         snapshot.match("receive_messages", {"messages": events})
 
         assert events[0]["eventName"] == "ObjectCreated:CompleteMultipartUpload"
@@ -395,12 +390,11 @@ class TestS3NotificationsToSQS:
     )
     def test_key_encoding(
         self,
-        s3_client,
-        sqs_client,
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
         snapshot,
+        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -413,9 +407,9 @@ class TestS3NotificationsToSQS:
 
         key = "a@b"
         key_encoded = "a%40b"
-        s3_client.put_object(Bucket=bucket_name, Key=key, Body="something")
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body="something")
 
-        events = sqs_collect_s3_events(sqs_client, queue_url, min_events=1)
+        events = sqs_collect_s3_events(aws_client.sqs, queue_url, min_events=1)
         snapshot.match("receive_messages", {"messages": events})
 
         assert events[0]["eventName"] == "ObjectCreated:Put"
@@ -427,12 +421,11 @@ class TestS3NotificationsToSQS:
     )
     def test_object_created_put_with_presigned_url_upload(
         self,
-        s3_client,
-        sqs_client,
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
         snapshot,
+        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -442,12 +435,12 @@ class TestS3NotificationsToSQS:
         key = "key-by-hostname"
 
         s3_create_sqs_bucket_notification(bucket_name, queue_url, ["s3:ObjectCreated:*"])
-        url = s3_client.generate_presigned_url(
+        url = aws_client.s3.generate_presigned_url(
             "put_object", Params={"Bucket": bucket_name, "Key": key}
         )
         requests.put(url, data="something", verify=False)
 
-        events = sqs_collect_s3_events(sqs_client, queue_url, 1)
+        events = sqs_collect_s3_events(aws_client.sqs, queue_url, 1)
         snapshot.match("receive_messages", {"messages": events})
 
         assert events[0]["eventName"] == "ObjectCreated:Put"
@@ -466,12 +459,11 @@ class TestS3NotificationsToSQS:
     )
     def test_object_tagging_put_event(
         self,
-        s3_client,
-        sqs_client,
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
         snapshot,
+        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -484,13 +476,13 @@ class TestS3NotificationsToSQS:
 
         dest_key = "key-dest-%s" % short_uid()
 
-        s3_client.put_object(Bucket=bucket_name, Key=dest_key, Body="FooBarBlitz")
+        aws_client.s3.put_object(Bucket=bucket_name, Key=dest_key, Body="FooBarBlitz")
 
         assert not sqs_collect_s3_events(
-            sqs_client, queue_url, 0, timeout=1
+            aws_client.sqs, queue_url, 0, timeout=1
         ), "unexpected event triggered for put_object"
 
-        s3_client.put_object_tagging(
+        aws_client.s3.put_object_tagging(
             Bucket=bucket_name,
             Key=dest_key,
             Tagging={
@@ -500,7 +492,7 @@ class TestS3NotificationsToSQS:
             },
         )
 
-        events = sqs_collect_s3_events(sqs_client, queue_url, 1)
+        events = sqs_collect_s3_events(aws_client.sqs, queue_url, 1)
         assert len(events) == 1, f"unexpected number of events in {events}"
         snapshot.match("receive_messages", {"messages": events})
 
@@ -522,12 +514,11 @@ class TestS3NotificationsToSQS:
     )
     def test_object_tagging_delete_event(
         self,
-        s3_client,
-        sqs_client,
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
         snapshot,
+        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -540,13 +531,13 @@ class TestS3NotificationsToSQS:
 
         dest_key = "key-dest-%s" % short_uid()
 
-        s3_client.put_object(Bucket=bucket_name, Key=dest_key, Body="FooBarBlitz")
+        aws_client.s3.put_object(Bucket=bucket_name, Key=dest_key, Body="FooBarBlitz")
 
         assert not sqs_collect_s3_events(
-            sqs_client, queue_url, 0, timeout=1
+            aws_client.sqs, queue_url, 0, timeout=1
         ), "unexpected event triggered for put_object"
 
-        s3_client.put_object_tagging(
+        aws_client.s3.put_object_tagging(
             Bucket=bucket_name,
             Key=dest_key,
             Tagging={
@@ -556,12 +547,12 @@ class TestS3NotificationsToSQS:
             },
         )
 
-        s3_client.delete_object_tagging(
+        aws_client.s3.delete_object_tagging(
             Bucket=bucket_name,
             Key=dest_key,
         )
 
-        events = sqs_collect_s3_events(sqs_client, queue_url, 1)
+        events = sqs_collect_s3_events(aws_client.sqs, queue_url, 1)
         assert len(events) == 1, f"unexpected number of events in {events}"
         snapshot.match("receive_messages", {"messages": events})
 
@@ -576,13 +567,12 @@ class TestS3NotificationsToSQS:
     )
     def test_xray_header(
         self,
-        s3_client,
-        sqs_client,
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
         cleanups,
         snapshot,
+        aws_client,
     ):
         # test for https://github.com/localstack/localstack/issues/3686
 
@@ -598,10 +588,10 @@ class TestS3NotificationsToSQS:
                 "X-Amzn-Trace-Id"
             ] = "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
 
-        s3_client.meta.events.register("before-send.s3.*", add_xray_header)
+        aws_client.s3.meta.events.register("before-send.s3.*", add_xray_header)
         # make sure the hook gets cleaned up after the test
         cleanups.append(
-            lambda: s3_client.meta.events.unregister("before-send.s3.*", add_xray_header)
+            lambda: aws_client.s3.meta.events.unregister("before-send.s3.*", add_xray_header)
         )
 
         key = "test-data"
@@ -611,11 +601,11 @@ class TestS3NotificationsToSQS:
         s3_create_sqs_bucket_notification(bucket_name, queue_url, ["s3:ObjectCreated:*"])
 
         # put an object where the bucket_name is in the path
-        s3_client.put_object(Bucket=bucket_name, Key=key, Body="something")
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body="something")
 
         def get_messages():
             recv_messages = []
-            resp = sqs_client.receive_message(
+            resp = aws_client.sqs.receive_message(
                 QueueUrl=queue_url,
                 AttributeNames=["AWSTraceHeader"],
                 MessageAttributeNames=["All"],
@@ -649,12 +639,11 @@ class TestS3NotificationsToSQS:
     )
     def test_notifications_with_filter(
         self,
-        s3_client,
         s3_create_bucket,
-        sqs_client,
         s3_create_sqs_bucket_notification,
         sqs_create_queue,
         snapshot,
+        aws_client,
     ):
         # create test bucket and queue
         bucket_name = f"notification-bucket-{short_uid()}"
@@ -665,7 +654,7 @@ class TestS3NotificationsToSQS:
         snapshot.add_transformer(snapshot.transform.regex(queue_name, "<queue>"))
         snapshot.add_transformer(snapshot.transform.regex(bucket_name, "<bucket>"))
         snapshot.add_transformer(snapshot.transform.s3_notifications_transformer())
-        queue_arn = set_policy_for_queue(sqs_client, queue_url, bucket_name)
+        queue_arn = set_policy_for_queue(aws_client.sqs, queue_url, bucket_name)
 
         events = ["s3:ObjectCreated:*", "s3:ObjectRemoved:Delete"]
         filter_rules = {
@@ -674,7 +663,7 @@ class TestS3NotificationsToSQS:
                 {"Name": "Suffix", "Value": "testfile.txt"},
             ]
         }
-        s3_client.put_bucket_notification_configuration(
+        aws_client.s3.put_bucket_notification_configuration(
             Bucket=bucket_name,
             NotificationConfiguration={
                 "QueueConfigurations": [
@@ -696,7 +685,7 @@ class TestS3NotificationsToSQS:
         )
 
         # retrieve and check notification config
-        config = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        config = aws_client.s3.get_bucket_notification_configuration(Bucket=bucket_name)
         snapshot.match("config", config)
         assert 2 == len(config["QueueConfigurations"])
         config = [c for c in config["QueueConfigurations"] if c.get("Events")][0]
@@ -706,31 +695,31 @@ class TestS3NotificationsToSQS:
         # upload file to S3 (this should NOT trigger a notification)
         test_key1 = "/testdata"
         test_data1 = b'{"test": "bucket_notification1"}'
-        s3_client.upload_fileobj(BytesIO(test_data1), bucket_name, test_key1)
+        aws_client.s3.upload_fileobj(BytesIO(test_data1), bucket_name, test_key1)
 
         # upload file to S3 (this should trigger a notification)
         test_key2 = "testupload/dir1/testfile.txt"
         test_data2 = b'{"test": "bucket_notification2"}'
-        s3_client.upload_fileobj(BytesIO(test_data2), bucket_name, test_key2)
+        aws_client.s3.upload_fileobj(BytesIO(test_data2), bucket_name, test_key2)
 
         # receive, assert, and delete message from SQS
-        messages = sqs_collect_s3_events(sqs_client, queue_url, 1)
+        messages = sqs_collect_s3_events(aws_client.sqs, queue_url, 1)
         assert len(messages) == 1
         snapshot.match("message", messages[0])
         assert messages[0]["s3"]["object"]["key"] == test_key2
         assert messages[0]["s3"]["bucket"]["name"] == bucket_name
 
         # delete notification config
-        s3_client.put_bucket_notification_configuration(
+        aws_client.s3.put_bucket_notification_configuration(
             Bucket=bucket_name, NotificationConfiguration={}
         )
-        config = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        config = aws_client.s3.get_bucket_notification_configuration(Bucket=bucket_name)
         snapshot.match("config_empty", config)
         assert not config.get("QueueConfigurations")
         assert not config.get("TopicConfiguration")
         # put notification config with single event type
         event = "s3:ObjectCreated:*"
-        s3_client.put_bucket_notification_configuration(
+        aws_client.s3.put_bucket_notification_configuration(
             Bucket=bucket_name,
             NotificationConfiguration={
                 "QueueConfigurations": [
@@ -738,7 +727,7 @@ class TestS3NotificationsToSQS:
                 ]
             },
         )
-        config = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        config = aws_client.s3.get_bucket_notification_configuration(Bucket=bucket_name)
         snapshot.match("config_updated", config)
         config = config["QueueConfigurations"][0]
         assert [event] == config["Events"]
@@ -746,7 +735,7 @@ class TestS3NotificationsToSQS:
         # put notification config with single event type
         event = "s3:ObjectCreated:*"
         filter_rules = {"FilterRules": [{"Name": "Prefix", "Value": "testupload/"}]}
-        s3_client.put_bucket_notification_configuration(
+        aws_client.s3.put_bucket_notification_configuration(
             Bucket=bucket_name,
             NotificationConfiguration={
                 "QueueConfigurations": [
@@ -759,7 +748,7 @@ class TestS3NotificationsToSQS:
                 ]
             },
         )
-        config = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        config = aws_client.s3.get_bucket_notification_configuration(Bucket=bucket_name)
         snapshot.match("config_updated_filter", config)
         config = config["QueueConfigurations"][0]
         assert [event] == config["Events"]
@@ -767,12 +756,12 @@ class TestS3NotificationsToSQS:
 
     @pytest.mark.aws_validated
     def test_filter_rules_case_insensitive(
-        self, s3_client, s3_create_bucket, sqs_create_queue, sqs_client, snapshot
+        self, s3_create_bucket, sqs_create_queue, snapshot, aws_client
     ):
         bucket_name = s3_create_bucket()
         id = short_uid()
         queue_url = sqs_create_queue(QueueName=f"my-queue-{id}")
-        queue_attributes = sqs_client.get_queue_attributes(
+        queue_attributes = aws_client.sqs.get_queue_attributes(
             QueueUrl=queue_url, AttributeNames=["QueueArn"]
         )
         snapshot.add_transformer(snapshot.transform.key_value("Id", "id"))
@@ -797,10 +786,10 @@ class TestS3NotificationsToSQS:
             ]
         }
 
-        s3_client.put_bucket_notification_configuration(
+        aws_client.s3.put_bucket_notification_configuration(
             Bucket=bucket_name, NotificationConfiguration=cfg, SkipDestinationValidation=True
         )
-        response = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        response = aws_client.s3.get_bucket_notification_configuration(Bucket=bucket_name)
         # verify casing of filter rule names
 
         rules = response["QueueConfigurations"][0]["Filter"]["Key"]["FilterRules"]
@@ -822,11 +811,11 @@ class TestS3NotificationsToSQS:
     )
     @pytest.mark.aws_validated
     def test_bucket_notification_with_invalid_filter_rules(
-        self, s3_create_bucket, sqs_create_queue, sqs_client, s3_client, snapshot
+        self, s3_create_bucket, sqs_create_queue, snapshot, aws_client
     ):
         bucket_name = s3_create_bucket()
         queue_url = sqs_create_queue()
-        queue_attributes = sqs_client.get_queue_attributes(
+        queue_attributes = aws_client.sqs.get_queue_attributes(
             QueueUrl=queue_url, AttributeNames=["QueueArn"]
         )
         cfg = {
@@ -841,7 +830,7 @@ class TestS3NotificationsToSQS:
             ]
         }
         with pytest.raises(ClientError) as e:
-            s3_client.put_bucket_notification_configuration(
+            aws_client.s3.put_bucket_notification_configuration(
                 Bucket=bucket_name, NotificationConfiguration=cfg
             )
         snapshot.match("invalid_filter_name", e.value.response)
@@ -857,7 +846,7 @@ class TestS3NotificationsToSQS:
             "$..Error.ArgumentValue",
         ],
     )
-    def test_invalid_sqs_arn(self, s3_client, s3_create_bucket, account_id, snapshot):
+    def test_invalid_sqs_arn(self, s3_create_bucket, account_id, snapshot, aws_client):
         bucket_name = s3_create_bucket()
         config = {
             "QueueConfigurations": [
@@ -870,7 +859,7 @@ class TestS3NotificationsToSQS:
 
         config["QueueConfigurations"][0]["QueueArn"] = "invalid-queue"
         with pytest.raises(ClientError) as e:
-            s3_client.put_bucket_notification_configuration(
+            aws_client.s3.put_bucket_notification_configuration(
                 Bucket=bucket_name,
                 NotificationConfiguration=config,
                 SkipDestinationValidation=False,
@@ -878,7 +867,7 @@ class TestS3NotificationsToSQS:
         snapshot.match("invalid_not_skip", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            s3_client.put_bucket_notification_configuration(
+            aws_client.s3.put_bucket_notification_configuration(
                 Bucket=bucket_name,
                 NotificationConfiguration=config,
                 SkipDestinationValidation=True,
@@ -890,28 +879,27 @@ class TestS3NotificationsToSQS:
             "QueueArn"
         ] = f"{arns.sqs_queue_arn('my-queue', account_id=account_id)}"
         with pytest.raises(ClientError) as e:
-            s3_client.put_bucket_notification_configuration(
+            aws_client.s3.put_bucket_notification_configuration(
                 Bucket=bucket_name,
                 NotificationConfiguration=config,
             )
         snapshot.match("queue-does-not-exist", e.value.response)
 
-        s3_client.put_bucket_notification_configuration(
+        aws_client.s3.put_bucket_notification_configuration(
             Bucket=bucket_name, NotificationConfiguration=config, SkipDestinationValidation=True
         )
-        config = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        config = aws_client.s3.get_bucket_notification_configuration(Bucket=bucket_name)
         snapshot.match("skip_destination_validation", config)
 
     @pytest.mark.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
     def test_object_put_acl(
         self,
-        s3_client,
-        sqs_client,
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
         snapshot,
+        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -922,16 +910,16 @@ class TestS3NotificationsToSQS:
         key_name = "my_key_acl"
         s3_create_sqs_bucket_notification(bucket_name, queue_url, ["s3:ObjectAcl:Put"])
 
-        s3_client.put_object(Bucket=bucket_name, Key=key_name, Body="something")
-        list_bucket_output = s3_client.list_buckets()
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key_name, Body="something")
+        list_bucket_output = aws_client.s3.list_buckets()
         owner = list_bucket_output["Owner"]
 
         # change the ACL to the default one, it should not send an Event. Use canned ACL first
-        s3_client.put_object_acl(Bucket=bucket_name, Key=key_name, ACL="private")
+        aws_client.s3.put_object_acl(Bucket=bucket_name, Key=key_name, ACL="private")
         # change the ACL, it should not send an Event. Use canned ACL first
-        s3_client.put_object_acl(Bucket=bucket_name, Key=key_name, ACL="public-read")
+        aws_client.s3.put_object_acl(Bucket=bucket_name, Key=key_name, ACL="public-read")
         # try changing ACL with Grant
-        s3_client.put_object_acl(
+        aws_client.s3.put_object_acl(
             Bucket=bucket_name,
             Key=key_name,
             GrantRead='uri="http://acs.amazonaws.com/groups/s3/LogDelivery"',
@@ -953,10 +941,10 @@ class TestS3NotificationsToSQS:
                 },
             ],
         }
-        s3_client.put_object_acl(Bucket=bucket_name, Key=key_name, AccessControlPolicy=acp)
+        aws_client.s3.put_object_acl(Bucket=bucket_name, Key=key_name, AccessControlPolicy=acp)
 
         # collect s3 events from SQS queue
-        events = sqs_collect_s3_events(sqs_client, queue_url, min_events=3)
+        events = sqs_collect_s3_events(aws_client.sqs, queue_url, min_events=3)
 
         assert len(events) == 3, f"unexpected number of events in {events}"
         # order seems not be guaranteed - sort so we can rely on the order

@@ -1,9 +1,8 @@
 import json
-from typing import Optional
+from typing import Final, Optional
 
 from localstack.aws.api.lambda_ import InvocationRequest, InvocationResponse, InvocationType
 from localstack.aws.api.stepfunctions import HistoryEventType, LambdaFunctionFailedEventDetails
-from localstack.services.awslambda.lambda_utils import ClientError
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
 )
@@ -22,19 +21,26 @@ from localstack.utils.aws.aws_stack import connect_to_service
 from localstack.utils.strings import to_bytes, to_str
 
 
+class LambdaFunctionErrorException(Exception):
+    function_error: Final[Optional[str]]
+
+    def __init__(self, function_error: Optional[str]):
+        self.function_error = function_error
+
+
 class StateTaskLambda(StateTask):
     resource: LambdaResource
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         # TODO: produce snapshot tests to adjust the following errors.
-        if isinstance(ex, ClientError):
+        if isinstance(ex, LambdaFunctionErrorException):
             return FailureEvent(
                 error_name=CustomErrorName("Lambda.Unknown"),
                 event_type=HistoryEventType.LambdaFunctionFailed,
                 event_details=EventDetails(
                     taskFailedEventDetails=LambdaFunctionFailedEventDetails(
                         error="Lambda.Unknown",
-                        cause=ex.response["Error"]["Message"],
+                        cause=ex.function_error,
                     )
                 ),
             )
@@ -65,7 +71,7 @@ class StateTaskLambda(StateTask):
 
         func_error: Optional[str] = invocation_resp.get("FunctionError")
         if func_error:
-            raise Exception(func_error)
+            raise LambdaFunctionErrorException(func_error)
 
         # TODO: supported response types?
         resp_payload = invocation_resp["Payload"].read()

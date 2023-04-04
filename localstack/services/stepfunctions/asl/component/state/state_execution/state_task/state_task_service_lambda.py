@@ -3,12 +3,14 @@ from typing import Optional
 
 from localstack.aws.api.lambda_ import InvocationRequest, InvocationResponse, InvocationType
 from localstack.aws.api.stepfunctions import HistoryEventType, LambdaFunctionFailedEventDetails
-from localstack.services.awslambda.lambda_utils import ClientError
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task_lambda import (
+    LambdaFunctionErrorException,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task_service import (
     StateTaskService,
@@ -22,14 +24,14 @@ from localstack.utils.strings import to_bytes, to_str
 class StateTaskServiceLambda(StateTaskService):
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         # TODO: produce snapshot tests to adjust the following errors.
-        if isinstance(ex, ClientError):
+        if isinstance(ex, LambdaFunctionErrorException):
             return FailureEvent(
                 error_name=CustomErrorName("Lambda.Unknown"),
                 event_type=HistoryEventType.LambdaFunctionFailed,
                 event_details=EventDetails(
                     taskFailedEventDetails=LambdaFunctionFailedEventDetails(
                         error="Lambda.Unknown",
-                        cause=ex.response["Error"]["Message"],
+                        cause=ex.function_error,
                     )
                 ),
             )
@@ -60,7 +62,7 @@ class StateTaskServiceLambda(StateTaskService):
 
         func_error: Optional[str] = invocation_resp.get("FunctionError")
         if func_error:
-            raise Exception(func_error)
+            raise LambdaFunctionErrorException(func_error)
 
         # TODO: supported response types?
         resp_payload = invocation_resp["Payload"].read()

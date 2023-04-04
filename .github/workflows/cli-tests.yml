@@ -15,6 +15,7 @@ on:
       - "bin/**"
     branches:
       - master
+      - release\/v[0-9]+(\.[0-9]+){0,2}  # e.g. release/v2.1.0 or release/v2.1
   push:
     paths:
       - ".github/workflows/cli-tests.yml"
@@ -29,6 +30,7 @@ on:
       - "bin/**"
     branches:
       - master
+      - release\/v[0-9]+(\.[0-9]+){0,2}  # e.g. release/v2.1.0 or release/v2.1
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}

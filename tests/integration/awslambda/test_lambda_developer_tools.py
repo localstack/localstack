@@ -33,12 +33,12 @@ class TestHotReloading:
     def test_hot_reloading(
         self,
         create_lambda_function_aws,
-        lambda_client,
         runtime,
         handler_file,
         handler_filename,
         lambda_su_role,
         cleanups,
+        aws_client,
     ):
         """Test hot reloading of lambda code"""
         function_name = f"test-hot-reloading-{short_uid()}"
@@ -59,11 +59,11 @@ class TestHotReloading:
             Role=lambda_su_role,
             Runtime=runtime,
         )
-        response = lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+        response = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.loads(response["Payload"].read())
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value1"
-        response = lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+        response = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.loads(response["Payload"].read())
         assert response_dict["counter"] == 2
         assert response_dict["constant"] == "value1"
@@ -71,11 +71,11 @@ class TestHotReloading:
             f.write(function_content.replace("value1", "value2"))
         # we have to sleep here, since the hot reloading is debounced with 500ms
         time.sleep(0.6)
-        response = lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+        response = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.loads(response["Payload"].read())
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value2"
-        response = lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+        response = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.loads(response["Payload"].read())
         assert response_dict["counter"] == 2
         assert response_dict["constant"] == "value2"
@@ -85,7 +85,7 @@ class TestHotReloading:
         mkdir(test_folder)
         # make sure the creation of the folder triggered reload
         time.sleep(0.6)
-        response = lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+        response = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.loads(response["Payload"].read())
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value2"
@@ -93,17 +93,13 @@ class TestHotReloading:
         with open(os.path.join(test_folder, "test-file"), mode="wt") as f:
             f.write("test-content")
         time.sleep(0.6)
-        response = lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+        response = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.loads(response["Payload"].read())
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value2"
 
     def test_hot_reloading_publish_version(
-        self,
-        create_lambda_function_aws,
-        lambda_client,
-        lambda_su_role,
-        cleanups,
+        self, create_lambda_function_aws, lambda_su_role, cleanups, aws_client
     ):
         """
         Test if publish version code sha256s are ignored when using hot-reload (cannot be matched anyways)
@@ -129,12 +125,12 @@ class TestHotReloading:
             Role=lambda_su_role,
             Runtime=Runtime.nodejs18_x,
         )
-        lambda_client.publish_version(FunctionName=function_name, CodeSha256="zipfilehash")
+        aws_client.awslambda.publish_version(FunctionName=function_name, CodeSha256="zipfilehash")
 
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="Focussing on the new provider")
 class TestDockerFlags:
-    def test_additional_docker_flags(self, lambda_client, create_lambda_function, monkeypatch):
+    def test_additional_docker_flags(self, create_lambda_function, monkeypatch, aws_client):
         env_value = short_uid()
         monkeypatch.setattr(config, "LAMBDA_DOCKER_FLAGS", f"-e Hello={env_value}")
         function_name = f"test-flags-{short_uid()}"
@@ -144,8 +140,8 @@ class TestDockerFlags:
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
-        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
-        result = lambda_client.invoke(FunctionName=function_name, Payload="{}")
+        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        result = aws_client.awslambda.invoke(FunctionName=function_name, Payload="{}")
         result_data = result["Payload"].read()
         result_data = json.loads(to_str(result_data))
         assert {"Hello": env_value} == result_data

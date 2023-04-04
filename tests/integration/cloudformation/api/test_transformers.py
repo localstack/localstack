@@ -5,9 +5,7 @@ from localstack.utils.strings import short_uid, to_bytes
 
 @pytest.mark.aws_validated
 @pytest.mark.skip_snapshot_verify(paths=["$..tags"])
-def test_duplicate_resources(
-    deploy_cfn_template, s3_bucket, s3_client, apigateway_client, cfn_client, snapshot
-):
+def test_duplicate_resources(deploy_cfn_template, s3_bucket, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.key_value("id"))
     snapshot.add_transformer(snapshot.transform.key_value("name"))
     snapshot.add_transformer(snapshot.transform.key_value("aws:cloudformation:stack-id"))
@@ -21,7 +19,7 @@ def test_duplicate_resources(
       title: "Test API"
     basePath: /base
     """
-    s3_client.put_object(Bucket=s3_bucket, Key="api.yaml", Body=to_bytes(api_spec))
+    aws_client.s3.put_object(Bucket=s3_bucket, Key="api.yaml", Body=to_bytes(api_spec))
 
     # deploy template
     template = """
@@ -52,6 +50,6 @@ def test_duplicate_resources(
 
     # assert REST API is created properly
     api_id = result.outputs.get("RestApiId")
-    result = apigateway_client.get_rest_api(restApiId=api_id)
+    result = aws_client.apigateway.get_rest_api(restApiId=api_id)
     assert result
     snapshot.match("api-details", result)

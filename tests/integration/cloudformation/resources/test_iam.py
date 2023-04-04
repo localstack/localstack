@@ -7,7 +7,7 @@ from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
 from localstack.utils.common import short_uid
 
 
-def test_delete_role_detaches_role_policy(cfn_client, iam_client, deploy_cfn_template):
+def test_delete_role_detaches_role_policy(deploy_cfn_template, aws_client):
     role_name = f"LsRole{short_uid()}"
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -15,7 +15,7 @@ def test_delete_role_detaches_role_policy(cfn_client, iam_client, deploy_cfn_tem
         ),
         parameters={"RoleName": role_name},
     )
-    attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)[
+    attached_policies = aws_client.iam.list_attached_role_policies(RoleName=role_name)[
         "AttachedPolicies"
     ]
     assert len(attached_policies) > 0
@@ -30,14 +30,11 @@ def test_delete_role_detaches_role_policy(cfn_client, iam_client, deploy_cfn_tem
     )
 
     with pytest.raises(Exception) as e:
-        iam_client.list_attached_role_policies(RoleName=role_name)
+        aws_client.iam.list_attached_role_policies(RoleName=role_name)
     assert e.value.response.get("Error").get("Code") == "NoSuchEntity"
 
 
-def test_policy_attachments(
-    iam_client,
-    deploy_cfn_template,
-):
+def test_policy_attachments(deploy_cfn_template, aws_client):
     role_name = f"role-{short_uid()}"
     group_name = f"group-{short_uid()}"
     user_name = f"user-{short_uid()}"
@@ -58,23 +55,23 @@ def test_policy_attachments(
     )
 
     # check inline policies
-    role_inline_policies = iam_client.list_role_policies(RoleName=role_name)
-    user_inline_policies = iam_client.list_user_policies(UserName=user_name)
-    group_inline_policies = iam_client.list_group_policies(GroupName=group_name)
+    role_inline_policies = aws_client.iam.list_role_policies(RoleName=role_name)
+    user_inline_policies = aws_client.iam.list_user_policies(UserName=user_name)
+    group_inline_policies = aws_client.iam.list_group_policies(GroupName=group_name)
     assert len(role_inline_policies["PolicyNames"]) == 2
     assert len(user_inline_policies["PolicyNames"]) == 1
     assert len(group_inline_policies["PolicyNames"]) == 1
 
     # check managed/attached policies
-    role_attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)
-    user_attached_policies = iam_client.list_attached_user_policies(UserName=user_name)
-    group_attached_policies = iam_client.list_attached_group_policies(GroupName=group_name)
+    role_attached_policies = aws_client.iam.list_attached_role_policies(RoleName=role_name)
+    user_attached_policies = aws_client.iam.list_attached_user_policies(UserName=user_name)
+    group_attached_policies = aws_client.iam.list_attached_group_policies(GroupName=group_name)
     assert len(role_attached_policies["AttachedPolicies"]) == 1
     assert len(user_attached_policies["AttachedPolicies"]) == 1
     assert len(group_attached_policies["AttachedPolicies"]) == 1
 
     # check service linked roles
-    roles = iam_client.list_roles(PathPrefix=SERVICE_LINKED_ROLE_PATH_PREFIX)["Roles"]
+    roles = aws_client.iam.list_roles(PathPrefix=SERVICE_LINKED_ROLE_PATH_PREFIX)["Roles"]
     matching = [r for r in roles if r.get("Description") == f"service linked role {linked_role_id}"]
     assert matching
     policy = matching[0]["AssumeRolePolicyDocument"]
@@ -84,7 +81,7 @@ def test_policy_attachments(
 
 @pytest.mark.aws_validated
 @pytest.mark.skip_snapshot_verify(paths=["$..User.Tags"])
-def test_iam_username_defaultname(deploy_cfn_template, iam_client, snapshot):
+def test_iam_username_defaultname(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.iam_api())
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
@@ -102,12 +99,12 @@ def test_iam_username_defaultname(deploy_cfn_template, iam_client, snapshot):
     user_name = stack.outputs["DefaultNameUserOutput"]
     assert user_name
 
-    get_iam_user = iam_client.get_user(UserName=user_name)
+    get_iam_user = aws_client.iam.get_user(UserName=user_name)
     snapshot.match("get_iam_user", get_iam_user)
 
 
 @pytest.mark.aws_validated
-def test_iam_user_access_key(deploy_cfn_template, cfn_client, iam_client, snapshot):
+def test_iam_user_access_key(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformers_list(
         [
             snapshot.transform.key_value("AccessKeyId", "key-id"),
@@ -126,7 +123,7 @@ def test_iam_user_access_key(deploy_cfn_template, cfn_client, iam_client, snapsh
 
     snapshot.match("key_outputs", stack.outputs)
 
-    keys = iam_client.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
+    keys = aws_client.iam.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
     snapshot.match("access_key", keys[0])
 
     # Update Status
@@ -138,7 +135,7 @@ def test_iam_user_access_key(deploy_cfn_template, cfn_client, iam_client, snapsh
         ),
         parameters={"UserName": user_name, "Status": "Inactive", "Serial": "2"},
     )
-    keys = iam_client.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
+    keys = aws_client.iam.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
     snapshot.match("access_key_updated", keys[0])
 
 
@@ -151,7 +148,7 @@ def test_iam_user_access_key(deploy_cfn_template, cfn_client, iam_client, snapsh
         "$..Policy.Tags",
     ]
 )
-def test_managed_policy_with_empty_resource(iam_client, deploy_cfn_template, snapshot):
+def test_managed_policy_with_empty_resource(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(
         snapshot.transform.iam_api(),
     )
@@ -171,5 +168,5 @@ def test_managed_policy_with_empty_resource(iam_client, deploy_cfn_template, sna
     snapshot.match("outputs", stack.outputs)
 
     policy_arn = stack.outputs["PolicyArn"]
-    policy = iam_client.get_policy(PolicyArn=policy_arn)
+    policy = aws_client.iam.get_policy(PolicyArn=policy_arn)
     snapshot.match("managed_policy", policy)

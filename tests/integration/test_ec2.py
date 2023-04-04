@@ -33,25 +33,27 @@ def create_launch_template(ec2_client):
 
 
 class TestEc2Integrations:
-    def test_create_route_table_association(self, ec2_client, cleanups):
-        vpc = ec2_client.create_vpc(CidrBlock="10.0.0.0/16")
-        cleanups.append(lambda: ec2_client.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
-        subnet = ec2_client.create_subnet(VpcId=vpc["Vpc"]["VpcId"], CidrBlock="10.0.0.0/24")
-        cleanups.append(lambda: ec2_client.delete_subnet(SubnetId=subnet["Subnet"]["SubnetId"]))
+    def test_create_route_table_association(self, cleanups, aws_client):
+        vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
+        cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
+        subnet = aws_client.ec2.create_subnet(VpcId=vpc["Vpc"]["VpcId"], CidrBlock="10.0.0.0/24")
+        cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=subnet["Subnet"]["SubnetId"]))
 
-        route_table = ec2_client.create_route_table(VpcId=vpc["Vpc"]["VpcId"])
+        route_table = aws_client.ec2.create_route_table(VpcId=vpc["Vpc"]["VpcId"])
         cleanups.append(
-            lambda: ec2_client.delete_route_table(
+            lambda: aws_client.ec2.delete_route_table(
                 RouteTableId=route_table["RouteTable"]["RouteTableId"]
             )
         )
-        association_id = ec2_client.associate_route_table(
+        association_id = aws_client.ec2.associate_route_table(
             RouteTableId=route_table["RouteTable"]["RouteTableId"],
             SubnetId=subnet["Subnet"]["SubnetId"],
         )["AssociationId"]
-        cleanups.append(lambda: ec2_client.disassociate_route_table(AssociationId=association_id))
+        cleanups.append(
+            lambda: aws_client.ec2.disassociate_route_table(AssociationId=association_id)
+        )
 
-        for route_tables in ec2_client.describe_route_tables()["RouteTables"]:
+        for route_tables in aws_client.ec2.describe_route_tables()["RouteTables"]:
             for association in route_tables["Associations"]:
                 if association["RouteTableId"] == route_table["RouteTable"]["RouteTableId"]:
                     if association.get("Main"):
@@ -59,31 +61,31 @@ class TestEc2Integrations:
                     assert association["SubnetId"] == subnet["Subnet"]["SubnetId"]
                     assert association["AssociationState"]["State"] == "associated"
 
-        ec2_client.disassociate_route_table(AssociationId=association_id)
-        for route_tables in ec2_client.describe_route_tables()["RouteTables"]:
+        aws_client.ec2.disassociate_route_table(AssociationId=association_id)
+        for route_tables in aws_client.ec2.describe_route_tables()["RouteTables"]:
             associations = [a for a in route_tables["Associations"] if not a.get("Main")]
             assert associations == []
 
-    def test_create_vpc_end_point(self, ec2_client, cleanups):
-        vpc = ec2_client.create_vpc(CidrBlock="10.0.0.0/16")
-        cleanups.append(lambda: ec2_client.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
-        subnet = ec2_client.create_subnet(VpcId=vpc["Vpc"]["VpcId"], CidrBlock="10.0.0.0/24")
-        cleanups.append(lambda: ec2_client.delete_subnet(SubnetId=subnet["Subnet"]["SubnetId"]))
-        route_table = ec2_client.create_route_table(VpcId=vpc["Vpc"]["VpcId"])
+    def test_create_vpc_end_point(self, cleanups, aws_client):
+        vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
+        cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
+        subnet = aws_client.ec2.create_subnet(VpcId=vpc["Vpc"]["VpcId"], CidrBlock="10.0.0.0/24")
+        cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=subnet["Subnet"]["SubnetId"]))
+        route_table = aws_client.ec2.create_route_table(VpcId=vpc["Vpc"]["VpcId"])
         cleanups.append(
-            lambda: ec2_client.delete_route_table(
+            lambda: aws_client.ec2.delete_route_table(
                 RouteTableId=route_table["RouteTable"]["RouteTableId"]
             )
         )
 
         # test without any end point type specified
-        vpc_end_point = ec2_client.create_vpc_endpoint(
+        vpc_end_point = aws_client.ec2.create_vpc_endpoint(
             VpcId=vpc["Vpc"]["VpcId"],
             ServiceName="com.amazonaws.us-east-1.s3",
             RouteTableIds=[route_table["RouteTable"]["RouteTableId"]],
         )
         cleanups.append(
-            lambda: ec2_client.delete_vpc_endpoints(
+            lambda: aws_client.ec2.delete_vpc_endpoints(
                 VpcEndpointIds=[vpc_end_point["VpcEndpoint"]["VpcEndpointId"]]
             )
         )
@@ -97,14 +99,14 @@ class TestEc2Integrations:
         assert 0 == len(vpc_end_point["VpcEndpoint"]["DnsEntries"])
 
         # test with any end point type as gateway
-        vpc_end_point = ec2_client.create_vpc_endpoint(
+        vpc_end_point = aws_client.ec2.create_vpc_endpoint(
             VpcId=vpc["Vpc"]["VpcId"],
             ServiceName="com.amazonaws.us-east-1.s3",
             RouteTableIds=[route_table["RouteTable"]["RouteTableId"]],
             VpcEndpointType="gateway",
         )
         cleanups.append(
-            lambda: ec2_client.delete_vpc_endpoints(
+            lambda: aws_client.ec2.delete_vpc_endpoints(
                 VpcEndpointIds=[vpc_end_point["VpcEndpoint"]["VpcEndpointId"]]
             )
         )
@@ -118,14 +120,14 @@ class TestEc2Integrations:
         assert 0 == len(vpc_end_point["VpcEndpoint"]["DnsEntries"])
 
         # test with end point type as interface
-        vpc_end_point = ec2_client.create_vpc_endpoint(
+        vpc_end_point = aws_client.ec2.create_vpc_endpoint(
             VpcId=vpc["Vpc"]["VpcId"],
             ServiceName="com.amazonaws.us-east-1.s3",
             SubnetIds=[subnet["Subnet"]["SubnetId"]],
             VpcEndpointType="interface",
         )
         cleanups.append(
-            lambda: ec2_client.delete_vpc_endpoints(
+            lambda: aws_client.ec2.delete_vpc_endpoints(
                 VpcEndpointIds=[vpc_end_point["VpcEndpoint"]["VpcEndpointId"]]
             )
         )
@@ -135,8 +137,8 @@ class TestEc2Integrations:
         assert vpc["Vpc"]["VpcId"] == vpc_end_point["VpcEndpoint"]["VpcId"]
         assert len(vpc_end_point["VpcEndpoint"]["DnsEntries"]) > 0
 
-    def test_reserved_instance_api(self, ec2_client):
-        rs = ec2_client.describe_reserved_instances_offerings(
+    def test_reserved_instance_api(self, aws_client):
+        rs = aws_client.ec2.describe_reserved_instances_offerings(
             AvailabilityZone="us-east-1a",
             IncludeMarketplace=True,
             InstanceType="t2.small",
@@ -149,14 +151,14 @@ class TestEc2Integrations:
         )
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
-        rs = ec2_client.purchase_reserved_instances_offering(
+        rs = aws_client.ec2.purchase_reserved_instances_offering(
             InstanceCount=1,
             ReservedInstancesOfferingId="string",
             LimitPrice={"Amount": 100.0, "CurrencyCode": "USD"},
         )
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
-        rs = ec2_client.describe_reserved_instances(
+        rs = aws_client.ec2.describe_reserved_instances(
             OfferingClass="standard",
             ReservedInstancesIds=[
                 "string",
@@ -165,7 +167,7 @@ class TestEc2Integrations:
         )
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
-    def test_vcp_peering_difference_regions(self, ec2_client):
+    def test_vcp_peering_difference_regions(self):
         # Note: different regions currently not supported due to set_default_region_in_headers(..) in edge.py
         region1 = region2 = aws_stack.get_region()
         ec2_client1 = aws_stack.create_external_boto_client(service_name="ec2", region_name=region1)
@@ -235,20 +237,20 @@ class TestEc2Integrations:
         ec2_client1.delete_vpc(VpcId=peer_vpc1["Vpc"]["VpcId"])
         ec2_client2.delete_vpc(VpcId=peer_vpc2["Vpc"]["VpcId"])
 
-    def test_describe_vpn_gateways_filter_by_vpc(self, ec2_client):
-        vpc = ec2_client.create_vpc(CidrBlock="10.0.0.0/16")
+    def test_describe_vpn_gateways_filter_by_vpc(self, aws_client):
+        vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
         vpc_id = vpc["Vpc"]["VpcId"]
 
-        gateway = ec2_client.create_vpn_gateway(AvailabilityZone="us-east-1a", Type="ipsec.1")
+        gateway = aws_client.ec2.create_vpn_gateway(AvailabilityZone="us-east-1a", Type="ipsec.1")
         assert 200 == gateway["ResponseMetadata"]["HTTPStatusCode"]
         assert "ipsec.1" == gateway["VpnGateway"]["Type"]
         assert gateway["VpnGateway"]["VpnGatewayId"] is not None
 
         gateway_id = gateway["VpnGateway"]["VpnGatewayId"]
 
-        ec2_client.attach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=gateway_id)
+        aws_client.ec2.attach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=gateway_id)
 
-        gateways = ec2_client.describe_vpn_gateways(
+        gateways = aws_client.ec2.describe_vpn_gateways(
             Filters=[
                 {"Name": "attachment.vpc-id", "Values": [vpc_id]},
             ],
@@ -260,16 +262,16 @@ class TestEc2Integrations:
         assert vpc_id == gateways["VpnGateways"][0]["VpcAttachments"][0]["VpcId"]
 
         # clean up
-        ec2_client.detach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=gateway_id)
-        ec2_client.delete_vpn_gateway(VpnGatewayId=gateway_id)
-        ec2_client.delete_vpc(VpcId=vpc_id)
+        aws_client.ec2.detach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=gateway_id)
+        aws_client.ec2.delete_vpn_gateway(VpnGatewayId=gateway_id)
+        aws_client.ec2.delete_vpc(VpcId=vpc_id)
 
-    def test_describe_vpc_endpoints_with_filter(self, ec2_client):
-        vpc = ec2_client.create_vpc(CidrBlock="10.0.0.0/16")
+    def test_describe_vpc_endpoints_with_filter(self, aws_client):
+        vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
         vpc_id = vpc["Vpc"]["VpcId"]
 
         # test filter of Gateway endpoint services
-        vpc_endpoint_gateway_services = ec2_client.describe_vpc_endpoint_services(
+        vpc_endpoint_gateway_services = aws_client.ec2.describe_vpc_endpoint_services(
             Filters=[
                 {"Name": "service-type", "Values": ["Gateway"]},
             ],
@@ -283,7 +285,7 @@ class TestEc2Integrations:
         assert f"com.amazonaws.{region}.s3" in services
 
         # test filter of Interface endpoint services
-        vpc_endpoint_interface_services = ec2_client.describe_vpc_endpoint_services(
+        vpc_endpoint_interface_services = aws_client.ec2.describe_vpc_endpoint_services(
             Filters=[
                 {"Name": "service-type", "Values": ["Interface"]},
             ],
@@ -296,7 +298,7 @@ class TestEc2Integrations:
         assert f"com.amazonaws.{region}.kinesis-firehose" in services
 
         # test filter that does not exist
-        vpc_endpoint_interface_services = ec2_client.describe_vpc_endpoint_services(
+        vpc_endpoint_interface_services = aws_client.ec2.describe_vpc_endpoint_services(
             Filters=[
                 {"Name": "service-type", "Values": ["fake"]},
             ],
@@ -307,11 +309,11 @@ class TestEc2Integrations:
         assert len(services) == 0
 
         # clean up
-        ec2_client.delete_vpc(VpcId=vpc_id)
+        aws_client.ec2.delete_vpc(VpcId=vpc_id)
 
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("id_type", ["id", "name"])
-    def test_modify_launch_template(self, ec2_client, create_launch_template, id_type):
+    def test_modify_launch_template(self, create_launch_template, id_type, aws_client):
         launch_template_result = create_launch_template(f"template-with-versions-{short_uid()}")
         template = launch_template_result["LaunchTemplate"]
 
@@ -322,17 +324,17 @@ class TestEc2Integrations:
             else {"LaunchTemplateName": template["LaunchTemplateName"]}
         )
 
-        new_version_result = ec2_client.create_launch_template_version(
+        new_version_result = aws_client.ec2.create_launch_template_version(
             LaunchTemplateData={"ImageId": PUBLIC_AMAZON_UBUNTU_IMAGE}, **kwargs
         )
 
         new_default_version = new_version_result["LaunchTemplateVersion"]["VersionNumber"]
-        ec2_client.modify_launch_template(
+        aws_client.ec2.modify_launch_template(
             LaunchTemplateId=template["LaunchTemplateId"],
             DefaultVersion=str(new_default_version),
         )
 
-        modified_template = ec2_client.describe_launch_templates(
+        modified_template = aws_client.ec2.describe_launch_templates(
             LaunchTemplateIds=[template["LaunchTemplateId"]]
         )
         assert modified_template["LaunchTemplates"][0]["DefaultVersionNumber"] == int(
@@ -341,12 +343,12 @@ class TestEc2Integrations:
 
 
 @pytest.mark.aws_validated
-def test_raise_modify_to_invalid_default_version(ec2_client, create_launch_template):
+def test_raise_modify_to_invalid_default_version(create_launch_template, aws_client):
     launch_template_result = create_launch_template(f"my-first-launch-template-{short_uid()}")
     template = launch_template_result["LaunchTemplate"]
 
     with pytest.raises(ClientError) as e:
-        ec2_client.modify_launch_template(
+        aws_client.ec2.modify_launch_template(
             LaunchTemplateId=template["LaunchTemplateId"], DefaultVersion="666"
         )
     assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
@@ -354,9 +356,9 @@ def test_raise_modify_to_invalid_default_version(ec2_client, create_launch_templ
 
 
 @pytest.mark.aws_validated
-def test_raise_when_launch_template_data_missing(ec2_client):
+def test_raise_when_launch_template_data_missing(aws_client):
     with pytest.raises(ClientError) as e:
-        ec2_client.create_launch_template(
+        aws_client.ec2.create_launch_template(
             LaunchTemplateName=f"unique_name-{short_uid()}", LaunchTemplateData={}
         )
     assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
@@ -373,7 +375,7 @@ def test_raise_invalid_launch_template_name(create_launch_template):
 
 
 @pytest.mark.aws_validated
-def test_raise_duplicate_launch_template_name(ec2_client, create_launch_template):
+def test_raise_duplicate_launch_template_name(create_launch_template):
     create_launch_template("name")
 
     with pytest.raises(ClientError) as e:
@@ -398,7 +400,7 @@ def pickle_backends():
     return _can_pickle
 
 
-def test_pickle_ec2_backend(ec2_client, pickle_backends):
-    _ = ec2_client.describe_account_attributes()
+def test_pickle_ec2_backend(pickle_backends, aws_client):
+    _ = aws_client.ec2.describe_account_attributes()
     pickle_backends(ec2_backends)
     assert pickle_backends(ec2_backends)
