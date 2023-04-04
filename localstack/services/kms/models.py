@@ -9,7 +9,7 @@ import struct
 import uuid
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, hmac
@@ -288,7 +288,7 @@ class KmsKey:
             # AWS itself raises this exception without any additional message.
             raise KMSInvalidSignatureException()
 
-    def _get_hmac_context(self, mac_algorithm: MacAlgorithmSpec) -> Any:
+    def _get_hmac_context(self, mac_algorithm: MacAlgorithmSpec) -> hmac.HMAC:
         if mac_algorithm == "HMAC_SHA_224":
             h = hmac.HMAC(self.crypto_key.key_material, hashes.SHA224())
         elif mac_algorithm == "HMAC_SHA_256":
