@@ -757,8 +757,8 @@
       }
     }
   },
-  "tests/integration/test_kms.py::TestKMSHmac::test_hmac_create_key": {
-    "recorded-date": "03-04-2023, 22:50:44",
+  "tests/integration/test_kms.py::TestKMS::test_hmac_create_key": {
+    "recorded-date": "04-04-2023, 14:21:34",
     "recorded-content": {
       "create-hmac-key": {
         "AWSAccountId": "111111111111",
@@ -798,8 +798,8 @@
       }
     }
   },
-  "tests/integration/test_kms.py::TestKMSHmac::test_hmac_create_key_invalid_operations": {
-    "recorded-date": "03-04-2023, 22:50:48",
+  "tests/integration/test_kms.py::TestKMS::test_hmac_create_key_invalid_operations": {
+    "recorded-date": "04-04-2023, 14:21:46",
     "recorded-content": {
       "create-hmac-key-without-key-usage": {
         "Error": {
@@ -833,12 +833,12 @@
       }
     }
   },
-  "tests/integration/test_kms.py::TestKMSHmac::test_generate_and_verify_mac[HMAC_224-HMAC_SHA_224]": {
-    "recorded-date": "03-04-2023, 22:50:53",
+  "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_224-HMAC_SHA_224]": {
+    "recorded-date": "04-04-2023, 14:21:59",
     "recorded-content": {
       "generate-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/9a06e397-7c23-4072-8cb6-678139c5dac2",
-        "Mac": "b'\\x00\\xee\\xf7\\x10a\\xba)lL\\x94E\\x1a}s\\x11\\xb0\\xdd\\x99_\\xc3_\\xaeHf)\\xfeZ{'",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/7adef49f-2edb-4755-a202-afb6000c1673",
+        "Mac": "b'\\x86\\xe9a\\xee\\xd2*p\\xb5\\xd8om[\\x1d\\xc9\\xdb\\x83)\\xe96X\\x82D\\xad\\xe1\\x83\\xf8\\xbc\\xe9'",
         "MacAlgorithm": "HMAC_SHA_224",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -846,7 +846,7 @@
         }
       },
       "verify-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/9a06e397-7c23-4072-8cb6-678139c5dac2",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/7adef49f-2edb-4755-a202-afb6000c1673",
         "MacAlgorithm": "HMAC_SHA_224",
         "MacValid": true,
         "ResponseMetadata": {
@@ -878,12 +878,12 @@
       }
     }
   },
-  "tests/integration/test_kms.py::TestKMSHmac::test_generate_and_verify_mac[HMAC_256-HMAC_SHA_256]": {
-    "recorded-date": "03-04-2023, 22:51:09",
+  "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_256-HMAC_SHA_256]": {
+    "recorded-date": "04-04-2023, 14:21:59",
     "recorded-content": {
       "generate-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/c64a71b7-f615-4fc4-9d0e-dac17a854d71",
-        "Mac": "b'z\\xe4)\\xe7\\xd1)\\xb5\\xbb\\xab\\x95\\xe6\\xcaNA!Ur\\xa3~\\x1b\\x96\\xc1I\\x04\\xf9\\n\\x96\\x057\\xb6\\x0f\\xb7'",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/96d5546b-4c0b-409b-aa17-982226608c91",
+        "Mac": "b'l\\xb9h\\x1c\\xff\\xd0\\x19R\\x82\\x83\\x8a\\x9d\\x86\\x16nS\\x0fO\\xf8Y\\xe5_\\x89\\xd2\\xc1#l\\x97\\xe3\\xad`l'",
         "MacAlgorithm": "HMAC_SHA_256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -891,7 +891,7 @@
         }
       },
       "verify-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/c64a71b7-f615-4fc4-9d0e-dac17a854d71",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/96d5546b-4c0b-409b-aa17-982226608c91",
         "MacAlgorithm": "HMAC_SHA_256",
         "MacValid": true,
         "ResponseMetadata": {
@@ -923,12 +923,12 @@
       }
     }
   },
-  "tests/integration/test_kms.py::TestKMSHmac::test_generate_and_verify_mac[HMAC_384-HMAC_SHA_384]": {
-    "recorded-date": "03-04-2023, 22:51:12",
+  "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_384-HMAC_SHA_384]": {
+    "recorded-date": "04-04-2023, 14:21:59",
     "recorded-content": {
       "generate-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/cb408051-6c85-48da-9314-58eaafcd5bf1",
-        "Mac": "b'N\\x0f0\\x8a\\x07\\xd1\\x1b\\xc1\\xeb\\x8d\\xd0\\x18h\\xecDU\\x10U\\x15\\xae\\x19\\xd3\\xd1\\xee\\xf1\\x87k\\x99|\\xe7\\x86gf\\xd5\\xf4\\xa4\\x01\\x0c`\\x08Y\\xf2.a<7\\xbc\\x99'",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/7d09d39d-9cb6-459e-b72f-5a97351921ba",
+        "Mac": "b'tVW\\xd3\\x9b\\xdc\\xc5\\x7f\\x9b\\xf8\\t\\xb9fo\\xda\\xd9\\nE\\x03\\xba\\xa1\\xfc\\x85\\x8a\\xf7\\xcc\\x1e\\x87\\x8b\\xfe\\n\\xf5\\x83\\x96\\xbc\\xd0B\\x9b\\x9aY\\xb2\\x02as\\xb8\\xca\\xb8\\xfb'",
         "MacAlgorithm": "HMAC_SHA_384",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -936,7 +936,7 @@
         }
       },
       "verify-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/cb408051-6c85-48da-9314-58eaafcd5bf1",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/7d09d39d-9cb6-459e-b72f-5a97351921ba",
         "MacAlgorithm": "HMAC_SHA_384",
         "MacValid": true,
         "ResponseMetadata": {
@@ -968,12 +968,12 @@
       }
     }
   },
-  "tests/integration/test_kms.py::TestKMSHmac::test_generate_and_verify_mac[HMAC_512-HMAC_SHA_512]": {
-    "recorded-date": "03-04-2023, 22:51:17",
+  "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_512-HMAC_SHA_512]": {
+    "recorded-date": "04-04-2023, 14:21:59",
     "recorded-content": {
       "generate-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/8dc7ebfa-8f3a-46cc-8630-6efb6c4343cc",
-        "Mac": "b\"\\xeb\\x87\\xdf\\xe2\\x88\\x95-\\x1f\\xfe\\xdb<\\x82\\xa5&|x'\\xd4\\x15\\x08\\x8cL<\\xaf\\xb0QT\\xba\\x13}\\xc3\\x11\\x8a\\x84\\xa7\\x8bB\\x15N\\xb6F\\xef1VJ~\\x05\\x82V\\xff\\xd4\\xf9\\xda\\xd3\\xaa\\x14\\xeb\\x99&\\xb4\\x16\\xec\\xfc\\xba\"",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/2a068ba0-4163-4fd4-8035-adf89eeb1994",
+        "Mac": "b'T\\xabF\\xa5\\xcbd\\xe3\\xc2|T\\x1c\\xa5\\x88J>w\\xde\\xe7C\"\\xf9\\x0c}:\\x9eVc\\x1b\\xc80\\xe4!#\\xce$\\xb0x\\x02\\x91\\x83\\x87B\\xb3xX\\xec\\xb0)\\xc7jg)\\xc3\\xb9\\x13\\t\\xbdO\\xd4oPV\\xac\\xa1'",
         "MacAlgorithm": "HMAC_SHA_512",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -981,7 +981,7 @@
         }
       },
       "verify-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/8dc7ebfa-8f3a-46cc-8630-6efb6c4343cc",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/2a068ba0-4163-4fd4-8035-adf89eeb1994",
         "MacAlgorithm": "HMAC_SHA_512",
         "MacValid": true,
         "ResponseMetadata": {
@@ -1013,8 +1013,8 @@
       }
     }
   },
-  "tests/integration/test_kms.py::TestKMSHmac::test_invalid_generate_mac[HMAC_224-HMAC_SHA_256]": {
-    "recorded-date": "03-04-2023, 22:51:22",
+  "tests/integration/test_kms.py::TestKMS::test_invalid_generate_mac[HMAC_224-HMAC_SHA_256]": {
+    "recorded-date": "04-04-2023, 14:22:21",
     "recorded-content": {
       "generate-mac": {
         "Error": {
@@ -1029,8 +1029,8 @@
       }
     }
   },
-  "tests/integration/test_kms.py::TestKMSHmac::test_invalid_generate_mac[HMAC_256-INVALID]": {
-    "recorded-date": "03-04-2023, 22:51:25",
+  "tests/integration/test_kms.py::TestKMS::test_invalid_generate_mac[HMAC_256-INVALID]": {
+    "recorded-date": "04-04-2023, 14:22:21",
     "recorded-content": {
       "generate-mac": {
         "Error": {
@@ -1044,12 +1044,12 @@
       }
     }
   },
-  "tests/integration/test_kms.py::TestKMSHmac::test_invalid_verify_mac[HMAC_256-HMAC_SHA_256-some different important message]": {
-    "recorded-date": "03-04-2023, 22:51:28",
+  "tests/integration/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-HMAC_SHA_256-some different important message]": {
+    "recorded-date": "04-04-2023, 14:22:30",
     "recorded-content": {
       "generate-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/d57a080a-aa39-4929-8220-a3247e07fd9c",
-        "Mac": "b'\\x8f?\\xfbr\\x98G\\x11\\x94;s!O\\xaa\\xd3\\xf2cU\\xde\\xe1+\\x1b9V\\xeb\\xa8P=\\xdc\\xb5\\xcaT\\\\'",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/d7a7f540-75a3-476c-9d7b-dc1ba976f10b",
+        "Mac": "b'\\x0c\\x96=\\x97\\x10\\xd4\\xa2\\xb7\\x08\\xd0w%\\xa6\\x1eT\\xf5Z\\xa00bx\\x02\\x90\\xe2\\x0f-\\x8c\\xf0\\xf9hQ\\x00'",
         "MacAlgorithm": "HMAC_SHA_256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1061,6 +1061,7 @@
           "Code": "KMSInvalidMacException",
           "Message": ""
         },
+        "message": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -1068,12 +1069,12 @@
       }
     }
   },
-  "tests/integration/test_kms.py::TestKMSHmac::test_invalid_verify_mac[HMAC_256-HMAC_SHA_512-some important message]": {
-    "recorded-date": "03-04-2023, 22:51:30",
+  "tests/integration/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-HMAC_SHA_512-some important message]": {
+    "recorded-date": "04-04-2023, 14:22:30",
     "recorded-content": {
       "generate-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/d9c7e9a7-b035-4440-b06f-f578403b0662",
-        "Mac": "b';u\\x12\\x00!\\x87\\xbd\\x99<\\x03\\rh\\xa2\\x82\\xf8a\\xba\\xe7\\xe0\\xf0\\xa8\\xfaj\\xbbqm\\x93>\\x13\\xe1\\xe9\\xfb'",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/6432fbe6-c58f-48d6-a22d-35ba55ea11c5",
+        "Mac": "b'\\x9d\\xbeEj<\\xbc9\\x9a -\\x9a3\\x99\\xb2\\x15V\\xc6\\xbc\\xe7\\xbbj\\x95\\xf9\\rU\\xff\\xae+g\\xb0\\xdcP'",
         "MacAlgorithm": "HMAC_SHA_256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1093,12 +1094,12 @@
       }
     }
   },
-  "tests/integration/test_kms.py::TestKMSHmac::test_invalid_verify_mac[HMAC_256-INVALID-some important message]": {
-    "recorded-date": "03-04-2023, 22:51:33",
+  "tests/integration/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-INVALID-some important message]": {
+    "recorded-date": "04-04-2023, 14:22:30",
     "recorded-content": {
       "generate-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/ef770e0e-ffb0-4e56-bbc5-444961ac36a5",
-        "Mac": "b'&\\x88t\\xd95\\xf3_\\xa8{r\\x8d\\x00\\xb3I#<\\xd7\\x8d\\xf7]\\xd1\\xc0-Uw\\xe8\\xcc\\x19\\xaf\\xb4\\xda\\xb2'",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/2a6d424a-b285-49ff-aed2-f691cad346ab",
+        "Mac": "b'\\xbe\\xa2\\xa3*cE\\xf8\\xc5\\x84I\\x9f\\xe2\\xb4\\xa9p\\x15%(\\xe6\\x9e\\x1b\\xb7;d;\\x0cp\\t:\\xca;c'",
         "MacAlgorithm": "HMAC_SHA_256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
