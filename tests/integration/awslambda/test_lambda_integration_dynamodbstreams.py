@@ -43,11 +43,11 @@ def _snapshot_transformers(snapshot):
 
 
 @pytest.fixture
-def wait_for_dynamodb_stream_enabled(dynamodbstreams_client):
+def wait_for_dynamodb_stream_enabled(aws_client):
     def _wait_for_stream_enabled(latest_stream_arn: str):
         def _is_stream_enabled():
             return (
-                dynamodbstreams_client.describe_stream(StreamArn=latest_stream_arn)[
+                aws_client.dynamodbstreams.describe_stream(StreamArn=latest_stream_arn)[
                     "StreamDescription"
                 ]["StreamStatus"]
                 == "ENABLED"
@@ -59,10 +59,10 @@ def wait_for_dynamodb_stream_enabled(dynamodbstreams_client):
 
 
 @pytest.fixture
-def get_lambda_logs_event(logs_client):
+def get_lambda_logs_event(aws_client):
     def _get_lambda_logs_event(function_name, expected_num_events, retries=30):
         return _get_lambda_invocation_events(
-            logs_client=logs_client,
+            logs_client=aws_client.logs,
             function_name=function_name,
             expected_num_events=expected_num_events,
             retries=retries,

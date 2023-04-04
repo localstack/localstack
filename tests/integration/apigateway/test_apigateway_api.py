@@ -59,13 +59,13 @@ def delete_rest_api_retry(client, rest_api_id: str):
 
 
 @pytest.fixture
-def apigw_create_rest_api(apigateway_client):
+def apigw_create_rest_api(aws_client):
     rest_apis = []
 
     def _factory(*args, **kwargs):
         if "name" not in kwargs:
             kwargs["name"] = f"test-api-{short_uid()}"
-        response = apigateway_client.create_rest_api(*args, **kwargs)
+        response = aws_client.apigateway.create_rest_api(*args, **kwargs)
         rest_apis.append(response["id"])
         return response
 
@@ -73,7 +73,7 @@ def apigw_create_rest_api(apigateway_client):
 
     # TODO: might clean up even more resources as we learn? integrations and such?
     for rest_api_id in rest_apis:
-        delete_rest_api_retry(apigateway_client, rest_api_id)
+        delete_rest_api_retry(aws_client.apigateway, rest_api_id)
 
 
 @pytest.mark.aws_validated

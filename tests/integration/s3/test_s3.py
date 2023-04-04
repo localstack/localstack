@@ -144,14 +144,16 @@ def s3_create_bucket_with_client(s3_resource):
 
 
 @pytest.fixture
-def s3_multipart_upload(s3_client):
+def s3_multipart_upload(aws_client):
     def perform_multipart_upload(
         bucket, key, data=None, zipped=False, acl=None, parts: int = 1, **kwargs
     ):
         # beware, the last part can be under 5 MiB, but previous parts needs to be between 5MiB and 5GiB
         if acl:
             kwargs["ACL"] = acl
-        multipart_upload_dict = s3_client.create_multipart_upload(Bucket=bucket, Key=key, **kwargs)
+        multipart_upload_dict = aws_client.s3.create_multipart_upload(
+            Bucket=bucket, Key=key, **kwargs
+        )
         upload_id = multipart_upload_dict["UploadId"]
         data = data or (5 * short_uid())
         multipart_upload_parts = []
@@ -172,7 +174,7 @@ def s3_multipart_upload(s3_client):
                 with gzip.GzipFile(fileobj=upload_file_object, mode="w") as filestream:
                     filestream.write(part_data)
 
-            response = s3_client.upload_part(
+            response = aws_client.s3.upload_part(
                 Bucket=bucket,
                 Key=key,
                 Body=upload_file_object,
@@ -185,7 +187,7 @@ def s3_multipart_upload(s3_client):
             if zipped:
                 break
 
-        return s3_client.complete_multipart_upload(
+        return aws_client.s3.complete_multipart_upload(
             Bucket=bucket,
             Key=key,
             MultipartUpload={"Parts": multipart_upload_parts},

@@ -46,19 +46,19 @@ firehose_permission = {
 
 
 @pytest.fixture
-def logs_log_group(logs_client):
+def logs_log_group(aws_client):
     name = f"test-log-group-{short_uid()}"
-    logs_client.create_log_group(logGroupName=name)
+    aws_client.logs.create_log_group(logGroupName=name)
     yield name
-    logs_client.delete_log_group(logGroupName=name)
+    aws_client.logs.delete_log_group(logGroupName=name)
 
 
 @pytest.fixture
-def logs_log_stream(logs_client, logs_log_group):
+def logs_log_stream(logs_log_group, aws_client):
     name = f"test-log-stream-{short_uid()}"
-    logs_client.create_log_stream(logGroupName=logs_log_group, logStreamName=name)
+    aws_client.logs.create_log_stream(logGroupName=logs_log_group, logStreamName=name)
     yield name
-    logs_client.delete_log_stream(logStreamName=name, logGroupName=logs_log_group)
+    aws_client.logs.delete_log_stream(logStreamName=name, logGroupName=logs_log_group)
 
 
 class TestCloudWatchLogs:
