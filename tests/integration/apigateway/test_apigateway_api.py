@@ -27,11 +27,11 @@ def apigw_snapshot_transformer(snapshot):
 
 
 @pytest.fixture(scope="class", autouse=True)
-def apigw_cleanup_before_run(apigateway_client):
+def apigw_cleanup_before_run(aws_client):
     # TODO: remove this once all tests are properly cleaning up and using fixtures
-    rest_apis = apigateway_client.get_rest_apis()
+    rest_apis = aws_client.apigateway.get_rest_apis()
     for rest_api in rest_apis["items"]:
-        delete_rest_api_retry(apigateway_client, rest_api["id"])
+        delete_rest_api_retry(aws_client.apigateway, rest_api["id"])
 
 
 def delete_rest_api_retry(client, rest_api_id: str):
