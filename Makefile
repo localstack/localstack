@@ -45,6 +45,9 @@ install-test-only: venv
 	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[test]"
 
 install-dev: venv         ## Install developer requirements into venv
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev]"
+
+install-dev-types: venv   ## Install developer requirements incl. type hints into venv
 	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev,typehint]"
 
 install: install-dev entrypoints  ## Install full dependencies into venv
