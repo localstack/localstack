@@ -28,7 +28,6 @@ from localstack.utils.sync import poll_condition
 from .awslambda.functions import lambda_integration
 from .awslambda.test_lambda import (
     PYTHON_TEST_RUNTIMES,
-    TEST_LAMBDA_LIBS,
     TEST_LAMBDA_PUT_ITEM_FILE,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
@@ -53,7 +52,7 @@ def handler(event, *args):
 
 
 @pytest.fixture(scope="class")
-def scheduled_test_lambda(lambda_client):
+def scheduled_test_lambda(lambda_client, events_client):
     # Note: create scheduled Lambda here - assertions will be run in test_scheduled_lambda() below..
 
     # create test Lambda
@@ -68,12 +67,14 @@ def scheduled_test_lambda(lambda_client):
 
     # create scheduled Lambda function
     rule_name = f"rule-{short_uid()}"
-    events = aws_stack.create_external_boto_client("events")
-    events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
-    events.put_targets(Rule=rule_name, Targets=[{"Id": f"target-{short_uid()}", "Arn": func_arn}])
+    target_id = f"target-{short_uid()}"
+    events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
+    events_client.put_targets(Rule=rule_name, Targets=[{"Id": target_id, "Arn": func_arn}])
 
     yield scheduled_lambda_name
 
+    events_client.remove_targets(Rule=rule_name, Ids=[target_id])
+    events_client.delete_rule(Name=rule_name)
     testutil.delete_lambda_function(scheduled_lambda_name)
 
 
@@ -207,10 +208,12 @@ class TestIntegration:
     def test_lambda_streams_batch_and_transactions(
         self,
         dynamodb_client,
+        lambda_client,
         dynamodbstreams_client,
         kinesis_create_stream,
         dynamodb_create_table,
         create_lambda_function,
+        cleanups,
     ):
         ddb_lease_table_suffix = "-kclapp2"
         table_name = short_uid() + "lsbat" + ddb_lease_table_suffix
@@ -251,13 +254,15 @@ class TestIntegration:
             # deploy test lambda connected to DynamoDB Stream
             create_lambda_function(
                 handler_file=TEST_LAMBDA_PYTHON,
-                libs=TEST_LAMBDA_LIBS,
                 func_name=lambda_ddb_name,
-                event_source_arn=ddb_event_source_arn,
-                starting_position="TRIM_HORIZON",
-                delete=True,
                 envvars={"KINESIS_STREAM_NAME": stream_name},
             )
+            uuid = lambda_client.create_event_source_mapping(
+                FunctionName=lambda_ddb_name,
+                EventSourceArn=ddb_event_source_arn,
+                StartingPosition="TRIM_HORIZON",
+            )["UUID"]
+            cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=uuid))
 
             # submit a batch with writes
             dynamodb_client.batch_write_item(
@@ -552,9 +557,7 @@ def test_kinesis_lambda_forward_chain(
     s3_client.create_bucket(Bucket=TEST_BUCKET_NAME)
 
     # deploy test lambdas connected to Kinesis streams
-    zip_file = testutil.create_lambda_archive(
-        load_file(TEST_LAMBDA_PYTHON), get_content=True, libs=TEST_LAMBDA_LIBS
-    )
+    zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True)
     lambda_1_resp = create_lambda_function(
         func_name=lambda1_name,
         zip_file=zip_file,

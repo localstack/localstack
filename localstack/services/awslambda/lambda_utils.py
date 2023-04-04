@@ -27,6 +27,8 @@ from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.strings import first_char_to_lower, short_uid
 
 LOG = logging.getLogger(__name__)
+# Custom logger for proactive deprecation hints related to the migration from the old to the new lambda provider
+HINT_LOG = logging.getLogger("localstack.services.awslambda.hints")
 
 # root path of Lambda API endpoints
 API_PATH_ROOT = "/2015-03-31"
@@ -54,7 +56,7 @@ LAMBDA_RUNTIME_PROVIDED_AL2 = Runtime.provided_al2
 
 # default handler and runtime
 LAMBDA_DEFAULT_HANDLER = "handler.handler"
-LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON37  # FIXME (?)
+LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON39  # FIXME (?)
 LAMBDA_DEFAULT_STARTING_POSITION = "LATEST"
 
 # List of Dotnet Lambda runtime names
@@ -185,7 +187,6 @@ def store_lambda_logs(
 
 
 def get_main_endpoint_from_container() -> str:
-    global DOCKER_MAIN_CONTAINER_IP
     if config.HOSTNAME_FROM_LAMBDA:
         return config.HOSTNAME_FROM_LAMBDA
     return get_endpoint_for_network(network=get_container_network_for_lambda())

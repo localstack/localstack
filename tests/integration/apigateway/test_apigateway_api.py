@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import time
@@ -17,6 +18,7 @@ LOG = logging.getLogger(__name__)
 # parent directory of this file
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OPENAPI_SPEC_PULUMI_JSON = os.path.join(PARENT_DIR, "files", "openapi.spec.pulumi.json")
+OPENAPI_SPEC_TF_JSON = os.path.join(PARENT_DIR, "files", "openapi.spec.tf.json")
 
 
 @pytest.fixture(autouse=True)
@@ -84,6 +86,75 @@ def test_import_rest_api(import_apigw, snapshot):
     snapshot.match("import_rest_api", response)
 
 
+@pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$.resources.items..resourceMethods",
+        "$.method-response-get.responseModels",
+        "$.method-response-get.responseParameters",
+        "$.integration-get.cacheNamespace",
+        "$.integration-get.contentHandling",
+        "$.integration-get.httpMethod",
+        "$.integration-get.integrationResponses",
+        "$.integration-get.passthroughBehavior",
+        "$.integration-get.requestParameters",
+        "$.integration-get.requestTemplates",
+        "$.integration-get.timeoutInMillis",
+        "$.integration-get.type",
+        "$.integration-get.uri",
+        "$.integration-response-get.responseParameters",
+        "$.integration-response-get.responseTemplates",
+        "$.method-response-options.responseModels",
+        "$.method-response-options.responseParameters",
+        "$.integration-options.cacheNamespace",
+        "$.integration-options.passthroughBehavior",
+        "$.integration-options.timeoutInMillis",
+        "$.integration-options.type",
+        "$.integration-options.httpMethod",
+        "$.integration-options.integrationResponses",
+        "$.integration-options.requestParameters",
+        "$.integration-response-options.responseParameters",
+        "$.integration-response-options.responseTemplates",
+    ]
+)
+def test_import_tf_rest_api(apigateway_client, import_apigw, snapshot):
+    snapshot.add_transformer(snapshot.transform.apigateway_api())
+
+    spec_file = load_file(OPENAPI_SPEC_TF_JSON)
+    response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
+
+    snapshot.match("import_tf_rest_api", response)
+    rest_api_id = response["id"]
+
+    response = apigateway_client.get_resources(restApiId=rest_api_id)
+    snapshot.match("resources", response)
+
+    for http_method in response["items"][0]["resourceMethods"]:
+        snapshot_http_key = http_method.lower()
+        response = apigateway_client.get_method_response(
+            restApiId=rest_api_id,
+            resourceId=root_id,
+            httpMethod=http_method,
+            statusCode="200",
+        )
+        snapshot.match(f"method-response-{snapshot_http_key}", response)
+
+        response = apigateway_client.get_integration(
+            restApiId=rest_api_id,
+            resourceId=root_id,
+            httpMethod=http_method,
+        )
+        snapshot.match(f"integration-{snapshot_http_key}", response)
+
+        response = apigateway_client.get_integration_response(
+            restApiId=rest_api_id,
+            resourceId=root_id,
+            httpMethod=http_method,
+            statusCode="200",
+        )
+        snapshot.match(f"integration-response-{snapshot_http_key}", response)
+
+
 class TestApiGatewayApi:
     @pytest.mark.aws_validated
     def test_list_and_delete_apis(self, apigateway_client, apigw_create_rest_api, snapshot):
@@ -107,6 +178,21 @@ class TestApiGatewayApi:
 
         response = apigateway_client.get_rest_apis()
         snapshot.match("get-rest-api-after-delete", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="rest apis are case insensitive for now because of custom id tags")
+    def test_get_api_case_insensitive(self, apigateway_client, apigw_create_rest_api, snapshot):
+        api_name1 = f"test-case-sensitive-apis-{short_uid()}"
+
+        response = apigw_create_rest_api(name=api_name1, description="lower case api")
+        snapshot.match("create-rest-api", response)
+        api_id = response["id"]
+
+        snapshot.add_transformer(snapshot.transform.regex(api_id.upper(), "<upper-id>"))
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_rest_api(restApiId=api_id.upper())
+        snapshot.match("get-api-upper-case", e.value.response)
 
     @pytest.mark.aws_validated
     def test_create_rest_api_with_optional_params(
@@ -620,3 +706,1238 @@ class TestApiGatewayApi:
             restApiId=api_id, parentId=parent_id, pathPart="{child+}"
         )
         snapshot.match("create-greedy-child-resource", greedy_child_response)
+
+    @pytest.mark.aws_validated
+    def test_authorizer_crud_no_api(self, apigateway_client, snapshot):
+        # maybe move this test to a full lifecycle one
+        # AWS validates the format of the authorizerUri before the restApi existence
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_authorizer(
+                restApiId="test-fake-rest-id",
+                name="fake-auth-name",
+                type="TOKEN",
+                authorizerUri="arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:myApiAuthorizer/invocations",
+                identitySource="method.request.header.Authorization",
+            )
+        snapshot.match("wrong-rest-api-id-create-authorizer", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_authorizers(restApiId="test-fake-rest-id")
+        snapshot.match("wrong-rest-api-id-get-authorizers", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_doc_arts_crud_no_api(self, apigateway_client, snapshot):
+        # maybe move this test to a full lifecycle one
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_documentation_part(
+                restApiId="test-fake-rest-id",
+                location={"type": "API"},
+                properties='{\n\t"info": {\n\t\t"description" : "Your first API with Amazon API Gateway."\n\t}\n}',
+            )
+        snapshot.match("wrong-rest-api-id-create-doc-part", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_documentation_parts(restApiId="test-fake-rest-id")
+        snapshot.match("wrong-rest-api-id-get-doc-parts", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_validators_crud_no_api(self, apigateway_client, snapshot):
+        # maybe move this test to a full lifecycle one
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_request_validator(
+                restApiId="test-fake-rest-id",
+                name="test-validator",
+                validateRequestBody=True,
+                validateRequestParameters=False,
+            )
+        snapshot.match("wrong-rest-api-id-create-validator", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_request_validators(restApiId="test-fake-rest-id")
+        snapshot.match("wrong-rest-api-id-get-validators", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_method_lifecycle(
+        self,
+        apigateway_client,
+        apigw_create_rest_api,
+        snapshot,
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource method lifecycle"
+        )
+        api_id = response["id"]
+        root_rest_api_resource = apigateway_client.get_resources(restApiId=api_id)
+        root_id = root_rest_api_resource["items"][0]["id"]
+
+        put_base_method_response = apigateway_client.put_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            authorizationType="NONE",
+        )
+        snapshot.match("put-base-method-response", put_base_method_response)
+
+        get_base_method_response = apigateway_client.get_method(
+            restApiId=api_id, resourceId=root_id, httpMethod="ANY"
+        )
+        snapshot.match("get-base-method-response", get_base_method_response)
+
+        del_base_method_response = apigateway_client.delete_method(
+            restApiId=api_id, resourceId=root_id, httpMethod="ANY"
+        )
+        snapshot.match("del-base-method-response", del_base_method_response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_method(restApiId=api_id, resourceId=root_id, httpMethod="ANY")
+        snapshot.match("get-deleted-method-response", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_method(restApiId=api_id, resourceId=root_id, httpMethod="ANY")
+        snapshot.match("delete-deleted-method-response", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_method_request_parameters(
+        self,
+        apigateway_client,
+        apigw_create_rest_api,
+        snapshot,
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource method request params"
+        )
+        api_id = response["id"]
+        root_rest_api_resource = apigateway_client.get_resources(restApiId=api_id)
+        root_id = root_rest_api_resource["items"][0]["id"]
+
+        put_method_response = apigateway_client.put_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            authorizationType="NONE",
+            requestParameters={
+                "method.request.querystring.q_optional": False,
+                "method.request.querystring.q_required": True,
+                "method.request.header.h_optional": False,
+                "method.request.header.h_required": True,
+            },
+        )
+        snapshot.match("put-method-request-params-response", put_method_response)
+
+        get_method_response = apigateway_client.get_method(
+            restApiId=api_id, resourceId=root_id, httpMethod="ANY"
+        )
+        snapshot.match("get-method-request-params-response", get_method_response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.put_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="GET",
+                authorizationType="NONE",
+                requestParameters={
+                    "method.request.querystring.optional": False,
+                    "method.request.header.optional": False,
+                },
+            )
+
+        snapshot.match("req-params-same-name", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$.delete-model-used-by-2-method.Error.Message",
+            "$.delete-model-used-by-2-method.message",  # we can't guarantee the last method will be the same as AWS
+        ]
+    )
+    def test_put_method_model(
+        self,
+        apigateway_client,
+        apigw_create_rest_api,
+        snapshot,
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource method model"
+        )
+        api_id = response["id"]
+        root_rest_api_resource = apigateway_client.get_resources(restApiId=api_id)
+        root_id = root_rest_api_resource["items"][0]["id"]
+
+        create_model = apigateway_client.create_model(
+            name="MySchema",
+            restApiId=api_id,
+            contentType="application/json",
+            description="",
+            schema=json.dumps({"title": "MySchema", "type": "object"}),
+        )
+        snapshot.match("create-model", create_model)
+
+        create_model_2 = apigateway_client.create_model(
+            name="MySchemaTwo",
+            restApiId=api_id,
+            contentType="application/json",
+            description="",
+            schema=json.dumps({"title": "MySchemaTwo", "type": "object"}),
+        )
+        snapshot.match("create-model-2", create_model_2)
+
+        put_method_response = apigateway_client.put_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            authorizationType="NONE",
+            requestModels={"application/json": "MySchema"},
+        )
+        snapshot.match("put-method-request-models", put_method_response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_model(restApiId=api_id, modelName="MySchema")
+        snapshot.match("delete-model-used", e.value.response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/requestModels/application~1json", "value": "MySchemaTwo"},
+        ]
+
+        update_method_model = apigateway_client.update_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            patchOperations=patch_operations,
+        )
+        snapshot.match("update-method-model", update_method_model)
+
+        delete_model = apigateway_client.delete_model(restApiId=api_id, modelName="MySchema")
+        snapshot.match("delete-model-unused", delete_model)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_model(restApiId=api_id, modelName="MySchemaTwo")
+        snapshot.match("delete-model-used-2", e.value.response)
+
+        # create a subresource using MySchemaTwo
+        resource = apigateway_client.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="test"
+        )
+        put_method_response = apigateway_client.put_method(
+            restApiId=api_id,
+            resourceId=resource["id"],
+            httpMethod="ANY",
+            authorizationType="NONE",
+            requestModels={"application/json": "MySchemaTwo"},
+        )
+        snapshot.match("put-method-2-request-models", put_method_response)
+
+        # assert that the error raised gives the path of the subresource
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_model(restApiId=api_id, modelName="MySchemaTwo")
+        snapshot.match("delete-model-used-by-2-method", e.value.response)
+
+        patch_operations = [
+            {"op": "remove", "path": "/requestModels/application~1json", "value": "MySchemaTwo"},
+        ]
+
+        # remove the Model from the subresource
+        update_method_model = apigateway_client.update_method(
+            restApiId=api_id,
+            resourceId=resource["id"],
+            httpMethod="ANY",
+            patchOperations=patch_operations,
+        )
+        snapshot.match("update-method-model-2", update_method_model)
+
+        if is_aws_cloud():
+            # just to be sure the change is properly set in AWS
+            time.sleep(3)
+
+        # assert that the error raised gives the path of the resource now
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_model(restApiId=api_id, modelName="MySchemaTwo")
+        snapshot.match("delete-model-used-by-method-1", e.value.response)
+
+        # delete the Method using MySchemaTwo
+        delete_method = apigateway_client.delete_method(
+            restApiId=api_id, resourceId=root_id, httpMethod="ANY"
+        )
+        snapshot.match("delete-method-using-model-2", delete_method)
+
+        # assert we can now delete MySchemaTwo
+        delete_model = apigateway_client.delete_model(restApiId=api_id, modelName="MySchemaTwo")
+        snapshot.match("delete-model-unused-2", delete_model)
+
+    @pytest.mark.aws_validated
+    def test_put_method_validation(
+        self,
+        apigateway_client,
+        apigw_create_rest_api,
+        snapshot,
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource method request params"
+        )
+        api_id = response["id"]
+        root_rest_api_resource = apigateway_client.get_resources(restApiId=api_id)
+        root_id = root_rest_api_resource["items"][0]["id"]
+
+        # wrong RestApiId
+        with pytest.raises(ClientError) as e:
+            apigateway_client.put_method(
+                restApiId="fake-api",
+                resourceId=root_id,
+                httpMethod="WRONG",
+                authorizationType="NONE",
+            )
+        snapshot.match("wrong-api", e.value.response)
+
+        # wrong resourceId
+        with pytest.raises(ClientError) as e:
+            apigateway_client.put_method(
+                restApiId=api_id,
+                resourceId="fake-resource-id",
+                httpMethod="WRONG",
+                authorizationType="NONE",
+            )
+        snapshot.match("wrong-resource", e.value.response)
+
+        # wrong httpMethod
+        with pytest.raises(ClientError) as e:
+            apigateway_client.put_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="WRONG",
+                authorizationType="NONE",
+            )
+        snapshot.match("wrong-method", e.value.response)
+
+        # missing AuthorizerId when setting authorizationType="CUSTOM"
+        with pytest.raises(ClientError) as e:
+            apigateway_client.put_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="ANY",
+                authorizationType="CUSTOM",
+            )
+        snapshot.match("missing-authorizer-id", e.value.response)
+
+        # invalid RequestValidatorId
+        with pytest.raises(ClientError) as e:
+            apigateway_client.put_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="ANY",
+                authorizationType="NONE",
+                requestValidatorId="fake-validator",
+            )
+        snapshot.match("invalid-request-validator", e.value.response)
+
+        # invalid Model id
+        with pytest.raises(ClientError) as e:
+            apigateway_client.put_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="ANY",
+                authorizationType="NONE",
+                requestModels={"application/json": "petModel"},
+            )
+        snapshot.match("invalid-model-name", e.value.response)
+
+        # TODO: validate authorizationScopes?
+        # TODO: add more validation on methods once its subresources are tested
+        # Authorizer, RequestValidator, Model
+
+    @pytest.mark.aws_validated
+    def test_update_method(
+        self,
+        apigateway_client,
+        apigw_create_rest_api,
+        snapshot,
+    ):
+        # see https://www.linkedin.com/pulse/updating-aws-cli-patch-operations-rest-api-yitzchak-meirovich/
+        # for patch path
+        snapshot.add_transformer(snapshot.transform.key_value("authorizerId"))
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing update method"
+        )
+        api_id = response["id"]
+        root_rest_api_resource = apigateway_client.get_resources(restApiId=api_id)
+        root_id = root_rest_api_resource["items"][0]["id"]
+
+        put_method_response = apigateway_client.put_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            authorizationType="NONE",
+        )
+        snapshot.match("put-method-response", put_method_response)
+
+        patch_operations_add = [
+            {
+                "op": "add",
+                "path": "/requestParameters/method.request.querystring.optional",
+                "value": "true",
+            },
+            {"op": "add", "path": "/requestModels/application~1json", "value": "Empty"},
+        ]
+
+        update_method_response_add = apigateway_client.update_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            patchOperations=patch_operations_add,
+        )
+        snapshot.match("update-method-add", update_method_response_add)
+
+        patch_operations_replace = [
+            {"op": "replace", "path": "/operationName", "value": "ReplacedOperationName"},
+            {"op": "replace", "path": "/apiKeyRequired", "value": "true"},
+            {"op": "replace", "path": "/authorizationType", "value": "AWS_IAM"},
+            {
+                "op": "replace",
+                "path": "/requestParameters/method.request.querystring.optional",
+                "value": "false",
+            },
+        ]
+
+        update_method_response_replace = apigateway_client.update_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            patchOperations=patch_operations_replace,
+        )
+        snapshot.match("update-method-replace", update_method_response_replace)
+
+        authorizer = apigateway_client.create_authorizer(
+            restApiId=api_id,
+            name="authorizer-test",
+            type="TOKEN",
+            authorizerUri="arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:myApiAuthorizer/invocations",
+            identitySource="method.request.header.Authorization",
+        )
+
+        patch_operations_replace_auth = [
+            {"op": "replace", "path": "/authorizerId", "value": authorizer["id"]},
+            {"op": "replace", "path": "/authorizationType", "value": "CUSTOM"},
+        ]
+
+        update_method_response_replace_auth = apigateway_client.update_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            patchOperations=patch_operations_replace_auth,
+        )
+        snapshot.match("update-method-replace-authorizer", update_method_response_replace_auth)
+
+        patch_operations_remove = [
+            {
+                "op": "remove",
+                "path": "/requestParameters/method.request.querystring.optional",
+                "value": "true",
+            },
+            {"op": "remove", "path": "/requestModels/application~1json", "value": "Empty"},
+        ]
+
+        update_method_response_remove = apigateway_client.update_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            patchOperations=patch_operations_remove,
+        )
+        snapshot.match("update-method-remove", update_method_response_remove)
+
+    @pytest.mark.aws_validated
+    def test_update_method_validation(
+        self,
+        apigateway_client,
+        apigw_create_rest_api,
+        snapshot,
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource method request params"
+        )
+        api_id = response["id"]
+        root_rest_api_resource = apigateway_client.get_resources(restApiId=api_id)
+        root_id = root_rest_api_resource["items"][0]["id"]
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_method(
+                restApiId="fake-api",
+                resourceId=root_id,
+                httpMethod="ANY",
+                patchOperations=[],
+            )
+        snapshot.match("wrong-rest-api", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_method(
+                restApiId=api_id,
+                resourceId="fake-resource-id",
+                httpMethod="ANY",
+                patchOperations=[],
+            )
+        snapshot.match("wrong-resource-id", e.value.response)
+
+        # method is not set for the resource?
+        with pytest.raises(ClientError) as e:
+            patch_operations_add = [
+                {"op": "replace", "path": "/operationName", "value": "methodDoesNotExist"},
+            ]
+            apigateway_client.update_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="GET",
+                patchOperations=patch_operations_add,
+            )
+        snapshot.match("method-does-not-exist", e.value.response)
+
+        put_method_response = apigateway_client.put_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            authorizationType="NONE",
+            apiKeyRequired=True,
+        )
+        snapshot.match("put-method-response", put_method_response)
+
+        # unsupported operation ?
+        patch_operations_add = [
+            {"op": "add", "path": "/operationName", "value": "operationName"},
+        ]
+        unsupported_operation_resp = apigateway_client.update_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            patchOperations=patch_operations_add,
+        )
+        snapshot.match("unsupported-operation", unsupported_operation_resp)
+
+        # unsupported path
+        with pytest.raises(ClientError) as e:
+            patch_operations_add = [
+                {"op": "add", "path": "/httpMethod", "value": "PUT"},
+            ]
+            apigateway_client.update_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="ANY",
+                patchOperations=patch_operations_add,
+            )
+        snapshot.match("unsupported-path", e.value.response)
+
+        # wrong path for requestParameters
+        with pytest.raises(ClientError) as e:
+            patch_operations_add = [
+                {
+                    "op": "replace",
+                    "path": "/requestParameters",
+                    "value": "method.request.querystring.optional=false",
+                },
+            ]
+            apigateway_client.update_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="ANY",
+                patchOperations=patch_operations_add,
+            )
+        snapshot.match("wrong-path-request-parameters", e.value.response)
+
+        # wrong path for requestModels
+        with pytest.raises(ClientError) as e:
+            patch_operations_add = [
+                {"op": "add", "path": "/requestModels/application/json", "value": "Empty"},
+            ]
+            apigateway_client.update_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="ANY",
+                patchOperations=patch_operations_add,
+            )
+        snapshot.match("wrong-path-request-models", e.value.response)
+
+        # wrong value type
+        patch_operations_add = [
+            {"op": "replace", "path": "/apiKeyRequired", "value": "whatever"},
+        ]
+        wrong_value_type_resp = apigateway_client.update_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            patchOperations=patch_operations_add,
+        )
+        snapshot.match("wrong-value-type", wrong_value_type_resp)
+
+        # add auth type without authorizer?
+        with pytest.raises(ClientError) as e:
+            patch_operations_add = [
+                {"op": "replace", "path": "/authorizationType", "value": "CUSTOM"},
+            ]
+            apigateway_client.update_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="ANY",
+                patchOperations=patch_operations_add,
+            )
+        snapshot.match("wrong-auth-type", e.value.response)
+
+        # add auth id when method has NONE, AWS will ignore it
+        patch_operations_add = [
+            {"op": "replace", "path": "/authorizerId", "value": "abc123"},
+        ]
+        response = apigateway_client.update_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            patchOperations=patch_operations_add,
+        )
+        snapshot.match("skip-auth-id-with-wrong-type", response)
+
+        # add auth type without real authorizer id?
+        with pytest.raises(ClientError) as e:
+            patch_operations_add = [
+                {"op": "replace", "path": "/authorizationType", "value": "CUSTOM"},
+                {"op": "replace", "path": "/authorizerId", "value": "abc123"},
+            ]
+            apigateway_client.update_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="ANY",
+                patchOperations=patch_operations_add,
+            )
+        snapshot.match("wrong-auth-id", e.value.response)
+
+        # replace wrong validator id
+        with pytest.raises(ClientError) as e:
+            patch_operations_add = [
+                {"op": "replace", "path": "/requestValidatorId", "value": "fake-id"},
+            ]
+            apigateway_client.update_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="ANY",
+                patchOperations=patch_operations_add,
+            )
+        snapshot.match("wrong-req-validator-id", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_model_lifecycle(
+        self,
+        apigateway_client,
+        apigw_create_rest_api,
+        snapshot,
+    ):
+        snapshot.add_transformer(SortingTransformer("items", lambda x: x["name"]))
+        # taken from https://docs.aws.amazon.com/apigateway/latest/api/API_CreateModel.html#API_CreateModel_Examples
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource model lifecycle"
+        )
+        api_id = response["id"]
+
+        create_model_response = apigateway_client.create_model(
+            name="CalcOutput",
+            restApiId=api_id,
+            contentType="application/json",
+            description="Calc output model",
+            schema='{\n\t"title": "Calc output",\n\t"type": "object",\n\t"properties": {\n\t\t"a": {\n\t\t\t"type": "number"\n\t\t},\n\t\t"b": {\n\t\t\t"type": "number"\n\t\t},\n\t\t"op": {\n\t\t\t"description": "operation of +, -, * or /",\n\t\t\t"type": "string"\n\t\t},\n\t\t"c": {\n\t\t    "type": "number"\n\t\t}\n\t},\n\t"required": ["a", "b", "op"]\n}\n',
+        )
+        snapshot.match("create-model", create_model_response)
+
+        get_models_response = apigateway_client.get_models(restApiId=api_id)
+        snapshot.match("get-models", get_models_response)
+
+        # manually assert the presence of 2 default models, Error and Empty, as snapshots will replace names
+        model_names = [model["name"] for model in get_models_response["items"]]
+        assert "Error" in model_names
+        assert "Empty" in model_names
+
+        get_model_response = apigateway_client.get_model(restApiId=api_id, modelName="CalcOutput")
+        snapshot.match("get-model", get_model_response)
+
+        del_model_response = apigateway_client.delete_model(
+            restApiId=api_id, modelName="CalcOutput"
+        )
+        snapshot.match("del-model", del_model_response)
+
+    @pytest.mark.aws_validated
+    def test_model_validation(
+        self,
+        apigateway_client,
+        apigw_create_rest_api,
+        snapshot,
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource model lifecycle"
+        )
+        api_id = response["id"]
+
+        fake_api_id = "abcde0"
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_model(
+                name="MySchema",
+                restApiId=fake_api_id,
+                contentType="application/json",
+                description="Test model",
+                schema=json.dumps({"title": "MySchema", "type": "object"}),
+            )
+
+        snapshot.match("create-model-wrong-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_models(restApiId=fake_api_id)
+        snapshot.match("get-models-wrong-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_model(restApiId=fake_api_id, modelName="MySchema")
+        snapshot.match("get-model-wrong-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_model(restApiId=fake_api_id, modelName="MySchema")
+        snapshot.match("del-model-wrong-id", e.value.response)
+
+        # assert that creating a model with an empty description works
+        response = apigateway_client.create_model(
+            name="MySchema",
+            restApiId=api_id,
+            contentType="application/json",
+            description="",
+            schema=json.dumps({"title": "MySchema", "type": "object"}),
+        )
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 201
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_model(
+                name="MySchema",
+                restApiId=api_id,
+                contentType="application/json",
+                description="",
+                schema=json.dumps({"title": "MySchema", "type": "object"}),
+            )
+        snapshot.match("create-model-already-exists", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_model(
+                name="",
+                restApiId=api_id,
+                contentType="application/json",
+                description="",
+                schema=json.dumps({"title": "MySchema", "type": "object"}),
+            )
+        snapshot.match("create-model-empty-name", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_model(
+                name="MyEmptySchema",
+                restApiId=api_id,
+                contentType="application/json",
+                description="",
+                schema="",
+            )
+
+        snapshot.match("create-model-empty-schema", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_model(
+                name="MyEmptySchema",
+                restApiId=api_id,
+                contentType="application/json",
+                description="",
+            )
+
+        snapshot.match("create-model-no-schema-json", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_model(
+                name="MyEmptySchemaXml",
+                restApiId=api_id,
+                contentType="application/xml",
+                description="",
+            )
+
+        snapshot.match("create-model-no-schema-xml", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_update_model(
+        self,
+        apigateway_client,
+        apigw_create_rest_api,
+        snapshot,
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing update resource model"
+        )
+        api_id = response["id"]
+
+        fake_api_id = "abcde0"
+        updated_schema = json.dumps({"title": "Updated schema", "type": "object"})
+        patch_operations = [
+            {"op": "replace", "path": "/schema", "value": updated_schema},
+            {"op": "replace", "path": "/description", "value": ""},
+        ]
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_model(
+                restApiId=fake_api_id,
+                modelName="mySchema",
+                patchOperations=patch_operations,
+            )
+
+        snapshot.match("update-model-wrong-id", e.value.response)
+
+        response = apigateway_client.create_model(
+            name="MySchema",
+            restApiId=api_id,
+            contentType="application/json",
+            description="",
+            schema=json.dumps({"title": "MySchema", "type": "object"}),
+        )
+        snapshot.match("create-model", response)
+
+        response = apigateway_client.update_model(
+            restApiId=api_id,
+            modelName="MySchema",
+            patchOperations=patch_operations,
+        )
+        snapshot.match("update-model", response)
+
+        with pytest.raises(ClientError) as e:
+            patch_operations = [{"op": "add", "path": "/wrong-path", "value": "not supported op"}]
+            apigateway_client.update_model(
+                restApiId=api_id,
+                modelName="MySchema",
+                patchOperations=patch_operations,
+            )
+
+        snapshot.match("update-model-invalid-op", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            patch_operations = [
+                {"op": "replace", "path": "/name", "value": "invalid"},
+            ]
+            apigateway_client.update_model(
+                restApiId=api_id,
+                modelName="MySchema",
+                patchOperations=patch_operations,
+            )
+
+        snapshot.match("update-model-invalid-path", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            patch_operations = [
+                {"op": "replace", "path": "/schema", "value": ""},
+            ]
+            apigateway_client.update_model(
+                restApiId=api_id,
+                modelName="MySchema",
+                patchOperations=patch_operations,
+            )
+        snapshot.match("update-model-empty-schema", e.value.response)
+
+
+class TestApiGatewayApiRequestValidator:
+    @pytest.mark.aws_validated
+    def test_request_validator_lifecycle(self, apigateway_client, apigw_create_rest_api, snapshot):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="my api",
+        )
+        snapshot.match("create-rest-api", response)
+        api_id = response["id"]
+
+        # create a request validator for an API
+        response = apigateway_client.create_request_validator(
+            restApiId=api_id, name=f"test-validator-{short_uid()}"
+        )
+        snapshot.match("create-request-validator", response)
+        validator_id = response["id"]
+
+        # get detail of a specific request validator corresponding to an API
+        response = apigateway_client.get_request_validator(
+            restApiId=api_id, requestValidatorId=validator_id
+        )
+        snapshot.match("get-request-validator", response)
+
+        # get list of all request validators in the API
+        response = apigateway_client.get_request_validators(restApiId=api_id)
+        snapshot.match("get-request-validators", response)
+
+        # update request validators with different set of patch operations
+        patch_operations = [
+            {"op": "replace", "path": "/validateRequestBody", "value": "true"},
+        ]
+        response = apigateway_client.update_request_validator(
+            restApiId=api_id, requestValidatorId=validator_id, patchOperations=patch_operations
+        )
+        snapshot.match("update-request-validator-with-value", response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/validateRequestBody"},
+        ]
+        response = apigateway_client.update_request_validator(
+            restApiId=api_id, requestValidatorId=validator_id, patchOperations=patch_operations
+        )
+        snapshot.match("update-request-validator-without-value", response)
+
+        response = apigateway_client.get_request_validator(
+            restApiId=api_id, requestValidatorId=validator_id
+        )
+        snapshot.match("get-request-validators-after-update-operation", response)
+
+        # delete request validator
+        response = apigateway_client.delete_request_validator(
+            restApiId=api_id, requestValidatorId=validator_id
+        )
+        snapshot.match("delete-request-validator", response)
+
+        # try fetching details of the deleted request validator
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_request_validator(
+                restApiId=api_id, requestValidatorId=validator_id
+            )
+        snapshot.match("get-deleted-request-validator", e.value.response)
+
+        # check list of all request validators in the API
+        response = apigateway_client.get_request_validators(restApiId=api_id)
+        snapshot.match("get-request-validators-after-delete", response)
+
+    @pytest.mark.aws_validated
+    def test_invalid_get_request_validator(
+        self, apigateway_client, apigw_create_rest_api, snapshot
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="my api",
+        )
+        api_id = response["id"]
+
+        response = apigateway_client.create_request_validator(
+            restApiId=api_id, name=f"test-validator-{short_uid()}"
+        )
+        validator_id = response["id"]
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_request_validator(
+                restApiId="api_id", requestValidatorId=validator_id
+            )
+        snapshot.match("get-request-validators-invalid-api-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_request_validator(
+                restApiId=api_id, requestValidatorId="validator_id"
+            )
+        snapshot.match("get-request-validators-invalid-validator-id", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_invalid_get_request_validators(
+        self, apigateway_client, apigw_create_rest_api, snapshot
+    ):
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_request_validators(restApiId="api_id")
+        snapshot.match("get-invalid-request-validators", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_invalid_delete_request_validator(
+        self, apigateway_client, apigw_create_rest_api, snapshot
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="my api",
+        )
+        api_id = response["id"]
+
+        response = apigateway_client.create_request_validator(
+            restApiId=api_id, name=f"test-validator-{short_uid()}"
+        )
+        validator_id = response["id"]
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_request_validator(
+                restApiId="api_id", requestValidatorId=validator_id
+            )
+        snapshot.match("delete-request-validator-invalid-api-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_request_validator(
+                restApiId=api_id, requestValidatorId="validator_id"
+            )
+        snapshot.match("delete-request-validator-invalid-validator-id", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_create_request_validator_invalid_api_id(
+        self, apigateway_client, apigw_create_rest_api, snapshot
+    ):
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_request_validator(
+                restApiId="api_id", name=f"test-validator-{short_uid()}"
+            )
+        snapshot.match("invalid-create-request-validator", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_invalid_update_request_validator_operations(
+        self, apigateway_client, apigw_create_rest_api, snapshot
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="my api",
+        )
+        snapshot.match("create-rest-api", response)
+        api_id = response["id"]
+
+        response = apigateway_client.create_request_validator(
+            restApiId=api_id, name=f"test-validator-{short_uid()}"
+        )
+        snapshot.match("create-request-validator", response)
+        validator_id = response["id"]
+
+        patch_operations = [
+            {"op": "add", "path": "/validateRequestBody", "value": "true"},
+        ]
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_request_validator(
+                restApiId=api_id, requestValidatorId=validator_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-request-validator-invalid-add-operation", e.value.response)
+
+        patch_operations = [
+            {"op": "remove", "path": "/validateRequestBody", "value": "true"},
+        ]
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_request_validator(
+                restApiId=api_id, requestValidatorId=validator_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-request-validator-invalid-remove-operation", e.value.response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/invalidPath", "value": "true"},
+        ]
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_request_validator(
+                restApiId=api_id, requestValidatorId=validator_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-request-validator-invalid-path", e.value.response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/name"},
+        ]
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_request_validator(
+                restApiId=api_id, requestValidatorId=validator_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-request-validator-empty-name-value", e.value.response)
+
+
+class TestApiGatewayApiDocumentationPart:
+    @pytest.mark.aws_validated
+    def test_documentation_part_lifecycle(self, apigateway_client, apigw_create_rest_api, snapshot):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="this is my api",
+        )
+        api_id = response["id"]
+
+        # create documentation part
+        response = apigateway_client.create_documentation_part(
+            restApiId=api_id,
+            location={"type": "API"},
+            properties='{ "description": "Sample API description" }',
+        )
+        snapshot.match("create-documentation-part", response)
+        documentation_part_id = response["id"]
+
+        # get detail of a specific documentation part corresponding to an API
+        response = apigateway_client.get_documentation_part(
+            restApiId=api_id, documentationPartId=documentation_part_id
+        )
+        snapshot.match("get-documentation-part", response)
+
+        # get list of all documentation parts in an API
+        response = apigateway_client.get_documentation_parts(
+            restApiId=api_id,
+        )
+        snapshot.match("get-documentation-parts", response)
+
+        # update documentation part
+        patch_operations = [
+            {
+                "op": "replace",
+                "path": "/properties",
+                "value": '{ "description": "Updated Sample API description" }',
+            },
+        ]
+        response = apigateway_client.update_documentation_part(
+            restApiId=api_id,
+            documentationPartId=documentation_part_id,
+            patchOperations=patch_operations,
+        )
+        snapshot.match("update-documentation-part", response)
+
+        # get detail of documentation part after update
+        response = apigateway_client.get_documentation_part(
+            restApiId=api_id, documentationPartId=documentation_part_id
+        )
+        snapshot.match("get-documentation-part-after-update", response)
+
+        # delete documentation part
+        response = apigateway_client.delete_documentation_part(
+            restApiId=api_id, documentationPartId=documentation_part_id
+        )
+        snapshot.match("delete_documentation_part", response)
+
+    @pytest.mark.aws_validated
+    def test_invalid_get_documentation_part(
+        self, apigateway_client, apigw_create_rest_api, snapshot
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="this is my api",
+        )
+        api_id = response["id"]
+
+        response = apigateway_client.create_documentation_part(
+            restApiId=api_id,
+            location={"type": "API"},
+            properties='{ "description": "Sample API description" }',
+        )
+        documentation_part_id = response["id"]
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_documentation_part(
+                restApiId="api_id", documentationPartId=documentation_part_id
+            )
+        snapshot.match("get-documentation-part-invalid-api-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_documentation_part(
+                restApiId=api_id, documentationPartId="documentation_part_id"
+            )
+        snapshot.match("get-documentation-part-invalid-doc-id", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_invalid_get_documentation_parts(self, apigateway_client, snapshot):
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_documentation_parts(
+                restApiId="api_id",
+            )
+        snapshot.match("get-inavlid-documentation-parts", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_invalid_update_documentation_part(
+        self, apigateway_client, apigw_create_rest_api, snapshot
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="this is my api",
+        )
+        api_id = response["id"]
+
+        response = apigateway_client.create_documentation_part(
+            restApiId=api_id,
+            location={"type": "API"},
+            properties='{ "description": "Sample API description" }',
+        )
+        documentation_part_id = response["id"]
+
+        patch_operations = [
+            {
+                "op": "replace",
+                "path": "/properties",
+                "value": '{ "description": "Updated Sample API description" }',
+            },
+        ]
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_documentation_part(
+                restApiId="api_id",
+                documentationPartId=documentation_part_id,
+                patchOperations=patch_operations,
+            )
+        snapshot.match("update-documentation-part-invalid-api-id", e.value.response)
+
+        patch_operations = [
+            {
+                "op": "add",
+                "path": "/properties",
+                "value": '{ "description": "Updated Sample API description" }',
+            },
+        ]
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_documentation_part(
+                restApiId=api_id,
+                documentationPartId=documentation_part_id,
+                patchOperations=patch_operations,
+            )
+        snapshot.match("update-documentation-part-invalid-add-operation", e.value.response)
+
+        patch_operations = [
+            {
+                "op": "replace",
+                "path": "/invalidPath",
+                "value": '{ "description": "Updated Sample API description" }',
+            },
+        ]
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_documentation_part(
+                restApiId=api_id,
+                documentationPartId=documentation_part_id,
+                patchOperations=patch_operations,
+            )
+        snapshot.match("update-documentation-part-invalid-path", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_invalid_create_documentation_part_operations(
+        self, apigateway_client, apigw_create_rest_api, snapshot
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="this is my api",
+        )
+        api_id = response["id"]
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_documentation_part(
+                restApiId="api_id",
+                location={"type": "API"},
+                properties='{ "description": "Sample API description" }',
+            )
+        snapshot.match("create_documentation_part_invalid_api_id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_documentation_part(
+                restApiId=api_id,
+                location={"type": "INVALID"},
+                properties='{ "description": "Sample API description" }',
+            )
+        snapshot.match("create_documentation_part_invalid_location_type", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_invalid_delete_documentation_part(
+        self, apigateway_client, apigw_create_rest_api, snapshot
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="this is my api",
+        )
+        api_id = response["id"]
+
+        response = apigateway_client.create_documentation_part(
+            restApiId=api_id,
+            location={"type": "API"},
+            properties='{ "description": "Sample API description" }',
+        )
+        documentation_part_id = response["id"]
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_documentation_part(
+                restApiId="api_id",
+                documentationPartId=documentation_part_id,
+            )
+        snapshot.match("delete_documentation_part_wrong_api_id", e.value.response)
+
+        response = apigateway_client.delete_documentation_part(
+            restApiId=api_id,
+            documentationPartId=documentation_part_id,
+        )
+        snapshot.match("delete_documentation_part", response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_documentation_part(
+                restApiId=api_id,
+                documentationPartId=documentation_part_id,
+            )
+        snapshot.match("delete_already_deleted_documentation_part", e.value.response)

@@ -6,6 +6,7 @@ from typing import Optional
 from flask import Response
 
 from localstack import config
+from localstack.aws.connect import connect_to
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import to_str
 from localstack.utils.time import now_utc
@@ -23,11 +24,11 @@ def dimension_lambda(kwargs):
     return [{"Name": "FunctionName", "Value": func_name}]
 
 
-def publish_lambda_metric(metric, value, kwargs):
+def publish_lambda_metric(metric, value, kwargs, region_name: Optional[str] = None):
     # publish metric only if CloudWatch service is available
     if not config.service_port("cloudwatch"):
         return
-    cw_client = aws_stack.connect_to_service("cloudwatch")
+    cw_client = connect_to(region_name=region_name).cloudwatch
     try:
         cw_client.put_metric_data(
             Namespace="AWS/Lambda",
@@ -96,24 +97,22 @@ def store_cloudwatch_logs(
     log_output,
     start_time=None,
     auto_create_group: Optional[bool] = True,
+    logs_client=None,
 ):
     start_time = start_time or int(time.time() * 1000)
-    logs_client = aws_stack.connect_to_service("logs")
+    logs_client = logs_client or aws_stack.connect_to_service("logs")
     log_output = to_str(log_output)
 
     if auto_create_group:
         # make sure that the log group exists, create it if not
-        log_groups = logs_client.describe_log_groups()["logGroups"]
-        log_groups = [lg["logGroupName"] for lg in log_groups]
-        if log_group_name not in log_groups:
-            try:
-                logs_client.create_log_group(logGroupName=log_group_name)
-            except Exception as e:
-                if "ResourceAlreadyExistsException" in str(e):
-                    # this can happen in certain cases, possibly due to a race condition
-                    pass
-                else:
-                    raise e
+        try:
+            logs_client.create_log_group(logGroupName=log_group_name)
+        except Exception as e:
+            if "ResourceAlreadyExistsException" in str(e):
+                # the log group already exists, this is fine
+                pass
+            else:
+                raise e
 
     # create a new log stream for this lambda invocation
     try:

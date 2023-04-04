@@ -22,6 +22,7 @@ from localstack.utils.strings import long_uid
 LOG = logging.getLogger(__name__)
 SERVERLESS_TRANSFORM = "AWS::Serverless-2016-10-31"
 EXTENSIONS_TRANSFORM = "AWS::LanguageExtensions"
+SECRETSMANAGER_TRANSFORM = "AWS::SecretsManager-2020-07-23"
 
 
 def parse_template(template: str) -> dict:
@@ -63,6 +64,9 @@ def transform_template(template: dict, parameters: list, stack=None) -> Dict:
             result = apply_serverless_transformation(result)
         elif transformation["Name"] == EXTENSIONS_TRANSFORM:
             continue
+        elif transformation["Name"] == SECRETSMANAGER_TRANSFORM:
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-aws-secretsmanager.html
+            LOG.warning("%s is not yet supported. Ignoring.", SECRETSMANAGER_TRANSFORM)
         else:
             result = execute_macro(
                 parsed_template=result,

@@ -66,6 +66,24 @@ class S3Bucket(GenericBaseModel):
             """Convert a CloudFormation ACL string (e.g., 'PublicRead') to an S3 ACL string (e.g., 'public-read')"""
             return re.sub("(?<!^)(?=[A-Z])", "-", acl).lower()
 
+        def transform_cfn_cors(cors_config):
+            if not cors_config:
+                return {}
+
+            transformed_cors = cors_config.copy()
+            transformed_cors["CORSRules"] = [
+                {
+                    "ID": rule.get("Id"),
+                    "AllowedHeaders": rule.get("AllowedHeaders"),
+                    "AllowedMethods": rule.get("AllowedMethods"),
+                    "AllowedOrigins": rule.get("AllowedOrigins"),
+                    "ExposeHeaders": rule.get("ExposedHeaders"),
+                    "MaxAgeSeconds": rule.get("MaxAge"),
+                }
+                for rule in transformed_cors.pop("CorsRules", [])
+            ]
+            return transformed_cors
+
         def s3_bucket_notification_config(params, **kwargs):
             notif_config = params.get("NotificationConfiguration")
             if not notif_config:
@@ -149,6 +167,18 @@ class S3Bucket(GenericBaseModel):
                     },
                 )
 
+        def _put_bucket_cors_configuration(resource_id, resources, resource_type, func, stack_name):
+            s3_client = aws_stack.connect_to_service("s3")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            bucket_name = props.get("BucketName")
+            cors_configuration = transform_cfn_cors(props.get("CorsConfiguration"))
+            if cors_configuration:
+                s3_client.put_bucket_cors(
+                    Bucket=bucket_name,
+                    CORSConfiguration=cors_configuration,
+                )
+
         def _create_bucket(resource_id, resources, resource_type, func, stack_name):
             s3_client = aws_stack.connect_to_service("s3")
             resource = resources[resource_id]
@@ -177,6 +207,7 @@ class S3Bucket(GenericBaseModel):
                     "parameters": s3_bucket_notification_config,
                 },
                 {"function": _put_bucket_versioning},
+                {"function": _put_bucket_cors_configuration},
                 {"function": _add_bucket_tags},
             ],
             "delete": [

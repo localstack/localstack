@@ -208,6 +208,10 @@ def patch_moto_request_handling():
 
     @patch(FuncThread.run)
     def thread_run(fn, self, *args, **kwargs):
-        if self._req_context:
-            THREAD_LOCAL.request_context = self._req_context
+        try:
+            if self._req_context:
+                THREAD_LOCAL.request_context = self._req_context
+        except AttributeError:
+            # sometimes there is a race condition where the previous patch has not been applied yet
+            pass
         return fn(self, *args, **kwargs)

@@ -922,7 +922,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_java_lambda_subscribe_sns_topic": {
-    "recorded-date": "09-09-2022, 22:37:37",
+    "recorded-date": "22-03-2023, 17:40:56",
     "recorded-content": {
       "get-function": {
         "Code": {
@@ -952,6 +952,13 @@
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
           "Runtime": "java11",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Active",
           "Timeout": 30,
           "TracingConfig": {
@@ -975,7 +982,7 @@
           "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
           "Condition": {
             "ArnLike": {
-              "AWS:SourceArn": "arn:aws:sns:<region>:111111111111:<resource:2>"
+              "AWS:SourceArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
             }
           }
         },

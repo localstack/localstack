@@ -143,11 +143,13 @@ class CloudformationProvider(CloudformationApi):
 
         # TODO: test what happens when both TemplateUrl and Body are specified
         state = get_cloudformation_store()
-        api_utils.prepare_template_body(request)  # TODO: avoid mutating request directly
-        if len(request["TemplateBody"]) > 51200:
+        template_body = request.get("TemplateBody") or ""
+        if len(template_body) > 51200:
             raise ValidationError(
-                f'1 validation error detected: Value \'{request["TemplateBody"]}\' at \'templateBody\' failed to satisfy constraint: Member must have length less than or equal to 51200'
+                f'1 validation error detected: Value \'{request["TemplateBody"]}\' at \'templateBody\' '
+                "failed to satisfy constraint: Member must have length less than or equal to 51200"
             )
+        api_utils.prepare_template_body(request)  # TODO: avoid mutating request directly
 
         template = template_preparer.parse_template(request["TemplateBody"])
         stack_name = template["StackName"] = request.get("StackName")

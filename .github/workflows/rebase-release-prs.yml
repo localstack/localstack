@@ -1,4 +1,4 @@
-name: Rebase release PRs
+name: Rebase Release PRs
 on:
   push:
     branches:

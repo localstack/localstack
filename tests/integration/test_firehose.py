@@ -193,7 +193,8 @@ class TestFirehoseIntegration:
             result = es_client.describe_elasticsearch_domain(DomainName=domain_name)
             return not result["DomainStatus"]["Processing"]
 
-        assert poll_condition(check_domain_state, 30, 1)
+        # if ElasticSearch is not yet installed, it might take some time to download the package before starting the domain
+        assert poll_condition(check_domain_state, 120, 1)
 
         # put kinesis stream record
         kinesis_record = {"target": "hello"}
@@ -239,6 +240,7 @@ class TestFirehoseIntegration:
         self,
         firehose_client,
         opensearch_client,
+        opensearch_create_domain,
         kinesis_client,
         kinesis_create_stream,
     ):
@@ -249,10 +251,10 @@ class TestFirehoseIntegration:
         bucket_arn = "arn:aws:s3:::foo"
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
 
-        opensearch_create_response = opensearch_client.create_domain(
-            DomainName=domain_name, EngineVersion="OpenSearch_2.3"
-        )
-        opensearch_arn = opensearch_create_response["DomainStatus"]["ARN"]
+        opensearch_create_domain(DomainName=domain_name, EngineVersion="OpenSearch_2.3")
+        opensearch_arn = opensearch_client.describe_domain(DomainName=domain_name)["DomainStatus"][
+            "ARN"
+        ]
 
         # create kinesis stream
         kinesis_create_stream(StreamName=stream_name, ShardCount=2)
@@ -357,7 +359,8 @@ class TestFirehoseIntegration:
                 ]
                 return not result
 
-            assert poll_condition(check_domain_state, 30, 1)
+            # if OpenSearch is not yet installed, it might take some time to download the package before starting the domain
+            assert poll_condition(check_domain_state, 120, 1)
 
             # put kinesis stream record
             kinesis_record = {"target": "hello"}

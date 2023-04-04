@@ -82,7 +82,12 @@ class EventsRule(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         rule_name = self.props.get("Name")
-        result = aws_stack.connect_to_service("events").describe_rule(Name=rule_name) or {}
+
+        kwargs = {"Name": rule_name}
+        if bus_name := self.props.get("EventBusName"):
+            kwargs["EventBusName"] = bus_name
+
+        result = aws_stack.connect_to_service("events").describe_rule(**kwargs) or {}
         return result if result.get("Name") else None
 
     @staticmethod

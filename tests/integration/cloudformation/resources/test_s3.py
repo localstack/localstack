@@ -58,3 +58,18 @@ def test_bucket_versioning(cfn_client, deploy_cfn_template, s3_client):
     bucket_name = result.outputs["BucketName"]
     bucket_version = s3_client.get_bucket_versioning(Bucket=bucket_name)
     assert bucket_version["Status"] == "Enabled"
+
+
+def test_cors_configuration(cfn_client, deploy_cfn_template, s3_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.s3_api())
+
+    result = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/s3_cors_bucket.yaml"
+        ),
+    )
+    bucket_name = result.outputs["BucketName"]
+    cors_info = s3_client.get_bucket_cors(Bucket=bucket_name)
+
+    snapshot.match("cors_info", cors_info)

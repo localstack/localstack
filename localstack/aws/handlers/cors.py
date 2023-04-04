@@ -3,7 +3,7 @@ A set of handlers which handle Cross Origin Resource Sharing (CORS).
 """
 import logging
 import re
-from typing import List
+from typing import List, Set
 from urllib.parse import urlparse
 
 from flask_cors.core import (
@@ -16,12 +16,11 @@ from flask_cors.core import (
 from werkzeug.datastructures import Headers
 
 from localstack import config
+from localstack.aws.api import RequestContext
+from localstack.aws.chain import Handler, HandlerChain
 from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
+from localstack.constants import LOCALHOST, LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Response
-
-from ...constants import LOCALHOST, LOCALHOST_HOSTNAME, PATH_USER_REQUEST
-from ..api import RequestContext
-from ..chain import Handler, HandlerChain
 
 LOG = logging.getLogger(__name__)
 
@@ -75,6 +74,28 @@ ALLOWED_CORS_RESPONSE_HEADERS = [
 ]
 
 
+def _get_allowed_cors_internal_domains() -> Set[str]:
+    """
+    Construct the list of allowed internal domains for CORS enforcement purposes
+    Defined as function to allow easier testing with monkeypatch of config values
+    """
+    return {LOCALHOST, LOCALHOST_HOSTNAME, config.HOSTNAME_EXTERNAL}
+
+
+_ALLOWED_INTERNAL_DOMAINS = _get_allowed_cors_internal_domains()
+
+
+def _get_allowed_cors_ports() -> Set[int]:
+    """
+    Construct the list of allowed ports for CORS enforcement purposes
+    Defined as function to allow easier testing with monkeypatch of config values
+    """
+    return set([config.EDGE_PORT] + ([config.EDGE_PORT_HTTP] if config.EDGE_PORT_HTTP else []))
+
+
+_ALLOWED_INTERNAL_PORTS = _get_allowed_cors_ports()
+
+
 def _get_allowed_cors_origins() -> List[str]:
     """Construct the list of allowed origins for CORS enforcement purposes"""
     result = [
@@ -88,9 +109,8 @@ def _get_allowed_cors_origins() -> List[str]:
     ]
     # Add allowed origins for localhost domains, using different protocol/port combinations.
     # If a different port is configured for EDGE_PORT_HTTP, add it to allowed origins as well
-    _ports = set([config.EDGE_PORT] + ([config.EDGE_PORT_HTTP] if config.EDGE_PORT_HTTP else []))
     for protocol in {"http", "https"}:
-        for port in _ports:
+        for port in _get_allowed_cors_ports():
             result.append(f"{protocol}://{LOCALHOST}:{port}")
             result.append(f"{protocol}://{LOCALHOST_HOSTNAME}:{port}")
 
@@ -102,6 +122,14 @@ def _get_allowed_cors_origins() -> List[str]:
 
 # allowed origins used for CORS / CSRF checks
 ALLOWED_CORS_ORIGINS = _get_allowed_cors_origins()
+
+# allowed dynamic internal origin
+# must follow the same pattern with 3 matching group, group 2 being the domain and group 3 the port
+# TODO: might need to match/group the scheme also?
+DYNAMIC_INTERNAL_ORIGINS = (
+    re.compile("(.*)\\.s3-website\\.(.[^:]*)(:[0-9]{2,5})?"),
+    re.compile("(.*)\\.cloudfront\\.(.[^:]*)(:[0-9]{2,5})?"),
+)
 
 
 def should_enforce_self_managed_service(context: RequestContext) -> bool:
@@ -171,6 +199,18 @@ class CorsEnforcer(Handler):
         for allowed_origin in allowed_origins:
             if allowed_origin == "*" or origin == allowed_origin:
                 return True
+
+        # performance wise, this is not very heavy because most of the regular requests will match above
+        # this would be executed mostly when rejecting or actually using content served by CloudFront or S3 website
+        for dynamic_origin in DYNAMIC_INTERNAL_ORIGINS:
+            match = dynamic_origin.match(origin)
+            if (
+                match
+                and (match.group(2) in _ALLOWED_INTERNAL_DOMAINS)
+                and (not (port := match.group(3)) or int(port[1:]) in _ALLOWED_INTERNAL_PORTS)
+            ):
+                return True
+
         return False
 
 

@@ -1,6 +1,6 @@
 import datetime
 import re
-from typing import Dict, Union
+from typing import Dict, Literal, Union
 
 import moto.s3.models as moto_s3_models
 from botocore.exceptions import ClientError
@@ -10,16 +10,17 @@ from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 
 from localstack.aws.api import CommonServiceException, ServiceException
 from localstack.aws.api.s3 import (
-    BucketCannedACL,
     BucketName,
     ChecksumAlgorithm,
     InvalidArgument,
+    MethodNotAllowed,
     NoSuchBucket,
     NoSuchKey,
-    ObjectCannedACL,
     ObjectKey,
-    Permission,
-    StorageClass,
+)
+from localstack.services.s3.constants import (
+    S3_VIRTUAL_HOST_FORWARDED_HEADER,
+    VALID_CANNED_ACLS_BUCKET,
 )
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import parse_arn
@@ -47,56 +48,6 @@ S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expr
 PATTERN_UUID = re.compile(
     r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
 )
-
-S3_VIRTUAL_HOST_FORWARDED_HEADER = "x-s3-vhost-forwarded-for"
-
-VALID_CANNED_ACLS_BUCKET = {
-    # https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
-    # bucket-owner-read + bucket-owner-full-control are allowed, but ignored for buckets
-    ObjectCannedACL.private,
-    ObjectCannedACL.authenticated_read,
-    ObjectCannedACL.aws_exec_read,
-    ObjectCannedACL.bucket_owner_full_control,
-    ObjectCannedACL.bucket_owner_read,
-    ObjectCannedACL.public_read,
-    ObjectCannedACL.public_read_write,
-    BucketCannedACL.log_delivery_write,
-}
-
-VALID_ACL_PREDEFINED_GROUPS = {
-    "http://acs.amazonaws.com/groups/global/AuthenticatedUsers",
-    "http://acs.amazonaws.com/groups/global/AllUsers",
-    "http://acs.amazonaws.com/groups/s3/LogDelivery",
-}
-
-VALID_GRANTEE_PERMISSIONS = {
-    Permission.FULL_CONTROL,
-    Permission.READ,
-    Permission.READ_ACP,
-    Permission.WRITE,
-    Permission.WRITE_ACP,
-}
-
-VALID_STORAGE_CLASSES = [
-    StorageClass.STANDARD,
-    StorageClass.STANDARD_IA,
-    StorageClass.GLACIER,
-    StorageClass.GLACIER_IR,
-    StorageClass.REDUCED_REDUNDANCY,
-    StorageClass.ONEZONE_IA,
-    StorageClass.INTELLIGENT_TIERING,
-    StorageClass.DEEP_ARCHIVE,
-]
-
-# response header overrides the client may request
-ALLOWED_HEADER_OVERRIDES = {
-    "ResponseContentType": "ContentType",
-    "ResponseContentLanguage": "ContentLanguage",
-    "ResponseExpires": "Expires",
-    "ResponseCacheControl": "CacheControl",
-    "ResponseContentDisposition": "ContentDisposition",
-    "ResponseContentEncoding": "ContentEncoding",
-}
 
 
 class InvalidRequest(ServiceException):
@@ -190,19 +141,41 @@ def get_bucket_from_moto(
     try:
         return moto_backend.get_bucket(bucket_name=bucket)
     except MissingBucket:
-        ex = NoSuchBucket("The specified bucket does not exist")
-        ex.BucketName = bucket
-        raise ex
+        raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
 
 
 def get_key_from_moto_bucket(
-    moto_bucket: moto_s3_models.FakeBucket, key: ObjectKey
-) -> moto_s3_models.FakeKey:
-    fake_key = moto_bucket.keys.get(key)
+    moto_bucket: FakeBucket,
+    key: ObjectKey,
+    version_id: str = None,
+    raise_if_delete_marker_method: Literal["GET", "PUT"] = None,
+) -> FakeKey | FakeDeleteMarker:
+    # TODO: rework the delete marker handling
+    # we basically need to re-implement moto `get_object` to account for FakeDeleteMarker
+    if version_id is None:
+        fake_key = moto_bucket.keys.get(key)
+    else:
+        for key_version in moto_bucket.keys.getlist(key, default=[]):
+            if str(key_version.version_id) == str(version_id):
+                fake_key = key_version
+                break
+        else:
+            fake_key = None
+
     if not fake_key:
-        ex = NoSuchKey("The specified key does not exist.")
-        ex.Key = key
-        raise ex
+        raise NoSuchKey("The specified key does not exist.", Key=key)
+
+    if isinstance(fake_key, FakeDeleteMarker) and raise_if_delete_marker_method:
+        # TODO: validate method, but should be PUT in most cases (updating a DeleteMarker)
+        match raise_if_delete_marker_method:
+            case "GET":
+                raise NoSuchKey("The specified key does not exist.", Key=key)
+            case "PUT":
+                raise MethodNotAllowed(
+                    "The specified method is not allowed against this resource.",
+                    Method="PUT",
+                    ResourceType="DeleteMarker",
+                )
 
     return fake_key
 
@@ -222,13 +195,14 @@ def capitalize_header_name_from_snake_case(header_name: str) -> str:
     return "-".join([part.capitalize() for part in header_name.split("-")])
 
 
-def validate_kms_key_id(kms_key: str, bucket: FakeBucket):
+def validate_kms_key_id(kms_key: str, bucket: FakeBucket) -> None:
     """
     Validate that the KMS key used to encrypt the object is valid
     :param kms_key: the KMS key id or ARN
     :param bucket: the targeted bucket
-    :raise
-    :return:
+    :raise KMS.DisabledException if the key is disabled
+    :raise KMS.NotFoundException if the key is not in the same region or does not exist
+    :return: the key ARN if found and enabled
     """
     try:
         parsed_arn = parse_arn(kms_key)
@@ -251,7 +225,12 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket):
     # the KMS key should be in the same region as the bucket, create the client in the bucket region
     kms_client = aws_stack.connect_to_service("kms", region_name=bucket.region_name)
     try:
-        kms_client.describe_key(KeyId=kms_key)
+        key = kms_client.describe_key(KeyId=kms_key)
+        if not key["KeyMetadata"]["Enabled"]:
+            raise CommonServiceException(
+                code="KMS.DisabledException", message=f'{key["KeyMetadata"]["Arn"]} is disabled.'
+            )
+
     except ClientError as e:
         if e.response["Error"]["Code"] == "NotFoundException":
             raise CommonServiceException(

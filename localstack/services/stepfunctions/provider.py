@@ -1,3 +1,5 @@
+import logging
+import os
 import threading
 
 from localstack import config
@@ -16,11 +18,15 @@ from localstack.constants import LOCALHOST
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.stepfunctions.stepfunctions_starter import (
     start_stepfunctions,
+    stop_stepfunctions,
     wait_for_stepfunctions,
 )
+from localstack.state import AssetDirectory, StateVisitor
 
 # lock to avoid concurrency issues when creating state machines in parallel (required for StepFunctions-Local)
 CREATION_LOCK = threading.RLock()
+
+LOG = logging.getLogger(__name__)
 
 
 class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
@@ -31,7 +37,24 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         """Return the URL of the backend StepFunctions server to forward requests to"""
         return f"http://{LOCALHOST}:{config.LOCAL_PORT_STEPFUNCTIONS}"
 
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(AssetDirectory(os.path.join(config.dirs.data, self.service)))
+
     def on_before_start(self):
+        start_stepfunctions()
+        wait_for_stepfunctions()
+
+    def on_before_state_reset(self):
+        stop_stepfunctions()
+
+    def on_before_state_load(self):
+        stop_stepfunctions()
+
+    def on_after_state_reset(self):
+        start_stepfunctions()
+        wait_for_stepfunctions()
+
+    def on_after_state_load(self):
         start_stepfunctions()
         wait_for_stepfunctions()
 

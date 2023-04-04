@@ -53,8 +53,12 @@ def localstack(debug, profile):
     from localstack.utils.files import cache_dir
 
     # overwrite the config variable here to defer import of cache_dir
-    if not config.LEGACY_DIRECTORIES and not os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip():
+    if not os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip():
         config.VOLUME_DIR = str(cache_dir() / "volume")
+
+    # FIXME: at some point we should remove the use of `config.dirs` for the CLI,
+    #  see https://github.com/localstack/localstack/pull/7906
+    config.dirs.for_cli().mkdirs()
 
 
 @localstack.group(name="config", help="Inspect your LocalStack configuration")
@@ -143,6 +147,11 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
         console.rule("LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)")
 
     if host:
+        # from here we abandon the regular CLI control path and start treating the process like a localstack
+        # runtime process
+        os.environ["LOCALSTACK_CLI"] = "0"
+        config.dirs = config.init_directories()
+
         try:
             bootstrap.start_infra_locally()
         except ImportError:

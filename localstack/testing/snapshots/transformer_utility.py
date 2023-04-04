@@ -162,6 +162,64 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def apigatewayv2_jwt_authorizer_event():
+        return [
+            TransformerUtility.jsonpath("$..claims.auth_time", "claims-auth-time"),
+            TransformerUtility.jsonpath("$..claims.client_id", "claims-client-id"),
+            TransformerUtility.jsonpath("$..claims.exp", "claims-exp"),
+            TransformerUtility.jsonpath("$..claims.iat", "claims-iat"),
+            TransformerUtility.jsonpath("$..claims.jti", "claims-jti"),
+            TransformerUtility.jsonpath("$..claims.sub", "claims-sub"),
+        ]
+
+    @staticmethod
+    def apigatewayv2_lambda_proxy_event():
+        return [
+            TransformerUtility.key_value("resourceId"),
+            TransformerUtility.key_value("sourceIp"),
+            TransformerUtility.jsonpath("$..requestContext.accountId", "account-id"),
+            TransformerUtility.jsonpath("$..requestContext.apiId", "api-id"),
+            TransformerUtility.jsonpath("$..requestContext.domainName", "domain-name"),
+            TransformerUtility.jsonpath("$..requestContext.domainPrefix", "domain-prefix"),
+            TransformerUtility.jsonpath(
+                "$..requestContext.extendedRequestId", "extended-request-id"
+            ),
+            TransformerUtility.jsonpath("$..requestContext.requestId", "request-id"),
+            TransformerUtility.jsonpath(
+                "$..requestContext.requestTime",
+                value_replacement="<request-time>",
+                reference_replacement=False,
+            ),
+            KeyValueBasedTransformer(
+                lambda k, v: str(v) if k == "requestTimeEpoch" else None,
+                "<request-time-epoch>",
+                replace_reference=False,
+            ),
+            TransformerUtility.key_value("time"),
+            KeyValueBasedTransformer(
+                lambda k, v: str(v) if k == "timeEpoch" else None,
+                "<time-epoch>",
+                replace_reference=False,
+            ),
+            TransformerUtility.jsonpath("$..multiValueHeaders.Host[*]", "host"),
+            TransformerUtility.jsonpath(
+                "$..multiValueHeaders.X-Forwarded-For[*]", "x-forwarded-for"
+            ),
+            TransformerUtility.jsonpath(
+                "$..multiValueHeaders.X-Forwarded-Port[*]", "x-forwarded-port"
+            ),
+            TransformerUtility.jsonpath(
+                "$..multiValueHeaders.X-Forwarded-Proto[*]", "x-forwarded-proto"
+            ),
+            TransformerUtility.jsonpath(
+                "$..multiValueHeaders.X-Amzn-Trace-Id[*]", "x-amzn-trace-id"
+            ),
+            TransformerUtility.jsonpath("$..multiValueHeaders.authorization[*]", "authorization"),
+            TransformerUtility.jsonpath("$..multiValueHeaders.User-Agent[*]", "user-agent"),
+            TransformerUtility.regex(r"python-requests/\d+\.\d+(\.\d+)?", "python-requests/x.x.x"),
+        ]
+
+    @staticmethod
     def cloudformation_api():
         """
         :return: array with Transformers, for cloudformation api.

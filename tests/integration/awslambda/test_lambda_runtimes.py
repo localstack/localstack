@@ -24,7 +24,6 @@ from tests.integration.awslambda.test_lambda import (
     PYTHON_TEST_RUNTIMES,
     TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS,
     TEST_LAMBDA_JAVA_WITH_LIB,
-    TEST_LAMBDA_LIBS,
     TEST_LAMBDA_NODEJS_ES6,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
@@ -309,7 +308,14 @@ class TestJavaRuntimes:
         retry(check_logs, retries=20)
 
     @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Code.RepositoryType", "$..Tags"]
+        condition=is_old_provider,
+        paths=[
+            "$..Code.RepositoryType",
+            "$..Tags",
+            "$..Configuration.RuntimeVersionConfig",
+            "$..Configuration.SnapStart",
+            "$..Statement.Condition.ArnLike",
+        ],
     )
     # TODO maybe snapshot payload as well
     def test_java_lambda_subscribe_sns_topic(
@@ -429,7 +435,6 @@ class TestPythonRuntimes:
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
             get_content=True,
-            libs=TEST_LAMBDA_LIBS,
             runtime=runtime,
             file_name="localstack_package/def/main.py",
         )
