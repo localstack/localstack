@@ -291,6 +291,13 @@ def in_docker():
         os_hostname = socket.gethostname()
         if os_hostname and os_hostname in content:
             return True
+
+    # containerd does not set any specific file or config, but does use
+    # io.containerd.snapshotter.v1.overlayfs as the overlay filesystem
+    with open("/proc/1/mountinfo", "rt") as infile:
+        if "io.containerd" in infile.read():
+            return True
+
     return False
 
 
