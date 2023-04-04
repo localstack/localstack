@@ -834,11 +834,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_224-HMAC_SHA_224]": {
-    "recorded-date": "04-04-2023, 14:21:59",
+    "recorded-date": "04-04-2023, 16:01:36",
     "recorded-content": {
       "generate-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/7adef49f-2edb-4755-a202-afb6000c1673",
-        "Mac": "b'\\x86\\xe9a\\xee\\xd2*p\\xb5\\xd8om[\\x1d\\xc9\\xdb\\x83)\\xe96X\\x82D\\xad\\xe1\\x83\\xf8\\xbc\\xe9'",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/e851f07d-5645-46e4-aabd-b036ead86b44",
+        "Mac": "b'\\xdeD\\xa5\\xeeDd\\x0e\\xfdO[\\x8ci\\x12\\x84\\xde\\xdd\\xac,,\\xb9\\xc8C\\xe7\\x00\\xba2\\xdb+'",
         "MacAlgorithm": "HMAC_SHA_224",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -846,7 +846,7 @@
         }
       },
       "verify-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/7adef49f-2edb-4755-a202-afb6000c1673",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/e851f07d-5645-46e4-aabd-b036ead86b44",
         "MacAlgorithm": "HMAC_SHA_224",
         "MacValid": true,
         "ResponseMetadata": {
@@ -879,11 +879,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_256-HMAC_SHA_256]": {
-    "recorded-date": "04-04-2023, 14:21:59",
+    "recorded-date": "04-04-2023, 16:01:39",
     "recorded-content": {
       "generate-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/96d5546b-4c0b-409b-aa17-982226608c91",
-        "Mac": "b'l\\xb9h\\x1c\\xff\\xd0\\x19R\\x82\\x83\\x8a\\x9d\\x86\\x16nS\\x0fO\\xf8Y\\xe5_\\x89\\xd2\\xc1#l\\x97\\xe3\\xad`l'",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/b86adf68-f057-4140-9619-23c474f11c5e",
+        "Mac": "b\"\\xe8\\t\\xe1y& \\xe7S_\\xe2\\xca\\xbb\\xb3F'-R\\xa8\\xa3\\x85\\xea\\xd9zn\\x0fQ\\x8ab\\xa6\\xef\\x9b:\"",
         "MacAlgorithm": "HMAC_SHA_256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -891,7 +891,7 @@
         }
       },
       "verify-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/96d5546b-4c0b-409b-aa17-982226608c91",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/b86adf68-f057-4140-9619-23c474f11c5e",
         "MacAlgorithm": "HMAC_SHA_256",
         "MacValid": true,
         "ResponseMetadata": {
@@ -924,11 +924,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_384-HMAC_SHA_384]": {
-    "recorded-date": "04-04-2023, 14:21:59",
+    "recorded-date": "04-04-2023, 16:01:42",
     "recorded-content": {
       "generate-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/7d09d39d-9cb6-459e-b72f-5a97351921ba",
-        "Mac": "b'tVW\\xd3\\x9b\\xdc\\xc5\\x7f\\x9b\\xf8\\t\\xb9fo\\xda\\xd9\\nE\\x03\\xba\\xa1\\xfc\\x85\\x8a\\xf7\\xcc\\x1e\\x87\\x8b\\xfe\\n\\xf5\\x83\\x96\\xbc\\xd0B\\x9b\\x9aY\\xb2\\x02as\\xb8\\xca\\xb8\\xfb'",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/5ad42559-2de9-493b-9571-ebd702f1836e",
+        "Mac": "b'\\xfb\\xb0m\\xecG\\x86\\xd0\\xe1eu\\xfc\\x0c_`\\r\\x1b\\x0fK\\xa8u\\xac\\xb0\\xb1\\xadn\\x88e\\xe1\\x82\\xc2\\xf8jU#q`QS\\x9e\\xad\\x19\\xad\\xfe<0\\xc8Sb'",
         "MacAlgorithm": "HMAC_SHA_384",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -936,7 +936,7 @@
         }
       },
       "verify-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/7d09d39d-9cb6-459e-b72f-5a97351921ba",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/5ad42559-2de9-493b-9571-ebd702f1836e",
         "MacAlgorithm": "HMAC_SHA_384",
         "MacValid": true,
         "ResponseMetadata": {
@@ -969,11 +969,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_512-HMAC_SHA_512]": {
-    "recorded-date": "04-04-2023, 14:21:59",
+    "recorded-date": "04-04-2023, 16:01:44",
     "recorded-content": {
       "generate-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/2a068ba0-4163-4fd4-8035-adf89eeb1994",
-        "Mac": "b'T\\xabF\\xa5\\xcbd\\xe3\\xc2|T\\x1c\\xa5\\x88J>w\\xde\\xe7C\"\\xf9\\x0c}:\\x9eVc\\x1b\\xc80\\xe4!#\\xce$\\xb0x\\x02\\x91\\x83\\x87B\\xb3xX\\xec\\xb0)\\xc7jg)\\xc3\\xb9\\x13\\t\\xbdO\\xd4oPV\\xac\\xa1'",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/b6d050b9-7e03-4db8-921b-6cb95baf32d5",
+        "Mac": "b'\\xdc/\\xe4\\x05\\x08\\xeaGB\\xa2.%\\xa0T\\x1e\\x80>\\xf8\\x11\\x95\\x0f\\x8d\\x07\\x06I\\x98\\xa5\\x97\\xf7O\\xdf\\x1b\\xb3^3rW\\xcbV0c/h\\\\\\xa1\\x8a\\xdf\\xa4\\x98.\\xec\\xc5V5zM\\x95\\xe0\\xb4X\\xa6\\n\\xbd\\xf1x'",
         "MacAlgorithm": "HMAC_SHA_512",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -981,7 +981,7 @@
         }
       },
       "verify-mac": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/2a068ba0-4163-4fd4-8035-adf89eeb1994",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/b6d050b9-7e03-4db8-921b-6cb95baf32d5",
         "MacAlgorithm": "HMAC_SHA_512",
         "MacValid": true,
         "ResponseMetadata": {

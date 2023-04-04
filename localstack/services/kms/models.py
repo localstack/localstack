@@ -9,7 +9,7 @@ import struct
 import uuid
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, hmac
@@ -288,7 +288,7 @@ class KmsKey:
             # AWS itself raises this exception without any additional message.
             raise KMSInvalidSignatureException()
 
-    def _get_hmac_context(self, mac_algorithm: MacAlgorithmSpec):
+    def _get_hmac_context(self, mac_algorithm: MacAlgorithmSpec) -> Any:
         if mac_algorithm == "HMAC_SHA_224":
             h = hmac.HMAC(self.crypto_key.key_material, hashes.SHA224())
         elif mac_algorithm == "HMAC_SHA_256":
@@ -297,6 +297,12 @@ class KmsKey:
             h = hmac.HMAC(self.crypto_key.key_material, hashes.SHA384())
         elif mac_algorithm == "HMAC_SHA_512":
             h = hmac.HMAC(self.crypto_key.key_material, hashes.SHA512())
+        else:
+            raise ValidationException(
+                f"1 validation error detected: Value '{mac_algorithm}' at 'macAlgorithm' "
+                f"failed to satisfy constraint: Member must satisfy enum value set: "
+                f"[HMAC_SHA_384, HMAC_SHA_256, HMAC_SHA_224, HMAC_SHA_512]"
+            )
         return h
 
     def _construct_sign_verify_kwargs(
@@ -374,7 +380,7 @@ class KmsKey:
             or "SYMMETRIC_DEFAULT"
         )
         self.metadata["CustomerMasterKeySpec"] = self.metadata.get("KeySpec")
-        self.metadata["KeyUsage"] = self._populate_key_usage(
+        self.metadata["KeyUsage"] = self._get_key_usage(
             create_key_request.get("KeyUsage"), self.metadata.get("KeySpec")
         )
 
@@ -490,8 +496,8 @@ class KmsKey:
         elif key_spec == "HMAC_512":
             self.metadata["MacAlgorithms"] = ["HMAC_SHA_512"]
 
-    def _populate_key_usage(self, request_key_usage: str, key_spec: str) -> str:
-        if key_spec in ["HMAC_224", "HMAC_256", "HMAC_384", "HMAC_512"]:
+    def _get_key_usage(self, request_key_usage: str, key_spec: str) -> str:
+        if key_spec in HMAC_RANGE_KEY_LENGTHS:
             if request_key_usage is None:
                 raise ValidationException(
                     "You must specify a KeyUsage value for all KMS keys except for symmetric encryption keys."
@@ -503,7 +509,7 @@ class KmsKey:
                     f"[ENCRYPT_DECRYPT, SIGN_VERIFY, GENERATE_VERIFY_MAC]"
                 )
             else:
-                return request_key_usage
+                return "GENERATE_VERIFY_MAC"
         else:
             return request_key_usage or "ENCRYPT_DECRYPT"
 

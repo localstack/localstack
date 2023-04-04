@@ -906,13 +906,13 @@ class TestKMS:
         )
         snapshot.match("generate-mac", generate_mac_response)
 
-        verify__mac_response = kms_client.verify_mac(
+        verify_mac_response = kms_client.verify_mac(
             KeyId=key_id,
             Message="some important message",
             MacAlgorithm=mac_algo,
             Mac=generate_mac_response["Mac"],
         )
-        snapshot.match("verify-mac", verify__mac_response)
+        snapshot.match("verify-mac", verify_mac_response)
 
         # test generate mac with invalid key-id
         with pytest.raises(ClientError) as e:
