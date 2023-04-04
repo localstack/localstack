@@ -122,7 +122,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             raise BadRequestException(f"Language code must be one of {LANGUAGE_MODELS.keys()}")
 
         store = transcribe_stores[context.account_id][context.region]
-        store.transcription_jobs[job_name] = TranscriptionJob(
+        job = TranscriptionJob(
             TranscriptionJobName=job_name,
             LanguageCode=language_code,
             Media=media,
@@ -130,8 +130,11 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             StartTime=datetime.datetime.utcnow(),
             TranscriptionJobStatus=TranscriptionJobStatus.QUEUED,
         )
+        store.transcription_jobs[job_name] = job
 
         start_thread(self._run_transcription_job, (store, job_name))
+
+        return StartTranscriptionJobResponse(TranscriptionJob=job)
 
     def list_transcription_jobs(
         self,
