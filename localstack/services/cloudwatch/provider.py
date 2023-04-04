@@ -241,10 +241,20 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 new_path=PATH_GET_RAW_METRICS,
             ),
         )
-        self.alarm_scheduler = AlarmScheduler()
+        self.start_alarm_scheduler()
 
-    def on_before_start(self):
-        # re-schedule alarms for persistence use-case
+    def on_before_state_reset(self):
+        self.shutdown_alarm_scheduler()
+
+    def on_after_state_reset(self):
+        self.start_alarm_scheduler()
+
+    def on_before_state_load(self):
+        self.shutdown_alarm_scheduler()
+
+    def on_after_state_load(self):
+        self.start_alarm_scheduler()
+
         def restart_alarms(*args):
             poll_condition(lambda: SERVICE_PLUGINS.is_running("cloudwatch"))
             self.alarm_scheduler.restart_existing_alarms()
@@ -252,7 +262,17 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         start_worker_thread(restart_alarms)
 
     def on_before_stop(self):
+        self.shutdown_alarm_scheduler()
+
+    def start_alarm_scheduler(self):
+        if not self.alarm_scheduler:
+            LOG.debug("starting cloudwatch scheduler")
+            self.alarm_scheduler = AlarmScheduler()
+
+    def shutdown_alarm_scheduler(self):
+        LOG.debug("stopping cloudwatch scheduler")
         self.alarm_scheduler.shutdown_scheduler()
+        self.alarm_scheduler = None
 
     def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames) -> None:
         moto.call_moto(context)

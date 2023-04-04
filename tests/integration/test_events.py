@@ -240,6 +240,38 @@ class TestEvents:
             events_client, sqs_client, pattern=TEST_EVENT_PATTERN, entries_asserts=[(entries, True)]
         )
 
+    def test_put_events_with_values_in_array(self, events_client, sqs_client):
+        pattern = {"detail": {"event": {"data": {"type": ["1", "2"]}}}}
+        entries1 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": ["3", "1"]}}}),
+            }
+        ]
+        entries2 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": ["2"]}}}),
+            }
+        ]
+        entries3 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": ["3"]}}}),
+            }
+        ]
+        entries_asserts = [(entries1, True), (entries2, True), (entries3, False)]
+        self._put_events_with_filter_to_sqs(
+            events_client,
+            sqs_client,
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_path="$.detail",
+        )
+
     @pytest.mark.aws_validated
     def test_put_events_with_nested_event_pattern(self, events_client, sqs_client):
         pattern = {"detail": {"event": {"data": {"type": ["1"]}}}}
@@ -464,11 +496,16 @@ class TestEvents:
 
         events_client.create_event_bus(Name=bus_name_1)
         resp = events_client.create_event_bus(Name=bus_name_2)
-        events_client.put_rule(
-            Name=rule_name,
-            EventBusName=bus_name_1,
-            EventPattern=json.dumps(TEST_EVENT_PATTERN),
-        )
+
+        for bus_name in (
+            bus_name_1,
+            bus_name_2,
+        ):
+            events_client.put_rule(
+                Name=rule_name,
+                EventBusName=bus_name,
+                EventPattern=json.dumps(TEST_EVENT_PATTERN),
+            )
 
         events_client.put_targets(
             Rule=rule_name,
@@ -585,6 +622,7 @@ class TestEvents:
         self,
         stepfunctions_client,
         sns_create_topic,
+        sns_client,
         sqs_client,
         sqs_create_queue,
         sqs_queue_arn,
@@ -624,7 +662,18 @@ class TestEvents:
         )["stateMachineArn"]
 
         topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
-        sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
+        subscription = sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
+
+        assert poll_condition(lambda: len(httpserver.log) >= 1, timeout=5)
+        sub_request, _ = httpserver.log[0]
+        payload = sub_request.get_json(force=True)
+        assert payload["Type"] == "SubscriptionConfirmation"
+        token = payload["Token"]
+        sns_client.confirm_subscription(TopicArn=topic_arn, Token=token)
+        sub_attrs = sns_client.get_subscription_attributes(
+            SubscriptionArn=subscription["SubscriptionArn"]
+        )
+        assert sub_attrs["Attributes"]["PendingConfirmation"] == "false"
 
         queue_url = sqs_create_queue(QueueName=queue_name)
         fifo_queue_url = sqs_create_queue(
@@ -1237,7 +1286,6 @@ class TestEvents:
         # put target
         events_client.put_targets(
             Rule=rule_name,
-            EventBusName=TEST_EVENT_BUS_NAME,
             Targets=[{"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"}],
         )
 
@@ -1638,3 +1686,55 @@ class TestEvents:
                 {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
             ],
         )
+
+    @pytest.mark.aws_validated
+    def test_should_ignore_schedules_for_put_event(
+        self, create_lambda_function, lambda_client, events_client, logs_client, cleanups
+    ):
+        """Regression test for https://github.com/localstack/localstack/issues/7847"""
+        fn_name = f"test-event-fn-{short_uid()}"
+        create_lambda_function(
+            func_name=fn_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_9,
+            client=lambda_client,
+        )
+
+        lambda_client.add_permission(
+            FunctionName=fn_name,
+            StatementId="AllowFnInvokeStatement",
+            Action="lambda:InvokeFunction",
+            Principal="events.amazonaws.com",
+        )
+
+        fn_arn = lambda_client.get_function(FunctionName=fn_name)["Configuration"]["FunctionArn"]
+        events_client.put_rule(
+            Name="ScheduledLambda", ScheduleExpression="rate(1 minute)"
+        )  # every minute, can't go lower than that
+        cleanups.append(lambda: events_client.delete_rule(Name="ScheduledLambda"))
+        events_client.put_targets(
+            Rule="ScheduledLambda", Targets=[{"Id": "calllambda1", "Arn": fn_arn}]
+        )
+        cleanups.append(
+            lambda: events_client.remove_targets(Rule="ScheduledLambda", Ids=["calllambda1"])
+        )
+
+        events_client.put_events(
+            Entries=[
+                {
+                    "Source": "MySource",
+                    "DetailType": "CustomType",
+                    "Detail": json.dumps({"message": "manually invoked"}),
+                }
+            ]
+        )
+
+        def check_invocation():
+            events_after = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")
+            # the custom sent event should NOT trigger the lambda (!)
+            assert len([e for e in events_after["events"] if "START" in e["message"]]) >= 1
+            assert (
+                len([e for e in events_after["events"] if "manually invoked" in e["message"]]) == 0
+            )
+
+        retry(check_invocation, sleep=5, retries=15)

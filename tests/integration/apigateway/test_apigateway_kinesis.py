@@ -5,8 +5,8 @@ import pytest
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+from tests.integration.apigateway.apigateway_fixtures import api_invoke_url
 from tests.integration.apigateway.conftest import DEFAULT_STAGE_NAME
-from tests.integration.apigateway_fixtures import api_invoke_url
 
 
 # PutRecord does not return EncryptionType, but it's documented as such.

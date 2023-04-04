@@ -8,7 +8,7 @@ from click.testing import CliRunner
 import localstack.utils.container_utils.docker_cmd_client
 from localstack import config, constants
 from localstack.cli.localstack import localstack as cli
-from localstack.config import DOCKER_SOCK, get_edge_url, in_docker
+from localstack.config import get_edge_url, in_docker
 from localstack.constants import MODULE_MAIN_PATH
 from localstack.utils.bootstrap import in_ci
 from localstack.utils.common import poll_condition
@@ -70,12 +70,8 @@ class TestCliContainerLifecycle:
             requests.get(get_edge_url() + "/_localstack/health")
 
     def test_wait_timeout_raises_exception(self, runner, container_client):
-        result = runner.invoke(cli, ["start", "-d"])
-        assert result.exit_code == 0
-        assert "starting LocalStack" in result.output
-
+        # assume a wait without start fails
         result = runner.invoke(cli, ["wait", "-t", "0.5"])
-        # one day this test will surely fail ;-)
         assert result.exit_code != 0
 
     def test_logs(self, runner, container_client):
@@ -117,34 +113,6 @@ class TestCliContainerLifecycle:
         assert "42069/tcp" in inspect["HostConfig"]["PortBindings"]
         assert f"{volume}:{volume}" in inspect["HostConfig"]["Binds"]
 
-    @pytest.mark.skipif(
-        condition=not config.LEGACY_DIRECTORIES, reason="this test targets LEGACY_DIRECTORIES=1"
-    )
-    def test_directories_mounted_correctly(self, runner, tmp_path, monkeypatch, container_client):
-        data_dir = tmp_path / "data_dir"
-        tmp_folder = tmp_path / "tmp"
-
-        # set different directories and make sure they are mounted correctly
-        monkeypatch.setenv("DATA_DIR", str(data_dir))
-        monkeypatch.setattr(config, "DATA_DIR", str(data_dir))
-        monkeypatch.setattr(config, "TMP_FOLDER", str(tmp_folder))
-        # reload directories from manipulated config
-        monkeypatch.setattr(config, "dirs", config.Directories.legacy_from_config())
-
-        runner.invoke(cli, ["start", "-d"])
-        runner.invoke(cli, ["wait", "-t", "60"])
-
-        # check that mounts were created correctly
-        inspect = container_client.inspect_container(config.MAIN_CONTAINER_NAME)
-        container_dirs = config.Directories.for_container()
-        binds = inspect["HostConfig"]["Binds"]
-        assert f"{tmp_folder}:{container_dirs.tmp}" in binds
-        assert f"{data_dir}:{container_dirs.data}" in binds
-        assert f"{DOCKER_SOCK}:{DOCKER_SOCK}" in binds
-
-    @pytest.mark.skipif(
-        condition=config.LEGACY_DIRECTORIES, reason="this test targets LEGACY_DIRECTORIES=0"
-    )
     def test_volume_dir_mounted_correctly(self, runner, tmp_path, monkeypatch, container_client):
         volume_dir = tmp_path / "volume"
 
@@ -165,9 +133,9 @@ class TestCliContainerLifecycle:
         monkeypatch.setattr(config, "DOCKER_FLAGS", f"--user={user}")
 
         if in_ci() and os.path.exists("/home/runner"):
-            logs_dir = "/home/runner/.cache/localstack/volume/logs"
-            mkdir(logs_dir)
-            run(["sudo", "chmod", "-R", "777", logs_dir])
+            volume_dir = "/home/runner/.cache/localstack/volume/"
+            mkdir(volume_dir)
+            run(["sudo", "chmod", "-R", "777", volume_dir])
 
         runner.invoke(cli, ["start", "-d"])
         runner.invoke(cli, ["wait", "-t", "60"])
@@ -177,8 +145,8 @@ class TestCliContainerLifecycle:
         result = json.loads(output[0])
         assert "stateMachines" in result
 
-        output = container_client.exec_in_container(config.MAIN_CONTAINER_NAME, ["ps", "-u", user])
-        assert "supervisord" in to_str(output[0])
+        output = container_client.exec_in_container(config.MAIN_CONTAINER_NAME, ["ps", "-fu", user])
+        assert "localstack-supervisor" in to_str(output[0])
 
     def test_start_cli_within_container(self, runner, container_client):
         output = container_client.run_container(

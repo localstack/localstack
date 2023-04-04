@@ -19,6 +19,8 @@ BisectBatchOnFunctionError = bool
 Boolean = bool
 CodeSigningConfigArn = str
 CodeSigningConfigId = str
+CollectionName = str
+DatabaseName = str
 Description = str
 DestinationArn = str
 Enabled = bool
@@ -119,6 +121,11 @@ class EventSourcePosition(str):
     TRIM_HORIZON = "TRIM_HORIZON"
     LATEST = "LATEST"
     AT_TIMESTAMP = "AT_TIMESTAMP"
+
+
+class FullDocument(str):
+    UpdateLookup = "UpdateLookup"
+    Default = "Default"
 
 
 class FunctionResponseType(str):
@@ -695,6 +702,12 @@ class CreateCodeSigningConfigResponse(TypedDict, total=False):
     CodeSigningConfig: CodeSigningConfig
 
 
+class DocumentDBEventSourceConfig(TypedDict, total=False):
+    DatabaseName: Optional[DatabaseName]
+    CollectionName: Optional[CollectionName]
+    FullDocument: Optional[FullDocument]
+
+
 class ScalingConfig(TypedDict, total=False):
     MaximumConcurrency: Optional[MaximumConcurrency]
 
@@ -772,6 +785,7 @@ class CreateEventSourceMappingRequest(ServiceRequest):
     AmazonManagedKafkaEventSourceConfig: Optional[AmazonManagedKafkaEventSourceConfig]
     SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
     ScalingConfig: Optional[ScalingConfig]
+    DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
 
 
 class SnapStart(TypedDict, total=False):
@@ -961,6 +975,7 @@ class EventSourceMappingConfiguration(TypedDict, total=False):
     AmazonManagedKafkaEventSourceConfig: Optional[AmazonManagedKafkaEventSourceConfig]
     SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
     ScalingConfig: Optional[ScalingConfig]
+    DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
 
 
 EventSourceMappingsList = List[EventSourceMappingConfiguration]
@@ -1224,13 +1239,14 @@ class GetProvisionedConcurrencyConfigResponse(TypedDict, total=False):
 
 
 class GetRuntimeManagementConfigRequest(ServiceRequest):
-    FunctionName: FunctionName
+    FunctionName: NamespacedFunctionName
     Qualifier: Optional[Qualifier]
 
 
 class GetRuntimeManagementConfigResponse(TypedDict, total=False):
     UpdateRuntimeOn: Optional[UpdateRuntimeOn]
     RuntimeVersionArn: Optional[RuntimeVersionArn]
+    FunctionArn: Optional[NameSpacedFunctionArn]
 
 
 class InvocationRequest(ServiceRequest):
@@ -1577,6 +1593,7 @@ class UpdateEventSourceMappingRequest(ServiceRequest):
     TumblingWindowInSeconds: Optional[TumblingWindowInSeconds]
     FunctionResponseTypes: Optional[FunctionResponseTypeList]
     ScalingConfig: Optional[ScalingConfig]
+    DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
 
 
 class UpdateFunctionCodeRequest(ServiceRequest):
@@ -1722,6 +1739,7 @@ class LambdaApi:
         amazon_managed_kafka_event_source_config: AmazonManagedKafkaEventSourceConfig = None,
         self_managed_kafka_event_source_config: SelfManagedKafkaEventSourceConfig = None,
         scaling_config: ScalingConfig = None,
+        document_db_event_source_config: DocumentDBEventSourceConfig = None,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
 
@@ -1934,7 +1952,10 @@ class LambdaApi:
 
     @handler("GetRuntimeManagementConfig")
     def get_runtime_management_config(
-        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier = None
+        self,
+        context: RequestContext,
+        function_name: NamespacedFunctionName,
+        qualifier: Qualifier = None,
     ) -> GetRuntimeManagementConfigResponse:
         raise NotImplementedError
 
@@ -2226,6 +2247,7 @@ class LambdaApi:
         tumbling_window_in_seconds: TumblingWindowInSeconds = None,
         function_response_types: FunctionResponseTypeList = None,
         scaling_config: ScalingConfig = None,
+        document_db_event_source_config: DocumentDBEventSourceConfig = None,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
 

@@ -20,6 +20,7 @@ from localstack.services.awslambda.invocation.runtime_executor import (
     RuntimeExecutor,
 )
 from localstack.services.awslambda.lambda_utils import (
+    HINT_LOG,
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
 )
@@ -27,7 +28,9 @@ from localstack.services.awslambda.packages import awslambda_runtime_package
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
+    DockerNotAvailable,
     DockerPlatform,
+    NoSuchImage,
     PortMappings,
     VolumeBind,
     VolumeMappings,
@@ -50,7 +53,7 @@ COPY aws-lambda-rie {rapid_entrypoint}
 COPY code/ /var/task
 """
 
-PULLED_IMAGES: set[str] = set()
+PULLED_IMAGES: set[(str, DockerPlatform)] = set()
 
 HOT_RELOADING_ENV_VARIABLE = "LOCALSTACK_HOT_RELOADING_PATHS"
 
@@ -64,15 +67,17 @@ ARCHITECTURE_PLATFORM_MAPPING: dict[Architecture, DockerPlatform] = dict(
 )
 
 
-def docker_platform(lambda_architecture: Architecture) -> DockerPlatform:
+def docker_platform(lambda_architecture: Architecture) -> DockerPlatform | None:
     """
     Convert an AWS Lambda architecture into a Docker platform flag. Examples:
     * docker_platform("x86_64") == "linux/amd64"
     * docker_platform("arm64") == "linux/arm64"
 
     :param lambda_architecture: the instruction set that the function supports
-    :return: Docker platform in the format ``os[/arch[/variant]]``
+    :return: Docker platform in the format ``os[/arch[/variant]]`` or None if configured to ignore the architecture
     """
+    if config.LAMBDA_IGNORE_ARCHITECTURE:
+        return None
     return ARCHITECTURE_PLATFORM_MAPPING[lambda_architecture]
 
 
@@ -299,6 +304,13 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             if container_config.ports is None:
                 container_config.ports = PortMappings()
             container_config.ports.add(self.executor_endpoint.container_port, INVOCATION_PORT)
+
+        if config.LAMBDA_INIT_DEBUG:
+            container_config.entrypoint = "/debug-bootstrap.sh"
+            if not container_config.ports:
+                container_config.ports = PortMappings()
+            container_config.ports.add(config.LAMBDA_INIT_DELVE_PORT, config.LAMBDA_INIT_DELVE_PORT)
+
         CONTAINER_CLIENT.create_container_from_config(container_config)
         if (
             not config.LAMBDA_PREBUILD_IMAGES
@@ -307,6 +319,18 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             CONTAINER_CLIENT.copy_into_container(
                 self.container_name, f"{str(get_runtime_client_path())}/.", "/"
             )
+            # tiny bit inefficient since we actually overwrite the init, but otherwise the path might not exist
+            if config.LAMBDA_INIT_DEBUG:
+                CONTAINER_CLIENT.copy_into_container(
+                    self.container_name, config.LAMBDA_INIT_BIN_PATH, "/var/rapid/init"
+                )
+                CONTAINER_CLIENT.copy_into_container(
+                    self.container_name, config.LAMBDA_INIT_DELVE_PATH, "/var/rapid/dlv"
+                )
+                CONTAINER_CLIENT.copy_into_container(
+                    self.container_name, config.LAMBDA_INIT_BOOTSTRAP_PATH, "/debug-bootstrap.sh"
+                )
+
         if not config.LAMBDA_PREBUILD_IMAGES:
             # copy_folders should be empty here if package type is not zip
             for source, target in container_config.copy_folders:
@@ -359,9 +383,25 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         if function_version.config.code:
             function_version.config.code.prepare_for_execution()
             image_name = resolver.get_image_for_runtime(function_version.config.runtime)
-            if image_name not in PULLED_IMAGES:
-                CONTAINER_CLIENT.pull_image(image_name)
-                PULLED_IMAGES.add(image_name)
+            platform = docker_platform(function_version.config.architectures[0])
+            # Pull image for a given platform upon function creation such that invocations do not time out.
+            if (image_name, platform) not in PULLED_IMAGES:
+                try:
+                    CONTAINER_CLIENT.pull_image(image_name, platform)
+                    PULLED_IMAGES.add((image_name, platform))
+                except NoSuchImage as e:
+                    LOG.debug(
+                        "Unable to pull image %s for runtime executor preparation.", image_name
+                    )
+                    raise e
+                except DockerNotAvailable as e:
+                    HINT_LOG.error(
+                        "Failed to pull Docker image because Docker is not available in the LocalStack container "
+                        "but required to run Lambda functions. Please add the Docker volume mount "
+                        '"/var/run/docker.sock:/var/run/docker.sock" to your LocalStack startup. '
+                        "https://docs.localstack.cloud/references/lambda-provider-v2/#docker-not-available"
+                    )
+                    raise e
             if config.LAMBDA_PREBUILD_IMAGES:
                 target_path = function_version.config.code.get_unzipped_code_location()
                 prepare_image(target_path, function_version)
@@ -378,3 +418,14 @@ class DockerRuntimeExecutor(RuntimeExecutor):
 
     def get_runtime_endpoint(self) -> str:
         return f"http://{self.get_endpoint_from_executor()}:{config.EDGE_PORT}{self.executor_endpoint.get_endpoint_prefix()}"
+
+    @classmethod
+    def validate_environment(cls) -> bool:
+        if not CONTAINER_CLIENT.has_docker():
+            LOG.warning(
+                "WARNING: Docker not available in the LocalStack container but required to run Lambda "
+                'functions. Please add the Docker volume mount "/var/run/docker.sock:/var/run/docker.sock" to your '
+                "LocalStack startup. https://docs.localstack.cloud/references/lambda-provider-v2/#docker-not-available"
+            )
+            return False
+        return True

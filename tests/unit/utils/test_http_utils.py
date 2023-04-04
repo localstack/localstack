@@ -1,4 +1,11 @@
-from localstack.utils.http import ACCEPT, add_query_params_to_url, canonicalize_headers
+import time
+
+import pytest
+from pytest_httpserver import HTTPServer
+
+from localstack.http import Request, Response
+from localstack.utils.files import load_file, new_tmp_file, rm_rf
+from localstack.utils.http import ACCEPT, add_query_params_to_url, canonicalize_headers, download
 
 
 def test_canonicalize_headers():
@@ -56,3 +63,39 @@ def test_add_query_params_to_url():
     for t in tt:
         result = add_query_params_to_url(t["uri"], t["query_params"])
         assert result == t["expected"]
+
+
+def test_download_with_timeout():
+    def _handler(_: Request) -> Response:
+        time.sleep(2)
+        return Response(b"", status=200)
+
+    tmp_file = new_tmp_file()
+    # it seems this test is not properly cleaning up for other unit tests, this step is normally not necessary
+    # we should use the fixture `httpserver` instead of HTTPServer directly
+    with HTTPServer() as server:
+        server.expect_request("/").respond_with_data(b"tmp_file", status=200)
+        server.expect_request("/sleep").respond_with_handler(_handler)
+        http_endpoint = server.url_for("/")
+
+        download(http_endpoint, tmp_file)
+        assert load_file(tmp_file) == "tmp_file"
+        with pytest.raises(TimeoutError):
+            download(f"{http_endpoint}/sleep", tmp_file, timeout=1)
+
+    # clean up
+    rm_rf(tmp_file)
+
+
+def test_download_with_headers(httpserver):
+    test_headers = {
+        "Authorization": "Beeearer Token Test Header",
+        "Random-Header": "Another non-specified header",
+    }
+
+    # only match for the specific headers
+    httpserver.expect_request("/", headers=test_headers).respond_with_data("OK")
+
+    http_endpoint = httpserver.url_for("/")
+    tmp_file = new_tmp_file()
+    download(http_endpoint, tmp_file, request_headers=test_headers)

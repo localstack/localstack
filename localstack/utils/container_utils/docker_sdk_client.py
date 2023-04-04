@@ -17,6 +17,7 @@ from localstack.utils.container_utils.container_client import (
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
+    DockerNotAvailable,
     DockerPlatform,
     NoSuchContainer,
     NoSuchImage,
@@ -24,6 +25,7 @@ from localstack.utils.container_utils.container_client import (
     PortMappings,
     RegistryConnectionError,
     SimpleVolumeBind,
+    Ulimit,
     Util,
 )
 from localstack.utils.strings import to_bytes, to_str
@@ -49,7 +51,7 @@ class SdkDockerClient(ContainerClient):
         if self.docker_client:
             return self.docker_client
         else:
-            raise ContainerException("Docker not available")
+            raise DockerNotAvailable("Docker not available")
 
     def _read_from_sock(self, sock: socket, tty: bool):
         """Reads multiplexed messages from a socket returned by attach_socket.
@@ -326,6 +328,20 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
+    def create_network(self, network_name: str) -> None:
+        try:
+            return self.client().networks.create(name=network_name).id
+        except APIError as e:
+            raise ContainerException() from e
+
+    def delete_network(self, network_name: str) -> None:
+        try:
+            return self.client().networks.get(network_name).remove()
+        except NotFound:
+            raise NoSuchNetwork(network_name)
+        except APIError as e:
+            raise ContainerException() from e
+
     def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
         try:
             return self.client().networks.get(network_name).attrs
@@ -516,21 +532,32 @@ class SdkDockerClient(ContainerClient):
         privileged: Optional[bool] = None,
         labels: Optional[Dict[str, str]] = None,
         platform: Optional[DockerPlatform] = None,
+        ulimits: Optional[List[Ulimit]] = None,
     ) -> str:
         LOG.debug("Creating container with attributes: %s", locals())
         extra_hosts = None
         if additional_flags:
             parsed_flags = Util.parse_additional_flags(
-                additional_flags, env_vars, ports, mount_volumes, network, user, platform
+                additional_flags,
+                env_vars=env_vars,
+                mounts=mount_volumes,
+                network=network,
+                platform=platform,
+                privileged=privileged,
+                ports=ports,
+                ulimits=ulimits,
+                user=user,
             )
             env_vars = parsed_flags.env_vars
-            ports = parsed_flags.ports
-            mount_volumes = parsed_flags.mounts
             extra_hosts = parsed_flags.extra_hosts
-            network = parsed_flags.network
+            mount_volumes = parsed_flags.mounts
             labels = parsed_flags.labels
-            user = parsed_flags.user
+            network = parsed_flags.network
             platform = parsed_flags.platform
+            privileged = parsed_flags.privileged
+            ports = parsed_flags.ports
+            ulimits = parsed_flags.ulimits
+            user = parsed_flags.user
 
         try:
             kwargs = {}
@@ -550,6 +577,13 @@ class SdkDockerClient(ContainerClient):
                 kwargs["privileged"] = True
             if labels:
                 kwargs["labels"] = labels
+            if ulimits:
+                kwargs["ulimits"] = [
+                    docker.types.Ulimit(
+                        name=ulimit.name, soft=ulimit.soft_limit, hard=ulimit.hard_limit
+                    )
+                    for ulimit in ulimits
+                ]
             mounts = None
             if mount_volumes:
                 mounts = Util.convert_mount_list_to_dict(mount_volumes)
@@ -607,11 +641,21 @@ class SdkDockerClient(ContainerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
+        platform: Optional[DockerPlatform] = None,
         privileged: Optional[bool] = None,
+        ulimits: Optional[List[Ulimit]] = None,
     ) -> Tuple[bytes, bytes]:
         LOG.debug("Running container with image: %s", image_name)
         container = None
         try:
+            kwargs = {}
+            if ulimits:
+                kwargs["ulimits"] = [
+                    docker.types.Ulimit(
+                        name=ulimit.name, soft=ulimit.soft_limit, hard=ulimit.hard_limit
+                    )
+                    for ulimit in ulimits
+                ]
             container = self.create_container(
                 image_name,
                 name=name,
@@ -633,6 +677,8 @@ class SdkDockerClient(ContainerClient):
                 additional_flags=additional_flags,
                 workdir=workdir,
                 privileged=privileged,
+                platform=platform,
+                **kwargs,
             )
             result = self.start_container(
                 container_name_or_id=container,

@@ -7,6 +7,7 @@ from typing import Dict, Optional
 
 from moto.events.models import events_backends
 
+from localstack.aws.connect import connect_to
 from localstack.services.apigateway.helpers import extract_query_string_params
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
@@ -34,13 +35,24 @@ def send_event_to_target(
     target_attributes: Dict = None,
     asynchronous: bool = True,
     target: Dict = None,
+    role: str = None,
+    source_arn: str = None,
+    source_service: str = None,
 ):
     region = extract_region_from_arn(target_arn)
     if target is None:
         target = {}
+    if role:
+        clients = connect_to.with_assumed_role(
+            role_arn=role, service_principal=source_service, region_name=region
+        )
+    else:
+        clients = connect_to(region_name=region)
 
     if ":lambda:" in target_arn:
-        lambda_client = connect_to_service("lambda")
+        lambda_client = clients.awslambda.request_metadata(
+            service_principal=source_service, source_arn=source_arn
+        )
         lambda_client.invoke(
             FunctionName=target_arn,
             Payload=to_bytes(json.dumps(event)),
@@ -48,11 +60,15 @@ def send_event_to_target(
         )
 
     elif ":sns:" in target_arn:
-        sns_client = connect_to_service("sns", region_name=region)
+        sns_client = clients.sns.request_metadata(
+            service_principal=source_service, source_arn=source_arn
+        )
         sns_client.publish(TopicArn=target_arn, Message=json.dumps(event))
 
     elif ":sqs:" in target_arn:
-        sqs_client = connect_to_service("sqs", region_name=region)
+        sqs_client = clients.sqs.request_metadata(
+            service_principal=source_service, source_arn=source_arn
+        )
         queue_url = get_sqs_queue_url(target_arn)
         msg_group_id = collections.get_safe(target_attributes, "$.SqsParameters.MessageGroupId")
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}

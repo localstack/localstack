@@ -18,8 +18,8 @@ class Value(Generic[_T]):
 
     value: Optional[_T]
 
-    def __init__(self) -> None:
-        self.value = None
+    def __init__(self, value: _T = None) -> None:
+        self.value = value
 
     def clear(self):
         self.value = None

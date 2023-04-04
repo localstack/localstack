@@ -99,27 +99,28 @@ class ApigatewayRouter:
     def register_routes(self) -> None:
         """Registers parameterized routes for API Gateway user invocations."""
         if self.registered:
-            LOG.debug("Skipped API gateway route registration (routes already registered).")
+            LOG.debug("Skipped API Gateway route registration (routes already registered).")
             return
         self.registered = True
-        LOG.debug("Registering parameterized API gateway routes.")
+        LOG.debug("Registering parameterized API Gateway routes.")
+        host_pattern = "<regex('[^-]+'):api_id><regex('(-vpce-[^.]+)?'):vpce_suffix>.execute-api.<regex('.*'):server>"
         self.router.add(
             "/",
-            host="<api_id>.execute-api.<regex('.*'):server>",
+            host=host_pattern,
             endpoint=self.invoke_rest_api,
             defaults={"path": "", "stage": None},
             strict_slashes=True,
         )
         self.router.add(
             "/<stage>/",
-            host="<api_id>.execute-api.<regex('.*'):server>",
+            host=host_pattern,
             endpoint=self.invoke_rest_api,
             defaults={"path": ""},
             strict_slashes=False,
         )
         self.router.add(
             "/<stage>/<path:path>",
-            host="<api_id>.execute-api.<regex('.*'):server>",
+            host=host_pattern,
             endpoint=self.invoke_rest_api,
             strict_slashes=True,
         )
@@ -136,10 +137,12 @@ class ApigatewayRouter:
             strict_slashes=True,
         )
 
-    def invoke_rest_api(self, request: Request, **url_params: Dict[str, Any]) -> Response:
-        if not get_api_account_id_and_region(url_params["api_id"])[1]:
+    def invoke_rest_api(self, request: Request, **url_params: Dict[str, str]) -> Response:
+        _, region_name = get_api_account_id_and_region(url_params["api_id"])
+        if not region_name:
             return Response(status=404)
         invocation_context = to_invocation_context(request, url_params)
+        invocation_context.region_name = region_name
         result = invoke_rest_api_from_request(invocation_context)
         if result is not None:
             return convert_response(result)

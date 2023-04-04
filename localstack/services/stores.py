@@ -34,6 +34,7 @@ from collections.abc import Callable
 from threading import RLock
 from typing import Any, Generic, Type, TypeVar, Union
 
+from localstack import config
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 
 LOCAL_ATTR_PREFIX = "attr_"
@@ -222,8 +223,11 @@ class RegionBundle(dict, Generic[BaseStoreType]):
         self._universal = universal
 
     def __getitem__(self, region_name) -> BaseStoreType:
-        if self.validate and region_name not in self.valid_regions:
-            # Tip: Try using a valid region or valid service name
+        if (
+            not config.ALLOW_NONSTANDARD_REGIONS
+            and self.validate
+            and region_name not in self.valid_regions
+        ):
             raise ValueError(
                 f"'{region_name}' is not a valid AWS region name for {self.service_name}"
             )

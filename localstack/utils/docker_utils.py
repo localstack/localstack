@@ -2,17 +2,18 @@ import functools
 import logging
 import platform
 import random
-import re
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from localstack import config
-from localstack.constants import DEFAULT_VOLUME_DIR
+from localstack.constants import DEFAULT_VOLUME_DIR, DOCKER_IMAGE_NAME
+from localstack.utils.collections import ensure_list
 from localstack.utils.container_utils.container_client import (
     ContainerClient,
     PortMappings,
     VolumeInfo,
 )
-from localstack.utils.net import PortNotAvailableException, PortRange
+from localstack.utils.net import IntOrPort, Port, PortNotAvailableException, PortRange
+from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
@@ -102,9 +103,6 @@ def get_host_path_for_path_in_docker(path):
     :param path: Path to be replaced (subpath of DEFAULT_VOLUME_DIR)
     :return: Path on the host
     """
-    if config.LEGACY_DIRECTORIES:
-        return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % config.dirs.functions, path)
-
     if config.is_in_docker:
         volume = get_default_volume_dir_mount()
 
@@ -134,16 +132,23 @@ def get_host_path_for_path_in_docker(path):
     return path
 
 
-def container_port_can_be_bound(port: int) -> bool:
-    """Determine whether a port can be bound by Docker containers"""
-    ports = PortMappings()
-    ports.add(port, port)
+def container_ports_can_be_bound(ports: Union[IntOrPort, List[IntOrPort]]) -> bool:
+    """Determine whether a given list of ports can be bound by Docker containers
+
+    :param ports: single port or list of ports to check
+    :return: True iff all ports can be bound
+    """
+    port_mappings = PortMappings()
+    ports = ensure_list(ports)
+    for port in ports:
+        port = Port.wrap(port)
+        port_mappings.add(port.port, port.port, protocol=port.protocol)
     try:
         result = DOCKER_CLIENT.run_container(
-            config.PORTS_CHECK_DOCKER_IMAGE,
+            _get_ports_check_docker_image(),
             entrypoint="",
             command=["echo", "test123"],
-            ports=ports,
+            ports=port_mappings,
             remove=True,
         )
     except Exception as e:
@@ -164,14 +169,15 @@ class _DockerPortRange(PortRange):
     PortRange which checks whether the port can be bound on the host instead of inside the container.
     """
 
-    def _try_reserve_port(self, port: int, duration: int) -> int:
+    def _try_reserve_port(self, port: IntOrPort, duration: int) -> int:
         """Checks if the given port is currently not reserved."""
-        if not self.is_port_reserved(port) and container_port_can_be_bound(port):
+        port = Port.wrap(port)
+        if not self.is_port_reserved(port) and container_ports_can_be_bound(port):
             # reserve the port for a short period of time
             self._ports_cache[port] = "__reserved__"
             if duration:
                 self._ports_cache.set_expiry(port, duration)
-            return port
+            return port.port
         else:
             raise PortNotAvailableException(f"The given port ({port}) is already reserved.")
 
@@ -179,33 +185,37 @@ class _DockerPortRange(PortRange):
 reserved_docker_ports = _DockerPortRange(PORT_START, PORT_END)
 
 
-def is_port_available_for_containers(port: int) -> bool:
+def is_port_available_for_containers(port: IntOrPort) -> bool:
     """Check whether the given port can be bound by containers and is not currently reserved"""
-    return not is_container_port_reserved(port) and container_port_can_be_bound(port)
+    return not is_container_port_reserved(port) and container_ports_can_be_bound(port)
 
 
-def reserve_container_port(port: int, duration: int = None):
+def reserve_container_port(port: IntOrPort, duration: int = None):
     """Reserve the given container port for a short period of time"""
     reserved_docker_ports.reserve_port(port, duration=duration)
 
 
-def is_container_port_reserved(port: int) -> bool:
+def is_container_port_reserved(port: IntOrPort) -> bool:
     """Return whether the given container port is currently reserved"""
+    port = Port.wrap(port)
     return reserved_docker_ports.is_port_reserved(port)
 
 
 def reserve_available_container_port(
-    duration: int = None, port_start: int = None, port_end: int = None
+    duration: int = None, port_start: int = None, port_end: int = None, protocol: str = None
 ) -> int:
     """Determine and reserve a port that can then be bound by a Docker container"""
+
+    protocol = protocol or "tcp"
 
     def _random_port():
         port = None
         while not port or reserved_docker_ports.is_port_reserved(port):
-            port = random.randint(
+            port_number = random.randint(
                 RANDOM_PORT_START if port_start is None else port_start,
                 RANDOM_PORT_END if port_end is None else port_end,
             )
+            port = Port(port=port_number, protocol=protocol)
         return port
 
     retries = 10
@@ -213,13 +223,34 @@ def reserve_available_container_port(
         port = _random_port()
         try:
             reserve_container_port(port, duration=duration)
-            return port
+            return port.port
         except PortNotAvailableException as e:
             LOG.debug("Could not bind port %s, trying the next one: %s", port, e)
 
     raise PortNotAvailableException(
         f"Unable to determine available Docker container port after {retries} retries"
     )
+
+
+@singleton_factory
+def _get_ports_check_docker_image() -> str:
+    """
+    Determine the Docker image to use for Docker port availability checks.
+    Uses either PORTS_CHECK_DOCKER_IMAGE (if configured), or otherwise inspects the running container's image.
+    """
+    if config.PORTS_CHECK_DOCKER_IMAGE:
+        # explicit configuration takes precedence
+        return config.PORTS_CHECK_DOCKER_IMAGE
+    if not config.is_in_docker:
+        # use default image for host mode
+        return DOCKER_IMAGE_NAME
+    try:
+        # inspect the running container to determine the image
+        container = DOCKER_CLIENT.inspect_container(get_current_container_id())
+        return container["Config"]["Image"]
+    except Exception:
+        # fall back to using the default Docker image
+        return DOCKER_IMAGE_NAME
 
 
 DOCKER_CLIENT: ContainerClient = create_docker_client()

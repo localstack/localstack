@@ -139,8 +139,8 @@ def kms():
     return Service.for_provider(provider)
 
 
-@aws_provider(api="lambda")
-def awslambda():
+@aws_provider(api="lambda", name="legacy")
+def awslambda_legacy():
     from localstack.services.awslambda import lambda_starter
 
     return Service(
@@ -150,6 +150,27 @@ def awslambda():
         check=lambda_starter.check_lambda,
         lifecycle_hook=lambda_starter.LambdaLifecycleHook(),
     )
+
+
+@aws_provider(api="lambda", name="v1")
+def awslambda_v1():
+    from localstack.services.awslambda import lambda_starter
+
+    return Service(
+        "lambda",
+        start=lambda_starter.start_lambda,
+        stop=lambda_starter.stop_lambda,
+        check=lambda_starter.check_lambda,
+        lifecycle_hook=lambda_starter.LambdaLifecycleHook(),
+    )
+
+
+@aws_provider(api="lambda")
+def awslambda():
+    from localstack.services.awslambda.provider import LambdaProvider
+
+    provider = LambdaProvider()
+    return Service.for_provider(provider)
 
 
 @aws_provider(api="lambda", name="asf")
@@ -208,8 +229,17 @@ def route53resolver():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
-@aws_provider(api="s3", name="default")
-def s3():
+@aws_provider(api="s3", name="legacy")
+def s3_legacy():
+    from localstack.services.s3 import s3_listener, s3_starter
+
+    return Service(
+        "s3", listener=s3_listener.UPDATE_S3, start=s3_starter.start_s3, check=s3_starter.check_s3
+    )
+
+
+@aws_provider(api="s3", name="v1")
+def s3_v1():
     from localstack.services.s3 import s3_listener, s3_starter
 
     return Service(
@@ -219,6 +249,14 @@ def s3():
 
 @aws_provider(api="s3", name="asf")
 def s3_asf():
+    from localstack.services.s3.provider import S3Provider
+
+    provider = S3Provider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider(api="s3", name="default")
+def s3():
     from localstack.services.s3.provider import S3Provider
 
     provider = S3Provider()
@@ -297,6 +335,19 @@ def events():
 
 @aws_provider()
 def stepfunctions():
+    from localstack.services.stepfunctions.provider import StepFunctionsProvider
+
+    provider = StepFunctionsProvider()
+    return Service.for_provider(
+        provider,
+        dispatch_table_factory=lambda _provider: HttpFallbackDispatcher(
+            _provider, _provider.get_forward_url
+        ),
+    )
+
+
+@aws_provider(api="stepfunctions", name="v1")
+def stepfunctions_v1():
     from localstack.services.stepfunctions.provider import StepFunctionsProvider
 
     provider = StepFunctionsProvider()

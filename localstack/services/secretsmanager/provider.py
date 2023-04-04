@@ -694,7 +694,7 @@ def get_resource_policy_model(self, secret_id):
         }
         policy = getattr(self.secrets[secret_id], "policy", None)
         if policy:
-            result["ResourcePolicy"] = json.dumps(policy)
+            result["ResourcePolicy"] = policy
         return json.dumps(result)
     else:
         raise SecretNotFoundException()

@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/choice_operators/test_boolean_equals.py::TestBooleanEquals::test_boolean_equals": {
-    "recorded-date": "03-03-2023, 19:54:02",
+    "recorded-date": "04-04-2023, 07:11:56",
     "recorded-content": {
       "cases": [
         {
@@ -159,6 +159,24 @@
         {
           "input": {
             "Variable": "2012-10-09T19:00:55",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
             "Value": false
           },
           "output": {
@@ -321,7 +339,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_boolean_equals.py::TestBooleanEquals::test_boolean_equals_path": {
-    "recorded-date": "03-03-2023, 19:54:39",
+    "recorded-date": "04-04-2023, 07:12:29",
     "recorded-content": {
       "cases": [
         {
@@ -480,6 +498,24 @@
         {
           "input": {
             "Variable": "2012-10-09T19:00:55",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
             "Value": false
           },
           "output": {

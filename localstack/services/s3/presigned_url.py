@@ -224,7 +224,7 @@ def s3_presigned_url_request_handler(_: HandlerChain, context: RequestContext, _
     Handler to validate S3 presigned URL. Checks the validity of the request signature, and raises an error if
     `S3_SKIP_SIGNATURE_VALIDATION` is set to False
     """
-    if context.service.service_name != "s3":
+    if not context.service or context.service.service_name != "s3":
         return
 
     if not is_presigned_url_request(context):
