@@ -181,7 +181,8 @@ def patch_moto_request_handling():
                 if match:
                     action = snake_to_camel_case(match.group(1))
             service = extract_service_name_from_auth_header(request.headers)
-            msg = (
+            exception_message: str | None = e.args[0] if e.args else None
+            msg = exception_message or (
                 f"API action '{action}' for service '{service}' not yet implemented or pro feature"
                 f" - check https://docs.localstack.cloud/user-guide/aws/feature-coverage for further information"
             )

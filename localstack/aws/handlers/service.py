@@ -184,7 +184,8 @@ class ServiceExceptionSerializer(ExceptionHandler):
 
         if operation and isinstance(exception, NotImplementedError):
             action_name = operation.name
-            message = (
+            exception_message: str | None = exception.args[0] if exception.args else None
+            message = exception_message or (
                 f"API action '{action_name}' for service '{service_name}' not yet implemented or pro feature"
                 f" - check https://docs.localstack.cloud/user-guide/aws/feature-coverage for further information"
             )
