@@ -762,11 +762,12 @@ def transcribe_create_job(transcribe_client, s3_client, s3_bucket):
         with open(audio_file, "rb") as f:
             s3_client.upload_fileobj(f, s3_bucket, s3_key)
 
-        transcribe_client.start_transcription_job(**params)
+        response = transcribe_client.start_transcription_job(**params)
 
-        job_names.append(params["TranscriptionJobName"])
+        job_name = response["TranscriptionJob"]["TranscriptionJobName"]
+        job_names.append(job_name)
 
-        return params["TranscriptionJobName"]
+        return job_name
 
     yield _create_job
 
