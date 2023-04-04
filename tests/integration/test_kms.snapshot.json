@@ -663,6 +663,10 @@
       }
     }
   },
+  "tests/integration/test_kms.py::TestKMS::test_sign_verify[ECC_NIST_P256-ECDSA_SHA_384]": {
+    "recorded-date": "16-03-2023, 18:57:59",
+    "recorded-content": {}
+  },
   "tests/integration/test_kms.py::TestKMS::test_sign_verify[ECC_SECG_P256K1-ECDSA_SHA_256]": {
     "recorded-date": "16-03-2023, 19:16:44",
     "recorded-content": {
@@ -705,6 +709,10 @@
         }
       }
     }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_sign_verify[ECC_SECG_P256K1-ECDSA_SHA_512]": {
+    "recorded-date": "16-03-2023, 18:58:07",
+    "recorded-content": {}
   },
   "tests/integration/test_kms.py::TestKMS::test_sign_verify[ECC_NIST_P384-ECDSA_SHA_384]": {
     "recorded-date": "16-03-2023, 19:16:39",
