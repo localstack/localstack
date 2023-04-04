@@ -730,7 +730,7 @@ def kms_replicate_key(create_boto_client):
 # but also to make sure that kms_create_key gets executed before and teared down after kms_create_alias -
 # to make sure that we clean up aliases before keys get cleaned up.
 @pytest.fixture()
-def kms_create_alias(kms_client, kms_create_key):
+def kms_create_alias(kms_create_key, aws_client):
     aliases = []
 
     def _create_alias(**kwargs):
@@ -739,7 +739,7 @@ def kms_create_alias(kms_client, kms_create_key):
         if "TargetKeyId" not in kwargs:
             kwargs["TargetKeyId"] = kms_create_key()["KeyId"]
 
-        kms_client.create_alias(**kwargs)
+        aws_client.kms.create_alias(**kwargs)
         aliases.append(kwargs["AliasName"])
         return kwargs["AliasName"]
 
@@ -747,13 +747,13 @@ def kms_create_alias(kms_client, kms_create_key):
 
     for alias in aliases:
         try:
-            kms_client.delete_alias(AliasName=alias)
+            aws_client.kms.delete_alias(AliasName=alias)
         except Exception as e:
             LOG.debug("error cleaning up KMS alias %s: %s", alias, e)
 
 
 @pytest.fixture()
-def kms_create_grant(kms_client, kms_create_key):
+def kms_create_grant(kms_create_key, aws_client):
     grants = []
 
     def _create_grant(**kwargs):
@@ -770,7 +770,7 @@ def kms_create_grant(kms_client, kms_create_key):
         if "KeyId" not in kwargs:
             kwargs["KeyId"] = kms_create_key()["KeyId"]
 
-        grant_id = kms_client.create_grant(**kwargs)["GrantId"]
+        grant_id = aws_client.kms.create_grant(**kwargs)["GrantId"]
         grants.append((grant_id, kwargs["KeyId"]))
         return grant_id, kwargs["KeyId"]
 
@@ -778,7 +778,7 @@ def kms_create_grant(kms_client, kms_create_key):
 
     for grant_id, key_id in grants:
         try:
-            kms_client.retire_grant(GrantId=grant_id, KeyId=key_id)
+            aws_client.kms.retire_grant(GrantId=grant_id, KeyId=key_id)
         except Exception as e:
             LOG.debug("error cleaning up KMS grant %s: %s", grant_id, e)
 
