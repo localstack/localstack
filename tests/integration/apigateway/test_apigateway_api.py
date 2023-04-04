@@ -224,6 +224,11 @@ class TestApiGatewayApi:
         )
         snapshot.match("create-with-empty-binary-media", response)
 
+        # create with negative minimumCompressionSize
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(name=f"test-api-{short_uid()}", minimumCompressionSize=-1)
+        snapshot.match("string-compression-size", e.value.response)
+
     @pytest.mark.aws_validated
     def test_create_rest_api_with_tags(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
@@ -291,6 +296,68 @@ class TestApiGatewayApi:
         snapshot.match("update-rest-api-remove", response)
         assert response["binaryMediaTypes"] == ["image/jpeg"]
         assert "description" not in response
+
+    @pytest.mark.aws_validated
+    def test_update_rest_api_compression(self, apigw_create_rest_api, snapshot, aws_client):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="this is my api"
+        )
+        api_id = response["id"]
+
+        # we can enable compression by setting a non-negative integer between 0 and 10485760
+        patch_operations_enable = [
+            {"op": "replace", "path": "/minimumCompressionSize", "value": "10"},
+        ]
+        response = aws_client.apigateway.update_rest_api(
+            restApiId=api_id, patchOperations=patch_operations_enable
+        )
+        snapshot.match("enable-compression", response)
+
+        # from the docs: to disable compression, apply a replace operation with the value property set to null or
+        # omit the value property.
+        # it seems an empty string is accepted as well
+        patch_operations = [
+            {"op": "replace", "path": "/minimumCompressionSize", "value": ""},
+        ]
+        response = aws_client.apigateway.update_rest_api(
+            restApiId=api_id, patchOperations=patch_operations
+        )
+        snapshot.match("disable-compression", response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/minimumCompressionSize", "value": "0"},
+        ]
+        response = aws_client.apigateway.update_rest_api(
+            restApiId=api_id, patchOperations=patch_operations
+        )
+        snapshot.match("set-compression-zero", response)
+
+        with pytest.raises(ClientError) as e:
+            patch_operations = [
+                {"op": "replace", "path": "/minimumCompressionSize", "value": "-1"},
+            ]
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("set-negative-compression", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            patch_operations = [
+                {"op": "replace", "path": "/minimumCompressionSize", "value": "test"},
+            ]
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("set-string-compression", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            patch_operations = [
+                {"op": "add", "path": "/minimumCompressionSize", "value": "10"},
+            ]
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("unsupported-operation", e.value.response)
 
     @pytest.mark.aws_validated
     def test_update_rest_api_behaviour(self, apigw_create_rest_api, snapshot, aws_client):
