@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Iterable, Optional
+from typing import Optional
 
 import pytest
 from _pytest.reports import TestReport
@@ -94,6 +94,8 @@ class DirtyMarkerHandler(Handler):
     A handler injected into the handler chain to only
     """
 
+    dirty: set[str]
+
     def __init__(self):
         self.dirty = set()
 
@@ -125,9 +127,9 @@ class PicklingErrorCollector:
     def __init__(self, service_manager: ServiceManager):
         self.service_manager = service_manager
 
-    def try_pickle_state_containers(self, services: Iterable[str]) -> PicklingTestResult:
+    def try_pickle_state_containers(self, services: set[str]) -> PicklingTestResult:
         result = PicklingTestResult()
-        for service_name in services:
+        for service_name in services.copy():
 
             service = self.service_manager.get_service(service_name)
             if not service:
