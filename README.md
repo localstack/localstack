@@ -34,7 +34,7 @@
   <br/>
   <a href="https://docs.localstack.cloud" target="_blank">📖 Docs</a> •
   <a href="https://app.localstack.cloud" target="_blank">💻 Pro version</a> •
-  <a href="https://docs.localstack.cloud/user-guide/aws/feature-coverage/" target="_blank">☑️ Feature coverage</a>
+  <a href="https://docs.localstack.cloud/references/coverage/" target="_blank">☑️ LocalStack coverage</a>
 </p>
 
 ---
@@ -109,7 +109,7 @@ To use SQS, a fully managed distributed message queuing service, on LocalStack, 
 }
 ```
 
-Learn more about [LocalStack AWS services](https://docs.localstack.cloud/user-guide/aws/feature-coverage/) and using them with LocalStack's `awslocal` CLI.
+Learn more about [LocalStack AWS services](https://docs.localstack.cloud/references/coverage/) and using them with LocalStack's `awslocal` CLI.
 
 ## Running
 
