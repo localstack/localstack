@@ -39,6 +39,8 @@ from localstack.aws.api.kms import (
     GenerateDataKeyResponse,
     GenerateDataKeyWithoutPlaintextRequest,
     GenerateDataKeyWithoutPlaintextResponse,
+    GenerateMacRequest,
+    GenerateMacResponse,
     GenerateRandomRequest,
     GenerateRandomResponse,
     GetKeyPolicyRequest,
@@ -68,6 +70,7 @@ from localstack.aws.api.kms import (
     ListKeysResponse,
     ListResourceTagsRequest,
     ListResourceTagsResponse,
+    MacAlgorithmSpec,
     MarkerType,
     NotFoundException,
     PlaintextType,
@@ -84,6 +87,8 @@ from localstack.aws.api.kms import (
     UntagResourceRequest,
     UpdateAliasRequest,
     UpdateKeyDescriptionRequest,
+    VerifyMacRequest,
+    VerifyMacResponse,
     VerifyRequest,
     VerifyResponse,
     WrappingKeySpec,
@@ -533,6 +538,46 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         result.pop("Plaintext")
         return GenerateDataKeyWithoutPlaintextResponse(**result)
 
+    @handler("GenerateMac", expand=False)
+    def generate_mac(
+        self,
+        context: RequestContext,
+        request: GenerateMacRequest,
+    ) -> GenerateMacResponse:
+        msg = request.get("Message")
+        self._validate_mac_msg_length(msg)
+
+        key = self._get_key(context, request.get("KeyId"))
+        self._validate_key_for_generate_verify_mac(key)
+
+        algorithm = request.get("MacAlgorithm")
+        self._validate_mac_algorithm(key, algorithm)
+
+        mac = key.generate_mac(msg, algorithm)
+
+        return GenerateMacResponse(Mac=mac, MacAlgorithm=algorithm, KeyId=key.metadata.get("Arn"))
+
+    @handler("VerifyMac", expand=False)
+    def verify_mac(
+        self,
+        context: RequestContext,
+        request: VerifyMacRequest,
+    ) -> VerifyMacResponse:
+        msg = request.get("Message")
+        self._validate_mac_msg_length(msg)
+
+        key = self._get_key(context, request.get("KeyId"))
+        self._validate_key_for_generate_verify_mac(key)
+
+        algorithm = request.get("MacAlgorithm")
+        self._validate_mac_algorithm(key, algorithm)
+
+        mac_valid = key.verify_mac(msg, request.get("Mac"), algorithm)
+
+        return VerifyMacResponse(
+            KeyId=key.metadata.get("Arn"), MacValid=mac_valid, MacAlgorithm=algorithm
+        )
+
     @handler("Sign", expand=False)
     def sign(self, context: RequestContext, request: SignRequest) -> SignResponse:
         key = self._get_key(context, request.get("KeyId"))
@@ -888,6 +933,34 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             raise InvalidKeyUsageException(
                 "KeyUsage for signing / verification key should be SIGN_VERIFY"
             )
+
+    def _validate_key_for_generate_verify_mac(self, key: KmsKey):
+        if key.metadata["KeyUsage"] != "GENERATE_VERIFY_MAC":
+            raise InvalidKeyUsageException(
+                "KeyUsage for generate / verify mac should be GENERATE_VERIFY_MAC"
+            )
+
+    def _validate_mac_msg_length(self, msg: bytes):
+        if len(msg) > 4096:
+            raise ValidationException(
+                "1 validation error detected: Value at 'message' failed to satisfy constraint: "
+                "Member must have length less than or equal to 4096"
+            )
+
+    def _validate_mac_algorithm(self, key: KmsKey, algorithm: str):
+        if not hasattr(MacAlgorithmSpec, algorithm):
+            raise ValidationException(
+                f"1 validation error detected: Value '{algorithm}' at 'macAlgorithm' "
+                f"failed to satisfy constraint: Member must satisfy enum value set: "
+                f"[HMAC_SHA_384, HMAC_SHA_256, HMAC_SHA_224, HMAC_SHA_512]"
+            )
+
+        key_spec = key.metadata["KeySpec"]
+        if x := algorithm.split("_"):
+            if len(x) == 3 and x[0] + "_" + x[2] != key_spec:
+                raise InvalidKeyUsageException(
+                    f"Algorithm {algorithm} is incompatible with key spec {key_spec}."
+                )
 
     def _validate_grant_request(self, data: Dict, store: KmsStore):
         if "KeyId" not in data or "GranteePrincipal" not in data or "Operations" not in data:

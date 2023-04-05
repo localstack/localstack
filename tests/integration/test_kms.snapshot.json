@@ -756,5 +756,366 @@
         }
       }
     }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_hmac_create_key": {
+    "recorded-date": "04-04-2023, 14:21:34",
+    "recorded-content": {
+      "create-hmac-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "HMAC_256",
+        "Description": "test key",
+        "Enabled": true,
+        "KeyId": "<uuid:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "HMAC_256",
+        "KeyState": "Enabled",
+        "KeyUsage": "GENERATE_VERIFY_MAC",
+        "MacAlgorithms": [
+          "HMAC_SHA_256"
+        ],
+        "MultiRegion": false,
+        "Origin": "AWS_KMS"
+      },
+      "describe-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "HMAC_256",
+        "Description": "test key",
+        "Enabled": true,
+        "KeyId": "<uuid:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "HMAC_256",
+        "KeyState": "Enabled",
+        "KeyUsage": "GENERATE_VERIFY_MAC",
+        "MacAlgorithms": [
+          "HMAC_SHA_256"
+        ],
+        "MultiRegion": false,
+        "Origin": "AWS_KMS"
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_hmac_create_key_invalid_operations": {
+    "recorded-date": "04-04-2023, 14:21:46",
+    "recorded-content": {
+      "create-hmac-key-without-key-usage": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "You must specify a KeyUsage value for all KMS keys except for symmetric encryption keys."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-hmac-key-invalid-spec": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'HMAC_random' at 'keySpec' failed to satisfy constraint: Member must satisfy enum value set: [RSA_2048, ECC_NIST_P384, ECC_NIST_P256, ECC_NIST_P521, HMAC_384, RSA_3072, ECC_SECG_P256K1, RSA_4096, SYMMETRIC_DEFAULT, HMAC_256, HMAC_224, HMAC_512]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-hmac-key-invalid-key-usage": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'RANDOM' at 'keyUsage' failed to satisfy constraint: Member must satisfy enum value set: [ENCRYPT_DECRYPT, SIGN_VERIFY, GENERATE_VERIFY_MAC]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_224-HMAC_SHA_224]": {
+    "recorded-date": "04-04-2023, 16:01:36",
+    "recorded-content": {
+      "generate-mac": {
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/e851f07d-5645-46e4-aabd-b036ead86b44",
+        "Mac": "b'\\xdeD\\xa5\\xeeDd\\x0e\\xfdO[\\x8ci\\x12\\x84\\xde\\xdd\\xac,,\\xb9\\xc8C\\xe7\\x00\\xba2\\xdb+'",
+        "MacAlgorithm": "HMAC_SHA_224",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verify-mac": {
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/e851f07d-5645-46e4-aabd-b036ead86b44",
+        "MacAlgorithm": "HMAC_SHA_224",
+        "MacValid": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "generate-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId key_id"
+        },
+        "message": "Invalid keyId key_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "verify-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId key_id"
+        },
+        "message": "Invalid keyId key_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_256-HMAC_SHA_256]": {
+    "recorded-date": "04-04-2023, 16:01:39",
+    "recorded-content": {
+      "generate-mac": {
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/b86adf68-f057-4140-9619-23c474f11c5e",
+        "Mac": "b\"\\xe8\\t\\xe1y& \\xe7S_\\xe2\\xca\\xbb\\xb3F'-R\\xa8\\xa3\\x85\\xea\\xd9zn\\x0fQ\\x8ab\\xa6\\xef\\x9b:\"",
+        "MacAlgorithm": "HMAC_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verify-mac": {
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/b86adf68-f057-4140-9619-23c474f11c5e",
+        "MacAlgorithm": "HMAC_SHA_256",
+        "MacValid": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "generate-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId key_id"
+        },
+        "message": "Invalid keyId key_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "verify-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId key_id"
+        },
+        "message": "Invalid keyId key_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_384-HMAC_SHA_384]": {
+    "recorded-date": "04-04-2023, 16:01:42",
+    "recorded-content": {
+      "generate-mac": {
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/5ad42559-2de9-493b-9571-ebd702f1836e",
+        "Mac": "b'\\xfb\\xb0m\\xecG\\x86\\xd0\\xe1eu\\xfc\\x0c_`\\r\\x1b\\x0fK\\xa8u\\xac\\xb0\\xb1\\xadn\\x88e\\xe1\\x82\\xc2\\xf8jU#q`QS\\x9e\\xad\\x19\\xad\\xfe<0\\xc8Sb'",
+        "MacAlgorithm": "HMAC_SHA_384",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verify-mac": {
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/5ad42559-2de9-493b-9571-ebd702f1836e",
+        "MacAlgorithm": "HMAC_SHA_384",
+        "MacValid": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "generate-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId key_id"
+        },
+        "message": "Invalid keyId key_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "verify-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId key_id"
+        },
+        "message": "Invalid keyId key_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_512-HMAC_SHA_512]": {
+    "recorded-date": "04-04-2023, 16:01:44",
+    "recorded-content": {
+      "generate-mac": {
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/b6d050b9-7e03-4db8-921b-6cb95baf32d5",
+        "Mac": "b'\\xdc/\\xe4\\x05\\x08\\xeaGB\\xa2.%\\xa0T\\x1e\\x80>\\xf8\\x11\\x95\\x0f\\x8d\\x07\\x06I\\x98\\xa5\\x97\\xf7O\\xdf\\x1b\\xb3^3rW\\xcbV0c/h\\\\\\xa1\\x8a\\xdf\\xa4\\x98.\\xec\\xc5V5zM\\x95\\xe0\\xb4X\\xa6\\n\\xbd\\xf1x'",
+        "MacAlgorithm": "HMAC_SHA_512",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verify-mac": {
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/b6d050b9-7e03-4db8-921b-6cb95baf32d5",
+        "MacAlgorithm": "HMAC_SHA_512",
+        "MacValid": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "generate-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId key_id"
+        },
+        "message": "Invalid keyId key_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "verify-mac-invalid-key-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId key_id"
+        },
+        "message": "Invalid keyId key_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_invalid_generate_mac[HMAC_224-HMAC_SHA_256]": {
+    "recorded-date": "04-04-2023, 14:22:21",
+    "recorded-content": {
+      "generate-mac": {
+        "Error": {
+          "Code": "InvalidKeyUsageException",
+          "Message": "Algorithm HMAC_SHA_256 is incompatible with key spec HMAC_224."
+        },
+        "message": "Algorithm HMAC_SHA_256 is incompatible with key spec HMAC_224.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_invalid_generate_mac[HMAC_256-INVALID]": {
+    "recorded-date": "04-04-2023, 14:22:21",
+    "recorded-content": {
+      "generate-mac": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'INVALID' at 'macAlgorithm' failed to satisfy constraint: Member must satisfy enum value set: [HMAC_SHA_384, HMAC_SHA_256, HMAC_SHA_224, HMAC_SHA_512]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-HMAC_SHA_256-some different important message]": {
+    "recorded-date": "04-04-2023, 14:22:30",
+    "recorded-content": {
+      "generate-mac": {
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/d7a7f540-75a3-476c-9d7b-dc1ba976f10b",
+        "Mac": "b'\\x0c\\x96=\\x97\\x10\\xd4\\xa2\\xb7\\x08\\xd0w%\\xa6\\x1eT\\xf5Z\\xa00bx\\x02\\x90\\xe2\\x0f-\\x8c\\xf0\\xf9hQ\\x00'",
+        "MacAlgorithm": "HMAC_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verify-mac": {
+        "Error": {
+          "Code": "KMSInvalidMacException",
+          "Message": ""
+        },
+        "message": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-HMAC_SHA_512-some important message]": {
+    "recorded-date": "04-04-2023, 14:22:30",
+    "recorded-content": {
+      "generate-mac": {
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/6432fbe6-c58f-48d6-a22d-35ba55ea11c5",
+        "Mac": "b'\\x9d\\xbeEj<\\xbc9\\x9a -\\x9a3\\x99\\xb2\\x15V\\xc6\\xbc\\xe7\\xbbj\\x95\\xf9\\rU\\xff\\xae+g\\xb0\\xdcP'",
+        "MacAlgorithm": "HMAC_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verify-mac": {
+        "Error": {
+          "Code": "InvalidKeyUsageException",
+          "Message": "Algorithm HMAC_SHA_512 is incompatible with key spec HMAC_256."
+        },
+        "message": "Algorithm HMAC_SHA_512 is incompatible with key spec HMAC_256.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-INVALID-some important message]": {
+    "recorded-date": "04-04-2023, 14:22:30",
+    "recorded-content": {
+      "generate-mac": {
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/2a6d424a-b285-49ff-aed2-f691cad346ab",
+        "Mac": "b'\\xbe\\xa2\\xa3*cE\\xf8\\xc5\\x84I\\x9f\\xe2\\xb4\\xa9p\\x15%(\\xe6\\x9e\\x1b\\xb7;d;\\x0cp\\t:\\xca;c'",
+        "MacAlgorithm": "HMAC_SHA_256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verify-mac": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'INVALID' at 'macAlgorithm' failed to satisfy constraint: Member must satisfy enum value set: [HMAC_SHA_384, HMAC_SHA_256, HMAC_SHA_224, HMAC_SHA_512]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

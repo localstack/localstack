@@ -16,6 +16,7 @@ from localstack.config import is_env_true
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.runtime import events
 from localstack.services import infra
+from localstack.testing.aws.util import base_aws_client, base_aws_client_factory, base_aws_session
 from localstack.utils.common import safe_requests
 from tests.integration.apigateway.apigateway_fixtures import delete_rest_api, import_rest_api
 from tests.integration.test_es import install_async as es_install_async
@@ -192,3 +193,18 @@ def import_apigw(apigateway_client):
 
     for rest_api_id in rest_api_ids:
         delete_rest_api(apigateway_client, restApiId=rest_api_id)
+
+
+@pytest.fixture(scope="session")
+def aws_session():
+    return base_aws_session()
+
+
+@pytest.fixture(scope="session")
+def aws_client_factory(aws_session):
+    return base_aws_client_factory(aws_session)
+
+
+@pytest.fixture(scope="session")
+def aws_client(aws_client_factory):
+    return base_aws_client(aws_client_factory)

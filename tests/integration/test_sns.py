@@ -2876,6 +2876,50 @@ class TestSNSProvider:
         )
         snapshot.match("duplicate-json-keys", resp)
 
+        with pytest.raises(ClientError) as e:
+            message = json.dumps({"default": {"object": "test"}})
+            aws_client.sns.publish(
+                TopicArn=topic_arn,
+                Message=message,
+                MessageStructure="json",
+            )
+        snapshot.match("key-is-not-string", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_message_structure_json_to_sqs(
+        self, aws_client, sns_create_topic, sqs_create_queue, snapshot, sns_create_sqs_subscription
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_name = f"test-queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        message = json.dumps({"default": "default field", "sqs": json.dumps({"field": "value"})})
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message=message,
+            MessageStructure="json",
+        )
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, WaitTimeSeconds=10, MaxNumberOfMessages=1
+        )
+        snapshot.match("get-msg-json-sqs", response)
+        receipt_handle = response["Messages"][0]["ReceiptHandle"]
+        aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+
+        # don't json dumps the SQS field, it will be ignored, and the message received will be the `default`
+        message = json.dumps({"default": "default field", "sqs": {"field": "value"}})
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message=message,
+            MessageStructure="json",
+        )
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, WaitTimeSeconds=10, MaxNumberOfMessages=1
+        )
+        snapshot.match("get-msg-json-default", response)
+
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
     def test_set_subscription_filter_policy_scope(

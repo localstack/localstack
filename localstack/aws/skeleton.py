@@ -16,6 +16,7 @@ from localstack.aws.protocol.parser import create_parser
 from localstack.aws.protocol.serializer import create_serializer
 from localstack.aws.spec import load_service
 from localstack.utils import analytics
+from localstack.utils.coverage_docs import get_coverage_link_for_service
 
 LOG = logging.getLogger(__name__)
 
@@ -205,10 +206,7 @@ class Skeleton:
         action_name = operation.name
         service_name = operation.service_model.service_name
         exception_message: str | None = exception.args[0] if exception.args else None
-        message = exception_message or (
-            f"API action '{action_name}' for service '{service_name}' not yet implemented or pro feature"
-            f" - check https://docs.localstack.cloud/user-guide/aws/feature-coverage for further information"
-        )
+        message = exception_message or get_coverage_link_for_service(service_name, action_name)
         LOG.info(message)
         error = CommonServiceException("InternalFailure", message, status_code=501)
         # record event

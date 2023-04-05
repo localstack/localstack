@@ -338,7 +338,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_create_rest_api_with_optional_params": {
-    "recorded-date": "01-02-2023, 23:48:05",
+    "recorded-date": "04-04-2023, 17:58:40",
     "recorded-content": {
       "create-only-name": {
         "apiKeySource": "HEADER",
@@ -398,6 +398,17 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
+        }
+      },
+      "string-compression-size": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid minimum compression size, must be between 0 and 10485760"
+        },
+        "message": "Invalid minimum compression size, must be between 0 and 10485760",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
@@ -2504,6 +2515,100 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_rest_api_compression": {
+    "recorded-date": "04-04-2023, 17:35:05",
+    "recorded-content": {
+      "enable-compression": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "this is my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "minimumCompressionSize": 10,
+        "name": "<name:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "disable-compression": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "this is my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-compression-zero": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "this is my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "minimumCompressionSize": 0,
+        "name": "<name:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-negative-compression": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid minimum compression size, must be between 0 and 10485760"
+        },
+        "message": "Invalid minimum compression size, must be between 0 and 10485760",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "set-string-compression": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid minimum compression size, must be between 0 and 10485760"
+        },
+        "message": "Invalid minimum compression size, must be between 0 and 10485760",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "unsupported-operation": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch operation specified. Must be 'add'|'remove'|'replace'"
+        },
+        "message": "Invalid patch operation specified. Must be 'add'|'remove'|'replace'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
