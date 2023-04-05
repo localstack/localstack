@@ -139,22 +139,50 @@ class TestCloudWatchLogs:
             # clean up
             aws_client.logs.delete_log_group(logGroupName=test_name)
 
-    def test_create_and_delete_log_stream(self, logs_log_group, aws_client):
+    def test_create_and_delete_log_stream(self, logs_log_group, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.logs_api())
         test_name = f"test-log-stream-{short_uid()}"
-        log_streams_before = aws_client.logs.describe_log_streams(logGroupName=logs_log_group).get(
-            "logStreams", []
-        )
+
+        response = aws_client.logs.describe_log_groups(logGroupNamePrefix=logs_log_group)
+        snapshot.match("describe-log-groups-prefix", response)
+        response = aws_client.logs.describe_log_groups(logGroupNamePattern=logs_log_group[2:])
+        snapshot.match("describe-log-groups-pattern", response)
+
+        with pytest.raises(Exception) as ctx:
+            aws_client.logs.describe_log_groups(
+                logGroupNamePattern=logs_log_group, logGroupNamePrefix=logs_log_group
+            )
+        snapshot.match("error-describe-logs-group", ctx.value.response)
 
         aws_client.logs.create_log_stream(logGroupName=logs_log_group, logStreamName=test_name)
-
         log_streams_between = aws_client.logs.describe_log_streams(logGroupName=logs_log_group).get(
             "logStreams", []
         )
         assert poll_condition(
-            lambda: len(log_streams_between) == len(log_streams_before) + 1,
+            lambda: len(log_streams_between) == 1,
             timeout=5.0,
             interval=0.5,
         )
+        snapshot.match("logs_log_group", log_streams_between)
+
+        with pytest.raises(Exception) as ctx:
+            aws_client.logs.describe_log_streams(
+                logGroupName=logs_log_group, logGroupIdentifier=logs_log_group
+            )
+        snapshot.match("error-describe-logs-streams", ctx.value.response)
+
+        response = aws_client.logs.describe_log_streams(logGroupIdentifier=logs_log_group).get(
+            "logStreams"
+        )
+        snapshot.match("log_group_identifier", response)
+        response = aws_client.logs.describe_log_streams(
+            logGroupIdentifier=arns.log_group_arn(
+                logs_log_group,
+                account_id=aws_client.sts.get_caller_identity()["Account"],
+                region_name=config.AWS_REGION_US_EAST_1,
+            )
+        ).get("logStreams")
+        snapshot.match("log_group_identifier-arn", response)
 
         aws_client.logs.delete_log_stream(logGroupName=logs_log_group, logStreamName=test_name)
 
@@ -162,11 +190,10 @@ class TestCloudWatchLogs:
             "logStreams", []
         )
         assert poll_condition(
-            lambda: len(log_streams_between) - 1 == len(log_streams_after),
+            lambda: len(log_streams_after) == 0,
             timeout=5.0,
             interval=0.5,
         )
-        assert len(log_streams_after) == len(log_streams_before)
 
     def test_put_events_multi_bytes_msg(self, logs_log_group, logs_log_stream, aws_client):
         body_msg = "🙀 - 参よ - 日本語"

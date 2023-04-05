@@ -224,6 +224,12 @@ class UnrecognizedClientException(ServiceException):
     status_code: int = 400
 
 
+class ValidationException(ServiceException):
+    code: str = "ValidationException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 AccountIds = List[AccountId]
 
 

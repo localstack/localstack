@@ -430,6 +430,26 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def logs_api():
+        """
+        :return: array with Transfromers, for logs api
+        """
+        return [
+            TransformerUtility.key_value("logGroupName"),
+            TransformerUtility.key_value("logStreamName"),
+            TransformerUtility.key_value("creationTime", "<time>", reference_replacement=False),
+            TransformerUtility.key_value(
+                "firstEventTimestamp", "<time>", reference_replacement=False
+            ),
+            TransformerUtility.key_value(
+                "lastEventTimestamp", "<time>", reference_replacement=False
+            ),
+            TransformerUtility.key_value(
+                "lastIngestionTime", "<time>", reference_replacement=False
+            ),
+        ]
+
+    @staticmethod
     def secretsmanager_api():
         return [
             KeyValueBasedTransformer(
