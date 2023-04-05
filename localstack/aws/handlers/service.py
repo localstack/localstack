@@ -9,6 +9,7 @@ from botocore.model import OperationModel, ServiceModel
 
 from localstack import config
 from localstack.http import Response
+from localstack.utils.coverage_docs import get_coverage_link_for_service
 
 from ..api import CommonServiceException, RequestContext, ServiceException
 from ..api.core import ServiceOperation
@@ -184,10 +185,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
 
         if operation and isinstance(exception, NotImplementedError):
             action_name = operation.name
-            message = (
-                f"API action '{action_name}' for service '{service_name}' not yet implemented or pro feature"
-                f" - check https://docs.localstack.cloud/user-guide/aws/feature-coverage for further information"
-            )
+            message = get_coverage_link_for_service(service_name, action_name)
             LOG.info(message)
             error = CommonServiceException("InternalFailure", message, status_code=501)
             context.service_exception = error
