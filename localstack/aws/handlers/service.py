@@ -185,7 +185,8 @@ class ServiceExceptionSerializer(ExceptionHandler):
 
         if operation and isinstance(exception, NotImplementedError):
             action_name = operation.name
-            message = get_coverage_link_for_service(service_name, action_name)
+            exception_message: str | None = exception.args[0] if exception.args else None
+            message = exception_message or get_coverage_link_for_service(service_name, action_name)
             LOG.info(message)
             error = CommonServiceException("InternalFailure", message, status_code=501)
             context.service_exception = error

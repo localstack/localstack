@@ -182,7 +182,8 @@ def patch_moto_request_handling():
                 if match:
                     action = snake_to_camel_case(match.group(1))
             service = extract_service_name_from_auth_header(request.headers)
-            msg = get_coverage_link_for_service(service, action)
+            exception_message: str | None = e.args[0] if e.args else None
+            msg = exception_message or get_coverage_link_for_service(service, action)
             response = requests_error_response(request.headers, msg, code=501)
             if config.MOCK_UNIMPLEMENTED:
                 is_json = is_json_request(request.headers)
