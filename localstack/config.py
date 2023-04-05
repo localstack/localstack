@@ -258,6 +258,15 @@ def in_docker():
     if OVERRIDE_IN_DOCKER:
         return True
 
+    # check some marker files that we create in our Dockerfiles
+    for path in [
+        "/usr/lib/localstack/.community-version",
+        "/usr/lib/localstack/.pro-version",
+        "/tmp/localstack/.marker",
+    ]:
+        if os.path.isfile(path):
+            return True
+
     # details: https://github.com/localstack/localstack/pull/4352
     if os.path.exists("/.dockerenv"):
         return True
@@ -291,6 +300,13 @@ def in_docker():
         os_hostname = socket.gethostname()
         if os_hostname and os_hostname in content:
             return True
+
+    # containerd does not set any specific file or config, but does use
+    # io.containerd.snapshotter.v1.overlayfs as the overlay filesystem
+    with open("/proc/1/mountinfo", "rt") as infile:
+        if "io.containerd" in infile.read():
+            return True
+
     return False
 
 
