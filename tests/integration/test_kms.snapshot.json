@@ -1117,5 +1117,123 @@
         }
       }
     }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_import_key": {
+    "recorded-date": "05-04-2023, 15:22:20",
+    "recorded-content": {
+      "created-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "<description:1>",
+        "Enabled": false,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "PendingImport",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "EXTERNAL"
+      },
+      "encrypt-before-import-error": {
+        "Error": {
+          "Code": "KMSInvalidStateException",
+          "Message": "arn:aws:kms:<region>:111111111111:key/<key-id:1> is pending import."
+        },
+        "message": "arn:aws:kms:<region>:111111111111:key/<key-id:1> is pending import.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-key-before-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "<description:1>",
+          "Enabled": false,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "PendingImport",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-after-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "<description:1>",
+          "Enabled": true,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Enabled",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-after-deleted-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "<description:1>",
+          "Enabled": false,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "PendingImport",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "encrypt-after-delete-error": {
+        "Error": {
+          "Code": "KMSInvalidStateException",
+          "Message": "arn:aws:kms:<region>:111111111111:key/<key-id:1> is pending import."
+        },
+        "message": "arn:aws:kms:<region>:111111111111:key/<key-id:1> is pending import.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
