@@ -209,7 +209,7 @@ def test_skeleton_e2e_sqs_send_message():
         (
             TestSqsApiNotImplemented(),
             "API action 'SendMessage' for service 'sqs' not yet implemented or pro feature"
-            " - please check https://docs.localstack.cloud/user-guide/aws/feature-coverage for further information",
+            " - please check https://docs.localstack.cloud/references/coverage/coverage_sqs/ for further information",
         ),
         (
             TestSqsApiNotImplementedWithMessage(),
