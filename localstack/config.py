@@ -258,6 +258,15 @@ def in_docker():
     if OVERRIDE_IN_DOCKER:
         return True
 
+    # check some marker files that we create in our Dockerfiles
+    for path in [
+        "/usr/lib/localstack/.community-version",
+        "/usr/lib/localstack/.pro-version",
+        "/tmp/localstack/.marker",
+    ]:
+        if os.path.isfile(path):
+            return True
+
     # details: https://github.com/localstack/localstack/pull/4352
     if os.path.exists("/.dockerenv"):
         return True
