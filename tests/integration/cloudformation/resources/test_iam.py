@@ -140,6 +140,63 @@ def test_iam_user_access_key(deploy_cfn_template, snapshot, aws_client):
 
 
 @pytest.mark.aws_validated
+def test_update_inline_policy(deploy_cfn_template, snapshot, iam_client):
+
+    snapshot.add_transformer(snapshot.transform.iam_api())
+    snapshot.add_transformer(snapshot.transform.key_value("PolicyName", "policy-name"))
+    snapshot.add_transformer(snapshot.transform.key_value("RoleName", "role-name"))
+    snapshot.add_transformer(snapshot.transform.key_value("UserName", "user-name"))
+
+    policy_name = f"policy-{short_uid()}"
+    user_name = f"user-{short_uid()}"
+    role_name = f"role-{short_uid()}"
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/iam_policy_role.yaml"
+        ),
+        parameters={
+            "PolicyName": policy_name,
+            "UserName": user_name,
+            "RoleName": role_name,
+        },
+    )
+
+    user_inline_policy_response = iam_client.get_user_policy(
+        UserName=user_name, PolicyName=policy_name
+    )
+    role_inline_policy_resource = iam_client.get_role_policy(
+        RoleName=role_name, PolicyName=policy_name
+    )
+
+    snapshot.match("user_inline_policy", user_inline_policy_response)
+    snapshot.match("role_inline_policy", role_inline_policy_resource)
+
+    deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/iam_policy_role_updated.yaml"
+        ),
+        parameters={
+            "PolicyName": policy_name,
+            "UserName": user_name,
+            "RoleName": role_name,
+        },
+        stack_name=stack.stack_name,
+        is_update=True,
+    )
+
+    user_updated_inline_policy_response = iam_client.get_user_policy(
+        UserName=user_name, PolicyName=policy_name
+    )
+    role_updated_inline_policy_resource = iam_client.get_role_policy(
+        RoleName=role_name, PolicyName=policy_name
+    )
+
+    snapshot.match("user_updated_inline_policy", user_updated_inline_policy_response)
+    snapshot.match("role_updated_inline_policy", role_updated_inline_policy_resource)
+
+
+@pytest.mark.aws_validated
 @pytest.mark.skip_snapshot_verify(
     paths=[
         "$..Policy.Description",
