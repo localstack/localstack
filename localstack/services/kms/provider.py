@@ -756,7 +756,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         )
         key_to_import_material_to.crypto_key.key_material = key_material
         key_to_import_material_to.metadata["Enabled"] = True
-        if not valid_to:
+        if expiration_model:
+            key_to_import_material_to.metadata["ExpirationModel"] = expiration_model
+        else:
             key_to_import_material_to.metadata[
                 "ExpirationModel"
             ] = ExpirationModelType.KEY_MATERIAL_DOES_NOT_EXPIRE
