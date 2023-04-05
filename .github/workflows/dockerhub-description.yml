@@ -7,6 +7,12 @@ on:
     paths:
       - README.md
       - .github/workflows/dockerhub-description.yml
+  pull_request:
+    paths:
+      - .github/workflows/dockerhub-description.yml
+    branches:
+      - master
+  workflow_dispatch:
 
 jobs:
   dockerHubDescription:
