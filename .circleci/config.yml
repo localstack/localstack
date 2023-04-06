@@ -3,10 +3,10 @@ version: 2.1
 parameters:
   ubuntu-amd64-machine-image:
     type: string
-    default: "ubuntu-2004:2022.04.1"
+    default: "ubuntu-2004:2023.02.1"
   ubuntu-arm64-machine-image:
     type: string
-    default: "ubuntu-2004:2022.04.1"
+    default: "ubuntu-2004:2023.02.1"
 
 executors:
   ubuntu-machine-amd64:
