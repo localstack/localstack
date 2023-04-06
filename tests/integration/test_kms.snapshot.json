@@ -1119,7 +1119,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_error_messaging_for_invalid_keys": {
-    "recorded-date": "06-04-2023, 14:23:52",
+    "recorded-date": "06-04-2023, 16:59:05",
     "recorded-content": {
       "generate-mac-invalid-key-id": {
         "Error": {
