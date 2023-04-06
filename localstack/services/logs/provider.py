@@ -61,7 +61,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         log_events: InputLogEvents,
         sequence_token: SequenceToken = None,
     ) -> PutLogEventsResponse:
-        logs_backend = get_moto_logs_backend(context.account_id, context.get_region())
+        logs_backend = get_moto_logs_backend(context.account_id, context.region)
         metric_filters = logs_backend.filters.metric_filters
         for metric_filter in metric_filters:
             pattern = metric_filter.get("filterPattern", "")
