@@ -587,6 +587,14 @@ class TestKMS:
         encrypted_key = public_key.encrypt(symmetric_key, PKCS1v15())
         describe_key_before_import = aws_client.kms.describe_key(KeyId=key_id)
         snapshot.match("describe-key-before-import", describe_key_before_import)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.import_key_material(
+                KeyId=key_id,
+                ImportToken=params["ImportToken"],
+                EncryptedKeyMaterial=encrypted_key,
+            )
+        snapshot.match("import-expiring-key-without-valid-to", e.value.response)
         aws_client.kms.import_key_material(
             KeyId=key_id,
             ImportToken=params["ImportToken"],

@@ -754,14 +754,23 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_material = import_state.key.crypto_key.key.decrypt(
             encrypted_key_material, decrypt_padding
         )
-        key_to_import_material_to.crypto_key.key_material = key_material
-        key_to_import_material_to.metadata["Enabled"] = True
         if expiration_model:
             key_to_import_material_to.metadata["ExpirationModel"] = expiration_model
         else:
             key_to_import_material_to.metadata[
                 "ExpirationModel"
-            ] = ExpirationModelType.KEY_MATERIAL_DOES_NOT_EXPIRE
+            ] = ExpirationModelType.KEY_MATERIAL_EXPIRES
+        if (
+            key_to_import_material_to.metadata["ExpirationModel"]
+            == ExpirationModelType.KEY_MATERIAL_EXPIRES
+            and not valid_to
+        ):
+            raise ValidationException(
+                "A validTo date must be set if the ExpirationModel is KEY_MATERIAL_EXPIRES"
+            )
+        # TODO actually set validTo and make the key expire
+        key_to_import_material_to.crypto_key.key_material = key_material
+        key_to_import_material_to.metadata["Enabled"] = True
         key_to_import_material_to.metadata["KeyState"] = KeyState.Enabled
         return ImportKeyMaterialResponse()
 
