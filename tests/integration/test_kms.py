@@ -556,9 +556,18 @@ class TestKMS:
         assert key_id in _get_all_key_ids(aws_client.kms)
 
     @pytest.mark.aws_validated
-    def test_import_key(self, kms_create_key, aws_client):
+    def test_import_key(self, kms_create_key, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("KeyId"))
+        snapshot.add_transformer(snapshot.transform.key_value("Description"))
         key = kms_create_key(Origin="EXTERNAL")
+        snapshot.match("created-key", key)
         key_id = key["KeyId"]
+
+        # try key before importing
+        plaintext = b"test content 123 !#"
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.encrypt(Plaintext=plaintext, KeyId=key_id)
+        snapshot.match("encrypt-before-import-error", e.value.response)
 
         # get key import params
         params = aws_client.kms.get_parameters_for_import(
@@ -576,20 +585,39 @@ class TestKMS:
         # import symmetric key (key material) into KMS
         public_key = load_der_public_key(params["PublicKey"])
         encrypted_key = public_key.encrypt(symmetric_key, PKCS1v15())
+        describe_key_before_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-before-import", describe_key_before_import)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.import_key_material(
+                KeyId=key_id,
+                ImportToken=params["ImportToken"],
+                EncryptedKeyMaterial=encrypted_key,
+            )
+        snapshot.match("import-expiring-key-without-valid-to", e.value.response)
         aws_client.kms.import_key_material(
             KeyId=key_id,
             ImportToken=params["ImportToken"],
             EncryptedKeyMaterial=encrypted_key,
             ExpirationModel="KEY_MATERIAL_DOES_NOT_EXPIRE",
         )
+        describe_key_after_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-after-import", describe_key_after_import)
 
         # use key to encrypt/decrypt data
-        plaintext = b"test content 123 !#"
         encrypt_result = aws_client.kms.encrypt(Plaintext=plaintext, KeyId=key_id)
         api_decrypted = aws_client.kms.decrypt(
             CiphertextBlob=encrypt_result["CiphertextBlob"], KeyId=key_id
         )
         assert api_decrypted["Plaintext"] == plaintext
+
+        aws_client.kms.delete_imported_key_material(KeyId=key_id)
+        describe_key_after_deleted_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-after-deleted-import", describe_key_after_deleted_import)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.encrypt(Plaintext=plaintext, KeyId=key_id)
+        snapshot.match("encrypt-after-delete-error", e.value.response)
 
     @pytest.mark.aws_validated
     def test_list_aliases_of_key(self, kms_create_key, kms_create_alias, aws_client):

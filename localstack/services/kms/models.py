@@ -25,12 +25,14 @@ from localstack.aws.api.kms import (
     DisabledException,
     EncryptionContextType,
     KeyMetadata,
+    KeyState,
     KMSInvalidMacException,
     KMSInvalidSignatureException,
     KMSInvalidStateException,
     MacAlgorithmSpec,
     MessageType,
     NotFoundException,
+    OriginType,
     SigningAlgorithmSpec,
     UnsupportedOperationException,
 )
@@ -387,9 +389,13 @@ class KmsKey:
         # Metadata fields AWS introduces automatically
         self.metadata["AWSAccountId"] = account_id or get_aws_account_id()
         self.metadata["CreationDate"] = datetime.datetime.now()
-        self.metadata["Enabled"] = True
+        self.metadata["Enabled"] = create_key_request.get("Origin") != OriginType.EXTERNAL
         self.metadata["KeyManager"] = "CUSTOMER"
-        self.metadata["KeyState"] = "Enabled"
+        self.metadata["KeyState"] = (
+            KeyState.Enabled
+            if create_key_request.get("Origin") != OriginType.EXTERNAL
+            else KeyState.PendingImport
+        )
         # https://docs.aws.amazon.com/kms/latest/developerguide/multi-region-keys-overview.html
         # "Notice that multi-Region keys have a distinctive key ID that begins with mrk-. You can use the mrk- prefix to
         # identify MRKs programmatically."

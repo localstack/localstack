@@ -628,6 +628,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     ) -> EncryptResponse:
         key = self._get_key(context, key_id)
         self._validate_key_for_encryption_decryption(key)
+        self._validate_key_state_not_pending_import(key)
         ciphertext_blob = key.encrypt(plaintext)
         # For compatibility, we return EncryptionAlgorithm values expected from AWS. But LocalStack currently always
         # encrypts with symmetric encryption no matter the key settings.
@@ -667,6 +668,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 f"ciphertext. Keep in mind that LocalStack currently doesn't perform asymmetric encryption"
             )
         self._validate_key_for_encryption_decryption(key)
+        self._validate_key_state_not_pending_import(key)
 
         plaintext = key.decrypt(ciphertext)
         # For compatibility, we return EncryptionAlgorithm values expected from AWS. But LocalStack currently always
@@ -747,11 +749,38 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 f"Unsupported padding, requested wrapping algorithm:'{import_state.wrapping_algo}'"
             )
 
+        # TODO check if there was already a key imported for this kms key
+        # if so, it has to be identical. We cannot change keys by reimporting after deletion/expiry
         key_material = import_state.key.crypto_key.key.decrypt(
             encrypted_key_material, decrypt_padding
         )
+        if expiration_model:
+            key_to_import_material_to.metadata["ExpirationModel"] = expiration_model
+        else:
+            key_to_import_material_to.metadata[
+                "ExpirationModel"
+            ] = ExpirationModelType.KEY_MATERIAL_EXPIRES
+        if (
+            key_to_import_material_to.metadata["ExpirationModel"]
+            == ExpirationModelType.KEY_MATERIAL_EXPIRES
+            and not valid_to
+        ):
+            raise ValidationException(
+                "A validTo date must be set if the ExpirationModel is KEY_MATERIAL_EXPIRES"
+            )
+        # TODO actually set validTo and make the key expire
         key_to_import_material_to.crypto_key.key_material = key_material
+        key_to_import_material_to.metadata["Enabled"] = True
+        key_to_import_material_to.metadata["KeyState"] = KeyState.Enabled
         return ImportKeyMaterialResponse()
+
+    def delete_imported_key_material(self, context: RequestContext, key_id: KeyIdType) -> None:
+        store = self._get_store(context)
+        key = store.get_key(key_id, enabled_key_allowed=True, disabled_key_allowed=True)
+        key.crypto_key.key_material = None
+        key.metadata["Enabled"] = False
+        key.metadata["KeyState"] = KeyState.PendingImport
+        key.metadata.pop("ExpirationModel", None)
 
     @handler("CreateAlias", expand=False)
     def create_alias(self, context: RequestContext, request: CreateAliasRequest) -> None:
@@ -921,6 +950,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         for tag_key in request.get("TagKeys"):
             # AWS doesn't seem to mind removal of a non-existent tag, so we do not raise any exception.
             key.tags.pop(tag_key, None)
+
+    def _validate_key_state_not_pending_import(self, key: KmsKey):
+        if key.metadata["KeyState"] == KeyState.PendingImport:
+            raise KMSInvalidStateException(f"{key.metadata['Arn']} is pending import.")
 
     def _validate_key_for_encryption_decryption(self, key: KmsKey):
         if key.metadata["KeyUsage"] != "ENCRYPT_DECRYPT":
