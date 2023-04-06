@@ -394,8 +394,10 @@ def moto_to_describe_dict(target, self):
     # reported race condition in https://github.com/localstack/localstack/issues/8011
     # making copy of "streams" dict here to avoid issues while summing up storedBytes
     copy_streams = copy.deepcopy(self.streams)
+    # parity tests shows that the arn ends with ":*"
+    arn = self.arn if self.arn.endswith(":*") else f"{self.arn}:*"
     log_group = {
-        "arn": self.arn,
+        "arn": arn,
         "creationTime": self.creation_time,
         "logGroupName": self.name,
         "metricFilterCount": 0,

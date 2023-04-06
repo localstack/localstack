@@ -447,6 +447,7 @@ class TransformerUtility:
             TransformerUtility.key_value(
                 "lastIngestionTime", "<time>", reference_replacement=False
             ),
+            TransformerUtility.key_value("nextToken", "<next_token>", reference_replacement=False),
         ]
 
     @staticmethod
