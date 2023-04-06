@@ -200,3 +200,19 @@ def test_endpoint_prefix_based_routing():
         )
     )
     assert detected_service_name == "chime-sdk-identity"
+
+
+def test_endpoint_prefix_based_routing_s3_virtual_host():
+    detected_service_name = determine_aws_service_name(
+        Request(method="GET", path="/", headers={"Host": "pictures.s3.localhost.localstack.cloud"})
+    )
+    assert detected_service_name == "s3"
+
+    detected_service_name = determine_aws_service_name(
+        Request(
+            method="POST",
+            path="/app-instances",
+            headers={"Host": "kms.s3.localhost.localstack.cloud"},
+        )
+    )
+    assert detected_service_name == "s3"
