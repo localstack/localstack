@@ -577,6 +577,21 @@ class TestOpensearchProvider:
         domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
         assert domain_name in domain_names
 
+    def test_advanced_security_options(self, opensearch_create_domain, aws_client):
+        advanced_security_options = AdvancedSecurityOptionsInput(
+            Enabled=True,
+            InternalUserDatabaseEnabled=True,
+            MasterUserOptions=MasterUserOptions(
+                MasterUserName="master-user",
+                MasterUserPassword="12345678Aa!",
+            ),
+        )
+        domain_name = opensearch_create_domain(
+            EngineVersion="OpenSearch_2.3", AdvancedSecurityOptions=advanced_security_options
+        )
+        describe_domain = aws_client.opensearch.describe_domain(DomainName=domain_name)
+        assert describe_domain["DomainStatus"]["AdvancedSecurityOptions"]["Enabled"] is True
+
 
 @markers.skip_offline
 class TestEdgeProxiedOpensearchCluster:
