@@ -1018,6 +1018,41 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                     f" constraint: [Member must satisfy enum value set: {VALID_OPERATIONS}]"
                 )
 
+    def _validate_content_size(
+        self,
+        plaintext: PlaintextType,
+        key: KmsKey,
+        encryption_algorithm: EncryptionAlgorithmSpec = None,
+    ):
+        # max size values extracted from AWS boto3 documentation
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/kms/client/encrypt.html
+        max_bytes_size = 0
+        if key.metadata["KeySpec"] == "RSA_2048" and encryption_algorithm == "RSAES_OAEP_SHA_1":
+            max_bytes_size = 214
+        elif key.metadata["KeySpec"] == "RSA_2048" and encryption_algorithm == "RSAES_OAEP_SHA_256":
+            max_bytes_size = 190
+        elif key.metadata["KeySpec"] == "RSA_3072" and encryption_algorithm == "RSAES_OAEP_SHA_1":
+            max_bytes_size = 342
+        elif key.metadata["KeySpec"] == "RSA_3072" and encryption_algorithm == "RSAES_OAEP_SHA_256":
+            max_bytes_size = 318
+        elif key.metadata["KeySpec"] == "RSA_4096" and encryption_algorithm == "RSAES_OAEP_SHA_1":
+            max_bytes_size = 470
+        elif key.metadata["KeySpec"] == "RSA_4096" and encryption_algorithm == "RSAES_OAEP_SHA_256":
+            max_bytes_size = 446
+
+        if len(plaintext) > max_bytes_size:
+            raise ValidationException(
+                f"Algorithm {encryption_algorithm} and key spec {key.metadata['KeySpec']} cannot encrypt data larger than {max_bytes_size} bytes."
+            )
+
+    def _validate_plaintext_max_size(self, plaintext: PlaintextType):
+        # Check if all plaintext are smaller than 4096 bytes independent of they key type.
+        if len(plaintext) > 4096:
+            raise ValidationException(
+                "1 validation error detected: Value at 'plaintext' failed to satisfy constraint:"
+                "Member must have length less than or equal to 4096."
+            )
+
 
 # ---------------
 # UTIL FUNCTIONS
