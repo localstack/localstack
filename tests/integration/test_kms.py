@@ -1012,6 +1012,7 @@ class TestKMS:
     @pytest.mark.aws_validated
     def test_error_messaging_for_invalid_keys(self, kms_client, kms_create_key, snapshot):
         snapshot.add_transformer(snapshot.transform.regex(PATTERN_KEY_ARN, "<key-arn>"))
+
         hmac_key_id = kms_create_key(
             Description="test key hmac",
             KeySpec="HMAC_224",
@@ -1024,7 +1025,7 @@ class TestKMS:
             Description="test key sign verify", KeyUsage="SIGN_VERIFY", KeySpec="RSA_2048"
         )["KeyId"]
 
-        # test validate key for generate mac with invalid key id
+        # test generate mac with invalid key id
         with pytest.raises(ClientError) as e:
             kms_client.generate_mac(
                 KeyId=encrypt_decrypt_key_id,
@@ -1054,4 +1055,3 @@ class TestKMS:
         with pytest.raises(ClientError) as e:
             kms_client.encrypt(Plaintext="test message 123!@#", KeyId=sign_verify_key_id)
         snapshot.match("encrypt-invalid-key-id", e.value.response)
-
