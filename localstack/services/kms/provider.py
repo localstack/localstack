@@ -1052,7 +1052,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         if len(plaintext) > PLAINTEXT_MAX_SIZE_BYTES:
             raise ValidationException(
                 "1 validation error detected: Value at 'plaintext' failed to satisfy constraint:"
-                "Member must have length less than or equal to 4096."
+                " Member must have length less than or equal to 4096."
             )
 
 
