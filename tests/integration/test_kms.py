@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+import re
 from datetime import datetime
 from random import getrandbits
 
@@ -13,6 +14,10 @@ from cryptography.hazmat.primitives.serialization import load_der_public_key
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.utils.strings import short_uid
+
+PATTERN_KEY_ARN = re.compile(
+    r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([^:]+)?:(\d{12})?:key/[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+)
 
 
 @pytest.fixture(scope="class")
@@ -1031,3 +1036,50 @@ class TestKMS:
                 Mac=generate_mac_response["Mac"],
             )
         snapshot.match("verify-mac", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_error_messaging_for_invalid_keys(self, kms_client, kms_create_key, snapshot):
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_KEY_ARN, "<key-arn>"))
+
+        hmac_key_id = kms_create_key(
+            Description="test key hmac",
+            KeySpec="HMAC_224",
+            KeyUsage="GENERATE_VERIFY_MAC",
+        )["KeyId"]
+
+        encrypt_decrypt_key_id = kms_create_key(Description="test key encrypt decrypt")["KeyId"]
+
+        sign_verify_key_id = kms_create_key(
+            Description="test key sign verify", KeyUsage="SIGN_VERIFY", KeySpec="RSA_2048"
+        )["KeyId"]
+
+        # test generate mac with invalid key id
+        with pytest.raises(ClientError) as e:
+            kms_client.generate_mac(
+                KeyId=encrypt_decrypt_key_id,
+                Message="some important message",
+                MacAlgorithm="HMAC_SHA_224",
+            )
+        snapshot.match("generate-mac-invalid-key-id", e.value.response)
+
+        # test create signature for a message with invalid key id
+        kwargs = {"KeyId": hmac_key_id, "SigningAlgorithm": "RSASSA_PSS_SHA_256"}
+        with pytest.raises(ClientError) as e:
+            kms_client.sign(MessageType="RAW", Message="test message 123!@#", **kwargs)
+        snapshot.match("sign-invalid-key-id", e.value.response)
+
+        # test verify signature for a message with invalid key id
+        with pytest.raises(ClientError) as e:
+            kms_client.verify(
+                MessageType="RAW",
+                Signature=b"random text",
+                Message="test message",
+                KeyId=encrypt_decrypt_key_id,
+                SigningAlgorithm="ECDSA_SHA_256",
+            )
+        snapshot.match("verify-invalid-key-id", e.value.response)
+
+        # test encrypting a text with invalid key id
+        with pytest.raises(ClientError) as e:
+            kms_client.encrypt(Plaintext="test message 123!@#", KeyId=sign_verify_key_id)
+        snapshot.match("encrypt-invalid-key-id", e.value.response)

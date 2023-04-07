@@ -1245,5 +1245,54 @@
         }
       }
     }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_error_messaging_for_invalid_keys": {
+    "recorded-date": "06-04-2023, 16:59:05",
+    "recorded-content": {
+      "generate-mac-invalid-key-id": {
+        "Error": {
+          "Code": "InvalidKeyUsageException",
+          "Message": "<key-arn> key usage is ENCRYPT_DECRYPT which is not valid for GenerateMac."
+        },
+        "message": "<key-arn> key usage is ENCRYPT_DECRYPT which is not valid for GenerateMac.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "sign-invalid-key-id": {
+        "Error": {
+          "Code": "InvalidKeyUsageException",
+          "Message": "<key-arn> key usage is GENERATE_VERIFY_MAC which is not valid for Sign."
+        },
+        "message": "<key-arn> key usage is GENERATE_VERIFY_MAC which is not valid for Sign.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "verify-invalid-key-id": {
+        "Error": {
+          "Code": "InvalidKeyUsageException",
+          "Message": "<key-arn> key usage is ENCRYPT_DECRYPT which is not valid for Verify."
+        },
+        "message": "<key-arn> key usage is ENCRYPT_DECRYPT which is not valid for Verify.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "encrypt-invalid-key-id": {
+        "Error": {
+          "Code": "InvalidKeyUsageException",
+          "Message": "<key-arn> key usage is SIGN_VERIFY which is not valid for Encrypt."
+        },
+        "message": "<key-arn> key usage is SIGN_VERIFY which is not valid for Encrypt.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
