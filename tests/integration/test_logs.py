@@ -139,34 +139,83 @@ class TestCloudWatchLogs:
             # clean up
             aws_client.logs.delete_log_group(logGroupName=test_name)
 
-    def test_create_and_delete_log_stream(self, logs_log_group, aws_client):
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            # TODO 'describe-log-groups' returns different attributes on AWS when using
+            #   'logGroupNamePattern' compared to 'logGroupNamePrefix' (for the same log group)
+            #    seems like a weird issue on AWS side, we just exclude the paths here for this particular call
+            "$..describe-log-groups-pattern.logGroups..metricFilterCount",
+            "$..describe-log-groups-pattern.logGroups..storedBytes",
+            "$..describe-log-groups-pattern.nextToken",
+        ]
+    )
+    def test_create_and_delete_log_stream(self, logs_log_group, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.logs_api())
         test_name = f"test-log-stream-{short_uid()}"
-        log_streams_before = aws_client.logs.describe_log_streams(logGroupName=logs_log_group).get(
-            "logStreams", []
-        )
 
-        aws_client.logs.create_log_stream(logGroupName=logs_log_group, logStreamName=test_name)
+        # filter for prefix/entire name here
+        response = aws_client.logs.describe_log_groups(logGroupNamePrefix=logs_log_group)
+        snapshot.match("describe-log-groups-prefix", response)
 
-        log_streams_between = aws_client.logs.describe_log_streams(logGroupName=logs_log_group).get(
-            "logStreams", []
-        )
+        # pattern for the short-uid
+        # for some reason, this does not work immediately on AWS
         assert poll_condition(
-            lambda: len(log_streams_between) == len(log_streams_before) + 1,
+            lambda: len(
+                aws_client.logs.describe_log_groups(
+                    logGroupNamePattern=logs_log_group.split("-")[-1]
+                ).get("logGroups")
+            )
+            == 1,
             timeout=5.0,
             interval=0.5,
         )
+        response = aws_client.logs.describe_log_groups(
+            logGroupNamePattern=logs_log_group.split("-")[-1]
+        )
+        snapshot.match("describe-log-groups-pattern", response)
+
+        # using prefix + pattern should raise error
+        with pytest.raises(Exception) as ctx:
+            aws_client.logs.describe_log_groups(
+                logGroupNamePattern=logs_log_group, logGroupNamePrefix=logs_log_group
+            )
+        snapshot.match("error-describe-logs-group", ctx.value.response)
+
+        aws_client.logs.create_log_stream(logGroupName=logs_log_group, logStreamName=test_name)
+        log_streams_between = aws_client.logs.describe_log_streams(logGroupName=logs_log_group).get(
+            "logStreams", []
+        )
+
+        snapshot.match("logs_log_group", log_streams_between)
+
+        # using log-group-name and log-group-identifier should raise exception
+        with pytest.raises(Exception) as ctx:
+            aws_client.logs.describe_log_streams(
+                logGroupName=logs_log_group, logGroupIdentifier=logs_log_group
+            )
+        snapshot.match("error-describe-logs-streams", ctx.value.response)
+
+        # log group identifier using the name of the log-group
+        response = aws_client.logs.describe_log_streams(logGroupIdentifier=logs_log_group).get(
+            "logStreams"
+        )
+        snapshot.match("log_group_identifier", response)
+        # log group identifier using arn
+        response = aws_client.logs.describe_log_streams(
+            logGroupIdentifier=arns.log_group_arn(
+                logs_log_group,
+                account_id=aws_client.sts.get_caller_identity()["Account"],
+                region_name=config.AWS_REGION_US_EAST_1,
+            )
+        ).get("logStreams")
+        snapshot.match("log_group_identifier-arn", response)
 
         aws_client.logs.delete_log_stream(logGroupName=logs_log_group, logStreamName=test_name)
 
         log_streams_after = aws_client.logs.describe_log_streams(logGroupName=logs_log_group).get(
             "logStreams", []
         )
-        assert poll_condition(
-            lambda: len(log_streams_between) - 1 == len(log_streams_after),
-            timeout=5.0,
-            interval=0.5,
-        )
-        assert len(log_streams_after) == len(log_streams_before)
+        assert len(log_streams_after) == 0
 
     def test_put_events_multi_bytes_msg(self, logs_log_group, logs_log_stream, aws_client):
         body_msg = "🙀 - 参よ - 日本語"
