@@ -1038,7 +1038,7 @@ class TestKMS:
         snapshot.match("verify-mac", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_error_messaging_for_invalid_keys(self, kms_client, kms_create_key, snapshot):
+    def test_error_messaging_for_invalid_keys(self, aws_client, kms_create_key, snapshot):
         snapshot.add_transformer(snapshot.transform.regex(PATTERN_KEY_ARN, "<key-arn>"))
 
         hmac_key_id = kms_create_key(
@@ -1055,7 +1055,7 @@ class TestKMS:
 
         # test generate mac with invalid key id
         with pytest.raises(ClientError) as e:
-            kms_client.generate_mac(
+            aws_client.kms.generate_mac(
                 KeyId=encrypt_decrypt_key_id,
                 Message="some important message",
                 MacAlgorithm="HMAC_SHA_224",
@@ -1065,12 +1065,12 @@ class TestKMS:
         # test create signature for a message with invalid key id
         kwargs = {"KeyId": hmac_key_id, "SigningAlgorithm": "RSASSA_PSS_SHA_256"}
         with pytest.raises(ClientError) as e:
-            kms_client.sign(MessageType="RAW", Message="test message 123!@#", **kwargs)
+            aws_client.kms.sign(MessageType="RAW", Message="test message 123!@#", **kwargs)
         snapshot.match("sign-invalid-key-id", e.value.response)
 
         # test verify signature for a message with invalid key id
         with pytest.raises(ClientError) as e:
-            kms_client.verify(
+            aws_client.kms.verify(
                 MessageType="RAW",
                 Signature=b"random text",
                 Message="test message",
@@ -1081,8 +1081,16 @@ class TestKMS:
 
         # test encrypting a text with invalid key id
         with pytest.raises(ClientError) as e:
-            kms_client.encrypt(Plaintext="test message 123!@#", KeyId=sign_verify_key_id)
+            aws_client.kms.encrypt(Plaintext="test message 123!@#", KeyId=sign_verify_key_id)
         snapshot.match("encrypt-invalid-key-id", e.value.response)
+
+        # test decrypting a text with invalid key id
+        ciphertext_blob = aws_client.kms.encrypt(
+            Plaintext="test message 123!@#", KeyId=encrypt_decrypt_key_id
+        )["CiphertextBlob"]
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(CiphertextBlob=ciphertext_blob, KeyId=hmac_key_id)
+        snapshot.match("decrypt-invalid-key-id", e.value.response)
 
     @pytest.mark.aws_validated
     def test_plaintext_size_for_encrypt(self, kms_create_key, snapshot, aws_client):
