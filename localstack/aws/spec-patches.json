@@ -774,21 +774,5 @@
         "exception": true
       }
     }
-  ],
-  "logs/2014-03-28/service-2": [
-    {
-      "op": "add",
-      "path": "/shapes/ValidationException",
-      "value": {
-        "type": "structure",
-        "members": {
-        },
-        "error": {
-          "httpStatusCode": 400
-        },
-        "documentation": "<p>The configuration is not valid.</p>",
-        "exception": true
-      }
-    }
   ]
 }

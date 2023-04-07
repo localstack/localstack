@@ -13,7 +13,7 @@ from moto.logs.models import LogsBackend
 from moto.logs.models import LogStream as MotoLogStream
 
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api import RequestContext, handler
+from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.logs import (
     AmazonResourceName,
     DescribeLogGroupsRequest,
@@ -34,7 +34,6 @@ from localstack.aws.api.logs import (
     TagKeyList,
     TagList,
     Tags,
-    ValidationException,
 )
 from localstack.services import moto
 from localstack.services.logs.models import get_moto_logs_backend, logs_stores
@@ -122,8 +121,9 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         log_group_identifier: str = request.get("logGroupIdentifier")
 
         if log_group_identifier and log_group_name:
-            raise ValidationException(
-                "LogGroup name and LogGroup ARN are mutually exclusive parameters."
+            raise CommonServiceException(
+                "ValidationException",
+                "LogGroup name and LogGroup ARN are mutually exclusive parameters.",
             )
         request_copy = copy.deepcopy(request)
         if log_group_identifier:

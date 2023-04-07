@@ -432,7 +432,7 @@ class TransformerUtility:
     @staticmethod
     def logs_api():
         """
-        :return: array with Transfromers, for logs api
+        :return: array with Transformers, for logs api
         """
         return [
             TransformerUtility.key_value("logGroupName"),
