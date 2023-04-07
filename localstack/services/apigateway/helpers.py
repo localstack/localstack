@@ -373,6 +373,7 @@ class RequestParametersResolver:
     """
     Integration request data mapping expressions
     https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html
+    https://docs.aws.amazon.com/apigateway/latest/developerguide/websocket-api-data-mapping.html
     """
 
     def resolve(self, context: ApiInvocationContext) -> IntegrationParameters:
@@ -384,8 +385,22 @@ class RequestParametersResolver:
 
         :return: IntegrationParameters
         """
-        method_request_params: Dict[str, Any] = self.method_request_dict(context)
 
+        if context.is_websocket_request():
+            sourced_request_params: Dict[str, Any] = self.route_request_dict(context)
+        else:
+            sourced_request_params: Dict[str, Any] = self.method_request_dict(context)
+
+        # For WebSocket requests, the request parameters are source from the route request parameters.
+        #
+        # requestParameters: {
+        #    "integration.request.path.pathParam": "route.request.header.Content-Type"
+        #    "integration.request.querystring.who": "route.request.querystring.who",
+        #    "integration.request.header.Content-Type": "'application/json'",
+        # }
+        #
+        # For REST requests, the request parameters are source from the method request parameters.
+        #
         # requestParameters: {
         #     "integration.request.path.pathParam": "method.request.header.Content-Type"
         #     "integration.request.querystring.who": "method.request.querystring.who",
@@ -397,8 +412,8 @@ class RequestParametersResolver:
         # request parameters
         integrations_parameters = {}
         for k, v in request_params.items():
-            if v.lower() in method_request_params:
-                integrations_parameters[k] = method_request_params[v.lower()]
+            if v.lower() in sourced_request_params:
+                integrations_parameters[k] = sourced_request_params[v.lower()]
             else:
                 # static values
                 integrations_parameters[k] = v.replace("'", "")
@@ -448,6 +463,35 @@ class RequestParametersResolver:
 
         if context.data:
             params["method.request.body"] = context.data
+
+        return {key.lower(): val for key, val in params.items()}
+
+    def route_request_dict(self, context):
+        """
+        Build a dict with all route request parameters and their values.
+
+        :return: dict with all route request parameters and their values,
+        and all keys in lowercase
+        """
+        params: Dict[str, str] = {}
+
+        # TODO: add support for context variables - include in apiinvocationcontext
+        # TODO: add support for multi-values headers and multi-values querystring
+
+        for k, v in context.query_params().items():
+            params[f"route.request.querystring.{k}"] = v
+
+        for k, v in context.headers.items():
+            params[f"route.request.header.{k}"] = v
+
+        for k, v in context.path_params.items():
+            params[f"route.request.path.{k}"] = v
+
+        for k, v in context.stage_variables.items():
+            params[f"stagevariables.{k}"] = v
+
+        if context.data:
+            params["route.request.body"] = context.data
 
         return {key.lower(): val for key, val in params.items()}
 
