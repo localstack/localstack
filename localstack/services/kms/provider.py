@@ -53,6 +53,7 @@ from localstack.aws.api.kms import (
     GrantTokenList,
     GrantTokenType,
     ImportKeyMaterialResponse,
+    IncorrectKeyException,
     InvalidCiphertextException,
     InvalidGrantIdException,
     InvalidKeyUsageException,
@@ -664,11 +665,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key = self._get_key(context, key_id)
         key_id = key.metadata["KeyId"]
         if key_id != ciphertext.key_id:
-            # Haven't checked if this is the exception being raised by AWS in such cases.
-            ValidationError(
-                f"The supplied KeyId {key_id} doesn't match the KeyId {ciphertext.key_id} present in "
-                f"ciphertext. Keep in mind that LocalStack currently doesn't perform asymmetric encryption"
+            raise IncorrectKeyException(
+                "The key ID in the request does not identify a CMK that can perform this operation."
             )
+
         self._validate_key_for_encryption_decryption(context, key)
         self._validate_key_state_not_pending_import(key)
 

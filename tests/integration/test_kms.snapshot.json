@@ -1247,7 +1247,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_error_messaging_for_invalid_keys": {
-    "recorded-date": "06-04-2023, 16:59:05",
+    "recorded-date": "07-04-2023, 14:16:00",
     "recorded-content": {
       "generate-mac-invalid-key-id": {
         "Error": {
@@ -1288,6 +1288,17 @@
           "Message": "<key-arn> key usage is SIGN_VERIFY which is not valid for Encrypt."
         },
         "message": "<key-arn> key usage is SIGN_VERIFY which is not valid for Encrypt.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "decrypt-invalid-key-id": {
+        "Error": {
+          "Code": "IncorrectKeyException",
+          "Message": "The key ID in the request does not identify a CMK that can perform this operation."
+        },
+        "message": "The key ID in the request does not identify a CMK that can perform this operation.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
