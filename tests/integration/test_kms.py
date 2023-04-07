@@ -1083,3 +1083,12 @@ class TestKMS:
         with pytest.raises(ClientError) as e:
             kms_client.encrypt(Plaintext="test message 123!@#", KeyId=sign_verify_key_id)
         snapshot.match("encrypt-invalid-key-id", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_plaintext_size_for_encrypt(self, kms_create_key, snapshot, aws_client):
+        key_id = kms_create_key()["KeyId"]
+        message = b"test message 123 !%$@ 1234567890"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.encrypt(KeyId=key_id, Plaintext=base64.b64encode(message * 100))
+        snapshot.match("invalid-plaintext-size-encrypt", e.value.response)
