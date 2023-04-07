@@ -1,0 +1,23 @@
+name: Enforce only bugfix on master
+
+on:
+  pull_request:
+    types: [labeled, unlabeled, opened, edited, synchronize]
+    # only enforce for PRs targeting the master branch
+    branches:
+    - master
+jobs:
+  # make sure _all_ PRs have a semver label
+  enforce-no-major-minor-label:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: mheap/github-action-required-labels@v4
+        with:
+          mode: exactly
+          count: 0
+          labels: "semver: minor, semver: major"
+          add_comment: true
+          message: "Currently, only bugfix PRs are allowed on master. Your PR labels ({{ applied }}) indicate that it cannot be merged into the master at this time."
