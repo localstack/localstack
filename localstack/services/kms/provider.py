@@ -627,6 +627,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         encryption_algorithm: EncryptionAlgorithmSpec = None,
     ) -> EncryptResponse:
         key = self._get_key(context, key_id)
+        self._validate_plaintext_length(plaintext)
         self._validate_key_for_encryption_decryption(context, key)
         self._validate_key_state_not_pending_import(key)
 
@@ -998,6 +999,13 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 raise InvalidKeyUsageException(
                     f"Algorithm {algorithm} is incompatible with key spec {key_spec}."
                 )
+
+    def _validate_plaintext_length(self, plaintext: bytes):
+        if len(plaintext) > 4096:
+            raise ValidationException(
+                "1 validation error detected: Value at 'plaintext' failed to satisfy constraint: "
+                "Member must have length less than or equal to 4096"
+            )
 
     def _validate_grant_request(self, data: Dict, store: KmsStore):
         if "KeyId" not in data or "GranteePrincipal" not in data or "Operations" not in data:

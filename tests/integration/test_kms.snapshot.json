@@ -1294,5 +1294,20 @@
         }
       }
     }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_plaintext_size_for_encrypt": {
+    "recorded-date": "07-04-2023, 10:52:32",
+    "recorded-content": {
+      "invalid-plaintext-size-encrypt": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value at 'plaintext' failed to satisfy constraint: Member must have length less than or equal to 4096"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
