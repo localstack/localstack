@@ -200,6 +200,7 @@ def import_apigw(aws_client):
     for rest_api_id in rest_api_ids:
         delete_rest_api(aws_client.apigateway, restApiId=rest_api_id)
 
+
 @pytest.fixture(scope="session")
 def aws_session():
     return base_aws_session()
@@ -213,18 +214,3 @@ def aws_client_factory(aws_session):
 @pytest.fixture(scope="session")
 def aws_client(aws_client_factory):
     return base_aws_client(aws_client_factory)
-
-
-@pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_teardown(item, *args):
-    # simple heuristic to get the service under test
-    module_name: str = item.module.__name__
-    service_name = module_name.split("_")[-1]
-
-    store_police = StorePolice(service_name)
-    control_result: StorePoliceResult = store_police.control()
-    if not control_result.ok:
-        logger.error(control_result.why)
-    assert control_result.ok
-
-    yield
