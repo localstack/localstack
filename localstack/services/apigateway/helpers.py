@@ -475,6 +475,7 @@ class RequestParametersResolver:
         """
         params: Dict[str, str] = {}
 
+        # TODO: headers, querystring is only available for the route $connect
         # TODO: add support for context variables - include in apiinvocationcontext
         # TODO: add support for multi-values headers and multi-values querystring
 
