@@ -131,8 +131,6 @@ VALID_OPERATIONS = [
     "GenerateDataKeyPair",
     "GenerateDataKeyPairWithoutPlaintext",
 ]
-# maximum size allowed by AWS
-PLAINTEXT_MAX_SIZE_BYTES = 4096
 
 
 class ValidationError(CommonServiceException):
