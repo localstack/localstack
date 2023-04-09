@@ -18,15 +18,9 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestIsOperators:
-    def test_is_boolean(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
-    ):
+    def test_is_boolean(self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -34,15 +28,9 @@ class TestIsOperators:
             comparisons=TYPE_COMPARISONS,
         )
 
-    def test_is_null(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
-    ):
+    def test_is_null(self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -50,15 +38,9 @@ class TestIsOperators:
             comparisons=TYPE_COMPARISONS,
         )
 
-    def test_is_numeric(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
-    ):
+    def test_is_numeric(self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -66,15 +48,9 @@ class TestIsOperators:
             comparisons=TYPE_COMPARISONS,
         )
 
-    def test_is_present(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
-    ):
+    def test_is_present(self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -82,15 +58,9 @@ class TestIsOperators:
             comparisons=TYPE_COMPARISONS,
         )
 
-    def test_is_string(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
-    ):
+    def test_is_string(self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -100,14 +70,10 @@ class TestIsOperators:
 
     @pytest.mark.skip(reason="TODO: investigate IsTimestamp behaviour.")
     def test_is_timestamp(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
+        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,

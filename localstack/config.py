@@ -582,6 +582,9 @@ EDGE_FORWARD_URL = os.environ.get("EDGE_FORWARD_URL", "").strip()
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
 
+# Default timeout for Docker API calls sent by the Docker SDK client, in seconds.
+DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS = int(os.environ.get("DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS") or 60)
+
 # whether to enable API-based updates of configuration variables at runtime
 ENABLE_CONFIG_UPDATES = is_env_true("ENABLE_CONFIG_UPDATES")
 
@@ -992,6 +995,7 @@ CONFIG_ENV_VARS = [
     "DISABLE_CUSTOM_CORS_S3",
     "DISABLE_EVENTS",
     "DOCKER_BRIDGE_IP",
+    "DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS",
     "DYNAMODB_ERROR_PROBABILITY",
     "DYNAMODB_HEAP_SIZE",
     "DYNAMODB_IN_MEMORY",

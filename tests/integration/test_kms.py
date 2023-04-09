@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+import re
 from datetime import datetime
 from random import getrandbits
 
@@ -13,6 +14,10 @@ from cryptography.hazmat.primitives.serialization import load_der_public_key
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.utils.strings import short_uid
+
+PATTERN_KEY_ARN = re.compile(
+    r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([^:]+)?:(\d{12})?:key/[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+)
 
 
 @pytest.fixture(scope="class")
@@ -57,8 +62,8 @@ def _get_alias(kms_client, alias_name, key_id=None):
 
 class TestKMS:
     @pytest.fixture(scope="class")
-    def user_arn(self, sts_client):
-        return sts_client.get_caller_identity()["Arn"]
+    def user_arn(self, aws_client):
+        return aws_client.sts.get_caller_identity()["Arn"]
 
     @pytest.mark.aws_validated
     def test_create_alias(self, kms_create_alias, kms_create_key, snapshot):
@@ -959,7 +964,7 @@ class TestKMS:
         ],
     )
     def test_generate_and_verify_mac(
-        self, kms_client, kms_create_key, key_spec, mac_algo, snapshot
+        self, kms_create_key, key_spec, mac_algo, snapshot, aws_client
     ):
         key_id = kms_create_key(
             Description="test hmac key",
@@ -967,14 +972,14 @@ class TestKMS:
             KeyUsage="GENERATE_VERIFY_MAC",
         )["KeyId"]
 
-        generate_mac_response = kms_client.generate_mac(
+        generate_mac_response = aws_client.kms.generate_mac(
             KeyId=key_id,
             Message="some important message",
             MacAlgorithm=mac_algo,
         )
         snapshot.match("generate-mac", generate_mac_response)
 
-        verify_mac_response = kms_client.verify_mac(
+        verify_mac_response = aws_client.kms.verify_mac(
             KeyId=key_id,
             Message="some important message",
             MacAlgorithm=mac_algo,
@@ -984,7 +989,7 @@ class TestKMS:
 
         # test generate mac with invalid key-id
         with pytest.raises(ClientError) as e:
-            kms_client.generate_mac(
+            aws_client.kms.generate_mac(
                 KeyId="key_id",
                 Message="some important message",
                 MacAlgorithm=mac_algo,
@@ -993,7 +998,7 @@ class TestKMS:
 
         # test verify mac with invalid key-id
         with pytest.raises(ClientError) as e:
-            kms_client.verify_mac(
+            aws_client.kms.verify_mac(
                 KeyId="key_id",
                 Message="some important message",
                 MacAlgorithm=mac_algo,
@@ -1015,7 +1020,7 @@ class TestKMS:
             ("HMAC_256", "INVALID"),
         ],
     )
-    def test_invalid_generate_mac(self, kms_client, kms_create_key, key_spec, mac_algo, snapshot):
+    def test_invalid_generate_mac(self, kms_create_key, key_spec, mac_algo, snapshot, aws_client):
         key_id = kms_create_key(
             Description="test hmac key",
             KeySpec=key_spec,
@@ -1023,7 +1028,7 @@ class TestKMS:
         )["KeyId"]
 
         with pytest.raises(ClientError) as e:
-            kms_client.generate_mac(
+            aws_client.kms.generate_mac(
                 KeyId=key_id,
                 Message="some important message",
                 MacAlgorithm=mac_algo,
@@ -1041,7 +1046,7 @@ class TestKMS:
         ],
     )
     def test_invalid_verify_mac(
-        self, kms_client, kms_create_key, key_spec, mac_algo, verify_msg, snapshot
+        self, kms_create_key, key_spec, mac_algo, verify_msg, snapshot, aws_client
     ):
         key_id = kms_create_key(
             Description="test hmac key",
@@ -1049,7 +1054,7 @@ class TestKMS:
             KeyUsage="GENERATE_VERIFY_MAC",
         )["KeyId"]
 
-        generate_mac_response = kms_client.generate_mac(
+        generate_mac_response = aws_client.kms.generate_mac(
             KeyId=key_id,
             Message="some important message",
             MacAlgorithm="HMAC_SHA_256",
@@ -1057,10 +1062,74 @@ class TestKMS:
         snapshot.match("generate-mac", generate_mac_response)
 
         with pytest.raises(ClientError) as e:
-            kms_client.verify_mac(
+            aws_client.kms.verify_mac(
                 KeyId=key_id,
                 Message=verify_msg,
                 MacAlgorithm=mac_algo,
                 Mac=generate_mac_response["Mac"],
             )
         snapshot.match("verify-mac", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_error_messaging_for_invalid_keys(self, aws_client, kms_create_key, snapshot):
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_KEY_ARN, "<key-arn>"))
+
+        hmac_key_id = kms_create_key(
+            Description="test key hmac",
+            KeySpec="HMAC_224",
+            KeyUsage="GENERATE_VERIFY_MAC",
+        )["KeyId"]
+
+        encrypt_decrypt_key_id = kms_create_key(Description="test key encrypt decrypt")["KeyId"]
+
+        sign_verify_key_id = kms_create_key(
+            Description="test key sign verify", KeyUsage="SIGN_VERIFY", KeySpec="RSA_2048"
+        )["KeyId"]
+
+        # test generate mac with invalid key id
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.generate_mac(
+                KeyId=encrypt_decrypt_key_id,
+                Message="some important message",
+                MacAlgorithm="HMAC_SHA_224",
+            )
+        snapshot.match("generate-mac-invalid-key-id", e.value.response)
+
+        # test create signature for a message with invalid key id
+        kwargs = {"KeyId": hmac_key_id, "SigningAlgorithm": "RSASSA_PSS_SHA_256"}
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.sign(MessageType="RAW", Message="test message 123!@#", **kwargs)
+        snapshot.match("sign-invalid-key-id", e.value.response)
+
+        # test verify signature for a message with invalid key id
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.verify(
+                MessageType="RAW",
+                Signature=b"random text",
+                Message="test message",
+                KeyId=encrypt_decrypt_key_id,
+                SigningAlgorithm="ECDSA_SHA_256",
+            )
+        snapshot.match("verify-invalid-key-id", e.value.response)
+
+        # test encrypting a text with invalid key id
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.encrypt(Plaintext="test message 123!@#", KeyId=sign_verify_key_id)
+        snapshot.match("encrypt-invalid-key-id", e.value.response)
+
+        # test decrypting a text with invalid key id
+        ciphertext_blob = aws_client.kms.encrypt(
+            Plaintext="test message 123!@#", KeyId=encrypt_decrypt_key_id
+        )["CiphertextBlob"]
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(CiphertextBlob=ciphertext_blob, KeyId=hmac_key_id)
+        snapshot.match("decrypt-invalid-key-id", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_plaintext_size_for_encrypt(self, kms_create_key, snapshot, aws_client):
+        key_id = kms_create_key()["KeyId"]
+        message = b"test message 123 !%$@ 1234567890"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.encrypt(KeyId=key_id, Plaintext=base64.b64encode(message * 100))
+        snapshot.match("invalid-plaintext-size-encrypt", e.value.response)
