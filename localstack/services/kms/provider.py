@@ -631,6 +631,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     ) -> EncryptResponse:
         key = self._get_key(context, key_id)
         self._validate_plaintext_length(plaintext)
+        self._validate_plaintext_key_type_based(plaintext, key, encryption_algorithm)
         self._validate_key_for_encryption_decryption(context, key)
         self._validate_key_state_not_pending_import(key)
 
@@ -1020,7 +1021,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                     f" constraint: [Member must satisfy enum value set: {VALID_OPERATIONS}]"
                 )
 
-    def _validate_content_size(
+    def _validate_plaintext_key_type_based(
         self,
         plaintext: PlaintextType,
         key: KmsKey,
@@ -1045,14 +1046,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         if len(plaintext) > max_size_bytes:
             raise ValidationException(
                 f"Algorithm {encryption_algorithm} and key spec {key.metadata['KeySpec']} cannot encrypt data larger than {max_size_bytes} bytes."
-            )
-
-    def _validate_plaintext_max_size(self, plaintext: PlaintextType):
-        # Check if any plaintext are smaller than 4096 bytes independent of they key type.
-        if len(plaintext) > PLAINTEXT_MAX_SIZE_BYTES:
-            raise ValidationException(
-                "1 validation error detected: Value at 'plaintext' failed to satisfy constraint:"
-                " Member must have length less than or equal to 4096."
             )
 
 
