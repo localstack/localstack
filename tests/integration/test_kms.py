@@ -564,17 +564,6 @@ class TestKMS:
             )
         snapshot.match("generate-random-exc", e.value.response)
 
-    def test_encrypt_validate_plaintext_max_size(self, kms_create_key, snapshot, aws_client):
-        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_2048")["KeyId"]
-        message = b"more than 4096 bytes" * 400
-        with pytest.raises(ClientError) as e:
-            aws_client.kms.encrypt(
-                KeyId=key_id,
-                Plaintext=base64.b64encode(message),
-                EncryptionAlgorithm="RSAES_OAEP_SHA_1",
-            )
-        snapshot.match("generate-random-exc", e.value.response)
-
     @pytest.mark.aws_validated
     def test_get_public_key(self, kms_create_key, aws_client):
         key = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_2048")

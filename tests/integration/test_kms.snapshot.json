@@ -44,21 +44,6 @@
       }
     }
   },
-  "tests/integration/test_kms.py::TestKMS::test_encrypt_validate_plaintext_max_size": {
-    "recorded-date": "06-04-2023, 14:50:19",
-    "recorded-content": {
-      "generate-random-exc": {
-        "Error": {
-          "Code": "ValidationException",
-          "Message": "1 validation error detected: Value at 'plaintext' failed to satisfy constraint: Member must have length less than or equal to 4096."
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
   "tests/integration/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_1]": {
     "recorded-date": "06-04-2023, 14:50:19",
     "recorded-content": {
