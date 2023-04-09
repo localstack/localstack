@@ -62,8 +62,8 @@ def _get_alias(kms_client, alias_name, key_id=None):
 
 class TestKMS:
     @pytest.fixture(scope="class")
-    def user_arn(self, sts_client):
-        return sts_client.get_caller_identity()["Arn"]
+    def user_arn(self, aws_client):
+        return aws_client.sts.get_caller_identity()["Arn"]
 
     @pytest.mark.aws_validated
     def test_create_alias(self, kms_create_alias, kms_create_key, snapshot):
@@ -931,7 +931,7 @@ class TestKMS:
         ],
     )
     def test_generate_and_verify_mac(
-        self, kms_client, kms_create_key, key_spec, mac_algo, snapshot
+        self, kms_create_key, key_spec, mac_algo, snapshot, aws_client
     ):
         key_id = kms_create_key(
             Description="test hmac key",
@@ -939,14 +939,14 @@ class TestKMS:
             KeyUsage="GENERATE_VERIFY_MAC",
         )["KeyId"]
 
-        generate_mac_response = kms_client.generate_mac(
+        generate_mac_response = aws_client.kms.generate_mac(
             KeyId=key_id,
             Message="some important message",
             MacAlgorithm=mac_algo,
         )
         snapshot.match("generate-mac", generate_mac_response)
 
-        verify_mac_response = kms_client.verify_mac(
+        verify_mac_response = aws_client.kms.verify_mac(
             KeyId=key_id,
             Message="some important message",
             MacAlgorithm=mac_algo,
@@ -956,7 +956,7 @@ class TestKMS:
 
         # test generate mac with invalid key-id
         with pytest.raises(ClientError) as e:
-            kms_client.generate_mac(
+            aws_client.kms.generate_mac(
                 KeyId="key_id",
                 Message="some important message",
                 MacAlgorithm=mac_algo,
@@ -965,7 +965,7 @@ class TestKMS:
 
         # test verify mac with invalid key-id
         with pytest.raises(ClientError) as e:
-            kms_client.verify_mac(
+            aws_client.kms.verify_mac(
                 KeyId="key_id",
                 Message="some important message",
                 MacAlgorithm=mac_algo,
@@ -987,7 +987,7 @@ class TestKMS:
             ("HMAC_256", "INVALID"),
         ],
     )
-    def test_invalid_generate_mac(self, kms_client, kms_create_key, key_spec, mac_algo, snapshot):
+    def test_invalid_generate_mac(self, kms_create_key, key_spec, mac_algo, snapshot, aws_client):
         key_id = kms_create_key(
             Description="test hmac key",
             KeySpec=key_spec,
@@ -995,7 +995,7 @@ class TestKMS:
         )["KeyId"]
 
         with pytest.raises(ClientError) as e:
-            kms_client.generate_mac(
+            aws_client.kms.generate_mac(
                 KeyId=key_id,
                 Message="some important message",
                 MacAlgorithm=mac_algo,
@@ -1013,7 +1013,7 @@ class TestKMS:
         ],
     )
     def test_invalid_verify_mac(
-        self, kms_client, kms_create_key, key_spec, mac_algo, verify_msg, snapshot
+        self, kms_create_key, key_spec, mac_algo, verify_msg, snapshot, aws_client
     ):
         key_id = kms_create_key(
             Description="test hmac key",
@@ -1021,7 +1021,7 @@ class TestKMS:
             KeyUsage="GENERATE_VERIFY_MAC",
         )["KeyId"]
 
-        generate_mac_response = kms_client.generate_mac(
+        generate_mac_response = aws_client.kms.generate_mac(
             KeyId=key_id,
             Message="some important message",
             MacAlgorithm="HMAC_SHA_256",
@@ -1029,7 +1029,7 @@ class TestKMS:
         snapshot.match("generate-mac", generate_mac_response)
 
         with pytest.raises(ClientError) as e:
-            kms_client.verify_mac(
+            aws_client.kms.verify_mac(
                 KeyId=key_id,
                 Message=verify_msg,
                 MacAlgorithm=mac_algo,

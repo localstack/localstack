@@ -181,18 +181,18 @@ def localstack_runtime():
 
 
 @pytest.fixture
-def import_apigw(apigateway_client):
+def import_apigw(aws_client):
     rest_api_ids = []
 
     def _import_apigateway_function(*args, **kwargs):
-        response, root_id = import_rest_api(apigateway_client, **kwargs)
+        response, root_id = import_rest_api(aws_client.apigateway, **kwargs)
         rest_api_ids.append(response.get("id"))
         return response, root_id
 
     yield _import_apigateway_function
 
     for rest_api_id in rest_api_ids:
-        delete_rest_api(apigateway_client, restApiId=rest_api_id)
+        delete_rest_api(aws_client.apigateway, restApiId=rest_api_id)
 
 
 @pytest.fixture(scope="session")
