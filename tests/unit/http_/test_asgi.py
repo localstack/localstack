@@ -9,6 +9,8 @@ from typing import List
 import requests
 from werkzeug import Request, Response
 
+from localstack.http.request import restore_payload
+
 LOG = logging.getLogger(__name__)
 
 
@@ -126,6 +128,20 @@ def test_chunked_transfer_encoding_request(serve_asgi_adapter):
     assert response.text == "foobar\nbaz"
 
     assert request_list[0].headers["Transfer-Encoding"].lower() == "chunked"
+
+
+def test_restore_parsed_payload(serve_asgi_adapter):
+    @Request.application
+    def app(request: Request) -> Response:
+        assert not request.data
+        assert dict(request.form) == {"foo": "bar", "baz": "ed"}
+        assert restore_payload(request) == b"foo=bar&baz=ed"
+        return Response("", 200)
+
+    server = serve_asgi_adapter(app)
+
+    response = requests.post(server.url, data={"foo": "bar", "baz": "ed"})
+    assert response.ok
 
 
 def test_input_stream_methods(serve_asgi_adapter):

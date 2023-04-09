@@ -6,6 +6,7 @@ import math
 import typing as t
 from asyncio import AbstractEventLoop
 from concurrent.futures import Executor
+from io import BufferedReader, RawIOBase
 from tempfile import SpooledTemporaryFile
 from urllib.parse import quote, unquote, urlparse
 
@@ -110,10 +111,89 @@ async def to_async_generator(
         yield val
 
 
-class HTTPRequestEventStreamAdapter:
+class CopyingReader(io.RawIOBase):
     """
-    An adapter to expose an ASGIReceiveCallable coroutine that returns HTTPRequestEvent
-    instances, as a PEP 3333 InputStream for consumption in synchronous WSGI/Werkzeug code.
+    A reader that writes everything it reads from an underlying source stream into a file.
+    """
+
+    def __init__(self, source: t.IO[bytes], file: t.IO[bytes]):
+        self.source = source
+        self.file = file
+
+    def writable(self) -> bool:
+        return False
+
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def read(self, size: t.Optional[int] = None) -> bytes:
+        data = self.source.read(size)
+        if data:
+            self.file.write(data)
+        return data
+
+    def readline(self, size: t.Optional[int] = None) -> bytes:
+        line = self.source.readline(size)
+        if line:
+            self.file.write(line)
+        return line
+
+    def readlines(self, size: t.Optional[int] = None) -> t.List[bytes]:
+        lines = self.source.readlines(size)
+        if lines:
+            self.file.writelines(lines)
+        return lines
+
+
+class CopyingHTTPRequestEventStreamAdapter(CopyingReader):
+    """
+    This is a special implementation of a CopyingReader that creates an underlying
+    RawHTTPRequestEventStreamAdapter and copies all data read from it into a SpooledTemporaryFile that can
+    later be used to restore the payload or proxy an already consumed payload.
+    """
+
+    read_buffer_size: int = 2**13  # 8KiB
+    """The size of the read buffer when reading from the raw socket stream."""
+
+    max_in_mem_size: int = 2**16  # 64KiB
+    """The amount of data of a request held in memory before spooling it to disk."""
+
+    def __init__(
+        self, receive: "ASGIReceiveCallable", event_loop: t.Optional[AbstractEventLoop] = None
+    ) -> None:
+        self.raw = RawHTTPRequestEventStreamAdapter(receive, event_loop)
+
+        super().__init__(
+            source=BufferedReader(self.raw, buffer_size=self.read_buffer_size),
+            file=SpooledTemporaryFile(max_size=self.max_in_mem_size),  # noqa
+        )
+
+    def restore_payload(self) -> bytes:
+        self.file.seek(0)
+        return self.file.read()
+
+
+def HTTPRequestEventStreamAdapter(
+    receive: "ASGIReceiveCallable", event_loop: t.Optional[AbstractEventLoop] = None
+) -> t.IO[bytes]:
+    """
+    Factory for exposing an ASGIReceiveCallable as an IO stream.
+    :param receive:
+    :param event_loop:
+    :return:
+    """
+    return t.cast(t.IO[bytes], CopyingHTTPRequestEventStreamAdapter(receive, event_loop))
+
+
+class RawHTTPRequestEventStreamAdapter(RawIOBase):
+    """
+    An adapter to expose an ASGIReceiveCallable coroutine that returns HTTPRequestEvent instances as an IO
+    stream for synchronous WSGI/Werkzeug code. The adapter is a Raw IO stream, meaning it does not have
+    optimized ``read``, ``readline``, or ``readlines`` methods. Make sure to use a ``BufferedReader`` around
+    the stream adapter.
     """
 
     def __init__(
@@ -124,110 +204,55 @@ class HTTPRequestEventStreamAdapter:
         self.event_loop = event_loop or asyncio.get_event_loop()
 
         self._more_body = True
-        self._buffer = bytearray()
-        self._buffer_file = SpooledTemporaryFile()
 
-    def _read_into(self, buf: bytearray) -> t.Tuple[int, bool]:
+        self._buffered_body = None
+        self._buffered_body_pos = 0
+
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, buf: bytearray | memoryview) -> int:
         if not self._more_body:
-            return 0, False
+            return 0
 
-        recv_future = asyncio.run_coroutine_threadsafe(self.receive(), self.event_loop)
-        event = recv_future.result()
-        # TODO: disconnect events
-        body = event["body"]
-        more = event.get("more_body", False)
-        buf.extend(body)
-        self._more_body = more
-        return len(body), more
+        # max bytes we can write into the buffer
+        buf_size = len(buf)
 
-    def read(self, size: t.Optional[int] = None) -> bytes:
-        """
-        Reads up to ``size`` bytes from the object and returns them. As a convenience, if ``size`` is unspecified or
-        ``-1``, all bytes until EOF are returned. Like RawIOBase specifies, only one system call is ever made (in
-        this case, a call to the ASGI receive callable). Fewer than ``size`` bytes may be returned if the underlying
-        call returns fewer than ``size`` bytes.
+        # _buffered_body holds the carry-over of what we didn't read in the last iteration
+        if self._buffered_body is None:
+            # read from the underlying socket stream
+            recv_future = asyncio.run_coroutine_threadsafe(self.receive(), self.event_loop)
+            event = recv_future.result()
+            # TODO: disconnect events
+            more = event.get("more_body", False)
 
-        :param size: the number of bytes to read
-        :return:
-        """
-        buf = self._buffer
-
-        if not buf and not self._more_body:
-            return b""
-
-        if size is None or size == -1:
-            while True:
-                read, more = self._read_into(buf)
-                if not more:
-                    break
-
-            arr = bytes(buf)
-            buf.clear()
-            return arr
-
-        if len(buf) < size:
-            self._read_into(buf)
-
-        copy = bytes(buf[:size])
-        self._buffer = buf[size:]
-        return copy
-
-    def readline(self, size: t.Optional[int] = None) -> bytes:
-        buf = self._buffer
-        size = size if size is not None else -1
-
-        while True:
-            i = buf.find(b"\n")  # FIXME: scans the whole buffer every time
-
-            if i >= 0:
-                if 0 < size < i:
-                    break  # no '\n' in range
-                else:
-                    arr = bytes(buf[: (i + 1)])
-                    self._buffer = buf[(i + 1) :]
-                    return arr
-
-            # ensure the buffer has at least `size` bytes (or all)
-            if size > 0:
-                if len(buf) >= size:
-                    break
-            _, more = self._read_into(buf)
             if not more:
-                break
+                self._more_body = False
+                return 0
 
-        if size > 0:
-            arr = bytes(buf[:size])
-            self._buffer = buf[size:]
-            return arr
+            body = self._buffered_body = event["body"]
+            pos = self._buffered_body_pos = 0
         else:
-            arr = bytes(buf)
-            buf.clear()
-            return arr
+            body = self._buffered_body
+            pos = self._buffered_body_pos
 
-    def readlines(self, size: t.Optional[int] = None) -> t.List[bytes]:
-        if size is None or size < 0:
-            return [line for line in self]
+        remaining = len(body) - pos
 
-        lines = []
-        while size > 0:
-            try:
-                line = self.__next__()
-            except StopIteration:
-                return lines
+        if remaining <= buf_size:
+            # the easiest case, where we write the entire remaining event body into the buffer. we may return
+            # less than the buffer size allows, but that's ok for raw IO streams.
+            buf[:remaining] = body[pos:]
+            self._buffered_body = None
+            return remaining
 
-            lines.append(line)
-            size = size - len(line)
+        # in this case, we can read at max buf_size from the body into the buffer, and need to save the
+        # rest for the next call
+        to_read = min(remaining, buf_size)
+        buf[:to_read] = body[pos : pos + to_read]
 
-        return lines
+        self._buffered_body_pos = pos + to_read
 
-    def __next__(self):
-        line = self.readline()
-        if line == b"" and not self._more_body:
-            raise StopIteration()
-        return line
-
-    def __iter__(self):
-        return self
+        return to_read
 
 
 class WsgiStartResponse:
