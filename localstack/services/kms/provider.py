@@ -1027,7 +1027,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     ):
         # max size values extracted from AWS boto3 documentation
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/kms/client/encrypt.html
-        max_size_bytes = 4096
+        max_size_bytes = 4096 # max allowed size
         if key.metadata["KeySpec"] == "RSA_2048" and encryption_algorithm == "RSAES_OAEP_SHA_1":
             max_size_bytes = 214
         elif key.metadata["KeySpec"] == "RSA_2048" and encryption_algorithm == "RSAES_OAEP_SHA_256":
