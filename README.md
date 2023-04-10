@@ -49,9 +49,9 @@ LocalStack also provides additional features to make your life as a cloud develo
 
 ## Requirements
 
-- `python` (Python 3.7 up to 3.11 supported)
-- `pip` (Python package manager)
-- `Docker`
+* `python` (Python 3.7 up to 3.11 supported)
+* `pip` (Python package manager)
+* `Docker`
 
 ## Installing
 
@@ -133,8 +133,8 @@ To start using LocalStack, check out our documentation at <https://docs.localsta
 
 To use LocalStack with a graphical user interface, you can use the following UI clients:
 
-- [Commandeer desktop app](https://getcommandeer.com)
-- [DynamoDB Admin Web UI](https://www.npmjs.com/package/dynamodb-admin)
+* [Commandeer desktop app](https://getcommandeer.com)
+* [DynamoDB Admin Web UI](https://www.npmjs.com/package/dynamodb-admin)
 
 ## Releases
 
