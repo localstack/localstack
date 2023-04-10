@@ -493,7 +493,8 @@ class EmailJsonTopicPublisher(TopicPublisher):
     """
 
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
-        ses_client = aws_stack.connect_to_service("ses")
+        region = extract_region_from_arn(subscriber["Endpoint"])
+        ses_client = connect_to(region_name=region).ses
         if endpoint := subscriber.get("Endpoint"):
             ses_client.verify_email_address(EmailAddress=endpoint)
             ses_client.verify_email_address(EmailAddress="admin@localstack.com")
