@@ -16,6 +16,13 @@ def noop(*args, **kwargs):
     return Response()
 
 
+def echo_params_json(request: Request, params: dict[str, str]):
+    """Test dispatcher that echoes the url match parameters as json"""
+    r = Response()
+    r.set_json(params)
+    return r
+
+
 class RequestCollector:
     """Test dispatcher that collects requests into a list"""
 
@@ -175,6 +182,100 @@ class TestRouter:
                     headers={"Host": "localstack.cloud:5446"},
                 )
             )
+
+    def test_path_converter(self):
+        router = Router()
+        router.add(path="/<path:path>", endpoint=echo_params_json)
+
+        assert router.dispatch(Request(path="/my")).json == {"path": "my"}
+        assert router.dispatch(Request(path="/my/")).json == {"path": "my"}
+        assert router.dispatch(Request(path="/my/path foobar")).json == {"path": "my/path foobar"}
+
+    def test_path_converter_with_args(self):
+        router = Router()
+        router.add(path="/with-args/<some_id>/<path:path>", endpoint=echo_params_json)
+
+        assert router.dispatch(Request(path="/with-args/123456/my")).json == {
+            "some_id": "123456",
+            "path": "my",
+        }
+
+        # removes trailing slash
+        assert router.dispatch(Request(path="/with-args/123456/my/")).json == {
+            "some_id": "123456",
+            "path": "my",
+        }
+
+        # works with sub paths
+        assert router.dispatch(Request(path="/with-args/123456/my/path")).json == {
+            "some_id": "123456",
+            "path": "my/path",
+        }
+
+        # no sub path raises 404
+        with pytest.raises(NotFound):
+            router.dispatch(Request(path="/with-args/123456"))
+
+        with pytest.raises(NotFound):
+            router.dispatch(Request(path="/with-args/123456/"))
+
+    def test_path_converter_and_regex_converter_in_host(self):
+        router = Router()
+        router.add(
+            path="/<path:path>",
+            host="foobar.us-east-1.opensearch.localhost.localstack.cloud<regex('(:.*)?'):port>",
+            endpoint=echo_params_json,
+        )
+        assert router.dispatch(
+            Request(
+                method="GET",
+                path="/_cluster/health",
+                headers={"Host": "foobar.us-east-1.opensearch.localhost.localstack.cloud:4566"},
+            )
+        ).json == {"path": "_cluster/health", "port": ":4566"}
+
+    def test_path_converter_and_port_converter_in_host(self):
+        router = Router()
+        router.add(
+            path="/<path:path>",
+            host="foobar.us-east-1.opensearch.localhost.localstack.cloud<port:port>",
+            endpoint=echo_params_json,
+        )
+        assert router.dispatch(
+            Request(
+                method="GET",
+                path="/_cluster/health",
+                headers={"Host": "foobar.us-east-1.opensearch.localhost.localstack.cloud:4566"},
+            )
+        ).json == {"path": "_cluster/health", "port": 4566}
+
+        assert router.dispatch(
+            Request(
+                method="GET",
+                path="/_cluster/health",
+                headers={"Host": "foobar.us-east-1.opensearch.localhost.localstack.cloud"},
+            )
+        ).json == {"path": "_cluster/health", "port": None}
+
+    def test_path_converter_and_greedy_regex_in_host(self):
+        router = Router()
+        router.add(
+            path="/<path:path>",
+            # note how the regex '.*' will also include the port (so port will not do anything)
+            host="foobar.us-east-1.opensearch.<regex('.*'):host><port:port>",
+            endpoint=echo_params_json,
+        )
+        assert router.dispatch(
+            Request(
+                method="GET",
+                path="/_cluster/health",
+                headers={"Host": "foobar.us-east-1.opensearch.localhost.localstack.cloud:4566"},
+            )
+        ).json == {
+            "path": "_cluster/health",
+            "host": "localhost.localstack.cloud:4566",
+            "port": None,
+        }
 
     def test_remove_rule(self):
         router = Router()
