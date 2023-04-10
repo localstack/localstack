@@ -10,20 +10,19 @@ from localstack.http.proxy import Proxy
 from localstack.runtime import hooks
 from localstack.services.edge import ROUTER
 from localstack.services.s3.utils import S3_VIRTUAL_HOST_FORWARDED_HEADER
-from localstack.utils.aws.request_context import AWS_REGION_REGEX
 
 LOG = logging.getLogger(__name__)
+
+AWS_REGION_REGEX = r"(?:us-gov|us|ap|ca|cn|eu|sa)-[a-z]+-\d"
 
 # virtual-host style: https://{bucket-name}.s3.{region?}.{domain}:{port?}/{key-name}
 # ex: https://{bucket-name}.s3.{region}.localhost.localstack.cloud.com:4566/{key-name}
 # ex: https://{bucket-name}.s3.{region}.amazonaws.com/{key-name}
-VHOST_REGEX_PATTERN = f"<regex('.*'):bucket>.s3.<regex('({AWS_REGION_REGEX}\\.)?'):region><regex('.*'):domain><regex('(?::\\d+)?'):port>"
+VHOST_REGEX_PATTERN = f"<regex('.*'):bucket>.s3.<regex('(?:{AWS_REGION_REGEX}.)?'):region><domain>"
 
 # path addressed request with the region in the hostname
 # https://s3.{region}.localhost.localstack.cloud.com/{bucket-name}/{key-name}
-PATH_WITH_REGION_PATTERN = (
-    f"s3.<regex('({AWS_REGION_REGEX}\\.)'):region><regex('.*'):domain><regex('(?::\\d+)?'):port>"
-)
+PATH_WITH_REGION_PATTERN = f"s3.<regex('{AWS_REGION_REGEX}.'):region><domain>"
 
 
 class S3VirtualHostProxyHandler:
@@ -59,7 +58,7 @@ class S3VirtualHostProxyHandler:
         return forwarded
 
     @staticmethod
-    def _rewrite_url(url: str, domain: str, bucket: str, region: str, port: str, **kwargs) -> str:
+    def _rewrite_url(url: str, domain: str, bucket: str, region: str, **kwargs) -> str:
         """
         Rewrites the url so that it can be forwarded to moto. Used for vhost-style and for any url that contains the region.
 
@@ -70,10 +69,9 @@ class S3VirtualHostProxyHandler:
         If the region is contained in the host-name we remove it (for now) as moto cannot handle the region correctly
 
         :param url: the original url
-        :param domain: the domain name
+        :param domain: the domain name (anything after s3.<region>., may include a port)
         :param bucket: the bucket name
-        :param region: the region name
-        :param port: the port number (if specified in the original request URL), or an empty string
+        :param region: the region name (includes the '.' at the end)
         :return: re-written url as string
         """
         splitted = urlsplit(url)
@@ -90,7 +88,7 @@ class S3VirtualHostProxyHandler:
 
         # the user can specify whatever domain & port he wants in the Host header
         # we need to make sure we're redirecting the request to our edge URL, possibly s3.localhost.localstack.cloud
-        host = f"{domain}:{port}" if port else domain
+        host = domain
         edge_host = f"{LOCALHOST_HOSTNAME}:{config.get_edge_port_http()}"
         if host != edge_host:
             netloc = netloc.replace(host, edge_host)
