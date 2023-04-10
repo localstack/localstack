@@ -188,7 +188,7 @@ class TestRouter:
         router.add(path="/<path:path>", endpoint=echo_params_json)
 
         assert router.dispatch(Request(path="/my")).json == {"path": "my"}
-        assert router.dispatch(Request(path="/my/")).json == {"path": "my"}
+        assert router.dispatch(Request(path="/my/")).json == {"path": "my/"}
         assert router.dispatch(Request(path="/my/path foobar")).json == {"path": "my/path foobar"}
 
     def test_path_converter_with_args(self):
@@ -203,7 +203,7 @@ class TestRouter:
         # removes trailing slash
         assert router.dispatch(Request(path="/with-args/123456/my/")).json == {
             "some_id": "123456",
-            "path": "my",
+            "path": "my/",
         }
 
         # works with sub paths
@@ -223,7 +223,7 @@ class TestRouter:
         router = Router()
         router.add(
             path="/<path:path>",
-            host="foobar.us-east-1.opensearch.localhost.localstack.cloud<regex('(:.*)?'):port>",
+            host="foobar.us-east-1.opensearch.localhost.localstack.cloud<regex('(?::.*)?'):port>",
             endpoint=echo_params_json,
         )
         assert router.dispatch(
