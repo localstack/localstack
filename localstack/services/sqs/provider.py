@@ -586,7 +586,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def _require_queue_by_arn(self, context: RequestContext, queue_arn: str) -> SqsQueue:
         arn = parse_arn(queue_arn)
-        return self._require_queue(arn.account, arn.region, arn["resource"])
+        return self._require_queue(arn["account"], arn["region"], arn["resource"])
 
     def _resolve_queue(
         self,
