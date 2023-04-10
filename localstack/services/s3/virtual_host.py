@@ -32,6 +32,13 @@ class S3VirtualHostProxyHandler:
     addressed S3 bucket to a path addressed URL, to allow easy routing matching the ASF specs.
     """
 
+    def __init__(self, proxy: Proxy = None):
+        self.proxy = proxy or Proxy(
+            forward_base_url=config.get_edge_url(),
+            preserve_host=False,
+            client=SimpleStreamingRequestsClient()
+        )
+
     def __call__(self, request: Request, **kwargs) -> Response:
         # TODO region pattern currently not working -> removing it from url
         rewritten_url = self._rewrite_url(url=request.url, **kwargs)
@@ -43,14 +50,9 @@ class S3VirtualHostProxyHandler:
         copied_headers["Host"] = forward_to_url.netloc
         copied_headers[S3_VIRTUAL_HOST_FORWARDED_HEADER] = request.headers["host"]
         # do not preserve the Host when forwarding (to avoid an endless loop)
-        with Proxy(
-            forward_base_url=config.get_edge_url(),
-            preserve_host=False,
-            client=SimpleStreamingRequestsClient(),
-        ) as proxy:
-            forwarded = proxy.forward(
-                request=request, forward_path=forward_to_url.path, headers=copied_headers
-            )
+        forwarded = self.proxy.forward(
+            request=request, forward_path=forward_to_url.path, headers=copied_headers
+        )
         # remove server specific headers that will be added before being returned
         forwarded.headers.pop("date", None)
         forwarded.headers.pop("server", None)
@@ -96,6 +98,34 @@ class S3VirtualHostProxyHandler:
         return urlunsplit((splitted.scheme, netloc, path, splitted.query, splitted.fragment))
 
 
+def add_s3_vhost_rules(router, s3_proxy_handler):
+    router.add(
+        path="/",
+        host=VHOST_REGEX_PATTERN,
+        endpoint=s3_proxy_handler,
+        defaults={"path": "/"},
+    )
+
+    router.add(
+        path="/<path:path>",
+        host=VHOST_REGEX_PATTERN,
+        endpoint=s3_proxy_handler,
+    )
+
+    router.add(
+        path="/<regex('.+'):bucket>",
+        host=PATH_WITH_REGION_PATTERN,
+        endpoint=s3_proxy_handler,
+        defaults={"path": "/"},
+    )
+
+    router.add(
+        path="/<regex('.+'):bucket>/<path:path>",
+        host=PATH_WITH_REGION_PATTERN,
+        endpoint=s3_proxy_handler,
+    )
+
+
 @hooks.on_infra_ready(should_load=not config.LEGACY_S3_PROVIDER)
 def register_virtual_host_routes():
     """
@@ -103,28 +133,4 @@ def register_virtual_host_routes():
 
     """
     s3_proxy_handler = S3VirtualHostProxyHandler()
-    ROUTER.add(
-        path="/",
-        host=VHOST_REGEX_PATTERN,
-        endpoint=s3_proxy_handler,
-        defaults={"path": "/"},
-    )
-
-    ROUTER.add(
-        path="/<path:path>",
-        host=VHOST_REGEX_PATTERN,
-        endpoint=s3_proxy_handler,
-    )
-
-    ROUTER.add(
-        path="/<regex('.+'):bucket>",
-        host=PATH_WITH_REGION_PATTERN,
-        endpoint=s3_proxy_handler,
-        defaults={"path": "/"},
-    )
-
-    ROUTER.add(
-        path="/<regex('.+'):bucket>/<path:path>",
-        host=PATH_WITH_REGION_PATTERN,
-        endpoint=s3_proxy_handler,
-    )
+    add_s3_vhost_rules(ROUTER, s3_proxy_handler)
