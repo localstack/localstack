@@ -115,21 +115,21 @@ Learn more about [LocalStack AWS services](https://docs.localstack.cloud/referen
 
 You can run LocalStack through the following options:
 
-- [LocalStack CLI](https://docs.localstack.cloud/getting-started/installation/#localstack-cli)
-- [Docker](https://docs.localstack.cloud/getting-started/installation/#docker)
-- [Docker Compose](https://docs.localstack.cloud/getting-started/installation/#docker-compose)
-- [Helm](https://docs.localstack.cloud/getting-started/installation/#helm)
+* [LocalStack CLI](https://docs.localstack.cloud/getting-started/installation/#localstack-cli)
+* [Docker](https://docs.localstack.cloud/getting-started/installation/#docker)
+* [Docker Compose](https://docs.localstack.cloud/getting-started/installation/#docker-compose)
+* [Helm](https://docs.localstack.cloud/getting-started/installation/#helm)
 
 ## Usage
 
 To start using LocalStack, check out our documentation at <https://docs.localstack.cloud>.
 
-- [LocalStack Configuration](https://docs.localstack.cloud/references/configuration/)
-- [LocalStack in CI](https://docs.localstack.cloud/user-guide/ci/)
-- [LocalStack Integrations](https://docs.localstack.cloud/user-guide/integrations/)
-- [LocalStack Tools](https://docs.localstack.cloud/user-guide/tools/)
-- [Understanding LocalStack](https://docs.localstack.cloud/references/)
-- [Troubleshoot](doc/troubleshoot/README.md)
+* [LocalStack Configuration](https://docs.localstack.cloud/references/configuration/)
+* [LocalStack in CI](https://docs.localstack.cloud/user-guide/ci/)
+* [LocalStack Integrations](https://docs.localstack.cloud/user-guide/integrations/)
+* [LocalStack Tools](https://docs.localstack.cloud/user-guide/tools/)
+* [Understanding LocalStack](https://docs.localstack.cloud/references/)
+* [Troubleshoot](doc/troubleshoot/README.md)
 
 To use LocalStack with a graphical user interface, you can use the following UI clients:
 
@@ -144,9 +144,9 @@ Please refer to [GitHub releases](https://github.com/localstack/localstack/relea
 
 If you are interested in contributing to LocalStack:
 
-- Start by reading our [contributing guide](CONTRIBUTING.md).
-- Check out our [developer guide](https://docs.localstack.cloud/contributing/).
-- Navigate our codebase and [open issues](https://github.com/localstack/localstack/issues).
+* Start by reading our [contributing guide](CONTRIBUTING.md).
+* Check out our [developer guide](https://docs.localstack.cloud/contributing/).
+* Navigate our codebase and [open issues](https://github.com/localstack/localstack/issues).
 
 We are thankful for all the contributions and feedback we receive.
 
@@ -154,9 +154,9 @@ We are thankful for all the contributions and feedback we receive.
 
 To get in touch with LocalStack team for bugs/feature requests, support questions or general discussions, please use:
 
-- [LocalStack Slack Community](https://localstack.cloud/contact/)
-- [LocalStack Discussion Page](https://discuss.localstack.cloud/)
-- [LocalStack GitHub Issue tracker](https://github.com/localstack/localstack/issues)
+* [LocalStack Slack Community](https://localstack.cloud/contact/)
+* [LocalStack Discussion Page](https://discuss.localstack.cloud/)
+* [LocalStack GitHub Issue tracker](https://github.com/localstack/localstack/issues)
 
 ### Contributors
 
