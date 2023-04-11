@@ -9,6 +9,8 @@ import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Mapping, Tuple, TypeVar
 
+import psutil
+
 from localstack import constants
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
@@ -302,9 +304,10 @@ def in_docker():
             return True
 
     # containerd does not set any specific file or config, but does use
-    # io.containerd.snapshotter.v1.overlayfs as the overlay filesystem
-    with open("/proc/1/mountinfo", "rt") as infile:
-        if "io.containerd" in infile.read():
+    # io.containerd.snapshotter.v1.overlayfs as the overlay filesystem for `/`.
+    partitions = psutil.disk_partitions(all=True)
+    for partition in partitions:
+        if partition.mountpoint == "/" and "io.containerd" in partition.opts:
             return True
 
     return False
