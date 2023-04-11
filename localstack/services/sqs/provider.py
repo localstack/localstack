@@ -447,7 +447,7 @@ class SqsDeveloperEndpoints:
             raise QueueDoesNotExist()
 
         try:
-            region, account_id, queue_name = parse_queue_url(request.values["QueueUrl"])
+            account_id, region, queue_name = parse_queue_url(request.values["QueueUrl"])
         except ValueError:
             LOG.exception("Error while parsing Queue URL from request values: %s", request.values)
             raise InvalidAddress()
@@ -1288,10 +1288,14 @@ def resolve_queue_location(
     :return: tuple of account id, region and queue_name
     """
     if not queue_name:
-        if queue_url:
-            return parse_queue_url(queue_url)
-        else:
-            return parse_queue_url(context.request.base_url)
+        try:
+            if queue_url:
+                return parse_queue_url(queue_url)
+            else:
+                return parse_queue_url(context.request.base_url)
+        except ValueError:
+            # should work if queue name is passed in QueueUrl
+            return context.account_id, context.region, queue_url
 
     return context.account_id, context.region, queue_name
 
