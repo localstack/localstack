@@ -44,6 +44,96 @@
       }
     }
   },
+  "tests/integration/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_1]": {
+    "recorded-date": "06-04-2023, 14:50:19",
+    "recorded-content": {
+      "generate-random-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Algorithm RSAES_OAEP_SHA_1 and key spec RSA_2048 cannot encrypt data larger than 214 bytes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_256]": {
+    "recorded-date": "06-04-2023, 14:50:19",
+    "recorded-content": {
+      "generate-random-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Algorithm RSAES_OAEP_SHA_256 and key spec RSA_2048 cannot encrypt data larger than 190 bytes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_3072-RSAES_OAEP_SHA_1]": {
+    "recorded-date": "06-04-2023, 14:50:19",
+    "recorded-content": {
+      "generate-random-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Algorithm RSAES_OAEP_SHA_1 and key spec RSA_3072 cannot encrypt data larger than 342 bytes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_3072-RSAES_OAEP_SHA_256]": {
+    "recorded-date": "06-04-2023, 14:50:19",
+    "recorded-content": {
+      "generate-random-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Algorithm RSAES_OAEP_SHA_256 and key spec RSA_3072 cannot encrypt data larger than 318 bytes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_4096-RSAES_OAEP_SHA_1]": {
+    "recorded-date": "06-04-2023, 14:50:19",
+    "recorded-content": {
+      "generate-random-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Algorithm RSAES_OAEP_SHA_1 and key spec RSA_4096 cannot encrypt data larger than 470 bytes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_4096-RSAES_OAEP_SHA_256]": {
+    "recorded-date": "06-04-2023, 14:50:19",
+    "recorded-content": {
+      "generate-random-exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Algorithm RSAES_OAEP_SHA_256 and key spec RSA_4096 cannot encrypt data larger than 446 bytes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
   "tests/integration/test_kms.py::TestKMS::test_generate_random[12]": {
     "recorded-date": "25-10-2022, 19:27:20",
     "recorded-content": {

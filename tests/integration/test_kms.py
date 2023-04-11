@@ -543,6 +543,29 @@ class TestKMS:
         assert base64.b64decode(plaintext) == message
 
     @pytest.mark.aws_validated
+    @pytest.mark.parametrize(
+        "key_spec,algo",
+        [
+            ("RSA_2048", "RSAES_OAEP_SHA_1"),
+            ("RSA_2048", "RSAES_OAEP_SHA_256"),
+            ("RSA_3072", "RSAES_OAEP_SHA_1"),
+            ("RSA_3072", "RSAES_OAEP_SHA_256"),
+            ("RSA_4096", "RSAES_OAEP_SHA_1"),
+            ("RSA_4096", "RSAES_OAEP_SHA_256"),
+        ],
+    )
+    def test_encrypt_validate_plaintext_size_per_key_type(
+        self, kms_create_key, key_spec, algo, snapshot, aws_client
+    ):
+        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=key_spec)["KeyId"]
+        message = b"more than 500 bytes and less than 4096 bytes" * 20
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.encrypt(
+                KeyId=key_id, Plaintext=base64.b64encode(message), EncryptionAlgorithm=algo
+            )
+        snapshot.match("generate-random-exc", e.value.response)
+
+    @pytest.mark.aws_validated
     def test_get_public_key(self, kms_create_key, aws_client):
         key = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_2048")
         response = aws_client.kms.get_public_key(KeyId=key["KeyId"])
