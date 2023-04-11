@@ -542,6 +542,7 @@ class TestKMS:
         )["Plaintext"]
         assert base64.b64decode(plaintext) == message
 
+    @pytest.mark.aws_validated
     @pytest.mark.parametrize(
         "key_spec,algo",
         [
