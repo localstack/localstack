@@ -75,3 +75,29 @@ def test_trailing_slashes_are_not_strict():
 
     op, _ = router.match(Request("POST", "/2015-03-31/functions/"))
     assert op.name == "CreateFunction"
+
+
+def test_s3_query_args_routing():
+    router = RestServiceOperationRouter(load_service("s3"))
+
+    op, _ = router.match(Request("DELETE", "/mybucket?delete"))
+    assert op.name == "DeleteBucket"
+
+    op, _ = router.match(Request("DELETE", "/mybucket/?delete"))
+    assert op.name == "DeleteBucket"
+
+    op, _ = router.match(Request("DELETE", "/mybucket/mykey?delete"))
+    assert op.name == "DeleteObject"
+
+    op, _ = router.match(Request("DELETE", "/mybucket/mykey/?delete"))
+    assert op.name == "DeleteObject"
+
+
+def test_s3_bucket_operation_with_trailing_slashes():
+    router = RestServiceOperationRouter(load_service("s3"))
+
+    op, _ = router.match(Request("GET", "/mybucket"))
+    assert op.name == "ListObjects"
+
+    op, _ = router.match(Request("Get", "/mybucket/"))
+    assert op.name == "ListObjects"
