@@ -311,9 +311,17 @@ def in_docker():
                 if not line:
                     continue
 
+                # skip comments
+                if line[0] == "#":
+                    continue
+
                 # format (man 5 fstab)
                 # <spec> <mount point> <type> <options> <rest>...
                 parts = line.split()
+                if len(parts) < 4:
+                    # badly formatted line
+                    continue
+
                 mount_point = parts[1]
                 options = parts[3]
 
