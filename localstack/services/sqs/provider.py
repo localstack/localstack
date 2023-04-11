@@ -605,7 +605,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         :raises QueueDoesNotExist: if the queue does not exist
         """
         account_id, region_name, name = resolve_queue_location(context, queue_name, queue_url)
-        return self._require_queue(account_id, region_name, name)
+        return self._require_queue(account_id, region_name or context.region, name)
 
     def create_queue(
         self,

@@ -24,7 +24,7 @@ def is_sqs_queue_url(url):
 
 def parse_queue_url(queue_url: str) -> Tuple[str, Optional[str], str]:
     """
-    Parses an SQS Queue URL and returns a triple of region, account_id, and queue_name.
+    Parses an SQS Queue URL and returns a triple of account_id, region and queue_name.
 
     :param queue_url: the queue URL
     :return: account_id, region (may be None), queue_name
