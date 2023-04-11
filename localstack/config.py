@@ -647,7 +647,7 @@ FORCE_SHUTDOWN = is_env_not_false("FORCE_SHUTDOWN")
 MOCK_UNIMPLEMENTED = is_env_true("MOCK_UNIMPLEMENTED")
 
 # set variables no_proxy, i.e., run internal service calls directly
-no_proxy = ",".join([LOCALSTACK_HOSTNAME, LOCALHOST, LOCALHOST_IP, "[::1]"])
+no_proxy = ",".join([constants.LOCALHOST_HOSTNAME, LOCALHOST, LOCALHOST_IP, "[::1]"])
 if os.environ.get("no_proxy"):
     os.environ["no_proxy"] += "," + no_proxy
 elif os.environ.get("NO_PROXY"):
