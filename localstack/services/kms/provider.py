@@ -1059,11 +1059,12 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             and encryption_algorithm == EncryptionAlgorithmSpec.RSAES_OAEP_SHA_256
         ):
             max_size_bytes = 446
-            
+
         if len(plaintext) > max_size_bytes:
             raise ValidationException(
                 f"Algorithm {encryption_algorithm} and key spec {key.metadata['KeySpec']} cannot encrypt data larger than {max_size_bytes} bytes."
             )
+
 
 # ---------------
 # UTIL FUNCTIONS
