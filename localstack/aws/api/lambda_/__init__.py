@@ -1,6 +1,6 @@
 import sys
 from datetime import datetime
-from typing import IO, Dict, Iterable, List, Optional, Union
+from typing import IO, Dict, Iterable, Iterator, List, Optional, Union
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -147,6 +147,11 @@ class InvocationType(str):
     DryRun = "DryRun"
 
 
+class InvokeMode(str):
+    BUFFERED = "BUFFERED"
+    RESPONSE_STREAM = "RESPONSE_STREAM"
+
+
 class LastUpdateStatus(str):
     Successful = "Successful"
     Failed = "Failed"
@@ -191,6 +196,11 @@ class ProvisionedConcurrencyStatusEnum(str):
     IN_PROGRESS = "IN_PROGRESS"
     READY = "READY"
     FAILED = "FAILED"
+
+
+class ResponseStreamingInvocationType(str):
+    RequestResponse = "RequestResponse"
+    DryRun = "DryRun"
 
 
 class Runtime(str):
@@ -878,6 +888,7 @@ class CreateFunctionUrlConfigRequest(ServiceRequest):
     Qualifier: Optional[FunctionUrlQualifier]
     AuthType: FunctionUrlAuthType
     Cors: Optional[Cors]
+    InvokeMode: Optional[InvokeMode]
 
 
 class CreateFunctionUrlConfigResponse(TypedDict, total=False):
@@ -886,6 +897,7 @@ class CreateFunctionUrlConfigResponse(TypedDict, total=False):
     AuthType: FunctionUrlAuthType
     Cors: Optional[Cors]
     CreationTime: Timestamp
+    InvokeMode: Optional[InvokeMode]
 
 
 class DeleteAliasRequest(ServiceRequest):
@@ -1091,6 +1103,7 @@ class FunctionUrlConfig(TypedDict, total=False):
     LastModifiedTime: Timestamp
     Cors: Optional[Cors]
     AuthType: FunctionUrlAuthType
+    InvokeMode: Optional[InvokeMode]
 
 
 FunctionUrlConfigList = List[FunctionUrlConfig]
@@ -1173,6 +1186,7 @@ class GetFunctionUrlConfigResponse(TypedDict, total=False):
     Cors: Optional[Cors]
     CreationTime: Timestamp
     LastModifiedTime: Timestamp
+    InvokeMode: Optional[InvokeMode]
 
 
 class GetLayerVersionByArnRequest(ServiceRequest):
@@ -1273,6 +1287,37 @@ class InvokeAsyncRequest(ServiceRequest):
 
 class InvokeAsyncResponse(TypedDict, total=False):
     Status: Optional[HttpStatus]
+
+
+class InvokeResponseStreamUpdate(TypedDict, total=False):
+    Payload: Optional[Blob]
+
+
+class InvokeWithResponseStreamCompleteEvent(TypedDict, total=False):
+    ErrorCode: Optional[String]
+    ErrorDetails: Optional[String]
+    LogResult: Optional[String]
+
+
+class InvokeWithResponseStreamRequest(ServiceRequest):
+    Payload: Optional[IO[Blob]]
+    FunctionName: NamespacedFunctionName
+    InvocationType: Optional[ResponseStreamingInvocationType]
+    LogType: Optional[LogType]
+    ClientContext: Optional[String]
+    Qualifier: Optional[Qualifier]
+
+
+class InvokeWithResponseStreamResponseEvent(TypedDict, total=False):
+    PayloadChunk: Optional[InvokeResponseStreamUpdate]
+    InvokeComplete: Optional[InvokeWithResponseStreamCompleteEvent]
+
+
+class InvokeWithResponseStreamResponse(TypedDict, total=False):
+    StatusCode: Optional[Integer]
+    ExecutedVersion: Optional[Version]
+    EventStream: Iterator[InvokeWithResponseStreamResponseEvent]
+    ResponseStreamContentType: Optional[String]
 
 
 class LayerVersionContentInput(TypedDict, total=False):
@@ -1643,6 +1688,7 @@ class UpdateFunctionUrlConfigRequest(ServiceRequest):
     Qualifier: Optional[FunctionUrlQualifier]
     AuthType: Optional[FunctionUrlAuthType]
     Cors: Optional[Cors]
+    InvokeMode: Optional[InvokeMode]
 
 
 class UpdateFunctionUrlConfigResponse(TypedDict, total=False):
@@ -1652,6 +1698,7 @@ class UpdateFunctionUrlConfigResponse(TypedDict, total=False):
     Cors: Optional[Cors]
     CreationTime: Timestamp
     LastModifiedTime: Timestamp
+    InvokeMode: Optional[InvokeMode]
 
 
 class LambdaApi:
@@ -1781,6 +1828,7 @@ class LambdaApi:
         auth_type: FunctionUrlAuthType,
         qualifier: FunctionUrlQualifier = None,
         cors: Cors = None,
+        invoke_mode: InvokeMode = None,
     ) -> CreateFunctionUrlConfigResponse:
         raise NotImplementedError
 
@@ -1979,6 +2027,19 @@ class LambdaApi:
         function_name: NamespacedFunctionName,
         invoke_args: IO[BlobStream],
     ) -> InvokeAsyncResponse:
+        raise NotImplementedError
+
+    @handler("InvokeWithResponseStream")
+    def invoke_with_response_stream(
+        self,
+        context: RequestContext,
+        function_name: NamespacedFunctionName,
+        invocation_type: ResponseStreamingInvocationType = None,
+        log_type: LogType = None,
+        client_context: String = None,
+        qualifier: Qualifier = None,
+        payload: IO[Blob] = None,
+    ) -> InvokeWithResponseStreamResponse:
         raise NotImplementedError
 
     @handler("ListAliases")
@@ -2313,5 +2374,6 @@ class LambdaApi:
         qualifier: FunctionUrlQualifier = None,
         auth_type: FunctionUrlAuthType = None,
         cors: Cors = None,
+        invoke_mode: InvokeMode = None,
     ) -> UpdateFunctionUrlConfigResponse:
         raise NotImplementedError

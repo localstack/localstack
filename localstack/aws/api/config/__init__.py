@@ -549,6 +549,31 @@ class ResourceType(str):
     AWS_Events_Connection = "AWS::Events::Connection"
     AWS_EventSchemas_Schema = "AWS::EventSchemas::Schema"
     AWS_MediaPackage_PackagingConfiguration = "AWS::MediaPackage::PackagingConfiguration"
+    AWS_KinesisVideo_SignalingChannel = "AWS::KinesisVideo::SignalingChannel"
+    AWS_AppStream_DirectoryConfig = "AWS::AppStream::DirectoryConfig"
+    AWS_LookoutVision_Project = "AWS::LookoutVision::Project"
+    AWS_Route53RecoveryControl_Cluster = "AWS::Route53RecoveryControl::Cluster"
+    AWS_Route53RecoveryControl_SafetyRule = "AWS::Route53RecoveryControl::SafetyRule"
+    AWS_Route53RecoveryControl_ControlPanel = "AWS::Route53RecoveryControl::ControlPanel"
+    AWS_Route53RecoveryControl_RoutingControl = "AWS::Route53RecoveryControl::RoutingControl"
+    AWS_Route53RecoveryReadiness_ResourceSet = "AWS::Route53RecoveryReadiness::ResourceSet"
+    AWS_RoboMaker_SimulationApplication = "AWS::RoboMaker::SimulationApplication"
+    AWS_RoboMaker_RobotApplication = "AWS::RoboMaker::RobotApplication"
+    AWS_HealthLake_FHIRDatastore = "AWS::HealthLake::FHIRDatastore"
+    AWS_Pinpoint_Segment = "AWS::Pinpoint::Segment"
+    AWS_Pinpoint_ApplicationSettings = "AWS::Pinpoint::ApplicationSettings"
+    AWS_Events_Rule = "AWS::Events::Rule"
+    AWS_EC2_DHCPOptions = "AWS::EC2::DHCPOptions"
+    AWS_EC2_NetworkInsightsPath = "AWS::EC2::NetworkInsightsPath"
+    AWS_EC2_TrafficMirrorFilter = "AWS::EC2::TrafficMirrorFilter"
+    AWS_EC2_IPAM = "AWS::EC2::IPAM"
+    AWS_IoTTwinMaker_Scene = "AWS::IoTTwinMaker::Scene"
+    AWS_NetworkManager_TransitGatewayRegistration = (
+        "AWS::NetworkManager::TransitGatewayRegistration"
+    )
+    AWS_CustomerProfiles_Domain = "AWS::CustomerProfiles::Domain"
+    AWS_AutoScaling_WarmPool = "AWS::AutoScaling::WarmPool"
+    AWS_Connect_PhoneNumber = "AWS::Connect::PhoneNumber"
 
 
 class ResourceValueType(str):

@@ -1770,6 +1770,11 @@ class InstanceType(str):
     r7g_12xlarge = "r7g.12xlarge"
     r7g_16xlarge = "r7g.16xlarge"
     r7g_metal = "r7g.metal"
+    c6in_metal = "c6in.metal"
+    m6in_metal = "m6in.metal"
+    m6idn_metal = "m6idn.metal"
+    r6in_metal = "r6in.metal"
+    r6idn_metal = "r6idn.metal"
 
 
 class InstanceTypeHypervisor(str):

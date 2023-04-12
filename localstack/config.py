@@ -302,10 +302,38 @@ def in_docker():
             return True
 
     # containerd does not set any specific file or config, but does use
-    # io.containerd.snapshotter.v1.overlayfs as the overlay filesystem
-    with open("/proc/1/mountinfo", "rt") as infile:
-        if "io.containerd" in infile.read():
-            return True
+    # io.containerd.snapshotter.v1.overlayfs as the overlay filesystem for `/`.
+    try:
+        with open("/proc/mounts", "rt") as infile:
+            for line in infile:
+                line = line.strip()
+
+                if not line:
+                    continue
+
+                # skip comments
+                if line[0] == "#":
+                    continue
+
+                # format (man 5 fstab)
+                # <spec> <mount point> <type> <options> <rest>...
+                parts = line.split()
+                if len(parts) < 4:
+                    # badly formatted line
+                    continue
+
+                mount_point = parts[1]
+                options = parts[3]
+
+                # only consider the root filesystem
+                if mount_point != "/":
+                    continue
+
+                if "io.containerd" in options:
+                    return True
+
+    except FileNotFoundError:
+        pass
 
     return False
 
@@ -647,7 +675,7 @@ FORCE_SHUTDOWN = is_env_not_false("FORCE_SHUTDOWN")
 MOCK_UNIMPLEMENTED = is_env_true("MOCK_UNIMPLEMENTED")
 
 # set variables no_proxy, i.e., run internal service calls directly
-no_proxy = ",".join([LOCALSTACK_HOSTNAME, LOCALHOST, LOCALHOST_IP, "[::1]"])
+no_proxy = ",".join([constants.LOCALHOST_HOSTNAME, LOCALHOST, LOCALHOST_IP, "[::1]"])
 if os.environ.get("no_proxy"):
     os.environ["no_proxy"] += "," + no_proxy
 elif os.environ.get("NO_PROXY"):

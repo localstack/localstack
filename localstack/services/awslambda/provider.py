@@ -134,6 +134,7 @@ from localstack.aws.api.lambda_ import (
     UpdateFunctionUrlConfigResponse,
     Version,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.awslambda import api_utils
 from localstack.services.awslambda import hooks as lambda_hooks
 from localstack.services.awslambda.api_utils import STATEMENT_ID_REGEX
@@ -184,7 +185,6 @@ from localstack.services.awslambda.urlrouter import FunctionUrlRouter
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import extract_service_from_arn
 from localstack.utils.collections import PaginatedList
 from localstack.utils.files import load_file
@@ -1193,7 +1193,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     ),
                     mode="rb",
                 )
-                lambda_client = aws_stack.connect_to_service("lambda")
+                lambda_client = connect_to().awslambda
                 lambda_client.create_function(
                     FunctionName="localstack-internal-awssdk",
                     Runtime=Runtime.nodejs16_x,
