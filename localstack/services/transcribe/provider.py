@@ -334,7 +334,9 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             # Update job details
             job["CompletionTime"] = datetime.datetime.utcnow()
             job["TranscriptionJobStatus"] = TranscriptionJobStatus.COMPLETED
-            job["Transcript"] = Transcript(TranscriptFileUri=f"s3://{output_bucket_name}/{output_key}")
+            job["Transcript"] = Transcript(
+                TranscriptFileUri=f"s3://{output_bucket_name}/{output_key}"
+            )
             job["MediaFormat"] = MediaFormat.wav
 
             LOG.info("Transcription job completed: %s", job_name)
