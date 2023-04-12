@@ -48,7 +48,7 @@ from localstack.services.awslambda.lambda_utils import HINT_LOG
 from localstack.utils.archives import get_unzipped_size, is_zip_file
 from localstack.utils.container_utils.container_client import ContainerException
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
-from localstack.utils.strings import to_str
+from localstack.utils.strings import short_uid, to_str
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -485,6 +485,26 @@ class LambdaService:
             vm_new.update_provisioned_concurrency_config(
                 provisioned_concurrency_config.provisioned_concurrent_executions
             )  # async again
+
+    def can_assume_role(self, role_arn: str) -> bool:
+        """
+        Checks whether lambda can assume the given role.
+        This _should_ only fail if IAM enforcement is enabled.
+
+        :param role_arn: Role to assume
+        :return: True if the role can be assumed by lambda, false otherwise
+        """
+        sts_client = connect_to().sts.request_metadata(service_principal="lambda")
+        try:
+            sts_client.assume_role(
+                RoleArn=role_arn,
+                RoleSessionName=f"test-assume-{short_uid()}",
+                DurationSeconds=900,
+            )
+            return True
+        except Exception as e:
+            LOG.debug("Cannot assume role %s: %s", role_arn, e)
+            return False
 
 
 def is_code_used(code: S3Code, function: Function) -> bool:
