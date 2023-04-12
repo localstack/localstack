@@ -207,7 +207,7 @@ class FirehoseProvider(FirehoseApi):
         self,
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
-        delivery_stream_type: DeliveryStreamType = DeliveryStreamType.DirectPut,
+        delivery_stream_type: DeliveryStreamType = None,
         kinesis_stream_source_configuration: KinesisStreamSourceConfiguration = None,
         delivery_stream_encryption_configuration_input: DeliveryStreamEncryptionConfigurationInput = None,
         s3_destination_configuration: S3DestinationConfiguration = None,
@@ -390,10 +390,7 @@ class FirehoseProvider(FirehoseApi):
         )
 
     def put_record(
-        self,
-        context: RequestContext,
-        delivery_stream_name: DeliveryStreamName,
-        record: Record,
+        self, context: RequestContext, delivery_stream_name: DeliveryStreamName, record: Record
     ) -> PutRecordOutput:
         record = self._reencode_record(record)
         return self._put_record(delivery_stream_name, record)

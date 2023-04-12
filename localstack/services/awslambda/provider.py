@@ -64,6 +64,7 @@ from localstack.aws.api.lambda_ import (
     InvocationResponse,
     InvocationType,
     InvokeAsyncResponse,
+    InvokeMode,
     LambdaApi,
     LastUpdateStatus,
     LayerName,
@@ -1675,6 +1676,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         auth_type: FunctionUrlAuthType,
         qualifier: FunctionUrlQualifier = None,
         cors: Cors = None,
+        invoke_mode: InvokeMode = None,
     ) -> CreateFunctionUrlConfigResponse:
         state = lambda_stores[context.account_id][context.region]
 
@@ -1787,6 +1789,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: FunctionUrlQualifier = None,
         auth_type: FunctionUrlAuthType = None,
         cors: Cors = None,
+        invoke_mode: InvokeMode = None,
     ) -> UpdateFunctionUrlConfigResponse:
         state = lambda_stores[context.account_id][context.region]
 
