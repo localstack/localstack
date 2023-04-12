@@ -112,6 +112,8 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
         request: StartTranscriptionJobRequest,
     ) -> StartTranscriptionJobResponse:
         job_name = request["TranscriptionJobName"]
+        output_bucket_name = request["OutputBucketName"]
+        output_key = request["OutputKey"]
         media = request["Media"]
         language_code = request.get("LanguageCode")
 
@@ -132,7 +134,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
         )
         store.transcription_jobs[job_name] = job
 
-        start_thread(self._run_transcription_job, (store, job_name))
+        start_thread(self._run_transcription_job, (store, job_name, output_bucket_name, output_key))
 
         return StartTranscriptionJobResponse(TranscriptionJob=job)
 
@@ -210,8 +212,8 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
     # Threads
     #
 
-    def _run_transcription_job(self, args: Tuple[TranscribeStore, str]):
-        store, job_name = args
+    def _run_transcription_job(self, args: Tuple[TranscribeStore, str, str, str]):
+        store, job_name, output_bucket_name, output_key = args
 
         job = store.transcription_jobs[job_name]
         job["StartTime"] = datetime.datetime.utcnow()
@@ -321,13 +323,18 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             }
 
             # Save to S3
-            output_key = short_uid() + ".json"
-            s3_client.put_object(Bucket=bucket, Key=output_key, Body=json.dumps(output))
+            if not output_key:
+                output_key = short_uid() + ".json"
+
+            if not output_bucket_name:
+                output_bucket_name = bucket
+
+            s3_client.put_object(Bucket=output_bucket_name, Key=output_key, Body=json.dumps(output))
 
             # Update job details
             job["CompletionTime"] = datetime.datetime.utcnow()
             job["TranscriptionJobStatus"] = TranscriptionJobStatus.COMPLETED
-            job["Transcript"] = Transcript(TranscriptFileUri=f"s3://{bucket}/{output_key}")
+            job["Transcript"] = Transcript(TranscriptFileUri=f"s3://{output_bucket_name}/{output_key}")
             job["MediaFormat"] = MediaFormat.wav
 
             LOG.info("Transcription job completed: %s", job_name)
