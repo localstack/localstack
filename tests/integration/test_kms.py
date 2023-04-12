@@ -1,7 +1,6 @@
 import base64
 import hashlib
 import json
-import re
 from datetime import datetime
 from random import getrandbits
 
@@ -19,6 +18,7 @@ from localstack.utils.strings import short_uid
 @pytest.fixture(autouse=True)
 def kms_api_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.kms_api())
+
 
 @pytest.fixture(scope="class")
 def kms_client_for_region(aws_client_factory):
