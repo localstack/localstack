@@ -258,7 +258,7 @@ def _create_service_map(service: ServiceModel) -> Map:
         rules=rules,
         strict_slashes=False,
         merge_slashes=False,
-        converters={"path": GreedyPathConverter},
+        # converters={"path": GreedyPathConverter},
     )
 
 
