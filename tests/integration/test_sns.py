@@ -590,8 +590,7 @@ class TestSNSProvider:
         assert sub_attr["Attributes"]["PendingConfirmation"] == "true"
 
         def check_subscription():
-            topic_tokens = store.subscription_tokens.get(topic_arn, {})
-            for token, sub_arn in topic_tokens.items():
+            for token, sub_arn in store.subscription_tokens.items():
                 if sub_arn == subscription_arn:
                     aws_client.sns.confirm_subscription(TopicArn=topic_arn, Token=token)
 
