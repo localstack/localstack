@@ -1,7 +1,6 @@
 import base64
 import hashlib
 import json
-import re
 from datetime import datetime
 from random import getrandbits
 
@@ -15,9 +14,10 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.utils.strings import short_uid
 
-PATTERN_KEY_ARN = re.compile(
-    r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([^:]+)?:(\d{12})?:key/[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
-)
+
+@pytest.fixture(autouse=True)
+def kms_api_snapshot_transformer(snapshot):
+    snapshot.add_transformer(snapshot.transform.kms_api())
 
 
 @pytest.fixture(scope="class")
@@ -424,8 +424,6 @@ class TestKMS:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
-            "$..Signature",
-            "$..KeyId",
             "$..Error.Message",
             "$..message",
         ]
@@ -585,7 +583,6 @@ class TestKMS:
 
     @pytest.mark.aws_validated
     def test_import_key(self, kms_create_key, aws_client, snapshot):
-        snapshot.add_transformer(snapshot.transform.key_value("KeyId"))
         snapshot.add_transformer(snapshot.transform.key_value("Description"))
         key = kms_create_key(Origin="EXTERNAL")
         snapshot.match("created-key", key)
@@ -707,7 +704,6 @@ class TestKMS:
     def test_replicate_key(
         self, kms_client_for_region, kms_create_key, kms_replicate_key, snapshot
     ):
-        snapshot.add_transformer(snapshot.transform.key_value("KeyId"))
         region_to_replicate_from = "us-east-1"
         region_to_replicate_to = "us-west-1"
         us_east_1_kms_client = kms_client_for_region(region_to_replicate_from)
@@ -938,12 +934,6 @@ class TestKMS:
         snapshot.match("create-hmac-key-invalid-key-usage", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..KeyId",
-            "$..Mac",
-        ]
-    )
     @pytest.mark.parametrize(
         "key_spec,mac_algo",
         [
@@ -997,12 +987,6 @@ class TestKMS:
         snapshot.match("verify-mac-invalid-key-id", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..KeyId",
-            "$..Mac",
-        ]
-    )
     @pytest.mark.parametrize(
         "key_spec,mac_algo",
         [
@@ -1026,7 +1010,7 @@ class TestKMS:
         snapshot.match("generate-mac", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..KeyId", "$..Mac", "$..message"])
+    @pytest.mark.skip_snapshot_verify(paths=["$..message"])
     @pytest.mark.parametrize(
         "key_spec,mac_algo,verify_msg",
         [
@@ -1062,8 +1046,6 @@ class TestKMS:
 
     @pytest.mark.aws_validated
     def test_error_messaging_for_invalid_keys(self, aws_client, kms_create_key, snapshot):
-        snapshot.add_transformer(snapshot.transform.regex(PATTERN_KEY_ARN, "<key-arn>"))
-
         hmac_key_id = kms_create_key(
             Description="test key hmac",
             KeySpec="HMAC_224",
