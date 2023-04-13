@@ -5,6 +5,7 @@ import logging
 import re
 import threading
 
+from localstack import config
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID, TEST_AWS_ACCESS_KEY_ID
 
 LOG = logging.getLogger(__name__)
@@ -99,13 +100,17 @@ def get_account_id_from_access_key_id(access_key_id: str) -> str:
         return access_key_id
 
     elif len(access_key_id) >= 20:
-        # If AWS_ACCESS_KEY_ID has production AWS credentials, ignore them
-        if access_key_id.startswith("ASIA") or access_key_id.startswith("AKIA"):
-            LOG.warning(
-                "Ignoring production AWS credentials provided to LocalStack. Falling back to default account ID."
-            )
+        if not config.PARITY_AWS_ACCESS_KEY_ID:
+            # If AWS_ACCESS_KEY_ID has production AWS credentials, ignore them
+            if access_key_id.startswith("ASIA") or access_key_id.startswith("AKIA"):
+                LOG.warning(
+                    "Ignoring production AWS credentials provided to LocalStack. Falling back to default account ID."
+                )
 
-        elif access_key_id.startswith("LSIA") or access_key_id.startswith("LKIA"):
-            return extract_account_id_from_access_key_id(access_key_id)
+            elif access_key_id.startswith("LSIA") or access_key_id.startswith("LKIA"):
+                return extract_account_id_from_access_key_id(access_key_id)
+        else:
+            if access_key_id.startswith("ASIA") or access_key_id.startswith("AKIA"):
+                return extract_account_id_from_access_key_id(access_key_id)
 
     return DEFAULT_AWS_ACCOUNT_ID

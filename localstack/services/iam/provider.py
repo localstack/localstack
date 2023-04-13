@@ -8,12 +8,14 @@ from moto.iam.models import Role as MotoRole
 from moto.iam.models import filter_items_with_path_prefix, iam_backends
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS
 
+from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.iam import (
     ActionNameListType,
     ActionNameType,
     AttachedPermissionsBoundary,
     ContextEntryListType,
+    CreateAccessKeyResponse,
     CreateRoleRequest,
     CreateRoleResponse,
     CreateServiceLinkedRoleResponse,
@@ -370,6 +372,16 @@ class IamProvider(IamApi):
                 PermissionsBoundaryArn=permissions_boundary,
                 PermissionsBoundaryType="Policy",
             )
+        return response
+
+    def create_access_key(
+        self, context: RequestContext, user_name: existingUserNameType = None
+    ) -> CreateAccessKeyResponse:
+        response = call_moto(context=context)
+        if not config.PARITY_AWS_ACCESS_KEY_ID and (
+            access_key_id := response.get("AccessKey", {}).get("AccessKeyId")
+        ):
+            response["AccessKey"]["AccessKeyId"] = "L" + access_key_id[1:]
         return response
 
     def get_user(

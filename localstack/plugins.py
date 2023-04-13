@@ -33,3 +33,17 @@ def deprecation_warnings() -> None:
     from localstack.deprecations import log_deprecation_warnings
 
     log_deprecation_warnings()
+
+
+@hooks.on_infra_start()
+def patch_moto_access_key_id():
+    from moto.core.responses import BaseResponse
+
+    from localstack.utils.patch import patch
+
+    @patch(BaseResponse.get_access_key)
+    def get_access_key(fn, self, *args, **kwargs):
+        response = fn(self, *args, **kwargs)
+        if not config.PARITY_AWS_ACCESS_KEY_ID and len(response) >= 20 and response.startswith("L"):
+            return "A" + response[1:]
+        return response

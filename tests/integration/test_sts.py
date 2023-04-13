@@ -182,14 +182,16 @@ class TestSTSIntegrations:
         assert is_number(result["Credentials"]["Expiration"])
 
     @pytest.mark.only_localstack
-    def test_get_caller_identity_user_access_key(self, cleanups):
+    @pytest.mark.parametrize("use_aws_creds", [True, False])
+    def test_get_caller_identity_user_access_key(self, cleanups, use_aws_creds, monkeypatch):
         """Check whether the correct account id is returned for requests by other users access keys"""
+        monkeypatch.setattr(config, "PARITY_AWS_ACCESS_KEY_ID", use_aws_creds)
         account_id = "123123123123"
         account_creds = {"AccessKeyId": account_id, "SecretAccessKey": "test"}
         iam_account_client = create_client_with_keys("iam", account_creds)
-        user_name = iam_account_client.create_user(UserName=f"test-user-{short_uid()}")["User"][
-            "UserName"
-        ]
+        user = iam_account_client.create_user(UserName=f"test-user-{short_uid()}")["User"]
+        user_name = user["UserName"]
+        user_arn = user["Arn"]
         cleanups.append(lambda: iam_account_client.delete_user(UserName=user_name))
         access_key_response = iam_account_client.create_access_key(UserName=user_name)["AccessKey"]
         cleanups.append(
@@ -201,10 +203,15 @@ class TestSTSIntegrations:
         sts_user_client = create_client_with_keys("sts", access_key_response)
         response = sts_user_client.get_caller_identity()
         assert account_id == response["Account"]
+        assert user_arn == response["Arn"]
 
     @pytest.mark.only_localstack
-    def test_get_caller_identity_role_access_key(self, aws_client, account_id, cleanups):
+    @pytest.mark.parametrize("use_aws_creds", [True, False])
+    def test_get_caller_identity_role_access_key(
+        self, aws_client, account_id, cleanups, use_aws_creds, monkeypatch
+    ):
         """Check whether the correct account id is returned for roles for other accounts"""
+        monkeypatch.setattr(config, "PARITY_AWS_ACCESS_KEY_ID", use_aws_creds)
         fake_account_id = "123123123123"
         account_creds = {"AccessKeyId": fake_account_id, "SecretAccessKey": "test"}
         iam_account_client = create_client_with_keys("iam", account_creds)
@@ -228,15 +235,19 @@ class TestSTSIntegrations:
         # assume the role and check if account id is correct
         assume_role_response = sts_account_client.assume_role(
             RoleArn=role_arn, RoleSessionName=f"test-session-{short_uid()}"
-        )["Credentials"]
-        sts_role_client = create_client_with_keys("sts", assume_role_response)
+        )
+        credentials = assume_role_response["Credentials"]
+        sts_role_client = create_client_with_keys("sts", credentials)
         response = sts_role_client.get_caller_identity()
         assert fake_account_id == response["Account"]
+        assert assume_role_response["AssumedRoleUser"]["Arn"] == response["Arn"]
 
         # assume the role coming from another account, to check if the account id is handled properly
         assume_role_response_other_account = aws_client.sts.assume_role(
             RoleArn=role_arn, RoleSessionName=f"test-session-{short_uid()}"
-        )["Credentials"]
-        sts_role_client_2 = create_client_with_keys("sts", assume_role_response_other_account)
+        )
+        credentials_other_account = assume_role_response_other_account["Credentials"]
+        sts_role_client_2 = create_client_with_keys("sts", credentials_other_account)
         response = sts_role_client_2.get_caller_identity()
         assert fake_account_id == response["Account"]
+        assert assume_role_response_other_account["AssumedRoleUser"]["Arn"] == response["Arn"]
