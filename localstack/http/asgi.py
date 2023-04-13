@@ -181,12 +181,10 @@ class RawHTTPRequestEventStreamAdapter(RawIOBase):
 
         # in this case, we can read at max buf_size from the body into the buffer, and need to save the
         # rest for the next call
-        to_read = min(remaining, buf_size)
-        buf[:to_read] = body[pos : pos + to_read]
+        buf[:buf_size] = body[pos : pos + buf_size]
+        self._buffered_body_pos = pos + buf_size
 
-        self._buffered_body_pos = pos + to_read
-
-        return to_read
+        return buf_size
 
 
 class WsgiStartResponse:
