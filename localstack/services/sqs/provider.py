@@ -539,6 +539,19 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         - Pagination of results (NextToken)
         - Delivery guarantees
         - The region is not encoded in the queue URL
+
+    CROSS-ACCOUNT ACCESS:
+    LocalStack permits cross-account access for all operations. However, AWS
+    disallows the same for following operations:
+        - AddPermission
+        - CreateQueue
+        - DeleteQueue
+        - ListQueues
+        - ListQueueTags
+        - RemovePermission
+        - SetQueueAttributes
+        - TagQueue
+        - UntagQueue
     """
 
     queues: Dict[str, SqsQueue]
