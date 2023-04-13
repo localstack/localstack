@@ -392,6 +392,14 @@ class TransformerUtility:
         """
         return [
             TransformerUtility.key_value("KeyId"),
+            TransformerUtility.jsonpath(
+                jsonpath="$..Signature",
+                value_replacement="<signature>",
+                reference_replacement=False,
+            ),
+            TransformerUtility.jsonpath(
+                jsonpath="$..Mac", value_replacement="<mac>", reference_replacement=False
+            ),
             RegexTransformer(PATTERN_KEY_ARN, replacement="<key-arn>"),
         ]
 

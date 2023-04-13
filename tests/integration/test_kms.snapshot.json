@@ -1,6 +1,6 @@
 {
   "tests/integration/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[None]": {
-    "recorded-date": "12-04-2023, 13:20:16",
+    "recorded-date": "13-04-2023, 11:29:52",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -15,7 +15,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[0]": {
-    "recorded-date": "12-04-2023, 13:20:17",
+    "recorded-date": "13-04-2023, 11:29:53",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -30,7 +30,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[1025]": {
-    "recorded-date": "12-04-2023, 13:20:18",
+    "recorded-date": "13-04-2023, 11:29:54",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -45,7 +45,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_1]": {
-    "recorded-date": "12-04-2023, 13:20:49",
+    "recorded-date": "13-04-2023, 11:30:27",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -60,7 +60,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_256]": {
-    "recorded-date": "12-04-2023, 13:20:50",
+    "recorded-date": "13-04-2023, 11:30:28",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -75,7 +75,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_3072-RSAES_OAEP_SHA_1]": {
-    "recorded-date": "12-04-2023, 13:20:51",
+    "recorded-date": "13-04-2023, 11:30:29",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -90,7 +90,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_3072-RSAES_OAEP_SHA_256]": {
-    "recorded-date": "12-04-2023, 13:20:52",
+    "recorded-date": "13-04-2023, 11:30:30",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -105,7 +105,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_4096-RSAES_OAEP_SHA_1]": {
-    "recorded-date": "12-04-2023, 13:20:52",
+    "recorded-date": "13-04-2023, 11:30:31",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -120,7 +120,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_4096-RSAES_OAEP_SHA_256]": {
-    "recorded-date": "12-04-2023, 13:20:53",
+    "recorded-date": "13-04-2023, 11:30:32",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -135,37 +135,37 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_random[12]": {
-    "recorded-date": "12-04-2023, 13:20:14",
+    "recorded-date": "13-04-2023, 11:29:50",
     "recorded-content": {
       "result_length": 12
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_random[44]": {
-    "recorded-date": "12-04-2023, 13:20:15",
+    "recorded-date": "13-04-2023, 11:29:50",
     "recorded-content": {
       "result_length": 44
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_random[91]": {
-    "recorded-date": "12-04-2023, 13:20:15",
+    "recorded-date": "13-04-2023, 11:29:51",
     "recorded-content": {
       "result_length": 91
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_random[1]": {
-    "recorded-date": "12-04-2023, 13:20:15",
+    "recorded-date": "13-04-2023, 11:29:51",
     "recorded-content": {
       "result_length": 1
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_random[1024]": {
-    "recorded-date": "12-04-2023, 13:20:15",
+    "recorded-date": "13-04-2023, 11:29:51",
     "recorded-content": {
       "result_length": 1024
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_create_key": {
-    "recorded-date": "12-04-2023, 13:19:54",
+    "recorded-date": "13-04-2023, 11:29:30",
     "recorded-content": {
       "describe-key": {
         "AWSAccountId": "111111111111",
@@ -188,7 +188,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_get_key_in_different_region": {
-    "recorded-date": "12-04-2023, 13:19:57",
+    "recorded-date": "13-04-2023, 11:29:32",
     "recorded-content": {
       "describe-key-diff-region-with-id": {
         "Error": {
@@ -263,7 +263,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_get_key_does_not_exist": {
-    "recorded-date": "12-04-2023, 13:19:58",
+    "recorded-date": "13-04-2023, 11:29:34",
     "recorded-content": {
       "describe-nonexistent-key-with-id": {
         "Error": {
@@ -301,7 +301,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_get_key_invalid_uuid": {
-    "recorded-date": "12-04-2023, 13:19:59",
+    "recorded-date": "13-04-2023, 11:29:34",
     "recorded-content": {
       "describe-key-with-invalid-uuid": {
         "Error": {
@@ -339,7 +339,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_replicate_key": {
-    "recorded-date": "12-04-2023, 13:21:10",
+    "recorded-date": "13-04-2023, 11:30:49",
     "recorded-content": {
       "describe-key-from-different-region": {
         "Error": {
@@ -481,7 +481,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_create_alias": {
-    "recorded-date": "12-04-2023, 13:19:51",
+    "recorded-date": "13-04-2023, 11:29:27",
     "recorded-content": {
       "create_alias": {
         "Error": {
@@ -496,11 +496,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_sign_verify[RSA_2048-RSASSA_PSS_SHA_256]": {
-    "recorded-date": "12-04-2023, 14:09:57",
+    "recorded-date": "13-04-2023, 11:29:59",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
-        "Signature": "b'5\\xab8\\x02\\r\\xb9\\xb1\\xc7H\\tZ[\\xa4%\"\\xc0\\xce\\xc5\\x992\\xa2\\x97\\x04\\x1e\\x85\\xdeu\\x85\\xcd\\x8c\\xfc\\x82\\xc0K\\xa5KY\\x9a\\xd5\\x94\\x13mh-\\xd8\\xb3\\x81V\\xa4\\xa6\\x1d!\\tF\\xd2\\x1a\\xda\\xeb%O\\xf2l\\xf6\\xee-\\x11\\x87\\xa8\\x9a\\xd1\\xd9o\\xfe\\xab\\xeb\\xd7N\\x0eY]!\\x89\\xca\\'.\\xdayx(G\\xf1\\x97\\x13G\\x80!\\x0b\\x06\\x1d\\x1c\\x86\\x12yc\\xd28\\xb1A\\xa9Yg+7X\\x81k\\x8d\\xe1\\xb0\\xc8\\x10\\xf1z\\x8d\\xca\\x057MB;hFt\\x0f!\\xe5\\x01n\\xe4\\xe5  W?\\xf2\\xde^\\xba\\xea\\x10]2\\xf6\\x80SzN\\x13\\x16z\\x07{OVi\\xeb\\xfe)\\xbf\\xc65\\xa3\\xf8\\x90\\xdcJ[\\xa9\\x0c\\x96Z\\xa9\\x1e\\x0f\\x8c\\xa6\\xde\\x9d\\xfb\\xbd\\x04\\xe9\\x81:\\x16\\x01\\xf3\\xa3L\\xe9M\\xb5\\xe3Be\\xad\\xd2\\x8c2Kql\\x8e\\x82\\xfb\\x9f\\x9d\\xc8Q\\xf0\\xd5\\xcd\\x1a\\\\!\\xccY\\xdc\\x03\\x87\\xa1\\xb8\\xf9\\xdeb\\x90\\x9c\\xa4\\xe6\\x9e\\xf2\\x82\\xcc5?\\xbb\\xdcVa\\xc8\\xf2.\\xea\\xdb%d'",
+        "Signature": "<signature>",
         "SigningAlgorithm": "RSASSA_PSS_SHA_256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -539,11 +539,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_sign_verify[RSA_2048-RSASSA_PSS_SHA_384]": {
-    "recorded-date": "12-04-2023, 14:10:00",
+    "recorded-date": "13-04-2023, 11:30:02",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
-        "Signature": "b'+\\xaft\\xfe\\xb1\\xca3\\x90T\\x9fqNyyP\\x93\\xa3r\\xbd\\x17\\x13\\x00\\xee\\x8b\\xa9y\\xec\\xbdff\\xb1\\xcb\\xfcoI\\x8c\\xff\\x16\\x9d\\x12=E\\x01\\x92\\xd0Z\\xe2gVP\\x93\\xa61\\xe0\\xefT\\xd0\\x98}\\xbf\\x82\\x8a;{\\xc1\\xddy\\xd3\\xa7\\x98\\xc9\\xb9\\xea*\\xb4\\xd8}\\xb0\\x00F\\x15\\x8c\\xa1\\xf1\\xf5f\\xc0u\"pAO\\x99\\xea\\xf2|9\\x05\\x98T\\x1b6\\xd8\\x1dT\\x0c\\xf8Q\\xadl-#\\xbe\\xeb\\xdf\\x91\\xf3\\x82\\x10\\n\\xa7B^t\\x8a6\\xff#\\xc8\\xa5\\x99\\x80m\\xd6;\\x87\\x07!\\xb4\\xa2\\xba\\x16\\xe5yc$\\xd9\\xd3DE\\xd5\\x0c\\n\\x85\\xe0\\x9b\\x19\\x03\\xb5\\x10\\x83\\x9ea\\xa7zxck\\x80e\\x12\\xac\\xae\\xc2C/\\x0f\\xbe\\xd6(d\\xc8\\x15\\xcb\\x16\\xf1\\x198\\x8e7\\x7f[V\\xb0\\xb5K$\\xff\\x8aXg\"\\x97\\xd2],S\\xa4\\x17b\\x87%\\x9a\\xcc\\x967d\\xcc\\xf7|\\x0c\\xd6\\t\\xcc\\x01\\xad$\\x87\\xb7E\\xcfj\\x01\\x1a\\xbe1\\x97}\\x96q0\\x95\\x10?\\x0e\\x13\\xc8\\xf4\\x95\\xab\\x99\\x03\\x00\\x9a\\xac\\x92'",
+        "Signature": "<signature>",
         "SigningAlgorithm": "RSASSA_PSS_SHA_384",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -582,11 +582,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_sign_verify[RSA_2048-RSASSA_PSS_SHA_512]": {
-    "recorded-date": "12-04-2023, 14:10:03",
+    "recorded-date": "13-04-2023, 11:30:05",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
-        "Signature": "b'\\x88\\xaf\\xa3\\xad\\xe1\\xd1\\x86\\x9f\\xe0\\xd9\\x81\\x83E\\x0b%?\\x99\\x12U\\xd0/Fj\\x88\\xb8(%\\xdf\\xa9\\x88\\x17\\t{\\x1c\\x120Mj\\xc4\\xfd\\x88\\xe8\\xeeT\"\\xf6\\xdb\\xc3\\x89\\xbd%E\\xff\\xa1\\xbc\\x14\\xce\\xd4\\xb6\\x0b\\xb1!L\\xe2\\xf0\\x93\\xacz| \\xa7\\x95\\xe4\\xf7\\xdf\\x10\\x03\\xf3wG{1\\xab\\x03\\x11ct\\xd7fjc\\xf0\\x16\\xd8\\xe87\\xd7\\xde\\x18\\x06\\x8a\\xbdx\\xc2\\x11r\\xde\\x15\\xe5\\x04\\xbduN\\xa7\\x81M\\x9f\\xf4T\\x9dLRc\\xc3#L\\xc3Wf0~M\\xbe\\xc9\\x07-b\\xa1\\x0b\\x8d\\xd6\\x9b\\xe0\\xb4\\xf2\\x8d}\\x93\\xf2\\x05\\x9d\\x03\\\\r\\x87\\xfc+f\\x8b@86\\xb0\\x7f@\\x8fR\\xe8\\xa4\\x12\\x81+\\\\\\xcd\\xe6!\\x0c\\xd7d\\xa8\\xa5\\xc3\\xcbV\\xf8z\\x99\\xcbLL\\xa8t\\xa8\\xbf-\\x96n\\xe5h\\x80\\x8d \\xd4\\xfb_\\xcb\\x8e\\x1e\\x13O\\xfcdmu\\x14O\\x03\\xef,n\\xc9IuNc\\x18\\xef\\xf6z\\x8f\\xabdH\\xd3\\xf6\\xf4\\x99\\xce\\xe9\\xbd6\\n\\x7f\\xab\\x08\\x86\"\\xec\\x170\\xde\\xd9\\xdaK\\x94\\xc6'",
+        "Signature": "<signature>",
         "SigningAlgorithm": "RSASSA_PSS_SHA_512",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -625,11 +625,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_sign_verify[RSA_4096-RSASSA_PKCS1_V1_5_SHA_256]": {
-    "recorded-date": "12-04-2023, 14:10:06",
+    "recorded-date": "13-04-2023, 11:30:09",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
-        "Signature": "b'\\x01\\xcc\\xe6\\x9b\\x85\\xb5|\\'}\\x1c\\x9d\\xff\\xc3\\xb2\\xac7\\xadlga^\\xb8\\xf8Y\\xfflTI\\xc6#\\xcc\\xb3^\\xcaT\\x05\\x03E\\xb2\\xeb\\x8b\\xb6e\\xa0\\xa3Iq\\x91\\xa9\\x93\\x8c\\xc7U\\xeb\\xa2\\x0frCb\\x83\\xe6\\xe7\\xa8\\xf9Oq\\xa8\\xaf\\x8d\\xaa\\xd2:\\xd3\\x9d\\xc2\\x96[\\xef\\xfd\\xe8\\xcd\\x98\\x98L\\xf7\\xb1\\x9e#\\x06\\xa7~\\xafn(4\\xb4K\\xe4\\xd5\\xdc\\x02G\\xc1uD\\xb9\\xe0,\\xbc\\xee\\x0e-\\x00\\xca\\xed\\x02]\\xc1\\xe4)\\xf5\\x0e\\x16\\x85\\xc3#\\xc0\\x81\\xaf\\x93\\x11\\xee\\xe1\\x85\\xa5\\xaa^L\\xee\\\\\\x86\\xf3\\xef\\xf9\\x9d\\x0c[\\xb3\\xc8\\xf7[\\xfc\\xcbC\\xc2>\\x97\\x0e\\xdcN\\x8cX[5\\x95v\\xb2\\x98q\\xacl\\xb4\\x14i_\\xbe\\x9aM\\xca+xC#\\xba\\x13\\xeb\\xd6\\x97\\xd2\\x87\\xcb\\xe8M\\xf9\\xc72\\xfa\\xd5\\x1d\\xa4\\xa38\\x8d\\xf5\\xa5\\xf0@r\\x00q= N\\x1dr#\\xf8(P\\xf6\\x83\\x1alI\\xefU\\x93\\x10#\\xed\\xb9}\\xd4\\xd4\\x04\\x93i\\xb3\\xe9\\xd7V\\xd5 pO\\x1bD\\x04\\x9aWn\\xba]\\x10\\xf6\\x97\\xedYNV\\x87\\x9f\\xd8\\xad\\xb2\\t\\xf4y\\x8a:\\x81\\xe7e\\x81\\x19K\\x1dP|\\xc6\\x9f\\xd6\\x87r\\xdd\\xc8\\xeb\\xcd\\x82P\\xe3\\x8aK\\xc0?PYo\"\\xe6\\x9b0\\x0ft\\xf87\\x0c\\xc6Q\\xad\\xb33&QT]\\xdfg\\xa2\\xe9\\xf8\\xda|\\xab\\xa1\\xd2u\\x9c\\xc7`\\xfe\\xa3\\xe3\\xf4Z\\xf3xu\\xa7\\xb4\\xd6\\x0b\\x8c=\\xb6\\xcc\\x13R\\t\\xc7#6\\x0f\\xd1NEti\\xb3\\xe0\\x98XX\\xe2\\x7f\\xb71\\xe9\\xfd9H\\r\\xa2\\xc4\\xb8\\x1e\\xca\\x1c\\xf9 :4\\xd3\\xe8\\xf3\\x1d{\\x16\\xa8\\xa0}Y3\\x10wWw\\xd0\\xa9\\x12\\xe4\"\\x1a8-@\\xf0\\xc7\\x85\\x8eK>\\x88\\xa3\\xbc\\xc8\\x06\\x1c\\xb5,\\x0b\\x13\\xbdUO\\xbc`\\x98J\\xa8\\x0f{\\xec\\x7fKW\\x93\\xae\\xc2\\x97\\x08\\xa0\\x8d\\x141\\x15J=\\x19\\x80\\xa1\\x7f\\xa7\\xddbaeb\\xbd;\\x1c\\x0b\\xc9\\xfa~\\x89z\\n\\xac\\xa4z\\xf30\\x82\\xa2%\\xce\\xfc\\xb3/\\xd6\\xed\\xcd6\\xbd\\x16\\x05}-\\xefL\\\\\\xac|\\xba\\x17y,\\xe4Vu\\xd1\\xcb-\\x02M\\xcfL\\xc2\\xac\\xab\\xe6'",
+        "Signature": "<signature>",
         "SigningAlgorithm": "RSASSA_PKCS1_V1_5_SHA_256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -668,11 +668,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_sign_verify[RSA_4096-RSASSA_PKCS1_V1_5_SHA_512]": {
-    "recorded-date": "12-04-2023, 14:10:09",
+    "recorded-date": "13-04-2023, 11:30:12",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
-        "Signature": "b'M=#;\\xdd\\xdf\\x9e\\xe1\\xad\\xea\\xcd\\xd0\\xb5x\\x15\\xe1\\x96\\xef>\\x02\\xbd\\'q\\x8c\\xae\\xf9\\xe3I\\xbc\\xd9\\xc6;\\xb1\\xaf\\xc4\\xcbWn\\x1c\\x9f\\xed\\x06\\xba\\x13\\xcc\\xf8\\x8da\\xbd\\xfdK\\x1ch\\xb6\\xa7\\xb8\\xdf,!M\\xdd\\xc3\\xb7+{\\xe0\\xd8F\\xfd`\\x07\\xd3\\x90t\\x9cI\\\\@\\xda\\x19\\xb7\\xe9L\\x97\\x9b\\x88\\x13V\\x17\\x08X\\n\\x80>}L\\xe2B\\xf3|\\x07X\\xe7\\x8eR7/\\x96\\x9a\\xcb\\xf1i\\xd6\\x88G\\xa5\\x0b\\xf6\\xe6\\xa5R\\x84.\\x03\\xc2!+\\xb0\\xd7\\xf2\\xc2}\\xe7\\xc0\\xeaa|liT\\xab\\xfa\\xad\\xd4\\x91n)\\xd8T\\x910/\\xb86\\xe9V\\xa7\\xdd\\x93\\xc5\\xb7(\\xb4V\\xa1\\x8bD\\x89\\xbc\\xab\\x9cYF1i\\x18\\xfc\\xaa\\xe7\\x0b@FZ1\\x0c\\xd0\\xdd\\xc6\\x01\\nBS>(}y\\r\\x1a\\x08)p@._uT\\x16\\x18ls\\x92e\\x9f\\xf74&\\xe6\\xf8\\x8cg\\x93\\xfe N&\"\\xeal4\\xd7\\x8b\\x00\\x06u\\xca\\xcc7\\x8b\\x9f\\x8e\\x1b:\\x94\\x91l\\x87\\xf8J\\xe2Rs\\x9b\\x90\\xb7>\\x1c\\x90-(S\\xd7d\\x9d\\x0e\\xf1\\xb5\\xa1\\xd0c\\xc3\\xf1\\xd6\\x8eP\\xc9\\x0chX#R\\x13\\xdc\\x9d|\\xb5\"$\\xc1j\\xd3\\x99Hp\\x7f\\x18\\xa6?\\xce\\xa0\\x19\\xdfL\\x94,\\xc6;0\\x87\\xfa\\xa2T%QIU\\x85z\\x93\\x17v\\x7f\\xa4\\xfa\\xf2T\\x8a\\xac\\x11]\\xf3\\xfeq\\xcf\\x0b\\xd6>nJ\\x83\\xa5t\\x81\\x12\\x8e\\xf0\\xda\\xe9\\xfc+\\xe0Z\\xfa>\\x89\\xce:\\xcc#\\x9f\\x8f\\xa9\\xbf\\xaa\\xec\\x85\\x1b\\xf2%\\xacd\\xf2\\x9a\\x00\\xe8zv\\x9fHQ\\xf0\\xf4:\\n!\\x98\\x13S\\x92\\x9fL|t\\x9e\\xbb\\x9571\\x7f\\xab\\x86!\\x81H%?\\xfe\\xb3\\xf6\\xd5u\\xd2\\xe0\\xb1oL\\xfc/\\xc9\\xcbcm \\xce\\xf5-P\\x92\\x1ejK>\\x1d\\x15\\x1aS\\xb5u\\xd0=\\\\\\x13\\xd9\\xba\\x17:\\xf5\\xeb<\\xbf\\xa2S\\xaf\\xf72H\\xe6\\x0b\\xbf\\xafmi\\x113\\xf6\\x143\\xc4\\x8a\\x00eY2g\\x82\\x9c5&\\xe5\\x90\\xae\\'Hs)\\x1f\\xf5\\xcb\\xaa\\xbaz\\xb8\\x85\\xcf\\x87~\\x84\\x9a\\xd2\\x86,M\\xc3\\xcbv\\x8e\\xdf\\xc2/\\xbb\\xd2\\xact'",
+        "Signature": "<signature>",
         "SigningAlgorithm": "RSASSA_PKCS1_V1_5_SHA_512",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -711,11 +711,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_sign_verify[ECC_NIST_P256-ECDSA_SHA_256]": {
-    "recorded-date": "12-04-2023, 14:10:12",
+    "recorded-date": "13-04-2023, 11:30:15",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
-        "Signature": "b'0E\\x02!\\x00\\x97\\xff]\\n\\xd2\\x9cw\\x10\\x06\\xfe\"M\\xc0\\xd0\"\\x83\\xdc\\xfamU\\xce\\x9c\\xc5\\xecK;\\xcd\\xddrI\\xb0\\xc0\\x02 \\x14\\xcf\\\\\\xd1\\x19\\xaf\\xde3\\xe9\\xd2\\xd5\\xa0\\xc9\\x89\\x15\\xe3\\xbd_\\x08x\\xb9\\x1f%\\xf3\\xc8\\x9d\\xeci\\x83\\x12W\\xb9'",
+        "Signature": "<signature>",
         "SigningAlgorithm": "ECDSA_SHA_256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -758,11 +758,11 @@
     "recorded-content": {}
   },
   "tests/integration/test_kms.py::TestKMS::test_sign_verify[ECC_SECG_P256K1-ECDSA_SHA_256]": {
-    "recorded-date": "12-04-2023, 14:10:17",
+    "recorded-date": "13-04-2023, 11:30:22",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
-        "Signature": "b'0D\\x02 x\\xd2\\xee\\x06\\x84\\xb4s\\xcc\\xc0R\\x90:$\\x01\\xc0r\\x95\\xe8\\x9d\\x98\\xe5:\\xa9\\xa3d\\x96q\\x88p\\xe6\\x17\\x90\\x02 p\\xbeF\\xb9,an\\x14&lR\\x18a\\xd5\\x8e\\xd0=\\x9a\\xae\\xd5\\xe9\\x8a\\xec\\x8d\\x13\\xa0pU\\xc4\\x91\\xf2\\x17'",
+        "Signature": "<signature>",
         "SigningAlgorithm": "ECDSA_SHA_256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -805,11 +805,11 @@
     "recorded-content": {}
   },
   "tests/integration/test_kms.py::TestKMS::test_sign_verify[ECC_NIST_P384-ECDSA_SHA_384]": {
-    "recorded-date": "12-04-2023, 14:10:14",
+    "recorded-date": "13-04-2023, 11:30:19",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
-        "Signature": "b'0e\\x021\\x00\\xc0(\\x97\\x10\\x11\\xae\\xd6\\xd0e\\x1bj\\xb5\\xae\\xe2\\xeb\\xb4\\xfa\\xe4<\\t]a\\xc8\\xe4\\x03\\xdfL\\xb4\\xd2\\xe6-_b\\x9f\\x89\\xf6G\\xfcU\\x10\\x99~I\\xb7\\x06\\x89\\x04\\x93\\x020+\\xff\\xe9\\xa8\\xe0\\x88\\x93\\xfd\\xdc\\x0f\\xff\\x0c\\x87I\\x8ci\\xf2\\xfb\\x0b\\xbe\\xdf\\xb4\\xfc\\xd7O\\xc9\\xdd\\xe6\\x12\\x843>\\x9d\\xa0R\\xb7\\xa4\\x90\\x0b/\\xf0G\\xc7\\xc8\\x8c\\x9c\\x8b\\xeb'",
+        "Signature": "<signature>",
         "SigningAlgorithm": "ECDSA_SHA_384",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -848,7 +848,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_hmac_create_key": {
-    "recorded-date": "12-04-2023, 13:21:25",
+    "recorded-date": "13-04-2023, 11:34:18",
     "recorded-content": {
       "create-hmac-key": {
         "AWSAccountId": "111111111111",
@@ -889,7 +889,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_hmac_create_key_invalid_operations": {
-    "recorded-date": "12-04-2023, 13:21:28",
+    "recorded-date": "13-04-2023, 11:31:06",
     "recorded-content": {
       "create-hmac-key-without-key-usage": {
         "Error": {
@@ -924,11 +924,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_224-HMAC_SHA_224]": {
-    "recorded-date": "12-04-2023, 13:21:29",
+    "recorded-date": "13-04-2023, 11:31:08",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
-        "Mac": "b'\\xe2\\xfc\\xe6B}\\xfd\\x1c\\xfd\\x9dS.0\\x8e\\x0c\\xfdfW5\\xff\\x03\\xfd8\\xe3D\\x13\\x91\\xba\\xcf'",
+        "Mac": "<mac>",
         "MacAlgorithm": "HMAC_SHA_224",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -969,11 +969,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_256-HMAC_SHA_256]": {
-    "recorded-date": "12-04-2023, 13:21:31",
+    "recorded-date": "13-04-2023, 11:31:10",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
-        "Mac": "b'\\xa5\\xa8\\xb8h\\xd1\\xc0u\\xf7\\xdfX\\x95\\xb4\\x19\\xed\\x9a\\xb5*\\xfc\\xd8\\xa9M\\x05\\xa3\\xa1x\\xe0\\x0e\\x9f\\xd5\\x14\\x7f\\x80'",
+        "Mac": "<mac>",
         "MacAlgorithm": "HMAC_SHA_256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1014,11 +1014,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_384-HMAC_SHA_384]": {
-    "recorded-date": "12-04-2023, 13:21:33",
+    "recorded-date": "13-04-2023, 11:31:12",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
-        "Mac": "b'\\x0e\\x1f\\x82\\xf9y\\x8dN\\xe9\\xcd\\x9b\\xae7p\\xa2\\x8f%]Y\\x07\\xd5\\xd5!\\x19\\xd5\\xc8\\xf6L\\x04U\\x03Az\\xf8\\x08.\\xfaxS\\xcf\\x13>\\xb0D\\xc8\\x90\\x18\\xe7\\x9d'",
+        "Mac": "<mac>",
         "MacAlgorithm": "HMAC_SHA_384",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1059,11 +1059,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_512-HMAC_SHA_512]": {
-    "recorded-date": "12-04-2023, 13:21:34",
+    "recorded-date": "13-04-2023, 11:31:13",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
-        "Mac": "b'\\xf1\\x86\\x02\\xfdO\\xdf\\x9c^\\xce\\x03\\xb4Z32\\xd2r\\x11\\x91\\xfd\\xa2\\xc19\\x18\\xc5:\\xdf\\x86\\xb6\\x9a\\xd0\\xa7\\xb4u\\xedd\\xfa!\\xce\\xbc\\r\\xe7C\\xffa\\xf5\\xf6\\x94\\xa5\\x86\\xac\\x99\\x02\\x05E&\\x99h\\\\\\xcc\\x03\\x8dE\\xe3~'",
+        "Mac": "<mac>",
         "MacAlgorithm": "HMAC_SHA_512",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1104,7 +1104,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_invalid_generate_mac[HMAC_224-HMAC_SHA_256]": {
-    "recorded-date": "12-04-2023, 13:21:35",
+    "recorded-date": "13-04-2023, 11:31:14",
     "recorded-content": {
       "generate-mac": {
         "Error": {
@@ -1120,7 +1120,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_invalid_generate_mac[HMAC_256-INVALID]": {
-    "recorded-date": "12-04-2023, 13:21:36",
+    "recorded-date": "13-04-2023, 11:31:15",
     "recorded-content": {
       "generate-mac": {
         "Error": {
@@ -1135,11 +1135,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-HMAC_SHA_256-some different important message]": {
-    "recorded-date": "12-04-2023, 13:21:37",
+    "recorded-date": "13-04-2023, 11:31:17",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
-        "Mac": "b'\\xb0\\x81Au\\xda\\x14R\\x0c\\x99M\\x86\\xdf](=.!\\xbc|\\x12\\xaf]\\xff\\t\\xa4\\x80#\\x06\\x17\\x87\\xfb\\xaa'",
+        "Mac": "<mac>",
         "MacAlgorithm": "HMAC_SHA_256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1159,11 +1159,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-HMAC_SHA_512-some important message]": {
-    "recorded-date": "12-04-2023, 13:21:38",
+    "recorded-date": "13-04-2023, 11:31:18",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
-        "Mac": "b'\\xf2*5\\x12\\xd3Y+\\xd8p\\xdb\\x01\\xd8\\xae\\x9e\\xee\\x1bU\\x0b\\xba0L\\xa1J@}\\xe5\\xe4\\x84\\xca@!('",
+        "Mac": "<mac>",
         "MacAlgorithm": "HMAC_SHA_256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1184,11 +1184,11 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-INVALID-some important message]": {
-    "recorded-date": "12-04-2023, 13:21:39",
+    "recorded-date": "13-04-2023, 11:31:19",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
-        "Mac": "b'\\xe0^1\\xc6MEG\\xb0\\xc9\\x10#\\xa8\\x89\\xab\\x8d\\xb9\\xad\\x93\\x05\\xad\\xee\\xca\\xe6\\xdf\\xb7\\xa2^\\xe9\\x82/\\xeft'",
+        "Mac": "<mac>",
         "MacAlgorithm": "HMAC_SHA_256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1208,7 +1208,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_import_key": {
-    "recorded-date": "12-04-2023, 13:21:00",
+    "recorded-date": "13-04-2023, 11:30:39",
     "recorded-content": {
       "created-key": {
         "AWSAccountId": "111111111111",
@@ -1336,7 +1336,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_error_messaging_for_invalid_keys": {
-    "recorded-date": "12-04-2023, 13:21:43",
+    "recorded-date": "13-04-2023, 11:31:23",
     "recorded-content": {
       "generate-mac-invalid-key-id": {
         "Error": {
@@ -1396,7 +1396,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_plaintext_size_for_encrypt": {
-    "recorded-date": "12-04-2023, 13:21:43",
+    "recorded-date": "13-04-2023, 11:31:24",
     "recorded-content": {
       "invalid-plaintext-size-encrypt": {
         "Error": {

@@ -424,7 +424,6 @@ class TestKMS:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
-            "$..Signature",
             "$..Error.Message",
             "$..message",
         ]
@@ -935,11 +934,6 @@ class TestKMS:
         snapshot.match("create-hmac-key-invalid-key-usage", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Mac",
-        ]
-    )
     @pytest.mark.parametrize(
         "key_spec,mac_algo",
         [
@@ -993,11 +987,6 @@ class TestKMS:
         snapshot.match("verify-mac-invalid-key-id", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Mac",
-        ]
-    )
     @pytest.mark.parametrize(
         "key_spec,mac_algo",
         [
@@ -1021,7 +1010,7 @@ class TestKMS:
         snapshot.match("generate-mac", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Mac", "$..message"])
+    @pytest.mark.skip_snapshot_verify(paths=["$..message"])
     @pytest.mark.parametrize(
         "key_spec,mac_algo,verify_msg",
         [
