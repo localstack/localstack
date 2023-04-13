@@ -20,14 +20,9 @@ from localstack.runtime.exceptions import LocalstackExit
 from localstack.services import generic_proxy, motoserver
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
-from localstack.utils import analytics, config_listener, files, objects
+from localstack.utils import config_listener, files, objects
 from localstack.utils.aws.request_context import patch_moto_request_handling
-from localstack.utils.bootstrap import (
-    canonicalize_api_names,
-    is_api_enabled,
-    log_duration,
-    setup_logging,
-)
+from localstack.utils.bootstrap import is_api_enabled, log_duration, setup_logging
 from localstack.utils.container_networking import get_main_container_id
 from localstack.utils.files import cleanup_tmp_files
 from localstack.utils.net import get_free_tcp_port, is_port_open
@@ -277,8 +272,6 @@ def stop_infra():
     if events.infra_stopping.is_set():
         return
 
-    analytics.log.event("infra_stop")
-
     # also used to signal shutdown for edge proxy so that any further requests will be rejected
     events.infra_stopping.set()
 
@@ -435,10 +428,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         if config.WAIT_FOR_DEBUGGER:
             debugpy.wait_for_client()
 
-    # prepare APIs
-    apis = canonicalize_api_names(apis)
-    analytics.log.event("infra_start", apis=apis)
-
     @log_duration()
     def prepare_environment():
         # set environment
@@ -499,7 +488,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     sys.stdout.flush()
 
     events.infra_ready.set()
-    analytics.log.event("infra_ready")
 
     hooks.on_infra_ready.run()
 

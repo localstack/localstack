@@ -216,22 +216,6 @@ def get_enabled_apis() -> Set[str]:
     return resolve_apis(config.parse_service_ports().keys())
 
 
-def canonicalize_api_names(apis: Iterable[str] = None) -> List[str]:
-    """
-    Finalize the list of API names and SERVICE_PORT configurations by first resolving the real services from the
-    enabled services, and then populating the configuration appropriately.
-
-    """
-    apis = resolve_apis(apis or config.SERVICE_PORTS.keys())
-
-    # make sure we have port mappings for each API
-    for api in apis:
-        if api not in config.SERVICE_PORTS:
-            config.SERVICE_PORTS[api] = config.DEFAULT_SERVICE_PORTS.get(api)
-
-    return list(apis)
-
-
 # DEPRECATED, lazy loading should be assumed
 def is_api_enabled(api: str) -> bool:
     apis = get_enabled_apis()
