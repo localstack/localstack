@@ -7,7 +7,7 @@ import threading
 import time
 from concurrent.futures.thread import ThreadPoolExecutor
 from queue import Empty
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
 from moto.sqs.models import Message as MotoMessage
@@ -447,7 +447,7 @@ class SqsDeveloperEndpoints:
             raise QueueDoesNotExist()
 
         try:
-            region, account_id, queue_name = parse_queue_url(request.values["QueueUrl"])
+            account_id, region, queue_name = parse_queue_url(request.values["QueueUrl"])
         except ValueError:
             LOG.exception("Error while parsing Queue URL from request values: %s", request.values)
             raise InvalidAddress()
@@ -539,6 +539,19 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         - Pagination of results (NextToken)
         - Delivery guarantees
         - The region is not encoded in the queue URL
+
+    CROSS-ACCOUNT ACCESS:
+    LocalStack permits cross-account access for all operations. However, AWS
+    disallows the same for following operations:
+        - AddPermission
+        - CreateQueue
+        - DeleteQueue
+        - ListQueues
+        - ListQueueTags
+        - RemovePermission
+        - SetQueueAttributes
+        - TagQueue
+        - UntagQueue
     """
 
     queues: Dict[str, SqsQueue]
@@ -568,7 +581,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._cloudwatch_publish_worker.stop()
         self._cloudwatch_dispatcher.shutdown()
 
-    def _require_queue(self, context: RequestContext, name: str) -> SqsQueue:
+    def _require_queue(self, account_id: str, region_name: str, name: str) -> SqsQueue:
         """
         Returns the queue for the given name, or raises QueueDoesNotExist if it does not exist.
 
@@ -577,7 +590,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         :returns: the queue
         :raises QueueDoesNotExist: if the queue does not exist
         """
-        store = self.get_store(context.account_id, context.region)
+        store = self.get_store(account_id, region_name)
         with self._mutex:
             if name not in store.queues.keys():
                 raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
@@ -586,7 +599,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def _require_queue_by_arn(self, context: RequestContext, queue_arn: str) -> SqsQueue:
         arn = parse_arn(queue_arn)
-        return self._require_queue(context, arn["resource"])
+        return self._require_queue(arn["account"], arn["region"], arn["resource"])
 
     def _resolve_queue(
         self,
@@ -604,8 +617,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         :returns: the queue
         :raises QueueDoesNotExist: if the queue does not exist
         """
-        name = resolve_queue_name(context, queue_name, queue_url)
-        return self._require_queue(context, name)
+        account_id, region_name, name = resolve_queue_location(context, queue_name, queue_url)
+        return self._require_queue(account_id, region_name or context.region, name)
 
     def create_queue(
         self,
@@ -1276,28 +1289,28 @@ def _create_message_attribute_hash(message_attributes) -> Optional[str]:
     return hash.hexdigest()
 
 
-def get_queue_name_from_url(queue_url: str) -> str:
-    return queue_url.rstrip("/").split("/")[-1]
-
-
-def resolve_queue_name(
+def resolve_queue_location(
     context: RequestContext, queue_name: Optional[str] = None, queue_url: Optional[str] = None
-) -> str:
+) -> Tuple[str, Optional[str], str]:
     """
-    Resolves a queue name from the given information.
+    Resolves a queue location from the given information.
 
     :param context: the request context, used for getting region and account_id, and optionally the queue_url
     :param queue_name: the queue name (if this is set, then this will be used for the key)
     :param queue_url: the queue url (if name is not set, this will be used to determine the queue name)
-    :return: the queue name describing the queue being requested
+    :return: tuple of account id, region and queue_name
     """
     if not queue_name:
-        if queue_url:
-            queue_name = get_queue_name_from_url(queue_url)
-        else:
-            queue_name = get_queue_name_from_url(context.request.base_url)
+        try:
+            if queue_url:
+                return parse_queue_url(queue_url)
+            else:
+                return parse_queue_url(context.request.base_url)
+        except ValueError:
+            # should work if queue name is passed in QueueUrl
+            return context.account_id, context.region, queue_url
 
-    return queue_name
+    return context.account_id, context.region, queue_name
 
 
 def message_filter_attributes(message: Message, names: Optional[AttributeNameList]):
