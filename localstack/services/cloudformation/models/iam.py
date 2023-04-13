@@ -431,6 +431,26 @@ class IAMPolicy(GenericBaseModel):
     def cloudformation_type():
         return "AWS::IAM::Policy"
 
+    def update_resource(self, new_resource, stack_name, resources):
+        client = aws_stack.connect_to_service("iam")
+        props = new_resource["Properties"]
+        _states = new_resource.get("_state_")
+        if _states:
+            policy_doc = json.dumps(remove_none_values(props["PolicyDocument"]))
+            policy_name = props["PolicyName"]
+            for role in props.get("Roles", []):
+                client.put_role_policy(
+                    RoleName=role, PolicyName=policy_name, PolicyDocument=policy_doc
+                )
+            for user in props.get("Users", []):
+                client.put_user_policy(
+                    UserName=user, PolicyName=policy_name, PolicyDocument=policy_doc
+                )
+            for group in props.get("Groups", []):
+                client.put_group_policy(
+                    GroupName=group, PolicyName=policy_name, PolicyDocument=policy_doc
+                )
+
     def fetch_state(self, stack_name, resources):
         return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=False)
 
@@ -442,22 +462,6 @@ class IAMPolicy(GenericBaseModel):
             # e.g. 'stack-fnSe-1OKWZIBB89193' where fnSe are the first 4 characters of the LogicalResourceId (or name?)
             suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=13))
             resource["PhysicalResourceId"] = f"stack-{resource.get('PolicyName', '')[:4]}-{suffix}"
-
-        def merge_policies(existing_policy, new_policy):
-            """Merge an existing IAM policy with a new policy.
-
-            :param existing_policy: Existing IAM policy
-            :param new_policy: New IAM policy to merge in
-            :return: Merged IAM policy
-            """
-            merged_policy = existing_policy.copy()
-            merged_policy["Statement"] = []
-            existing_sids = [s["Sid"] for s in existing_policy["Statement"]]
-            for new_statement in new_policy["Statement"]:
-                if new_statement["Sid"] in existing_sids:
-                    continue
-                merged_policy["Statement"].append(new_statement)
-            return merged_policy
 
         def _create(resource_id, resources, resource_type, func, stack_name, *args, **kwargs):
             iam = aws_stack.connect_to_service("iam")
@@ -477,30 +481,6 @@ class IAMPolicy(GenericBaseModel):
                     GroupName=group, PolicyName=policy_name, PolicyDocument=policy_doc
                 )
 
-        def _update(resource_id, resources, resource_type, func, stack_name, *args, **kwargs):
-            iam = aws_stack.connect_to_service("iam")
-            props = resources[resource_id]["Properties"]
-            policy_doc = json.dumps(remove_none_values(props["PolicyDocument"]))
-            policy_name = props["PolicyName"]
-            for role in props.get("Roles", []):
-                existing_policy = iam.get_role_policy(RoleName=role, PolicyName=policy_name)
-                updated_policy = merge_policies(existing_policy, policy_doc)
-                iam.put_role_policy(
-                    RoleName=role, PolicyName=policy_name, PolicyDocument=updated_policy
-                )
-            for user in props.get("Users", []):
-                existing_policy = iam.get_user_policy(UserName=user, PolicyName=policy_name)
-                updated_policy = merge_policies(existing_policy, policy_doc)
-                iam.put_user_policy(
-                    UserName=user, PolicyName=policy_name, PolicyDocument=updated_policy
-                )
-            for group in props.get("Groups", []):
-                existing_policy = iam.get_group_policy(GroupName=group, PolicyName=policy_name)
-                updated_policy = merge_policies(existing_policy, policy_doc)
-                iam.put_group_policy(
-                    GroupName=group, PolicyName=policy_name, PolicyDocument=updated_policy
-                )
-
         def _delete_params(params, *args, **kwargs):
             return {"PolicyArn": arns.policy_arn(params["PolicyName"])}
 
@@ -509,7 +489,6 @@ class IAMPolicy(GenericBaseModel):
                 "function": _create,
                 "result_handler": _store_physical_id,
             },
-            "update": {"function": _update},
             "delete": {"function": "delete_policy", "parameters": _delete_params},
         }
 
