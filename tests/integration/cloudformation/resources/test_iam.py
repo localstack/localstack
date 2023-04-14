@@ -140,7 +140,7 @@ def test_iam_user_access_key(deploy_cfn_template, snapshot, aws_client):
 
 
 @pytest.mark.aws_validated
-def test_update_inline_policy(deploy_cfn_template, snapshot, iam_client):
+def test_update_inline_policy(deploy_cfn_template, snapshot, aws_client):
 
     snapshot.add_transformer(snapshot.transform.iam_api())
     snapshot.add_transformer(snapshot.transform.key_value("PolicyName", "policy-name"))
@@ -162,10 +162,10 @@ def test_update_inline_policy(deploy_cfn_template, snapshot, iam_client):
         },
     )
 
-    user_inline_policy_response = iam_client.get_user_policy(
+    user_inline_policy_response = aws_client.iam.get_user_policy(
         UserName=user_name, PolicyName=policy_name
     )
-    role_inline_policy_resource = iam_client.get_role_policy(
+    role_inline_policy_resource = aws_client.iam.get_role_policy(
         RoleName=role_name, PolicyName=policy_name
     )
 
@@ -185,10 +185,10 @@ def test_update_inline_policy(deploy_cfn_template, snapshot, iam_client):
         is_update=True,
     )
 
-    user_updated_inline_policy_response = iam_client.get_user_policy(
+    user_updated_inline_policy_response = aws_client.iam.get_user_policy(
         UserName=user_name, PolicyName=policy_name
     )
-    role_updated_inline_policy_resource = iam_client.get_role_policy(
+    role_updated_inline_policy_resource = aws_client.iam.get_role_policy(
         RoleName=role_name, PolicyName=policy_name
     )
 
