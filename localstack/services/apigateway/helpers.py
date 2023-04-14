@@ -1342,7 +1342,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     api_id = invocation_context.api_id
     stage = invocation_context.stage
 
-    source_ip = headers.get("X-Forwarded-For", ",").split(",")[-2].strip()
+    source_ip = headers.get("X-Forwarded-For", ",").split(",")[-2].strip() or "127.0.0.1"
     integration_uri = integration_uri or ""
     account_id = integration_uri.split(":lambda:path")[-1].split(":function:")[0].split(":")[-1]
     account_id = account_id or get_aws_account_id()
@@ -1355,7 +1355,6 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
         "resourceId": resource_id,
         "requestId": long_uid(),
         "identity": {
-            "accountId": account_id,
             "sourceIp": source_ip,
             "userAgent": headers.get("User-Agent"),
         },

@@ -176,7 +176,7 @@ def is_response_obj(result, include_lambda_response=False):
 def get_response_payload(response, as_json=False):
     result = (
         response.content
-        if isinstance(response, RequestsResponse)
+        if isinstance(response, (RequestsResponse, LambdaResponse))
         else response.data
         if isinstance(response, FlaskResponse)
         else None
