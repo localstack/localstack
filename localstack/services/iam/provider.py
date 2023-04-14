@@ -1,9 +1,9 @@
 import json
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 from urllib.parse import quote
 
-from moto.iam.models import AWSManagedPolicy, IAMBackend, InlinePolicy, Policy
+from moto.iam.models import AccessKey, AWSManagedPolicy, IAMBackend, InlinePolicy, Policy
 from moto.iam.models import Role as MotoRole
 from moto.iam.models import filter_items_with_path_prefix, iam_backends
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS
@@ -15,7 +15,6 @@ from localstack.aws.api.iam import (
     ActionNameType,
     AttachedPermissionsBoundary,
     ContextEntryListType,
-    CreateAccessKeyResponse,
     CreateRoleRequest,
     CreateRoleResponse,
     CreateServiceLinkedRoleResponse,
@@ -374,16 +373,6 @@ class IamProvider(IamApi):
             )
         return response
 
-    def create_access_key(
-        self, context: RequestContext, user_name: existingUserNameType = None
-    ) -> CreateAccessKeyResponse:
-        response = call_moto(context=context)
-        if not config.PARITY_AWS_ACCESS_KEY_ID and (
-            access_key_id := response.get("AccessKey", {}).get("AccessKeyId")
-        ):
-            response["AccessKey"]["AccessKeyId"] = "L" + access_key_id[1:]
-        return response
-
     def get_user(
         self, context: RequestContext, user_name: existingUserNameType = None
     ) -> GetUserResponse:
@@ -508,3 +497,17 @@ def apply_patches():
         except Exception:
             # Actually role can be deleted before policy being deleted in cloudformation
             pass
+
+    @patch(AccessKey.__init__)
+    def access_key__init__(
+        fn,
+        self,
+        user_name: Optional[str],
+        prefix: str,
+        account_id: str,
+        status: str = "Active",
+        **kwargs,
+    ):
+        if not config.PARITY_AWS_ACCESS_KEY_ID:
+            prefix = "L" + prefix[1:]
+        fn(self, user_name, prefix, account_id, status, **kwargs)
