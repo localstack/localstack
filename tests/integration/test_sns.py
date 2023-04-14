@@ -3374,7 +3374,6 @@ class TestSNSProvider:
         snapshot.match("messages", {"Messages": messages})
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="SNS provider does not deduplicate on topic level yet")
     def test_publish_to_fifo_topic_deduplication_on_topic_level(
         self,
         sns_create_topic,
@@ -3400,12 +3399,16 @@ class TestSNSProvider:
         sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
         # TODO: for message deduplication, we are using the underlying features of the SQS queue
-        # however, SQS queue only deduplicate on the MessageGroupId, where the SNS topic deduplicate on the topic level
+        # however, SQS queue only deduplicate at the Queue level, where the SNS topic deduplicate on the topic level
         # we will need to implement this
+        # TODO: add a test with 2 subscriptions and a filter, to validate deduplication at topic level
         message = "Test"
         aws_client.sns.publish(
             TopicArn=topic_arn, Message=message, MessageGroupId="message-group-id-1"
         )
+        time.sleep(
+            0.5
+        )  # this is to ensure order of arrival, because we do not deduplicate at SNS level yet
         aws_client.sns.publish(
             TopicArn=topic_arn, Message=message, MessageGroupId="message-group-id-2"
         )

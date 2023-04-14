@@ -291,7 +291,7 @@ class SqsTopicPublisher(TopicPublisher):
             kwargs["MessageDeduplicationId"] = hashlib.sha256(content.encode("utf-8")).hexdigest()
 
         # TODO: for message deduplication, we are using the underlying features of the SQS queue
-        # however, SQS queue only deduplicate on the MessageGroupId, where the SNS topic deduplicate on the topic level
+        # however, SQS queue only deduplicate at the Queue level, where the SNS topic deduplicate on the topic level
         # we will need to implement this
         return kwargs
 
