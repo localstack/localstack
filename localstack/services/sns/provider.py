@@ -404,14 +404,33 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         authenticate_on_unsubscribe: authenticateOnUnsubscribe = None,
     ) -> ConfirmSubscriptionResponse:
         # TODO: validate format on the token (seems to be 288 hex chars)
-        store = self.get_store(account_id=context.account_id, region=context.region)
-        topic_tokens = store.subscription_tokens.get(topic_arn, {})
+        # this request can come from any http client, it might not be signed (we would need to implement
+        # `authenticate_on_unsubscribe` to force a signing client to do this request.
+        # so, the region and account_id might not be in the request. Use the ones from the topic_arn
+        try:
+            parsed_arn = parse_arn(topic_arn)
+        except InvalidArnException:
+            raise InvalidParameterException("Invalid parameter: Topic")
 
-        subscription_arn = topic_tokens.pop(token, None)
+        store = self.get_store(account_id=parsed_arn["account"], region=parsed_arn["region"])
+
+        # it seems SNS is able to know what the region of the topic should be, even though a wrong topic is accepted
+        if parsed_arn["region"] != get_region_from_subscription_token(token):
+            raise InvalidParameterException("Invalid parameter: Topic")
+
+        subscription_arn = store.subscription_tokens.get(token)
         if not subscription_arn:
             raise InvalidParameterException("Invalid parameter: Token")
 
         subscription = store.subscriptions.get(subscription_arn)
+        if not subscription:
+            # subscription could have been deleted in the meantime
+            raise InvalidParameterException("Invalid parameter: Token")
+
+        # ConfirmSubscription is idempotent
+        if subscription.get("PendingConfirmation") == "false":
+            return ConfirmSubscriptionResponse(SubscriptionArn=subscription_arn)
+
         subscription["PendingConfirmation"] = "false"
         subscription["ConfirmationWasAuthenticated"] = "true"
 
@@ -495,7 +514,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if subscription["Protocol"] in ["http", "https"]:
             # TODO: actually validate this (re)subscribe behaviour somehow (localhost.run?)
             #  we might need to save the sub token in the store
-            subscription_token = short_uid()
+            subscription_token = encode_subscription_token_with_region(region=context.region)
             message_ctx = SnsMessage(
                 type="UnsubscribeConfirmation",
                 token=subscription_token,
@@ -737,9 +756,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         store.topic_subscriptions[topic_arn].append(subscription_arn)
 
         # store the token and subscription arn
-        subscription_token = short_uid()
-        topic_tokens = store.subscription_tokens.setdefault(topic_arn, {})
-        topic_tokens[subscription_token] = subscription_arn
+        # TODO: the token is a 288 hex char string
+        subscription_token = encode_subscription_token_with_region(region=context.region)
+        store.subscription_tokens[subscription_token] = subscription_arn
 
         # Send out confirmation message for HTTP(S), fix for https://github.com/localstack/localstack/issues/881
         if protocol in ["http", "https"]:
@@ -803,7 +822,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             store.subscriptions.pop(topic_sub, None)
 
         store.sns_tags.pop(topic_arn, None)
-        store.subscription_tokens.pop(topic_arn, None)
 
     def create_topic(
         self,
@@ -966,6 +984,29 @@ def extract_tags(
             if is_create_topic_request and existing_tags is not None and tag not in existing_tags:
                 return False
     return True
+
+
+def encode_subscription_token_with_region(region: str) -> str:
+    """
+    Create a 64 characters Subscription Token with the region encoded
+    :param region:
+    :return: a subscription token with the region encoded
+    """
+    return ((region.encode() + b"/").hex() + short_uid() * 8)[:64]
+
+
+def get_region_from_subscription_token(token: str) -> str:
+    """
+    Try to decode and return the region from a subscription token
+    :param token:
+    :return: the region if able to decode it
+    :raises: InvalidParameterException if the token is invalid
+    """
+    try:
+        region = token.split("2f", maxsplit=1)[0]
+        return bytes.fromhex(region).decode("utf-8")
+    except (IndexError, ValueError, TypeError, UnicodeDecodeError):
+        raise InvalidParameterException("Invalid parameter: Token")
 
 
 def register_sns_api_resource(router: Router):

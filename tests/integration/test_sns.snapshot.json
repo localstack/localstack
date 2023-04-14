@@ -3645,5 +3645,194 @@
         }
       }
     }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_external_http_endpoint[True]": {
+    "recorded-date": "13-04-2023, 02:58:36",
+    "recorded-content": {
+      "subscription-confirmation": {
+        "Message": "You have chosen to subscribe to the topic arn:aws:sns:<region>:111111111111:<resource:1>.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
+        "MessageId": "<uuid:1>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:aws:sns:<region>:111111111111:<resource:1>&Token=<token:1>",
+        "Timestamp": "date",
+        "Token": "<token:1>",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "SubscriptionConfirmation"
+      },
+      "broken-topic-arn-confirm": {
+        "ErrorResponse": {
+          "Error": {
+            "Code": "InvalidParameter",
+            "Message": "Invalid parameter: Topic",
+            "Type": "Sender"
+          },
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "broken-token-confirm": {
+        "ErrorResponse": {
+          "Error": {
+            "Code": "InvalidParameter",
+            "Message": "Invalid parameter: Token",
+            "Type": "Sender"
+          },
+          "RequestId": "<request-id:2>"
+        }
+      },
+      "different-region-arn-confirm": {
+        "ErrorResponse": {
+          "Error": {
+            "Code": "InvalidParameter",
+            "Message": "Invalid parameter: Topic",
+            "Type": "Sender"
+          },
+          "RequestId": "<request-id:3>"
+        }
+      },
+      "nonexistent-token-confirm": {
+        "ConfirmSubscriptionResponse": {
+          "ConfirmSubscriptionResult": {
+            "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        }
+      },
+      "confirm-subscribe": {
+        "ConfirmSubscriptionResponse": {
+          "ConfirmSubscriptionResult": {
+            "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        }
+      },
+      "unsubscribe-response": {
+        "UnsubscribeResponse": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        }
+      },
+      "unsubscribe-request": {
+        "Message": "You have chosen to deactivate subscription arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message.",
+        "MessageId": "<uuid:2>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:aws:sns:<region>:111111111111:<resource:1>&Token=<token:2>",
+        "Timestamp": "date",
+        "Token": "<token:2>",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "UnsubscribeConfirmation"
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_external_http_endpoint[False]": {
+    "recorded-date": "13-04-2023, 02:58:52",
+    "recorded-content": {
+      "subscription-confirmation": {
+        "Message": "You have chosen to subscribe to the topic arn:aws:sns:<region>:111111111111:<resource:1>.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
+        "MessageId": "<uuid:1>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:aws:sns:<region>:111111111111:<resource:1>&Token=<token:1>",
+        "Timestamp": "date",
+        "Token": "<token:1>",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "SubscriptionConfirmation"
+      },
+      "broken-topic-arn-confirm": {
+        "ErrorResponse": {
+          "Error": {
+            "Code": "InvalidParameter",
+            "Message": "Invalid parameter: Topic",
+            "Type": "Sender"
+          },
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "broken-token-confirm": {
+        "ErrorResponse": {
+          "Error": {
+            "Code": "InvalidParameter",
+            "Message": "Invalid parameter: Token",
+            "Type": "Sender"
+          },
+          "RequestId": "<request-id:2>"
+        }
+      },
+      "different-region-arn-confirm": {
+        "ErrorResponse": {
+          "Error": {
+            "Code": "InvalidParameter",
+            "Message": "Invalid parameter: Topic",
+            "Type": "Sender"
+          },
+          "RequestId": "<request-id:3>"
+        }
+      },
+      "nonexistent-token-confirm": {
+        "ConfirmSubscriptionResponse": {
+          "ConfirmSubscriptionResult": {
+            "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        }
+      },
+      "confirm-subscribe": {
+        "ConfirmSubscriptionResponse": {
+          "ConfirmSubscriptionResult": {
+            "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        }
+      },
+      "http-message": {
+        "Message": "test_external_http_endpoint",
+        "MessageId": "<uuid:2>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "Timestamp": "date",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "Notification",
+        "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+      },
+      "unsubscribe-response": {
+        "UnsubscribeResponse": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        }
+      },
+      "unsubscribe-request": {
+        "Message": "You have chosen to deactivate subscription arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message.",
+        "MessageId": "<uuid:3>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:aws:sns:<region>:111111111111:<resource:1>&Token=<token:2>",
+        "Timestamp": "date",
+        "Token": "<token:2>",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "UnsubscribeConfirmation"
+      }
+    }
   }
 }
