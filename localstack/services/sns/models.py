@@ -114,8 +114,8 @@ class SnsStore(BaseStore):
     # maps subscription ARN to SnsSubscription
     subscriptions: Dict[str, SnsSubscription] = LocalAttribute(default=dict)
 
-    # maps topic Arn to subscription validation token to subscription ARN
-    subscription_tokens: Dict[str, Dict[str, str]] = LocalAttribute(default=dict)
+    # maps confirmation token to subscription ARN
+    subscription_tokens: Dict[str, str] = LocalAttribute(default=dict)
 
     # maps topic ARN to list of tags
     sns_tags: Dict[str, List[Dict]] = LocalAttribute(default=dict)
