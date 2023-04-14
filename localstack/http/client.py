@@ -47,6 +47,19 @@ class SimpleRequestsClient(HttpClient):
     def __init__(self, session: requests.Session = None):
         self.session = session or requests.Session()
 
+    @staticmethod
+    def _get_destination_url(request: Request, server: str | None = None) -> str:
+        if server:
+            # accepts "http://localhost:5000" or "localhost:5000"
+            if "://" in server:
+                parts = urlparse(server)
+                scheme, server = parts.scheme, parts.netloc
+            else:
+                scheme = request.scheme
+            return get_raw_current_url(scheme, server, request.root_path, get_raw_path(request))
+
+        return get_raw_base_url(request)
+
     def request(self, request: Request, server: str | None = None) -> Response:
         """
         Very naive implementation to make the given HTTP request using the requests library, i.e., process the request
@@ -61,16 +74,7 @@ class SimpleRequestsClient(HttpClient):
         :return: the response.
         """
 
-        if server:
-            # accepts "http://localhost:5000" or "localhost:5000"
-            if "://" in server:
-                parts = urlparse(server)
-                scheme, server = parts.scheme, parts.netloc
-            else:
-                scheme = request.scheme
-            url = get_raw_current_url(scheme, server, request.root_path, get_raw_path(request))
-        else:
-            url = get_raw_base_url(request)
+        url = self._get_destination_url(request, server)
 
         response = self.session.request(
             method=request.method,
@@ -95,6 +99,53 @@ class SimpleRequestsClient(HttpClient):
 
     def close(self):
         self.session.close()
+
+
+class SimpleStreamingRequestsClient(SimpleRequestsClient):
+    def request(self, request: Request, server: str | None = None) -> Response:
+        """
+        Very naive implementation to make the given HTTP request using the requests library, i.e., process the request
+        as a client.
+
+        :param request: the request to perform
+        :param server: the URL to send the request to, which defaults to the host component of the original Request.
+        :return: the response.
+        """
+
+        url = self._get_destination_url(request, server)
+
+        response = self.session.request(
+            method=request.method,
+            # use raw base url to preserve path url encoding
+            url=url,
+            # request.args are only the url parameters
+            params=[(k, v) for k, v in request.args.items(multi=True)],
+            headers=dict(request.headers.items()),
+            data=restore_payload(request),
+            stream=True,
+        )
+
+        if request.method == "HEAD":
+            # for HEAD  requests we have to keep the original content-length, but it will be re-calculated when creating
+            # the final_response object
+            final_response = Response(
+                response=response.content,
+                status=response.status_code,
+                headers=Headers(dict(response.headers)),
+            )
+            final_response.content_length = response.headers.get("Content-Length", 0)
+            return final_response
+
+        response_headers = Headers(dict(response.headers))
+        response_headers.pop("Content-Length", None)
+
+        final_response = Response(
+            response=(chunk for chunk in response.raw.stream(1024, decode_content=False)),
+            status=response.status_code,
+            headers=response_headers,
+        )
+
+        return final_response
 
 
 def make_request(request: Request) -> Response:

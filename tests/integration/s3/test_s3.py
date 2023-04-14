@@ -1821,6 +1821,29 @@ class TestS3:
         assert body == str(download_file_object)
 
     @pytest.mark.only_localstack
+    def test_virtual_host_proxy_does_not_decode_gzip(self, aws_client, s3_bucket):
+        # Write contents to memory rather than a file.
+        data = "123gzipfile"
+        upload_file_object = BytesIO()
+        mtime = 1676569620  # hardcode the GZIP timestamp
+        with gzip.GzipFile(fileobj=upload_file_object, mode="w", mtime=mtime) as filestream:
+            filestream.write(data.encode("utf-8"))
+        raw_gzip = upload_file_object.getvalue()
+        # Upload gzip
+        aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key="test.gz",
+            ContentEncoding="gzip",
+            Body=raw_gzip,
+        )
+
+        key_url = f"{_bucket_url_vhost(s3_bucket)}/test.gz"
+        gzip_response = requests.get(key_url, stream=True)
+        # get the raw data, don't let requests decode the response
+        raw_data = b"".join(chunk for chunk in gzip_response.raw.stream(1024, decode_content=False))
+        assert raw_data == raw_gzip
+
+    @pytest.mark.only_localstack
     def test_put_object_with_md5_and_chunk_signature(self, s3_bucket, aws_client):
         # Boto still does not support chunk encoding, which means we can't test with the client nor
         # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
