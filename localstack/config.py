@@ -445,6 +445,11 @@ PORTS_CHECK_DOCKER_IMAGE = os.environ.get("PORTS_CHECK_DOCKER_IMAGE", "").strip(
 # TODO: this will likely become the default and may get removed in the future
 FORWARD_EDGE_INMEM = True
 
+# Additional hostnames to be added to the TLS certificate generated for HTTPS traffic
+# Note: these are assumed to be hostnames like `localhost`, rather than the eventually required
+# format of `DNS:<hostname>`
+ADDITIONAL_SANS = os.environ.get("ADDITIONAL_SANS")
+
 
 def is_trace_logging_enabled():
     if LS_LOG:

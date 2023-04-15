@@ -9,6 +9,7 @@ from hypercorn.typing import ASGIFramework
 from localstack.aws.gateway import Gateway
 from localstack.aws.handlers.proxy import ProxyHandler
 from localstack.aws.serving.asgi import AsgiGateway
+from localstack.config import ADDITIONAL_SANS
 from localstack.logging.setup import setup_hypercorn_logger
 from localstack.utils.collections import ensure_list
 from localstack.utils.serving import Server
@@ -98,7 +99,9 @@ class GatewayServer(HypercornServer):
 
         if use_ssl:
             install_predefined_cert_if_available()
-            _, cert_file_name, key_file_name = create_ssl_cert(serial_number=port)
+            _, cert_file_name, key_file_name = create_ssl_cert(
+                serial_number=port, additional_sans=ADDITIONAL_SANS
+            )
             config.certfile = cert_file_name
             config.keyfile = key_file_name
 

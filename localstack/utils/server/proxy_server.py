@@ -2,7 +2,7 @@ import logging
 import os
 import select
 import socket
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 from localstack.constants import BIND_HOST, LOCALHOST_IP
 from localstack.utils.asyncio import ensure_event_loop
@@ -85,12 +85,17 @@ def start_ssl_proxy(
     target_ssl=False,
     client_cert_key: Tuple[str, str] = None,
     asynchronous: bool = False,
+    additional_sans: Optional[str] = None,
 ):
     """Start a proxy server that accepts SSL requests and forwards requests to a backend (either SSL or non-SSL)"""
 
     def _run(*args):
         return _do_start_ssl_proxy(
-            port, target, target_ssl=target_ssl, client_cert_key=client_cert_key
+            port,
+            target,
+            target_ssl=target_ssl,
+            client_cert_key=client_cert_key,
+            additional_sans=additional_sans,
         )
 
     if not asynchronous:
@@ -125,6 +130,7 @@ def _do_start_ssl_proxy(
     target_ssl=False,
     client_cert_key: Tuple[str, str] = None,
     bind_address: str = "0.0.0.0",
+    additional_sans: Optional[str] = None,
 ):
     """
     Starts a tcp proxy (with tls) on the specified port
@@ -153,7 +159,7 @@ def _do_start_ssl_proxy(
     args = dict(rserver=[remote])
 
     # set SSL contexts
-    _, cert_file_name, key_file_name = create_ssl_cert()
+    _, cert_file_name, key_file_name = create_ssl_cert(additional_sans=additional_sans)
     for context in pproxy.server.sslcontexts:
         context.load_cert_chain(cert_file_name, key_file_name)
 

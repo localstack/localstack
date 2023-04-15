@@ -2442,7 +2442,9 @@ def _serve_flask_app(app, port, host=None, cors=True, asynchronous=False):
         host = "0.0.0.0"
     ssl_context = None
     if not config.FORWARD_EDGE_INMEM and config.USE_SSL:
-        _, cert_file_name, key_file_name = create_ssl_cert(serial_number=port)
+        _, cert_file_name, key_file_name = create_ssl_cert(
+            serial_number=port, additional_sans=config.ADDITIONAL_SANS
+        )
         ssl_context = cert_file_name, key_file_name
     app.config["ENV"] = "development"
 

@@ -25,7 +25,7 @@ from requests.models import Request, Response
 from werkzeug.exceptions import HTTPException
 
 from localstack import config
-from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
+from localstack.config import ADDITIONAL_SANS, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import APPLICATION_JSON, BIND_HOST, HEADER_LOCALSTACK_REQUEST_URL
 from localstack.http.request import get_full_raw_path
 from localstack.services.messages import Headers, MessagePayload
@@ -624,7 +624,9 @@ def start_proxy_server(
     ssl_creds = (None, None)
     if use_ssl:
         install_predefined_cert_if_available()
-        _, cert_file_name, key_file_name = create_ssl_cert(serial_number=port)
+        _, cert_file_name, key_file_name = create_ssl_cert(
+            serial_number=port, additional_sans=ADDITIONAL_SANS
+        )
         ssl_creds = (cert_file_name, key_file_name)
 
     result = http2_server.run_server(

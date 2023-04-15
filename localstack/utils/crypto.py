@@ -24,6 +24,13 @@ PEM_CERT_END = "-----END CERTIFICATE-----"
 PEM_KEY_START_REGEX = r"-----BEGIN(.*)PRIVATE KEY-----"
 PEM_KEY_END_REGEX = r"-----END(.*)PRIVATE KEY-----"
 
+DEFAULT_SANS = [
+    "DNS:localhost",
+    "DNS:test.localhost.atlassian.io",
+    "DNS:localhost.localstack.cloud",
+    "IP:127.0.0.1",
+]
+
 
 @synchronized(lock=SSL_CERT_LOCK)
 def generate_ssl_cert(
@@ -32,6 +39,7 @@ def generate_ssl_cert(
     random=False,
     return_content=False,
     serial_number=None,
+    additional_sans=None,
 ):
     # Note: Do NOT import "OpenSSL" at the root scope
     # (Our test Lambdas are importing this file but don't have the module installed)
@@ -58,7 +66,12 @@ def generate_ssl_cert(
         save_file(cert_file_name, cert_content)
         return cert_file_name, key_file_name
 
-    if target_file and not overwrite and file_exists_not_empty(target_file):
+    if (
+        target_file
+        and not overwrite
+        and file_exists_not_empty(target_file)
+        and additional_sans is None
+    ):
         try:
             cert_file_name, key_file_name = store_cert_key_files(target_file)
         except Exception as e:
@@ -98,12 +111,14 @@ def generate_ssl_cert(
     cert.gmtime_adj_notAfter(2 * 365 * 24 * 60 * 60)
     cert.set_issuer(cert.get_subject())
     cert.set_pubkey(k)
-    alt_names = (
-        b"DNS:localhost,DNS:test.localhost.atlassian.io,DNS:localhost.localstack.cloud,IP:127.0.0.1"
-    )
+
+    SANS = DEFAULT_SANS
+    if additional_sans is not None:
+        SANS = [f"DNS:{every.strip()}" for every in additional_sans.split(",")] + SANS
+
     cert.add_extensions(
         [
-            crypto.X509Extension(b"subjectAltName", False, alt_names),
+            crypto.X509Extension(b"subjectAltName", False, ",".join(SANS).encode("utf8")),
             crypto.X509Extension(b"basicConstraints", True, b"CA:false"),
             crypto.X509Extension(
                 b"keyUsage", True, b"nonRepudiation,digitalSignature,keyEncipherment"
@@ -125,7 +140,7 @@ def generate_ssl_cert(
         cert_file_name = "%s.crt" % target_file
         # check existence to avoid permission denied issues:
         # https://github.com/localstack/localstack/issues/1607
-        if not all_exist(target_file, key_file_name, cert_file_name):
+        if not all_exist(target_file, key_file_name, cert_file_name) or additional_sans is not None:
             for i in range(2):
                 try:
                     save_file(target_file, file_content)
