@@ -52,7 +52,11 @@ from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.templating import VtlTemplate
 from localstack.utils.collections import dict_multi_values, remove_attributes
 from localstack.utils.common import make_http_request, to_str
-from localstack.utils.http import add_query_params_to_url, canonicalize_headers, parse_request_data
+from localstack.utils.http import (
+    add_query_params_to_url,
+    header_keys_to_lowercase,
+    parse_request_data,
+)
 from localstack.utils.json import json_safe
 from localstack.utils.strings import camel_to_snake_case, to_bytes
 
@@ -241,7 +245,13 @@ class LambdaProxyIntegration(BackendIntegration):
             k: v[-1] if isinstance(v, list) else v for k, v in query_string_params.items()
         }
         # AWS canonical header names, converting them to lower-case
-        headers = canonicalize_headers(headers)
+        headers = header_keys_to_lowercase(headers)
+
+        # if content-type is not application/json, AWS encodes the body as base64
+        if "content-type" not in headers:
+            data = to_str(base64.b64encode(to_bytes(data)))
+            is_base64_encoded = True
+
         return {
             "path": path,
             "headers": dict(headers),
@@ -338,39 +348,7 @@ class LambdaProxyIntegration(BackendIntegration):
             query_string_params=query_string_params,
         )
 
-        response = LambdaResponse()
-        response.headers.update({"content-type": "application/json"})
-        parsed_result = json.loads(str(result or "{}"))
-        parsed_result = common.json_safe(parsed_result)
-        parsed_result = {} if parsed_result is None else parsed_result
-
-        keys = parsed_result.keys()
-
-        if not ("statusCode" in keys and "body" in keys):
-            LOG.warning(
-                'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}'
-            )
-            response.status_code = 502
-            response._content = json.dumps({"message": "Internal server error"})
-            return response
-
-        response.status_code = int(parsed_result.get("statusCode", 200))
-        parsed_headers = parsed_result.get("headers", {})
-        if parsed_headers is not None:
-            response.headers.update(parsed_headers)
-        try:
-            result_body = parsed_result.get("body")
-            if isinstance(result_body, dict):
-                response._content = json.dumps(result_body)
-            else:
-                body_bytes = to_bytes(result_body or "")
-                if parsed_result.get("isBase64Encoded", False):
-                    body_bytes = base64.b64decode(body_bytes)
-                response._content = body_bytes
-        except Exception as e:
-            LOG.warning("Couldn't set Lambda response content: %s", e)
-            response._content = "{}"
-        response.multi_value_headers = parsed_result.get("multiValueHeaders") or {}
+        response = self.build_response(invocation_context, result)
 
         # apply custom response template
         self.update_content_length(response)
@@ -378,6 +356,62 @@ class LambdaProxyIntegration(BackendIntegration):
 
         self.response_templates.render(invocation_context)
         return invocation_context.response
+
+    def build_response(self, invocation_context, result):
+        response = LambdaResponse()
+        response.headers.update({"content-type": "application/json"})
+        parsed_result = json.loads(str(result or "{}"))
+        parsed_result = common.json_safe(parsed_result)
+        parsed_result = {} if parsed_result is None else parsed_result
+
+        if invocation_context.integration.get("PayloadFormatVersion") == "1.0":
+            keys = parsed_result.keys()
+            if not ("statusCode" in keys and "body" in keys):
+                LOG.warning(
+                    'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}'
+                )
+                response.status_code = 502
+                response._content = json.dumps({"message": "Internal server error"})
+                return response
+            response.status_code = int(parsed_result.get("statusCode", 200))
+            parsed_headers = parsed_result.get("headers", {})
+            if parsed_headers is not None:
+                response.headers.update(parsed_headers)
+            try:
+                result_body = parsed_result.get("body")
+                if isinstance(result_body, dict):
+                    response._content = json.dumps(result_body)
+                else:
+                    body_bytes = to_bytes(result_body or "")
+                    if parsed_result.get("isBase64Encoded", False):
+                        body_bytes = base64.b64decode(body_bytes)
+                    response._content = body_bytes
+            except Exception as e:
+                LOG.warning("Couldn't set Lambda response content: %s", e)
+                response._content = "{}"
+            response.multi_value_headers = parsed_result.get("multiValueHeaders") or {}
+            return response
+        else:
+            # PayloadFormatVersion 2.0 accepts string responses and inferes the response
+            if isinstance(parsed_result, str):
+                response.status_code = 200
+                response._content = parsed_result
+                return response
+            else:
+                if "statusCode" in parsed_result:
+                    response.status_code = parsed_result.get("statusCode")
+                else:
+                    response.status_code = 200
+                if "headers" in parsed_result:
+                    response.headers.update(parsed_result.get("headers"))
+                if "body" in parsed_result:
+                    body = parsed_result.get("body")
+                    response._content = body
+                    if parsed_result.get("isBase64Encoded", False):
+                        response._content = base64.b64decode(body)
+                else:
+                    response._content = json.dumps(parsed_result, separators=(",", ":"))
+                return response
 
 
 class LambdaIntegration(BackendIntegration):

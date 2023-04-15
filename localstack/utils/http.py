@@ -54,6 +54,10 @@ def create_chunked_data(data, chunk_size: int = 80):
     return ret
 
 
+def header_keys_to_lowercase(headers: Union[Dict, CaseInsensitiveDict]) -> Dict:
+    return {k.lower(): v for k, v in headers.items()}
+
+
 def canonicalize_headers(headers: Union[Dict, CaseInsensitiveDict]) -> Dict:
     if not headers:
         return headers
