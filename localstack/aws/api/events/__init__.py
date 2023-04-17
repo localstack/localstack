@@ -1133,13 +1133,17 @@ class SageMakerPipelineParameters(TypedDict, total=False):
     PipelineParameterList: Optional[SageMakerPipelineParameterList]
 
 
+Sqls = List[Sql]
+
+
 class RedshiftDataParameters(TypedDict, total=False):
     SecretManagerArn: Optional[RedshiftSecretManagerArn]
     Database: Database
     DbUser: Optional[DbUser]
-    Sql: Sql
+    Sql: Optional[Sql]
     StatementName: Optional[StatementName]
     WithEvent: Optional[Boolean]
+    Sqls: Optional[Sqls]
 
 
 class SqsParameters(TypedDict, total=False):
