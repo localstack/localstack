@@ -65,13 +65,13 @@ class TestAwsSdk:
         snapshot.match("get_execution_history", get_execution_history)
 
     def test_invalid_secret_name(
-        self, stepfunctions_client, create_iam_role_for_sfn, create_state_machine, snapshot
+        self, aws_client, create_iam_role_for_sfn, create_state_machine, snapshot
     ):
         template = EHT.load_sfn_template(EHT.AWS_SDK_TASK_FAILED_SECRETSMANAGER_CREATE_SECRET)
         definition = json.dumps(template)
         exec_input = json.dumps({"Name": "Invalid Name", "SecretString": "HelloWorld"})
         self._test_aws_sdk_scenario(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -80,7 +80,7 @@ class TestAwsSdk:
         )
 
     def test_no_such_bucket(
-        self, stepfunctions_client, create_iam_role_for_sfn, create_state_machine, snapshot
+        self, aws_client, create_iam_role_for_sfn, create_state_machine, snapshot
     ):
         template = EHT.load_sfn_template(EHT.AWS_SDK_TASK_FAILED_S3_LIST_OBJECTS)
         definition = json.dumps(template)
@@ -88,7 +88,7 @@ class TestAwsSdk:
         snapshot.add_transformer(RegexTransformer(bucket_name, "someNonexistentBucketName"))
         exec_input = json.dumps({"Bucket": bucket_name})
         self._test_aws_sdk_scenario(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,

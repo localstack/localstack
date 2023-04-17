@@ -11,7 +11,10 @@ LOG = logging.getLogger(__name__)
 
 
 @pytest.fixture
-def create_iam_role_for_sfn(cleanups, iam_client, create_state_machine, stepfunctions_client):
+def create_iam_role_for_sfn(aws_client, cleanups, create_state_machine):
+    iam_client = aws_client.iam
+    stepfunctions_client = aws_client.stepfunctions
+
     def _create():
         role_name = f"test-sfn-role-{short_uid()}"
         policy_name = f"test-sfn-policy-{short_uid()}"
