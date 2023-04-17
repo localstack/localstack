@@ -9,12 +9,12 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 
 
-def test_nested_stack(s3_client, cfn_client, deploy_cfn_template, s3_create_bucket):
+def test_nested_stack(deploy_cfn_template, s3_create_bucket, aws_client):
     # upload template to S3
     artifacts_bucket = f"cf-artifacts-{short_uid()}"
     artifacts_path = "stack.yaml"
     s3_create_bucket(Bucket=artifacts_bucket, ACL="public-read")
-    s3_client.put_object(
+    aws_client.s3.put_object(
         Bucket=artifacts_bucket,
         Key=artifacts_path,
         Body=load_file(os.path.join(os.path.dirname(__file__), "../../templates/template5.yaml")),
@@ -34,18 +34,18 @@ def test_nested_stack(s3_client, cfn_client, deploy_cfn_template, s3_create_buck
 
     # assert that nested resources have been created
     def assert_bucket_exists():
-        response = s3_client.head_bucket(Bucket=stack_bucket_name)
+        response = aws_client.s3.head_bucket(Bucket=stack_bucket_name)
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
 
     retry(assert_bucket_exists)
 
 
-def test_nested_stack_output_refs(cfn_client, deploy_cfn_template, s3_client, s3_create_bucket):
+def test_nested_stack_output_refs(deploy_cfn_template, s3_create_bucket, aws_client):
     """test output handling of nested stacks incl. referencing the nested output in the parent stack"""
     bucket_name = s3_create_bucket()
     nested_bucket_name = f"test-bucket-nested-{short_uid()}"
     key = f"test-key-{short_uid()}"
-    s3_client.upload_file(
+    aws_client.s3.upload_file(
         os.path.join(
             os.path.dirname(__file__), "../../templates/nested-stack-output-refs.nested.yaml"
         ),
@@ -63,7 +63,7 @@ def test_nested_stack_output_refs(cfn_client, deploy_cfn_template, s3_client, s3
     )
 
     nested_stack_id = result.outputs["CustomNestedStackId"]
-    nested_stack_details = cfn_client.describe_stacks(StackName=nested_stack_id)
+    nested_stack_details = aws_client.cloudformation.describe_stacks(StackName=nested_stack_id)
     nested_stack_outputs = nested_stack_details["Stacks"][0]["Outputs"]
     assert "InnerCustomOutput" not in result.outputs
     assert (
@@ -77,7 +77,7 @@ def test_nested_stack_output_refs(cfn_client, deploy_cfn_template, s3_client, s3
 
 @pytest.mark.skip(reason="Nested stacks don't work properly")
 @pytest.mark.aws_validated
-def test_nested_with_nested_stack(cfn_client, deploy_cfn_template, s3_client, s3_create_bucket):
+def test_nested_with_nested_stack(deploy_cfn_template, s3_create_bucket, aws_client):
     bucket_name = s3_create_bucket()
     bucket_to_create_name = f"test-bucket-{short_uid()}"
     domain = "amazonaws.com" if is_aws_cloud() else "localhost.localstack.cloud:4566"
@@ -86,7 +86,7 @@ def test_nested_with_nested_stack(cfn_client, deploy_cfn_template, s3_client, s3
     urls = []
 
     for nested_stack in nested_stacks:
-        s3_client.upload_file(
+        aws_client.s3.upload_file(
             os.path.join(os.path.dirname(__file__), "../../templates/", nested_stack),
             Bucket=bucket_name,
             Key=nested_stack,
@@ -111,13 +111,13 @@ def test_nested_with_nested_stack(cfn_client, deploy_cfn_template, s3_client, s3
 
 @pytest.mark.aws_validated
 @pytest.mark.skip(reason="not working correctly")
-def test_lifecycle_nested_stack(cfn_client, deploy_cfn_template, s3_client, s3_create_bucket):
+def test_lifecycle_nested_stack(deploy_cfn_template, s3_create_bucket, aws_client):
     bucket_name = s3_create_bucket()
     nested_bucket_name = f"test-bucket-nested-{short_uid()}"
     altered_nested_bucket_name = f"test-bucket-nested-{short_uid()}"
     key = f"test-key-{short_uid()}"
 
-    s3_client.upload_file(
+    aws_client.s3.upload_file(
         os.path.join(
             os.path.dirname(__file__), "../../templates/nested-stack-output-refs.nested.yaml"
         ),
@@ -134,7 +134,7 @@ def test_lifecycle_nested_stack(cfn_client, deploy_cfn_template, s3_client, s3_c
             "nested_bucket_name": nested_bucket_name,
         },
     )
-    assert s3_client.head_bucket(Bucket=nested_bucket_name)
+    assert aws_client.s3.head_bucket(Bucket=nested_bucket_name)
 
     deploy_cfn_template(
         is_update=True,
@@ -149,13 +149,13 @@ def test_lifecycle_nested_stack(cfn_client, deploy_cfn_template, s3_client, s3_c
         max_wait=120 if is_aws_cloud() else None,
     )
 
-    assert s3_client.head_bucket(Bucket=altered_nested_bucket_name)
+    assert aws_client.s3.head_bucket(Bucket=altered_nested_bucket_name)
 
     stack.destroy()
 
     def _assert_bucket_is_deleted():
         try:
-            s3_client.head_bucket(Bucket=altered_nested_bucket_name)
+            aws_client.s3.head_bucket(Bucket=altered_nested_bucket_name)
             return False
         except ClientError:
             return True
@@ -171,9 +171,7 @@ def test_lifecycle_nested_stack(cfn_client, deploy_cfn_template, s3_client, s3_c
     ]
 )
 @pytest.mark.aws_validated
-def test_nested_output_in_params(
-    s3_client, cfn_client, deploy_cfn_template, s3_create_bucket, iam_client, sns_client, snapshot
-):
+def test_nested_output_in_params(deploy_cfn_template, s3_create_bucket, snapshot, aws_client):
     """
     Deploys a Stack with two nested stacks (sub1 and sub2) with a dependency between each other sub2 depends on sub1.
     The `sub2` stack uses an output parameter of `sub1` as an input parameter.
@@ -190,7 +188,7 @@ def test_nested_output_in_params(
     sub1_path = "sub1.yaml"
     sub2_path = "sub2.yaml"
     s3_create_bucket(Bucket=template_bucket, ACL="public-read")
-    s3_client.put_object(
+    aws_client.s3.put_object(
         Bucket=template_bucket,
         Key=sub1_path,
         Body=load_file(
@@ -199,7 +197,7 @@ def test_nested_output_in_params(
             )
         ),
     )
-    s3_client.put_object(
+    aws_client.s3.put_object(
         Bucket=template_bucket,
         Key=sub2_path,
         Body=load_file(
@@ -236,15 +234,15 @@ def test_nested_output_in_params(
 
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
-    get_role_response = iam_client.get_role(RoleName=role_name)
+    get_role_response = aws_client.iam.get_role(RoleName=role_name)
     snapshot.match("get_role_response", get_role_response)
-    role_policies = iam_client.list_role_policies(RoleName=role_name)
+    role_policies = aws_client.iam.list_role_policies(RoleName=role_name)
     snapshot.match("role_policies", role_policies)
     policy_name = role_policies["PolicyNames"][0]
-    actual_policy = iam_client.get_role_policy(RoleName=role_name, PolicyName=policy_name)
+    actual_policy = aws_client.iam.get_role_policy(RoleName=role_name, PolicyName=policy_name)
     snapshot.match("actual_policy", actual_policy)
 
-    sns_pager = sns_client.get_paginator("list_topics")
+    sns_pager = aws_client.sns.get_paginator("list_topics")
     topics = sns_pager.paginate().build_full_result()["Topics"]
     filtered_topics = [t["TopicArn"] for t in topics if topic_name in t["TopicArn"]]
     assert len(filtered_topics) == 1

@@ -22,6 +22,7 @@ from localstack.aws.api.s3 import (
     AccessDenied,
     AuthorizationQueryParametersError,
     InvalidArgument,
+    InvalidBucketName,
     SignatureDoesNotMatch,
 )
 from localstack.aws.chain import HandlerChain
@@ -32,6 +33,7 @@ from localstack.services.s3.utils import (
     _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
     forwarded_from_virtual_host_addressed_request,
+    is_bucket_name_valid,
 )
 from localstack.utils.strings import to_bytes
 
@@ -535,6 +537,9 @@ class S3SigV4SignatureContext:
         self.request_query_string = qs
 
         if forwarded_from_virtual_host_addressed_request(self._headers):
+            # FIXME: maybe move this so it happens earlier in the chain when using virtual host?
+            if not is_bucket_name_valid(self._bucket):
+                raise InvalidBucketName(BucketName=self._bucket)
             netloc = self._headers.get(S3_VIRTUAL_HOST_FORWARDED_HEADER)
             self.host = netloc
             self._original_host = netloc
@@ -547,7 +552,13 @@ class S3SigV4SignatureContext:
             netloc = urlparse.urlparse(self.request.url).netloc
             self.host = netloc
             self._original_host = netloc
-            self.path = context.request.path
+            # check that the path starts with the bucket
+            # our path has been sanitized, we should use the un-sanitized one
+            if not self.request.path.startswith(f"/{self._bucket}"):
+                splitted_path = self.request.path.split("/", maxsplit=2)
+                self.path = f"/{self._bucket}/{splitted_path[-1]}"
+            else:
+                self.path = self.request.path
 
         self.aws_request = self._get_aws_request()
 

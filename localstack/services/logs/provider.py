@@ -1,4 +1,5 @@
 import base64
+import copy
 import io
 import json
 import logging
@@ -6,18 +7,21 @@ from gzip import GzipFile
 from typing import Callable, Dict
 
 from moto.core.utils import unix_time_millis
-from moto.logs import models as logs_models
-from moto.logs.exceptions import InvalidParameterException, ResourceNotFoundException
+from moto.logs.models import LogEvent
 from moto.logs.models import LogGroup as MotoLogGroup
 from moto.logs.models import LogsBackend
 from moto.logs.models import LogStream as MotoLogStream
-from moto.logs.models import logs_backends
 
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api import RequestContext
+from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.logs import (
     AmazonResourceName,
+    DescribeLogGroupsRequest,
+    DescribeLogGroupsResponse,
+    DescribeLogStreamsRequest,
+    DescribeLogStreamsResponse,
     InputLogEvents,
+    InvalidParameterException,
     KmsKeyId,
     ListTagsForResourceResponse,
     ListTagsLogGroupResponse,
@@ -25,11 +29,13 @@ from localstack.aws.api.logs import (
     LogsApi,
     LogStreamName,
     PutLogEventsResponse,
+    ResourceNotFoundException,
     SequenceToken,
     TagKeyList,
     TagList,
     Tags,
 )
+from localstack.services import moto
 from localstack.services.logs.models import get_moto_logs_backend, logs_stores
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -54,7 +60,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         log_events: InputLogEvents,
         sequence_token: SequenceToken = None,
     ) -> PutLogEventsResponse:
-        logs_backend = logs_backends[context.account_id][aws_stack.get_region()]
+        logs_backend = get_moto_logs_backend(context.account_id, context.region)
         metric_filters = logs_backend.filters.metric_filters
         for metric_filter in metric_filters:
             pattern = metric_filter.get("filterPattern", "")
@@ -79,6 +85,53 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
                                 "Unable to put metric data for matching CloudWatch log events", e
                             )
         return call_moto(context)
+
+    @handler("DescribeLogGroups", expand=False)
+    def describe_log_groups(
+        self, context: RequestContext, request: DescribeLogGroupsRequest
+    ) -> DescribeLogGroupsResponse:
+        region_backend = get_moto_logs_backend(context.account_id, context.region)
+
+        prefix: str = request.get("logGroupNamePrefix", "")
+        pattern: str = request.get("logGroupNamePattern", "")
+
+        if pattern and prefix:
+            raise InvalidParameterException(
+                "LogGroup name prefix and LogGroup name pattern are mutually exclusive parameters."
+            )
+
+        copy_groups = copy.deepcopy(region_backend.groups)
+
+        groups = [
+            group.to_describe_dict()
+            for name, group in copy_groups.items()
+            if not (prefix or pattern)
+            or (prefix and name.startswith(prefix))
+            or (pattern and pattern in name)
+        ]
+
+        groups = sorted(groups, key=lambda x: x["logGroupName"])
+        return DescribeLogGroupsResponse(logGroups=groups)
+
+    @handler("DescribeLogStreams", expand=False)
+    def describe_log_streams(
+        self, context: RequestContext, request: DescribeLogStreamsRequest
+    ) -> DescribeLogStreamsResponse:
+        log_group_name: str = request.get("logGroupName")
+        log_group_identifier: str = request.get("logGroupIdentifier")
+
+        if log_group_identifier and log_group_name:
+            raise CommonServiceException(
+                "ValidationException",
+                "LogGroup name and LogGroup ARN are mutually exclusive parameters.",
+            )
+        request_copy = copy.deepcopy(request)
+        if log_group_identifier:
+            request_copy.pop("logGroupIdentifier")
+            # identifier can be arn or name
+            request_copy["logGroupName"] = log_group_identifier.split(":")[-1]
+
+        return moto.call_moto_with_request(context, request_copy)
 
     def create_log_group(
         self,
@@ -249,7 +302,7 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
     # TODO: call/patch upstream method here, instead of duplicating the code!
     self.last_ingestion_time = int(unix_time_millis())
     self.stored_bytes += sum([len(log_event["message"]) for log_event in log_events])
-    events = [logs_models.LogEvent(self.last_ingestion_time, log_event) for log_event in log_events]
+    events = [LogEvent(self.last_ingestion_time, log_event) for log_event in log_events]
     self.events += events
     self.upload_sequence_token += 1
 
@@ -258,7 +311,7 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
         # TODO only patched in pro
         matches = get_pattern_matcher(self.filter_pattern)
         events = [
-            logs_models.LogEvent(self.last_ingestion_time, event)
+            LogEvent(self.last_ingestion_time, event)
             for event in log_events
             if matches(self.filter_pattern, event)
         ]
@@ -334,3 +387,24 @@ def moto_create_log_stream(target, self, log_stream_name):
     stream = self.streams[log_stream_name]
     filters = self.describe_subscription_filters()
     stream.filter_pattern = filters[0]["filterPattern"] if filters else None
+
+
+@patch(MotoLogGroup.to_describe_dict)
+def moto_to_describe_dict(target, self):
+    # reported race condition in https://github.com/localstack/localstack/issues/8011
+    # making copy of "streams" dict here to avoid issues while summing up storedBytes
+    copy_streams = copy.deepcopy(self.streams)
+    # parity tests shows that the arn ends with ":*"
+    arn = self.arn if self.arn.endswith(":*") else f"{self.arn}:*"
+    log_group = {
+        "arn": arn,
+        "creationTime": self.creation_time,
+        "logGroupName": self.name,
+        "metricFilterCount": 0,
+        "storedBytes": sum(s.stored_bytes for s in copy_streams.values()),
+    }
+    if self.retention_in_days:
+        log_group["retentionInDays"] = self.retention_in_days
+    if self.kms_key_id:
+        log_group["kmsKeyId"] = self.kms_key_id
+    return log_group

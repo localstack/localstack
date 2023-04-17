@@ -32,6 +32,9 @@ PATTERN_LOGSTREAM_ID: Pattern[str] = re.compile(
     # but some responses from LS look like this: 2022/5/30/[$LATEST]20b0964ab88b01c1 -> might not be correct on LS?
     r"\d{4}/\d{1,2}/\d{1,2}/\[((\$LATEST)|\d+)\][0-9a-f]{8,32}"
 )
+PATTERN_KEY_ARN = re.compile(
+    r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([^:]+)?:(\d{12})?:key/[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+)
 
 
 class TransformerUtility:
@@ -383,6 +386,24 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def kms_api():
+        """
+        :return: array with Transformers, for kms api.
+        """
+        return [
+            TransformerUtility.key_value("KeyId"),
+            TransformerUtility.jsonpath(
+                jsonpath="$..Signature",
+                value_replacement="<signature>",
+                reference_replacement=False,
+            ),
+            TransformerUtility.jsonpath(
+                jsonpath="$..Mac", value_replacement="<mac>", reference_replacement=False
+            ),
+            RegexTransformer(PATTERN_KEY_ARN, replacement="<key-arn>"),
+        ]
+
+    @staticmethod
     def sns_api():
         """
         :return: array with Transformers, for sns api.
@@ -427,6 +448,27 @@ class TransformerUtility:
             TransformerUtility.key_value("AlarmName"),
             KeyValueBasedTransformer(_resource_name_transformer, "SubscriptionArn"),
             TransformerUtility.key_value("Region", "region-name-full"),
+        ]
+
+    @staticmethod
+    def logs_api():
+        """
+        :return: array with Transformers, for logs api
+        """
+        return [
+            TransformerUtility.key_value("logGroupName"),
+            TransformerUtility.key_value("logStreamName"),
+            TransformerUtility.key_value("creationTime", "<time>", reference_replacement=False),
+            TransformerUtility.key_value(
+                "firstEventTimestamp", "<time>", reference_replacement=False
+            ),
+            TransformerUtility.key_value(
+                "lastEventTimestamp", "<time>", reference_replacement=False
+            ),
+            TransformerUtility.key_value(
+                "lastIngestionTime", "<time>", reference_replacement=False
+            ),
+            TransformerUtility.key_value("nextToken", "<next_token>", reference_replacement=False),
         ]
 
     @staticmethod

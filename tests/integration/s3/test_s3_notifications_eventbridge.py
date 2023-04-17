@@ -10,13 +10,7 @@ from localstack.utils.sync import retry
 
 @pytest.fixture
 def basic_event_bridge_rule_to_sqs_queue(
-    s3_client,
-    s3_create_bucket,
-    events_create_rule,
-    sqs_create_queue,
-    sqs_queue_arn,
-    sqs_client,
-    events_client,
+    s3_create_bucket, events_create_rule, sqs_create_queue, sqs_queue_arn, aws_client
 ):
     bus_name = "default"
     queue_name = f"test-queue-{short_uid()}"
@@ -25,7 +19,7 @@ def basic_event_bridge_rule_to_sqs_queue(
     target_id = f"test-target-{short_uid()}"
 
     s3_create_bucket(Bucket=bucket_name)
-    s3_client.put_bucket_notification_configuration(
+    aws_client.s3.put_bucket_notification_configuration(
         Bucket=bucket_name, NotificationConfiguration={"EventBridgeConfiguration": {}}
     )
 
@@ -61,11 +55,11 @@ def basic_event_bridge_rule_to_sqs_queue(
             }
         ]
     }
-    sqs_client.set_queue_attributes(
+    aws_client.sqs.set_queue_attributes(
         QueueUrl=queue_url,
         Attributes={"Policy": json.dumps(queue_policy), "ReceiveMessageWaitTimeSeconds": "5"},
     )
-    events_client.put_targets(Rule=rule_name, Targets=[{"Id": target_id, "Arn": queue_arn}])
+    aws_client.events.put_targets(Rule=rule_name, Targets=[{"Id": target_id, "Arn": queue_arn}])
 
     return bucket_name, queue_url
 
@@ -96,23 +90,17 @@ class TestS3NotificationsToEventBridge:
     @pytest.mark.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..detail.object.etag"]
     )
-    def test_object_created_put(
-        self,
-        s3_client,
-        sqs_client,
-        basic_event_bridge_rule_to_sqs_queue,
-        snapshot,
-    ):
+    def test_object_created_put(self, basic_event_bridge_rule_to_sqs_queue, snapshot, aws_client):
         bucket_name, queue_url = basic_event_bridge_rule_to_sqs_queue
 
         test_key = "test-key"
-        s3_client.put_object(Bucket=bucket_name, Key=test_key, Body=b"data")
-        s3_client.delete_object(Bucket=bucket_name, Key=test_key)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=test_key, Body=b"data")
+        aws_client.s3.delete_object(Bucket=bucket_name, Key=test_key)
 
         messages = {}
 
         def _receive_messages():
-            received = sqs_client.receive_message(QueueUrl=queue_url).get("Messages", [])
+            received = aws_client.sqs.receive_message(QueueUrl=queue_url).get("Messages", [])
             for msg in received:
                 event_message = json.loads(msg["Body"])
                 messages.update({event_message["detail-type"]: event_message})
@@ -135,28 +123,22 @@ class TestS3NotificationsToEventBridge:
 
     @pytest.mark.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
-    def test_object_put_acl(
-        self,
-        s3_client,
-        sqs_client,
-        basic_event_bridge_rule_to_sqs_queue,
-        snapshot,
-    ):
+    def test_object_put_acl(self, basic_event_bridge_rule_to_sqs_queue, snapshot, aws_client):
 
         # setup fixture
         bucket_name, queue_url = basic_event_bridge_rule_to_sqs_queue
         key_name = "my_key_acl"
 
-        s3_client.put_object(Bucket=bucket_name, Key=key_name, Body="something")
-        list_bucket_output = s3_client.list_buckets()
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key_name, Body="something")
+        list_bucket_output = aws_client.s3.list_buckets()
         owner = list_bucket_output["Owner"]
 
         # change the ACL to the default one, it should not send an Event. Use canned ACL first
-        s3_client.put_object_acl(Bucket=bucket_name, Key=key_name, ACL="private")
+        aws_client.s3.put_object_acl(Bucket=bucket_name, Key=key_name, ACL="private")
         # change the ACL, it should not send an Event. Use canned ACL first
-        s3_client.put_object_acl(Bucket=bucket_name, Key=key_name, ACL="public-read")
+        aws_client.s3.put_object_acl(Bucket=bucket_name, Key=key_name, ACL="public-read")
         # try changing ACL with Grant
-        s3_client.put_object_acl(
+        aws_client.s3.put_object_acl(
             Bucket=bucket_name,
             Key=key_name,
             GrantRead='uri="http://acs.amazonaws.com/groups/s3/LogDelivery"',
@@ -178,12 +160,12 @@ class TestS3NotificationsToEventBridge:
                 },
             ],
         }
-        s3_client.put_object_acl(Bucket=bucket_name, Key=key_name, AccessControlPolicy=acp)
+        aws_client.s3.put_object_acl(Bucket=bucket_name, Key=key_name, AccessControlPolicy=acp)
 
         messages = []
 
         def _receive_messages():
-            received = sqs_client.receive_message(QueueUrl=queue_url).get("Messages", [])
+            received = aws_client.sqs.receive_message(QueueUrl=queue_url).get("Messages", [])
             for msg in received:
                 event_message = json.loads(msg["Body"])
                 messages.append(event_message)

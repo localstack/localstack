@@ -20,19 +20,23 @@ if TYPE_CHECKING:
     from mypy_boto3_codecommit import CodeCommitClient
     from mypy_boto3_cognito_identity import CognitoIdentityClient
     from mypy_boto3_cognito_idp import CognitoIdentityProviderClient
+    from mypy_boto3_dms import DatabaseMigrationServiceClient
     from mypy_boto3_docdb import DocDBClient
     from mypy_boto3_dynamodb import DynamoDBClient
     from mypy_boto3_dynamodbstreams import DynamoDBStreamsClient
     from mypy_boto3_ec2 import EC2Client
     from mypy_boto3_ecr import ECRClient
     from mypy_boto3_ecs import ECSClient
+    from mypy_boto3_efs import EFSClient
     from mypy_boto3_eks import EKSClient
+    from mypy_boto3_elasticache import ElastiCacheClient
     from mypy_boto3_elasticbeanstalk import ElasticBeanstalkClient
     from mypy_boto3_elbv2 import ElasticLoadBalancingv2Client
     from mypy_boto3_emr import EMRClient
     from mypy_boto3_es import ElasticsearchServiceClient
     from mypy_boto3_events import EventBridgeClient
     from mypy_boto3_firehose import FirehoseClient
+    from mypy_boto3_fis import FISClient
     from mypy_boto3_glacier import GlacierClient
     from mypy_boto3_glue import GlueClient
     from mypy_boto3_iam import IAMClient
@@ -42,6 +46,8 @@ if TYPE_CHECKING:
     from mypy_boto3_iotwireless import IoTWirelessClient
     from mypy_boto3_kafka import KafkaClient
     from mypy_boto3_kinesis import KinesisClient
+    from mypy_boto3_kinesisanalytics import KinesisAnalyticsClient
+    from mypy_boto3_kinesisanalyticsv2 import KinesisAnalyticsV2Client
     from mypy_boto3_kms import KMSClient
     from mypy_boto3_lakeformation import LakeFormationClient
     from mypy_boto3_lambda import LambdaClient
@@ -109,6 +115,9 @@ class TypedServiceClientFactory(abc.ABC):
     cognito_idp: Union[
         "CognitoIdentityProviderClient", "MetadataRequestInjector[CognitoIdentityProviderClient]"
     ]
+    dms: Union[
+        "DatabaseMigrationServiceClient", "MetadataRequestInjector[DatabaseMigrationServiceClient]"
+    ]
     docdb: Union["DocDBClient", "MetadataRequestInjector[DocDBClient]"]
     dynamodb: Union["DynamoDBClient", "MetadataRequestInjector[DynamoDBClient]"]
     dynamodbstreams: Union[
@@ -117,7 +126,9 @@ class TypedServiceClientFactory(abc.ABC):
     ec2: Union["EC2Client", "MetadataRequestInjector[EC2Client]"]
     ecr: Union["ECRClient", "MetadataRequestInjector[ECRClient]"]
     ecs: Union["ECSClient", "MetadataRequestInjector[ECSClient]"]
+    efs: Union["EFSClient", "MetadataRequestInjector[EFSClient]"]
     eks: Union["EKSClient", "MetadataRequestInjector[EKSClient]"]
+    elasticache: Union["ElastiCacheClient", "MetadataRequestInjector[ElastiCacheClient]"]
     elasticbeanstalk: Union[
         "ElasticBeanstalkClient", "MetadataRequestInjector[ElasticBeanstalkClient]"
     ]
@@ -128,6 +139,7 @@ class TypedServiceClientFactory(abc.ABC):
     es: Union["ElasticsearchServiceClient", "MetadataRequestInjector[ElasticsearchServiceClient]"]
     events: Union["EventBridgeClient", "MetadataRequestInjector[EventBridgeClient]"]
     firehose: Union["FirehoseClient", "MetadataRequestInjector[FirehoseClient]"]
+    fis: Union["FISClient", "MetadataRequestInjector[FISClient]"]
     glacier: Union["GlacierClient", "MetadataRequestInjector[GlacierClient]"]
     glue: Union["GlueClient", "MetadataRequestInjector[GlueClient]"]
     iam: Union["IAMClient", "MetadataRequestInjector[IAMClient]"]
@@ -137,6 +149,12 @@ class TypedServiceClientFactory(abc.ABC):
     iotwireless: Union["IoTWirelessClient", "MetadataRequestInjector[IoTWirelessClient]"]
     kafka: Union["KafkaClient", "MetadataRequestInjector[KafkaClient]"]
     kinesis: Union["KinesisClient", "MetadataRequestInjector[KinesisClient]"]
+    kinesisanalytics: Union[
+        "KinesisAnalyticsClient", "MetadataRequestInjector[KinesisAnalyticsClient]"
+    ]
+    kinesisanalyticsv2: Union[
+        "KinesisAnalyticsV2Client", "MetadataRequestInjector[KinesisAnalyticsV2Client]"
+    ]
     kms: Union["KMSClient", "MetadataRequestInjector[KMSClient]"]
     lakeformation: Union["LakeFormationClient", "MetadataRequestInjector[LakeFormationClient]"]
     logs: Union["CloudWatchLogsClient", "MetadataRequestInjector[CloudWatchLogsClient]"]

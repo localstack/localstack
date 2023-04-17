@@ -14,13 +14,13 @@ from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wai
 
 
 def test_create_change_set_without_parameters(
-    cfn_client, sns_client, cleanup_stacks, cleanup_changesets, is_change_set_created_and_available
+    cleanup_stacks, cleanup_changesets, is_change_set_created_and_available, aws_client
 ):
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
 
     template_path = os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
-    response = cfn_client.create_change_set(
+    response = aws_client.cloudformation.create_change_set(
         StackName=stack_name,
         ChangeSetName=change_set_name,
         TemplateBody=load_template_raw(template_path),
@@ -33,18 +33,20 @@ def test_create_change_set_without_parameters(
 
     try:
         # make sure the change set wasn't executed (which would create a topic)
-        topics = sns_client.list_topics()
+        topics = aws_client.sns.list_topics()
         topic_arns = list(map(lambda x: x["TopicArn"], topics["Topics"]))
         assert not any("sns-topic-simple" in arn for arn in topic_arns)
         # stack is initially in REVIEW_IN_PROGRESS state. only after executing the change_set will it change its status
-        stack_response = cfn_client.describe_stacks(StackName=stack_id)
+        stack_response = aws_client.cloudformation.describe_stacks(StackName=stack_id)
         assert stack_response["Stacks"][0]["StackStatus"] == "REVIEW_IN_PROGRESS"
 
         # Change set can now either be already created/available or it is pending/unavailable
         wait_until(
             is_change_set_created_and_available(change_set_id), 2, 10, strategy="exponential"
         )
-        describe_response = cfn_client.describe_change_set(ChangeSetName=change_set_id)
+        describe_response = aws_client.cloudformation.describe_change_set(
+            ChangeSetName=change_set_id
+        )
 
         assert describe_response["ChangeSetName"] == change_set_name
         assert describe_response["ChangeSetId"] == change_set_id
@@ -66,13 +68,12 @@ def test_create_change_set_without_parameters(
 # TODO: implement
 @pytest.mark.xfail(condition=not is_aws_cloud(), reason="Not properly implemented")
 def test_create_change_set_update_without_parameters(
-    cfn_client,
-    sns_client,
     cleanup_stacks,
     cleanup_changesets,
     is_change_set_created_and_available,
     is_change_set_finished,
     snapshot,
+    aws_client,
 ):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     """after creating a stack via a CREATE change set we send an UPDATE change set changing the SNS topic name"""
@@ -82,7 +83,7 @@ def test_create_change_set_update_without_parameters(
 
     template_path = os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
 
-    response = cfn_client.create_change_set(
+    response = aws_client.cloudformation.create_change_set(
         StackName=stack_name,
         ChangeSetName=change_set_name,
         TemplateBody=load_template_raw(template_path),
@@ -97,11 +98,11 @@ def test_create_change_set_update_without_parameters(
     try:
         # Change set can now either be already created/available or it is pending/unavailable
         wait_until(is_change_set_created_and_available(change_set_id))
-        cfn_client.execute_change_set(ChangeSetName=change_set_id)
+        aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
         wait_until(is_change_set_finished(change_set_id))
         template = load_template_raw(template_path)
 
-        update_response = cfn_client.create_change_set(
+        update_response = aws_client.cloudformation.create_change_set(
             StackName=stack_name,
             ChangeSetName=change_set_name2,
             TemplateBody=template.replace("sns-topic-simple", "sns-topic-simple-2"),
@@ -110,11 +111,15 @@ def test_create_change_set_update_without_parameters(
         assert wait_until(is_change_set_created_and_available(update_response["Id"]))
         snapshot.match(
             "describe_change_set",
-            cfn_client.describe_change_set(ChangeSetName=update_response["Id"]),
+            aws_client.cloudformation.describe_change_set(ChangeSetName=update_response["Id"]),
         )
-        snapshot.match("list_change_set", cfn_client.list_change_sets(StackName=stack_name))
+        snapshot.match(
+            "list_change_set", aws_client.cloudformation.list_change_sets(StackName=stack_name)
+        )
 
-        describe_response = cfn_client.describe_change_set(ChangeSetName=update_response["Id"])
+        describe_response = aws_client.cloudformation.describe_change_set(
+            ChangeSetName=update_response["Id"]
+        )
         changes = describe_response["Changes"]
         assert len(changes) == 1
         assert changes[0]["Type"] == "Resource"
@@ -134,13 +139,13 @@ def test_create_change_set_update_without_parameters(
 
 
 @pytest.mark.skip(reason="TODO")
-def test_create_change_set_with_template_url(cfn_client):
+def test_create_change_set_with_template_url():
     pass
 
 
 @pytest.mark.xfail(reason="change set type not implemented")
 def test_create_change_set_create_existing(
-    cfn_client, is_stack_created, cleanup_changesets, cleanup_stacks
+    is_stack_created, cleanup_changesets, cleanup_stacks, aws_client
 ):
     """tries to create an already existing stack"""
 
@@ -148,7 +153,7 @@ def test_create_change_set_create_existing(
     change_set_name = f"change-set-{short_uid()}"
 
     template_path = os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
-    response = cfn_client.create_change_set(
+    response = aws_client.cloudformation.create_change_set(
         StackName=stack_name,
         ChangeSetName=change_set_name,
         TemplateBody=load_template_raw(template_path),
@@ -159,12 +164,12 @@ def test_create_change_set_create_existing(
     assert change_set_id
     assert stack_id
     try:
-        cfn_client.execute_change_set(ChangeSetName=change_set_id)
+        aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
         wait_until(is_stack_created(stack_id))
 
         with pytest.raises(Exception) as ex:
             change_set_name2 = f"change-set-{short_uid()}"
-            cfn_client.create_change_set(
+            aws_client.cloudformation.create_change_set(
                 StackName=stack_name,
                 ChangeSetName=change_set_name2,
                 TemplateBody=load_template_raw("sns_topic_simple.yaml"),
@@ -176,13 +181,13 @@ def test_create_change_set_create_existing(
         cleanup_stacks([stack_id])
 
 
-def test_create_change_set_update_nonexisting(cfn_client):
+def test_create_change_set_update_nonexisting(aws_client):
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
     template_path = os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
 
     with pytest.raises(Exception) as ex:
-        response = cfn_client.create_change_set(
+        response = aws_client.cloudformation.create_change_set(
             StackName=stack_name,
             ChangeSetName=change_set_name,
             TemplateBody=load_template_raw(template_path),
@@ -198,17 +203,17 @@ def test_create_change_set_update_nonexisting(cfn_client):
 
 
 @pytest.mark.skip(reason="TODO")
-def test_create_change_set_import(cfn_client):
+def test_create_change_set_import():
     """test importing existing resources into a stack via the change set"""
     pass  # TODO
 
 
-def test_create_change_set_invalid_params(cfn_client):
+def test_create_change_set_invalid_params(aws_client):
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
     template_path = os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
     with pytest.raises(ClientError) as ex:
-        cfn_client.create_change_set(
+        aws_client.cloudformation.create_change_set(
             StackName=stack_name,
             ChangeSetName=change_set_name,
             TemplateBody=load_template_raw(template_path),
@@ -218,12 +223,12 @@ def test_create_change_set_invalid_params(cfn_client):
     assert err["Code"] == "ValidationError"
 
 
-def test_create_change_set_missing_stackname(cfn_client):
+def test_create_change_set_missing_stackname(aws_client):
     """in this case boto doesn't even let us send the request"""
     change_set_name = f"change-set-{short_uid()}"
     template_path = os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
     with pytest.raises(Exception):
-        cfn_client.create_change_set(
+        aws_client.cloudformation.create_change_set(
             StackName="",
             ChangeSetName=change_set_name,
             TemplateBody=load_template_raw(template_path),
@@ -232,13 +237,11 @@ def test_create_change_set_missing_stackname(cfn_client):
 
 
 def test_create_change_set_with_ssm_parameter(
-    cfn_client,
-    sns_client,
-    ssm_client,
     cleanup_changesets,
     cleanup_stacks,
     is_change_set_created_and_available,
     is_stack_created,
+    aws_client,
 ):
     """References a simple stack parameter"""
 
@@ -249,14 +252,14 @@ def test_create_change_set_with_ssm_parameter(
     sns_topic_logical_id = "topic123"
     parameter_logical_id = "parameter123"
 
-    ssm_client.put_parameter(Name=parameter_name, Value=parameter_value, Type="String")
+    aws_client.ssm.put_parameter(Name=parameter_name, Value=parameter_value, Type="String")
     template_path = os.path.join(
         os.path.dirname(__file__), "../../templates/dynamicparameter_ssm_string.yaml"
     )
     template_rendered = render_template(
         load_template_raw(template_path), parameter_name=parameter_name
     )
-    response = cfn_client.create_change_set(
+    response = aws_client.cloudformation.create_change_set(
         StackName=stack_name,
         ChangeSetName=change_set_name,
         TemplateBody=template_rendered,
@@ -269,19 +272,21 @@ def test_create_change_set_with_ssm_parameter(
 
     try:
         # make sure the change set wasn't executed (which would create a new topic)
-        list_topics_response = sns_client.list_topics()
+        list_topics_response = aws_client.sns.list_topics()
         matching_topics = [
             t for t in list_topics_response["Topics"] if parameter_value in t["TopicArn"]
         ]
         assert matching_topics == []
 
         # stack is initially in REVIEW_IN_PROGRESS state. only after executing the change_set will it change its status
-        stack_response = cfn_client.describe_stacks(StackName=stack_id)
+        stack_response = aws_client.cloudformation.describe_stacks(StackName=stack_id)
         assert stack_response["Stacks"][0]["StackStatus"] == "REVIEW_IN_PROGRESS"
 
         # Change set can now either be already created/available or it is pending/unavailable
         wait_until(is_change_set_created_and_available(change_set_id))
-        describe_response = cfn_client.describe_change_set(ChangeSetName=change_set_id)
+        describe_response = aws_client.cloudformation.describe_change_set(
+            ChangeSetName=change_set_id
+        )
 
         assert describe_response["ChangeSetName"] == change_set_name
         assert describe_response["ChangeSetId"] == change_set_id
@@ -302,10 +307,10 @@ def test_create_change_set_with_ssm_parameter(
         assert parameters[0]["ParameterValue"] == parameter_name
         assert parameters[0]["ResolvedValue"] == parameter_value  # the important part
 
-        cfn_client.execute_change_set(ChangeSetName=change_set_id)
+        aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
         wait_until(is_stack_created(stack_id))
 
-        topics = sns_client.list_topics()
+        topics = aws_client.sns.list_topics()
         topic_arns = list(map(lambda x: x["TopicArn"], topics["Topics"]))
         assert any((parameter_value in t) for t in topic_arns)
     finally:
@@ -314,20 +319,21 @@ def test_create_change_set_with_ssm_parameter(
 
 
 @pytest.mark.aws_validated
-def test_describe_change_set_nonexisting(cfn_client, snapshot):
+def test_describe_change_set_nonexisting(snapshot, aws_client):
     with pytest.raises(Exception) as ex:
-        cfn_client.describe_change_set(StackName="somestack", ChangeSetName="DoesNotExist")
+        aws_client.cloudformation.describe_change_set(
+            StackName="somestack", ChangeSetName="DoesNotExist"
+        )
     snapshot.match("exception", ex.value)
 
 
 def test_execute_change_set(
-    cfn_client,
-    sns_client,
     is_change_set_finished,
     is_change_set_created_and_available,
     is_change_set_failed_and_unavailable,
     cleanup_changesets,
     cleanup_stacks,
+    aws_client,
 ):
     """check if executing a change set succeeds in creating/modifying the resources in changed"""
 
@@ -336,7 +342,7 @@ def test_execute_change_set(
     template_path = os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
     template_body = load_template_raw(template_path)
 
-    response = cfn_client.create_change_set(
+    response = aws_client.cloudformation.create_change_set(
         StackName=stack_name,
         ChangeSetName=change_set_name,
         TemplateBody=template_body,
@@ -349,17 +355,17 @@ def test_execute_change_set(
 
     try:
         assert wait_until(is_change_set_created_and_available(change_set_id=change_set_id))
-        cfn_client.execute_change_set(ChangeSetName=change_set_id)
+        aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
         assert wait_until(is_change_set_finished(change_set_id))
         # check if stack resource was created
-        topics = sns_client.list_topics()
+        topics = aws_client.sns.list_topics()
         topic_arns = list(map(lambda x: x["TopicArn"], topics["Topics"]))
         assert any(("sns-topic-simple" in t) for t in topic_arns)
 
         # new change set name
         change_set_name = f"change-set-{short_uid()}"
         # check if update with identical stack leads to correct behavior
-        response = cfn_client.create_change_set(
+        response = aws_client.cloudformation.create_change_set(
             StackName=stack_name,
             ChangeSetName=change_set_name,
             TemplateBody=template_body,
@@ -368,7 +374,7 @@ def test_execute_change_set(
         change_set_id = response["Id"]
         stack_id = response["StackId"]
         assert wait_until(is_change_set_failed_and_unavailable(change_set_id=change_set_id))
-        describe_failed_change_set_result = cfn_client.describe_change_set(
+        describe_failed_change_set_result = aws_client.cloudformation.describe_change_set(
             ChangeSetName=change_set_id
         )
         assert describe_failed_change_set_result["ChangeSetName"] == change_set_name
@@ -377,7 +383,7 @@ def test_execute_change_set(
             == "The submitted information didn't contain changes. Submit different information to create a change set."
         )
         with pytest.raises(ClientError) as e:
-            cfn_client.execute_change_set(ChangeSetName=change_set_id)
+            aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
         e.match("InvalidChangeSetStatus")
         e.match(
             rf"ChangeSet \[{change_set_id}\] cannot be executed in its current status of \[FAILED\]"
@@ -388,14 +394,16 @@ def test_execute_change_set(
 
 
 @pytest.mark.aws_validated
-def test_delete_change_set_exception(cfn_client, snapshot):
+def test_delete_change_set_exception(snapshot, aws_client):
     """test error cases when trying to delete a change set"""
     with pytest.raises(Exception) as e1:
-        cfn_client.delete_change_set(StackName="nostack", ChangeSetName="DoesNotExist")
+        aws_client.cloudformation.delete_change_set(
+            StackName="nostack", ChangeSetName="DoesNotExist"
+        )
     snapshot.match("e1", e1)
 
     with pytest.raises(Exception) as e2:
-        cfn_client.delete_change_set(ChangeSetName="DoesNotExist")
+        aws_client.cloudformation.delete_change_set(ChangeSetName="DoesNotExist")
     snapshot.match("e2", e2)
 
 
@@ -424,7 +432,7 @@ def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_tem
 
 
 @pytest.mark.aws_validated
-def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_template, s3_client):
+def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_template, aws_client):
     first_bucket_name = f"test-bucket-1-{short_uid()}"
     second_bucket_name = f"test-bucket-2-{short_uid()}"
     template_path = os.path.join(
@@ -440,7 +448,7 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
         },
     )
 
-    available_buckets = s3_client.list_buckets()
+    available_buckets = aws_client.s3.list_buckets()
     bucket_names = [bucket["Name"] for bucket in available_buckets["Buckets"]]
     assert first_bucket_name in bucket_names
     assert second_bucket_name in bucket_names
@@ -457,7 +465,7 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
     )
 
     def assert_bucket_gone():
-        available_buckets = s3_client.list_buckets()
+        available_buckets = aws_client.s3.list_buckets()
         bucket_names = [bucket["Name"] for bucket in available_buckets["Buckets"]]
         return first_bucket_name in bucket_names and second_bucket_name not in bucket_names
 
@@ -472,7 +480,7 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
     ]
 )
 @pytest.mark.aws_validated
-def test_empty_changeset(cfn_client, snapshot, cleanups):
+def test_empty_changeset(snapshot, cleanups, aws_client):
     """
     Creates a change set that doesn't actually update any resources and then tries to execute it
     """
@@ -481,14 +489,14 @@ def test_empty_changeset(cfn_client, snapshot, cleanups):
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
     change_set_name_nochange = f"change-set-nochange-{short_uid()}"
-    cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
+    cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
 
     template_path = os.path.join(os.path.dirname(__file__), "../../templates/cdkmetadata.yaml")
     template = load_template_file(template_path)
 
     # 1. create change set and execute
 
-    first_changeset = cfn_client.create_change_set(
+    first_changeset = aws_client.cloudformation.create_change_set(
         StackName=stack_name,
         ChangeSetName=change_set_name,
         TemplateBody=template,
@@ -498,7 +506,7 @@ def test_empty_changeset(cfn_client, snapshot, cleanups):
     snapshot.match("first_changeset", first_changeset)
 
     def _check_changeset_available():
-        status = cfn_client.describe_change_set(
+        status = aws_client.cloudformation.describe_change_set(
             StackName=stack_name, ChangeSetName=first_changeset["Id"]
         )["Status"]
         if status == "FAILED":
@@ -507,16 +515,18 @@ def test_empty_changeset(cfn_client, snapshot, cleanups):
 
     assert wait_until(_check_changeset_available)
 
-    describe_first_cs = cfn_client.describe_change_set(
+    describe_first_cs = aws_client.cloudformation.describe_change_set(
         StackName=stack_name, ChangeSetName=first_changeset["Id"]
     )
     snapshot.match("describe_first_cs", describe_first_cs)
     assert describe_first_cs["ExecutionStatus"] == "AVAILABLE"
 
-    cfn_client.execute_change_set(StackName=stack_name, ChangeSetName=first_changeset["Id"])
+    aws_client.cloudformation.execute_change_set(
+        StackName=stack_name, ChangeSetName=first_changeset["Id"]
+    )
 
     def _check_changeset_success():
-        status = cfn_client.describe_change_set(
+        status = aws_client.cloudformation.describe_change_set(
             StackName=stack_name, ChangeSetName=first_changeset["Id"]
         )["ExecutionStatus"]
         if status in ["EXECUTE_FAILED", "UNAVAILABLE", "OBSOLETE"]:
@@ -526,7 +536,7 @@ def test_empty_changeset(cfn_client, snapshot, cleanups):
     assert wait_until(_check_changeset_success)
 
     # 2. create a new change set without changes
-    nochange_changeset = cfn_client.create_change_set(
+    nochange_changeset = aws_client.cloudformation.create_change_set(
         StackName=stack_name,
         ChangeSetName=change_set_name_nochange,
         TemplateBody=template,
@@ -535,26 +545,28 @@ def test_empty_changeset(cfn_client, snapshot, cleanups):
     )
     snapshot.match("nochange_changeset", nochange_changeset)
 
-    describe_nochange = cfn_client.describe_change_set(
+    describe_nochange = aws_client.cloudformation.describe_change_set(
         StackName=stack_name, ChangeSetName=nochange_changeset["Id"]
     )
     snapshot.match("describe_nochange", describe_nochange)
     assert describe_nochange["ExecutionStatus"] == "UNAVAILABLE"
 
     # 3. try to execute the unavailable change set
-    with pytest.raises(cfn_client.exceptions.InvalidChangeSetStatusException) as e:
-        cfn_client.execute_change_set(StackName=stack_name, ChangeSetName=nochange_changeset["Id"])
+    with pytest.raises(aws_client.cloudformation.exceptions.InvalidChangeSetStatusException) as e:
+        aws_client.cloudformation.execute_change_set(
+            StackName=stack_name, ChangeSetName=nochange_changeset["Id"]
+        )
     snapshot.match("error_execute_failed", e.value)
 
 
 @pytest.mark.aws_validated
-def test_deleted_changeset(cfn_client, snapshot, cleanups):
+def test_deleted_changeset(snapshot, cleanups, aws_client):
     """simple case verifying that proper exception is thrown when trying to get a deleted changeset"""
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
     changeset_name = f"changeset-{short_uid()}"
     stack_name = f"stack-{short_uid()}"
-    cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
+    cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
 
     snapshot.add_transformer(snapshot.transform.regex(stack_name, "<stack-name>"))
 
@@ -562,7 +574,7 @@ def test_deleted_changeset(cfn_client, snapshot, cleanups):
     template = load_template_file(template_path)
 
     # 1. create change set
-    create = cfn_client.create_change_set(
+    create = aws_client.cloudformation.create_change_set(
         ChangeSetName=changeset_name,
         StackName=stack_name,
         TemplateBody=template,
@@ -574,9 +586,9 @@ def test_deleted_changeset(cfn_client, snapshot, cleanups):
     changeset_id = create["Id"]
 
     def _check_changeset_available():
-        status = cfn_client.describe_change_set(StackName=stack_name, ChangeSetName=changeset_id)[
-            "Status"
-        ]
+        status = aws_client.cloudformation.describe_change_set(
+            StackName=stack_name, ChangeSetName=changeset_id
+        )["Status"]
         if status == "FAILED":
             raise ShortCircuitWaitException("Change set in unrecoverable status")
         return status == "CREATE_COMPLETE"
@@ -584,27 +596,29 @@ def test_deleted_changeset(cfn_client, snapshot, cleanups):
     assert wait_until(_check_changeset_available)
 
     # 2. delete change set
-    cfn_client.delete_change_set(ChangeSetName=changeset_id, StackName=stack_name)
+    aws_client.cloudformation.delete_change_set(ChangeSetName=changeset_id, StackName=stack_name)
 
-    with pytest.raises(cfn_client.exceptions.ChangeSetNotFoundException) as e:
-        cfn_client.describe_change_set(StackName=stack_name, ChangeSetName=changeset_id)
+    with pytest.raises(aws_client.cloudformation.exceptions.ChangeSetNotFoundException) as e:
+        aws_client.cloudformation.describe_change_set(
+            StackName=stack_name, ChangeSetName=changeset_id
+        )
     snapshot.match("postdelete_changeset_notfound", e.value)
 
 
 @pytest.mark.aws_validated
-def test_autoexpand_capability_requirement(cfn_client, cleanups):
+def test_autoexpand_capability_requirement(cleanups, aws_client):
     stack_name = f"test-stack-{short_uid()}"
     changeset_name = f"test-changeset-{short_uid()}"
     queue_name = f"test-queue-{short_uid()}"
-    cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
+    cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
 
     template_body = load_template_raw(
         os.path.join(os.path.dirname(__file__), "../../templates/cfn_macro_languageextensions.yaml")
     )
 
-    with pytest.raises(cfn_client.exceptions.InsufficientCapabilitiesException):
+    with pytest.raises(aws_client.cloudformation.exceptions.InsufficientCapabilitiesException):
         # requires the capability
-        cfn_client.create_stack(
+        aws_client.cloudformation.create_stack(
             StackName=stack_name,
             TemplateBody=template_body,
             Parameters=[
@@ -614,7 +628,7 @@ def test_autoexpand_capability_requirement(cfn_client, cleanups):
         )
 
     # does not require the capability
-    create_changeset_result = cfn_client.create_change_set(
+    create_changeset_result = aws_client.cloudformation.create_change_set(
         StackName=stack_name,
         ChangeSetName=changeset_name,
         TemplateBody=template_body,
@@ -624,6 +638,6 @@ def test_autoexpand_capability_requirement(cfn_client, cleanups):
             {"ParameterKey": "QueueNameParam", "ParameterValue": queue_name},
         ],
     )
-    cfn_client.get_waiter("change_set_create_complete").wait(
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
         ChangeSetName=create_changeset_result["Id"]
     )

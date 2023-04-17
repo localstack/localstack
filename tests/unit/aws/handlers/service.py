@@ -3,7 +3,7 @@ import pytest
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.aws.forwarder import create_aws_request_context
-from localstack.aws.handlers.service import ServiceResponseParser
+from localstack.aws.handlers.service import ServiceExceptionSerializer, ServiceResponseParser
 from localstack.aws.protocol.serializer import create_serializer
 from localstack.http import Request, Response
 
@@ -128,3 +128,19 @@ class TestServiceResponseHandler:
 
         assert context.service_response is None
         assert isinstance(context.service_exception, ValueError)
+
+    @pytest.mark.parametrize(
+        "message, output", [("", "not yet implemented or pro feature"), ("Ups!", "Ups!")]
+    )
+    def test_not_implemented_error(self, service_response_handler_chain, message, output):
+        context = create_aws_request_context(
+            "opensearch", "DescribeDomain", {"DomainName": "foobar"}
+        )
+        not_implemented_exception = NotImplementedError(message)
+
+        ServiceExceptionSerializer().create_exception_response(not_implemented_exception, context)
+
+        assert output in context.service_exception.message
+        assert context.service_exception.code == "InternalFailure"
+        assert not context.service_exception.sender_fault
+        assert context.service_exception.status_code == 501

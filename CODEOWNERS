@@ -107,10 +107,10 @@
 /tests/integration/test_iam.py @dfangl
 
 # Lambda
-/localstack/aws/api/lambda_/ @dfangl @dominikschubert
-/localstack/services/awslambda/ @dfangl @dominikschubert
-/localstack/services/cloudformation/models/awslambda.py @dfangl @dominikschubert
-/tests/integration/awslambda/ @dfangl @dominikschubert
+/localstack/aws/api/lambda_/ @joe4dev @dfangl @dominikschubert
+/localstack/services/awslambda/ @joe4dev @dfangl @dominikschubert
+/localstack/services/cloudformation/models/awslambda.py @joe4dev @dfangl @dominikschubert
+/tests/integration/awslambda/ @joe4dev @dfangl @dominikschubert
 
 # Logs
 /localstack/aws/api/logs/ @steffyP

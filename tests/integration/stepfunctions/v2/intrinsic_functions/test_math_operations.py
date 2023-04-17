@@ -22,9 +22,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestMathOperations:
-    def test_math_random(
-        self, stepfunctions_client, create_iam_role_for_sfn, create_state_machine, snapshot
-    ):
+    def test_math_random(self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client):
         snf_role_arn = create_iam_role_for_sfn()
         snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
         snapshot.add_transformer(
@@ -59,21 +57,23 @@ class TestMathOperations:
             exec_input_dict = {IFT.FUNCTION_INPUT_KEY: input_value}
             exec_input = json.dumps(exec_input_dict)
 
-            exec_resp = stepfunctions_client.start_execution(
+            exec_resp = aws_client.stepfunctions.start_execution(
                 stateMachineArn=state_machine_arn, input=exec_input
             )
             snapshot.add_transformer(snapshot.transform.sfn_sm_exec_arn(exec_resp, i))
             execution_arn = exec_resp["executionArn"]
 
             await_execution_success(
-                stepfunctions_client=stepfunctions_client, execution_arn=execution_arn
+                stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
             )
 
-            exec_hist_resp = stepfunctions_client.get_execution_history(executionArn=execution_arn)
+            exec_hist_resp = aws_client.stepfunctions.get_execution_history(
+                executionArn=execution_arn
+            )
             snapshot.match(f"exec_hist_resp_{i}", exec_hist_resp)
 
     def test_math_random_seeded(
-        self, stepfunctions_client, create_iam_role_for_sfn, create_state_machine, snapshot
+        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
     ):
         snf_role_arn = create_iam_role_for_sfn()
         snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -106,32 +106,26 @@ class TestMathOperations:
         exec_input_dict = {IFT.FUNCTION_INPUT_KEY: input_value}
         exec_input = json.dumps(exec_input_dict)
 
-        exec_resp = stepfunctions_client.start_execution(
+        exec_resp = aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_arn, input=exec_input
         )
         snapshot.add_transformer(snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
         execution_arn = exec_resp["executionArn"]
 
         await_execution_success(
-            stepfunctions_client=stepfunctions_client, execution_arn=execution_arn
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
         )
 
-        exec_hist_resp = stepfunctions_client.get_execution_history(executionArn=execution_arn)
+        exec_hist_resp = aws_client.stepfunctions.get_execution_history(executionArn=execution_arn)
         snapshot.match("exec_hist_resp", exec_hist_resp)
 
-    def test_math_add(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
-    ):
+    def test_math_add(self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client):
         add_tuples = [(-9, 3), (1.49, 1.50), (1.50, 1.51), (-1.49, -1.50), (-1.50, -1.51)]
         input_values = list()
         for fst, snd in add_tuples:
             input_values.append({"fst": fst, "snd": snd})
         create_and_test_on_inputs(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,

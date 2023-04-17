@@ -124,7 +124,9 @@ class ExecutorEndpoint:
         if not self.container_address:
             raise ValueError("Container address not set, but got an invoke.")
         invocation_url = f"http://{self.container_address}:{self.container_port}/invoke"
-        response = requests.post(url=invocation_url, json=payload)
+        # disable proxies for internal requests
+        proxies = {"http": "", "https": ""}
+        response = requests.post(url=invocation_url, json=payload, proxies=proxies)
         if not response.ok:
             raise InvokeSendError(
                 f"Error while sending invocation {payload} to {invocation_url}. Error Code: {response.status_code}"

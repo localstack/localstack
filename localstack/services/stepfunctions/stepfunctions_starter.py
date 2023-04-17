@@ -94,7 +94,7 @@ def wait_for_stepfunctions():
 
 
 def stop_stepfunctions():
-    if PROCESS_THREAD or not PROCESS_THREAD.process:
+    if not PROCESS_THREAD or not PROCESS_THREAD.process:
         return
     LOG.debug("Restarting StepFunctions process ...")
 

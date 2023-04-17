@@ -431,6 +431,26 @@ class IAMPolicy(GenericBaseModel):
     def cloudformation_type():
         return "AWS::IAM::Policy"
 
+    def update_resource(self, new_resource, stack_name, resources):
+        client = aws_stack.connect_to_service("iam")
+        props = new_resource["Properties"]
+        _states = new_resource.get("_state_")
+        if _states:
+            policy_doc = json.dumps(remove_none_values(props["PolicyDocument"]))
+            policy_name = props["PolicyName"]
+            for role in props.get("Roles", []):
+                client.put_role_policy(
+                    RoleName=role, PolicyName=policy_name, PolicyDocument=policy_doc
+                )
+            for user in props.get("Users", []):
+                client.put_user_policy(
+                    UserName=user, PolicyName=policy_name, PolicyDocument=policy_doc
+                )
+            for group in props.get("Groups", []):
+                client.put_group_policy(
+                    GroupName=group, PolicyName=policy_name, PolicyDocument=policy_doc
+                )
+
     def fetch_state(self, stack_name, resources):
         return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=False)
 

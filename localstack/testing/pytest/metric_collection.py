@@ -38,7 +38,7 @@ def pytest_sessionstart(session: "Session") -> None:
         writer.writerow(Metric.RAW_DATA_HEADER)
 
 
-@pytest.hookimpl()
+@pytest.hookimpl(trylast=True)
 def pytest_runtest_teardown(item: "Item", nextitem: Optional["Item"]) -> None:
     node_id = item.nodeid
     xfail = False

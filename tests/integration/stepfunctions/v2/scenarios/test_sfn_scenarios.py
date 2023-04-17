@@ -58,7 +58,7 @@ class TestFundamental:
             assert describe_ex_done["status"] == assert_state
 
     @pytest.mark.aws_validated
-    def test_path_based_on_data(self, deploy_cfn_template, stepfunctions_client, snapshot):
+    def test_path_based_on_data(self, deploy_cfn_template, snapshot, aws_client):
         """
         Based on the "path-based-on-data" sample workflow on serverlessland.com
 
@@ -78,7 +78,7 @@ class TestFundamental:
             snapshot.transform.regex(statemachine_name, "<state-machine-name>")
         )
 
-        describe_statemachine = stepfunctions_client.describe_state_machine(
+        describe_statemachine = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=statemachine_arn
         )
         snapshot.match("describe_statemachine", describe_statemachine)
@@ -102,7 +102,7 @@ class TestFundamental:
         ]
 
         for run_config in run_configs:
-            self._record_execution(stepfunctions_client, snapshot, statemachine_arn, run_config)
+            self._record_execution(aws_client.stepfunctions, snapshot, statemachine_arn, run_config)
 
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider,
@@ -114,7 +114,7 @@ class TestFundamental:
         ],
     )
     @pytest.mark.aws_validated
-    def test_wait_for_callback(self, deploy_cfn_template, stepfunctions_client, snapshot):
+    def test_wait_for_callback(self, deploy_cfn_template, snapshot, aws_client):
         """
         Based on the "wait-for-callback" sample workflow on serverlessland.com
         """
@@ -139,7 +139,7 @@ class TestFundamental:
             )
         )
 
-        describe_statemachine = stepfunctions_client.describe_state_machine(
+        describe_statemachine = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=statemachine_arn
         )
         snapshot.match("describe_statemachine", describe_statemachine)
@@ -158,15 +158,13 @@ class TestFundamental:
         ]
 
         for run_config in run_configs:
-            self._record_execution(stepfunctions_client, snapshot, statemachine_arn, run_config)
+            self._record_execution(aws_client.stepfunctions, snapshot, statemachine_arn, run_config)
 
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Headers", "$..StatusText"]
     )
     @pytest.mark.aws_validated
-    def test_step_functions_calling_api_gateway(
-        self, deploy_cfn_template, stepfunctions_client, snapshot
-    ):
+    def test_step_functions_calling_api_gateway(self, deploy_cfn_template, snapshot, aws_client):
         """
         Based on the "step-functions-calling-api-gateway" sample workflow on serverlessland.com
         """
@@ -203,7 +201,7 @@ class TestFundamental:
         snapshot.add_transformer(snapshot.transform.key_value("Via", reference_replacement=False))
         snapshot.add_transformer(snapshot.transform.key_value("ApiEndpoint"), priority=-1)
 
-        describe_statemachine = stepfunctions_client.describe_state_machine(
+        describe_statemachine = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=statemachine_arn
         )
         snapshot.match("describe_statemachine", describe_statemachine)
@@ -222,4 +220,4 @@ class TestFundamental:
         ]
 
         for run_config in run_configs:
-            self._record_execution(stepfunctions_client, snapshot, statemachine_arn, run_config)
+            self._record_execution(aws_client.stepfunctions, snapshot, statemachine_arn, run_config)

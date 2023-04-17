@@ -25,12 +25,12 @@ from tests.integration.apigateway.conftest import DEFAULT_STAGE_NAME
     ]
 )
 def test_rest_api_to_dynamodb_integration(
-    apigateway_client,
     ddb_action,
     dynamodb_create_table,
     dynamodb_resource,
     create_rest_api_with_integration,
     snapshot,
+    aws_client,
 ):
     snapshot.add_transformer(snapshot.transform.key_value("date", reference_replacement=False))
     snapshot.add_transformer(
@@ -71,7 +71,7 @@ def test_rest_api_to_dynamodb_integration(
     request_templates = {APPLICATION_JSON: template}
 
     # deploy REST API with integration
-    region_name = apigateway_client.meta.region_name
+    region_name = aws_client.apigateway.meta.region_name
     integration_uri = f"arn:aws:apigateway:{region_name}:dynamodb:action/{ddb_action}"
     api_id = create_rest_api_with_integration(
         integration_uri=integration_uri,
@@ -117,12 +117,8 @@ def test_rest_api_to_dynamodb_integration(
 
 
 @pytest.mark.aws_validated
-def test_error_aws_proxy_not_supported(
-    apigateway_client,
-    create_rest_api_with_integration,
-    snapshot,
-):
-    region_name = apigateway_client.meta.region_name
+def test_error_aws_proxy_not_supported(create_rest_api_with_integration, snapshot, aws_client):
+    region_name = aws_client.apigateway.meta.region_name
     integration_uri = f"arn:aws:apigateway:{region_name}:dynamodb:action/Query"
 
     api_id = create_rest_api_with_integration(
@@ -131,11 +127,11 @@ def test_error_aws_proxy_not_supported(
     )
 
     # assert error - AWS_PROXY not supported for DDB integrations (AWS parity)
-    resources = apigateway_client.get_resources(restApiId=api_id)["items"]
+    resources = aws_client.apigateway.get_resources(restApiId=api_id)["items"]
     child_resource = [res for res in resources if res.get("parentId")][0]
     with pytest.raises(ClientError) as exc:
         create_rest_api_integration(
-            apigateway_client,
+            aws_client.apigateway,
             restApiId=api_id,
             resourceId=child_resource["id"],
             httpMethod="POST",

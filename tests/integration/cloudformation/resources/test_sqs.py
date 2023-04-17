@@ -6,14 +6,14 @@ from botocore.exceptions import ClientError
 from localstack.utils.strings import short_uid
 
 
-def test_sqs_queue_policy(sqs_client, deploy_cfn_template):
+def test_sqs_queue_policy(deploy_cfn_template, aws_client):
     result = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/sqs_with_queuepolicy.yaml"
         )
     )
     queue_url = result.outputs["QueueUrlOutput"]
-    resp = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["Policy"])
+    resp = aws_client.sqs.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["Policy"])
     assert (
         "Statement" in resp["Attributes"]["Policy"]
     )  # just kind of a smoke test to see if its set
@@ -58,17 +58,17 @@ Resources:
 """
 
 
-def test_cfn_handle_sqs_resource(deploy_cfn_template, sqs_client):
+def test_cfn_handle_sqs_resource(deploy_cfn_template, aws_client):
     fifo_queue = f"queue-{short_uid()}.fifo"
 
     stack = deploy_cfn_template(template=TEST_TEMPLATE_15 % fifo_queue)
 
-    rs = sqs_client.get_queue_url(QueueName=fifo_queue)
+    rs = aws_client.sqs.get_queue_url(QueueName=fifo_queue)
     assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     queue_url = rs["QueueUrl"]
 
-    rs = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
+    rs = aws_client.sqs.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
     attributes = rs["Attributes"]
     assert "ContentBasedDeduplication" in attributes
     assert "FifoQueue" in attributes
@@ -79,5 +79,5 @@ def test_cfn_handle_sqs_resource(deploy_cfn_template, sqs_client):
     stack.destroy()
 
     with pytest.raises(ClientError) as ctx:
-        sqs_client.get_queue_url(QueueName=fifo_queue)
+        aws_client.sqs.get_queue_url(QueueName=fifo_queue)
     assert ctx.value.response["Error"]["Code"] == "AWS.SimpleQueueService.NonExistentQueue"

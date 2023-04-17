@@ -13,6 +13,7 @@ from localstack.aws.api.kinesis import (
     KinesisApi,
     PartitionKey,
     ProvisionedThroughputExceededException,
+    PutRecordOutput,
     PutRecordsOutput,
     PutRecordsRequestEntryList,
     PutRecordsResultEntry,
@@ -146,7 +147,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         explicit_hash_key: HashKey = None,
         sequence_number_for_ordering: SequenceNumber = None,
         stream_arn: StreamARN = None,
-    ):
+    ) -> PutRecordOutput:
         if random() < config.KINESIS_ERROR_PROBABILITY:
             raise ProvisionedThroughputExceededException(
                 "Rate exceeded for shard X in stream Y under account Z."

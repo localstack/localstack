@@ -15,7 +15,7 @@ from localstack.utils.testutil import create_zip_file
 
 class TestCdkInit:
     @pytest.mark.parametrize("bootstrap_version", ["10", "11", "12"])
-    def test_cdk_bootstrap(self, deploy_cfn_template, cfn_client, bootstrap_version):
+    def test_cdk_bootstrap(self, deploy_cfn_template, bootstrap_version, aws_client):
         deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__),
@@ -28,7 +28,7 @@ class TestCdkInit:
             )
         )
         assert init_stack_result.outputs["BootstrapVersionOutput"] == bootstrap_version
-        stack_res = cfn_client.describe_stack_resources(
+        stack_res = aws_client.cloudformation.describe_stack_resources(
             StackName=init_stack_result.stack_id, LogicalResourceId="CDKMetadata"
         )
         assert len(stack_res["StackResources"]) == 1
@@ -64,13 +64,15 @@ class TestCdkInit:
             cleanup_stacks([stack_name])
 
     # TODO: remove this and replace with CDK test
-    def test_cdk_template(self, s3_client, lambda_client, deploy_cfn_template, s3_create_bucket):
+    def test_cdk_template(self, deploy_cfn_template, s3_create_bucket, aws_client):
         bucket = f"bucket-{short_uid()}"
         key = f"key-{short_uid()}"
         path = os.path.join(os.path.dirname(__file__), "../../templates/asset")
 
         s3_create_bucket(Bucket=bucket)
-        s3_client.put_object(Bucket=bucket, Key=key, Body=create_zip_file(path, get_content=True))
+        aws_client.s3.put_object(
+            Bucket=bucket, Key=key, Body=create_zip_file(path, get_content=True)
+        )
 
         template = load_file(
             os.path.join(os.path.dirname(__file__), "../../templates/cdktemplate.json")
@@ -84,7 +86,7 @@ class TestCdkInit:
             },
         )
 
-        resp = lambda_client.list_functions()
+        resp = aws_client.awslambda.list_functions()
         functions = [func for func in resp["Functions"] if stack.stack_name in func["FunctionName"]]
 
         assert len(functions) == 2
@@ -106,7 +108,7 @@ class TestCdkSampleApp:
         ]
     )
     @pytest.mark.aws_validated
-    def test_cdk_sample(self, deploy_cfn_template, cfn_client, sqs_client, snapshot):
+    def test_cdk_sample(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.add_transformer(snapshot.transform.sqs_api())
         snapshot.add_transformer(snapshot.transform.sns_api())
@@ -124,15 +126,15 @@ class TestCdkSampleApp:
 
         queue_url = deploy.outputs["QueueUrl"]
 
-        queue_attr_policy = sqs_client.get_queue_attributes(
+        queue_attr_policy = aws_client.sqs.get_queue_attributes(
             QueueUrl=queue_url, AttributeNames=["Policy"]
         )
         snapshot.match("queue_attr_policy", queue_attr_policy)
-        stack_resources = cfn_client.list_stack_resources(StackName=deploy.stack_id)
+        stack_resources = aws_client.cloudformation.list_stack_resources(StackName=deploy.stack_id)
         snapshot.match("stack_resources", stack_resources)
 
         # physical resource id of the queue policy AWS::SQS::QueuePolicy
-        queue_policy_resource = cfn_client.describe_stack_resource(
+        queue_policy_resource = aws_client.cloudformation.describe_stack_resource(
             StackName=deploy.stack_id, LogicalResourceId="CdksampleQueuePolicyFA91005A"
         )
         snapshot.add_transformer(

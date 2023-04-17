@@ -47,9 +47,7 @@ Resources:
 """
 
 
-def test_cfn_apigateway_aws_integration(
-    apigateway_client, s3_client, iam_client, deploy_cfn_template
-):
+def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
     api_name = f"rest-api-{short_uid()}"
     custom_id = short_uid()
 
@@ -66,12 +64,14 @@ def test_cfn_apigateway_aws_integration(
     )
 
     # check resources creation
-    apis = [api for api in apigateway_client.get_rest_apis()["items"] if api["name"] == api_name]
+    apis = [
+        api for api in aws_client.apigateway.get_rest_apis()["items"] if api["name"] == api_name
+    ]
     assert len(apis) == 1
     api_id = apis[0]["id"]
 
     # check resources creation
-    resources = apigateway_client.get_resources(restApiId=api_id)["items"]
+    resources = aws_client.apigateway.get_resources(restApiId=api_id)["items"]
     assert (
         resources[0]["resourceMethods"]["GET"]["requestParameters"]["method.request.path.id"]
         is False
@@ -85,7 +85,7 @@ def test_cfn_apigateway_aws_integration(
 
     # check domains creation
     domain_names = [
-        domain["domainName"] for domain in apigateway_client.get_domain_names()["items"]
+        domain["domainName"] for domain in aws_client.apigateway.get_domain_names()["items"]
     ]
     expected_domain = "cfn5632.localstack.cloud"  # hardcoded value from template yaml file
     assert expected_domain in domain_names
@@ -93,16 +93,16 @@ def test_cfn_apigateway_aws_integration(
     # check basepath mappings creation
     mappings = [
         mapping["basePath"]
-        for mapping in apigateway_client.get_base_path_mappings(domainName=expected_domain)["items"]
+        for mapping in aws_client.apigateway.get_base_path_mappings(domainName=expected_domain)[
+            "items"
+        ]
     ]
     assert len(mappings) == 1
     assert mappings[0] == "(none)"
 
 
 @pytest.mark.aws_validated
-def test_cfn_apigateway_swagger_import(
-    deploy_cfn_template, apigateway_client, echo_http_server_post
-):
+def test_cfn_apigateway_swagger_import(deploy_cfn_template, echo_http_server_post, aws_client):
     api_name = f"rest-api-{short_uid()}"
     deploy_cfn_template(
         template=TEST_TEMPLATE_1,
@@ -110,7 +110,9 @@ def test_cfn_apigateway_swagger_import(
     )
 
     # get API details
-    apis = [api for api in apigateway_client.get_rest_apis()["items"] if api["name"] == api_name]
+    apis = [
+        api for api in aws_client.apigateway.get_rest_apis()["items"] if api["name"] == api_name
+    ]
     assert len(apis) == 1
     api_id = apis[0]["id"]
 
@@ -126,7 +128,7 @@ def test_cfn_apigateway_swagger_import(
 
 
 @pytest.mark.only_localstack
-def test_url_output(apigateway_client, tmp_http_server, deploy_cfn_template):
+def test_url_output(tmp_http_server, deploy_cfn_template):
     test_port, invocations, proxy = tmp_http_server
     integration_uri = f"http://localhost:{test_port}/{{proxy}}"
     api_name = f"rest-api-{short_uid()}"
@@ -151,13 +153,13 @@ def test_url_output(apigateway_client, tmp_http_server, deploy_cfn_template):
     assert f"https://{api_id}.execute-api.{constants.LOCALHOST_HOSTNAME}:4566" in api_url
 
 
-def test_cfn_with_apigateway_resources(deploy_cfn_template, apigateway_client):
+def test_cfn_with_apigateway_resources(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "../../templates/template35.yaml")
     )
     apis = [
         api
-        for api in apigateway_client.get_rest_apis()["items"]
+        for api in aws_client.apigateway.get_rest_apis()["items"]
         if api["name"] == "celeste-Gateway-local"
     ]
     assert len(apis) == 1
@@ -165,7 +167,7 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, apigateway_client):
 
     resources = [
         res
-        for res in apigateway_client.get_resources(restApiId=api_id)["items"]
+        for res in aws_client.apigateway.get_resources(restApiId=api_id)["items"]
         if res.get("pathPart") == "account"
     ]
 
@@ -177,7 +179,7 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, apigateway_client):
     }
     models = [
         model
-        for model in apigateway_client.get_models(restApiId=api_id)["items"]
+        for model in aws_client.apigateway.get_models(restApiId=api_id)["items"]
         if stack.stack_name in model["name"]
     ]
 
@@ -187,7 +189,7 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, apigateway_client):
 
     apis = [
         api
-        for api in apigateway_client.get_rest_apis()["items"]
+        for api in aws_client.apigateway.get_rest_apis()["items"]
         if api["name"] == "celeste-Gateway-local"
     ]
     assert not apis
@@ -208,7 +210,7 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, apigateway_client):
     ]
 )
 def test_cfn_deploy_apigateway_integration(
-    deploy_cfn_template, s3_client, s3_create_bucket, cfn_client, apigateway_client, snapshot
+    deploy_cfn_template, s3_create_bucket, snapshot, aws_client
 ):
     bucket_name = f"hofund-local-deployment-{short_uid()}"
     key_name = "serverless/hofund/local/1599143878432/authorizer.zip"
@@ -217,7 +219,7 @@ def test_cfn_deploy_apigateway_integration(
     )
 
     s3_create_bucket(Bucket=bucket_name, ACL="public-read")
-    s3_client.put_object(
+    aws_client.s3.put_object(
         Bucket=bucket_name,
         Key=key_name,
         Body=create_zip_file(package_path, get_content=True),
@@ -236,22 +238,22 @@ def test_cfn_deploy_apigateway_integration(
     snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "stack-name"))
 
     rest_api_id = stack.outputs["RestApiId"]
-    rest_api = apigateway_client.get_rest_api(restApiId=rest_api_id)
+    rest_api = aws_client.apigateway.get_rest_api(restApiId=rest_api_id)
     snapshot.match("rest_api", rest_api)
 
     resource_id = stack.outputs["ResourceId"]
-    method = apigateway_client.get_method(
+    method = aws_client.apigateway.get_method(
         restApiId=rest_api_id, resourceId=resource_id, httpMethod="GET"
     )
     snapshot.match("method", method)
 
 
-def test_cfn_apigateway_rest_api(deploy_cfn_template, apigateway_client):
+def test_cfn_apigateway_rest_api(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "../../templates/apigateway.json")
     )
 
-    rs = apigateway_client.get_rest_apis()
+    rs = aws_client.apigateway.get_rest_apis()
     apis = [item for item in rs["items"] if item["name"] == "DemoApi_dev"]
     assert not apis
 
@@ -261,40 +263,40 @@ def test_cfn_apigateway_rest_api(deploy_cfn_template, apigateway_client):
         template_path=os.path.join(os.path.dirname(__file__), "../../templates/apigateway.json"),
         parameters={"Create": "True"},
     )
-    rs = apigateway_client.get_rest_apis()
+    rs = aws_client.apigateway.get_rest_apis()
     apis = [item for item in rs["items"] if item["name"] == "DemoApi_dev"]
     assert len(apis) == 1
 
-    rs = apigateway_client.get_models(restApiId=apis[0]["id"])
+    rs = aws_client.apigateway.get_models(restApiId=apis[0]["id"])
     assert len(rs["items"]) == 3
 
     stack_2.destroy()
 
-    rs = apigateway_client.get_rest_apis()
+    rs = aws_client.apigateway.get_rest_apis()
     apis = [item for item in rs["items"] if item["name"] == "DemoApi_dev"]
     assert not apis
 
 
 @pytest.mark.aws_validated
-def test_account(deploy_cfn_template, apigateway_client, cfn_client):
+def test_account(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/apigateway_account.yml"
         )
     )
 
-    account_info = apigateway_client.get_account()
+    account_info = aws_client.apigateway.get_account()
     assert account_info["cloudwatchRoleArn"] == stack.outputs["RoleArn"]
 
     # Assert that after deletion of stack, the apigw account is not updated
     stack.destroy()
-    cfn_client.get_waiter("stack_delete_complete").wait(StackName=stack.stack_name)
-    account_info = apigateway_client.get_account()
+    aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack.stack_name)
+    account_info = aws_client.apigateway.get_account()
     assert account_info["cloudwatchRoleArn"] == stack.outputs["RoleArn"]
 
 
 @pytest.mark.aws_validated
-def test_update_usage_plan(deploy_cfn_template, cfn_client, apigateway_client):
+def test_update_usage_plan(deploy_cfn_template, aws_client):
     rest_api_name = f"api-{short_uid()}"
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -312,14 +314,14 @@ def test_update_usage_plan(deploy_cfn_template, cfn_client, apigateway_client):
         parameters={"QuotaLimit": "7000", "RestApiName": rest_api_name},
     )
 
-    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
+    aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
 
-    usage_plan = apigateway_client.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
+    usage_plan = aws_client.apigateway.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
 
     assert 7000 == usage_plan["quota"]["limit"]
 
 
-def test_api_gateway_with_policy_as_dict(deploy_cfn_template, apigateway_client, snapshot):
+def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_client):
     template = """
     Parameters:
       RestApiName:
@@ -353,7 +355,7 @@ def test_api_gateway_with_policy_as_dict(deploy_cfn_template, apigateway_client,
     snapshot.add_transformer(snapshot.transform.apigateway_api())
     snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "stack-name"))
 
-    rest_api = apigateway_client.get_rest_api(restApiId=stack.outputs.get("MyApiId"))
+    rest_api = aws_client.apigateway.get_rest_api(restApiId=stack.outputs.get("MyApiId"))
 
     # note: API Gateway seems to perform double-escaping of the policy document for REST APIs, if specified as dict
     policy = to_bytes(rest_api["policy"]).decode("unicode_escape")
