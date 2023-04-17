@@ -60,6 +60,9 @@ def test_invoke_cold_start(create_lambda_function, aws_client, monkeypatch):
     def invoke():
         aws_client.awslambda.invoke(FunctionName=function_name)
 
+    # Initial cold start could be even slower due to init downloading
+    invoke()
+
     # Cold starts caused by keep alive 0
     repeat = 100
     # Optionally sleep in between repetitions
