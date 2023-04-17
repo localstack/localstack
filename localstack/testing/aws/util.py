@@ -184,12 +184,14 @@ def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
             connect_timeout=1_000,
             read_timeout=1_000,
             retries={"total_max_attempts": 1},
-            region_name=TEST_AWS_REGION_NAME,
         )
 
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         return ExternalAwsClientFactory(session=session, config=config)
     else:
+        if config:
+            # Prevent this fixture from using the region configured in system config
+            config = config.merge(botocore.config.Config(region_name=TEST_AWS_REGION_NAME))
         return ExternalClientFactory(session=session, config=config)
 
 
