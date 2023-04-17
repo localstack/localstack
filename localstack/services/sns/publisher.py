@@ -627,7 +627,10 @@ class FirehoseTopicPublisher(TopicPublisher):
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         message_body = self.prepare_message(context.message, subscriber)
         try:
-            firehose_client = aws_stack.connect_to_service("firehose")
+            region = extract_region_from_arn(subscriber["Endpoint"])
+            firehose_client = connect_to(region_name=region).firehose.request_metadata(
+                source_arn=subscriber["TopicArn"], service_principal="sns"
+            )
             endpoint = subscriber["Endpoint"]
             if endpoint:
                 delivery_stream = extract_resource_from_arn(endpoint).split("/")[1]
