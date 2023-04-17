@@ -94,8 +94,8 @@ class TestTerraform:
         start_worker_thread(_run)
 
     @pytest.mark.skip_offline
-    def test_bucket_exists(self, s3_client):
-        response = s3_client.head_bucket(Bucket=BUCKET_NAME)
+    def test_bucket_exists(self, aws_client):
+        response = aws_client.s3.head_bucket(Bucket=BUCKET_NAME)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         cors = {
@@ -106,16 +106,16 @@ class TestTerraform:
             "MaxAgeSeconds": 3000,
         }
 
-        response = s3_client.get_bucket_cors(Bucket=BUCKET_NAME)
+        response = aws_client.s3.get_bucket_cors(Bucket=BUCKET_NAME)
         assert response["CORSRules"][0] == cors
 
-        response = s3_client.get_bucket_versioning(Bucket=BUCKET_NAME)
+        response = aws_client.s3.get_bucket_versioning(Bucket=BUCKET_NAME)
         assert response["Status"] == "Enabled"
 
     @pytest.mark.skip_offline
-    def test_sqs(self, sqs_client):
-        queue_url = sqs_client.get_queue_url(QueueName=QUEUE_NAME)["QueueUrl"]
-        response = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
+    def test_sqs(self, aws_client):
+        queue_url = aws_client.sqs.get_queue_url(QueueName=QUEUE_NAME)["QueueUrl"]
+        response = aws_client.sqs.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
 
         assert response["Attributes"]["DelaySeconds"] == "90"
         assert response["Attributes"]["MaximumMessageSize"] == "2048"
@@ -123,19 +123,19 @@ class TestTerraform:
         assert response["Attributes"]["ReceiveMessageWaitTimeSeconds"] == "10"
 
     @pytest.mark.skip_offline
-    def test_lambda(self, lambda_client):
+    def test_lambda(self, aws_client):
         account_id = get_aws_account_id()
-        response = lambda_client.get_function(FunctionName=LAMBDA_NAME)
+        response = aws_client.awslambda.get_function(FunctionName=LAMBDA_NAME)
         assert response["Configuration"]["FunctionName"] == LAMBDA_NAME
         assert response["Configuration"]["Handler"] == LAMBDA_HANDLER
         assert response["Configuration"]["Runtime"] == LAMBDA_RUNTIME
         assert response["Configuration"]["Role"] == LAMBDA_ROLE.format(account_id=account_id)
 
     @pytest.mark.skip_offline
-    def test_event_source_mapping(self, lambda_client):
+    def test_event_source_mapping(self, aws_client):
         queue_arn = QUEUE_ARN.format(account_id=get_aws_account_id())
         lambda_arn = LAMBDA_ARN.format(account_id=get_aws_account_id(), lambda_name=LAMBDA_NAME)
-        all_mappings = lambda_client.list_event_source_mappings(
+        all_mappings = aws_client.awslambda.list_event_source_mappings(
             EventSourceArn=queue_arn, FunctionName=LAMBDA_NAME
         )
         function_mapping = all_mappings.get("EventSourceMappings")[0]
@@ -144,8 +144,8 @@ class TestTerraform:
 
     @pytest.mark.skip_offline
     @pytest.mark.xfail(reason="flaky")
-    def test_apigateway(self, apigateway_client):
-        rest_apis = apigateway_client.get_rest_apis()
+    def test_apigateway(self, aws_client):
+        rest_apis = aws_client.apigateway.get_rest_apis()
 
         rest_id = None
         for rest_api in rest_apis["items"]:
@@ -154,7 +154,7 @@ class TestTerraform:
                 break
 
         assert rest_id
-        resources = apigateway_client.get_resources(restApiId=rest_id)["items"]
+        resources = aws_client.apigateway.get_resources(restApiId=rest_id)["items"]
 
         # We always have 1 default root resource (with path "/")
         assert len(resources) == 3
@@ -173,24 +173,24 @@ class TestTerraform:
         assert res2[0]["resourceMethods"]["GET"]["methodIntegration"]["uri"]
 
     @pytest.mark.skip_offline
-    def test_route53(self, route53_client):
-        response = route53_client.create_hosted_zone(Name="zone123", CallerReference="ref123")
+    def test_route53(self, aws_client):
+        response = aws_client.route53.create_hosted_zone(Name="zone123", CallerReference="ref123")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 201
         change_id = response.get("ChangeInfo", {}).get("Id", "change123")
 
-        response = route53_client.get_change(Id=change_id)
+        response = aws_client.route53.get_change(Id=change_id)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @pytest.mark.skip_offline
-    def test_acm(self, acm_client):
-        certs = acm_client.list_certificates()["CertificateSummaryList"]
+    def test_acm(self, aws_client):
+        certs = aws_client.acm.list_certificates()["CertificateSummaryList"]
         certs = [c for c in certs if c.get("DomainName") == "example.com"]
         assert len(certs) == 1
 
     @pytest.mark.skip_offline
     @pytest.mark.xfail(reason="flaky")
-    def test_apigateway_escaped_policy(self, apigateway_client):
-        rest_apis = apigateway_client.get_rest_apis()
+    def test_apigateway_escaped_policy(self, aws_client):
+        rest_apis = aws_client.apigateway.get_rest_apis()
 
         service_apis = []
 
@@ -201,17 +201,17 @@ class TestTerraform:
         assert len(service_apis) == 1
 
     @pytest.mark.skip_offline
-    def test_dynamodb(self, dynamodb_client):
+    def test_dynamodb(self, aws_client):
         def _table_exists(tablename, dynamotables):
             return any(name for name in dynamotables["TableNames"] if name == tablename)
 
-        tables = dynamodb_client.list_tables()
+        tables = aws_client.dynamodb.list_tables()
         assert _table_exists("tf_dynamotable1", tables)
         assert _table_exists("tf_dynamotable2", tables)
         assert _table_exists("tf_dynamotable3", tables)
 
     @pytest.mark.skip_offline
-    def test_security_groups(self, ec2_client):
-        rules = ec2_client.describe_security_groups(MaxResults=100)["SecurityGroups"]
+    def test_security_groups(self, aws_client):
+        rules = aws_client.ec2.describe_security_groups(MaxResults=100)["SecurityGroups"]
         matching = [r for r in rules if r["Description"] == "TF SG with ingress / egress rules"]
         assert matching

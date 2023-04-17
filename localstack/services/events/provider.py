@@ -19,10 +19,12 @@ from localstack.aws.api.events import (
     ConnectionDescription,
     ConnectionName,
     CreateConnectionAuthRequestParameters,
+    CreateConnectionResponse,
     EventBusNameOrArn,
     EventPattern,
     EventsApi,
     PutRuleResponse,
+    PutTargetsResponse,
     RoleArn,
     RuleDescription,
     RuleName,
@@ -177,7 +179,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         authorization_type: ConnectionAuthorizationType,
         auth_parameters: CreateConnectionAuthRequestParameters,
         description: ConnectionDescription = None,
-    ):
+    ) -> CreateConnectionResponse:
         errors = []
 
         if not CONNECTION_NAME_PATTERN.match(name):
@@ -207,7 +209,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         rule: RuleName,
         targets: TargetList,
         event_bus_name: EventBusNameOrArn = None,
-    ):
+    ) -> PutTargetsResponse:
         validation_errors = []
 
         id_regex = re.compile(r"^[\.\-_A-Za-z0-9]+$")

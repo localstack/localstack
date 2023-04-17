@@ -9,7 +9,7 @@ from localstack.utils.sync import wait_until
 LOG = logging.getLogger(__name__)
 
 
-def test_eventbus_policies(cfn_client, events_client, deploy_cfn_template):
+def test_eventbus_policies(deploy_cfn_template, aws_client):
     event_bus_name = f"event-bus-{short_uid()}"
 
     stack_response = deploy_cfn_template(
@@ -19,15 +19,15 @@ def test_eventbus_policies(cfn_client, events_client, deploy_cfn_template):
         parameters={"EventBusName": event_bus_name},
     )
 
-    describe_response = events_client.describe_event_bus(Name=event_bus_name)
+    describe_response = aws_client.events.describe_event_bus(Name=event_bus_name)
     policy = json.loads(describe_response["Policy"])
     assert len(policy["Statement"]) == 2
 
     # verify physical resource ID creation
-    pol1_description = cfn_client.describe_stack_resource(
+    pol1_description = aws_client.cloudformation.describe_stack_resource(
         StackName=stack_response.stack_name, LogicalResourceId="eventPolicy"
     )
-    pol2_description = cfn_client.describe_stack_resource(
+    pol2_description = aws_client.cloudformation.describe_stack_resource(
         StackName=stack_response.stack_name, LogicalResourceId="eventPolicy2"
     )
     assert (
@@ -44,16 +44,12 @@ def test_eventbus_policies(cfn_client, events_client, deploy_cfn_template):
         parameters={"EventBusName": event_bus_name},
     )
 
-    describe_response = events_client.describe_event_bus(Name=event_bus_name)
+    describe_response = aws_client.events.describe_event_bus(Name=event_bus_name)
     policy = json.loads(describe_response["Policy"])
     assert len(policy["Statement"]) == 1
 
 
-def test_eventbus_policy_statement(
-    cfn_client,
-    events_client,
-    deploy_cfn_template,
-):
+def test_eventbus_policy_statement(deploy_cfn_template, aws_client):
     event_bus_name = f"event-bus-{short_uid()}"
     statement_id = f"statement-{short_uid()}"
 
@@ -64,7 +60,7 @@ def test_eventbus_policy_statement(
         parameters={"EventBusName": event_bus_name, "StatementId": statement_id},
     )
 
-    describe_response = events_client.describe_event_bus(Name=event_bus_name)
+    describe_response = aws_client.events.describe_event_bus(Name=event_bus_name)
     policy = json.loads(describe_response["Policy"])
     assert policy["Version"] == "2012-10-17"
     assert len(policy["Statement"]) == 1
@@ -76,7 +72,7 @@ def test_eventbus_policy_statement(
     assert event_bus_name in statement["Resource"]
 
 
-def test_event_rule_to_logs(cfn_client, events_client, logs_client, deploy_cfn_template):
+def test_event_rule_to_logs(deploy_cfn_template, aws_client):
     event_rule_name = f"event-rule-{short_uid()}"
     log_group_name = f"log-group-{short_uid()}"
     event_bus_name = f"bus-{short_uid()}"
@@ -94,12 +90,12 @@ def test_event_rule_to_logs(cfn_client, events_client, logs_client, deploy_cfn_t
         },
     )
 
-    log_groups = logs_client.describe_log_groups(logGroupNamePrefix=log_group_name)["logGroups"]
+    log_groups = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_name)["logGroups"]
     log_group_names = [lg["logGroupName"] for lg in log_groups]
     assert log_group_name in log_group_names
 
     message_token = f"test-message-{short_uid()}"
-    resp = events_client.put_events(
+    resp = aws_client.events.put_events(
         Entries=[
             {
                 "Source": "unittest",
@@ -113,20 +109,20 @@ def test_event_rule_to_logs(cfn_client, events_client, logs_client, deploy_cfn_t
     assert len(resp["Entries"]) == 1
 
     wait_until(
-        lambda: len(logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"])
+        lambda: len(aws_client.logs.describe_log_streams(logGroupName=log_group_name)["logStreams"])
         > 0,
         1.0,
         5,
         "linear",
     )
-    log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
-    log_events = logs_client.get_log_events(
+    log_streams = aws_client.logs.describe_log_streams(logGroupName=log_group_name)["logStreams"]
+    log_events = aws_client.logs.get_log_events(
         logGroupName=log_group_name, logStreamName=log_streams[0]["logStreamName"]
     )
     assert message_token in log_events["events"][0]["message"]
 
 
-def test_event_rule_creation_without_target(cfn_client, events_client, deploy_cfn_template):
+def test_event_rule_creation_without_target(deploy_cfn_template, aws_client):
     event_rule_name = f"event-rule-{short_uid()}"
     deploy_cfn_template(
         template_path=os.path.join(
@@ -135,18 +131,18 @@ def test_event_rule_creation_without_target(cfn_client, events_client, deploy_cf
         parameters={"EventRuleName": event_rule_name},
     )
 
-    response = events_client.describe_rule(
+    response = aws_client.events.describe_rule(
         Name=event_rule_name,
     )
     assert response
 
 
-def test_cfn_event_bus_resource(events_client, deploy_cfn_template):
+def test_cfn_event_bus_resource(deploy_cfn_template, aws_client):
     def _assert(expected_len):
-        rs = events_client.list_event_buses()
+        rs = aws_client.events.list_event_buses()
         event_buses = [eb for eb in rs["EventBuses"] if eb["Name"] == "my-test-bus"]
         assert len(event_buses) == expected_len
-        rs = events_client.list_connections()
+        rs = aws_client.events.list_connections()
         connections = [con for con in rs["Connections"] if con["Name"] == "my-test-conn"]
         assert len(connections) == expected_len
 
@@ -209,7 +205,7 @@ Resources:
 """
 
 
-def test_cfn_handle_events_rule(events_client, deploy_cfn_template):
+def test_cfn_handle_events_rule(deploy_cfn_template, aws_client):
     bucket_name = f"target-{short_uid()}"
     rule_prefix = f"s3-rule-{short_uid()}"
     rule_name = f"{rule_prefix}-{short_uid()}"
@@ -218,28 +214,28 @@ def test_cfn_handle_events_rule(events_client, deploy_cfn_template):
         template=TEST_TEMPLATE_16 % (bucket_name, rule_name),
     )
 
-    rs = events_client.list_rules(NamePrefix=rule_prefix)
+    rs = aws_client.events.list_rules(NamePrefix=rule_prefix)
     assert rule_name in [rule["Name"] for rule in rs["Rules"]]
 
     target_arn = arns.s3_bucket_arn(bucket_name)  # TODO: !
-    rs = events_client.list_targets_by_rule(Rule=rule_name)
+    rs = aws_client.events.list_targets_by_rule(Rule=rule_name)
     assert target_arn in [target["Arn"] for target in rs["Targets"]]
 
     # clean up
     stack.destroy()
-    rs = events_client.list_rules(NamePrefix=rule_prefix)
+    rs = aws_client.events.list_rules(NamePrefix=rule_prefix)
     assert rule_name not in [rule["Name"] for rule in rs["Rules"]]
 
 
-def test_cfn_handle_events_rule_without_name(events_client, deploy_cfn_template):
-    rs = events_client.list_rules()
+def test_cfn_handle_events_rule_without_name(deploy_cfn_template, aws_client):
+    rs = aws_client.events.list_rules()
     rule_names = [rule["Name"] for rule in rs["Rules"]]
 
     stack = deploy_cfn_template(
         template=TEST_TEMPLATE_18 % arns.role_arn("sfn_role"),  # TODO: !
     )
 
-    rs = events_client.list_rules()
+    rs = aws_client.events.list_rules()
     new_rules = [rule for rule in rs["Rules"] if rule["Name"] not in rule_names]
     assert len(new_rules) == 1
     rule = new_rules[0]
@@ -248,5 +244,5 @@ def test_cfn_handle_events_rule_without_name(events_client, deploy_cfn_template)
 
     stack.destroy()
 
-    rs = events_client.list_rules()
+    rs = aws_client.events.list_rules()
     assert rule["Name"] not in [r["Name"] for r in rs["Rules"]]

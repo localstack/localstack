@@ -258,6 +258,15 @@ def in_docker():
     if OVERRIDE_IN_DOCKER:
         return True
 
+    # check some marker files that we create in our Dockerfiles
+    for path in [
+        "/usr/lib/localstack/.community-version",
+        "/usr/lib/localstack/.pro-version",
+        "/tmp/localstack/.marker",
+    ]:
+        if os.path.isfile(path):
+            return True
+
     # details: https://github.com/localstack/localstack/pull/4352
     if os.path.exists("/.dockerenv"):
         return True
@@ -291,6 +300,41 @@ def in_docker():
         os_hostname = socket.gethostname()
         if os_hostname and os_hostname in content:
             return True
+
+    # containerd does not set any specific file or config, but does use
+    # io.containerd.snapshotter.v1.overlayfs as the overlay filesystem for `/`.
+    try:
+        with open("/proc/mounts", "rt") as infile:
+            for line in infile:
+                line = line.strip()
+
+                if not line:
+                    continue
+
+                # skip comments
+                if line[0] == "#":
+                    continue
+
+                # format (man 5 fstab)
+                # <spec> <mount point> <type> <options> <rest>...
+                parts = line.split()
+                if len(parts) < 4:
+                    # badly formatted line
+                    continue
+
+                mount_point = parts[1]
+                options = parts[3]
+
+                # only consider the root filesystem
+                if mount_point != "/":
+                    continue
+
+                if "io.containerd" in options:
+                    return True
+
+    except FileNotFoundError:
+        pass
+
     return False
 
 
@@ -566,6 +610,9 @@ EDGE_FORWARD_URL = os.environ.get("EDGE_FORWARD_URL", "").strip()
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
 
+# Default timeout for Docker API calls sent by the Docker SDK client, in seconds.
+DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS = int(os.environ.get("DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS") or 60)
+
 # whether to enable API-based updates of configuration variables at runtime
 ENABLE_CONFIG_UPDATES = is_env_true("ENABLE_CONFIG_UPDATES")
 
@@ -628,7 +675,7 @@ FORCE_SHUTDOWN = is_env_not_false("FORCE_SHUTDOWN")
 MOCK_UNIMPLEMENTED = is_env_true("MOCK_UNIMPLEMENTED")
 
 # set variables no_proxy, i.e., run internal service calls directly
-no_proxy = ",".join([LOCALSTACK_HOSTNAME, LOCALHOST, LOCALHOST_IP, "[::1]"])
+no_proxy = ",".join([constants.LOCALHOST_HOSTNAME, LOCALHOST, LOCALHOST_IP, "[::1]"])
 if os.environ.get("no_proxy"):
     os.environ["no_proxy"] += "," + no_proxy
 elif os.environ.get("NO_PROXY"):
@@ -976,6 +1023,7 @@ CONFIG_ENV_VARS = [
     "DISABLE_CUSTOM_CORS_S3",
     "DISABLE_EVENTS",
     "DOCKER_BRIDGE_IP",
+    "DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS",
     "DYNAMODB_ERROR_PROBABILITY",
     "DYNAMODB_HEAP_SIZE",
     "DYNAMODB_IN_MEMORY",

@@ -92,11 +92,7 @@ from tests.integration.awslambda.test_lambda import TEST_LAMBDA_AWS_PROXY, TEST_
     ]
 )
 def test_lambda_aws_proxy_integration(
-    apigateway_client,
-    create_rest_apigw,
-    create_lambda_function,
-    create_role_with_policy,
-    snapshot,
+    create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client
 ):
     function_name = f"test-function-{short_uid()}"
     stage_name = "test"
@@ -120,10 +116,10 @@ def test_lambda_aws_proxy_integration(
         name=f"test-api-{short_uid()}",
         description="Integration test API",
     )
-    resource_id = apigateway_client.create_resource(
+    resource_id = aws_client.apigateway.create_resource(
         restApiId=api_id, parentId=root, pathPart="{proxy+}"
     )["id"]
-    apigateway_client.put_method(
+    aws_client.apigateway.put_method(
         restApiId=api_id,
         resourceId=resource_id,
         httpMethod="ANY",
@@ -131,16 +127,16 @@ def test_lambda_aws_proxy_integration(
     )
 
     # Lambda AWS_PROXY integration
-    apigateway_client.put_integration(
+    aws_client.apigateway.put_integration(
         restApiId=api_id,
         resourceId=resource_id,
         httpMethod="ANY",
         type="AWS_PROXY",
         integrationHttpMethod="POST",
-        uri=f"arn:aws:apigateway:{apigateway_client.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+        uri=f"arn:aws:apigateway:{aws_client.apigateway.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
         credentials=role_arn,
     )
-    apigateway_client.create_deployment(restApiId=api_id, stageName=stage_name)
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
 
     # invoke rest api
     invocation_url = api_invoke_url(
@@ -242,7 +238,7 @@ def test_lambda_aws_proxy_integration(
 
 @pytest.mark.aws_validated
 def test_lambda_aws_integration(
-    apigateway_client, create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot
+    create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client
 ):
     function_name = f"test-{short_uid()}"
     stage_name = "api"
@@ -260,40 +256,40 @@ def test_lambda_aws_integration(
 
     api_id, _, root = create_rest_apigw(name=f"test-api-{short_uid()}")
     resource_id, _ = create_rest_resource(
-        apigateway_client, restApiId=api_id, parentId=root, pathPart="test"
+        aws_client.apigateway, restApiId=api_id, parentId=root, pathPart="test"
     )
     create_rest_resource_method(
-        apigateway_client,
+        aws_client.apigateway,
         restApiId=api_id,
         resourceId=resource_id,
         httpMethod="POST",
         authorizationType="NONE",
     )
     create_rest_api_integration(
-        apigateway_client,
+        aws_client.apigateway,
         restApiId=api_id,
         resourceId=resource_id,
         httpMethod="POST",
         type="AWS",
         integrationHttpMethod="POST",
-        uri=f"arn:aws:apigateway:{apigateway_client.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+        uri=f"arn:aws:apigateway:{aws_client.apigateway.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
         credentials=role_arn,
     )
     create_rest_api_integration_response(
-        apigateway_client,
+        aws_client.apigateway,
         restApiId=api_id,
         resourceId=resource_id,
         httpMethod="POST",
         statusCode="200",
     )
     create_rest_api_method_response(
-        apigateway_client,
+        aws_client.apigateway,
         restApiId=api_id,
         resourceId=resource_id,
         httpMethod="POST",
         statusCode="200",
     )
-    apigateway_client.create_deployment(restApiId=api_id, stageName=stage_name)
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
     invocation_url = api_invoke_url(api_id=api_id, stage=stage_name, path="/test")
 
     def invoke_api(url):

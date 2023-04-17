@@ -9,7 +9,7 @@ from localstack.utils.strings import short_uid
 
 @pytest.mark.aws_validated
 @pytest.mark.skip_snapshot_verify(paths=["$..StreamDescription.StreamModeDetails"])
-def test_stream_creation(kinesis_client, cfn_client, deploy_cfn_template, snapshot):
+def test_stream_creation(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.resource_name())
     snapshot.add_transformers_list(
         [
@@ -39,22 +39,22 @@ def test_stream_creation(kinesis_client, cfn_client, deploy_cfn_template, snapsh
     stack = deploy_cfn_template(template=template)
     snapshot.match("stack_output", stack.outputs)
 
-    description = cfn_client.describe_stack_resources(StackName=stack.stack_name)
+    description = aws_client.cloudformation.describe_stack_resources(StackName=stack.stack_name)
     snapshot.match("resource_description", description)
 
     stream_name = stack.outputs.get("StreamNameFromRef")
-    description = kinesis_client.describe_stream(StreamName=stream_name)
+    description = aws_client.kinesis.describe_stream(StreamName=stream_name)
     snapshot.match("stream_description", description)
 
 
-def test_default_parameters_kinesis(deploy_cfn_template, kinesis_client):
+def test_default_parameters_kinesis(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/kinesis_default.yaml"
         )
     )
 
-    stream_response = kinesis_client.list_streams(ExclusiveStartStreamName=stack.stack_name)
+    stream_response = aws_client.kinesis.list_streams(ExclusiveStartStreamName=stack.stack_name)
 
     stream_names = stream_response["StreamNames"]
     assert len(stream_names) > 0
@@ -112,9 +112,7 @@ Outputs:
 """
 
 
-def test_cfn_handle_kinesis_firehose_resources(
-    kinesis_client, firehose_client, deploy_cfn_template
-):
+def test_cfn_handle_kinesis_firehose_resources(deploy_cfn_template, aws_client):
     kinesis_stream_name = f"kinesis-stream-{short_uid()}"
     firehose_role_name = f"firehose-role-{short_uid()}"
     firehose_stream_name = f"firehose-stream-{short_uid()}"
@@ -129,27 +127,27 @@ def test_cfn_handle_kinesis_firehose_resources(
 
     assert len(stack.outputs) == 1
 
-    rs = firehose_client.describe_delivery_stream(DeliveryStreamName=firehose_stream_name)
+    rs = aws_client.firehose.describe_delivery_stream(DeliveryStreamName=firehose_stream_name)
     assert rs["DeliveryStreamDescription"]["DeliveryStreamARN"] == stack.outputs["MyStreamArn"]
     assert rs["DeliveryStreamDescription"]["DeliveryStreamName"] == firehose_stream_name
 
-    rs = kinesis_client.describe_stream(StreamName=kinesis_stream_name)
+    rs = aws_client.kinesis.describe_stream(StreamName=kinesis_stream_name)
     assert rs["StreamDescription"]["StreamName"] == kinesis_stream_name
 
     # clean up
     stack.destroy()
 
-    rs = kinesis_client.list_streams()
+    rs = aws_client.kinesis.list_streams()
     assert kinesis_stream_name not in rs["StreamNames"]
-    rs = firehose_client.list_delivery_streams()
+    rs = aws_client.firehose.list_delivery_streams()
     assert firehose_stream_name not in rs["DeliveryStreamNames"]
 
 
-def test_describe_template(s3_client, cfn_client, s3_create_bucket):
+def test_describe_template(s3_create_bucket, aws_client):
     bucket_name = f"b-{short_uid()}"
     template_body = TEST_TEMPLATE_12 % "test-firehose-role-name"
     s3_create_bucket(Bucket=bucket_name, ACL="public-read")
-    s3_client.put_object(Bucket=bucket_name, Key="template.yml", Body=template_body)
+    aws_client.s3.put_object(Bucket=bucket_name, Key="template.yml", Body=template_body)
 
     template_url = f"{config.get_edge_url()}/{bucket_name}/template.yml"  # TODO
 
@@ -158,12 +156,12 @@ def test_describe_template(s3_client, cfn_client, s3_create_bucket):
         {"ParameterKey": "DeliveryStreamName"},
     ]
     # get summary by template URL
-    result = cfn_client.get_template_summary(TemplateURL=template_url)
+    result = aws_client.cloudformation.get_template_summary(TemplateURL=template_url)
     assert result.get("Parameters") == params
     assert "AWS::S3::Bucket" in result["ResourceTypes"]
     assert result.get("ResourceIdentifierSummaries")
     # get summary by template body
-    result = cfn_client.get_template_summary(TemplateBody=template_body)
+    result = aws_client.cloudformation.get_template_summary(TemplateBody=template_body)
     assert result.get("Parameters") == params
     assert "AWS::Kinesis::Stream" in result["ResourceTypes"]
     assert result.get("ResourceIdentifierSummaries")
@@ -193,11 +191,11 @@ Resources:
 """
 
 
-def test_dynamodb_stream_response_with_cf(dynamodb_client, deploy_cfn_template):
+def test_dynamodb_stream_response_with_cf(deploy_cfn_template, aws_client):
     template = TEST_TEMPLATE_28 % "EventTable"
     deploy_cfn_template(template=template)
 
-    response = dynamodb_client.describe_kinesis_streaming_destination(TableName="EventTable")
+    response = aws_client.dynamodb.describe_kinesis_streaming_destination(TableName="EventTable")
 
     assert response.get("TableName") == "EventTable"
     assert len(response.get("KinesisDataStreamDestinations")) == 1

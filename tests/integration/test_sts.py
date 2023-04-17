@@ -89,10 +89,10 @@ TEST_SAML_ASSERTION = """
 
 
 class TestSTSIntegrations:
-    def test_assume_role(self, sts_client):
+    def test_assume_role(self, aws_client):
         test_role_session_name = "s3-access-example"
         test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
-        response = sts_client.assume_role(
+        response = aws_client.sts.assume_role(
             RoleArn=test_role_arn, RoleSessionName=test_role_session_name
         )
 
@@ -102,11 +102,11 @@ class TestSTSIntegrations:
             assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
             assert assume_role_id_parts[1] == test_role_session_name
 
-    def test_assume_role_with_web_identity(self, sts_client):
+    def test_assume_role_with_web_identity(self, aws_client):
         test_role_session_name = "web_token"
         test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
         test_web_identity_token = "token"
-        response = sts_client.assume_role_with_web_identity(
+        response = aws_client.sts.assume_role_with_web_identity(
             RoleArn=test_role_arn,
             RoleSessionName=test_role_session_name,
             WebIdentityToken=test_web_identity_token,
@@ -118,7 +118,7 @@ class TestSTSIntegrations:
             assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
             assert assume_role_id_parts[1] == test_role_session_name
 
-    def test_assume_role_with_saml(self, sts_client):
+    def test_assume_role_with_saml(self, aws_client):
         account_id = "000000000000"
         role_name = "test-role"
         provider_name = "TestProvFed"
@@ -138,7 +138,7 @@ class TestSTSIntegrations:
             account_id=account_id, provider_name=provider_name
         )
         base64_saml_assertion = b64encode(saml_assertion.encode("utf-8")).decode("utf-8")
-        response = sts_client.assume_role_with_saml(
+        response = aws_client.sts.assume_role_with_saml(
             RoleArn=role_arn,
             PrincipalArn=principal_arn,
             SAMLAssertion=base64_saml_assertion,
@@ -150,9 +150,9 @@ class TestSTSIntegrations:
             assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
             assert assume_role_id_parts[1] == fed_name
 
-    def test_get_federation_token(self, sts_client):
+    def test_get_federation_token(self, aws_client):
         token_name = "TestName"
-        response = sts_client.get_federation_token(Name=token_name)
+        response = aws_client.sts.get_federation_token(Name=token_name)
 
         assert response["Credentials"]
         assert response["Credentials"]["SecretAccessKey"]
@@ -162,8 +162,8 @@ class TestSTSIntegrations:
         assert federated_user_info[1] == token_name
 
     @pytest.mark.only_localstack
-    def test_get_caller_identity_root(self, sts_client, iam_client, monkeypatch):
-        response = sts_client.get_caller_identity()
+    def test_get_caller_identity_root(self, monkeypatch, aws_client):
+        response = aws_client.sts.get_caller_identity()
         account_id = response["Account"]
         assert f"arn:aws:iam::{account_id}:root" == response["Arn"]
 

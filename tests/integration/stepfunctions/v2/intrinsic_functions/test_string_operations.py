@@ -19,18 +19,14 @@ pytestmark = pytest.mark.skipif(
 )
 class TestStringOperations:
     def test_string_split(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
+        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
     ):
         input_values = [
             {"fst": "1,2,3,4,5", "snd": ","},
             {"fst": "This.is+a,test=string", "snd": ".+,="},
         ]
         create_and_test_on_inputs(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,

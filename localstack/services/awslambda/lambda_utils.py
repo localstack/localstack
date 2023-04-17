@@ -14,6 +14,7 @@ from flask import Response
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import FilterCriteria, Runtime
+from localstack.aws.connect import connect_to
 from localstack.services.awslambda.lambda_models import AwsLambdaStore, awslambda_stores
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
@@ -245,7 +246,7 @@ def get_zip_bytes(function_code):
     """
     function_code = function_code or {}
     if "S3Bucket" in function_code:
-        s3_client = aws_stack.connect_to_service("s3")
+        s3_client = connect_to().s3
         bytes_io = BytesIO()
         try:
             s3_client.download_fileobj(function_code["S3Bucket"], function_code["S3Key"], bytes_io)

@@ -44,7 +44,7 @@ class TestCSRF:
         assert response.headers["access-control-allow-origin"] == "https://app.localstack.cloud"
         assert "GET" in response.headers["access-control-allow-methods"].split(",")
 
-    def test_cors_s3_override(self, s3_client, s3_bucket, monkeypatch):
+    def test_cors_s3_override(self, s3_bucket, monkeypatch, aws_client):
         monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_S3", True)
 
         BUCKET_CORS_CONFIG = {
@@ -58,10 +58,10 @@ class TestCSRF:
             ]
         }
 
-        s3_client.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=BUCKET_CORS_CONFIG)
+        aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=BUCKET_CORS_CONFIG)
 
         # create signed url
-        url = s3_client.generate_presigned_url(
+        url = aws_client.s3.generate_presigned_url(
             ClientMethod="put_object",
             Params={
                 "Bucket": s3_bucket,

@@ -39,6 +39,8 @@ from localstack.aws.api.kms import (
     GenerateDataKeyResponse,
     GenerateDataKeyWithoutPlaintextRequest,
     GenerateDataKeyWithoutPlaintextResponse,
+    GenerateMacRequest,
+    GenerateMacResponse,
     GenerateRandomRequest,
     GenerateRandomResponse,
     GetKeyPolicyRequest,
@@ -51,10 +53,12 @@ from localstack.aws.api.kms import (
     GrantTokenList,
     GrantTokenType,
     ImportKeyMaterialResponse,
+    IncorrectKeyException,
     InvalidCiphertextException,
     InvalidGrantIdException,
     InvalidKeyUsageException,
     KeyIdType,
+    KeySpec,
     KeyState,
     KmsApi,
     KMSInvalidStateException,
@@ -68,6 +72,7 @@ from localstack.aws.api.kms import (
     ListKeysResponse,
     ListResourceTagsRequest,
     ListResourceTagsResponse,
+    MacAlgorithmSpec,
     MarkerType,
     NotFoundException,
     PlaintextType,
@@ -84,6 +89,8 @@ from localstack.aws.api.kms import (
     UntagResourceRequest,
     UpdateAliasRequest,
     UpdateKeyDescriptionRequest,
+    VerifyMacRequest,
+    VerifyMacResponse,
     VerifyRequest,
     VerifyResponse,
     WrappingKeySpec,
@@ -449,7 +456,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
     def _generate_data_key_pair(self, key_id: str, key_pair_spec: str, context: RequestContext):
         key = self._get_key(context, key_id)
-        self._validate_key_for_encryption_decryption(key)
+        self._validate_key_for_encryption_decryption(context, key)
         crypto_key = KmsCryptoKey(key_pair_spec)
         return {
             "KeyId": key_id,
@@ -510,7 +517,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def _generate_data_key(self, key_id: str, context: RequestContext):
         key = self._get_key(context, key_id)
         # TODO Should also have a validation for the key being a symmetric one.
-        self._validate_key_for_encryption_decryption(key)
+        self._validate_key_for_encryption_decryption(context, key)
         crypto_key = KmsCryptoKey("SYMMETRIC_DEFAULT")
         return {
             "KeyId": key_id,
@@ -533,10 +540,50 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         result.pop("Plaintext")
         return GenerateDataKeyWithoutPlaintextResponse(**result)
 
+    @handler("GenerateMac", expand=False)
+    def generate_mac(
+        self,
+        context: RequestContext,
+        request: GenerateMacRequest,
+    ) -> GenerateMacResponse:
+        msg = request.get("Message")
+        self._validate_mac_msg_length(msg)
+
+        key = self._get_key(context, request.get("KeyId"))
+        self._validate_key_for_generate_verify_mac(context, key)
+
+        algorithm = request.get("MacAlgorithm")
+        self._validate_mac_algorithm(key, algorithm)
+
+        mac = key.generate_mac(msg, algorithm)
+
+        return GenerateMacResponse(Mac=mac, MacAlgorithm=algorithm, KeyId=key.metadata.get("Arn"))
+
+    @handler("VerifyMac", expand=False)
+    def verify_mac(
+        self,
+        context: RequestContext,
+        request: VerifyMacRequest,
+    ) -> VerifyMacResponse:
+        msg = request.get("Message")
+        self._validate_mac_msg_length(msg)
+
+        key = self._get_key(context, request.get("KeyId"))
+        self._validate_key_for_generate_verify_mac(context, key)
+
+        algorithm = request.get("MacAlgorithm")
+        self._validate_mac_algorithm(key, algorithm)
+
+        mac_valid = key.verify_mac(msg, request.get("Mac"), algorithm)
+
+        return VerifyMacResponse(
+            KeyId=key.metadata.get("Arn"), MacValid=mac_valid, MacAlgorithm=algorithm
+        )
+
     @handler("Sign", expand=False)
     def sign(self, context: RequestContext, request: SignRequest) -> SignResponse:
         key = self._get_key(context, request.get("KeyId"))
-        self._validate_key_for_sign_verify(key)
+        self._validate_key_for_sign_verify(context, key)
 
         # TODO Add constraints on KeySpec / SigningAlgorithm pairs:
         #  https://docs.aws.amazon.com/kms/latest/developerguide/asymmetric-key-specs.html#key-spec-ecc
@@ -555,7 +602,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     @handler("Verify", expand=False)
     def verify(self, context: RequestContext, request: VerifyRequest) -> VerifyResponse:
         key = self._get_key(context, request.get("KeyId"))
-        self._validate_key_for_sign_verify(key)
+        self._validate_key_for_sign_verify(context, key)
 
         signing_algorithm = request.get("SigningAlgorithm")
         is_signature_valid = key.verify(
@@ -582,7 +629,11 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         encryption_algorithm: EncryptionAlgorithmSpec = None,
     ) -> EncryptResponse:
         key = self._get_key(context, key_id)
-        self._validate_key_for_encryption_decryption(key)
+        self._validate_plaintext_length(plaintext)
+        self._validate_plaintext_key_type_based(plaintext, key, encryption_algorithm)
+        self._validate_key_for_encryption_decryption(context, key)
+        self._validate_key_state_not_pending_import(key)
+
         ciphertext_blob = key.encrypt(plaintext)
         # For compatibility, we return EncryptionAlgorithm values expected from AWS. But LocalStack currently always
         # encrypts with symmetric encryption no matter the key settings.
@@ -616,12 +667,12 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key = self._get_key(context, key_id)
         key_id = key.metadata["KeyId"]
         if key_id != ciphertext.key_id:
-            # Haven't checked if this is the exception being raised by AWS in such cases.
-            ValidationError(
-                f"The supplied KeyId {key_id} doesn't match the KeyId {ciphertext.key_id} present in "
-                f"ciphertext. Keep in mind that LocalStack currently doesn't perform asymmetric encryption"
+            raise IncorrectKeyException(
+                "The key ID in the request does not identify a CMK that can perform this operation."
             )
-        self._validate_key_for_encryption_decryption(key)
+
+        self._validate_key_for_encryption_decryption(context, key)
+        self._validate_key_state_not_pending_import(key)
 
         plaintext = key.decrypt(ciphertext)
         # For compatibility, we return EncryptionAlgorithm values expected from AWS. But LocalStack currently always
@@ -652,7 +703,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             raise UnsupportedOperationException(
                 "Key material can only be imported into keys with Origin of EXTERNAL"
             )
-        self._validate_key_for_encryption_decryption(key_to_import_material_to)
+        self._validate_key_for_encryption_decryption(context, key_to_import_material_to)
         key_id = key_to_import_material_to.metadata["KeyId"]
 
         key = KmsKey(CreateKeyRequest(KeySpec=wrapping_key_spec))
@@ -689,7 +740,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_to_import_material_to = store.get_key(
             key_id, enabled_key_allowed=True, disabled_key_allowed=True
         )
-        self._validate_key_for_encryption_decryption(key_to_import_material_to)
+        self._validate_key_for_encryption_decryption(context, key_to_import_material_to)
 
         if import_state.wrapping_algo == AlgorithmSpec.RSAES_PKCS1_V1_5:
             decrypt_padding = padding.PKCS1v15()
@@ -702,11 +753,38 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 f"Unsupported padding, requested wrapping algorithm:'{import_state.wrapping_algo}'"
             )
 
+        # TODO check if there was already a key imported for this kms key
+        # if so, it has to be identical. We cannot change keys by reimporting after deletion/expiry
         key_material = import_state.key.crypto_key.key.decrypt(
             encrypted_key_material, decrypt_padding
         )
+        if expiration_model:
+            key_to_import_material_to.metadata["ExpirationModel"] = expiration_model
+        else:
+            key_to_import_material_to.metadata[
+                "ExpirationModel"
+            ] = ExpirationModelType.KEY_MATERIAL_EXPIRES
+        if (
+            key_to_import_material_to.metadata["ExpirationModel"]
+            == ExpirationModelType.KEY_MATERIAL_EXPIRES
+            and not valid_to
+        ):
+            raise ValidationException(
+                "A validTo date must be set if the ExpirationModel is KEY_MATERIAL_EXPIRES"
+            )
+        # TODO actually set validTo and make the key expire
         key_to_import_material_to.crypto_key.key_material = key_material
+        key_to_import_material_to.metadata["Enabled"] = True
+        key_to_import_material_to.metadata["KeyState"] = KeyState.Enabled
         return ImportKeyMaterialResponse()
+
+    def delete_imported_key_material(self, context: RequestContext, key_id: KeyIdType) -> None:
+        store = self._get_store(context)
+        key = store.get_key(key_id, enabled_key_allowed=True, disabled_key_allowed=True)
+        key.crypto_key.key_material = None
+        key.metadata["Enabled"] = False
+        key.metadata["KeyState"] = KeyState.PendingImport
+        key.metadata.pop("ExpirationModel", None)
 
     @handler("CreateAlias", expand=False)
     def create_alias(self, context: RequestContext, request: CreateAliasRequest) -> None:
@@ -877,16 +955,58 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             # AWS doesn't seem to mind removal of a non-existent tag, so we do not raise any exception.
             key.tags.pop(tag_key, None)
 
-    def _validate_key_for_encryption_decryption(self, key: KmsKey):
-        if key.metadata["KeyUsage"] != "ENCRYPT_DECRYPT":
+    def _validate_key_state_not_pending_import(self, key: KmsKey):
+        if key.metadata["KeyState"] == KeyState.PendingImport:
+            raise KMSInvalidStateException(f"{key.metadata['Arn']} is pending import.")
+
+    def _validate_key_for_encryption_decryption(self, context: RequestContext, key: KmsKey):
+        key_usage = key.metadata["KeyUsage"]
+        if key_usage != "ENCRYPT_DECRYPT":
             raise InvalidKeyUsageException(
-                "KeyUsage for encryption / decryption should be ENCRYPT_DECRYPT"
+                f"{key.metadata['Arn']} key usage is {key_usage} which is not valid for {context.operation.name}."
             )
 
-    def _validate_key_for_sign_verify(self, key: KmsKey):
-        if key.metadata["KeyUsage"] != "SIGN_VERIFY":
+    def _validate_key_for_sign_verify(self, context: RequestContext, key: KmsKey):
+        key_usage = key.metadata["KeyUsage"]
+        if key_usage != "SIGN_VERIFY":
             raise InvalidKeyUsageException(
-                "KeyUsage for signing / verification key should be SIGN_VERIFY"
+                f"{key.metadata['Arn']} key usage is {key_usage} which is not valid for {context.operation.name}."
+            )
+
+    def _validate_key_for_generate_verify_mac(self, context: RequestContext, key: KmsKey):
+        key_usage = key.metadata["KeyUsage"]
+        if key_usage != "GENERATE_VERIFY_MAC":
+            raise InvalidKeyUsageException(
+                f"{key.metadata['Arn']} key usage is {key_usage} which is not valid for {context.operation.name}."
+            )
+
+    def _validate_mac_msg_length(self, msg: bytes):
+        if len(msg) > 4096:
+            raise ValidationException(
+                "1 validation error detected: Value at 'message' failed to satisfy constraint: "
+                "Member must have length less than or equal to 4096"
+            )
+
+    def _validate_mac_algorithm(self, key: KmsKey, algorithm: str):
+        if not hasattr(MacAlgorithmSpec, algorithm):
+            raise ValidationException(
+                f"1 validation error detected: Value '{algorithm}' at 'macAlgorithm' "
+                f"failed to satisfy constraint: Member must satisfy enum value set: "
+                f"[HMAC_SHA_384, HMAC_SHA_256, HMAC_SHA_224, HMAC_SHA_512]"
+            )
+
+        key_spec = key.metadata["KeySpec"]
+        if x := algorithm.split("_"):
+            if len(x) == 3 and x[0] + "_" + x[2] != key_spec:
+                raise InvalidKeyUsageException(
+                    f"Algorithm {algorithm} is incompatible with key spec {key_spec}."
+                )
+
+    def _validate_plaintext_length(self, plaintext: bytes):
+        if len(plaintext) > 4096:
+            raise ValidationException(
+                "1 validation error detected: Value at 'plaintext' failed to satisfy constraint: "
+                "Member must have length less than or equal to 4096"
             )
 
     def _validate_grant_request(self, data: Dict, store: KmsStore):
@@ -899,6 +1019,51 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                     f"Value {['Operations']} at 'operations' failed to satisfy constraint: Member must satisfy"
                     f" constraint: [Member must satisfy enum value set: {VALID_OPERATIONS}]"
                 )
+
+    def _validate_plaintext_key_type_based(
+        self,
+        plaintext: PlaintextType,
+        key: KmsKey,
+        encryption_algorithm: EncryptionAlgorithmSpec = None,
+    ):
+        # max size values extracted from AWS boto3 documentation
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/kms/client/encrypt.html
+        max_size_bytes = 4096  # max allowed size
+        if (
+            key.metadata["KeySpec"] == KeySpec.RSA_2048
+            and encryption_algorithm == EncryptionAlgorithmSpec.RSAES_OAEP_SHA_1
+        ):
+            max_size_bytes = 214
+        elif (
+            key.metadata["KeySpec"] == KeySpec.RSA_2048
+            and encryption_algorithm == EncryptionAlgorithmSpec.RSAES_OAEP_SHA_256
+        ):
+            max_size_bytes = 190
+        elif (
+            key.metadata["KeySpec"] == KeySpec.RSA_3072
+            and encryption_algorithm == EncryptionAlgorithmSpec.RSAES_OAEP_SHA_1
+        ):
+            max_size_bytes = 342
+        elif (
+            key.metadata["KeySpec"] == KeySpec.RSA_3072
+            and encryption_algorithm == EncryptionAlgorithmSpec.RSAES_OAEP_SHA_256
+        ):
+            max_size_bytes = 318
+        elif (
+            key.metadata["KeySpec"] == KeySpec.RSA_4096
+            and encryption_algorithm == EncryptionAlgorithmSpec.RSAES_OAEP_SHA_1
+        ):
+            max_size_bytes = 470
+        elif (
+            key.metadata["KeySpec"] == KeySpec.RSA_4096
+            and encryption_algorithm == EncryptionAlgorithmSpec.RSAES_OAEP_SHA_256
+        ):
+            max_size_bytes = 446
+
+        if len(plaintext) > max_size_bytes:
+            raise ValidationException(
+                f"Algorithm {encryption_algorithm} and key spec {key.metadata['KeySpec']} cannot encrypt data larger than {max_size_bytes} bytes."
+            )
 
 
 # ---------------

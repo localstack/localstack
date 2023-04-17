@@ -11,7 +11,7 @@ from .test_integration import PARTITION_KEY
 
 class TestErrorInjection:
     @pytest.mark.only_localstack
-    def test_kinesis_error_injection(self, monkeypatch, kinesis_client, wait_for_stream_ready):
+    def test_kinesis_error_injection(self, monkeypatch, wait_for_stream_ready, aws_client):
         kinesis = aws_stack.create_external_boto_client("kinesis", config=self.retry_config())
         stream_name = f"stream-{short_uid()}"
         resources.create_kinesis_stream(stream_name)
@@ -29,7 +29,7 @@ class TestErrorInjection:
             test_all_errors = kinesis.put_records(StreamName=stream_name, Records=records)
             assert test_all_errors["FailedRecordCount"] == 1
         finally:
-            kinesis_client.delete_stream(StreamName=stream_name)
+            aws_client.kinesis.delete_stream(StreamName=stream_name)
 
     @pytest.mark.only_localstack
     def test_dynamodb_error_injection(self, monkeypatch):

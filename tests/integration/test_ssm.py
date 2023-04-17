@@ -21,13 +21,13 @@ def _assert(search_name: str, param_name: str, ssm_client):
 
 class TestSSM:
     @pytest.mark.aws_validated
-    def test_describe_parameters(self, ssm_client):
-        response = ssm_client.describe_parameters()
+    def test_describe_parameters(self, aws_client):
+        response = aws_client.ssm.describe_parameters()
         assert "Parameters" in response
         assert isinstance(response["Parameters"], list)
 
     @pytest.mark.aws_validated
-    def test_put_parameters(self, ssm_client, create_parameter):
+    def test_put_parameters(self, create_parameter, aws_client):
         param_name = f"param-{short_uid()}"
         create_parameter(
             Name=param_name,
@@ -36,12 +36,12 @@ class TestSSM:
             Type="String",
         )
 
-        _assert(param_name, param_name, ssm_client)
-        _assert(f"/{param_name}", f"/{param_name}", ssm_client)
+        _assert(param_name, param_name, aws_client.ssm)
+        _assert(f"/{param_name}", f"/{param_name}", aws_client.ssm)
 
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("param_name_pattern", ["/<param>//b//c", "<param>/b/c"])
-    def test_hierarchical_parameter(self, ssm_client, create_parameter, param_name_pattern):
+    def test_hierarchical_parameter(self, create_parameter, param_name_pattern, aws_client):
         param_a = short_uid()
         create_parameter(
             Name=f"/{param_a}/b/c",
@@ -49,15 +49,15 @@ class TestSSM:
             Type="String",
         )
 
-        _assert(f"/{param_a}/b/c", f"/{param_a}/b/c", ssm_client)
+        _assert(f"/{param_a}/b/c", f"/{param_a}/b/c", aws_client.ssm)
         pname = param_name_pattern.replace("<param>", param_a)
         with pytest.raises(Exception) as exc:
-            _assert(pname, f"/{param_a}/b/c", ssm_client)
+            _assert(pname, f"/{param_a}/b/c", aws_client.ssm)
         exc.match("ValidationException")
         exc.match("sub-paths divided by slash symbol")
 
     @pytest.mark.aws_validated
-    def test_get_secret_parameter(self, ssm_client, create_secret):
+    def test_get_secret_parameter(self, create_secret, aws_client):
         secret_name = f"test_secret-{short_uid()}"
         create_secret(
             Name=secret_name,
@@ -65,7 +65,7 @@ class TestSSM:
             Description="testing creation of secrets",
         )
 
-        result = ssm_client.get_parameter(
+        result = aws_client.ssm.get_parameter(
             Name=f"/aws/reference/secretsmanager/{secret_name}", WithDecryption=True
         )
         assert f"/aws/reference/secretsmanager/{secret_name}" == result.get("Parameter").get("Name")
@@ -79,18 +79,18 @@ class TestSSM:
 
         # negative test for https://github.com/localstack/localstack/issues/6551
         with pytest.raises(Exception):
-            ssm_client.get_parameter(Name=secret_name, WithDecryption=True)
+            aws_client.ssm.get_parameter(Name=secret_name, WithDecryption=True)
 
     @pytest.mark.aws_validated
-    def test_get_inexistent_secret(self, ssm_client):
+    def test_get_inexistent_secret(self, aws_client):
         invalid_name = "/aws/reference/secretsmanager/inexistent"
-        with pytest.raises(ssm_client.exceptions.ParameterNotFound) as exc:
-            ssm_client.get_parameter(Name=invalid_name, WithDecryption=True)
+        with pytest.raises(aws_client.ssm.exceptions.ParameterNotFound) as exc:
+            aws_client.ssm.get_parameter(Name=invalid_name, WithDecryption=True)
         exc.match("ParameterNotFound")
         exc.match(f"Secret .*{invalid_name.lstrip('/')}.* not found.")
 
     @pytest.mark.aws_validated
-    def test_get_parameters_and_secrets(self, ssm_client, create_parameter, create_secret):
+    def test_get_parameters_and_secrets(self, create_parameter, create_secret, aws_client):
         param_name = f"param-{short_uid()}"
         secret_path = "/aws/reference/secretsmanager/"
         secret_name = f"test_secret_param_{short_uid()}"
@@ -109,7 +109,7 @@ class TestSSM:
             Description="testing creation of secrets",
         )
 
-        response = ssm_client.get_parameters(
+        response = aws_client.ssm.get_parameters(
             Names=[
                 param_name,
                 complete_secret,
@@ -127,15 +127,15 @@ class TestSSM:
             assert param in ["inexistent_param", secret_path + "inexistent_secret"]
 
     @pytest.mark.aws_validated
-    def test_get_parameters_by_path_and_filter_by_labels(self, ssm_client, create_parameter):
+    def test_get_parameters_by_path_and_filter_by_labels(self, create_parameter, aws_client):
         prefix = f"/prefix-{short_uid()}"
         path = f"{prefix}/path"
         value = "value"
         param = create_parameter(Name=path, Value=value, Type="String")
-        ssm_client.label_parameter_version(
+        aws_client.ssm.label_parameter_version(
             Name=path, ParameterVersion=param["Version"], Labels=["latest"]
         )
-        list_of_params = ssm_client.get_parameters_by_path(
+        list_of_params = aws_client.ssm.get_parameters_by_path(
             Path=prefix, ParameterFilters=[{"Key": "Label", "Values": ["latest"]}]
         )
         assert len(list_of_params["Parameters"]) == 1
@@ -146,9 +146,9 @@ class TestSSM:
         assert found_param["Value"] == "value"
 
     @pytest.mark.aws_validated
-    def test_get_inexistent_maintenance_window(self, ssm_client):
+    def test_get_inexistent_maintenance_window(self, aws_client):
         invalid_name = "mw-00000000000000000"
-        with pytest.raises(ssm_client.exceptions.DoesNotExistException) as exc:
-            ssm_client.get_maintenance_window(WindowId=invalid_name)
+        with pytest.raises(aws_client.ssm.exceptions.DoesNotExistException) as exc:
+            aws_client.ssm.get_maintenance_window(WindowId=invalid_name)
         exc.match("DoesNotExistException")
         exc.match(f"Maintenance window {invalid_name} does not exist")
