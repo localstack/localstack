@@ -16,6 +16,7 @@ from localstack.aws.protocol.parser import create_parser
 from localstack.aws.protocol.serializer import create_serializer
 from localstack.aws.spec import load_service
 from localstack.utils import analytics
+from localstack.utils.coverage_docs import get_coverage_link_for_service
 
 LOG = logging.getLogger(__name__)
 
@@ -153,8 +154,8 @@ class Skeleton:
             return self.dispatch_request(context, instance)
         except ServiceException as e:
             return self.on_service_exception(context, e)
-        except NotImplementedError:
-            return self.on_not_implemented_error(context)
+        except NotImplementedError as e:
+            return self.on_not_implemented_error(context, e)
 
     def dispatch_request(self, context: RequestContext, instance: ServiceRequest) -> HttpResponse:
         operation = context.operation
@@ -189,11 +190,14 @@ class Skeleton:
             exception, context.operation, context.request.headers
         )
 
-    def on_not_implemented_error(self, context: RequestContext) -> HttpResponse:
+    def on_not_implemented_error(
+        self, context: RequestContext, exception: NotImplementedError
+    ) -> HttpResponse:
         """
         Called by invoke if either the dispatch table did not contain an entry for the operation, or the service
         provider raised a NotImplementedError
         :param context: the request context
+        :param exception: the NotImplementedError that was raised
         :return: an HttpResponse object
         """
         operation = context.operation
@@ -201,10 +205,8 @@ class Skeleton:
 
         action_name = operation.name
         service_name = operation.service_model.service_name
-        message = (
-            f"API action '{action_name}' for service '{service_name}' not yet implemented or pro feature"
-            f" - check https://docs.localstack.cloud/user-guide/aws/feature-coverage for further information"
-        )
+        exception_message: str | None = exception.args[0] if exception.args else None
+        message = exception_message or get_coverage_link_for_service(service_name, action_name)
         LOG.info(message)
         error = CommonServiceException("InternalFailure", message, status_code=501)
         # record event

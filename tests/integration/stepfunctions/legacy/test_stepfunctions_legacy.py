@@ -217,9 +217,9 @@ def setup_and_tear_down():
 
 
 @pytest.fixture
-def sfn_execution_role(iam_client):
+def sfn_execution_role(aws_client):
     role_name = f"role-{short_uid()}"
-    result = iam_client.create_role(
+    result = aws_client.iam.create_role(
         RoleName=role_name,
         AssumeRolePolicyDocument='{"Version": "2012-10-17", "Statement": {"Action": "sts:AssumeRole", "Effect": "Allow", "Principal": {"Service": "states.amazonaws.com"}}}',
     )

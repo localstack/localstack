@@ -1,0 +1,54 @@
+Parameters:
+  UserName:
+    Type: String
+    Default: "RandomUser"
+  RoleName:
+    Type: String
+    Default: "RandomRole"
+  PolicyName:
+    Type: String
+    Default: "RandomPolicy"
+Resources:
+  MyUser:
+    Type: "AWS::IAM::User"
+    Properties:
+      UserName: !Ref UserName
+  MyRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Ref RoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "ec2.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+  UserPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: !Ref PolicyName
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "s3:PutObject"
+            Resource: "*"
+      Users:
+        - Ref: MyUser
+  RolePolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: !Ref PolicyName
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "s3:ListBucket"
+            Resource: "*"
+      Roles:
+        - Ref: MyRole

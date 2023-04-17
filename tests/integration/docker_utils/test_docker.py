@@ -26,6 +26,7 @@ from localstack.utils.container_utils.container_client import (
     VolumeInfo,
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
+from localstack.utils.container_utils.docker_sdk_client import SdkDockerClient
 from localstack.utils.docker_utils import (
     container_ports_can_be_bound,
     is_container_port_reserved,
@@ -1328,6 +1329,16 @@ class TestDockerNetworking:
             docker_client.start_container(
                 container_name_or_id=container_2.container_id, attach=True
             )
+
+    def test_docker_sdk_timeout_seconds(self, monkeypatch):
+        # check that the timeout seconds are defined by the config variable
+        monkeypatch.setattr(config, "DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS", 1337)
+        sdk_client = SdkDockerClient()
+        assert sdk_client.docker_client.api.timeout == 1337
+        # check that the config variable is reloaded when the client is recreated
+        monkeypatch.setattr(config, "DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS", 987)
+        sdk_client = SdkDockerClient()
+        assert sdk_client.docker_client.api.timeout == 987
 
 
 class TestDockerPermissions:

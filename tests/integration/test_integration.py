@@ -52,7 +52,7 @@ def handler(event, *args):
 
 
 @pytest.fixture(scope="class")
-def scheduled_test_lambda(lambda_client, events_client):
+def scheduled_test_lambda(aws_client):
     # Note: create scheduled Lambda here - assertions will be run in test_scheduled_lambda() below..
 
     # create test Lambda
@@ -62,19 +62,19 @@ def scheduled_test_lambda(lambda_client, events_client):
     resp = testutil.create_lambda_function(
         handler_file=handler_file, func_name=scheduled_lambda_name
     )
-    lambda_client.get_waiter("function_active_v2").wait(FunctionName=scheduled_lambda_name)
+    aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=scheduled_lambda_name)
     func_arn = resp["CreateFunctionResponse"]["FunctionArn"]
 
     # create scheduled Lambda function
     rule_name = f"rule-{short_uid()}"
     target_id = f"target-{short_uid()}"
-    events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
-    events_client.put_targets(Rule=rule_name, Targets=[{"Id": target_id, "Arn": func_arn}])
+    aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
+    aws_client.events.put_targets(Rule=rule_name, Targets=[{"Id": target_id, "Arn": func_arn}])
 
     yield scheduled_lambda_name
 
-    events_client.remove_targets(Rule=rule_name, Ids=[target_id])
-    events_client.delete_rule(Name=rule_name)
+    aws_client.events.remove_targets(Rule=rule_name, Ids=[target_id])
+    aws_client.events.delete_rule(Name=rule_name)
     testutil.delete_lambda_function(scheduled_lambda_name)
 
 

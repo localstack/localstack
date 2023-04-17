@@ -401,8 +401,8 @@ def test_put_integration_validation(aws_client):
 
 
 @pytest.fixture
-def default_vpc(ec2_client):
-    vpcs = ec2_client.describe_vpcs()
+def default_vpc(aws_client):
+    vpcs = aws_client.ec2.describe_vpcs()
     for vpc in vpcs["Vpcs"]:
         if vpc.get("IsDefault"):
             return vpc
@@ -410,12 +410,12 @@ def default_vpc(ec2_client):
 
 
 @pytest.fixture
-def create_vpc_endpoint(ec2_client, default_vpc):
+def create_vpc_endpoint(default_vpc, aws_client):
     endpoints = []
 
     def _create(**kwargs):
         kwargs.setdefault("VpcId", default_vpc["VpcId"])
-        result = ec2_client.create_vpc_endpoint(**kwargs)
+        result = aws_client.ec2.create_vpc_endpoint(**kwargs)
         endpoints.append(result["VpcEndpoint"]["VpcEndpointId"])
         return result["VpcEndpoint"]
 
@@ -423,7 +423,7 @@ def create_vpc_endpoint(ec2_client, default_vpc):
 
     for endpoint in endpoints:
         with contextlib.suppress(Exception):
-            ec2_client.delete_vpc_endpoints(VpcEndpointIds=[endpoint])
+            aws_client.ec2.delete_vpc_endpoints(VpcEndpointIds=[endpoint])
 
 
 @pytest.mark.skip_snapshot_verify(
