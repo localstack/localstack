@@ -654,6 +654,11 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             # TODO: test how this behaves in a FIFO context with a lot of threads.
             self._publisher.publish_to_topic(publish_ctx, topic_or_target_arn)
 
+        if is_fifo:
+            return PublishResponse(
+                MessageId=message_ctx.message_id, SequenceNumber=message_ctx.sequencer_number
+            )
+
         return PublishResponse(MessageId=message_ctx.message_id)
 
     def subscribe(

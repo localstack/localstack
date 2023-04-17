@@ -1753,7 +1753,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[True]": {
-    "recorded-date": "12-08-2022, 13:43:57",
+    "recorded-date": "14-04-2023, 19:13:18",
     "recorded-content": {
       "topic-attrs": {
         "Attributes": {
@@ -1770,7 +1770,10 @@
                 "numMinDelayRetries": 0,
                 "backoffFunction": "linear"
               },
-              "disableSubscriptionOverrides": false
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
             }
           },
           "FifoTopic": "true",
@@ -1823,6 +1826,7 @@
           "Protocol": "sqs",
           "RawMessageDelivery": "true",
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+          "SubscriptionPrincipal": "<sub-principal>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
         },
         "ResponseMetadata": {
@@ -1832,10 +1836,6 @@
       },
       "publish-batch-response-fifo": {
         "Failed": [],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "Successful": [
           {
             "Id": "1",
@@ -1852,7 +1852,11 @@
             "MessageId": "<uuid:3>",
             "SequenceNumber": "<sequence-number:3>"
           }
-        ]
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       },
       "messages": {
         "Messages": [
@@ -1924,7 +1928,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[False]": {
-    "recorded-date": "12-08-2022, 13:43:59",
+    "recorded-date": "14-04-2023, 19:13:21",
     "recorded-content": {
       "topic-attrs": {
         "Attributes": {
@@ -1941,7 +1945,10 @@
                 "numMinDelayRetries": 0,
                 "backoffFunction": "linear"
               },
-              "disableSubscriptionOverrides": false
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
             }
           },
           "FifoTopic": "true",
@@ -1994,6 +2001,7 @@
           "Protocol": "sqs",
           "RawMessageDelivery": "true",
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+          "SubscriptionPrincipal": "<sub-principal>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
         },
         "ResponseMetadata": {
@@ -2003,10 +2011,6 @@
       },
       "publish-batch-response-fifo": {
         "Failed": [],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "Successful": [
           {
             "Id": "1",
@@ -2023,7 +2027,11 @@
             "MessageId": "<uuid:3>",
             "SequenceNumber": "<sequence-number:3>"
           }
-        ]
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       },
       "messages": {
         "Messages": [
@@ -2475,8 +2483,8 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_fifo_batch_messages_to_dlq[True]": {
-    "recorded-date": "09-12-2022, 17:27:21",
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_fifo_messages_to_dlq[True]": {
+    "recorded-date": "14-04-2023, 18:26:46",
     "recorded-content": {
       "topic-attrs": {
         "Attributes": {
@@ -2493,7 +2501,10 @@
                 "numMinDelayRetries": 0,
                 "backoffFunction": "linear"
               },
-              "disableSubscriptionOverrides": false
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
             }
           },
           "FifoTopic": "true",
@@ -2561,7 +2572,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "messages-in-dlq": {
+      "batch-messages-in-dlq": {
         "Messages": [
           {
             "Attributes": {
@@ -2627,11 +2638,38 @@
             "ReceiptHandle": "<receipt-handle:3>"
           }
         ]
+      },
+      "publish-response-fifo": {
+        "MessageId": "<uuid:7>",
+        "SequenceNumber": "<sequence-number:7>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-in-dlq": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "message-deduplication-id-1",
+              "MessageGroupId": "message-group-id-1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:8>"
+            },
+            "Body": "test-message",
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:8>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          }
+        ]
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_fifo_batch_messages_to_dlq[False]": {
-    "recorded-date": "09-12-2022, 17:27:24",
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_fifo_messages_to_dlq[False]": {
+    "recorded-date": "14-04-2023, 18:26:50",
     "recorded-content": {
       "topic-attrs": {
         "Attributes": {
@@ -2648,7 +2686,10 @@
                 "numMinDelayRetries": 0,
                 "backoffFunction": "linear"
               },
-              "disableSubscriptionOverrides": false
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
             }
           },
           "FifoTopic": "true",
@@ -2716,7 +2757,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "messages-in-dlq": {
+      "batch-messages-in-dlq": {
         "Messages": [
           {
             "Attributes": {
@@ -2805,6 +2846,41 @@
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:6>",
             "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ]
+      },
+      "publish-response-fifo": {
+        "MessageId": "<uuid:7>",
+        "SequenceNumber": "<sequence-number:7>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-in-dlq": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "message-deduplication-id-1",
+              "MessageGroupId": "message-group-id-1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:8>"
+            },
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:7>",
+              "SequenceNumber": "<sequence-number:7>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "test-message",
+              "Timestamp": "date",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:8>",
+            "ReceiptHandle": "<receipt-handle:4>"
           }
         ]
       }

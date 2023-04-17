@@ -1349,6 +1349,7 @@ class TestSNSProvider:
             "$.topic-attrs.Attributes.DeliveryPolicy",
             "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
             "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
+            "$.sub-attrs-raw-true.Attributes.SubscriptionPrincipal",
         ]
     )
     @pytest.mark.parametrize("content_based_deduplication", [True, False])
@@ -1482,7 +1483,7 @@ class TestSNSProvider:
         ]
     )
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
-    def test_publish_fifo_batch_messages_to_dlq(
+    def test_publish_fifo_messages_to_dlq(
         self,
         sns_create_topic,
         sqs_create_queue,
@@ -1597,7 +1598,7 @@ class TestSNSProvider:
         message_ids_received = set()
         messages = []
 
-        def get_messages_from_dlq():
+        def get_messages_from_dlq(amount_msg: int):
             # due to the random nature of receiving SQS messages, we need to consolidate a single object to match
             # MaxNumberOfMessages could return less than 3 messages
             sqs_response = aws_client.sqs.receive_message(
@@ -1620,9 +1621,20 @@ class TestSNSProvider:
                     QueueUrl=dlq_url, ReceiptHandle=message["ReceiptHandle"]
                 )
 
-            assert len(messages) == 3
+            assert len(messages) == amount_msg
 
-        retry(get_messages_from_dlq, retries=5, sleep=1)
+        retry(get_messages_from_dlq, retries=5, sleep=1, amount_msg=3)
+        snapshot.match("batch-messages-in-dlq", {"Messages": messages})
+        messages.clear()
+
+        publish_response = aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message="test-message",
+            MessageGroupId="message-group-id-1",
+            MessageDeduplicationId="message-deduplication-id-1",
+        )
+        snapshot.match("publish-response-fifo", publish_response)
+        retry(get_messages_from_dlq, retries=5, sleep=1, amount_msg=1)
         snapshot.match("messages-in-dlq", {"Messages": messages})
 
     @pytest.mark.aws_validated
