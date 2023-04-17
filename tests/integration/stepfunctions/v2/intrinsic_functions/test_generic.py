@@ -20,16 +20,10 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestGeneric:
-    def test_format_1(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
-    ):
+    def test_format_1(self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client):
         input_values = ["", " ", "HelloWorld", None, 1, 1.1, '{"Arg1": 1, "Arg2": []}']
         create_and_test_on_inputs(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -37,13 +31,7 @@ class TestGeneric:
             input_values,
         )
 
-    def test_format_2(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
-    ):
+    def test_format_2(self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client):
         values = [
             "",
             " ",
@@ -59,7 +47,7 @@ class TestGeneric:
             input_values.append({"fst": value, "snd": value})
 
         create_and_test_on_inputs(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,

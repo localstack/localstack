@@ -138,5 +138,83 @@
         }
       }
     }
+  },
+  "tests/integration/test_logs.py::TestCloudWatchLogs::test_create_and_delete_log_stream": {
+    "recorded-date": "06-04-2023, 11:42:42",
+    "recorded-content": {
+      "describe-log-groups-prefix": {
+        "logGroups": [
+          {
+            "arn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
+            "creationTime": "timestamp",
+            "logGroupName": "<log-group-name:1>",
+            "metricFilterCount": 0,
+            "storedBytes": 0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-log-groups-pattern": {
+        "logGroups": [
+          {
+            "arn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
+            "creationTime": "timestamp",
+            "logGroupName": "<log-group-name:1>"
+          }
+        ],
+        "nextToken": "<next_token>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error-describe-logs-group": {
+        "Error": {
+          "Code": "InvalidParameterException",
+          "Message": "LogGroup name prefix and LogGroup name pattern are mutually exclusive parameters."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "logs_log_group": [
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "creationTime": "timestamp",
+          "arn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name:1>:log-stream:<log-stream-name:1>",
+          "storedBytes": 0
+        }
+      ],
+      "error-describe-logs-streams": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "LogGroup name and LogGroup ARN are mutually exclusive parameters."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "log_group_identifier": [
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "creationTime": "timestamp",
+          "arn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name:1>:log-stream:<log-stream-name:1>",
+          "storedBytes": 0
+        }
+      ],
+      "log_group_identifier-arn": [
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "creationTime": "timestamp",
+          "arn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name:1>:log-stream:<log-stream-name:1>",
+          "storedBytes": 0
+        }
+      ]
+    }
   }
 }

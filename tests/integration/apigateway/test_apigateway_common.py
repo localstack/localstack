@@ -27,13 +27,7 @@ class TestApiGatewayCommon:
         ]
     )
     def test_api_gateway_request_validator(
-        self,
-        apigateway_client,
-        create_lambda_function,
-        create_rest_apigw,
-        apigw_redeploy_api,
-        lambda_client,
-        snapshot,
+        self, create_lambda_function, create_rest_apigw, apigw_redeploy_api, snapshot, aws_client
     ):
         # TODO: create fixture which will provide basic integrations where we can test behaviour
         # see once we have more cases how we can regroup functionality into one or several fixtures
@@ -54,7 +48,7 @@ class TestApiGatewayCommon:
             handler_file=TEST_LAMBDA_AWS_PROXY,
             runtime=LAMBDA_RUNTIME_PYTHON39,
         )
-        lambda_arn = lambda_client.get_function(FunctionName=fn_name)["Configuration"][
+        lambda_arn = aws_client.awslambda.get_function(FunctionName=fn_name)["Configuration"][
             "FunctionArn"
         ]
         # matching on lambda id for reference replacement in snapshots
@@ -66,15 +60,15 @@ class TestApiGatewayCommon:
 
         api_id, _, root = create_rest_apigw(name="aws lambda api")
 
-        resource_1 = apigateway_client.create_resource(
+        resource_1 = aws_client.apigateway.create_resource(
             restApiId=api_id, parentId=root, pathPart="test"
         )["id"]
 
-        resource_id = apigateway_client.create_resource(
+        resource_id = aws_client.apigateway.create_resource(
             restApiId=api_id, parentId=resource_1, pathPart="{test}"
         )["id"]
 
-        validator_id = apigateway_client.create_request_validator(
+        validator_id = aws_client.apigateway.create_request_validator(
             restApiId=api_id,
             name="test-validator",
             validateRequestParameters=True,
@@ -82,7 +76,7 @@ class TestApiGatewayCommon:
         )["id"]
 
         for http_method in ("GET", "POST"):
-            apigateway_client.put_method(
+            aws_client.apigateway.put_method(
                 restApiId=api_id,
                 resourceId=resource_id,
                 httpMethod=http_method,
@@ -91,7 +85,7 @@ class TestApiGatewayCommon:
                 requestParameters={"method.request.path.test": True},
             )
 
-            apigateway_client.put_integration(
+            aws_client.apigateway.put_integration(
                 restApiId=api_id,
                 resourceId=resource_id,
                 httpMethod=http_method,
@@ -100,13 +94,13 @@ class TestApiGatewayCommon:
                 uri=f"arn:aws:apigateway:{region}:lambda:path//2015-03-31/functions/"
                 f"{lambda_arn}/invocations",
             )
-            apigateway_client.put_method_response(
+            aws_client.apigateway.put_method_response(
                 restApiId=api_id,
                 resourceId=resource_id,
                 httpMethod=http_method,
                 statusCode="200",
             )
-            apigateway_client.put_integration_response(
+            aws_client.apigateway.put_integration_response(
                 restApiId=api_id,
                 resourceId=resource_id,
                 httpMethod=http_method,
@@ -114,12 +108,12 @@ class TestApiGatewayCommon:
             )
 
         stage_name = "local"
-        deploy_1 = apigateway_client.create_deployment(restApiId=api_id, stageName=stage_name)
+        deploy_1 = aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
         snapshot.match("deploy-1", deploy_1)
 
         source_arn = f"arn:aws:execute-api:{region}:{account_id}:{api_id}/*/*/test/*"
 
-        lambda_client.add_permission(
+        aws_client.awslambda.add_permission(
             FunctionName=lambda_arn,
             StatementId=str(short_uid()),
             Action="lambda:InvokeFunction",
@@ -136,7 +130,7 @@ class TestApiGatewayCommon:
         response_get = requests.get(url)
         assert response_get.ok
 
-        response = apigateway_client.update_method(
+        response = aws_client.apigateway.update_method(
             restApiId=api_id,
             resourceId=resource_id,
             httpMethod="POST",
@@ -164,7 +158,7 @@ class TestApiGatewayCommon:
             snapshot.match("missing-required-request-params", response.json())
 
         # create Model schema to validate body
-        apigateway_client.create_model(
+        aws_client.apigateway.create_model(
             restApiId=api_id,
             name="testSchema",
             contentType="application/json",
@@ -182,7 +176,7 @@ class TestApiGatewayCommon:
         )
         # then attach the schema to the methods
         for http_method in ("GET", "POST"):
-            response = apigateway_client.update_method(
+            response = aws_client.apigateway.update_method(
                 restApiId=api_id,
                 resourceId=resource_id,
                 httpMethod=http_method,
@@ -197,7 +191,7 @@ class TestApiGatewayCommon:
             snapshot.match(f"add-schema-{http_method}", response)
 
         # revert the path validation for POST method
-        response = apigateway_client.update_method(
+        response = aws_client.apigateway.update_method(
             restApiId=api_id,
             resourceId=resource_id,
             httpMethod="POST",
@@ -233,7 +227,7 @@ class TestApiGatewayCommon:
 
         # remove the validator from the methods
         for http_method in ("GET", "POST"):
-            response = apigateway_client.update_method(
+            response = aws_client.apigateway.update_method(
                 restApiId=api_id,
                 resourceId=resource_id,
                 httpMethod=http_method,

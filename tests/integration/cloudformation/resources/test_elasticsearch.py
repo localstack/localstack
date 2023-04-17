@@ -39,13 +39,13 @@ Outputs:
 
 
 @pytest.mark.skip_offline
-def test_cfn_handle_elasticsearch_domain(es_client, deploy_cfn_template):
+def test_cfn_handle_elasticsearch_domain(deploy_cfn_template, aws_client):
     domain_name = f"es-{short_uid()}"
 
     stack = deploy_cfn_template(template=TEST_TEMPLATE_10, parameters={"DomainName": domain_name})
     assert len(stack.outputs) == 4
 
-    rs = es_client.describe_elasticsearch_domain(DomainName=domain_name)
+    rs = aws_client.es.describe_elasticsearch_domain(DomainName=domain_name)
     status = rs["DomainStatus"]
     assert status["DomainName"] == domain_name
     assert stack.outputs["MyElasticsearchArn"] == status["ARN"]
@@ -53,5 +53,5 @@ def test_cfn_handle_elasticsearch_domain(es_client, deploy_cfn_template):
     assert stack.outputs["MyElasticsearchDomainEndpoint"] == status["Endpoint"]
     assert stack.outputs["MyElasticsearchRef"] == status["DomainName"]
 
-    tags = es_client.list_tags(ARN=status["ARN"])["TagList"]
+    tags = aws_client.es.list_tags(ARN=status["ARN"])["TagList"]
     assert tags == [{"Key": "k1", "Value": "v1"}, {"Key": "k2", "Value": "v2"}]

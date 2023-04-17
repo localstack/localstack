@@ -21,11 +21,7 @@ pytestmark = pytest.mark.skipif(
 )
 class TestJsonManipulation:
     def test_string_to_json(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
+        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
     ):
         input_values = [
             "",
@@ -40,7 +36,7 @@ class TestJsonManipulation:
             '{"Arg1": 1, "Arg2": []}',
         ]
         create_and_test_on_inputs(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -49,11 +45,7 @@ class TestJsonManipulation:
         )
 
     def test_json_to_string(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
+        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
     ):
         input_values = [
             "null",
@@ -67,7 +59,7 @@ class TestJsonManipulation:
         ]
         input_values_jsons = list(map(json.loads, input_values))
         create_and_test_on_inputs(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -75,13 +67,7 @@ class TestJsonManipulation:
             input_values_jsons,
         )
 
-    def test_json_merge(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
-    ):
+    def test_json_merge(self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client):
         merge_bindings = [
             ({"a": {"a1": 1, "a2": 2}, "b": 2, "d": 3}, {"a": {"a3": 1, "a4": 2}, "c": 3, "d": 4}),
         ]
@@ -89,7 +75,7 @@ class TestJsonManipulation:
         for fst, snd in merge_bindings:
             input_values.append({"fst": fst, "snd": snd})
         create_and_test_on_inputs(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,

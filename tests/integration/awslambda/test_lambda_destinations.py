@@ -23,13 +23,12 @@ class TestLambdaDLQ:
     @pytest.mark.aws_validated
     def test_dead_letter_queue(
         self,
-        lambda_client,
         create_lambda_function,
-        sqs_client,
         sqs_create_queue,
         sqs_queue_arn,
         lambda_su_role,
         snapshot,
+        aws_client,
     ):
         """Creates a lambda with a defined dead letter queue, and check failed lambda invocation leads to a message"""
         # create DLQ and Lambda function
@@ -56,7 +55,7 @@ class TestLambdaDLQ:
 
         # invoke Lambda, triggering an error
         payload = {lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1}
-        lambda_client.invoke(
+        aws_client.awslambda.invoke(
             FunctionName=lambda_name,
             Payload=json.dumps(payload),
             InvocationType="Event",
@@ -64,7 +63,9 @@ class TestLambdaDLQ:
 
         # assert that message has been received on the DLQ
         def receive_dlq():
-            result = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=["All"])
+            result = aws_client.sqs.receive_message(
+                QueueUrl=queue_url, MessageAttributeNames=["All"]
+            )
             assert len(result["Messages"]) > 0
             return result
 
@@ -73,11 +74,11 @@ class TestLambdaDLQ:
         snapshot.match("receive_result", receive_result)
 
         # update DLQ config
-        update_function_config_response = lambda_client.update_function_configuration(
+        update_function_config_response = aws_client.awslambda.update_function_configuration(
             FunctionName=lambda_name, DeadLetterConfig={}
         )
         snapshot.match("delete_dlq", update_function_config_response)
-        invoke_result = lambda_client.invoke(
+        invoke_result = aws_client.awslambda.invoke(
             FunctionName=lambda_name, Payload=json.dumps(payload), LogType="Tail"
         )
         snapshot.match("invoke_result", invoke_result)
@@ -115,13 +116,12 @@ class TestLambdaDestinationSqs:
     def test_assess_lambda_destination_invocation(
         self,
         payload,
-        lambda_client,
-        sqs_client,
         create_lambda_function,
         sqs_create_queue,
         sqs_queue_arn,
         lambda_su_role,
         snapshot,
+        aws_client,
     ):
         """Testing the destination config API and operation (for the OnSuccess case)"""
         snapshot.add_transformer(snapshot.transform.lambda_api())
@@ -140,7 +140,7 @@ class TestLambdaDestinationSqs:
             role=lambda_su_role,
         )
 
-        put_event_invoke_config_response = lambda_client.put_function_event_invoke_config(
+        put_event_invoke_config_response = aws_client.awslambda.put_function_event_invoke_config(
             FunctionName=lambda_name,
             MaximumRetryAttempts=0,
             DestinationConfig={
@@ -150,14 +150,14 @@ class TestLambdaDestinationSqs:
         )
         snapshot.match("put_function_event_invoke_config", put_event_invoke_config_response)
 
-        lambda_client.invoke(
+        aws_client.awslambda.invoke(
             FunctionName=lambda_name,
             Payload=json.dumps(payload),
             InvocationType="Event",
         )
 
         def receive_message():
-            rs = sqs_client.receive_message(
+            rs = aws_client.sqs.receive_message(
                 QueueUrl=queue_url, WaitTimeSeconds=2, MessageAttributeNames=["All"]
             )
             assert len(rs["Messages"]) > 0
@@ -171,14 +171,13 @@ class TestLambdaDestinationSqs:
     )
     def test_lambda_destination_default_retries(
         self,
-        lambda_client,
-        sqs_client,
         create_lambda_function,
         sqs_create_queue,
         sqs_queue_arn,
         lambda_su_role,
         snapshot,
         monkeypatch,
+        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.lambda_api())
         snapshot.add_transformer(snapshot.transform.sqs_api())
@@ -199,7 +198,7 @@ class TestLambdaDestinationSqs:
             role=lambda_su_role,
         )
 
-        put_event_invoke_config_response = lambda_client.put_function_event_invoke_config(
+        put_event_invoke_config_response = aws_client.awslambda.put_function_event_invoke_config(
             FunctionName=lambda_name,
             DestinationConfig={
                 "OnSuccess": {"Destination": queue_arn},
@@ -208,14 +207,14 @@ class TestLambdaDestinationSqs:
         )
         snapshot.match("put_function_event_invoke_config", put_event_invoke_config_response)
 
-        lambda_client.invoke(
+        aws_client.awslambda.invoke(
             FunctionName=lambda_name,
             Payload=json.dumps({lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1}),
             InvocationType="Event",
         )
 
         def receive_message():
-            rs = sqs_client.receive_message(
+            rs = aws_client.sqs.receive_message(
                 QueueUrl=queue_url, WaitTimeSeconds=2, MessageAttributeNames=["All"]
             )
             assert len(rs["Messages"]) > 0
@@ -230,15 +229,13 @@ class TestLambdaDestinationSqs:
     @pytest.mark.aws_validated
     def test_retries(
         self,
-        lambda_client,
         snapshot,
         create_lambda_function,
         sqs_create_queue,
         sqs_queue_arn,
         lambda_su_role,
-        logs_client,
-        sqs_client,
         monkeypatch,
+        aws_client,
     ):
         """
         behavior test, we don't really care about any API surface here right now
@@ -274,14 +271,14 @@ class TestLambdaDestinationSqs:
             runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
-        lambda_client.put_function_event_invoke_config(
+        aws_client.awslambda.put_function_event_invoke_config(
             FunctionName=fn_name,
             MaximumRetryAttempts=2,
             DestinationConfig={"OnFailure": {"Destination": queue_arn}},
         )
-        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=fn_name)
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=fn_name)
 
-        invoke_result = lambda_client.invoke(
+        invoke_result = aws_client.awslambda.invoke(
             FunctionName=fn_name,
             Payload=to_bytes(json.dumps({"message": message_id})),
             InvocationType="Event",  # important, otherwise destinations won't be triggered
@@ -290,7 +287,7 @@ class TestLambdaDestinationSqs:
 
         def get_filtered_event_count() -> int:
             filter_result = retry(
-                logs_client.filter_log_events, sleep=2.0, logGroupName=f"/aws/lambda/{fn_name}"
+                aws_client.logs.filter_log_events, sleep=2.0, logGroupName=f"/aws/lambda/{fn_name}"
             )
             filtered_log_events = [e for e in filter_result["events"] if message_id in e["message"]]
             return len(filtered_log_events)
@@ -306,7 +303,7 @@ class TestLambdaDestinationSqs:
 
         # 1. event should be in queue
         def msg_in_queue():
-            msgs = sqs_client.receive_message(
+            msgs = aws_client.sqs.receive_message(
                 QueueUrl=queue_url, AttributeNames=["All"], VisibilityTimeout=0
             )
             return len(msgs["Messages"]) == 1
@@ -314,21 +311,23 @@ class TestLambdaDestinationSqs:
         assert wait_until(msg_in_queue)
 
         # We didn't delete the message so it should be available again after waiting shortly (2x visibility timeout to be sure)
-        msgs = sqs_client.receive_message(
+        msgs = aws_client.sqs.receive_message(
             QueueUrl=queue_url, AttributeNames=["All"], VisibilityTimeout=1
         )
         snapshot.match("queue_destination_payload", msgs)
 
         # 2. there should be only one event stream (re-use of environment)
         #    technically not guaranteed but should be nearly 100%
-        log_streams = logs_client.describe_log_streams(logGroupName=f"/aws/lambda/{fn_name}")
+        log_streams = aws_client.logs.describe_log_streams(logGroupName=f"/aws/lambda/{fn_name}")
         assert len(log_streams["logStreams"]) == 1
 
         # 3. the lambda should have been called 3 times (correlation via custom message id)
         assert get_filtered_event_count() == 3
 
         # verify the event ID is the same in all calls
-        log_events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")["events"]
+        log_events = aws_client.logs.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
+            "events"
+        ]
 
         # only get messages with the printed event
         request_ids = [
@@ -345,15 +344,13 @@ class TestLambdaDestinationSqs:
     @pytest.mark.aws_validated
     def test_maxeventage(
         self,
-        lambda_client,
         snapshot,
         create_lambda_function,
         sqs_create_queue,
         sqs_queue_arn,
         lambda_su_role,
-        logs_client,
-        sqs_client,
         monkeypatch,
+        aws_client,
     ):
         """
         Behavior test for MaximumRetryAttempts in EventInvokeConfig
@@ -382,15 +379,15 @@ class TestLambdaDestinationSqs:
             func_name=fn_name,
             role=lambda_su_role,
         )
-        lambda_client.put_function_event_invoke_config(
+        aws_client.awslambda.put_function_event_invoke_config(
             FunctionName=fn_name,
             MaximumRetryAttempts=2,
             MaximumEventAgeInSeconds=60,
             DestinationConfig={"OnFailure": {"Destination": queue_arn}},
         )
-        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=fn_name)
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=fn_name)
 
-        lambda_client.invoke(
+        aws_client.awslambda.invoke(
             FunctionName=fn_name,
             Payload=to_bytes(json.dumps({"message": message_id})),
             InvocationType="Event",  # important, otherwise destinations won't be triggered
@@ -400,9 +397,9 @@ class TestLambdaDestinationSqs:
         def log_group_exists():
             return (
                 len(
-                    logs_client.describe_log_groups(logGroupNamePrefix=f"/aws/lambda/{fn_name}")[
-                        "logGroups"
-                    ]
+                    aws_client.logs.describe_log_groups(
+                        logGroupNamePrefix=f"/aws/lambda/{fn_name}"
+                    )["logGroups"]
                 )
                 == 1
             )
@@ -411,7 +408,7 @@ class TestLambdaDestinationSqs:
 
         def get_filtered_event_count() -> int:
             filter_result = retry(
-                logs_client.filter_log_events, sleep=2.0, logGroupName=f"/aws/lambda/{fn_name}"
+                aws_client.logs.filter_log_events, sleep=2.0, logGroupName=f"/aws/lambda/{fn_name}"
             )
             filtered_log_events = [e for e in filter_result["events"] if message_id in e["message"]]
             return len(filtered_log_events)
@@ -420,7 +417,7 @@ class TestLambdaDestinationSqs:
         # invocation + 60s (1st delay) > 60s (configured max)
 
         def get_msg_from_q():
-            msgs = sqs_client.receive_message(
+            msgs = aws_client.sqs.receive_message(
                 QueueUrl=queue_url,
                 AttributeNames=["All"],
                 VisibilityTimeout=3,
@@ -428,7 +425,7 @@ class TestLambdaDestinationSqs:
                 WaitTimeSeconds=5,
             )
             assert len(msgs["Messages"]) == 1
-            sqs_client.delete_message(
+            aws_client.sqs.delete_message(
                 QueueUrl=queue_url, ReceiptHandle=msgs["Messages"][0]["ReceiptHandle"]
             )
             return msgs["Messages"][0]
@@ -443,16 +440,16 @@ class TestLambdaDestinationSqs:
 
         # now we increase the max event age to give it a bit of a buffer for the actual lambda execution (60s + 30s buffer = 90s)
         # one retry should now be attempted since there's enough time left
-        lambda_client.update_function_event_invoke_config(
+        aws_client.awslambda.update_function_event_invoke_config(
             FunctionName=fn_name, MaximumEventAgeInSeconds=90, MaximumRetryAttempts=2
         )
-        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=fn_name)
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=fn_name)
 
         # deleting the log group, so we have a 'fresh' counter
         # without it, the assertion later would need to accommodate for previous invocations
-        logs_client.delete_log_group(logGroupName=f"/aws/lambda/{fn_name}")
+        aws_client.logs.delete_log_group(logGroupName=f"/aws/lambda/{fn_name}")
 
-        lambda_client.invoke(
+        aws_client.awslambda.invoke(
             FunctionName=fn_name,
             Payload=to_bytes(json.dumps({"message": message_id})),
             InvocationType="Event",  # important, otherwise destinations won't be triggered

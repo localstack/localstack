@@ -19,15 +19,11 @@ pytestmark = pytest.mark.skipif(
 )
 class TestEncodeDecode:
     def test_base_64_encode(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
+        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
     ):
         input_values = ["", "Data to encode"]
         create_and_test_on_inputs(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -36,15 +32,11 @@ class TestEncodeDecode:
         )
 
     def test_base_64_decode(
-        self,
-        stepfunctions_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        snapshot,
+        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
     ):
         input_values = ["", "RGF0YSB0byBlbmNvZGU="]
         create_and_test_on_inputs(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,

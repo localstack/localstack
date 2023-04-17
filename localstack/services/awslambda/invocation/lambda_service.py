@@ -22,6 +22,7 @@ from localstack.aws.api.lambda_ import (
     ResourceNotFoundException,
     State,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.awslambda import api_utils
 from localstack.services.awslambda.api_utils import (
     lambda_arn,
@@ -45,7 +46,6 @@ from localstack.services.awslambda.invocation.models import lambda_stores
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
 from localstack.services.awslambda.lambda_utils import HINT_LOG
 from localstack.utils.archives import get_unzipped_size, is_zip_file
-from localstack.utils.aws import aws_stack
 from localstack.utils.container_utils.container_client import ContainerException
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 from localstack.utils.strings import to_str
@@ -536,7 +536,7 @@ def store_lambda_archive(
             Type="User",
         )
     # store all buckets in us-east-1 for now
-    s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
+    s3_client: "S3Client" = connect_to(region_name="us-east-1").s3
     bucket_name = f"awslambda-{region_name}-tasks"
     # s3 create bucket is idempotent
     s3_client.create_bucket(Bucket=bucket_name)
@@ -584,7 +584,7 @@ def store_s3_bucket_archive(
     """
     if archive_bucket == config.BUCKET_MARKER_LOCAL:
         return create_hot_reloading_code(path=archive_key)
-    s3_client: "S3Client" = aws_stack.connect_to_service("s3")
+    s3_client: "S3Client" = connect_to().s3
     kwargs = {"VersionId": archive_version} if archive_version else {}
     archive_file = s3_client.get_object(Bucket=archive_bucket, Key=archive_key, **kwargs)[
         "Body"

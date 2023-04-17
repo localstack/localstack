@@ -35,7 +35,7 @@ class TestExceptionHandlers:
         }
 
     def test_router_handler_patch_http_errors(self, cleanups):
-        # this one works because PATCH operations are not detected by the service name parser as s3 requestss
+        # this one works because PATCH operations are not detected by the service name parser as s3 requests
         def _raise_error(_request):
             raise Forbidden()
 

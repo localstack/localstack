@@ -42,7 +42,9 @@ class SdkDockerClient(ContainerClient):
 
     def __init__(self):
         try:
-            self.docker_client = docker.from_env()
+            from localstack.config import DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS
+
+            self.docker_client = docker.from_env(timeout=DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS)
             logging.getLogger("urllib3").setLevel(logging.INFO)
         except DockerException:
             self.docker_client = None

@@ -344,7 +344,8 @@ def determine_aws_service_name(request: Request, services: ServiceCatalog = None
     if host:
         # iterate over the service spec's endpoint prefix
         for prefix, services_per_prefix in services.endpoint_prefix_index.items():
-            if host.startswith(prefix):
+            # this prevents a virtual host addressed bucket to be wrongly recognized
+            if host.startswith(f"{prefix}.") and ".s3." not in host:
                 if len(services_per_prefix) == 1:
                     return services_per_prefix[0]
                 candidates.update(services_per_prefix)

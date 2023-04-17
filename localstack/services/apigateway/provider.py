@@ -129,6 +129,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
         if request.get("description") == "":
             raise BadRequestException("Description cannot be an empty string")
+
+        minimum_compression_size = request.get("minimumCompressionSize")
+        if minimum_compression_size is not None and (
+            minimum_compression_size < 0 or minimum_compression_size > 10485760
+        ):
+            raise BadRequestException(
+                "Invalid minimum compression size, must be between 0 and 10485760"
+            )
+
         result = call_moto(context)
         rest_api = get_moto_rest_api(context, rest_api_id=result["id"])
         rest_api.version = request.get("version")
@@ -158,6 +167,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         fixed_patch_ops = []
         binary_media_types_path = "/binaryMediaTypes"
+        # TODO: validate a bit more patch operations
         for patch_op in patch_operations:
             patch_op_path = patch_op.get("path", "")
             # binaryMediaTypes has a specific way of being set
@@ -186,13 +196,31 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     )
                     patch_op["op"] = "add"
 
+            elif patch_op_path == "/minimumCompressionSize":
+                if patch_op["op"] != "replace":
+                    raise BadRequestException(
+                        "Invalid patch operation specified. Must be 'add'|'remove'|'replace'"
+                    )
+
+                try:
+                    # try to cast the value to integer if truthy, else reject
+                    value = int(val) if (val := patch_op.get("value")) else None
+                except ValueError:
+                    raise BadRequestException(
+                        "Invalid minimum compression size, must be between 0 and 10485760"
+                    )
+
+                if value is not None and (value < 0 or value > 10485760):
+                    raise BadRequestException(
+                        "Invalid minimum compression size, must be between 0 and 10485760"
+                    )
+                patch_op["value"] = value
+
             fixed_patch_ops.append(patch_op)
 
         _patch_api_gateway_entity(rest_api, fixed_patch_ops)
 
         # fix data types after patches have been applied
-        if rest_api.minimum_compression_size:
-            rest_api.minimum_compression_size = int(rest_api.minimum_compression_size or -1)
         endpoint_configs = rest_api.endpoint_configuration or {}
         if isinstance(endpoint_configs.get("vpcEndpointIds"), str):
             endpoint_configs["vpcEndpointIds"] = [endpoint_configs["vpcEndpointIds"]]
@@ -1449,6 +1477,9 @@ def get_moto_rest_api(context: RequestContext, rest_api_id: str) -> MotoRestAPI:
 def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True) -> RestApi:
     if not rest_api.get("binaryMediaTypes"):
         rest_api.pop("binaryMediaTypes", None)
+
+    if not isinstance(rest_api.get("minimumCompressionSize"), int):
+        rest_api.pop("minimumCompressionSize", None)
 
     if not rest_api.get("tags"):
         if remove_tags:
