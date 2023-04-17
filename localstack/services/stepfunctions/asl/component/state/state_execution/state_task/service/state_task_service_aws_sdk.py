@@ -1,5 +1,3 @@
-import json
-
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.stepfunctions import (

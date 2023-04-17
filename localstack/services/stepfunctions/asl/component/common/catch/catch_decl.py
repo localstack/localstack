@@ -8,7 +8,6 @@ from localstack.services.stepfunctions.asl.component.common.catch.catcher_decl i
 from localstack.services.stepfunctions.asl.component.common.catch.catcher_outcome import (
     CatcherOutcome,
     CatcherOutcomeCaught,
-    CatcherOutcomeNotCaught,
 )
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
