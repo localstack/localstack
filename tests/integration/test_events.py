@@ -73,10 +73,10 @@ EVENT_BUS_ROLE = {
 
 
 @pytest.fixture
-def events_allow_event_rule_to_sqs_queue(sqs_client):
+def events_allow_event_rule_to_sqs_queue(aws_client):
     def _allow_event_rule(sqs_queue_url, sqs_queue_arn, event_rule_arn) -> None:
         # allow event rule to write to sqs queue
-        sqs_client.set_queue_attributes(
+        aws_client.sqs.set_queue_attributes(
             QueueUrl=sqs_queue_url,
             Attributes={
                 "Policy": json.dumps(
@@ -100,44 +100,46 @@ def events_allow_event_rule_to_sqs_queue(sqs_client):
 
 
 @pytest.fixture
-def events_put_rule(events_client):
+def events_put_rule(aws_client):
     rules = []
 
     def _factory(**kwargs):
         if "Name" not in kwargs:
             kwargs["Name"] = f"rule-{short_uid()}"
 
-        resp = events_client.put_rule(**kwargs)
+        resp = aws_client.events.put_rule(**kwargs)
         rules.append((kwargs["Name"], kwargs.get("EventBusName", "default")))
         return resp
 
     yield _factory
 
     for rule, event_bus_name in rules:
-        targets_response = events_client.list_targets_by_rule(
+        targets_response = aws_client.events.list_targets_by_rule(
             Rule=rule, EventBusName=event_bus_name
         )
         if targets := targets_response["Targets"]:
             targets_ids = [target["Id"] for target in targets]
-            events_client.remove_targets(Rule=rule, EventBusName=event_bus_name, Ids=targets_ids)
-        events_client.delete_rule(Name=rule, EventBusName=event_bus_name)
+            aws_client.events.remove_targets(
+                Rule=rule, EventBusName=event_bus_name, Ids=targets_ids
+            )
+        aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
 
 
 @pytest.fixture
-def events_create_event_bus(events_client):
+def events_create_event_bus(aws_client):
     event_buses = []
 
     def _factory(**kwargs):
         if "Name" not in kwargs:
             kwargs["Name"] = f"event-bus-{short_uid()}"
-        resp = events_client.create_event_bus(**kwargs)
+        resp = aws_client.events.create_event_bus(**kwargs)
         event_buses.append(kwargs["Name"])
         return resp
 
     yield _factory
 
     for event_bus in event_buses:
-        events_client.delete_event_bus(Name=event_bus)
+        aws_client.events.delete_event_bus(Name=event_bus)
 
 
 class TestEvents:

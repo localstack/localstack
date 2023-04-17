@@ -84,6 +84,8 @@ class DynamodbServer(Server):
         """Stop the DynamoDB server."""
         import psutil
 
+        if self._thread is None:
+            return
         self._thread.auto_restart = False
         self.shutdown()
         self.join(timeout=10)

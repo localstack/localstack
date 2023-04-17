@@ -10,13 +10,7 @@ from localstack.utils.sync import retry
 
 @pytest.fixture
 def basic_event_bridge_rule_to_sqs_queue(
-    s3_client,
-    s3_create_bucket,
-    events_create_rule,
-    sqs_create_queue,
-    sqs_queue_arn,
-    sqs_client,
-    events_client,
+    s3_create_bucket, events_create_rule, sqs_create_queue, sqs_queue_arn, aws_client
 ):
     bus_name = "default"
     queue_name = f"test-queue-{short_uid()}"
@@ -25,7 +19,7 @@ def basic_event_bridge_rule_to_sqs_queue(
     target_id = f"test-target-{short_uid()}"
 
     s3_create_bucket(Bucket=bucket_name)
-    s3_client.put_bucket_notification_configuration(
+    aws_client.s3.put_bucket_notification_configuration(
         Bucket=bucket_name, NotificationConfiguration={"EventBridgeConfiguration": {}}
     )
 
@@ -61,11 +55,11 @@ def basic_event_bridge_rule_to_sqs_queue(
             }
         ]
     }
-    sqs_client.set_queue_attributes(
+    aws_client.sqs.set_queue_attributes(
         QueueUrl=queue_url,
         Attributes={"Policy": json.dumps(queue_policy), "ReceiveMessageWaitTimeSeconds": "5"},
     )
-    events_client.put_targets(Rule=rule_name, Targets=[{"Id": target_id, "Arn": queue_arn}])
+    aws_client.events.put_targets(Rule=rule_name, Targets=[{"Id": target_id, "Arn": queue_arn}])
 
     return bucket_name, queue_url
 

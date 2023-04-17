@@ -577,10 +577,10 @@ class TestLambdaFunction:
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
 class TestLambdaImages:
     @pytest.fixture(scope="class")
-    def login_docker_client(self, ecr_client):
+    def login_docker_client(self, aws_client):
         if not is_aws_cloud():
             return
-        auth_data = ecr_client.get_authorization_token()
+        auth_data = aws_client.ecr.get_authorization_token()
         # if check is necessary since registry login data is not available at LS before min. 1 repository is created
         if auth_data["authorizationData"]:
             auth_data = auth_data["authorizationData"][0]
@@ -1583,7 +1583,7 @@ class TestLambdaRevisions:
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
 class TestLambdaTag:
     @pytest.fixture(scope="function")
-    def fn_arn(self, create_lambda_function, lambda_client):
+    def fn_arn(self, create_lambda_function, aws_client):
         """simple reusable setup to test tagging operations against"""
         function_name = f"fn-{short_uid()}"
         create_lambda_function(
@@ -1592,7 +1592,9 @@ class TestLambdaTag:
             runtime=Runtime.python3_9,
         )
 
-        yield lambda_client.get_function(FunctionName=function_name)["Configuration"]["FunctionArn"]
+        yield aws_client.awslambda.get_function(FunctionName=function_name)["Configuration"][
+            "FunctionArn"
+        ]
 
     @pytest.mark.aws_validated
     def test_create_tag_on_fn_create(self, create_lambda_function, snapshot, aws_client):

@@ -11,7 +11,10 @@ LOG = logging.getLogger(__name__)
 
 
 @pytest.fixture
-def create_iam_role_for_sfn(cleanups, iam_client, create_state_machine, stepfunctions_client):
+def create_iam_role_for_sfn(aws_client, cleanups, create_state_machine):
+    iam_client = aws_client.iam
+    stepfunctions_client = aws_client.stepfunctions
+
     def _create():
         role_name = f"test-sfn-role-{short_uid()}"
         policy_name = f"test-sfn-policy-{short_uid()}"
@@ -101,11 +104,11 @@ def create_iam_role_for_sfn(cleanups, iam_client, create_state_machine, stepfunc
 
 
 @pytest.fixture
-def create_state_machine(stepfunctions_client):
+def create_state_machine(aws_client):
     _state_machine_arns: Final[list[str]] = list()
 
     def _create_state_machine(**kwargs):
-        create_output = stepfunctions_client.create_state_machine(**kwargs)
+        create_output = aws_client.stepfunctions.create_state_machine(**kwargs)
         create_output_arn = create_output["stateMachineArn"]
         _state_machine_arns.append(create_output_arn)
         return create_output
@@ -114,6 +117,6 @@ def create_state_machine(stepfunctions_client):
 
     for state_machine_arn in _state_machine_arns:
         try:
-            stepfunctions_client.delete_state_machine(stateMachineArn=state_machine_arn)
+            aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
         except Exception:
             LOG.debug(f"Unable to delete state machine '{state_machine_arn}' during cleanup.")

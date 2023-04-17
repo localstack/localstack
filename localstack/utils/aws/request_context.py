@@ -17,6 +17,7 @@ from localstack.utils.aws.aws_responses import (
     requests_response,
     requests_to_flask_response,
 )
+from localstack.utils.coverage_docs import get_coverage_link_for_service
 from localstack.utils.patch import patch
 from localstack.utils.strings import snake_to_camel_case
 from localstack.utils.threads import FuncThread
@@ -181,10 +182,8 @@ def patch_moto_request_handling():
                 if match:
                     action = snake_to_camel_case(match.group(1))
             service = extract_service_name_from_auth_header(request.headers)
-            msg = (
-                f"API action '{action}' for service '{service}' not yet implemented or pro feature"
-                f" - check https://docs.localstack.cloud/user-guide/aws/feature-coverage for further information"
-            )
+            exception_message: str | None = e.args[0] if e.args else None
+            msg = exception_message or get_coverage_link_for_service(service, action)
             response = requests_error_response(request.headers, msg, code=501)
             if config.MOCK_UNIMPLEMENTED:
                 is_json = is_json_request(request.headers)

@@ -241,6 +241,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> CreateBucketOutput:
         bucket_name = request["Bucket"]
         validate_bucket_name(bucket=bucket_name)
+
+        # FIXME: moto will raise an exception if no Content-Length header is set. However, some SDK (Java v1 for ex.)
+        # will not provide a content-length if there's no body attached to the PUT request (not mandatory in HTTP specs)
+        # We will add it manually, normally to 0, if not present. AWS accepts that.
+        if "content-length" not in context.request.headers:
+            context.request.headers["Content-Length"] = str(len(context.request.data))
+
         response: CreateBucketOutput = call_moto(context)
         # Location is always contained in response -> full url for LocationConstraint outside us-east-1
         if request.get("CreateBucketConfiguration"):

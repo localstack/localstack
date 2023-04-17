@@ -356,5 +356,158 @@
         }
       }
     }
+  },
+  "tests/integration/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_no_such_function_catch": {
+    "recorded-date": "17-04-2023, 16:48:27",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "no_such_<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "no_such_<lambda_function_name>",
+                "Payload": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "no_such_<lambda_function_name>",
+                "Payload": null
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "Function not found: arn:aws:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
+              "error": "Lambda.ResourceNotFoundException",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Start",
+              "output": {
+                "Error": "Lambda.ResourceNotFoundException",
+                "Cause": "Function not found: arn:aws:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Error": "Lambda.ResourceNotFoundException",
+                "Cause": "Function not found: arn:aws:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EndWithStateTaskFailedHandler"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "EndWithStateTaskFailedHandler",
+              "output": {
+                "Error": "Lambda.ResourceNotFoundException",
+                "Cause": "Function not found: arn:aws:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
+                "task_failed_error": {
+                  "Error": "Lambda.ResourceNotFoundException",
+                  "Cause": "Function not found: arn:aws:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Error": "Lambda.ResourceNotFoundException",
+                "Cause": "Function not found: arn:aws:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)",
+                "task_failed_error": {
+                  "Error": "Lambda.ResourceNotFoundException",
+                  "Cause": "Function not found: arn:aws:lambda:<region>:111111111111:function:no_such_<lambda_function_name> (Service: AWSLambda; Status Code: 404; Error Code: ResourceNotFoundException; Request ID: <request_id>; Proxy: null)"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

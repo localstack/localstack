@@ -58,10 +58,7 @@ APIGATEWAY_ASSUME_ROLE_POLICY = {
 
 @pytest.fixture
 def create_rest_api_with_integration(
-    create_rest_apigw,
-    apigateway_client,
-    wait_for_stream_ready,
-    create_iam_role_with_policy,
+    create_rest_apigw, wait_for_stream_ready, create_iam_role_with_policy, aws_client
 ):
     def _factory(
         integration_uri,
@@ -76,11 +73,11 @@ def create_rest_api_with_integration(
         )
 
         resource_id, _ = create_rest_resource(
-            apigateway_client, restApiId=api_id, parentId=root_id, pathPart="test"
+            aws_client.apigateway, restApiId=api_id, parentId=root_id, pathPart="test"
         )
 
         method, _ = create_rest_resource_method(
-            apigateway_client,
+            aws_client.apigateway,
             restApiId=api_id,
             resourceId=resource_id,
             httpMethod="POST",
@@ -103,7 +100,7 @@ def create_rest_api_with_integration(
         )
 
         create_rest_api_integration(
-            apigateway_client,
+            aws_client.apigateway,
             restApiId=api_id,
             resourceId=resource_id,
             httpMethod=method,
@@ -115,7 +112,7 @@ def create_rest_api_with_integration(
         )
 
         create_rest_api_method_response(
-            apigateway_client,
+            aws_client.apigateway,
             restApiId=api_id,
             resourceId=resource_id,
             httpMethod="POST",
@@ -124,7 +121,7 @@ def create_rest_api_with_integration(
 
         res_templates = res_templates or {APPLICATION_JSON: "$input.json('$')"}
         create_rest_api_integration_response(
-            apigateway_client,
+            aws_client.apigateway,
             restApiId=api_id,
             resourceId=resource_id,
             httpMethod="POST",
@@ -132,9 +129,9 @@ def create_rest_api_with_integration(
             responseTemplates=res_templates,
         )
 
-        deployment_id, _ = create_rest_api_deployment(apigateway_client, restApiId=api_id)
+        deployment_id, _ = create_rest_api_deployment(aws_client.apigateway, restApiId=api_id)
         create_rest_api_stage(
-            apigateway_client, restApiId=api_id, stageName=stage, deploymentId=deployment_id
+            aws_client.apigateway, restApiId=api_id, stageName=stage, deploymentId=deployment_id
         )
 
         return api_id
@@ -143,11 +140,11 @@ def create_rest_api_with_integration(
 
 
 @pytest.fixture
-def apigw_redeploy_api(apigateway_client):
+def apigw_redeploy_api(aws_client):
     def _factory(rest_api_id: str, stage_name: str):
-        deployment_id = apigateway_client.create_deployment(restApiId=rest_api_id)["id"]
+        deployment_id = aws_client.apigateway.create_deployment(restApiId=rest_api_id)["id"]
 
-        apigateway_client.update_stage(
+        aws_client.apigateway.update_stage(
             restApiId=rest_api_id,
             stageName=stage_name,
             patchOperations=[{"op": "replace", "path": "/deploymentId", "value": deployment_id}],

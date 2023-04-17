@@ -13,11 +13,11 @@ PUBLIC_AMAZON_UBUNTU_IMAGE = "ami-03e08697c325f02ab"
 
 
 @pytest.fixture()
-def create_launch_template(ec2_client):
+def create_launch_template(aws_client):
     template_ids = []
 
     def create(template_name):
-        response = ec2_client.create_launch_template(
+        response = aws_client.ec2.create_launch_template(
             LaunchTemplateName=template_name,
             LaunchTemplateData={
                 "ImageId": PUBLIC_AMAZON_LINUX_IMAGE,
@@ -29,7 +29,7 @@ def create_launch_template(ec2_client):
     yield create
     for id in template_ids:
         with contextlib.suppress(ClientError):
-            ec2_client.delete_launch_template(LaunchTemplateId=id)
+            aws_client.ec2.delete_launch_template(LaunchTemplateId=id)
 
 
 class TestEc2Integrations:

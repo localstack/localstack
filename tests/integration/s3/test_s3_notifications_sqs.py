@@ -89,7 +89,7 @@ def create_sqs_bucket_notification(
 
 
 @pytest.fixture
-def s3_create_sqs_bucket_notification(s3_client, sqs_client) -> NotificationFactory:
+def s3_create_sqs_bucket_notification(aws_client) -> NotificationFactory:
     """
     A factory fixture for creating sqs bucket notifications.
 
@@ -99,7 +99,9 @@ def s3_create_sqs_bucket_notification(s3_client, sqs_client) -> NotificationFact
     """
 
     def factory(bucket_name: str, queue_url: str, events: List["EventType"]):
-        return create_sqs_bucket_notification(s3_client, sqs_client, bucket_name, queue_url, events)
+        return create_sqs_bucket_notification(
+            aws_client.s3, aws_client.sqs, bucket_name, queue_url, events
+        )
 
     return factory
 

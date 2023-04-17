@@ -53,25 +53,25 @@ def sns_snapshot_transformer(snapshot):
 
 
 @pytest.fixture
-def sns_create_platform_application(sns_client):
+def sns_create_platform_application(aws_client):
     platform_applications = []
 
     def factory(**kwargs):
         if "Name" not in kwargs:
             kwargs["Name"] = f"platform-app-{short_uid()}"
-        response = sns_client.create_platform_application(**kwargs)
+        response = aws_client.sns.create_platform_application(**kwargs)
         platform_applications.append(response["PlatformApplicationArn"])
         return response
 
     yield factory
 
     for platform_application in platform_applications:
-        endpoints = sns_client.list_endpoints_by_platform_application(
+        endpoints = aws_client.sns.list_endpoints_by_platform_application(
             PlatformApplicationArn=platform_application
         )
         for endpoint in endpoints["Endpoints"]:
             try:
-                sns_client.delete_endpoint(EndpointArn=endpoint["EndpointArn"])
+                aws_client.sns.delete_endpoint(EndpointArn=endpoint["EndpointArn"])
             except Exception as e:
                 LOG.debug(
                     "Error cleaning up platform endpoint '%s' for platform app '%s': %s",
@@ -80,7 +80,7 @@ def sns_create_platform_application(sns_client):
                     e,
                 )
         try:
-            sns_client.delete_platform_application(PlatformApplicationArn=platform_application)
+            aws_client.sns.delete_platform_application(PlatformApplicationArn=platform_application)
         except Exception as e:
             LOG.debug("Error cleaning up platform application '%s': %s", platform_application, e)
 

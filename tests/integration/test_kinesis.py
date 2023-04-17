@@ -406,10 +406,12 @@ class TestKinesis:
 
 
 @pytest.fixture
-def wait_for_consumer_ready(kinesis_client):
+def wait_for_consumer_ready(aws_client):
     def _wait_for_consumer_ready(consumer_arn: str):
         def is_consumer_ready():
-            describe_response = kinesis_client.describe_stream_consumer(ConsumerARN=consumer_arn)
+            describe_response = aws_client.kinesis.describe_stream_consumer(
+                ConsumerARN=consumer_arn
+            )
             return describe_response["ConsumerDescription"]["ConsumerStatus"] == "ACTIVE"
 
         poll_condition(is_consumer_ready)
