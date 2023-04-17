@@ -145,16 +145,16 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_parallel.state_parallel import (
     StateParallel,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.resource import (
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     LambdaResource,
     Resource,
     ServiceResource,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
+    StateTaskService,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task_lambda import (
     StateTaskLambda,
-)
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task_service import (
-    StateTaskService,
 )
 from localstack.services.stepfunctions.asl.component.state.state_fail.state_fail import StateFail
 from localstack.services.stepfunctions.asl.component.state.state_pass.result import Result

@@ -5,7 +5,7 @@ import logging
 import threading
 from typing import Any, Optional
 
-from localstack.aws.api.stepfunctions import Timestamp
+from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, Timestamp
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     ContextObject,
     ContextObjectInitData,
@@ -88,7 +88,7 @@ class Environment:
             self.program_state_event.set()
             self.program_state_event.clear()
 
-    def set_error(self, error: Any) -> None:
+    def set_error(self, error: ExecutionFailedEventDetails) -> None:
         with self._state_mutex:
             self._program_state = ProgramError(error=error)
             for frame in self._frames:

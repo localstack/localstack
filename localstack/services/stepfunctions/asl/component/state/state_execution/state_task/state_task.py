@@ -8,7 +8,7 @@ from localstack.services.stepfunctions.asl.component.common.parameters import Pa
 from localstack.services.stepfunctions.asl.component.state.state_execution.execute_state import (
     ExecutionState,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.resource import (
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     Resource,
 )
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps

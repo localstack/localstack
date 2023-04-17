@@ -5,7 +5,6 @@ from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, Histor
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import (
     CatchOutcome,
-    CatchOutcomeCaught,
     CatchOutcomeNotCaught,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.error_name import ErrorName
@@ -115,10 +114,11 @@ class ExecutionState(CommonStateField, abc.ABC):
         self.catch.eval(env)
         res: CatchOutcome = env.stack.pop()
 
-        if isinstance(res, CatchOutcomeCaught):
-            pass
-        elif isinstance(res, CatchOutcomeNotCaught):
-            raise RuntimeError(f"No Catcher when dealing with exception '{ex}'.")
+        if isinstance(res, CatchOutcomeNotCaught):
+            env.set_error(
+                ExecutionFailedEventDetails(**(list(failure_event.event_details.values())[0]))
+            )
+            raise ex
 
     def _eval_state(self, env: Environment) -> None:
         try:

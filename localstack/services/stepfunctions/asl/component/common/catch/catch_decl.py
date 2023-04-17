@@ -2,6 +2,7 @@ from typing import Final
 
 from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import (
     CatchOutcomeCaught,
+    CatchOutcomeNotCaught,
 )
 from localstack.services.stepfunctions.asl.component.common.catch.catcher_decl import CatcherDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catcher_outcome import (
@@ -26,4 +27,4 @@ class CatchDecl(EvalComponent):
                 env.stack.append(CatchOutcomeCaught())
                 return
 
-        env.stack.append(CatcherOutcomeNotCaught())
+        env.stack.append(CatchOutcomeNotCaught())
