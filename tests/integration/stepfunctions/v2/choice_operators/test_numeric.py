@@ -37,7 +37,7 @@ TYPE_COMPARISONS_VARS: Final[list[Any]] = [
 class TestNumerics:
     def test_numeric_equals(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
@@ -50,7 +50,7 @@ class TestNumerics:
             type_equals.append((var, 1.0))
 
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -60,7 +60,7 @@ class TestNumerics:
 
     def test_numeric_equals_path(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
@@ -73,7 +73,7 @@ class TestNumerics:
             type_equals.append((var, 1.0))
 
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -84,13 +84,13 @@ class TestNumerics:
 
     def test_numeric_greater_than(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -100,13 +100,13 @@ class TestNumerics:
 
     def test_numeric_greater_than_path(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -117,13 +117,13 @@ class TestNumerics:
 
     def test_numeric_greater_than_equals(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -133,13 +133,13 @@ class TestNumerics:
 
     def test_numeric_greater_than_equals_path(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -150,13 +150,13 @@ class TestNumerics:
 
     def test_numeric_less_than(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -166,13 +166,13 @@ class TestNumerics:
 
     def test_numeric_less_than_path(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -183,13 +183,13 @@ class TestNumerics:
 
     def test_numeric_less_than_equals(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -199,13 +199,13 @@ class TestNumerics:
 
     def test_numeric_less_than_equals_path(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
