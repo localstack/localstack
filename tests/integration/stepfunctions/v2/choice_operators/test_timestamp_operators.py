@@ -42,7 +42,7 @@ BASE_COMPARISONS: Final[list[tuple[str, str]]] = [(T0, T0), (T0, T1), (T1, T0)]
 class TestTimestamps:
     def test_timestamp_equals(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
@@ -52,7 +52,7 @@ class TestTimestamps:
             type_equals.append((var, T0))
 
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -62,13 +62,13 @@ class TestTimestamps:
 
     def test_timestamp_equals_path(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -79,13 +79,13 @@ class TestTimestamps:
 
     def test_timestamp_greater_than(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -95,13 +95,13 @@ class TestTimestamps:
 
     def test_timestamp_greater_than_path(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -112,13 +112,13 @@ class TestTimestamps:
 
     def test_timestamp_greater_than_equals(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -128,13 +128,13 @@ class TestTimestamps:
 
     def test_timestamp_greater_than_equals_path(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -145,13 +145,13 @@ class TestTimestamps:
 
     def test_timestamp_less_than(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -161,13 +161,13 @@ class TestTimestamps:
 
     def test_timestamp_less_than_path(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -178,13 +178,13 @@ class TestTimestamps:
 
     def test_timestamp_less_than_equals(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
@@ -194,13 +194,13 @@ class TestTimestamps:
 
     def test_timestamp_less_than_equals_path(
         self,
-        stepfunctions_client,
+        aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         snapshot,
     ):
         create_and_test_comparison_function(
-            stepfunctions_client,
+            aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
