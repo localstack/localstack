@@ -62,7 +62,7 @@ Additionally, we add the following information:
 In order to get more metadata from the build, we also send some general information to tests_raw_builds.datasource:
 - *build_id:* the workflow-id (for CircleCI) or run-id (for GitHub)
 - *timestamp:* a timestamp as string which will be the same for the CI run
-- *branch:* env value from *`CIRCLE_BRANCH`* or *`GITHUB_REF_NAME`*
+- *branch:* env value from *`CIRCLE_BRANCH`* or *`GITHUB_HEAD_REF`* (only set for pull_requests) or *`GITHUB_REF_NAME`*
 - *build_url:* env value from *`CIRCLE_BUILD_URL`* or *$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID*
 - *pull_requests:* env value from *`CIRCLE_PULL_REQUESTS`* or *`GITHUB_REF`*
 - *build_num:* env value from *`CIRCLE_BUILD_NUM`* (empty for GitHub, there seems to be no equivalent)
@@ -141,7 +141,8 @@ def send_metadata_for_build(build_id: str, timestamp: str):
 
     GitHub env examples:
     GITHUB_REF=ref/heads/master or ref/pull/<pr_number>/merge (will be used for 'pull_requests')
-    GITHUB_REF_NAME=feature-branch-1 (will be used for 'branch')
+    GITHUB_HEAD_REF=tinybird_data (used for 'branch', set only for pull_requests)
+    GITHUB_REF_NAME=feature-branch-1 (will be used for 'branch' if GITHUB_HEAD_REF is not set)
     GITHUB_RUN_ID=1658821493 (will be used for 'workflow_id')
 
     workflow run's URL (will be used for 'build_url'):
@@ -150,7 +151,12 @@ def send_metadata_for_build(build_id: str, timestamp: str):
     could not find anything that corresponds to "build_num" (number of current job in CircleCI)
          -> leaving it blank for Github
     """
-    branch = os.environ.get("CIRCLE_BRANCH", "") or os.environ.get("GITHUB_REF_NAME", "")
+    # on GitHub the GITHUB_HEAD_REF is only set for pull_request, else we use the GITHUB_REF_NAME
+    branch = (
+        os.environ.get("CIRCLE_BRANCH", "")
+        or os.environ.get("GITHUB_HEAD_REF", "")
+        or os.environ.get("GITHUB_REF_NAME", "")
+    )
     workflow_id = os.environ.get("CIRCLE_WORKFLOW_ID", "") or os.environ.get("GITHUB_RUN_ID", "")
 
     build_url = os.environ.get("CIRCLE_BUILD_URL", "")
