@@ -169,9 +169,13 @@ try:
 except Exception:
     MAX_POOL_CONNECTIONS = 150
 
-# test credentials used for generating signature for S3 presigned URLs (to be used by external clients)
+# credentials used in the test suite
 TEST_AWS_ACCESS_KEY_ID = "test"
 TEST_AWS_SECRET_ACCESS_KEY = "test"
+
+# additional credentials used in the test suite (mainly for cross-account access)
+SECONDARY_TEST_AWS_ACCESS_KEY_ID = "test2"
+SECONDARY_TEST_AWS_SECRET_ACCESS_KEY = "test2"
 
 # credentials being used for internal calls
 INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"

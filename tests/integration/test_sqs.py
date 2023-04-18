@@ -12,6 +12,10 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import (
+    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.services.sqs.models import sqs_stores
 from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
@@ -84,6 +88,43 @@ class TestSqsProvider:
         client = aws_stack.connect_to_service("sqs", endpoint_url=host)
         queue_url = client.get_queue_url(QueueName=queue_name)["QueueUrl"]
         assert queue_url == f"{host}/{account_id}/{queue_name}"
+
+    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    def test_cross_account_access(
+        self, monkeypatch, sqs_create_queue, aws_client_factory, strategy
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")
+
+        queue_url = sqs_create_queue()
+
+        # Ensure SQS operations work across accounts
+        client = aws_client_factory.get_client(
+            "sqs",
+            "ap-south-1",
+            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+        )
+
+        assert client.get_queue_attributes(QueueUrl=queue_url)
+        assert client.send_message(QueueUrl=queue_url, MessageBody="foo")["MessageId"]
+        response = client.receive_message(QueueUrl=queue_url)
+        assert len(response["Messages"]) == 1
+        assert client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+        assert client.purge_queue(QueueUrl=queue_url)
+
+        # On production AWS, cross-account access is not applicable for following operations,
+        # but this is not enforced in LocalStack
+        # - AddPermission
+        # - CreateQueue
+        # - DeleteQueue
+        # - ListQueues
+        # - ListQueueTags
+        # - RemovePermission
+        # - SetQueueAttributes
+        # - TagQueue
+        # - UntagQueue
 
     @pytest.mark.aws_validated
     def test_list_queues(self, sqs_create_queue, aws_client):

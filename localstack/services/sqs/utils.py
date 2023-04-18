@@ -22,12 +22,12 @@ def is_sqs_queue_url(url):
     return re.match(r"^/(queue|%s)/[a-zA-Z0-9_-]+(.fifo)?$" % get_aws_account_id(), path)
 
 
-def parse_queue_url(queue_url: str) -> Tuple[Optional[str], str, str]:
+def parse_queue_url(queue_url: str) -> Tuple[str, Optional[str], str]:
     """
-    Parses an SQS Queue URL and returns a triple of region, account_id, and queue_name.
+    Parses an SQS Queue URL and returns a triple of account_id, region and queue_name.
 
     :param queue_url: the queue URL
-    :return: region (may be None), account_id, queue_name
+    :return: account_id, region (may be None), queue_name
     """
     url = urlparse(queue_url.rstrip("/"))
     path_parts = url.path.lstrip("/").split("/")
@@ -55,7 +55,7 @@ def parse_queue_url(queue_url: str) -> Tuple[Optional[str], str, str]:
     else:
         region = None
 
-    return region, account_id, queue_name
+    return account_id, region, queue_name
 
 
 def parse_message_attributes(
