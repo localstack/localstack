@@ -14,7 +14,7 @@ from localstack.utils.objects import singleton_factory
 from localstack.utils.patch import patch
 
 # reduce the validation wait time from 60 (default) to 10 seconds
-moto_settings.ACM_VALIDATION_WAIT = 10
+moto_settings.ACM_VALIDATION_WAIT = min(10, moto_settings.ACM_VALIDATION_WAIT)
 
 
 @patch(acm_models.CertBundle.describe)

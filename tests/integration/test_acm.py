@@ -62,10 +62,13 @@ class TestACM:
         options = result["Certificate"]["DomainValidationOptions"]
         assert len(options) == 1
 
-    def test_boto_wait_for_certificate_validation(self, acm_request_certificate, aws_client):
+    def test_boto_wait_for_certificate_validation(
+        self, acm_request_certificate, aws_client, monkeypatch
+    ):
+        monkeypatch.setattr(moto_settings, "ACM_VALIDATION_WAIT", 1)
         certificate_arn = acm_request_certificate()["CertificateArn"]
         waiter = aws_client.acm.get_waiter("certificate_validated")
-        waiter.wait(CertificateArn=certificate_arn, WaiterConfig={"Delay": 0, "MaxAttempts": 1})
+        waiter.wait(CertificateArn=certificate_arn, WaiterConfig={"Delay": 0.5, "MaxAttempts": 3})
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..Certificate.SignatureAlgorithm"])
@@ -74,7 +77,7 @@ class TestACM:
     ):
         snapshot.add_transformer(snapshot.transform.key_value("OID"))
         snapshot.add_transformer(snapshot.transform.key_value("Serial"))
-        monkeypatch.setattr(moto_settings, "ACM_VALIDATION_WAIT", 3)
+        monkeypatch.setattr(moto_settings, "ACM_VALIDATION_WAIT", 2)
 
         # request certificate for subdomain
         domain_name = f"test-domain-{short_uid()}.localhost.localstack.cloud"
