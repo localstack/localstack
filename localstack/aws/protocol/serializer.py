@@ -1522,11 +1522,12 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         shape: Shape,
         operation_model: OperationModel,
         mime_type: str,
+        request_id: str,
     ) -> Optional[str]:
         root = self._serialize_body_params_to_xml(params, shape, operation_model, mime_type)
         # S3 does not follow the specs on the root tag name for 41 of 44 operations
         root.tag = self._RESPONSE_ROOT_TAGS.get(root.tag, root.tag)
-        self._prepare_additional_traits_in_xml(root)
+        self._prepare_additional_traits_in_xml(root, request_id)
         return self._node_to_string(root, mime_type)
 
     def _prepare_additional_traits_in_response(
