@@ -325,6 +325,7 @@ class TestLambdaBehavior:
             "$..Payload.paths._var_task_uid",
         ],
     )
+    # TODO: fix arch compatibility detection for supported emulations
     @pytest.mark.skipif(get_arch() == "arm64", reason="Cannot inspect x86 runtime on arm")
     @pytest.mark.aws_validated
     def test_runtime_introspection_x86(self, create_lambda_function, snapshot, aws_client):

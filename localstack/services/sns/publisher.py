@@ -17,7 +17,6 @@ import requests
 from localstack import config
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.api.sns import MessageAttributeMap
-from localstack.aws.api.sqs import MessageBodyAttributeMap
 from localstack.aws.connect import connect_to
 from localstack.config import external_service_url
 from localstack.services.sns import constants as sns_constants
@@ -248,36 +247,19 @@ class SqsTopicPublisher(TopicPublisher):
         message_context = context.message
         try:
             message_body = self.prepare_message(message_context, subscriber)
-            sqs_message_attrs = self.create_sqs_message_attributes(
-                subscriber, message_context.message_attributes
-            )
+            kwargs = self.get_sqs_kwargs(msg_context=message_context, subscriber=subscriber)
         except Exception:
             LOG.exception("An internal error occurred while trying to format the message for SQS")
             return
         try:
             queue_url: str = sqs_queue_url_for_arn(subscriber["Endpoint"])
-
             region = extract_region_from_arn(subscriber["Endpoint"])
             sqs_client = connect_to(region_name=region).sqs.request_metadata(
                 source_arn=subscriber["TopicArn"], service_principal="sns"
             )
-            kwargs = {}
-            if message_context.message_group_id:
-                kwargs["MessageGroupId"] = message_context.message_group_id
-            if message_context.message_deduplication_id:
-                kwargs["MessageDeduplicationId"] = message_context.message_deduplication_id
-            elif queue_url.endswith(".fifo"):
-                # Amazon SNS uses the message body provided to generate a unique hash value to use as the deduplication
-                # ID for each message, so you don't need to set a deduplication ID when you send each message.
-                # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
-                content = context.message.message_content("sqs")
-                kwargs["MessageDeduplicationId"] = hashlib.sha256(
-                    content.encode("utf-8")
-                ).hexdigest()
             sqs_client.send_message(
                 QueueUrl=queue_url,
                 MessageBody=message_body,
-                MessageAttributes=sqs_message_attrs,
                 MessageSystemAttributes=create_sqs_system_attributes(context.request_headers),
                 **kwargs,
             )
@@ -285,9 +267,7 @@ class SqsTopicPublisher(TopicPublisher):
         except Exception as exc:
             LOG.info("Unable to forward SNS message to SQS: %s %s", exc, traceback.format_exc())
             store_delivery_log(message_context, subscriber, success=False)
-            sns_error_to_dead_letter_queue(
-                subscriber, message_body, str(exc), MessageAttributes=sqs_message_attrs
-            )
+            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc), **kwargs)
             if "NonExistentQueue" in str(exc):
                 LOG.debug("The SQS queue endpoint does not exist anymore")
                 # todo: if the queue got deleted, even if we recreate a queue with the same name/url
@@ -295,32 +275,21 @@ class SqsTopicPublisher(TopicPublisher):
                 #  We should mark this subscription as "broken"
 
     @staticmethod
-    def create_sqs_message_attributes(
-        subscriber: SnsSubscription, attributes: MessageAttributeMap
-    ) -> MessageBodyAttributeMap:
-        message_attributes = {}
-        # if RawDelivery is `false`, SNS does not attach SQS message attributes but sends them as part of SNS message
-        if not is_raw_message_delivery(subscriber):
-            return message_attributes
-
-        for key, value in attributes.items():
-            if data_type := value.get("DataType"):
-                attribute = {"DataType": data_type}
-                if data_type.startswith("Binary"):
-                    val = value.get("BinaryValue")
-                    attribute["BinaryValue"] = base64.b64decode(to_bytes(val))
-                    # base64 decoding might already have happened, in which decode fails.
-                    # If decode fails, fallback to whatever is in there.
-                    if not attribute["BinaryValue"]:
-                        attribute["BinaryValue"] = val
-
-                else:
-                    val = value.get("StringValue", "")
-                    attribute["StringValue"] = str(val)
-
-                message_attributes[key] = attribute
-
-        return message_attributes
+    def get_sqs_kwargs(msg_context: SnsMessage, subscriber: SnsSubscription):
+        kwargs = {}
+        if is_raw_message_delivery(subscriber) and msg_context.message_attributes:
+            kwargs["MessageAttributes"] = msg_context.message_attributes
+        if msg_context.message_group_id:
+            kwargs["MessageGroupId"] = msg_context.message_group_id
+        if msg_context.message_deduplication_id:
+            kwargs["MessageDeduplicationId"] = msg_context.message_deduplication_id
+        elif subscriber["TopicArn"].endswith(".fifo"):
+            # Amazon SNS uses the message body provided to generate a unique hash value to use as the deduplication
+            # ID for each message, so you don't need to set a deduplication ID when you send each message.
+            # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
+            content = msg_context.message_content("sqs")
+            kwargs["MessageDeduplicationId"] = hashlib.sha256(content.encode("utf-8")).hexdigest()
+        return kwargs
 
 
 class SqsBatchTopicPublisher(SqsTopicPublisher):
@@ -339,23 +308,13 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
         failure_map = {}
         for index, message_ctx in enumerate(context.messages):
             message_body = self.prepare_message(message_ctx, subscriber)
-            sqs_message_attrs = self.create_sqs_message_attributes(
-                subscriber, message_ctx.message_attributes
-            )
-            entry = {"Id": f"sns-batch-{index}", "MessageBody": message_body}
+            sqs_kwargs = self.get_sqs_kwargs(message_ctx, subscriber)
+            entry = {"Id": f"sns-batch-{index}", "MessageBody": message_body, **sqs_kwargs}
             # in case of failure
             failure_map[entry["Id"]] = {
                 "context": message_ctx,
                 "entry": entry,
             }
-            if sqs_message_attrs:
-                entry["MessageAttributes"] = sqs_message_attrs
-
-            if message_ctx.message_group_id:
-                entry["MessageGroupId"] = message_ctx.message_group_id
-
-            if message_ctx.message_deduplication_id:
-                entry["MessageDeduplicationId"] = message_ctx.message_deduplication_id
 
             if sqs_system_attrs:
                 entry["MessageSystemAttributes"] = sqs_system_attrs
@@ -364,7 +323,6 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
 
         try:
             queue_url = sqs_queue_url_for_arn(subscriber["Endpoint"])
-
             region = extract_region_from_arn(subscriber["Endpoint"])
             sqs_client = connect_to(region_name=region).sqs.request_metadata(
                 source_arn=subscriber["TopicArn"], service_principal="sns"
@@ -405,16 +363,8 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
             for message_ctx in context.messages:
                 store_delivery_log(message_ctx, subscriber, success=False)
                 msg_body = self.prepare_message(message_ctx, subscriber)
-                sqs_message_attrs = self.create_sqs_message_attributes(
-                    subscriber, message_ctx.message_attributes
-                )
-                kwargs = {"MessageAttributes": sqs_message_attrs}
-                if message_ctx.message_group_id:
-                    kwargs["MessageGroupId"] = message_ctx.message_group_id
+                kwargs = self.get_sqs_kwargs(message_ctx, subscriber)
 
-                if message_ctx.message_deduplication_id:
-                    kwargs["MessageDeduplicationId"] = message_ctx.message_deduplication_id
-                # TODO: fix passing FIFO attrs to DLQ (MsgGroupId and such)
                 sns_error_to_dead_letter_queue(
                     subscriber,
                     msg_body,
