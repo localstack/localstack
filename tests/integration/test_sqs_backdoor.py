@@ -179,7 +179,7 @@ class TestSqsDeveloperEdpoints:
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-1")
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-2")
 
-        region, account, name = parse_queue_url(queue_url)
+        account, region, name = parse_queue_url(queue_url)
         # sometimes the region cannot be determined from the queue url, we make no assumptions about this in this test
         region = region or aws_client.sqs.meta.region_name
 
