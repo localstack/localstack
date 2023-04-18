@@ -2102,7 +2102,7 @@ class TestSqsProvider:
             QueueUrl=queue_url, MessageBody=item, MessageGroupId=group, **kwargs
         )
 
-        # second doesn't receive anything since the message has the same content
+        # second doesn't receive anything the deduplication id is the same
         response = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
         assert response.get("Messages", []) == []
         snapshot.match("get-messages-duplicate", response)
