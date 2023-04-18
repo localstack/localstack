@@ -1896,15 +1896,15 @@ class TestLambdaAliases:
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestRequestIdHandling:
     @pytest.mark.aws_validated
-    def test_request_id_format(self, lambda_client):
-        r = lambda_client.list_functions()
+    def test_request_id_format(self, aws_client):
+        r = aws_client.awslambda.list_functions()
         request_id = r["ResponseMetadata"]["RequestId"]
         assert re.match(
             r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", request_id
         )
 
     @pytest.mark.aws_validated
-    def test_request_id_invoke(self, lambda_client, create_lambda_function, logs_client, snapshot):
+    def test_request_id_invoke(self, aws_client, create_lambda_function, logs_client, snapshot):
         func_name = f"test_lambda_{short_uid()}"
         log_group_name = f"/aws/lambda/{func_name}"
 
@@ -1912,10 +1912,10 @@ class TestRequestIdHandling:
             func_name=func_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             runtime=Runtime.python3_9,
-            client=lambda_client,
+            client=aws_client.awslambda,
         )
 
-        result = lambda_client.invoke(
+        result = aws_client.awslambda.invoke(
             FunctionName=func_name, Payload=json.dumps({"hello": "world"})
         )
         snapshot.match("invoke_result", result)
@@ -1935,9 +1935,7 @@ class TestRequestIdHandling:
         snapshot.match("end_log_entries", end_log_entries)
 
     @pytest.mark.aws_validated
-    def test_request_id_invoke_url(
-        self, lambda_client, create_lambda_function, logs_client, snapshot
-    ):
+    def test_request_id_invoke_url(self, aws_client, create_lambda_function, logs_client, snapshot):
         snapshot.add_transformer(
             snapshot.transform.key_value(
                 "FunctionUrl", "<function-url>", reference_replacement=False
@@ -1955,16 +1953,16 @@ class TestRequestIdHandling:
             func_name=fn_name,
             handler_file=handler_file,
             runtime=Runtime.python3_9,
-            client=lambda_client,
+            client=aws_client.awslambda,
         )
 
-        url_config = lambda_client.create_function_url_config(
+        url_config = aws_client.awslambda.create_function_url_config(
             FunctionName=fn_name,
             AuthType="NONE",
         )
         snapshot.match("create_lambda_url_config", url_config)
 
-        permissions_response = lambda_client.add_permission(
+        permissions_response = aws_client.awslambda.add_permission(
             FunctionName=fn_name,
             StatementId="urlPermission",
             Action="lambda:InvokeFunctionUrl",
@@ -1998,7 +1996,7 @@ class TestRequestIdHandling:
 
     @pytest.mark.aws_validated
     def test_request_id_async_invoke_with_retry(
-        self, lambda_client, create_lambda_function, logs_client, monkeypatch, snapshot
+        self, aws_client, create_lambda_function, logs_client, monkeypatch, snapshot
     ):
         snapshot.add_transformer(
             snapshot.transform.key_value("eventId", "<event-id>", reference_replacement=False)
@@ -2014,15 +2012,15 @@ class TestRequestIdHandling:
             func_name=func_name,
             handler_file=TEST_LAMBDA_CONTEXT_REQID,
             runtime=Runtime.python3_9,
-            client=lambda_client,
+            client=aws_client.awslambda,
         )
 
-        lambda_client.put_function_event_invoke_config(
+        aws_client.awslambda.put_function_event_invoke_config(
             FunctionName=func_name, MaximumRetryAttempts=1
         )
-        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=func_name)
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=func_name)
 
-        result = lambda_client.invoke(
+        result = aws_client.awslambda.invoke(
             FunctionName=func_name, InvocationType="Event", Payload=json.dumps({"fail": 1})
         )
         snapshot.match("invoke_result", result)
