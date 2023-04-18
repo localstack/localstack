@@ -651,5 +651,113 @@
         }
       }
     }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_fifo_deduplication_arrives_once_after_delete[True]": {
+    "recorded-date": "14-04-2023, 19:30:06",
+    "recorded-content": {
+      "get-messages": {
+        "Messages": [
+          {
+            "Body": {
+              "foo": "bar"
+            },
+            "MD5OfBody": "94232c5b8fc9272f6f73a1e36eb68fcf",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-messages-duplicate": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_fifo_deduplication_arrives_once_after_delete[False]": {
+    "recorded-date": "14-04-2023, 19:30:08",
+    "recorded-content": {
+      "get-messages": {
+        "Messages": [
+          {
+            "Body": {
+              "foo": "bar"
+            },
+            "MD5OfBody": "94232c5b8fc9272f6f73a1e36eb68fcf",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-messages-duplicate": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_fifo_deduplication_not_on_message_group_id[True]": {
+    "recorded-date": "14-04-2023, 20:25:10",
+    "recorded-content": {
+      "get-messages": {
+        "Messages": [
+          {
+            "Body": {
+              "foo": "bar"
+            },
+            "MD5OfBody": "94232c5b8fc9272f6f73a1e36eb68fcf",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-dedup-messages": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_fifo_deduplication_not_on_message_group_id[False]": {
+    "recorded-date": "14-04-2023, 20:25:12",
+    "recorded-content": {
+      "get-messages": {
+        "Messages": [
+          {
+            "Body": {
+              "foo": "bar"
+            },
+            "MD5OfBody": "94232c5b8fc9272f6f73a1e36eb68fcf",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-dedup-messages": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

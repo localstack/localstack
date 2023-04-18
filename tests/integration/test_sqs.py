@@ -2062,6 +2062,96 @@ class TestSqsProvider:
         assert response.get("Messages", []) == []
 
     @pytest.mark.aws_validated
+    @pytest.mark.parametrize("content_based_deduplication", [True, False])
+    def test_fifo_deduplication_arrives_once_after_delete(
+        self,
+        sqs_create_queue,
+        aws_client,
+        content_based_deduplication,
+        snapshot,
+    ):
+        attributes = {"FifoQueue": "true"}
+        if content_based_deduplication:
+            attributes["ContentBasedDeduplication"] = "true"
+        queue_url = sqs_create_queue(
+            QueueName=f"test-queue-{short_uid()}.fifo",
+            Attributes=attributes,
+        )
+        item = '{"foo": "bar"}'
+        group = "group-1"
+        kwargs = {}
+        if not content_based_deduplication:
+            kwargs["MessageDeduplicationId"] = "dedup1"
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody=item, MessageGroupId=group, **kwargs
+        )
+
+        # first receive has the item
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=3)
+        snapshot.match("get-messages", response)
+        assert len(response["Messages"]) == 1
+        assert response["Messages"][0]["Body"] == item
+        # delete the item, we want to check that we don't receive a duplicate even after deletion
+        # see https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
+        aws_client.sqs.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+
+        # republish the same message
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody=item, MessageGroupId=group, **kwargs
+        )
+
+        # second doesn't receive anything the deduplication id is the same
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+        assert response.get("Messages", []) == []
+        snapshot.match("get-messages-duplicate", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize("content_based_deduplication", [True, False])
+    def test_fifo_deduplication_not_on_message_group_id(
+        self,
+        sqs_create_queue,
+        aws_client,
+        content_based_deduplication,
+        snapshot,
+    ):
+        attributes = {"FifoQueue": "true"}
+        if content_based_deduplication:
+            attributes["ContentBasedDeduplication"] = "true"
+        queue_url = sqs_create_queue(
+            QueueName=f"test-queue-{short_uid()}.fifo",
+            Attributes=attributes,
+        )
+        item = '{"foo": "bar"}'
+        kwargs = {}
+        if not content_based_deduplication:
+            kwargs["MessageDeduplicationId"] = "dedup1"
+
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody=item, MessageGroupId="group-1", **kwargs
+        )
+
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody=item, MessageGroupId="group-2", **kwargs
+        )
+
+        # first receive has the item
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=1, WaitTimeSeconds=2
+        )
+        assert len(response["Messages"]) == 1
+        assert response["Messages"][0]["Body"] == item
+        snapshot.match("get-messages", response)
+
+        # second doesn't since the message has the same content
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=1, WaitTimeSeconds=1
+        )
+        assert response.get("Messages", []) == []
+        snapshot.match("get-dedup-messages", response)
+
+    @pytest.mark.aws_validated
     @pytest.mark.xfail(
         reason="localstack allows queue names with slashes, but this should be deprecated"
     )

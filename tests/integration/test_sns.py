@@ -2220,7 +2220,7 @@ class TestSNSProvider:
             _get_snapshot_requests_response(broken_token_confirm_subscribe_request),
         )
 
-        # a topic with a different region will fail than the subscription
+        # using the right topic name with a different region will fail when confirming the subscription
         parsed_arn = parse_arn(topic_arn)
         different_region = "eu-central-1" if parsed_arn["region"] != "eu-central-1" else "us-east-1"
         different_region_topic = topic_arn.replace(parsed_arn["region"], different_region)
