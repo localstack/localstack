@@ -115,9 +115,10 @@ def create_wsgi_input(
 ) -> t.IO[bytes]:
     """
     Factory for exposing an ASGIReceiveCallable as an IO stream.
-    :param receive:
-    :param event_loop:
-    :return:
+
+    :param receive: the receive callable
+    :param event_loop: the event loop used by the event stream adapter
+    :return: a new IO stream that wraps the given receive callable.
     """
     return BufferedReader(RawHTTPRequestEventStreamAdapter(receive, event_loop))
 
