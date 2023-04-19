@@ -92,6 +92,7 @@ from localstack.utils.aws.arns import (
     opensearch_domain_name,
     s3_bucket_name,
 )
+from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.common import (
     TIMESTAMP_FORMAT_MICROS,
     first_char_to_lower,
@@ -719,7 +720,15 @@ class FirehoseProvider(FirehoseApi):
         bucket = s3_bucket_name(s3_destination_description["BucketARN"])
         prefix = s3_destination_description.get("Prefix", "")
 
-        s3 = connect_to().s3.request_metadata(source_arn=stream_name, service_principal="firehose")
+        if role_arn := s3_destination_description.get("RoleARN"):
+            factory = connect_to.with_assumed_role(
+                role_arn=role_arn, service_principal=ServicePrincipal.firehose
+            )
+        else:
+            factory = connect_to()
+        s3 = factory.s3.request_metadata(
+            source_arn=stream_name, service_principal=ServicePrincipal.firehose
+        )
         batched_data = b"".join([base64.b64decode(r.get("Data") or r.get("data")) for r in records])
 
         obj_path = self._get_s3_object_path(stream_name, prefix)
