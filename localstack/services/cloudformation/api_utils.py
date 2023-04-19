@@ -88,3 +88,8 @@ def convert_s3_to_local_url(url: str) -> str:
     bucket_name = s3_listener.normalize_bucket_name(bucket_name)
     local_url = f"{config.service_url('s3')}/{bucket_name}/{key_name}"
     return local_url
+
+
+def validate_stack_name(stack_name):
+    pattern = r"[a-zA-Z][-a-zA-Z0-9]*|arn:[-a-zA-Z0-9:/._+]*"
+    return re.match(pattern, stack_name) is not None
