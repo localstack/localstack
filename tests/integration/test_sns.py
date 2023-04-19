@@ -1349,6 +1349,8 @@ class TestSNSProvider:
             "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
             "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
             "$.sub-attrs-raw-true.Attributes.SubscriptionPrincipal",
+            "$.republish-batch-response-fifo.Successful..MessageId",  # TODO: SNS doesnt keep track of duplicate
+            "$.republish-batch-response-fifo.Successful..SequenceNumber",  # TODO: SNS doesnt keep track of duplicate
         ]
     )
     @pytest.mark.parametrize("content_based_deduplication", [True, False])
@@ -1467,11 +1469,24 @@ class TestSNSProvider:
 
         retry(get_messages, retries=5, sleep=1)
         snapshot.match("messages", {"Messages": messages})
-        # todo add test for deduplication
-        # https://docs.aws.amazon.com/cli/latest/reference/sns/publish-batch.html
-        # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
-        # > The SQS FIFO queue consumer processes the message and deletes it from the queue before the visibility
-        # > timeout expires.
+
+        publish_batch_response = aws_client.sns.publish_batch(
+            TopicArn=topic_arn,
+            PublishBatchRequestEntries=publish_batch_request_entries,
+        )
+
+        snapshot.match("republish-batch-response-fifo", publish_batch_response)
+        get_deduplicated_messages = aws_client.sqs.receive_message(
+            QueueUrl=queue_url,
+            MessageAttributeNames=["All"],
+            AttributeNames=["All"],
+            MaxNumberOfMessages=10,
+            WaitTimeSeconds=3,
+            VisibilityTimeout=0,
+        )
+        # there should not be any messages here, as they are duplicate
+        # see https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
+        snapshot.match("duplicate-messages", get_deduplicated_messages)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -1688,8 +1703,6 @@ class TestSNSProvider:
             )
         snapshot.match("no-dedup-id", e.value.response)
 
-        # todo add test and implement behaviour for ContentBasedDeduplication or MessageDeduplicationId
-
     @pytest.mark.aws_validated
     def test_subscribe_to_sqs_with_queue_url(
         self, sns_create_topic, sqs_create_queue, sns_subscription, snapshot
@@ -1823,31 +1836,34 @@ class TestSNSProvider:
             QueueName=queue_name,
             Attributes=queue_attributes,
         )
-        # todo check both ContentBasedDeduplication and MessageDeduplicationId when implemented
-        # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
 
         sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
         message = "Test"
-        if content_based_deduplication:
-            aws_client.sns.publish(
-                TopicArn=topic_arn, Message=message, MessageGroupId="message-group-id-1"
-            )
-        else:
-            aws_client.sns.publish(
-                TopicArn=topic_arn,
-                Message=message,
-                MessageGroupId="message-group-id-1",
-                MessageDeduplicationId="message-deduplication-id-1",
-            )
+        kwargs = {"MessageGroupId": "message-group-id-1"}
+        if not content_based_deduplication:
+            kwargs["MessageDeduplicationId"] = "message-deduplication-id-1"
+
+        aws_client.sns.publish(TopicArn=topic_arn, Message=message, **kwargs)
 
         response = aws_client.sqs.receive_message(
             QueueUrl=queue_url,
-            VisibilityTimeout=0,
             WaitTimeSeconds=10,
             AttributeNames=["All"],
         )
         snapshot.match("messages", response)
+
+        aws_client.sqs.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+        # republish the message, to check deduplication
+        aws_client.sns.publish(TopicArn=topic_arn, Message=message, **kwargs)
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url,
+            WaitTimeSeconds=1,
+            AttributeNames=["All"],
+        )
+        snapshot.match("dedup-messages", response)
 
     @pytest.mark.aws_validated
     def test_validations_for_fifo(
@@ -3311,21 +3327,111 @@ class TestSNSProvider:
 
         # Topic has ContentBasedDeduplication set to true, the queue should receive only one message
         # SNS will create a MessageDeduplicationId for the SQS queue, as it does not have ContentBasedDeduplication
+        for _ in range(2):
+            aws_client.sns.publish(
+                TopicArn=topic_arn, Message="Test single", MessageGroupId="message-group-id-1"
+            )
+            aws_client.sns.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "1",
+                        "MessageGroupId": "message-group-id-1",
+                        "Message": "Test batched",
+                    }
+                ],
+            )
+
+        messages = []
+        message_ids_received = set()
+
+        def get_messages():
+            # due to the random nature of receiving SQS messages, we need to consolidate a single object to match
+            # MaxNumberOfMessages could return less than 2 messages
+            sqs_response = aws_client.sqs.receive_message(
+                QueueUrl=queue_url,
+                MessageAttributeNames=["All"],
+                AttributeNames=["All"],
+                MaxNumberOfMessages=10,
+                WaitTimeSeconds=1,
+                VisibilityTimeout=10,
+            )
+
+            for message in sqs_response["Messages"]:
+                if message["MessageId"] in message_ids_received:
+                    continue
+
+                message_ids_received.add(message["MessageId"])
+                messages.append(message)
+                aws_client.sqs.delete_message(
+                    QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"]
+                )
+
+            assert len(messages) == 2
+
+        retry(get_messages, retries=5, sleep=1)
+        messages.sort(key=lambda x: x["Attributes"]["MessageDeduplicationId"])
+        snapshot.match("messages", {"Messages": messages})
+
+    @pytest.mark.aws_validated
+    def test_publish_to_fifo_topic_deduplication_on_topic_level(
+        self,
+        sns_create_topic,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
+        snapshot,
+        aws_client,
+    ):
+        topic_name = f"topic-{short_uid()}.fifo"
+        queue_name = f"queue-{short_uid()}.fifo"
+        topic_attributes = {"FifoTopic": "true", "ContentBasedDeduplication": "true"}
+        queue_attributes = {"FifoQueue": "true"}
+
+        topic_arn = sns_create_topic(
+            Name=topic_name,
+            Attributes=topic_attributes,
+        )["TopicArn"]
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes=queue_attributes,
+        )
+
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        # TODO: for message deduplication, we are using the underlying features of the SQS queue
+        # however, SQS queue only deduplicate at the Queue level, where the SNS topic deduplicate on the topic level
+        # we will need to implement this
+        # TODO: add a test with 2 subscriptions and a filter, to validate deduplication at topic level
         message = "Test"
         aws_client.sns.publish(
             TopicArn=topic_arn, Message=message, MessageGroupId="message-group-id-1"
         )
+        time.sleep(
+            0.5
+        )  # this is to ensure order of arrival, because we do not deduplicate at SNS level yet
         aws_client.sns.publish(
-            TopicArn=topic_arn, Message=message, MessageGroupId="message-group-id-1"
+            TopicArn=topic_arn, Message=message, MessageGroupId="message-group-id-2"
         )
 
+        # get the deduplicated message and delete it
         response = aws_client.sqs.receive_message(
             QueueUrl=queue_url,
-            VisibilityTimeout=0,
+            VisibilityTimeout=10,
             WaitTimeSeconds=10,
             AttributeNames=["All"],
         )
         snapshot.match("messages", response)
+        aws_client.sqs.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+        # assert there are no more messages in the queue
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url,
+            VisibilityTimeout=10,
+            WaitTimeSeconds=1,
+            AttributeNames=["All"],
+        )
+        snapshot.match("dedup-messages", response)
 
     @pytest.mark.aws_validated
     def test_publish_to_fifo_with_target_arn(self, sns_create_topic, aws_client):
