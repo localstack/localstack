@@ -107,8 +107,14 @@ class TestACM:
         snapshot.match("describe-cert", response)
 
         if is_aws_cloud():
-            # wait until DNS entry has been added (needs to be done manually!)
-            input()
+            # Wait until DNS entry has been added (needs to be done manually!)
+            # Note: When running parity tests against AWS, we need to add the CNAME record to our DNS
+            #  server (currently with gandi.net), to enable validation of the certificate.
+            prompt = (
+                f"Please add the following CNAME entry to the LocalStack DNS server, then hit [ENTER] once "
+                f"the certificate has been validated in AWS: {dns_options['Name']} = {dns_options['Value']}"
+            )
+            input(prompt)
 
         def _get_cert_issued():
             response = aws_client.acm.describe_certificate(CertificateArn=cert_arn)
