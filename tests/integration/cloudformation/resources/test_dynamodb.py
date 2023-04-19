@@ -81,6 +81,9 @@ def test_default_name_for_table(deploy_cfn_template, snapshot, aws_client):
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
         "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
         "$..Table.Replicas",
+        "$..Table.DeletionProtectionEnabled",
+        "$..Table.LatestStreamArn",
+        "$..Table.LatestStreamLabel",
     ]
 )
 @pytest.mark.parametrize("billing_mode", ["PROVISIONED", "PAY_PER_REQUEST"])
