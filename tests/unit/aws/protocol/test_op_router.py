@@ -27,9 +27,6 @@ def test_create_op_router_works_for_every_service(service):
         pass
 
 
-@pytest.mark.skip(
-    reason="this is mostly for documentation behavior of the old greedy path converter that is no longer in use"
-)
 def test_greedy_path_converter():
     # this test is mostly to document behavior
 
@@ -104,3 +101,10 @@ def test_s3_bucket_operation_with_trailing_slashes():
 
     op, _ = router.match(Request("Get", "/mybucket/"))
     assert op.name == "ListObjects"
+
+
+def test_s3_bucket_operation_with_double_slashes():
+    router = RestServiceOperationRouter(load_service("s3"))
+
+    op, _ = router.match(Request("GET", "/mybucket//mykey"))
+    assert op.name == "GetObject"
