@@ -1904,7 +1904,7 @@ class TestRequestIdHandling:
         )
 
     @pytest.mark.aws_validated
-    def test_request_id_invoke(self, aws_client, create_lambda_function, logs_client, snapshot):
+    def test_request_id_invoke(self, aws_client, create_lambda_function, snapshot):
         func_name = f"test_lambda_{short_uid()}"
         log_group_name = f"/aws/lambda/{func_name}"
 
@@ -1924,7 +1924,7 @@ class TestRequestIdHandling:
         )
 
         def fetch_logs():
-            log_events_result = logs_client.filter_log_events(logGroupName=log_group_name)
+            log_events_result = aws_client.logs.filter_log_events(logGroupName=log_group_name)
             assert any(["REPORT" in e["message"] for e in log_events_result["events"]])
             return log_events_result
 
@@ -1935,7 +1935,7 @@ class TestRequestIdHandling:
         snapshot.match("end_log_entries", end_log_entries)
 
     @pytest.mark.aws_validated
-    def test_request_id_invoke_url(self, aws_client, create_lambda_function, logs_client, snapshot):
+    def test_request_id_invoke_url(self, aws_client, create_lambda_function, snapshot):
         snapshot.add_transformer(
             snapshot.transform.key_value(
                 "FunctionUrl", "<function-url>", reference_replacement=False
@@ -1983,7 +1983,7 @@ class TestRequestIdHandling:
         )
 
         def fetch_logs():
-            log_events_result = logs_client.filter_log_events(logGroupName=log_group_name)
+            log_events_result = aws_client.logs.filter_log_events(logGroupName=log_group_name)
             assert any(["REPORT" in e["message"] for e in log_events_result["events"]])
             return log_events_result
 
@@ -1996,7 +1996,7 @@ class TestRequestIdHandling:
 
     @pytest.mark.aws_validated
     def test_request_id_async_invoke_with_retry(
-        self, aws_client, create_lambda_function, logs_client, monkeypatch, snapshot
+        self, aws_client, create_lambda_function, monkeypatch, snapshot
     ):
         snapshot.add_transformer(
             snapshot.transform.key_value("eventId", "<event-id>", reference_replacement=False)
@@ -2030,7 +2030,7 @@ class TestRequestIdHandling:
 
         time.sleep(test_delay_base * 2)
 
-        log_events = logs_client.filter_log_events(logGroupName=log_group_name)
+        log_events = aws_client.logs.filter_log_events(logGroupName=log_group_name)
         report_messages = [e for e in log_events["events"] if "REPORT" in e["message"]]
         assert len(report_messages) == 2
         assert all([request_id in rm["message"] for rm in report_messages])
