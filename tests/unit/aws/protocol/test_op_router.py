@@ -27,6 +27,9 @@ def test_create_op_router_works_for_every_service(service):
         pass
 
 
+@pytest.mark.skip(
+    reason="this is mostly for documentation behavior of the old greedy path converter that is no longer in use"
+)
 def test_greedy_path_converter():
     # this test is mostly to document behavior
 

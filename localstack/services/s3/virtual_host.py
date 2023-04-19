@@ -35,7 +35,7 @@ class S3VirtualHostProxyHandler:
         self.proxy = proxy or Proxy(
             forward_base_url=config.get_edge_url(),
             preserve_host=False,
-            client=SimpleStreamingRequestsClient()
+            client=SimpleStreamingRequestsClient(),
         )
 
     def __call__(self, request: Request, **kwargs) -> Response:
