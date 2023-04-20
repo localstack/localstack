@@ -403,7 +403,13 @@ def resolve_refs_recursively(stack, value):
                     "SecretString"
                 ]
                 if json_key:
-                    return json.loads(secret_value)[json_key]
+                    json_secret = json.loads(secret_value)
+                    if json_key not in json_secret:
+                        raise DependencyNotYetSatisfied(
+                            resource_ids=secret_id,
+                            message=f"Key {json_key} is not yet available in secret {secret_id}.",
+                        )
+                    return json_secret[json_key]
                 else:
                     return secret_value
             else:
