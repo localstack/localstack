@@ -154,7 +154,7 @@ def _serve_key(request: Request, bucket_name: BucketName, path: str = None) -> R
         not key_name or is_folder
     ):  # the path automatically remove the trailing slash, even with strict_slashes=False
         index_key = website_config["IndexDocument"]["Suffix"]
-        key_name = f"{key_name}/{index_key}" if key_name else index_key
+        key_name = f"{key_name}{index_key}" if key_name else index_key
 
     key = _get_key_from_moto_bucket(bucket, key_name)
     if not key:
