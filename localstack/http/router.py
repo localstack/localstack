@@ -171,7 +171,10 @@ class Router(Generic[E]):
             converters = {**self.default_converters, **converters}
 
         self.url_map = Map(
-            host_matching=True, strict_slashes=False, converters=converters, redirect_defaults=False
+            host_matching=True,
+            strict_slashes=False,
+            converters=converters,
+            redirect_defaults=False,
         )
         self.dispatcher = dispatcher or call_endpoint
         self._mutex = threading.RLock()

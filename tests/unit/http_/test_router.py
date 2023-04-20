@@ -5,6 +5,7 @@ import pytest
 import requests
 import werkzeug
 from werkzeug.exceptions import MethodNotAllowed, NotFound
+from werkzeug.routing import RequestRedirect
 
 from localstack.http import Request, Response, Router
 from localstack.http.router import E, RequestArguments, route
@@ -189,6 +190,8 @@ class TestRouter:
 
         assert router.dispatch(Request(path="/my")).json == {"path": "my"}
         assert router.dispatch(Request(path="/my/")).json == {"path": "my/"}
+        assert router.dispatch(Request(path="/my//path")).json == {"path": "my//path"}
+        assert router.dispatch(Request(path="/my//path/")).json == {"path": "my//path/"}
         assert router.dispatch(Request(path="/my/path foobar")).json == {"path": "my/path foobar"}
 
     def test_path_converter_with_args(self):
@@ -200,7 +203,7 @@ class TestRouter:
             "path": "my",
         }
 
-        # removes trailing slash
+        # werkzeug no longer removes trailing slashes in matches
         assert router.dispatch(Request(path="/with-args/123456/my/")).json == {
             "some_id": "123456",
             "path": "my/",
@@ -218,6 +221,12 @@ class TestRouter:
 
         with pytest.raises(NotFound):
             router.dispatch(Request(path="/with-args/123456/"))
+
+        # with the default slash behavior of the URL map (merge_slashes=False), werkzeug tries to redirect
+        # the call to /with-args/123456/my/ (note: this is desirable for web servers, not always for us
+        # though)
+        with pytest.raises(RequestRedirect):
+            assert router.dispatch(Request(path="/with-args/123456//my/"))
 
     def test_path_converter_and_regex_converter_in_host(self):
         router = Router()

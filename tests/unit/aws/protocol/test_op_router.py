@@ -59,6 +59,20 @@ def test_s3_head_request():
     assert op.name == "HeadObject"
 
 
+def test_basic_param_extraction():
+    router = RestServiceOperationRouter(load_service("apigateway"))
+
+    op, params = router.match(Request("POST", "/restapis/myrestapi/deployments"))
+    assert op.name == "CreateDeployment"
+    assert params == {"restapi_id": "myrestapi"}
+
+    with pytest.raises(NotFound):
+        # note: this is to document the behavior of werkzeug, not necessarily what we want for the op router.
+        # the behavior of double slashes in parameters probably cannot be generalized and will be handled by
+        # services case-by-case
+        router.match(Request("POST", "/restapis/myrestapi//deployments"))
+
+
 def test_trailing_slashes_are_not_strict():
     # this is tested against AWS. AWS is not strict about trailing slashes when routing operations.
 
@@ -80,31 +94,50 @@ def test_trailing_slashes_are_not_strict():
 def test_s3_query_args_routing():
     router = RestServiceOperationRouter(load_service("s3"))
 
-    op, _ = router.match(Request("DELETE", "/mybucket?delete"))
+    op, params = router.match(Request("DELETE", "/mybucket?delete"))
     assert op.name == "DeleteBucket"
+    assert params == {"Bucket": "mybucket"}
 
-    op, _ = router.match(Request("DELETE", "/mybucket/?delete"))
+    op, params = router.match(Request("DELETE", "/mybucket/?delete"))
     assert op.name == "DeleteBucket"
+    assert params == {"Bucket": "mybucket"}
 
-    op, _ = router.match(Request("DELETE", "/mybucket/mykey?delete"))
+    op, params = router.match(Request("DELETE", "/mybucket/mykey?delete"))
     assert op.name == "DeleteObject"
+    assert params == {"Bucket": "mybucket", "Key": "mykey"}
 
-    op, _ = router.match(Request("DELETE", "/mybucket/mykey/?delete"))
+    op, params = router.match(Request("DELETE", "/mybucket/mykey/?delete"))
     assert op.name == "DeleteObject"
+    assert params == {"Bucket": "mybucket", "Key": "mykey"}
 
 
 def test_s3_bucket_operation_with_trailing_slashes():
     router = RestServiceOperationRouter(load_service("s3"))
 
-    op, _ = router.match(Request("GET", "/mybucket"))
+    op, params = router.match(Request("GET", "/mybucket"))
     assert op.name == "ListObjects"
+    assert params == {"Bucket": "mybucket"}
 
-    op, _ = router.match(Request("Get", "/mybucket/"))
+    op, params = router.match(Request("Get", "/mybucket/"))
     assert op.name == "ListObjects"
+    assert params == {"Bucket": "mybucket"}
+
+
+def test_s3_object_operation_with_trailing_slashes():
+    router = RestServiceOperationRouter(load_service("s3"))
+
+    op, params = router.match(Request("GET", "/mybucket/mykey"))
+    assert op.name == "GetObject"
+    assert params == {"Bucket": "mybucket", "Key": "mykey"}
+
+    op, params = router.match(Request("GET", "/mybucket/mykey/"))
+    assert op.name == "GetObject"
+    assert params == {"Bucket": "mybucket", "Key": "mykey"}
 
 
 def test_s3_bucket_operation_with_double_slashes():
     router = RestServiceOperationRouter(load_service("s3"))
 
-    op, _ = router.match(Request("GET", "/mybucket//mykey"))
+    op, params = router.match(Request("GET", "/mybucket//mykey"))
     assert op.name == "GetObject"
+    assert params == {"Bucket": "mybucket", "Key": "/mykey"}

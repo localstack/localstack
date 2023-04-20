@@ -13,6 +13,11 @@ from localstack.http.request import get_raw_path
 
 
 class GreedyPathConverter(PathConverter):
+    """
+    This converter makes sure that the path ``/mybucket//mykey`` can be matched to the pattern
+    ``<Bucket>/<path:Key>`` and will result in `Key` being `/mykey`.
+    """
+
     regex = ".*?"
 
 
@@ -258,14 +263,13 @@ def _create_service_map(service: ServiceModel) -> Map:
 
     return Map(
         rules=rules,
-        # don't be strict about trailing slashes
+        # don't be strict about trailing slashes when matching
         strict_slashes=False,
         # we can't really use werkzeug's merge-slashes since it uses HTTP redirects to solve it
         merge_slashes=False,
+        # get service-specific converters
+        converters={"path": GreedyPathConverter},
     )
-
-
-multiple_slash_pattern = re.compile(r"/+")
 
 
 class RestServiceOperationRouter:
@@ -297,7 +301,14 @@ class RestServiceOperationRouter:
             # specified. the specs do _not_ contain any operations on OPTIONS methods at all.
             # avoid matching issues for preflight requests by matching against a similar GET request instead.
             method = request.method if request.method != "OPTIONS" else "GET"
-            path = self.get_path_for_matching(request)
+
+            path = get_raw_path(request)
+            # trailing slashes are ignored in smithy matching,
+            # see https://smithy.io/1.0/spec/core/http-traits.html#literal-character-sequences and this
+            # makes sure that, e.g., in s3, `GET /mybucket/` is not matched to `GetBucket` and not to
+            # `GetObject` and the associated rule.
+            path = path.rstrip("/")
+
             rule, args = matcher.match(path, method=method, return_rule=True)
         except MethodNotAllowed as e:
             # MethodNotAllowed (405) exception is raised if a path is matching, but the method does not.
@@ -318,24 +329,3 @@ class RestServiceOperationRouter:
         operation: OperationModel = rule.endpoint
 
         return operation, args
-
-    def get_path_for_matching(self, request: Request) -> str:
-        """
-        Extracts the path from the request used for finding matching operations. This doesn't have to be the
-        path actually used in the router, since here we need a path that works for matching the werkzeug
-        rules generated from the specs.
-
-        An example where these paths can differ is for instance s3 paths with double slashes. This request::
-
-            GET /mybucket//mykey
-
-        Should match "GetObject", but the rule for this operation looks like ``/<Bucket>/<Key>``, which won't
-        match here because the path matcher doesn't match on prefixed slashes.
-
-        :param request: the service request
-        :return: the path used for matching
-        """
-        path = get_raw_path(request)
-        # merge slashes for matching.
-        path = multiple_slash_pattern.sub("/", path)
-        return path
