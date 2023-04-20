@@ -5854,5 +5854,101 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_in_place": {
+    "recorded-date": "20-04-2023, 21:51:53",
+    "recorded-content": {
+      "put_object": {
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head_object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "application/json",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "key": "value"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-attrs": {
+        "LastModified": "datetime",
+        "StorageClass": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-in-place-no-change": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "This copy request is illegal because it is trying to copy an object to itself without changing the object's metadata, storage class, website redirect location or encryption attributes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "copy-object-in-place-with-storage-class": {
+        "CopyObjectResult": {
+          "ChecksumSHA256": "lyTB4g5uPk1/V+0l+dTvsAblCFkNUoyQ2ll/andcE+U=",
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-attrs-after-copy": {
+        "LastModified": "datetime",
+        "StorageClass": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-acl": {
+        "Grants": [
+          {
+            "Grantee": {
+              "DisplayName": "aws-sandbox-benjamin-simon-001",
+              "ID": "c32ee542628cfb38f348c508a38f7e82a38b79b25f728d7e262c1d90441b608a",
+              "Type": "CanonicalUser"
+            },
+            "Permission": "FULL_CONTROL"
+          }
+        ],
+        "Owner": {
+          "DisplayName": "<display-name>",
+          "ID": "<owner-id>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-in-place-with-acl": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "This copy request is illegal because it is trying to copy an object to itself without changing the object's metadata, storage class, website redirect location or encryption attributes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

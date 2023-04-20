@@ -1258,6 +1258,68 @@ class TestS3:
         snapshot.match("head_object_second_copy", head_object)
 
     @pytest.mark.aws_validated
+    def test_s3_copy_object_in_place(self, s3_create_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "source-object"
+        bucket_name = s3_create_bucket()
+        resp = aws_client.s3.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='{"key": "value"}',
+            ContentType="application/json",
+            Metadata={"key": "value"},
+        )
+        snapshot.match("put_object", resp)
+
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
+        snapshot.match("head_object", head_object)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=bucket_name,
+            Key=object_key,
+            ObjectAttributes=["StorageClass"],
+        )
+        snapshot.match("object-attrs", object_attrs)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=bucket_name, CopySource=f"{bucket_name}/{object_key}", Key=object_key
+            )
+        snapshot.match("copy-object-in-place-no-change", e.value.response)
+
+        # it seems as long as you specify the field necessary, it does not check if the previous value was the same
+        # and allows the copy
+
+        # copy the object with the same StorageClass as the source object
+        resp = aws_client.s3.copy_object(
+            Bucket=bucket_name,
+            CopySource=f"{bucket_name}/{object_key}",
+            Key=object_key,
+            ChecksumAlgorithm="SHA256",
+            StorageClass=StorageClass.STANDARD,
+        )
+        snapshot.match("copy-object-in-place-with-storage-class", resp)
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=bucket_name,
+            Key=object_key,
+            ObjectAttributes=["StorageClass"],
+        )
+        snapshot.match("object-attrs-after-copy", object_attrs)
+
+        # get source object ACl, private
+        object_acl = aws_client.s3.get_object_acl(Bucket=bucket_name, Key=object_key)
+        snapshot.match("object-acl", object_acl)
+        # copy the object with any ACL does not work, even if different from source object
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=bucket_name,
+                CopySource=f"{bucket_name}/{object_key}",
+                Key=object_key,
+                ACL="public-read",
+            )
+        snapshot.match("copy-object-in-place-with-acl", e.value.response)
+
+    @pytest.mark.aws_validated
     # behaviour is wrong in Legacy, we inherit Bucket ACL
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider,
