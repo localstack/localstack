@@ -18,11 +18,13 @@ AWS_REGION_REGEX = r"(?:us-gov|us|ap|ca|cn|eu|sa)-[a-z]+-\d"
 # virtual-host style: https://{bucket-name}.s3.{region?}.{domain}:{port?}/{key-name}
 # ex: https://{bucket-name}.s3.{region}.localhost.localstack.cloud.com:4566/{key-name}
 # ex: https://{bucket-name}.s3.{region}.amazonaws.com/{key-name}
-VHOST_REGEX_PATTERN = f"<regex('.*'):bucket>.s3.<regex('(?:{AWS_REGION_REGEX}.)?'):region><domain>"
+VHOST_REGEX_PATTERN = (
+    f"<regex('.*'):bucket>.s3.<regex('(?:{AWS_REGION_REGEX}\\.)?'):region><domain>"
+)
 
 # path addressed request with the region in the hostname
 # https://s3.{region}.localhost.localstack.cloud.com/{bucket-name}/{key-name}
-PATH_WITH_REGION_PATTERN = f"s3.<regex('{AWS_REGION_REGEX}.'):region><domain>"
+PATH_WITH_REGION_PATTERN = f"s3.<regex('{AWS_REGION_REGEX}\\.'):region><domain>"
 
 
 class S3VirtualHostProxyHandler:
@@ -34,6 +36,7 @@ class S3VirtualHostProxyHandler:
     def __init__(self, proxy: Proxy = None):
         self.proxy = proxy or Proxy(
             forward_base_url=config.get_edge_url(),
+            # do not preserve the Host when forwarding (to avoid an endless loop)
             preserve_host=False,
             client=SimpleStreamingRequestsClient(),
         )
@@ -48,7 +51,6 @@ class S3VirtualHostProxyHandler:
         copied_headers = copy.copy(request.headers)
         copied_headers["Host"] = forward_to_url.netloc
         copied_headers[S3_VIRTUAL_HOST_FORWARDED_HEADER] = request.headers["host"]
-        # do not preserve the Host when forwarding (to avoid an endless loop)
         forwarded = self.proxy.forward(
             request=request, forward_path=forward_to_url.path, headers=copied_headers
         )
