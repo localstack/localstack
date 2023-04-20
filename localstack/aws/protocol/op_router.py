@@ -248,7 +248,9 @@ def _create_service_map(service: ServiceModel) -> Map:
             # if there is only a single operation for a (path, method) combination,
             # the default Werkzeug rule can be used directly (this is the case for most rules)
             op = ops[0]
-            rules.append(_StrictMethodRule(string=rule_string, method=method, endpoint=op.operation))  # type: ignore
+            rules.append(
+                _StrictMethodRule(string=rule_string, method=method, endpoint=op.operation)
+            )  # type: ignore
         else:
             # if there is an ambiguity with only the (path, method) combination,
             # a custom rule - which can use additional request metadata - needs to be used
@@ -256,10 +258,14 @@ def _create_service_map(service: ServiceModel) -> Map:
 
     return Map(
         rules=rules,
+        # don't be strict about trailing slashes
         strict_slashes=False,
+        # we can't really use werkzeug's merge-slashes since it uses HTTP redirects to solve it
         merge_slashes=False,
-        # converters={"path": GreedyPathConverter},
     )
+
+
+multiple_slash_pattern = re.compile(r"/+")
 
 
 class RestServiceOperationRouter:
@@ -291,7 +297,8 @@ class RestServiceOperationRouter:
             # specified. the specs do _not_ contain any operations on OPTIONS methods at all.
             # avoid matching issues for preflight requests by matching against a similar GET request instead.
             method = request.method if request.method != "OPTIONS" else "GET"
-            rule, args = matcher.match(get_raw_path(request), method=method, return_rule=True)
+            path = self.get_path_for_matching(request)
+            rule, args = matcher.match(path, method=method, return_rule=True)
         except MethodNotAllowed as e:
             # MethodNotAllowed (405) exception is raised if a path is matching, but the method does not.
             # Our router handles this as a 404.
@@ -311,3 +318,24 @@ class RestServiceOperationRouter:
         operation: OperationModel = rule.endpoint
 
         return operation, args
+
+    def get_path_for_matching(self, request: Request) -> str:
+        """
+        Extracts the path from the request used for finding matching operations. This doesn't have to be the
+        path actually used in the router, since here we need a path that works for matching the werkzeug
+        rules generated from the specs.
+
+        An example where these paths can differ is for instance s3 paths with double slashes. This request::
+
+            GET /mybucket//mykey
+
+        Should match "GetObject", but the rule for this operation looks like ``/<Bucket>/<Key>``, which won't
+        match here because the path matcher doesn't match on prefixed slashes.
+
+        :param request: the service request
+        :return: the path used for matching
+        """
+        path = get_raw_path(request)
+        # merge slashes for matching.
+        path = multiple_slash_pattern.sub("/", path)
+        return path
