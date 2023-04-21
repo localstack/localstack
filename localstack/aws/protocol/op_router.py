@@ -20,6 +20,11 @@ class GreedyPathConverter(PathConverter):
 
     regex = ".*?"
 
+    part_isolating = False
+    """From the werkzeug docs: If a custom converter can match a forward slash, /, it should have the
+    attribute part_isolating set to False. This will ensure that rules using the custom converter are
+    correctly matched."""
+
 
 class _HttpOperation(NamedTuple):
     """Useful intermediary representation of the 'http' block of an operation to make code cleaner"""
