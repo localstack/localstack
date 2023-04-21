@@ -3035,6 +3035,7 @@ class TestS3:
 
         key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
         proxied_response = requests.get(key_url)
+        assert proxied_response.ok
         assert proxied_response.headers["server"] == response.headers["server"]
         assert len(proxied_response.headers["server"].split(",")) == 1
         assert len(proxied_response.headers["date"].split(",")) == 2  # coma in the date
