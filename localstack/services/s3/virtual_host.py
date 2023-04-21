@@ -33,14 +33,6 @@ class S3VirtualHostProxyHandler:
     addressed S3 bucket to a path addressed URL, to allow easy routing matching the ASF specs.
     """
 
-    def __init__(self, proxy: Proxy = None):
-        self.proxy = proxy or Proxy(
-            forward_base_url=config.get_edge_url(),
-            # do not preserve the Host when forwarding (to avoid an endless loop)
-            preserve_host=False,
-            client=SimpleStreamingRequestsClient(),
-        )
-
     def __call__(self, request: Request, **kwargs) -> Response:
         # TODO region pattern currently not working -> removing it from url
         rewritten_url = self._rewrite_url(url=request.url, **kwargs)
@@ -51,13 +43,27 @@ class S3VirtualHostProxyHandler:
         copied_headers = copy.copy(request.headers)
         copied_headers["Host"] = forward_to_url.netloc
         copied_headers[S3_VIRTUAL_HOST_FORWARDED_HEADER] = request.headers["host"]
-        forwarded = self.proxy.forward(
-            request=request, forward_path=forward_to_url.path, headers=copied_headers
-        )
+        with self._create_proxy() as proxy:
+            forwarded = proxy.forward(
+                request=request, forward_path=forward_to_url.path, headers=copied_headers
+            )
         # remove server specific headers that will be added before being returned
         forwarded.headers.pop("date", None)
         forwarded.headers.pop("server", None)
         return forwarded
+
+    def _create_proxy(self) -> Proxy:
+        """
+        Factory for creating proxy instance used when proxying s3 calls.
+
+        :return: a proxy instance
+        """
+        return Proxy(
+            forward_base_url=config.get_edge_url(),
+            # do not preserve the Host when forwarding (to avoid an endless loop)
+            preserve_host=False,
+            client=SimpleStreamingRequestsClient(),
+        )
 
     @staticmethod
     def _rewrite_url(url: str, domain: str, bucket: str, region: str, **kwargs) -> str:

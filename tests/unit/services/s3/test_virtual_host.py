@@ -3,9 +3,11 @@ from queue import Queue
 import pytest
 from werkzeug.exceptions import NotFound
 
+from localstack import config
 from localstack.http import Request, Response, Router
 from localstack.http.client import HttpClient
 from localstack.http.dispatcher import handler_dispatcher
+from localstack.http.proxy import Proxy
 from localstack.services.s3.virtual_host import S3VirtualHostProxyHandler, add_s3_vhost_rules
 
 
@@ -19,6 +21,13 @@ class _RequestCollectingClient(HttpClient):
         self.requests.put((request, server))
         return Response()
 
+    def create_proxy(self) -> Proxy:
+        """
+        Factory used to plug into S3VirtualHostProxyHandler._create_proxy
+        :return: a proxy using this client
+        """
+        return Proxy(config.get_edge_url(), preserve_host=False, client=self)
+
 
 class TestS3VirtualHostProxyHandler:
     def test_vhost_without_region(self):
@@ -26,7 +35,8 @@ class TestS3VirtualHostProxyHandler:
         router = Router(dispatcher=handler_dispatcher())
         collector = _RequestCollectingClient()
         handler = S3VirtualHostProxyHandler()
-        handler.proxy.client = collector
+        handler._create_proxy = collector.create_proxy
+
         # add rules
         add_s3_vhost_rules(router, handler)
 
@@ -55,7 +65,7 @@ class TestS3VirtualHostProxyHandler:
         router = Router(dispatcher=handler_dispatcher())
         collector = _RequestCollectingClient()
         handler = S3VirtualHostProxyHandler()
-        handler.proxy.client = collector
+        handler._create_proxy = collector.create_proxy
         # add rules
         add_s3_vhost_rules(router, handler)
 
@@ -103,7 +113,7 @@ class TestS3VirtualHostProxyHandler:
         router = Router(dispatcher=handler_dispatcher())
         collector = _RequestCollectingClient()
         handler = S3VirtualHostProxyHandler()
-        handler.proxy.client = collector
+        handler._create_proxy = collector.create_proxy
         # add rules
         add_s3_vhost_rules(router, handler)
 
@@ -120,7 +130,7 @@ class TestS3VirtualHostProxyHandler:
         router = Router(dispatcher=handler_dispatcher())
         collector = _RequestCollectingClient()
         handler = S3VirtualHostProxyHandler()
-        handler.proxy.client = collector
+        handler._create_proxy = collector.create_proxy
         # add rules
         add_s3_vhost_rules(router, handler)
 
