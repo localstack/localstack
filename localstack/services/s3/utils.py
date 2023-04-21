@@ -1,6 +1,7 @@
 import datetime
 import re
-from typing import Dict, Literal, Union
+from typing import Dict, Literal, Optional, Union
+from urllib.parse import parse_qs, unquote, urlparse
 
 import moto.s3.models as moto_s3_models
 from botocore.exceptions import ClientError
@@ -120,6 +121,15 @@ def is_valid_canonical_id(canonical_id: str) -> bool:
         return int(canonical_id, 16) and len(canonical_id) == 64
     except ValueError:
         return False
+
+
+def extract_bucket_key_version_id_from_copy_source(
+    copy_source: str,
+) -> tuple[BucketName, ObjectKey, Optional[str]]:
+    copy_source_parsed = urlparse(copy_source)
+    src_bucket, src_key = unquote(copy_source_parsed.path).lstrip("/").split("/", 1)
+    src_version_id = parse_qs(copy_source_parsed.query).get("versionId", [None])[0]
+    return src_bucket, src_key, src_version_id
 
 
 def forwarded_from_virtual_host_addressed_request(headers: Dict[str, str]) -> bool:

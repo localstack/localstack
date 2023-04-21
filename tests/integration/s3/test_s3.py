@@ -1258,6 +1258,9 @@ class TestS3:
         snapshot.match("head_object_second_copy", head_object)
 
     @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        reason="Behaviour is wrong in moto, does not check the right things, see https://github.com/localstack/localstack/issues/8172"
+    )
     def test_s3_copy_object_in_place(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "source-object"
@@ -1318,6 +1321,56 @@ class TestS3:
                 ACL="public-read",
             )
         snapshot.match("copy-object-in-place-with-acl", e.value.response)
+        # TODO: add more cases to check
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_s3_copy_object_with_checksum(self, s3_create_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "source-object"
+        bucket_name = s3_create_bucket()
+        # create key with no checksum
+        resp = aws_client.s3.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='{"key": "value"}',
+            ContentType="application/json",
+            Metadata={"key": "value"},
+        )
+        snapshot.match("put-object-no-checksum", resp)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=bucket_name,
+            Key=object_key,
+            ObjectAttributes=["Checksum"],
+        )
+        snapshot.match("object-attrs", object_attrs)
+
+        # copy the object in place with some metadata and replacing it, but with a checksum
+        resp = aws_client.s3.copy_object(
+            Bucket=bucket_name,
+            CopySource=f"{bucket_name}/{object_key}",
+            Key=object_key,
+            ChecksumAlgorithm="SHA256",
+            Metadata={"key1": "value1"},
+            MetadataDirective="REPLACE",
+        )
+        snapshot.match("copy-object-in-place-with-checksum", resp)
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=bucket_name,
+            Key=object_key,
+            ObjectAttributes=["Checksum"],
+        )
+        snapshot.match("object-attrs-after-copy", object_attrs)
+
+        dest_key = "dest-object"
+        # copy the object to check if the new object has the checksum too
+        resp = aws_client.s3.copy_object(
+            Bucket=bucket_name,
+            CopySource=f"{bucket_name}/{object_key}",
+            Key=dest_key,
+        )
+        snapshot.match("copy-object-to-dest-keep-checksum", resp)
 
     @pytest.mark.aws_validated
     # behaviour is wrong in Legacy, we inherit Bucket ACL

@@ -114,6 +114,7 @@ from localstack.services.s3.presigned_url import (
 from localstack.services.s3.utils import (
     _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
+    extract_bucket_key_version_id_from_copy_source,
     get_bucket_from_moto,
     get_header_name,
     get_key_from_moto_bucket,
@@ -453,12 +454,38 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: CopyObjectRequest,
     ) -> CopyObjectOutput:
+        moto_backend = get_moto_s3_backend(context)
+        dest_moto_bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
         if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
-            moto_backend = get_moto_s3_backend(context)
-            bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
-            validate_kms_key_id(sse_kms_key_id, bucket)
+            validate_kms_key_id(sse_kms_key_id, dest_moto_bucket)
 
         response: CopyObjectOutput = call_moto(context)
+
+        # moto does not copy all attributes of the key
+        src_bucket, src_key, src_version_id = extract_bucket_key_version_id_from_copy_source(
+            request["CopySource"]
+        )
+        src_moto_bucket = get_bucket_from_moto(moto_backend, bucket=src_bucket)
+        source_key_object = get_key_from_moto_bucket(
+            src_moto_bucket, key=src_key, version_id=src_version_id
+        )
+
+        checksum_algorithm = (
+            request.get("ChecksumAlgorithm") or source_key_object.checksum_algorithm
+        )
+        if checksum_algorithm:
+            # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
+            # TODO: moto does not store the checksum of object, there is a TODO there as well
+            # in the meantime, just compute the hash everytime it's requested
+            dest_key_object = get_key_from_moto_bucket(dest_moto_bucket, key=request["Key"])
+            dest_key_object.checksum_algorithm = checksum_algorithm
+
+            checksum = get_object_checksum_for_algorithm(
+                checksum_algorithm=checksum_algorithm,
+                data=source_key_object.value,
+            )
+            response["CopyObjectResult"][f"Checksum{checksum_algorithm.upper()}"] = checksum  # noqa
+
         self._notify(context)
         return response
 
