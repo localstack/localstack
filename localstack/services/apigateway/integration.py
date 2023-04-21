@@ -392,7 +392,8 @@ class LambdaProxyIntegration(BackendIntegration):
             response.multi_value_headers = parsed_result.get("multiValueHeaders") or {}
             return response
         else:
-            # PayloadFormatVersion 2.0 accepts string responses and inferes the response
+            # PayloadFormatVersion 2.0 accepts string responses and inferes the response,
+            # check AWS docs for more info
             if isinstance(parsed_result, str):
                 response.status_code = 200
                 response._content = parsed_result
@@ -411,6 +412,11 @@ class LambdaProxyIntegration(BackendIntegration):
                         response._content = base64.b64decode(body)
                 else:
                     response._content = json.dumps(parsed_result, separators=(",", ":"))
+
+                # special case for 404 - here will override any of the processing done above
+                if response.status_code == 404:
+                    response._content = json.dumps({"message": "Not Found"}, separators=(",", ":"))
+
                 return response
 
 
