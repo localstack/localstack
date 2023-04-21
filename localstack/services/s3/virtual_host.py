@@ -3,9 +3,9 @@ import logging
 from urllib.parse import urlsplit, urlunsplit
 
 from localstack import config
+from localstack.aws.client import GatewayClient
 from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.http import Request, Response
-from localstack.http.client import SimpleStreamingRequestsClient
 from localstack.http.proxy import Proxy
 from localstack.runtime import hooks
 from localstack.services.edge import ROUTER
@@ -54,15 +54,18 @@ class S3VirtualHostProxyHandler:
 
     def _create_proxy(self) -> Proxy:
         """
-        Factory for creating proxy instance used when proxying s3 calls.
+        Factory for creating proxy instance used when proxying s3 calls, injects directly into the handler
+        chain.
 
         :return: a proxy instance
         """
+        from localstack.runtime import components
+
         return Proxy(
             forward_base_url=config.get_edge_url(),
             # do not preserve the Host when forwarding (to avoid an endless loop)
             preserve_host=False,
-            client=SimpleStreamingRequestsClient(),
+            client=GatewayClient(components.gateway),
         )
 
     @staticmethod

@@ -6,9 +6,11 @@ from typing import Dict, Iterable, Optional
 
 from botocore.model import OperationModel
 from botocore.parsers import ResponseParser, ResponseParserFactory
-from werkzeug import Response
+from werkzeug import Request, Response
 
 from localstack.aws.api import CommonServiceException, ServiceException, ServiceResponse
+from localstack.aws.gateway import Gateway
+from localstack.http.client import HttpClient
 from localstack.runtime import hooks
 from localstack.utils.patch import patch
 
@@ -220,3 +222,21 @@ def raise_service_exception(response: Response, parsed_response: Dict) -> None:
     """
     if service_exception := parse_service_exception(response, parsed_response):
         raise service_exception
+
+
+class GatewayClient(HttpClient):
+    """
+    HttpClient implementation that injects the request directly into the Gateway.
+    """
+
+    gateway: Gateway
+
+    def __init__(self, gateway: Gateway):
+        self.gateway = gateway
+
+    def request(self, request: Request, server: str | None = None) -> Response:
+        from localstack.http.response import Response
+
+        response = Response()
+        self.gateway.process(request, response)
+        return response
