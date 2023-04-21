@@ -129,10 +129,9 @@ class SecretsManagerSecretTargetAttachment(GenericBaseModel):
     def cloudformation_type():
         return "AWS::SecretsManager::SecretTargetAttachment"
 
-    def get_physical_resource_id(self, attribute, **kwargs):
-        return arns.secretsmanager_secret_arn(self.props.get("SecretId"))
-
     def fetch_state(self, stack_name, resources):
+        if not self.physical_resource_id:
+            return None
         secretsmanager_client = connect_to().secretsmanager
         secret_id = self.props["SecretId"]
         secret = secretsmanager_client.get_secret_value(SecretId=secret_id)["SecretString"]
@@ -173,12 +172,18 @@ class SecretsManagerSecretTargetAttachment(GenericBaseModel):
                 old_secret["port"] = instance["Endpoint"]["Port"]
                 old_secret["dbname"] = instance["DBName"]
                 old_secret["engine"] = instance["Engine"]
-                secretsmanager_client.put_secret_value(
+                return secretsmanager_client.put_secret_value(
                     SecretId=secret_id, SecretString=json.dumps(old_secret)
                 )
 
+        def _store_arn(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["ARN"]
+
         return {
-            "create": {"function": create_secret_target_attachment},
+            "create": {
+                "function": create_secret_target_attachment,
+                "result_handler": _store_arn,
+            },
         }
 
 
