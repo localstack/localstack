@@ -1976,16 +1976,16 @@ def create_user_with_policy(create_policy_generated_document, create_user, aws_c
     return _create_user_with_policy
 
 
-# TODO: Fix
 @pytest.fixture()
-def register_extension(s3_bucket, s3_client, cfn_client):
+def register_extension(s3_bucket, aws_client):
+    cfn_client = aws_client.cloudformation
     extensions_arns = []
 
     def _register(extension_name, extension_type, artifact_path):
         bucket = s3_bucket
         key = f"artifact-{short_uid()}"
 
-        s3_client.upload_file(artifact_path, bucket, key)
+        aws_client.s3.upload_file(artifact_path, bucket, key)
 
         register_response = cfn_client.register_type(
             Type=extension_type,
