@@ -811,8 +811,7 @@ class TestLambdaImages:
             Environment={"Variables": {"CUSTOM_ENV": "test"}},
             Publish=True,
         )
-        snapshot.match("create-image-response", create_image_response)
-        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        snapshot.match("create_image_response", create_image_response)
 
         get_function_result = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_function_result", get_function_result)
@@ -838,7 +837,7 @@ class TestLambdaImages:
                 Description="Second version description :)",
                 CodeSha256="a" * 64,
             )
-        snapshot.match("invalid-sha-publish", e.value.response)
+        snapshot.match("invalid_sha_publish", e.value.response)
 
         # publish with correct codesha256
         first_publish_response = aws_client.awslambda.publish_version(

@@ -392,11 +392,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             if current_latest_version.config.package_type == PackageType.Zip
             else current_latest_version.config.image.code_sha256
         )
-        is_hot_reloading = (
+        # if the code is a zip package and hot reloaded (hot reloading is currently only supported for zip packagetypes)
+        # we cannot enforce the codesha256 check
+        is_hot_reloaded_zip_package = (
             current_latest_version.config.package_type == PackageType.Zip
             and current_latest_version.config.code.is_hot_reloading()
         )
-        if code_sha256 and current_hash != code_sha256 and not is_hot_reloading:
+        if code_sha256 and current_hash != code_sha256 and not is_hot_reloaded_zip_package:
             raise InvalidParameterValueException(
                 f"CodeSHA256 ({code_sha256}) is different from current CodeSHA256 in $LATEST ({current_hash}). Please try again with the CodeSHA256 in $LATEST.",
                 Type="User",

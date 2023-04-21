@@ -12064,9 +12064,9 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaImages::test_lambda_image_versions": {
-    "recorded-date": "21-04-2023, 11:58:36",
+    "recorded-date": "21-04-2023, 17:05:08",
     "recorded-content": {
-      "create-image-response": {
+      "create_image_response": {
         "Architectures": [
           "x86_64"
         ],
@@ -12307,7 +12307,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "invalid-sha-publish": {
+      "invalid_sha_publish": {
         "Error": {
           "Code": "InvalidParameterValueException",
           "Message": "CodeSHA256 (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) is different from current CodeSHA256 in $LATEST (<code-sha256:1>). Please try again with the CodeSHA256 in $LATEST."
