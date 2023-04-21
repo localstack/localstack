@@ -293,6 +293,14 @@ class TestSqsProvider:
         assert result["Messages"][0]["Body"] == "message"
 
     @pytest.mark.aws_validated
+    def test_send_receive_message_encoded_content(self, sqs_create_queue, aws_client):
+        queue = sqs_create_queue()
+        aws_client.sqs.send_message(QueueUrl=queue, MessageBody='"&quot;&quot;\r')
+        result = aws_client.sqs.receive_message(QueueUrl=queue)
+        assert len(result["Messages"]) == 1
+        assert result["Messages"][0]["Body"] == '"&quot;&quot;\r'
+
+    @pytest.mark.aws_validated
     def test_send_message_batch(self, sqs_queue, aws_client):
         aws_client.sqs.send_message_batch(
             QueueUrl=sqs_queue,
