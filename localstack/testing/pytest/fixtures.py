@@ -1447,7 +1447,7 @@ def acm_request_certificate(aws_client_factory):
         response = acm_client.request_certificate(**kwargs)
         created_certificate_arn = response["CertificateArn"]
         certificate_arns.append((created_certificate_arn, region_name))
-        return created_certificate_arn
+        return response
 
     yield factory
 

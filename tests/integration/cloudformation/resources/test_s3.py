@@ -56,6 +56,7 @@ def test_bucket_versioning(deploy_cfn_template, aws_client):
     assert bucket_version["Status"] == "Enabled"
 
 
+@pytest.mark.aws_validated
 def test_cors_configuration(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.s3_api())
@@ -65,7 +66,10 @@ def test_cors_configuration(deploy_cfn_template, snapshot, aws_client):
             os.path.dirname(__file__), "../../templates/s3_cors_bucket.yaml"
         ),
     )
-    bucket_name = result.outputs["BucketName"]
-    cors_info = aws_client.s3.get_bucket_cors(Bucket=bucket_name)
+    bucket_name_optional = result.outputs["BucketNameAllParameters"]
+    cors_info = aws_client.s3.get_bucket_cors(Bucket=bucket_name_optional)
+    snapshot.match("cors-info-optional", cors_info)
 
-    snapshot.match("cors_info", cors_info)
+    bucket_name_required = result.outputs["BucketNameOnlyRequired"]
+    cors_info = aws_client.s3.get_bucket_cors(Bucket=bucket_name_required)
+    snapshot.match("cors-info-only-required", cors_info)

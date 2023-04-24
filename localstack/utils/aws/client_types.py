@@ -228,5 +228,6 @@ class ServicePrincipal(str):
 
     awslambda = "lambda"
     apigateway = "apigateway"
+    firehose = "firehose"
     sqs = "sqs"
     sns = "sns"

@@ -437,7 +437,10 @@ def resolve_ssm_parameter_value(parameter_type: str, parameter_value: str) -> st
     function will resolve the SSM parameter with name `test-param` and return the SSM parameter's value.
     """
     # TODO: support different parameter value types
-    if parameter_type == "AWS::SSM::Parameter::Value<String>":
+    if (
+        parameter_type == "AWS::SSM::Parameter::Value<String>"
+        or parameter_type == "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+    ):
         ssm_client = aws_stack.connect_to_service("ssm")
         return ssm_client.get_parameter(Name=parameter_value)["Parameter"]["Value"]
     raise Exception(f"Unsupported parameter value type {parameter_type}")

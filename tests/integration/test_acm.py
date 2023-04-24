@@ -1,8 +1,12 @@
 import pytest
+from moto import settings as moto_settings
 from moto.ec2 import utils as ec2_utils
 
 from localstack.aws.accounts import get_aws_account_id
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import aws_stack
+from localstack.utils.strings import short_uid
+from localstack.utils.sync import retry
 
 DIGICERT_ROOT_CERT = """
 -----BEGIN CERTIFICATE-----
@@ -53,12 +57,76 @@ class TestACM:
                 aws_client.acm.delete_certificate(CertificateArn=result["CertificateArn"])
 
     def test_domain_validation(self, acm_request_certificate, aws_client):
-        certificate_arn = acm_request_certificate()
+        certificate_arn = acm_request_certificate()["CertificateArn"]
         result = aws_client.acm.describe_certificate(CertificateArn=certificate_arn)
         options = result["Certificate"]["DomainValidationOptions"]
         assert len(options) == 1
 
-    def test_boto_wait_for_certificate_validation(self, acm_request_certificate, aws_client):
-        certificate_arn = acm_request_certificate()
+    def test_boto_wait_for_certificate_validation(
+        self, acm_request_certificate, aws_client, monkeypatch
+    ):
+        monkeypatch.setattr(moto_settings, "ACM_VALIDATION_WAIT", 1)
+        certificate_arn = acm_request_certificate()["CertificateArn"]
         waiter = aws_client.acm.get_waiter("certificate_validated")
-        waiter.wait(CertificateArn=certificate_arn, WaiterConfig={"Delay": 0, "MaxAttempts": 1})
+        waiter.wait(CertificateArn=certificate_arn, WaiterConfig={"Delay": 0.5, "MaxAttempts": 3})
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Certificate.SignatureAlgorithm"])
+    def test_certificate_for_subdomain_wildcard(
+        self, acm_request_certificate, aws_client, snapshot, monkeypatch
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("OID"))
+        snapshot.add_transformer(snapshot.transform.key_value("Serial"))
+        monkeypatch.setattr(moto_settings, "ACM_VALIDATION_WAIT", 2)
+
+        # request certificate for subdomain
+        domain_name = f"test-domain-{short_uid()}.localhost.localstack.cloud"
+        subdomain_pattern = f"*.{domain_name}"
+        create_response = acm_request_certificate(
+            ValidationMethod="DNS", DomainName=subdomain_pattern
+        )
+        cert_arn = create_response["CertificateArn"]
+
+        snapshot.add_transformer(snapshot.transform.regex(domain_name, "<domain-name>"))
+        cert_id = cert_arn.split("certificate/")[-1]
+        snapshot.add_transformer(snapshot.transform.regex(cert_id, "<cert-id>"))
+        snapshot.match("request-cert", create_response)
+
+        def _get_cert_with_records():
+            response = aws_client.acm.describe_certificate(CertificateArn=cert_arn)
+            assert response["Certificate"]["DomainValidationOptions"][0]["ResourceRecord"]
+            return response
+
+        # wait for cert with ResourceRecord CNAME entry
+        response = retry(_get_cert_with_records, sleep=1, retries=30)
+        dns_options = response["Certificate"]["DomainValidationOptions"][0]["ResourceRecord"]
+        snapshot.add_transformer(
+            snapshot.transform.regex(dns_options["Name"].split(".")[0], "<record-prefix>")
+        )
+        snapshot.add_transformer(snapshot.transform.regex(dns_options["Value"], "<record-value>"))
+        snapshot.match("describe-cert", response)
+
+        if is_aws_cloud():
+            # Wait until DNS entry has been added (needs to be done manually!)
+            # Note: When running parity tests against AWS, we need to add the CNAME record to our DNS
+            #  server (currently with gandi.net), to enable validation of the certificate.
+            prompt = (
+                f"Please add the following CNAME entry to the LocalStack DNS server, then hit [ENTER] once "
+                f"the certificate has been validated in AWS: {dns_options['Name']} = {dns_options['Value']}"
+            )
+            input(prompt)
+
+        def _get_cert_issued():
+            response = aws_client.acm.describe_certificate(CertificateArn=cert_arn)
+            assert response["Certificate"]["Status"] == "ISSUED"
+            return response
+
+        # get cert again after validation
+        response = retry(_get_cert_issued, sleep=1, retries=30)
+        snapshot.match("describe-cert-2", response)
+
+        # also snapshot response of cert summaries via list_certificates
+        response = aws_client.acm.list_certificates()
+        summaries = response.get("CertificateSummaryList") or []
+        matching = [cert for cert in summaries if cert["CertificateArn"] == cert_arn]
+        snapshot.match("list-cert", matching)

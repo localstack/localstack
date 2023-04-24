@@ -59,7 +59,6 @@ from localstack.aws.api.firehose import (
     S3DestinationConfiguration,
     S3DestinationDescription,
     S3DestinationUpdate,
-    ServiceUnavailableException,
     SplunkDestinationConfiguration,
     SplunkDestinationUpdate,
     TagDeliveryStreamInputTagList,
@@ -84,7 +83,6 @@ from localstack.services.firehose.mappers import (
     convert_source_config_to_desc,
 )
 from localstack.services.firehose.models import FirehoseStore, firehose_stores
-from localstack.services.opensearch import versions
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import (
     extract_region_from_arn,
@@ -92,6 +90,7 @@ from localstack.utils.aws.arns import (
     opensearch_domain_name,
     s3_bucket_name,
 )
+from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.common import (
     TIMESTAMP_FORMAT_MICROS,
     first_char_to_lower,
@@ -237,21 +236,6 @@ class FirehoseProvider(FirehoseApi):
             db_description = convert_opensearch_config_to_desc(
                 amazonopensearchservice_destination_configuration
             )
-
-            domain_arn = db_description.get("DomainARN")
-            domain_name = opensearch_domain_name(domain_arn)
-
-            domain = aws_stack.connect_to_service("opensearch").describe_domain(
-                DomainName=domain_name
-            )
-            engine_version = domain["DomainStatus"]["EngineVersion"]
-
-            if versions.get_install_version(engine_version).startswith("2.3"):
-                # See https://docs.aws.amazon.com/opensearch-service/latest/developerguide/version-migration.html
-                raise ServiceUnavailableException(
-                    "Delivery stream destination is not supported: OpenSearch 2.3"
-                )
-
             destinations.append(
                 DestinationDescription(
                     DestinationId=short_uid(),
@@ -719,7 +703,15 @@ class FirehoseProvider(FirehoseApi):
         bucket = s3_bucket_name(s3_destination_description["BucketARN"])
         prefix = s3_destination_description.get("Prefix", "")
 
-        s3 = connect_to().s3.request_metadata(source_arn=stream_name, service_principal="firehose")
+        if role_arn := s3_destination_description.get("RoleARN"):
+            factory = connect_to.with_assumed_role(
+                role_arn=role_arn, service_principal=ServicePrincipal.firehose
+            )
+        else:
+            factory = connect_to()
+        s3 = factory.s3.request_metadata(
+            source_arn=stream_name, service_principal=ServicePrincipal.firehose
+        )
         batched_data = b"".join([base64.b64decode(r.get("Data") or r.get("data")) for r in records])
 
         obj_path = self._get_s3_object_path(stream_name, prefix)

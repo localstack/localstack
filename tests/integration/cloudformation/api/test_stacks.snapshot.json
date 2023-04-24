@@ -575,5 +575,21 @@
         "AWS::SQS::QueuePolicy"
       ]
     }
+  },
+  "tests/integration/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_name_creation": {
+    "recorded-date": "19-04-2023, 12:44:47",
+    "recorded-content": {
+      "stack_response": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value '*@da591fa3_$' at 'stackName' failed to satisfy constraint: Member must satisfy regular expression pattern: [a-zA-Z][-a-zA-Z0-9]*|arn:[-a-zA-Z0-9:/._+]*",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

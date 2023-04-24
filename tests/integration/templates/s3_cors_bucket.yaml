@@ -15,6 +15,20 @@ Resources:
               - Date
             Id: "test-cors-id"
             MaxAge: 3600
+
+  LocalBucket2:
+    Type: AWS::S3::Bucket
+    Properties:
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods:
+              - GET
+            AllowedOrigins:
+              - '*'
+
+
 Outputs:
-  BucketName:
+  BucketNameAllParameters:
     Value: !Ref LocalBucket
+  BucketNameOnlyRequired:
+    Value: !Ref LocalBucket2
