@@ -3,6 +3,7 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.comparis
 )
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.operator.implementations.boolean_equals import *  # noqa
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.operator.implementations.is_operator import *  # noqa
+from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.operator.implementations.numeric import *  # noqa
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.operator.operator import (
     Operator,
 )
