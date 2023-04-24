@@ -72,6 +72,22 @@ class TestStacksApi:
         snapshot.match("describe_stack", response)
 
     @pytest.mark.aws_validated
+    def test_stack_name_creation(self, deploy_cfn_template, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+        stack_name = f"*@{short_uid()}_$"
+
+        with pytest.raises(Exception) as e:
+            deploy_cfn_template(
+                template_path=os.path.join(
+                    os.path.dirname(__file__), "../../templates/sns_topic_template.yaml"
+                ),
+                stack_name=stack_name,
+            )
+
+            snapshot.match("stack_response", e.value.response)
+
+    @pytest.mark.aws_validated
     @pytest.mark.parametrize("fileformat", ["yaml", "json"])
     def test_get_template(self, deploy_cfn_template, snapshot, fileformat, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())

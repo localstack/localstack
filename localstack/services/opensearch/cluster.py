@@ -244,14 +244,14 @@ def register_cluster(
             ROUTER.add(
                 path=path,
                 endpoint=endpoint,
-                host=f'{host}<regex("(:.*)?"):port>',
+                host=f"{host}<port:port>",
             )
         )
         rules.append(
             ROUTER.add(
                 f"{path}/<path:path>",
                 endpoint=endpoint,
-                host=f'{host}<regex("(:.*)?"):port>',
+                host=f"{host}<port:port>",
             )
         )
     elif strategy == "domain":
@@ -263,14 +263,14 @@ def register_cluster(
             ROUTER.add(
                 "/",
                 endpoint=endpoint,
-                host=f"{host}<regex('(:.*)?'):port>",
+                host=f"{host}<port:port>",
             )
         )
         rules.append(
             ROUTER.add(
                 "/<path:path>",
                 endpoint=endpoint,
-                host=f"{host}<regex('(:.*)?'):port>",
+                host=f"{host}<port:port>",
             )
         )
     elif strategy == "path":

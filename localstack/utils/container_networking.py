@@ -28,17 +28,22 @@ def get_main_container_network() -> Optional[str]:
                 )
                 return networks[0]
         return config.MAIN_DOCKER_NETWORK
-    main_container_network = None
-    try:
-        if config.is_in_docker:
+
+    # use the default bridge network in case of host mode or if we can't resolve the networks for the main container
+    main_container_network = "bridge"
+    if config.is_in_docker:
+        try:
             networks = DOCKER_CLIENT.get_networks(get_main_container_name())
             main_container_network = networks[0]
-        else:
-            main_container_network = "bridge"  # use the default bridge network in case of host mode
-        LOG.info("Determined main container network: %s", main_container_network)
-    except Exception as e:
-        container_name = get_main_container_name()
-        LOG.info('Unable to get network name of main container "%s": %s', container_name, e)
+        except Exception as e:
+            container_name = get_main_container_name()
+            LOG.info(
+                'Unable to get network name of main container "%s", falling back to "bridge": %s',
+                container_name,
+                e,
+            )
+
+    LOG.info("Determined main container network: %s", main_container_network)
     return main_container_network
 
 

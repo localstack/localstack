@@ -10,7 +10,7 @@ from localstack.utils.aws import aws_stack
 def get_ddb_provisioned_throughput(params, **kwargs):
     args = params.get("ProvisionedThroughput")
     if args == PLACEHOLDER_AWS_NO_VALUE:
-        return {}
+        return None
     is_ondemand = params.get("BillingMode") == "PAY_PER_REQUEST"
     if is_ondemand and args is None:
         return
@@ -19,6 +19,9 @@ def get_ddb_provisioned_throughput(params, **kwargs):
             args["ReadCapacityUnits"] = int(args["ReadCapacityUnits"])
         if isinstance(args["WriteCapacityUnits"], str):
             args["WriteCapacityUnits"] = int(args["WriteCapacityUnits"])
+    if not is_ondemand and args is None:
+        args["ReadCapacityUnits"] = 5
+        args["WriteCapacityUnits"] = 5
     return args
 
 
@@ -78,14 +81,6 @@ class DynamoDBTable(GenericBaseModel):
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
-        is_pay_per_request = resource.get("Properties", {}).get("BillingMode") == "PAY_PER_REQUEST"
-
-        if not is_pay_per_request:
-            resource["Properties"]["ProvisionedThroughput"] = {
-                "ReadCapacityUnits": 5,
-                "WriteCapacityUnits": 5,
-            }
-
         table_name = resource.get("Properties", {}).get("TableName")
         resource["Properties"]["TableName"] = table_name or generate_default_name(
             stack_name, resource["LogicalResourceId"]
