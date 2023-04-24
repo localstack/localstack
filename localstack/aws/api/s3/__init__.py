@@ -448,6 +448,7 @@ class ObjectStorageClass(str):
     DEEP_ARCHIVE = "DEEP_ARCHIVE"
     OUTPOSTS = "OUTPOSTS"
     GLACIER_IR = "GLACIER_IR"
+    SNOW = "SNOW"
 
 
 class ObjectVersionStorageClass(str):
@@ -535,6 +536,7 @@ class StorageClass(str):
     DEEP_ARCHIVE = "DEEP_ARCHIVE"
     OUTPOSTS = "OUTPOSTS"
     GLACIER_IR = "GLACIER_IR"
+    SNOW = "SNOW"
 
 
 class StorageClassAnalysisSchemaVersion(str):
