@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  Input:
+    Type: String
+  TagValue:
+    Type: String
+
+Resources:
+  CustomParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Ref Input
+      Tags:
+        A: !Ref TagValue
+
+Outputs:
+  CustomParameterOutput:
+    Value: !Ref CustomParameter
