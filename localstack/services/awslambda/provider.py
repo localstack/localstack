@@ -1222,6 +1222,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             account_id=context.account_id,
             invocation_type=invocation_type,
             client_context=client_context,
+            request_id=context.request_id,
             payload=payload.read() if payload else None,
         )
         if invocation_type == "Event":

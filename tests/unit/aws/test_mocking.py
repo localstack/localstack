@@ -5,6 +5,7 @@ from localstack.aws.mocking import generate_request, generate_response, get_mock
 from localstack.aws.protocol.serializer import create_serializer as create_response_serializer
 from localstack.aws.protocol.validate import validate_request
 from localstack.aws.spec import load_service
+from localstack.utils.strings import long_uid
 
 
 # currently, checking all operations just takes too long and is potentially flaky due to nondeterminism when
@@ -47,7 +48,7 @@ def test_generate_response(service_name, operation_name):
 
     # make sure we can serialize the response
     serializer = create_response_serializer(service)
-    assert serializer.serialize_to_response(response, operation, {})
+    assert serializer.serialize_to_response(response, operation, {}, long_uid())
 
 
 def test_get_mocking_skeleton():

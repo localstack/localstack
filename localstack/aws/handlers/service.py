@@ -224,7 +224,9 @@ class ServiceExceptionSerializer(ExceptionHandler):
             context.service_exception = error
 
         serializer = create_serializer(context.service)  # TODO: serializer cache
-        return serializer.serialize_error_to_response(error, operation, context.request.headers)
+        return serializer.serialize_error_to_response(
+            error, operation, context.request.headers, context.request_id
+        )
 
 
 class ServiceResponseParser(Handler):

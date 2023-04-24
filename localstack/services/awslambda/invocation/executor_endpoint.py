@@ -63,7 +63,7 @@ class ExecutorEndpoint:
         def invocation_logs(request: Request, invoke_id: str) -> Response:
             logs = request.json
             if isinstance(logs, Dict):
-                logs["invocation_id"] = invoke_id
+                logs["request_id"] = invoke_id
                 invocation_logs = InvocationLogs(**logs)
                 self.service_endpoint.invocation_logs(
                     invoke_id=invoke_id, invocation_logs=invocation_logs
