@@ -25,6 +25,10 @@ class ErrorHandlingTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/task_service_lambda_invoke_catch_relevant.json5"
     )
 
+    AWS_SERVICE_SQS_SEND_MSG_CATCH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/task_service_sqs_send_msg_catch.json5"
+    )
+
     # Lambda Functions.
     LAMBDA_FUNC_RAISE_EXCEPTION: Final[str] = os.path.join(
         _THIS_FOLDER, "lambdafunctions/raise_exception.py"

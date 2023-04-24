@@ -1,0 +1,94 @@
+{
+  "tests/integration/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_no_such_queue": {
+    "recorded-date": "20-04-2023, 20:33:57",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "<no_such_sqs_queue_url>",
+                "MessageBody": "test_message_body"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<no_such_sqs_queue_url>",
+                "MessageBody": "test_message_body"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "QueueUrl": "<no_such_sqs_queue_url>",
+                "MessageBody": "test_message_body"
+              },
+              "region": "<region>",
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "Unable to execute HTTP request: no-such-queue-2e3d4d6d: Name or service not known",
+              "error": "SQS.SdkClientException",
+              "resource": "sendMessage",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "Unable to execute HTTP request: no-such-queue-2e3d4d6d: Name or service not known",
+              "error": "SQS.SdkClientException"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

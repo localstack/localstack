@@ -25,6 +25,9 @@ from localstack.utils.common import camel_to_snake_case
 
 
 class StateTaskServiceAwsSdk(StateTaskService):
+    def _get_resource_type(self) -> str:
+        return f"{self.resource.service_name}:{self.resource.api_name}"
+
     def _eval_execution(self, env: Environment) -> None:
         super()._eval_execution(env=env)
 

@@ -18,9 +18,6 @@ from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
 class StateTaskServiceLambda(StateTaskService, StateTaskLambda):
-    def _get_resource_type(self) -> str:
-        return "lambda"
-
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         failure_event: FailureEvent = super()._from_error(env=env, ex=ex)
         event_details: EventDetails = failure_event.event_details

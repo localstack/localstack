@@ -16,7 +16,7 @@ class StateTaskService(StateTask, abc.ABC):
     resource: ServiceResource
 
     def _get_resource_type(self) -> str:
-        return f"{self.resource.service_name}:{self.resource.api_name}"
+        return self.resource.service_name
 
     def _eval_parameters(self, env: Environment) -> dict:
         parameters = dict()
@@ -41,5 +41,12 @@ class StateTaskService(StateTask, abc.ABC):
                 )
 
                 return StateTaskServiceLambda()
+            case "sqs":
+                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_sqs import (
+                    StateTaskServiceSqs,
+                )
+
+                return StateTaskServiceSqs()
+
             case unknown:
                 raise NotImplementedError(f"Unsupported service: '{unknown}'.")  # noqa
