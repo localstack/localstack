@@ -73,3 +73,29 @@ def test_default_name_for_table(deploy_cfn_template, snapshot, aws_client):
 
     response = aws_client.dynamodb.describe_table(TableName=stack.outputs["TableName"])
     snapshot.match("table_description", response)
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
+        "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
+        "$..Table.Replicas",
+        "$..Table.DeletionProtectionEnabled",
+        "$..Table.LatestStreamArn",
+        "$..Table.LatestStreamLabel",
+    ]
+)
+@pytest.mark.parametrize("billing_mode", ["PROVISIONED", "PAY_PER_REQUEST"])
+def test_billing_mode_as_conditional(deploy_cfn_template, snapshot, aws_client, billing_mode):
+    snapshot.add_transformer(snapshot.transform.dynamodb_api())
+    snapshot.add_transformer(snapshot.transform.key_value("TableName", "table-name"))
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/dynamodb_billing_conditional.yml"
+        ),
+        parameters={"BillingModeParameter": billing_mode},
+    )
+
+    response = aws_client.dynamodb.describe_table(TableName=stack.outputs["TableName"])
+    snapshot.match("table_description", response)

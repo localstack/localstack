@@ -1513,23 +1513,28 @@ class SqsResponseSerializer(QueryResponseSerializer):
     """
 
     def _default_serialize(self, xmlnode: ETree.Element, params: str, _, name: str, __) -> None:
-        """Ensures that XML text nodes use HTML entities instead of " or \r"""
+        """
+        Ensures that we "mark" characters in the node's text which need to be specifically encoded.
+        This is necessary to easily identify these specific characters later, after the standard XML serialization is
+        done, while not replacing any other occurrences of these characters which might appear in the serialized string.
+        """
         node = ETree.SubElement(xmlnode, name)
-        node.text = str(params).replace('"', "&quot;").replace("\r", "&#xD;")
+        node.text = (
+            str(params)
+            .replace('"', '__marker__"__marker__')
+            .replace("\r", "__marker__\r__marker__")
+        )
 
     def _node_to_string(self, root: Optional[ETree.ElementTree], mime_type: str) -> Optional[str]:
-        """
-        Replaces the double-escaped HTML entities with their correct HTML entity (basically reverts the escaping in
-        the serialization of the used XML framework).
-        """
+        """Replaces the previously "marked" characters with their encoded value."""
         generated_string = super()._node_to_string(root, mime_type)
         return (
             to_bytes(
                 to_str(generated_string)
                 # Undo the second escaping of the &
-                .replace("&amp;quot;", "&quot;")
+                .replace('__marker__"__marker__', "&quot;")
                 # Undo the second escaping of the carriage return (\r)
-                .replace("&amp;#xD;", "&#xD;")
+                .replace("__marker__\r__marker__", "&#xD;")
             )
             if generated_string is not None
             else None

@@ -28,9 +28,7 @@ from localstack.utils.aws import aws_stack
 
 LOG = logging.getLogger(__name__)
 
-STATIC_WEBSITE_HOST_REGEX = (
-    '<regex(".*"):bucket_name>.%s<regex("(:[0-9]{2,5})?"):port>' % S3_STATIC_WEBSITE_HOSTNAME
-)
+STATIC_WEBSITE_HOST_REGEX = f'<regex(".*"):bucket_name>.{S3_STATIC_WEBSITE_HOSTNAME}<port:port>'
 
 _leading_whitespace_re = re.compile("(^[ \t]*)(?:[ \t\n])", re.MULTILINE)
 
@@ -156,7 +154,7 @@ def _serve_key(request: Request, bucket_name: BucketName, path: str = None) -> R
         not key_name or is_folder
     ):  # the path automatically remove the trailing slash, even with strict_slashes=False
         index_key = website_config["IndexDocument"]["Suffix"]
-        key_name = f"{key_name}/{index_key}" if key_name else index_key
+        key_name = f"{key_name}{index_key}" if key_name else index_key
 
     key = _get_key_from_moto_bucket(bucket, key_name)
     if not key:

@@ -17,8 +17,9 @@ _opensearch_install_versions = {
     "1.0": "1.0.0",
     "1.1": "1.1.0",
     "1.2": "1.2.4",
-    "1.3": "1.3.6",
+    "1.3": "1.3.9",
     "2.3": "2.3.0",
+    "2.5": "2.5.0",
 }
 # Internal representation of the Elasticsearch versions (without the "Elasticsearch_" prefix)
 _elasticsearch_install_versions = {
@@ -210,7 +211,11 @@ compatible_versions = [
     ),
     CompatibleVersionsMap(
         SourceVersion="OpenSearch_1.3",
-        TargetVersions=["OpenSearch_2.3"],
+        TargetVersions=["OpenSearch_2.3", "OpenSearch_2.5"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="OpenSearch_2.3",
+        TargetVersions=["OpenSearch_2.5"],
     ),
 ]
 

@@ -10,20 +10,21 @@ from localstack.http.proxy import Proxy
 from localstack.runtime import hooks
 from localstack.services.edge import ROUTER
 from localstack.services.s3.utils import S3_VIRTUAL_HOST_FORWARDED_HEADER
-from localstack.utils.aws.request_context import AWS_REGION_REGEX
 
 LOG = logging.getLogger(__name__)
+
+AWS_REGION_REGEX = r"(?:us-gov|us|ap|ca|cn|eu|sa)-[a-z]+-\d"
 
 # virtual-host style: https://{bucket-name}.s3.{region?}.{domain}:{port?}/{key-name}
 # ex: https://{bucket-name}.s3.{region}.localhost.localstack.cloud.com:4566/{key-name}
 # ex: https://{bucket-name}.s3.{region}.amazonaws.com/{key-name}
-VHOST_REGEX_PATTERN = f"<regex('.*'):bucket>.s3.<regex('({AWS_REGION_REGEX}\\.)?'):region><regex('.*'):domain><regex('(?::\\d+)?'):port>"
+VHOST_REGEX_PATTERN = (
+    f"<regex('.*'):bucket>.s3.<regex('(?:{AWS_REGION_REGEX}\\.)?'):region><domain>"
+)
 
 # path addressed request with the region in the hostname
 # https://s3.{region}.localhost.localstack.cloud.com/{bucket-name}/{key-name}
-PATH_WITH_REGION_PATTERN = (
-    f"s3.<regex('({AWS_REGION_REGEX}\\.)'):region><regex('.*'):domain><regex('(?::\\d+)?'):port>"
-)
+PATH_WITH_REGION_PATTERN = f"s3.<regex('{AWS_REGION_REGEX}\\.'):region><domain>"
 
 
 class S3VirtualHostProxyHandler:
@@ -42,12 +43,7 @@ class S3VirtualHostProxyHandler:
         copied_headers = copy.copy(request.headers)
         copied_headers["Host"] = forward_to_url.netloc
         copied_headers[S3_VIRTUAL_HOST_FORWARDED_HEADER] = request.headers["host"]
-        # do not preserve the Host when forwarding (to avoid an endless loop)
-        with Proxy(
-            forward_base_url=config.get_edge_url(),
-            preserve_host=False,
-            client=SimpleStreamingRequestsClient(),
-        ) as proxy:
+        with self._create_proxy() as proxy:
             forwarded = proxy.forward(
                 request=request, forward_path=forward_to_url.path, headers=copied_headers
             )
@@ -56,8 +52,21 @@ class S3VirtualHostProxyHandler:
         forwarded.headers.pop("server", None)
         return forwarded
 
+    def _create_proxy(self) -> Proxy:
+        """
+        Factory for creating proxy instance used when proxying s3 calls.
+
+        :return: a proxy instance
+        """
+        return Proxy(
+            forward_base_url=config.get_edge_url(),
+            # do not preserve the Host when forwarding (to avoid an endless loop)
+            preserve_host=False,
+            client=SimpleStreamingRequestsClient(),
+        )
+
     @staticmethod
-    def _rewrite_url(url: str, domain: str, bucket: str, region: str, port: str, **kwargs) -> str:
+    def _rewrite_url(url: str, domain: str, bucket: str, region: str, **kwargs) -> str:
         """
         Rewrites the url so that it can be forwarded to moto. Used for vhost-style and for any url that contains the region.
 
@@ -68,10 +77,9 @@ class S3VirtualHostProxyHandler:
         If the region is contained in the host-name we remove it (for now) as moto cannot handle the region correctly
 
         :param url: the original url
-        :param domain: the domain name
+        :param domain: the domain name (anything after s3.<region>., may include a port)
         :param bucket: the bucket name
-        :param region: the region name
-        :param port: the port number (if specified in the original request URL), or an empty string
+        :param region: the region name (includes the '.' at the end)
         :return: re-written url as string
         """
         splitted = urlsplit(url)
@@ -88,12 +96,40 @@ class S3VirtualHostProxyHandler:
 
         # the user can specify whatever domain & port he wants in the Host header
         # we need to make sure we're redirecting the request to our edge URL, possibly s3.localhost.localstack.cloud
-        host = f"{domain}:{port}" if port else domain
+        host = domain
         edge_host = f"{LOCALHOST_HOSTNAME}:{config.get_edge_port_http()}"
         if host != edge_host:
             netloc = netloc.replace(host, edge_host)
 
         return urlunsplit((splitted.scheme, netloc, path, splitted.query, splitted.fragment))
+
+
+def add_s3_vhost_rules(router, s3_proxy_handler):
+    router.add(
+        path="/",
+        host=VHOST_REGEX_PATTERN,
+        endpoint=s3_proxy_handler,
+        defaults={"path": "/"},
+    )
+
+    router.add(
+        path="/<path:path>",
+        host=VHOST_REGEX_PATTERN,
+        endpoint=s3_proxy_handler,
+    )
+
+    router.add(
+        path="/<regex('.+'):bucket>",
+        host=PATH_WITH_REGION_PATTERN,
+        endpoint=s3_proxy_handler,
+        defaults={"path": "/"},
+    )
+
+    router.add(
+        path="/<regex('.+'):bucket>/<path:path>",
+        host=PATH_WITH_REGION_PATTERN,
+        endpoint=s3_proxy_handler,
+    )
 
 
 @hooks.on_infra_ready(should_load=not config.LEGACY_S3_PROVIDER)
@@ -103,28 +139,4 @@ def register_virtual_host_routes():
 
     """
     s3_proxy_handler = S3VirtualHostProxyHandler()
-    ROUTER.add(
-        path="/",
-        host=VHOST_REGEX_PATTERN,
-        endpoint=s3_proxy_handler,
-        defaults={"path": "/"},
-    )
-
-    ROUTER.add(
-        path="/<path:path>",
-        host=VHOST_REGEX_PATTERN,
-        endpoint=s3_proxy_handler,
-    )
-
-    ROUTER.add(
-        path="/<regex('.+'):bucket>",
-        host=PATH_WITH_REGION_PATTERN,
-        endpoint=s3_proxy_handler,
-        defaults={"path": "/"},
-    )
-
-    ROUTER.add(
-        path="/<regex('.+'):bucket>/<path:path>",
-        host=PATH_WITH_REGION_PATTERN,
-        endpoint=s3_proxy_handler,
-    )
+    add_s3_vhost_rules(ROUTER, s3_proxy_handler)
