@@ -1,0 +1,5 @@
+Resources:
+  MyBucket:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Join ["a", "b", "c"]

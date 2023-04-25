@@ -1,0 +1,6 @@
+Resources:
+  MyBucket:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName:
+        Fn::ImportValue: TestExportDoesNotExist

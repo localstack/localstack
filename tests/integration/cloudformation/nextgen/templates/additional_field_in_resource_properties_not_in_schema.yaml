@@ -1,0 +1,5 @@
+Resources:
+  MyBucket:
+    Type: AWS::SNS::Topic
+    Properties:
+      CustomField: something

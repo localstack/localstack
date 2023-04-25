@@ -1,0 +1,20 @@
+Parameters:
+  Param1:
+    Type: String
+  Param2:
+    Type: String
+
+Resources:
+  MyBucket:
+    Type: AWS::SNS::Topic
+
+Rules:
+  Rule01:
+    RuleCondition: !Equals
+      - !Ref Param1
+      - HelloWorld
+    Assertions:
+      - Assert: !Equals
+          - !Ref Param2
+          - HelloWorld2
+        AssertDescription: Information about this assert

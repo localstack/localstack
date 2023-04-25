@@ -1,0 +1,9 @@
+Transform: AWS::Serverless-2016-10-31
+
+Description: Hello to this invalid template
+
+Resources:
+  SomeRes:
+    Type: AWS::Serverless::Unknown
+    Properties:
+      ABC: abc

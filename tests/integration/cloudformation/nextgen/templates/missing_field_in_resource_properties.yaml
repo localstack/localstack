@@ -1,0 +1,3 @@
+Resources:
+  MyBucket:
+    Type: AWS::SSM::Parameter
