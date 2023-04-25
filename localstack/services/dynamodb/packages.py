@@ -1,7 +1,7 @@
 import os
-import tempfile
 from typing import List
 
+from localstack import config
 from localstack.constants import ARTIFACTS_REPO, MAVEN_REPO_URL
 from localstack.packages import InstallTarget, Package, PackageInstaller
 from localstack.utils.archives import (
@@ -43,7 +43,7 @@ class DynamoDBLocalPackageInstaller(PackageInstaller):
 
     def _install(self, target: InstallTarget):
         # download and extract archive
-        tmp_archive = os.path.join(tempfile.gettempdir(), "localstack.ddb.zip")
+        tmp_archive = os.path.join(config.dirs.cache, "localstack.ddb.zip")
         install_dir = self._get_install_dir(target)
         download_and_extract_with_retry(DYNAMODB_JAR_URL, tmp_archive, install_dir)
 
