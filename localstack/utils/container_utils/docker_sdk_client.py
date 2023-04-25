@@ -6,6 +6,7 @@ import queue
 import socket
 import threading
 from typing import Dict, List, Optional, Tuple, Union
+from urllib.parse import quote
 
 import docker
 from docker import DockerClient
@@ -91,7 +92,8 @@ class SdkDockerClient(ContainerClient):
                 api_client.base_url + url, **api_client._set_request_timeout(kwargs)
             )
 
-        result = _head(f"/containers/{container.id}/archive", params={"path": container_path})
+        escaped_id = quote(container.id, safe="/:")
+        result = _head(f"/containers/{escaped_id}/archive", params={"path": container_path})
         stats = result.headers.get("X-Docker-Container-Path-Stat")
         target_exists = result.ok
 
