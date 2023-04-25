@@ -3,7 +3,6 @@ import logging
 import random
 import string
 
-from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import (
     REF_ARN_ATTRS,
@@ -129,62 +128,12 @@ class SecretsManagerSecretTargetAttachment(GenericBaseModel):
     def cloudformation_type():
         return "AWS::SecretsManager::SecretTargetAttachment"
 
+    def get_physical_resource_id(self, attribute, **kwargs):
+        return arns.secretsmanager_secret_arn(self.props.get("SecretId"))
+
     def fetch_state(self, stack_name, resources):
-        if not self.physical_resource_id:
-            return None
-        secretsmanager_client = connect_to().secretsmanager
-        secret_id = self.props["SecretId"]
-        secret = secretsmanager_client.get_secret_value(SecretId=secret_id)["SecretString"]
-        try:
-            secret = json.loads(secret)
-        except json.JSONDecodeError:
-            LOG.debug("Error decoding secret string %s", secret)
-        if "engine" in secret:
-            return secret
-
-    @staticmethod
-    def get_deploy_templates():
-        def create_secret_target_attachment(resource_id, resources, *args, **kwargs):
-            LOG.debug("Creating secret target attachment")
-            resource = resources[resource_id]
-            params = resource["Properties"]
-            secret_id = params["SecretId"]
-            target_id = params["TargetId"]
-            target_type = params["TargetType"]
-            clients = connect_to()
-            secretsmanager_client = clients.secretsmanager
-            rds_client = clients.rds
-            old_secret = secretsmanager_client.get_secret_value(SecretId=secret_id)["SecretString"]
-            try:
-                old_secret = json.loads(old_secret)
-            except json.JSONDecodeError:
-                LOG.debug("Error decoding secret string %s", old_secret)
-            if target_type == "AWS::RDS::DBInstance":
-                instances = rds_client.describe_db_instances(DBInstanceIdentifier=target_id)[
-                    "DBInstances"
-                ]
-                if not instances:
-                    LOG.warning("Could not find db instance %s", target_id)
-                    return {}
-                instance = instances[0]
-                # add keys to match https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_secret_json_structure.html
-                old_secret["host"] = instance["Endpoint"]["Address"]
-                old_secret["port"] = instance["Endpoint"]["Port"]
-                old_secret["dbname"] = instance["DBName"]
-                old_secret["engine"] = instance["Engine"]
-                return secretsmanager_client.put_secret_value(
-                    SecretId=secret_id, SecretString=json.dumps(old_secret)
-                )
-
-        def _store_arn(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["ARN"]
-
-        return {
-            "create": {
-                "function": create_secret_target_attachment,
-                "result_handler": _store_arn,
-            },
-        }
+        # TODO implement?
+        return {"state": "dummy"}
 
 
 class SecretsManagerRotationSchedule(GenericBaseModel):
