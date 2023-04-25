@@ -70,6 +70,7 @@ class Stack:
         self.template_body = template_body
         self._template_raw = clone_safe(self.template)
         self.template_original = clone_safe(self.template)
+
         # initialize resources
         for resource_id, resource in self.template_resources.items():
             resource["LogicalResourceId"] = self.template_original["Resources"][resource_id][
