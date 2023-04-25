@@ -20,4 +20,5 @@ jobs:
           count: 0
           labels: "semver: major"
           add_comment: true
+          token: ${{ secrets.PRO_ACCESS_TOKEN }}
           message: "Currently, only minor and patch changes are allowed on master. Your PR labels ({{ applied }}) indicate that it cannot be merged into the master at this time."
