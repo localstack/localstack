@@ -1,11 +1,19 @@
+import json
 import os
 import time
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 import pytest
 from botocore.exceptions import ClientError, ParamValidationError, WaiterError
+from dateutil.parser import parse as parse_datetime
 
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
+
+if TYPE_CHECKING:
+    from mypy_boto3_cloudtrail import LookupEventsPaginator
+
 
 THIS_DIR = os.path.dirname(__file__)
 
@@ -259,3 +267,64 @@ def test_skeleton_stack(aws_client, snapshot, cleanups, scenario, setup_role):
         .build_full_result()
     )
     snapshot.match("stack_events", stack_events)
+
+
+@pytest.fixture
+def capture_cloudtrail_events(aws_client, snapshot, create_iam_role_with_policy):
+    start_time = datetime.now(tz=timezone.utc)
+    role_name = f"role-{short_uid()}"
+    policy_name = f"policy-{short_uid()}"
+    role_definition = {
+        "Statement": {
+            "Sid": "",
+            "Effect": "Allow",
+            "Principal": {"Service": "cloudformation.amazonaws.com"},
+            "Action": "sts:AssumeRole",
+        }
+    }
+
+    policy_document = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": ["*"],
+                "Resource": ["*"],
+            },
+        ],
+    }
+    role_arn = create_iam_role_with_policy(
+        RoleName=role_name,
+        PolicyName=policy_name,
+        RoleDefinition=role_definition,
+        PolicyDefinition=policy_document,
+    )
+    time.sleep(15)
+
+    yield role_arn
+
+    end_time = datetime.now(tz=timezone.utc)
+
+    events = []
+    paginator: "LookupEventsPaginator" = aws_client.cloudtrail.get_paginator("lookup_events")
+    for page in paginator.paginate(
+        StartTime=start_time,
+        EndTime=end_time,
+    ):
+        for event in page["Events"]:
+            raw_cloudtrail_event = event.get("CloudTrailEvent")
+            if not raw_cloudtrail_event:
+                continue
+            cloudtrail_event = json.loads(raw_cloudtrail_event)
+            deploy_role = (
+                cloudtrail_event.get("userIdentity", {})
+                .get("sessionContext", {})
+                .get("sessionIssuer", {})
+                .get("arn")
+            )
+            if deploy_role == role_arn:
+                events.append(cloudtrail_event)
+
+    events.sort(key=lambda e: parse_datetime(e["eventTime"]))
+
+    snapshot.match("cloudtrail-events", events)
