@@ -1,3 +1,5 @@
+import base64
+import json
 import logging
 import os
 import queue
@@ -82,12 +84,19 @@ class SdkDockerClient(ContainerClient):
         # https://github.com/docker/cli/blob/e3dfc2426e51776a3263cab67fbba753dd3adaa9/cli/command/container/cp.go#L260
         # The isDir Bit is the most significant bit in the 32bit struct:
         # https://golang.org/src/os/types.go?s=2650:2683
-        stats = {}
-        try:
-            _, stats = container.get_archive(container_path)
-            target_exists = True
-        except APIError:
-            target_exists = False
+        api_client = self.client().api
+
+        def _head(url, **kwargs):
+            return api_client.head(
+                api_client.base_url + url, **api_client._set_request_timeout(kwargs)
+            )
+
+        result = _head(f"/containers/{container.id}/archive", params={"path": container_path})
+        stats = result.headers.get("X-Docker-Container-Path-Stat")
+        target_exists = result.ok
+
+        if target_exists:
+            stats = json.loads(base64.b64decode(stats).decode("utf-8"))
         target_is_dir = target_exists and bool(stats["mode"] & SDK_ISDIR)
         return target_exists, target_is_dir
 
