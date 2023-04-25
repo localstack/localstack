@@ -1,4 +1,4 @@
-name: Enforce only bugfix on master
+name: Enforce no major on master
 
 on:
   pull_request:
@@ -7,8 +7,8 @@ on:
     branches:
     - master
 jobs:
-  # make sure _all_ PRs have a semver label
-  enforce-no-major-minor-label:
+  # make sure no PRs with major label are merged
+  enforce-no-major-label:
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -18,6 +18,6 @@ jobs:
         with:
           mode: exactly
           count: 0
-          labels: "semver: minor, semver: major"
+          labels: "semver: major"
           add_comment: true
-          message: "Currently, only bugfix PRs are allowed on master. Your PR labels ({{ applied }}) indicate that it cannot be merged into the master at this time."
+          message: "Currently, only minor and patch changes are allowed on master. Your PR labels ({{ applied }}) indicate that it cannot be merged into the master at this time."
