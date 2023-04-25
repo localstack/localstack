@@ -1,0 +1,6 @@
+Resources:
+  Table:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: incomplete-table-description
+      # No key schema or attribute definitions
