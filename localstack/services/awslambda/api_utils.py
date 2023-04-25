@@ -3,8 +3,9 @@ import datetime
 import random
 import re
 import string
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Tuple
 
+from localstack.aws.api import RequestContext
 from localstack.aws.api import lambda_ as api_spec
 from localstack.aws.api.lambda_ import (
     AliasConfiguration,
@@ -19,7 +20,6 @@ from localstack.aws.api.lambda_ import (
     InvalidParameterValueException,
     LayerVersionContentOutput,
     PublishLayerVersionResponse,
-    ResourceNotFoundException,
     Runtime,
     TracingConfig,
 )
@@ -179,30 +179,40 @@ def qualifier_is_alias(qualifier: str) -> bool:
     return bool(ALIAS_REGEX.match(qualifier))
 
 
-def get_function_name(function_arn_or_name: str, region: str) -> str:
+def get_function_name(function_arn_or_name: str) -> str:
     """
-    Return function name from a given arn. Will check if the region provided matches the region in the arn, if an arn
+    Return function name from a given arn.
 
     :param function_arn_or_name: Function arn or only name
-    :param region: Region of the request
     :return: function name
     """
-    name, _ = get_name_and_qualifier(function_arn_or_name, qualifier=None, region=region)
+    name, _, _, _ = get_name_and_qualifier(function_arn_or_name, qualifier=None)
     return name
 
 
-def function_name_qualifier_and_region_from_arn(arn: str) -> tuple[str, str | None, str | None]:
+def function_locators_from_arn(arn: str) -> tuple[str, str | None, str | None, str | None]:
     """
     Takes a full or partial arn, or a name
 
     :param arn: Given arn (or name)
-    :return: tuple with (name, qualifier, region). Qualifier and region are none if missing
+    :return: tuple with (name, qualifier, account, region). Qualifier and region are none if missing
     """
-    return FUNCTION_NAME_REGEX.match(arn).group("name", "qualifier", "region")
+    return FUNCTION_NAME_REGEX.match(arn).group("name", "qualifier", "account", "region")
+
+
+def get_account_and_region(function_arn_or_name: str, context: RequestContext) -> Tuple[str, str]:
+    """
+    Takes a full ARN, partial ARN or a name. Returns account ID and region from ARN if available, else
+    falls back to context account ID and region.
+
+    Lambda allows cross-account access. This function should be used to resolve the correct Store based on the ARN.
+    """
+    _, _, account_id, region = function_locators_from_arn(function_arn_or_name)
+    return account_id or context.account_id, region or context.region
 
 
 def get_name_and_qualifier(
-    function_arn_or_name: str, qualifier: str | None, region: str
+    function_arn_or_name: str, qualifier: str | None
 ) -> tuple[str, str | None]:
     """
     Takes a full or partial arn, or a name and a qualifier
@@ -210,20 +220,12 @@ def get_name_and_qualifier(
 
     :param function_arn_or_name: Given arn (or name)
     :param qualifier: A qualifier for the function (or None)
-    :param region: The region the function lives in
     :return: tuple with (name, qualifier). Qualifier is none if missing
     """
-    function_name, arn_qualifier, arn_region = function_name_qualifier_and_region_from_arn(
-        function_arn_or_name
-    )
+    function_name, arn_qualifier, _, _ = function_locators_from_arn(function_arn_or_name)
     if qualifier and arn_qualifier and arn_qualifier != qualifier:
         raise InvalidParameterValueException(
             "The derived qualifier from the function name does not match the specified qualifier.",
-            Type="User",
-        )
-    if arn_region and arn_region != region:
-        raise ResourceNotFoundException(
-            f"Functions from '{arn_region}' are not reachable in this region ('{region}')",
             Type="User",
         )
     qualifier = qualifier or arn_qualifier
