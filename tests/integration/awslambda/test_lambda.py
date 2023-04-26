@@ -13,6 +13,10 @@ from botocore.response import StreamingBody
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
+from localstack.constants import (
+    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.services.awslambda.lambda_api import use_docker
 from localstack.testing.aws.lambda_utils import (
     concurrency_update_done,
@@ -2038,3 +2042,87 @@ class TestRequestIdHandling:
             e["message"].rstrip() for e in log_events["events"] if "END" in e["message"]
         ]
         snapshot.match("end_messages", end_messages)
+
+    def test_cross_account_access(self, aws_client_factory, create_lambda_function):
+        func_name = f"func-{short_uid()}"
+
+        func_arn = create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            runtime=Runtime.python3_9,
+        )["CreateFunctionResponse"]["FunctionArn"]
+
+        client = aws_client_factory.get_client(
+            "lambda",
+            "ap-south-1",
+            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+        )
+
+        # Following operation in Lambda support cross-account access. This test
+        # asserts that these operations work for an ARN in cross-account scenario.
+        # See: https://docs.aws.amazon.com/lambda/latest/dg/access-control-resource-based.html#permissions-resource-xaccountinvoke
+        #
+        # - Invoke
+        # - GetFunction
+        # - GetFunctionConfiguration
+        # - UpdateFunctionCode (NOT TESTED)
+        # - DeleteFunction
+        # - PublishVersion
+        # - ListVersionsByFunction
+        # - CreateAlias
+        # - GetAlias
+        # - ListAliases
+        # - UpdateAlias
+        # - DeleteAlias
+        # - GetPolicy (NOT TESTED)
+        # - PutFunctionConcurrency
+        # - DeleteFunctionConcurrency
+        # - ListTags
+        # - TagResource
+        # - UntagResource
+
+        assert (
+            client.get_function(FunctionName=func_arn)["Configuration"]["FunctionArn"] == func_arn
+        )
+
+        assert client.get_function_configuration(FunctionName=func_arn)["FunctionArn"] == func_arn
+
+        assert client.list_versions_by_function(FunctionName=func_arn)
+
+        assert client.put_function_concurrency(
+            FunctionName=func_arn, ReservedConcurrentExecutions=1
+        )
+
+        assert client.delete_function_concurrency(FunctionName=func_arn)
+
+        alias_name = short_uid()
+        assert client.create_alias(
+            FunctionName=func_arn, FunctionVersion="$LATEST", Name=alias_name
+        )
+
+        assert client.get_alias(FunctionName=func_arn, Name=alias_name)
+
+        alias_description = "blyat"
+        assert client.update_alias(
+            FunctionName=func_arn, Name=alias_name, Description=alias_description
+        )
+
+        resp = client.list_aliases(FunctionName=func_arn)
+        assert len(resp["Aliases"]) == 1
+        assert resp["Aliases"][0]["Description"] == alias_description
+
+        assert client.delete_alias(FunctionName=func_arn, Name=alias_name)
+
+        tags = {"foo": "bar"}
+        assert client.tag_resource(Resource=func_arn, Tags=tags)
+
+        assert client.list_tags(Resource=func_arn)["Tags"] == tags
+
+        assert client.untag_resource(Resource=func_arn, TagKeys=["lorem"])
+
+        assert client.invoke(FunctionName=func_arn)
+
+        assert client.publish_version(FunctionName=func_arn)
+
+        assert client.delete_function(FunctionName=func_arn)
