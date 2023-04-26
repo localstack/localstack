@@ -994,5 +994,225 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/nextgen/test_api_3.py::test_skeleton_changeset[create_resource_permission_denied_missing_field]": {
+    "recorded-date": "26-04-2023, 14:11:27",
+    "recorded-content": {
+      "describe_stack": {
+        "Stacks": [
+          {
+            "CreationTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "EnableTerminationProtection": false,
+            "NotificationARNs": [],
+            "RoleARN": "arn:aws:iam::111111111111:role/role-b4d3cdab",
+            "RollbackConfiguration": {},
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-bbbcdf78/b50f0980-e433-11ed-898d-027bf426c6a4",
+            "StackName": "cfnv2-test-stack-bbbcdf78",
+            "StackStatus": "REVIEW_IN_PROGRESS",
+            "StackStatusReason": "User Initiated",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_changeset_byarnalone": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/cfnv2-test-changeset-a0acc25c/6db19e1d-fb69-43b4-b237-e0d0db4776a8",
+        "ChangeSetName": "cfnv2-test-changeset-a0acc25c",
+        "Changes": [],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "UNAVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-bbbcdf78/b50f0980-e433-11ed-898d-027bf426c6a4",
+        "StackName": "cfnv2-test-stack-bbbcdf78",
+        "Status": "CREATE_PENDING",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_changeset_bynames_postwait": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/cfnv2-test-changeset-a0acc25c/6db19e1d-fb69-43b4-b237-e0d0db4776a8",
+        "ChangeSetName": "cfnv2-test-changeset-a0acc25c",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-bbbcdf78/b50f0980-e433-11ed-898d-027bf426c6a4",
+        "StackName": "cfnv2-test-stack-bbbcdf78",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_stack_postexecute": {
+        "Stacks": [
+          {
+            "CreationTime": "datetime",
+            "DeletionTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "EnableTerminationProtection": false,
+            "LastUpdatedTime": "datetime",
+            "NotificationARNs": [],
+            "RoleARN": "arn:aws:iam::111111111111:role/role-b4d3cdab",
+            "RollbackConfiguration": {},
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-bbbcdf78/b50f0980-e433-11ed-898d-027bf426c6a4",
+            "StackName": "cfnv2-test-stack-bbbcdf78",
+            "StackStatus": "ROLLBACK_COMPLETE",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "postcreate_original_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": "Resources:\n  Parameter:\n    Type: AWS::SSM::Parameter\n",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "postcreate_processed_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": "Resources:\n  Parameter:\n    Type: AWS::SSM::Parameter\n",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stack_events": {
+        "StackEvents": [
+          {
+            "EventId": "<uuid:1>",
+            "LogicalResourceId": "cfnv2-test-stack-bbbcdf78",
+            "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-bbbcdf78/b50f0980-e433-11ed-898d-027bf426c6a4",
+            "ResourceStatus": "ROLLBACK_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-bbbcdf78/b50f0980-e433-11ed-898d-027bf426c6a4",
+            "StackName": "cfnv2-test-stack-bbbcdf78",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Parameter-DELETE_COMPLETE-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "",
+            "ResourceProperties": {},
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-bbbcdf78/b50f0980-e433-11ed-898d-027bf426c6a4",
+            "StackName": "cfnv2-test-stack-bbbcdf78",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:2>",
+            "LogicalResourceId": "cfnv2-test-stack-bbbcdf78",
+            "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-bbbcdf78/b50f0980-e433-11ed-898d-027bf426c6a4",
+            "ResourceStatus": "ROLLBACK_IN_PROGRESS",
+            "ResourceStatusReason": "The following resource(s) failed to create: [Parameter]. Rollback requested by user.",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-bbbcdf78/b50f0980-e433-11ed-898d-027bf426c6a4",
+            "StackName": "cfnv2-test-stack-bbbcdf78",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Parameter-CREATE_FAILED-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "",
+            "ResourceProperties": {},
+            "ResourceStatus": "CREATE_FAILED",
+            "ResourceStatusReason": "Property validation failure: [The property {/Type} is required, The property {/Value} is required]",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-bbbcdf78/b50f0980-e433-11ed-898d-027bf426c6a4",
+            "StackName": "cfnv2-test-stack-bbbcdf78",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Parameter-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "",
+            "ResourceProperties": {},
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-bbbcdf78/b50f0980-e433-11ed-898d-027bf426c6a4",
+            "StackName": "cfnv2-test-stack-bbbcdf78",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:3>",
+            "LogicalResourceId": "cfnv2-test-stack-bbbcdf78",
+            "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-bbbcdf78/b50f0980-e433-11ed-898d-027bf426c6a4",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "User Initiated",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-bbbcdf78/b50f0980-e433-11ed-898d-027bf426c6a4",
+            "StackName": "cfnv2-test-stack-bbbcdf78",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:4>",
+            "LogicalResourceId": "cfnv2-test-stack-bbbcdf78",
+            "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-bbbcdf78/b50f0980-e433-11ed-898d-027bf426c6a4",
+            "ResourceStatus": "REVIEW_IN_PROGRESS",
+            "ResourceStatusReason": "User Initiated",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-bbbcdf78/b50f0980-e433-11ed-898d-027bf426c6a4",
+            "StackName": "cfnv2-test-stack-bbbcdf78",
+            "Timestamp": "timestamp"
+          }
+        ]
+      }
+    }
+  },
+  "tests/integration/cloudformation/nextgen/test_api_3.py::test_skeleton_stack[create_resource_permission_denied_missing_field]": {
+    "recorded-date": "26-04-2023, 14:01:45",
+    "recorded-content": {
+      "create_stack_exc": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Either Template URL or Template Body must be specified.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

@@ -1,0 +1,3 @@
+Resources:
+  Parameter:
+    Type: AWS::SSM::Parameter

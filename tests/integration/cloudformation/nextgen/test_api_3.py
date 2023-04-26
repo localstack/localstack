@@ -8,7 +8,7 @@ import pytest
 from botocore.exceptions import ClientError, ParamValidationError, WaiterError
 from dateutil.parser import parse as parse_datetime
 
-from localstack.utils.files import load_file
+from localstack.utils.files import load_file as _load_file
 from localstack.utils.strings import short_uid
 
 if TYPE_CHECKING:
@@ -37,93 +37,59 @@ THIS_DIR = os.path.dirname(__file__)
 # CreateStack - Missing item in mapping
 # CreateStack - Rules (passing / non-passing)
 
+
+def load_file(path):
+    contents = _load_file(path)
+    if not contents:
+        raise ValueError(f"could not load from {path}")
+
+    return contents
+
+
 create_args = {
     "resolve_ssm_parameter_as_stack_parameter_permission_denied": {
-        "TemplateBody": load_file(
-            os.path.join(
-                THIS_DIR,
-                "./templates/resolve_ssm_parameter_as_stack_parameter_permission_denied.yaml",
-            )
-        ),
         "Parameters": [
             {"ParameterKey": "TopicName", "ParameterValue": "ssm-parameter-cannot-access"},
         ],
         "denied_services": ["ssm"],
     },
     "resolve_ssm_parameter_as_stack_parameter_does_not_exist": {
-        "TemplateBody": load_file(
-            os.path.join(
-                THIS_DIR, "./templates/resolve_ssm_parameter_as_stack_parameter_does_not_exist.yaml"
-            )
-        ),
         "Parameters": [
             {"ParameterKey": "TopicName", "ParameterValue": "ssm-parameter-does-not-exist"},
         ],
     },
     "create_resource_permission_denied": {
-        "TemplateBody": load_file(
-            os.path.join(THIS_DIR, "./templates/create_resource_permission_denied.yaml")
-        ),
         "Parameters": [
             {"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"},
         ],
         "denied_services": ["sns"],
     },
-    "template_invalid_cfn_schema": {
-        "TemplateBody": load_file(
-            os.path.join(THIS_DIR, "./templates/template_invalid_cfn_schema.yaml")
-        ),
-    },
-    "template_invalid_yaml_syntax": {
-        "TemplateBody": load_file(
-            os.path.join(THIS_DIR, "./templates/template_invalid_yaml_syntax.yaml")
-        ),
-    },
-    "missing_required_parameter": {
-        "TemplateBody": load_file(
-            os.path.join(THIS_DIR, "./templates/missing_required_parameter.yaml")
-        ),
-    },
+    "template_invalid_cfn_schema": {},
+    "template_invalid_yaml_syntax": {},
+    "missing_required_parameter": {},
     "combi_template_parameters_ssm_parameters": {
-        "TemplateBody": load_file(
-            os.path.join(THIS_DIR, "./templates/combi_template_parameters_ssm_parameters.yaml")
-        ),
         "Parameters": [
             {"ParameterKey": "Bar", "ParameterValue": "missing-ssm-parameter"},
         ],
     },
     "invalid_parameter_type": {
-        "TemplateBody": load_file(
-            os.path.join(THIS_DIR, "./templates/invalid_parameter_type.yaml")
-        ),
         "Parameters": [
             {"ParameterKey": "Foo", "ParameterValue": "hello"},
         ],
     },
     "invalid_parameter_type_and_missing_ssm": {
-        "TemplateBody": load_file(
-            os.path.join(THIS_DIR, "./templates/invalid_parameter_type.yaml")
-        ),
         "Parameters": [
             {"ParameterKey": "Foo", "ParameterValue": "hello"},
             {"ParameterKey": "Bar", "ParameterValue": "missing-ssm-parameter"},
         ],
     },
     "missing_mappings_template_parameters": {
-        "TemplateBody": load_file(
-            os.path.join(THIS_DIR, "./templates/missing_mappings_template_parameters.yaml")
-        ),
         "Parameters": [],
     },
-    "missing_ref_missing_mappings": {
-        "TemplateBody": load_file(
-            os.path.join(THIS_DIR, "./templates/missing_ref_missing_mappings.yaml")
-        ),
-    },
-    "dynamic_reference_missing_parameter": {
-        "TemplateBody": load_file(
-            os.path.join(THIS_DIR, "./templates/dynamic_reference_missing_parameter.yaml")
-        ),
+    "missing_ref_missing_mappings": {},
+    "dynamic_reference_missing_parameter": {},
+    "create_resource_permission_denied_missing_field": {
+        "denied_services": ["ssm"],
     },
 }
 
@@ -176,6 +142,8 @@ def setup_role(create_iam_role_with_policy, aws_client):
 
 @pytest.mark.parametrize("scenario", scenarios)
 def test_skeleton_changeset(aws_client, snapshot, cleanups, scenario, setup_role):
+    template_body = load_file(os.path.join(THIS_DIR, f"./templates/{scenario}.yaml"))
+
     cfn_client: CloudFormationClient = aws_client.cloudformation
     stack_name = f"cfnv2-test-stack-{short_uid()}"
     change_set_name = f"cfnv2-test-changeset-{short_uid()}"
@@ -186,14 +154,9 @@ def test_skeleton_changeset(aws_client, snapshot, cleanups, scenario, setup_role
         create_args[scenario]["RoleARN"] = role_arn
         time.sleep(15)
 
-    # try:
-    #     validation_result = cfn_client.validate_template(TemplateBody="")
-    # except ClientError as e:
-    #     snapshot.match("create_change_set_exc", e.response)
-    #     return
-
     try:
         change_set_result = cfn_client.create_change_set(
+            TemplateBody=template_body,
             StackName=stack_name,
             ChangeSetName=change_set_name,
             ChangeSetType="CREATE",
@@ -212,12 +175,6 @@ def test_skeleton_changeset(aws_client, snapshot, cleanups, scenario, setup_role
 
     describe_stack = cfn_client.describe_stacks(StackName=stack_arn)
     snapshot.match("describe_stack", describe_stack)
-    stack_events = (
-        cfn_client.get_paginator("describe_stack_events")
-        .paginate(StackName=stack_arn)
-        .build_full_result()
-    )
-    snapshot.match("stack_events", stack_events)
     describe_changeset_byarnalone = cfn_client.describe_change_set(ChangeSetName=change_set_arn)
     snapshot.match("describe_changeset_byarnalone", describe_changeset_byarnalone)
     try:
@@ -260,6 +217,13 @@ def test_skeleton_changeset(aws_client, snapshot, cleanups, scenario, setup_role
         snapshot.match("postcreate_processed_template_exc", e.response)
     except Exception as e:
         snapshot.match("postcreate_processed_template_exc", str(e))
+
+    stack_events = (
+        cfn_client.get_paginator("describe_stack_events")
+        .paginate(StackName=stack_arn)
+        .build_full_result()
+    )
+    snapshot.match("stack_events", stack_events)
 
 
 @pytest.mark.parametrize("scenario", scenarios)
