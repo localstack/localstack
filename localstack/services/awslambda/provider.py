@@ -930,6 +930,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         function_name = request.get("FunctionName")
         account_id, region = api_utils.get_account_and_region(function_name, context)
+        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier=None)
 
         store = lambda_stores[account_id][region]
         if function_name not in store.functions:
