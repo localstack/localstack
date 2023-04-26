@@ -1083,7 +1083,7 @@ def test_s3_get_object_keys_with_slashes():
     )
 
 
-def test_s3_put_object_keys_with_slashes_and_special_characters():
+def test_s3_put_object_keys_with_trailing_slash_and_special_characters():
     _botocore_parser_integration_test(
         service="s3",
         action="PutObject",
