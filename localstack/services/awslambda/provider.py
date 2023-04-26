@@ -668,6 +668,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"1 validation error detected: Value '{request.get('Role')}'"
                 + " at 'role' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:iam::\\d{12}:role/?[a-zA-Z_0-9+=,.@\\-_/]+"
             )
+        if not self.lambda_service.can_assume_role(request.get("Role")):
+            raise InvalidParameterValueException(
+                "The role defined for the function cannot be assumed by Lambda.", Type="User"
+            )
         package_type = request.get("PackageType", PackageType.Zip)
         runtime = request.get("Runtime")
         if package_type == PackageType.Zip and runtime not in IMAGE_MAPPING:
