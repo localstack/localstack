@@ -1,6 +1,6 @@
+Parameters:
+  Foo:
+    Type: String
 Resources:
-  Table:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: incomplete-table-description
-      # No key schema or attribute definitions
+  Topic:
+    Type: AWS::SNS::Topic

@@ -90,161 +90,33 @@
     }
   },
   "tests/integration/cloudformation/nextgen/test_api_3.py::test_skeleton_stack[missing_required_parameter]": {
-    "recorded-date": "25-04-2023, 14:21:21",
+    "recorded-date": "26-04-2023, 09:28:39",
     "recorded-content": {
-      "postcreate_original_template": {
-        "StagesAvailable": [
-          "Original",
-          "Processed"
-        ],
-        "TemplateBody": "Resources:\n  Table:\n    Type: AWS::DynamoDB::Table\n    Properties:\n      TableName: incomplete-table-description\n      # No key schema or attribute definitions\n",
+      "create_stack_exc": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Parameters: [Foo] must have values",
+          "Type": "Sender"
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "postcreate_processed_template": {
-        "StagesAvailable": [
-          "Original",
-          "Processed"
-        ],
-        "TemplateBody": "Resources:\n  Table:\n    Type: AWS::DynamoDB::Table\n    Properties:\n      TableName: incomplete-table-description\n      # No key schema or attribute definitions\n",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe_stack": {
-        "Stacks": [
-          {
-            "CreationTime": "datetime",
-            "DeletionTime": "datetime",
-            "DisableRollback": false,
-            "DriftInformation": {
-              "StackDriftStatus": "NOT_CHECKED"
-            },
-            "EnableTerminationProtection": false,
-            "NotificationARNs": [],
-            "RollbackConfiguration": {},
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-62dacddb/ff4c4df0-e36b-11ed-b08f-0a01e99f7e86",
-            "StackName": "cfnv2-test-stack-62dacddb",
-            "StackStatus": "ROLLBACK_COMPLETE",
-            "Tags": []
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPStatusCode": 400
         }
       }
     }
   },
   "tests/integration/cloudformation/nextgen/test_api_3.py::test_skeleton_changeset[missing_required_parameter]": {
-    "recorded-date": "25-04-2023, 14:20:50",
+    "recorded-date": "26-04-2023, 09:28:39",
     "recorded-content": {
-      "describe_stack": {
-        "Stacks": [
-          {
-            "CreationTime": "datetime",
-            "DisableRollback": false,
-            "DriftInformation": {
-              "StackDriftStatus": "NOT_CHECKED"
-            },
-            "EnableTerminationProtection": false,
-            "NotificationARNs": [],
-            "RollbackConfiguration": {},
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-3c7346b8/da75c330-e36b-11ed-967f-0a7a322278dc",
-            "StackName": "cfnv2-test-stack-3c7346b8",
-            "StackStatus": "REVIEW_IN_PROGRESS",
-            "StackStatusReason": "User Initiated",
-            "Tags": []
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe_changeset_byarnalone": {
-        "Capabilities": [],
-        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/cfnv2-test-changeset-48a86b70/dd0a586b-f56e-41e9-a585-3021e3246726",
-        "ChangeSetName": "cfnv2-test-changeset-48a86b70",
-        "Changes": [],
-        "CreationTime": "datetime",
-        "ExecutionStatus": "UNAVAILABLE",
-        "IncludeNestedStacks": false,
-        "NotificationARNs": [],
-        "RollbackConfiguration": {},
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-3c7346b8/da75c330-e36b-11ed-967f-0a7a322278dc",
-        "StackName": "cfnv2-test-stack-3c7346b8",
-        "Status": "CREATE_PENDING",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe_changeset_bynames_postwait": {
-        "Capabilities": [],
-        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/cfnv2-test-changeset-48a86b70/dd0a586b-f56e-41e9-a585-3021e3246726",
-        "ChangeSetName": "cfnv2-test-changeset-48a86b70",
-        "Changes": [
-          {
-            "ResourceChange": {
-              "Action": "Add",
-              "Details": [],
-              "LogicalResourceId": "Table",
-              "ResourceType": "AWS::DynamoDB::Table",
-              "Scope": []
-            },
-            "Type": "Resource"
-          }
-        ],
-        "CreationTime": "datetime",
-        "ExecutionStatus": "AVAILABLE",
-        "IncludeNestedStacks": false,
-        "NotificationARNs": [],
-        "RollbackConfiguration": {},
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-3c7346b8/da75c330-e36b-11ed-967f-0a7a322278dc",
-        "StackName": "cfnv2-test-stack-3c7346b8",
-        "Status": "CREATE_COMPLETE",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe_stack_postexecute": {
-        "Stacks": [
-          {
-            "CreationTime": "datetime",
-            "DeletionTime": "datetime",
-            "DisableRollback": false,
-            "DriftInformation": {
-              "StackDriftStatus": "NOT_CHECKED"
-            },
-            "EnableTerminationProtection": false,
-            "LastUpdatedTime": "datetime",
-            "NotificationARNs": [],
-            "RollbackConfiguration": {},
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/cfnv2-test-stack-3c7346b8/da75c330-e36b-11ed-967f-0a7a322278dc",
-            "StackName": "cfnv2-test-stack-3c7346b8",
-            "StackStatus": "ROLLBACK_COMPLETE",
-            "Tags": []
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "execute_change_set_exc": {
+      "create_change_set_exc": {
         "Error": {
-          "Code": "ChangeSetNotFound",
-          "Message": "ChangeSet [cfnv2-test-changeset-48a86b70] does not exist",
+          "Code": "ValidationError",
+          "Message": "Parameters: [Foo] must have values",
           "Type": "Sender"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 404
+          "HTTPStatusCode": 400
         }
       }
     }

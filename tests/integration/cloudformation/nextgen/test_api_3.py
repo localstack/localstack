@@ -199,25 +199,33 @@ def test_skeleton_changeset(aws_client, snapshot, cleanups, scenario, setup_role
     # execute changeset
     try:
         cfn_client.execute_change_set(ChangeSetName=change_set_arn)
-        try:
-            cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_arn)
-        except WaiterError:
-            pass
+    except ClientError as e:
+        snapshot.match("execute_change_set_exc", e.response)
+    except Exception as e:
+        snapshot.match("postcreate_processed_template_exc", str(e))
+
+    try:
+        cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_arn)
+    except WaiterError:
+        pass
 
         # capture post-state
-        describe_stack_postexecute = cfn_client.describe_stacks(StackName=stack_arn)
-        snapshot.match("describe_stack_postexecute", describe_stack_postexecute)
-        postcreate_original_template = cfn_client.get_template(
-            StackName=stack_name, ChangeSetName=change_set_name, TemplateStage="Original"
-        )
-        snapshot.match("postcreate_original_template", postcreate_original_template)
+    describe_stack_postexecute = cfn_client.describe_stacks(StackName=stack_arn)
+    snapshot.match("describe_stack_postexecute", describe_stack_postexecute)
+
+    postcreate_original_template = cfn_client.get_template(
+        StackName=stack_name, TemplateStage="Original"
+    )
+    snapshot.match("postcreate_original_template", postcreate_original_template)
+    try:
         postcreate_processed_template = cfn_client.get_template(
-            StackName=stack_name, ChangeSetName=change_set_name, TemplateStage="Processed"
+            StackName=stack_name, TemplateStage="Processed"
         )
         snapshot.match("postcreate_processed_template", postcreate_processed_template)
     except ClientError as e:
-        snapshot.match("execute_change_set_exc", e.response)
-        return
+        snapshot.match("postcreate_processed_template_exc", e.response)
+    except Exception as e:
+        snapshot.match("postcreate_processed_template_exc", str(e))
 
 
 @pytest.mark.parametrize("scenario", scenarios)
@@ -229,6 +237,7 @@ def test_skeleton_stack(aws_client, snapshot, cleanups, scenario, setup_role):
     if denied_services:
         role_arn = setup_role(denied_services)
         create_args[scenario]["RoleARN"] = role_arn
+        # TODO: only AWS cloud
         time.sleep(15)
 
     try:
@@ -251,22 +260,30 @@ def test_skeleton_stack(aws_client, snapshot, cleanups, scenario, setup_role):
     except WaiterError:
         pass
 
-    postcreate_original_template = cfn_client.get_template(
-        StackName=stack_name, TemplateStage="Original"
-    )
-    snapshot.match("postcreate_original_template", postcreate_original_template)
-    postcreate_processed_template = cfn_client.get_template(
-        StackName=stack_name, TemplateStage="Processed"
-    )
-    snapshot.match("postcreate_processed_template", postcreate_processed_template)
     describe_stack = cfn_client.describe_stacks(StackName=stack_arn)
     snapshot.match("describe_stack", describe_stack)
+
     stack_events = (
         cfn_client.get_paginator("describe_stack_events")
         .paginate(StackName=stack_arn)
         .build_full_result()
     )
     snapshot.match("stack_events", stack_events)
+
+    postcreate_original_template = cfn_client.get_template(
+        StackName=stack_name, TemplateStage="Original"
+    )
+    snapshot.match("postcreate_original_template", postcreate_original_template)
+
+    try:
+        postcreate_processed_template = cfn_client.get_template(
+            StackName=stack_name, TemplateStage="Processed"
+        )
+        snapshot.match("postcreate_processed_template", postcreate_processed_template)
+    except ClientError as e:
+        snapshot.match("postcreate_processed_template_exc", e.response)
+    except Exception as e:
+        snapshot.match("postcreate_processed_template_exc", str(e))
 
 
 @pytest.fixture
