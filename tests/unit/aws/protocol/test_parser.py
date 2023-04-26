@@ -1083,6 +1083,17 @@ def test_s3_get_object_keys_with_slashes():
     )
 
 
+def test_s3_put_object_keys_with_slashes_and_special_characters():
+    _botocore_parser_integration_test(
+        service="s3",
+        action="PutObject",
+        Bucket="test-bucket",
+        Key="test@key/",
+        ContentLength=0,
+        Metadata={},
+    )
+
+
 def test_restxml_headers_parsing():
     """Test the parsing of a map with the location trait 'headers'."""
     _botocore_parser_integration_test(
