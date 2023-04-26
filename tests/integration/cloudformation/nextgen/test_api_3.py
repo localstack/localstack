@@ -108,29 +108,15 @@ create_args = {
             {"ParameterKey": "Bar", "ParameterValue": "missing-ssm-parameter"},
         ],
     },
+    "missing_mappings_template_parameters": {
+        "TemplateBody": load_file(
+            os.path.join(THIS_DIR, "./templates/missing_mappings_template_parameters.yaml")
+        ),
+        "Parameters": [],
+    },
 }
 
-scenarios = [
-    # "resolve_ssm_parameter_as_stack_parameter_permission_denied",
-    # "resolve_ssm_parameter_as_stack_parameter_does_not_exist",
-    # "create_resource_permission_denied",
-    # "template_invalid_cfn_schema",
-    # "template_invalid_yaml_syntax",
-    # "missing_required_parameter",
-    ###
-    # "missing_field_in_resource_properties",
-    # "additional_field_in_resource_properties_not_in_schema",
-    # "invalid_intrinsic_function_usage",
-    # "ref_nonexisting",
-    # "import_nonexisting_export",
-    # "missing_item_in_mapping",
-    # "passing_rule",
-    # "failing_rule",
-    # optional
-    # "invalid_global_transformation",
-    "invalid_parameter_type",
-    "combi_template_parameters_ssm_parameters",
-]
+scenarios = list(create_args.keys())
 
 
 @pytest.fixture

@@ -462,5 +462,21 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/nextgen/test_api_3.py::test_skeleton_changeset[missing_mappings_template_parameters]": {
+    "recorded-date": "26-04-2023, 09:55:29",
+    "recorded-content": {
+      "create_change_set_exc": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Parameters: [Foo] must have values",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
