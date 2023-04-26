@@ -1,0 +1,6 @@
+Resources:
+  Parameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      # missing value, type
+      Foo: bar # additional field

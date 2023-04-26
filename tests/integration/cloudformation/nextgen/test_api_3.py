@@ -105,6 +105,7 @@ create_args = {
             {"ParameterKey": "Param2", "ParameterValue": "HelloWorld"},  # correct: HelloWorld2
         ],
     },
+    "additional_field_missing_field": {},
 }
 
 scenarios = list(create_args.keys())
