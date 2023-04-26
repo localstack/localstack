@@ -430,5 +430,37 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/nextgen/test_api_3.py::test_skeleton_changeset[combi_template_parameters_ssm_parameters]": {
+    "recorded-date": "26-04-2023, 09:46:32",
+    "recorded-content": {
+      "create_change_set_exc": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Unable to fetch parameters [missing-ssm-parameter] from parameter store for this account.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/nextgen/test_api_3.py::test_skeleton_changeset[invalid_parameter_type]": {
+    "recorded-date": "26-04-2023, 09:51:37",
+    "recorded-content": {
+      "create_change_set_exc": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Parameter 'Foo' must be a number.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

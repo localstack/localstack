@@ -1,0 +1,8 @@
+Parameters:
+  Foo:
+    Type: String
+  Bar:
+    Type: AWS::SSM::Parameter::Value<String>
+Resources:
+  Topic:
+    Type: AWS::SNS::Topic

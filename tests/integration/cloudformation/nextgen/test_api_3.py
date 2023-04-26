@@ -83,15 +83,40 @@ create_args = {
             os.path.join(THIS_DIR, "./templates/missing_required_parameter.yaml")
         ),
     },
+    "combi_template_parameters_ssm_parameters": {
+        "TemplateBody": load_file(
+            os.path.join(THIS_DIR, "./templates/combi_template_parameters_ssm_parameters.yaml")
+        ),
+        "Parameters": [
+            {"ParameterKey": "Bar", "ParameterValue": "missing-ssm-parameter"},
+        ],
+    },
+    "invalid_parameter_type": {
+        "TemplateBody": load_file(
+            os.path.join(THIS_DIR, "./templates/invalid_parameter_type.yaml")
+        ),
+        "Parameters": [
+            {"ParameterKey": "Foo", "ParameterValue": "hello"},
+        ],
+    },
+    "invalid_parameter_type_and_missing_ssm": {
+        "TemplateBody": load_file(
+            os.path.join(THIS_DIR, "./templates/invalid_parameter_type.yaml")
+        ),
+        "Parameters": [
+            {"ParameterKey": "Foo", "ParameterValue": "hello"},
+            {"ParameterKey": "Bar", "ParameterValue": "missing-ssm-parameter"},
+        ],
+    },
 }
 
 scenarios = [
-    "resolve_ssm_parameter_as_stack_parameter_permission_denied",
-    "resolve_ssm_parameter_as_stack_parameter_does_not_exist",
-    "create_resource_permission_denied",
-    "template_invalid_cfn_schema",
-    "template_invalid_yaml_syntax",
-    "missing_required_parameter",
+    # "resolve_ssm_parameter_as_stack_parameter_permission_denied",
+    # "resolve_ssm_parameter_as_stack_parameter_does_not_exist",
+    # "create_resource_permission_denied",
+    # "template_invalid_cfn_schema",
+    # "template_invalid_yaml_syntax",
+    # "missing_required_parameter",
     ###
     # "missing_field_in_resource_properties",
     # "additional_field_in_resource_properties_not_in_schema",
@@ -103,6 +128,8 @@ scenarios = [
     # "failing_rule",
     # optional
     # "invalid_global_transformation",
+    "invalid_parameter_type",
+    "combi_template_parameters_ssm_parameters",
 ]
 
 

@@ -1,0 +1,6 @@
+Parameters:
+  Foo:
+    Type: Number
+Resources:
+  Topic:
+    Type: AWS::SNS::Topic
