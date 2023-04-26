@@ -1,0 +1,14 @@
+Resources:
+  MyTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref MissingRef
+      DisplayName: !FindInMap [Mapping01, Key03, Name]
+
+
+Mappings:
+  Mapping01:
+    Key01:
+      Name: Value01
+    Key02:
+      Name: Value02

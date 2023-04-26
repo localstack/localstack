@@ -478,5 +478,37 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/nextgen/test_api_3.py::test_skeleton_changeset[missing_ref_missing_mappings]": {
+    "recorded-date": "26-04-2023, 10:03:44",
+    "recorded-content": {
+      "create_change_set_exc": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template error: Unable to get mapping for Mapping01::Key03::Name",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/nextgen/test_api_3.py::test_skeleton_changeset[dynamic_reference_missing_parameter]": {
+    "recorded-date": "26-04-2023, 10:11:28",
+    "recorded-content": {
+      "create_change_set_exc": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: [/Resources/MyTopic/Properties/TopicName] map keys must be strings; received a map instead",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

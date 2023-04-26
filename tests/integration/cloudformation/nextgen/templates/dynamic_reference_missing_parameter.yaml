@@ -1,0 +1,5 @@
+Resources:
+  MyTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: '{{resolve:ssm:missing-parameter}}'

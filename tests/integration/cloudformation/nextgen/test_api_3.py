@@ -12,6 +12,7 @@ from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
 if TYPE_CHECKING:
+    from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_cloudtrail import LookupEventsPaginator
 
 
@@ -114,6 +115,16 @@ create_args = {
         ),
         "Parameters": [],
     },
+    "missing_ref_missing_mappings": {
+        "TemplateBody": load_file(
+            os.path.join(THIS_DIR, "./templates/missing_ref_missing_mappings.yaml")
+        ),
+    },
+    "dynamic_reference_missing_parameter": {
+        "TemplateBody": load_file(
+            os.path.join(THIS_DIR, "./templates/dynamic_reference_missing_parameter.yaml")
+        ),
+    },
 }
 
 scenarios = list(create_args.keys())
@@ -165,7 +176,7 @@ def setup_role(create_iam_role_with_policy, aws_client):
 
 @pytest.mark.parametrize("scenario", scenarios)
 def test_skeleton_changeset(aws_client, snapshot, cleanups, scenario, setup_role):
-    cfn_client = aws_client.cloudformation
+    cfn_client: CloudFormationClient = aws_client.cloudformation
     stack_name = f"cfnv2-test-stack-{short_uid()}"
     change_set_name = f"cfnv2-test-changeset-{short_uid()}"
 
@@ -174,6 +185,12 @@ def test_skeleton_changeset(aws_client, snapshot, cleanups, scenario, setup_role
         role_arn = setup_role(denied_services)
         create_args[scenario]["RoleARN"] = role_arn
         time.sleep(15)
+
+    # try:
+    #     validation_result = cfn_client.validate_template(TemplateBody="")
+    # except ClientError as e:
+    #     snapshot.match("create_change_set_exc", e.response)
+    #     return
 
     try:
         change_set_result = cfn_client.create_change_set(
@@ -203,7 +220,11 @@ def test_skeleton_changeset(aws_client, snapshot, cleanups, scenario, setup_role
     snapshot.match("stack_events", stack_events)
     describe_changeset_byarnalone = cfn_client.describe_change_set(ChangeSetName=change_set_arn)
     snapshot.match("describe_changeset_byarnalone", describe_changeset_byarnalone)
-    cfn_client.get_waiter("change_set_create_complete").wait(ChangeSetName=change_set_arn)
+    try:
+        cfn_client.get_waiter("change_set_create_complete").wait(ChangeSetName=change_set_arn)
+    except Exception as e:
+        snapshot.match("wait_for_create_change_set_exc", str(e))
+
     describe_changeset_bynames_postwait = cfn_client.describe_change_set(
         ChangeSetName=change_set_name, StackName=stack_name
     )
