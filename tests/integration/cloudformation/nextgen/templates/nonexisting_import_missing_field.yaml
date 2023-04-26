@@ -1,0 +1,6 @@
+Resources:
+  MyTopic:
+    Type: AWS::SSM::Parameter
+    Properties:
+      # missing type field
+      Value: !ImportValue MissingImport

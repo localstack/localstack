@@ -91,6 +91,7 @@ create_args = {
     "create_resource_permission_denied_missing_field": {
         "denied_services": ["ssm"],
     },
+    "nonexisting_import_missing_field": {},
 }
 
 scenarios = list(create_args.keys())
