@@ -11,6 +11,12 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
+    StatesErrorNameType,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     LambdaResource,
 )
@@ -20,6 +26,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.utils.aws.aws_stack import connect_to_service
+from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import to_bytes, to_str
 
 
@@ -53,31 +60,31 @@ class StateTaskLambda(StateTask):
         return error, cause
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        # TODO: produce snapshot tests to adjust the following errors.
         if isinstance(ex, LambdaFunctionErrorException):
-            return FailureEvent(
-                error_name=CustomErrorName("Exception"),
-                event_type=HistoryEventType.TaskFailed,
-                event_details=EventDetails(
-                    taskFailedEventDetails=TaskFailedEventDetails(
-                        error="Exception",
-                        cause=ex.payload,
-                    )
-                ),
-            )
+            error = "Exception"
+            error_name = CustomErrorName(error)
+            cause = ex.payload
         elif isinstance(ex, ClientError):
             error, cause = self._error_cause_from_client_error(ex)
-            return FailureEvent(
-                error_name=CustomErrorName(error),
-                event_type=HistoryEventType.TaskFailed,
-                event_details=EventDetails(
-                    taskFailedEventDetails=TaskFailedEventDetails(
-                        error=error,
-                        cause=cause,
-                    )
-                ),
-            )
-        return super()._from_error(env=env, ex=ex)
+            error_name = CustomErrorName(error)
+        else:
+            error = "Exception"
+            error_name = (StatesErrorName(StatesErrorNameType.StatesTaskFailed),)
+            cause = str(ex)
+
+        return FailureEvent(
+            error_name=error_name,
+            event_type=HistoryEventType.TaskFailed,
+            event_details=EventDetails(
+                taskFailedEventDetails=TaskFailedEventDetails(
+                    error=error,
+                    cause=cause,
+                )
+            ),
+        )
+
+    def _from_uncaught_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        return self._from_error(env=env, ex=ex)
 
     def _eval_execution(self, env: Environment) -> None:
         # TODO: check type? input (file) path as lm input? raw binary inputs? always json?
@@ -111,7 +118,10 @@ class StateTaskLambda(StateTask):
         # TODO: supported response types?
         resp_payload = invocation_resp["Payload"].read()
         resp_payload_str = to_str(resp_payload)
-        resp_payload_json: json = json.loads(resp_payload_str)
-        resp_payload_json.pop("ResponseMetadata", None)
+        resp_payload_json: json = json.loads(resp_payload_str) or dict()
+        if resp_payload_json:
+            resp_payload_json.pop("ResponseMetadata", None)
+        invocation_resp["Payload"] = resp_payload_json
 
-        env.stack.append(resp_payload_json)
+        response = select_from_typed_dict(typed_dict=InvocationResponse, obj=invocation_resp)
+        env.stack.append(response)

@@ -1,7 +1,9 @@
 from localstack.aws.api.stepfunctions import (
+    HistoryEventExecutionDataDetails,
     HistoryEventType,
     TaskScheduledEventDetails,
     TaskStartedEventDetails,
+    TaskSucceededEventDetails,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
@@ -20,12 +22,20 @@ from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 class StateTaskServiceLambda(StateTaskService, StateTaskLambda):
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         failure_event: FailureEvent = super()._from_error(env=env, ex=ex)
+        self._normalise_failure_event(failure_event)
+        return failure_event
+
+    def _from_uncaught_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        failure_event: FailureEvent = super()._from_uncaught_error(env=env, ex=ex)
+        self._normalise_failure_event(failure_event)
+        return failure_event
+
+    def _normalise_failure_event(self, failure_event: FailureEvent) -> None:
         event_details: EventDetails = failure_event.event_details
         if "taskFailedEventDetails" in event_details:
             task_failed_details: TaskStartedEventDetails = event_details["taskFailedEventDetails"]
             task_failed_details["resourceType"] = self._get_resource_type()
             task_failed_details["resource"] = self.resource.api_action
-        return failure_event
 
     def _eval_execution(self, env: Environment) -> None:
         parameters = self._eval_parameters(env=env)
@@ -51,3 +61,16 @@ class StateTaskServiceLambda(StateTaskService, StateTaskLambda):
             ),
         )
         super()._eval_execution(env=env)
+        response = env.stack[-1]
+
+        env.event_history.add_event(
+            hist_type_event=HistoryEventType.TaskSucceeded,
+            event_detail=EventDetails(
+                taskSucceededEventDetails=TaskSucceededEventDetails(
+                    resourceType=self._get_resource_type(),
+                    resource=self.resource.api_action,
+                    output=to_json_str(response),
+                    outputDetails=HistoryEventExecutionDataDetails(truncated=False),
+                )
+            ),
+        )

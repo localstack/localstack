@@ -1,20 +1,23 @@
 from typing import Final, Optional
 
+from botocore.exceptions import ClientError
+
 from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
     HistoryEventType,
+    TaskFailedEventDetails,
     TaskScheduledEventDetails,
     TaskStartedEventDetails,
     TaskSucceededEventDetails,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
+    CustomErrorName,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
     StateTaskService,
-)
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task_lambda import (
-    StateTaskLambda,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
@@ -24,6 +27,9 @@ from localstack.utils.strings import camel_to_snake_case
 
 
 class StateTaskServiceSqs(StateTaskService):
+    _ERROR_NAME_CLIENT: Final[str] = "SQS.SdkClientException"
+    _ERROR_NAME_AWS: Final[str] = "SQS.AmazonSQSException"
+
     _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
         "sendmessage": {
             "DelaySeconds",
@@ -35,14 +41,52 @@ class StateTaskServiceSqs(StateTaskService):
         }
     }
 
-    # def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-    #     failure_event: FailureEvent = super()._from_error(env=env, ex=ex)
-    #     event_details: EventDetails = failure_event.event_details
-    #     if "taskFailedEventDetails" in event_details:
-    #         task_failed_details: TaskStartedEventDetails = event_details["taskFailedEventDetails"]
-    #         task_failed_details["resourceType"] = self._get_resource_type()
-    #         task_failed_details["resource"] = self.resource.api_action
-    #     return failure_event
+    def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        if isinstance(ex, ClientError):
+            return FailureEvent(
+                error_name=CustomErrorName(self._ERROR_NAME_CLIENT),
+                event_type=HistoryEventType.TaskFailed,
+                event_details=EventDetails(
+                    taskFailedEventDetails=TaskFailedEventDetails(
+                        error=self._ERROR_NAME_CLIENT,
+                        cause=ex.response["Error"][
+                            "Message"
+                        ],  # TODO: update to report expected cause.
+                        resource=self.resource.api_action,
+                        resourceType=self.resource.service_name,
+                    )
+                ),
+            )
+        else:
+            return FailureEvent(
+                error_name=CustomErrorName(self._ERROR_NAME_AWS),
+                event_type=HistoryEventType.TaskFailed,
+                event_details=EventDetails(
+                    taskFailedEventDetails=TaskFailedEventDetails(
+                        error=self._ERROR_NAME_AWS,
+                        cause=str(ex),  # TODO: update to report expected cause.
+                        resource=self.resource.api_action,
+                        resourceType=self.resource.service_name,
+                    )
+                ),
+            )
+
+    def _from_uncaught_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        error_name: str = (
+            self._ERROR_NAME_CLIENT if isinstance(ex, ClientError) else self._ERROR_NAME_AWS
+        )
+        return FailureEvent(
+            error_name=CustomErrorName(error_name),
+            event_type=HistoryEventType.TaskFailed,
+            event_details=EventDetails(
+                taskFailedEventDetails=TaskFailedEventDetails(
+                    error=error_name,
+                    cause=str(ex),  # TODO: update to report expected cause.
+                    resource=self.resource.api_action,
+                    resourceType=self.resource.service_name,
+                )
+            ),
+        )
 
     def _eval_parameters(self, env: Environment) -> dict:
         api_action: str = self.resource.api_action
@@ -57,9 +101,8 @@ class StateTaskServiceSqs(StateTaskService):
             parameter for parameter in parameters.keys() if parameter not in supported_parameters
         ]
         if unsupported_parameters:
-            raise RuntimeError(
-                f"TODO: raise unsupported parameters error? '{unsupported_parameters}'"
-            )
+            for unsupported_parameter in unsupported_parameters:
+                parameters.pop(unsupported_parameter, None)
 
         return parameters
 

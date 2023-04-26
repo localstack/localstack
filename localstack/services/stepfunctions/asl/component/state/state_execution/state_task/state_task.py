@@ -61,6 +61,6 @@ class StateTask(ExecutionState, abc.ABC):
         self.resource = state_props.get(Resource)
 
     def _eval_body(self, env: Environment) -> None:
-        env.context_object["Task"] = Task(Token="TODO")
+        env.context_object["Task"] = Task(Token="Unsupported")
         super(StateTask, self)._eval_body(env=env)
         env.context_object["Task"] = None

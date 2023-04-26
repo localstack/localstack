@@ -12,16 +12,27 @@
       "Catch": [
         {
           "ErrorEquals": [
-            "Lambda.Unknown"
+            "SQS.SdkClientException"
           ],
-          "Next": "EndWithHandler"
+          "Next": "EndWithClientHandler"
+        },
+        {
+          "ErrorEquals": [
+            "SQS.AmazonSQSException"
+          ],
+          "Next": "EndWithSQSException"
         }
       ],
       "Next": "EndWithFinal",
     },
-    "EndWithHandler": {
+    "EndWithClientHandler": {
       "Type": "Pass",
-      "ResultPath": "$.error",
+      "ResultPath": "$.client_error",
+      "End": true
+    },
+    "EndWithSQSException" : {
+      "Type": "Pass",
+      "ResultPath": "$.aws_error",
       "End": true
     },
     "EndWithFinal": {

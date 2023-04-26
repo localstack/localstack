@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from localstack.aws.api.sqs import MessageSystemAttributeNameForSends
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.templates.services.services_templates import (
@@ -15,19 +16,19 @@ pytestmark = pytest.mark.skipif(
 
 
 @pytest.mark.skip_snapshot_verify(
-    paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
+    paths=[
+        "$..loggingConfiguration",
+        "$..tracingConfiguration",
+        "$..previousEventId",
+        # TODO: add support for Sdk Http metadata.
+        "$..SdkHttpMetadata",
+        "$..SdkResponseMetadata",
+        # TODO: investigate `cause` construction issues with reported LS's SQS errors.
+        "$..cause",
+        "$..Cause",
+    ]
 )
 class TestTaskServiceSqs:
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..events..executionSucceededEventDetails.output.SdkHttpMetadata",
-            "$..events..executionSucceededEventDetails.output.SdkResponseMetadata",
-            "$..events..stateExitedEventDetails.output.SdkHttpMetadata",
-            "$..events..stateExitedEventDetails.output.SdkResponseMetadata",
-            "$..events..taskSucceededEventDetails.output.SdkHttpMetadata",
-            "$..events..taskSucceededEventDetails.output.SdkResponseMetadata",
-        ]
-    )
     def test_send_message(
         self,
         aws_client,
@@ -60,3 +61,39 @@ class TestTaskServiceSqs:
         receive_message_res = aws_client.sqs.receive_message(QueueUrl=queue_url)
         assert len(receive_message_res["Messages"]) == 1
         assert receive_message_res["Messages"][0]["Body"] == message_body
+
+    def test_send_message_unsupported_parameters(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sqs_create_queue,
+        snapshot,
+    ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
+        snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
+
+        template = ST.load_sfn_template(ST.SQS_SEND_MESSAGE)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {
+                "QueueUrl": queue_url,
+                "MessageBody": "test",
+                "MessageSystemAttribute": {
+                    MessageSystemAttributeNameForSends.AWSTraceHeader: "test"
+                },
+            }
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            snapshot,
+            definition,
+            exec_input,
+        )
