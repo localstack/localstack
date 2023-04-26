@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
 import pytest
@@ -358,3 +358,60 @@ def capture_cloudtrail_events(aws_client, snapshot, create_iam_role_with_policy)
     events.sort(key=lambda e: parse_datetime(e["eventTime"]))
 
     snapshot.match("cloudtrail-events", events)
+
+
+@pytest.fixture
+def store_events(request, create_iam_role_with_policy, aws_client):
+    test_name = request.node.name
+    start_time = datetime.now(tz=timezone.utc) - timedelta(hours=1)
+
+    role_name = f"role-{short_uid()}"
+    policy_name = f"policy-{short_uid()}"
+    role_definition = {
+        "Statement": {
+            "Sid": "",
+            "Effect": "Allow",
+            "Principal": {"Service": "cloudformation.amazonaws.com"},
+            "Action": "sts:AssumeRole",
+        }
+    }
+
+    policy_document = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": ["*"],
+                "Resource": ["*"],
+            },
+        ],
+    }
+    role_arn = create_iam_role_with_policy(
+        RoleName=role_name,
+        PolicyName=policy_name,
+        RoleDefinition=role_definition,
+        PolicyDefinition=policy_document,
+    )
+
+    yield role_arn
+
+    end_time = datetime.now(tz=timezone.utc) + timedelta(hours=1)
+
+    stepfunctions_payload = {
+        "test_name": test_name,
+        "role_arn": role_arn,
+        "start_time": start_time.isoformat(),
+        "end_time": end_time.isoformat(),
+    }
+
+    step_function_arn = aws_client.ssm.get_parameter(Name="cloudtrail-stepfunction-arn",)[
+        "Parameter"
+    ]["Value"]
+
+    aws_client.stepfunctions.start_execution(
+        stateMachineArn=step_function_arn, input=json.dumps(stepfunctions_payload)
+    )
+
+
+def test_foo(store_events):
+    pass
