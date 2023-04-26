@@ -90,6 +90,7 @@ def get_lambda_logs_event(aws_client):
     paths=[
         # dynamodb issues, not related to lambda
         "$..TableDescription.BillingModeSummary.LastUpdateToPayPerRequestDateTime",
+        "$..TableDescription.DeletionProtectionEnabled",
         "$..TableDescription.ProvisionedThroughput.LastDecreaseDateTime",
         "$..TableDescription.ProvisionedThroughput.LastIncreaseDateTime",
         "$..TableDescription.StreamSpecification",
