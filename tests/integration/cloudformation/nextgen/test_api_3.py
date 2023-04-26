@@ -99,6 +99,12 @@ create_args = {
         ],
         "denied_services": ["sns"],
     },
+    "failing_rule_missing_import": {
+        "Parameters": [
+            {"ParameterKey": "Param1", "ParameterValue": "HelloWorld"},
+            {"ParameterKey": "Param2", "ParameterValue": "HelloWorld"},  # correct: HelloWorld2
+        ],
+    },
 }
 
 scenarios = list(create_args.keys())
