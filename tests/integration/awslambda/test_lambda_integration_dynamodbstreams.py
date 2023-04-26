@@ -117,7 +117,7 @@ class TestDynamoDBEventSourceMapping:
         policy_name = f"test-lambda-policy-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
         partition_key = "my_partition_key"
-        db_item = {partition_key: {"S": "hello world"}}
+        db_item = {partition_key: {"S": "hello world"}, "binary_key": {"B": b"foobar"}}
         role_arn = create_iam_role_with_policy(
             RoleName=role,
             PolicyName=policy_name,

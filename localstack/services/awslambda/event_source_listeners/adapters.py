@@ -16,6 +16,7 @@ from localstack.services.awslambda.lambda_executors import (
     InvocationResult as LegacyInvocationResult,  # TODO: extract
 )
 from localstack.services.awslambda.lambda_utils import event_source_arn_matches
+from localstack.utils.json import BytesEncoder
 from localstack.utils.strings import to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -132,7 +133,7 @@ class EventSourceAsfAdapter(EventSourceAdapter):
             account_id=fn_parts["account_id"],
             invocation_type=invocation_type,
             client_context=json.dumps(context or {}),
-            payload=to_bytes(json.dumps(payload or {})),
+            payload=to_bytes(json.dumps(payload or {}, cls=BytesEncoder)),
             request_id=gen_amzn_requestid(),
         )
 
@@ -189,7 +190,7 @@ class EventSourceAsfAdapter(EventSourceAdapter):
                 account_id=fn_parts["account_id"],
                 invocation_type=invocation_type,
                 client_context=json.dumps(context or {}),
-                payload=to_bytes(json.dumps(payload or {})),
+                payload=to_bytes(json.dumps(payload or {}, cls=BytesEncoder)),
                 request_id=gen_amzn_requestid(),
             )
 
