@@ -38,7 +38,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]) -> Optional[Test
     use_legacy_report = os.environ.get("SNAPSHOT_LEGACY_REPORT", "0") == "1"
 
     result: _Result = yield
-    report: TestReport = result.result
+    report: TestReport = result.get_result()
 
     if call.excinfo is not None and isinstance(call.excinfo.value, SnapshotAssertionError):
         err: SnapshotAssertionError = call.excinfo.value
