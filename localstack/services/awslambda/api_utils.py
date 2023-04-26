@@ -54,7 +54,7 @@ DESTINATION_ARN_PATTERN = re.compile(
 
 # Pattern for extracting various attributes from a full or partial ARN or just a function name.
 FUNCTION_NAME_REGEX = re.compile(
-    r"(arn:(aws[a-zA-Z-]*):lambda:)?((?P<region>[a-z]{2}(-gov)?-[a-z]+-\d{1}):)?(?P<account>\d{12}:)?(function:)?(?P<name>[a-zA-Z0-9-_\.]+)(:(?P<qualifier>\$LATEST|[a-zA-Z0-9-_]+))?"
+    r"(arn:(aws[a-zA-Z-]*):lambda:)?((?P<region>[a-z]{2}(-gov)?-[a-z]+-\d{1}):)?(?:(?P<account>\d{12}):)?(function:)?(?P<name>[a-zA-Z0-9-_\.]+)(:(?P<qualifier>\$LATEST|[a-zA-Z0-9-_]+))?"
 )  # also length 1-170 incl.
 # Pattern for a lambda function handler
 HANDLER_REGEX = re.compile(r"[^\s]+")
