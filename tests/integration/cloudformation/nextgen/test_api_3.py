@@ -92,6 +92,13 @@ create_args = {
         "denied_services": ["ssm"],
     },
     "nonexisting_import_missing_field": {},
+    "failing_rule_resource_permissions": {
+        "Parameters": [
+            {"ParameterKey": "Param1", "ParameterValue": "HelloWorld"},
+            {"ParameterKey": "Param2", "ParameterValue": "HelloWorld"},  # correct: HelloWorld2
+        ],
+        "denied_services": ["sns"],
+    },
 }
 
 scenarios = list(create_args.keys())
