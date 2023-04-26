@@ -87,9 +87,9 @@ class SdkDockerClient(ContainerClient):
         # https://golang.org/src/os/types.go?s=2650:2683
         api_client = self.client().api
 
-        def _head(url, **kwargs):
+        def _head(path_suffix, **kwargs):
             return api_client.head(
-                api_client.base_url + url, **api_client._set_request_timeout(kwargs)
+                api_client.base_url + path_suffix, **api_client._set_request_timeout(kwargs)
             )
 
         escaped_id = quote(container.id, safe="/:")
