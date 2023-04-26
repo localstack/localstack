@@ -186,7 +186,7 @@ def get_function_name(function_arn_or_name: str) -> str:
     :param function_arn_or_name: Function arn or only name
     :return: function name
     """
-    name, _, _, _ = get_name_and_qualifier(function_arn_or_name, qualifier=None)
+    name, _ = get_name_and_qualifier(function_arn_or_name, qualifier=None)
     return name
 
 
