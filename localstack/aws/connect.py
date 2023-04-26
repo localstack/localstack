@@ -448,9 +448,7 @@ class ExternalClientFactory(ClientFactory):
         :param region_name: Name of the AWS region to be associated with the client
             If set to None, loads from botocore session.
         :param aws_access_key_id: Access key to use for the client.
-            Defaults to dummy value ("test")
         :param aws_secret_access_key: Secret key to use for the client.
-            Defaults to "dummy value ("test")
         :param aws_session_token: Session token to use for the client.
             Not being used if not set.
         :param endpoint_url: Full endpoint URL to be used by the client.
