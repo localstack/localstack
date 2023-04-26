@@ -3350,6 +3350,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self, context: RequestContext, function_name: FunctionName
     ) -> None:
         account_id, region = api_utils.get_account_and_region(function_name, context)
+        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, None)
         store = lambda_stores[account_id][region]
         fn = store.functions.get(function_name)
         fn.reserved_concurrent_executions = None
@@ -3402,7 +3403,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
 
-        account_id, region = api_utils.get_account_and_region(fn_name, context)
+        account_id, region = api_utils.get_account_and_region(resource, context)
         fn = self._get_function(function_name=fn_name, account_id=account_id, region=region)
 
         self._update_tags(fn, tags)
