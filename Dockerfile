@@ -154,6 +154,15 @@ ADD localstack/ localstack/
 # Generate the plugin entrypoints
 RUN make entrypoints
 
+# Install packages which should be shipped by default
+RUN --mount=type=cache,target=/root/.cache \
+    --mount=type=cache,target=/var/lib/localstack/cache \
+    source .venv/bin/activate && \
+    python -m localstack.cli.lpm install \
+      dynamodb-local && \
+    chown -R localstack:localstack /usr/lib/localstack && \
+    chmod -R 777 /usr/lib/localstack
+
 # link the extensions virtual environment into the localstack venv
 RUN echo /var/lib/localstack/lib/extensions/python_venv/lib/python3.10/site-packages > localstack-extensions-venv.pth && \
     mv localstack-extensions-venv.pth .venv/lib/python*/site-packages/
