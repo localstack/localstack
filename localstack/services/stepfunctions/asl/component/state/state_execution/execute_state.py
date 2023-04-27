@@ -1,7 +1,12 @@
 import abc
+import logging
 from typing import Optional
 
-from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, HistoryEventType
+from localstack.aws.api.stepfunctions import (
+    ExecutionFailedEventDetails,
+    HistoryEventType,
+    TaskFailedEventDetails,
+)
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import (
     CatchOutcome,
@@ -10,6 +15,12 @@ from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome 
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
+    StatesErrorNameType,
+)
 from localstack.services.stepfunctions.asl.component.common.path.result_path import ResultPath
 from localstack.services.stepfunctions.asl.component.common.result_selector import ResultSelector
 from localstack.services.stepfunctions.asl.component.common.retry.retry_decl import RetryDecl
@@ -17,6 +28,9 @@ from localstack.services.stepfunctions.asl.component.common.retry.retry_outcome 
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
+
+LOG = logging.getLogger(__name__)
 
 
 class ExecutionState(CommonStateField, abc.ABC):
@@ -55,13 +69,22 @@ class ExecutionState(CommonStateField, abc.ABC):
         self.retry = state_props.get(RetryDecl)
         self.catch = state_props.get(CatchDecl)
 
-    @abc.abstractmethod
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        ...
+        LOG.warning("State Task executed generig failure event reporting logic.")
+        return FailureEvent(
+            error_name=StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed),
+            event_type=HistoryEventType.TaskFailed,
+            event_details=EventDetails(
+                taskFailedEventDetails=TaskFailedEventDetails(
+                    error="Unsupported Error Handling",
+                    cause=str(ex),
+                )
+            ),
+        )
 
-    @abc.abstractmethod
     def _from_uncaught_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        ...
+        LOG.warning("State Task executed generic uncaught failure event reporting logic.")
+        return self._from_error(env=env, ex=ex)
 
     @abc.abstractmethod
     def _eval_execution(self, env: Environment) -> None:
