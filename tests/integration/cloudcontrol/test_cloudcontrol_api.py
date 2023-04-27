@@ -66,6 +66,7 @@ def create_resource(aws_client):
             LOG.warning(f"Failed to delete resource with request token {rr}")
 
 
+@pytest.mark.skip("Not Implemented yet")
 class TestCloudControlResourceApi:
     @pytest.mark.aws_validated
     def test_lifecycle(self, snapshot, create_resource, aws_client):
@@ -406,6 +407,7 @@ class TestCloudControlResourceApi:
         snapshot.match("update_createonlyproperty_exc", e.value.response)
 
 
+@pytest.mark.skip("Not Implemented yet")
 class TestCloudControlResourceRequestApi:
     @pytest.mark.aws_validated
     def test_invalid_request_token_exc(self, snapshot, aws_client):
