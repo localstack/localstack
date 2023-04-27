@@ -477,6 +477,8 @@ def process_events(event: Dict, targets: List[Dict]):
                 changed_event,
                 pick_attributes(target, ["$.SqsParameters", "$.KinesisParameters"]),
                 target=target,
+                source_service="events",
+                source_arn=target.get("RuleArn"),
             )
         except Exception as e:
             LOG.info(f"Unable to send event notification {truncate(event)} to target {target}: {e}")
@@ -523,10 +525,12 @@ def events_handler_put_events(self):
         targets = []
         for rule in matching_rules:
             if filter_event_based_on_event_format(self, rule.name, event_bus_name, formatted_event):
+                rule_targets = self.events_backend.list_targets_by_rule(
+                    rule.name, event_bus_arn(event_bus_name)
+                ).get("Targets", [])
+
                 targets.extend(
-                    self.events_backend.list_targets_by_rule(
-                        rule.name, event_bus_arn(event_bus_name)
-                    )["Targets"]
+                    [target.update({"RuleArn": rule.arn}) or target for target in rule_targets]
                 )
 
         # process event
