@@ -249,6 +249,8 @@ class SdkDockerClient(ContainerClient):
                     raise NoSuchImage(docker_image)
                 if "is denied" in to_str(result):
                     raise AccessDenied(docker_image)
+                if "requesting higher privileges than access token allows" in to_str(result):
+                    raise AccessDenied(docker_image)
                 if "connection refused" in to_str(result):
                     raise RegistryConnectionError(result)
                 raise ContainerException(result)
