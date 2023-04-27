@@ -11,13 +11,13 @@ from typing import TYPE_CHECKING, Dict, Literal, Optional
 
 from localstack import config
 from localstack.aws.api.lambda_ import TracingMode
+from localstack.aws.connect import connect_to
 from localstack.services.awslambda.invocation.executor_endpoint import ServiceEndpoint
 from localstack.services.awslambda.invocation.lambda_models import Credentials, FunctionVersion
 from localstack.services.awslambda.invocation.runtime_executor import (
     RuntimeExecutor,
     get_runtime_executor,
 )
-from localstack.utils.aws import aws_stack
 from localstack.utils.strings import to_str
 
 if TYPE_CHECKING:
@@ -153,6 +153,8 @@ class RuntimeEnvironment:
             env_vars["LOCALSTACK_USER"] = ""
         if config.LAMBDA_INIT_USER:
             env_vars["LOCALSTACK_USER"] = config.LAMBDA_INIT_USER
+        if config.DEBUG:
+            env_vars["LOCALSTACK_INIT_LOG_LEVEL"] = "debug"
         if config.LAMBDA_INIT_POST_INVOKE_WAIT_MS:
             env_vars["LOCALSTACK_POST_INVOKE_WAIT_MS"] = int(config.LAMBDA_INIT_POST_INVOKE_WAIT_MS)
         return env_vars
@@ -247,7 +249,7 @@ class RuntimeEnvironment:
             self.keepalive_timer.cancel()
 
         invoke_payload = {
-            "invoke-id": invocation_event.invocation_id,
+            "invoke-id": invocation_event.invocation.request_id,  # TODO: rename to request-id
             "invoked-function-arn": invocation_event.invocation.invoked_arn,
             "payload": to_str(invocation_event.invocation.payload),
             "trace-id": self._generate_trace_header(),
@@ -255,7 +257,7 @@ class RuntimeEnvironment:
         self.runtime_executor.invoke(payload=invoke_payload)
 
     def get_credentials(self) -> Credentials:
-        sts_client = aws_stack.connect_to_service("sts")
+        sts_client = connect_to().sts.request_metadata(service_principal="lambda")
         # TODO we should probably set a maximum alive duration for environments, due to the session expiration
         return sts_client.assume_role(
             RoleArn=self.function_version.config.role,

@@ -1753,7 +1753,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[True]": {
-    "recorded-date": "12-08-2022, 13:43:57",
+    "recorded-date": "14-04-2023, 19:17:55",
     "recorded-content": {
       "topic-attrs": {
         "Attributes": {
@@ -1770,7 +1770,10 @@
                 "numMinDelayRetries": 0,
                 "backoffFunction": "linear"
               },
-              "disableSubscriptionOverrides": false
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
             }
           },
           "FifoTopic": "true",
@@ -1823,6 +1826,7 @@
           "Protocol": "sqs",
           "RawMessageDelivery": "true",
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+          "SubscriptionPrincipal": "<sub-principal>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
         },
         "ResponseMetadata": {
@@ -1832,10 +1836,6 @@
       },
       "publish-batch-response-fifo": {
         "Failed": [],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "Successful": [
           {
             "Id": "1",
@@ -1852,7 +1852,11 @@
             "MessageId": "<uuid:3>",
             "SequenceNumber": "<sequence-number:3>"
           }
-        ]
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       },
       "messages": {
         "Messages": [
@@ -1920,11 +1924,41 @@
             "ReceiptHandle": "<receipt-handle:3>"
           }
         ]
+      },
+      "republish-batch-response-fifo": {
+        "Failed": [],
+        "Successful": [
+          {
+            "Id": "1",
+            "MessageId": "<uuid:1>",
+            "SequenceNumber": "<sequence-number:1>"
+          },
+          {
+            "Id": "2",
+            "MessageId": "<uuid:2>",
+            "SequenceNumber": "<sequence-number:2>"
+          },
+          {
+            "Id": "3",
+            "MessageId": "<uuid:3>",
+            "SequenceNumber": "<sequence-number:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "duplicate-messages": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[False]": {
-    "recorded-date": "12-08-2022, 13:43:59",
+    "recorded-date": "14-04-2023, 19:18:02",
     "recorded-content": {
       "topic-attrs": {
         "Attributes": {
@@ -1941,7 +1975,10 @@
                 "numMinDelayRetries": 0,
                 "backoffFunction": "linear"
               },
-              "disableSubscriptionOverrides": false
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
             }
           },
           "FifoTopic": "true",
@@ -1994,6 +2031,7 @@
           "Protocol": "sqs",
           "RawMessageDelivery": "true",
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+          "SubscriptionPrincipal": "<sub-principal>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
         },
         "ResponseMetadata": {
@@ -2003,10 +2041,6 @@
       },
       "publish-batch-response-fifo": {
         "Failed": [],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "Successful": [
           {
             "Id": "1",
@@ -2023,7 +2057,11 @@
             "MessageId": "<uuid:3>",
             "SequenceNumber": "<sequence-number:3>"
           }
-        ]
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       },
       "messages": {
         "Messages": [
@@ -2091,11 +2129,41 @@
             "ReceiptHandle": "<receipt-handle:3>"
           }
         ]
+      },
+      "republish-batch-response-fifo": {
+        "Failed": [],
+        "Successful": [
+          {
+            "Id": "1",
+            "MessageId": "<uuid:1>",
+            "SequenceNumber": "<sequence-number:1>"
+          },
+          {
+            "Id": "2",
+            "MessageId": "<uuid:2>",
+            "SequenceNumber": "<sequence-number:2>"
+          },
+          {
+            "Id": "3",
+            "MessageId": "<uuid:3>",
+            "SequenceNumber": "<sequence-number:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "duplicate-messages": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_message_to_fifo_sqs[True]": {
-    "recorded-date": "27-01-2023, 19:44:21",
+    "recorded-date": "14-04-2023, 19:38:46",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -2127,11 +2195,17 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "dedup-messages": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_message_to_fifo_sqs[False]": {
-    "recorded-date": "27-01-2023, 19:44:23",
+    "recorded-date": "14-04-2023, 19:38:59",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -2159,6 +2233,12 @@
             "ReceiptHandle": "<receipt-handle:1>"
           }
         ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dedup-messages": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2475,8 +2555,8 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_fifo_batch_messages_to_dlq[True]": {
-    "recorded-date": "09-12-2022, 17:27:21",
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_fifo_messages_to_dlq[True]": {
+    "recorded-date": "14-04-2023, 18:26:46",
     "recorded-content": {
       "topic-attrs": {
         "Attributes": {
@@ -2493,7 +2573,10 @@
                 "numMinDelayRetries": 0,
                 "backoffFunction": "linear"
               },
-              "disableSubscriptionOverrides": false
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
             }
           },
           "FifoTopic": "true",
@@ -2561,7 +2644,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "messages-in-dlq": {
+      "batch-messages-in-dlq": {
         "Messages": [
           {
             "Attributes": {
@@ -2627,11 +2710,38 @@
             "ReceiptHandle": "<receipt-handle:3>"
           }
         ]
+      },
+      "publish-response-fifo": {
+        "MessageId": "<uuid:7>",
+        "SequenceNumber": "<sequence-number:7>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-in-dlq": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "message-deduplication-id-1",
+              "MessageGroupId": "message-group-id-1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:8>"
+            },
+            "Body": "test-message",
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:8>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          }
+        ]
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_fifo_batch_messages_to_dlq[False]": {
-    "recorded-date": "09-12-2022, 17:27:24",
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_fifo_messages_to_dlq[False]": {
+    "recorded-date": "14-04-2023, 18:26:50",
     "recorded-content": {
       "topic-attrs": {
         "Attributes": {
@@ -2648,7 +2758,10 @@
                 "numMinDelayRetries": 0,
                 "backoffFunction": "linear"
               },
-              "disableSubscriptionOverrides": false
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
             }
           },
           "FifoTopic": "true",
@@ -2716,7 +2829,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "messages-in-dlq": {
+      "batch-messages-in-dlq": {
         "Messages": [
           {
             "Attributes": {
@@ -2805,6 +2918,41 @@
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:6>",
             "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ]
+      },
+      "publish-response-fifo": {
+        "MessageId": "<uuid:7>",
+        "SequenceNumber": "<sequence-number:7>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-in-dlq": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "message-deduplication-id-1",
+              "MessageGroupId": "message-group-id-1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:8>"
+            },
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:7>",
+              "SequenceNumber": "<sequence-number:7>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "test-message",
+              "Timestamp": "date",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:8>",
+            "ReceiptHandle": "<receipt-handle:4>"
           }
         ]
       }
@@ -3120,7 +3268,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_publish_to_fifo_topic_to_sqs_queue_no_content_dedup[True]": {
-    "recorded-date": "27-01-2023, 19:39:16",
+    "recorded-date": "14-04-2023, 19:57:05",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -3128,27 +3276,38 @@
             "Attributes": {
               "ApproximateFirstReceiveTimestamp": "timestamp",
               "ApproximateReceiveCount": "1",
-              "MessageDeduplicationId": "532eaabd9574880dbf76b9b8cc00832c20a6ec113d682299550d7a6e0f345e25",
+              "MessageDeduplicationId": "2591186cff6c740cb9e0cfce1653a7e6998d57da12e1da13d85344b1c08be4cb",
               "MessageGroupId": "message-group-id-1",
               "SenderId": "<sender-id>",
               "SentTimestamp": "timestamp",
               "SequenceNumber": "<sequence-number:1>"
             },
-            "Body": "Test",
+            "Body": "Test single",
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:1>",
             "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "32a45f72fe3d20fb5d4f1647421d1c5f9d20ef207c8ab713443cc9f9b76c468c",
+              "MessageGroupId": "message-group-id-1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:2>"
+            },
+            "Body": "Test batched",
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
           }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
+        ]
       }
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_publish_to_fifo_topic_to_sqs_queue_no_content_dedup[False]": {
-    "recorded-date": "27-01-2023, 19:39:19",
+    "recorded-date": "14-04-2023, 19:57:07",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -3156,7 +3315,7 @@
             "Attributes": {
               "ApproximateFirstReceiveTimestamp": "timestamp",
               "ApproximateReceiveCount": "1",
-              "MessageDeduplicationId": "532eaabd9574880dbf76b9b8cc00832c20a6ec113d682299550d7a6e0f345e25",
+              "MessageDeduplicationId": "2591186cff6c740cb9e0cfce1653a7e6998d57da12e1da13d85344b1c08be4cb",
               "MessageGroupId": "message-group-id-1",
               "SenderId": "<sender-id>",
               "SentTimestamp": "timestamp",
@@ -3167,19 +3326,38 @@
               "MessageId": "<uuid:1>",
               "SequenceNumber": "<sequence-number:2>",
               "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
-              "Message": "Test",
+              "Message": "Test single",
               "Timestamp": "date",
               "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:2>",
             "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "32a45f72fe3d20fb5d4f1647421d1c5f9d20ef207c8ab713443cc9f9b76c468c",
+              "MessageGroupId": "message-group-id-1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:3>"
+            },
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:3>",
+              "SequenceNumber": "<sequence-number:4>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "Test batched",
+              "Timestamp": "date",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:2>"
           }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
+        ]
       }
     }
   },
@@ -3567,6 +3745,237 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_to_fifo_topic_deduplication_on_topic_level": {
+    "recorded-date": "14-04-2023, 20:03:27",
+    "recorded-content": {
+      "messages": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "532eaabd9574880dbf76b9b8cc00832c20a6ec113d682299550d7a6e0f345e25",
+              "MessageGroupId": "message-group-id-1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:1>"
+            },
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "SequenceNumber": "<sequence-number:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "Test",
+              "Timestamp": "date",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dedup-messages": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_external_http_endpoint[True]": {
+    "recorded-date": "13-04-2023, 02:58:36",
+    "recorded-content": {
+      "subscription-confirmation": {
+        "Message": "You have chosen to subscribe to the topic arn:aws:sns:<region>:111111111111:<resource:1>.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
+        "MessageId": "<uuid:1>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:aws:sns:<region>:111111111111:<resource:1>&Token=<token:1>",
+        "Timestamp": "date",
+        "Token": "<token:1>",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "SubscriptionConfirmation"
+      },
+      "broken-topic-arn-confirm": {
+        "ErrorResponse": {
+          "Error": {
+            "Code": "InvalidParameter",
+            "Message": "Invalid parameter: Topic",
+            "Type": "Sender"
+          },
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "broken-token-confirm": {
+        "ErrorResponse": {
+          "Error": {
+            "Code": "InvalidParameter",
+            "Message": "Invalid parameter: Token",
+            "Type": "Sender"
+          },
+          "RequestId": "<request-id:2>"
+        }
+      },
+      "different-region-arn-confirm": {
+        "ErrorResponse": {
+          "Error": {
+            "Code": "InvalidParameter",
+            "Message": "Invalid parameter: Topic",
+            "Type": "Sender"
+          },
+          "RequestId": "<request-id:3>"
+        }
+      },
+      "nonexistent-token-confirm": {
+        "ConfirmSubscriptionResponse": {
+          "ConfirmSubscriptionResult": {
+            "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        }
+      },
+      "confirm-subscribe": {
+        "ConfirmSubscriptionResponse": {
+          "ConfirmSubscriptionResult": {
+            "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        }
+      },
+      "unsubscribe-response": {
+        "UnsubscribeResponse": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        }
+      },
+      "unsubscribe-request": {
+        "Message": "You have chosen to deactivate subscription arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message.",
+        "MessageId": "<uuid:2>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:aws:sns:<region>:111111111111:<resource:1>&Token=<token:2>",
+        "Timestamp": "date",
+        "Token": "<token:2>",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "UnsubscribeConfirmation"
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_external_http_endpoint[False]": {
+    "recorded-date": "13-04-2023, 02:58:52",
+    "recorded-content": {
+      "subscription-confirmation": {
+        "Message": "You have chosen to subscribe to the topic arn:aws:sns:<region>:111111111111:<resource:1>.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
+        "MessageId": "<uuid:1>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:aws:sns:<region>:111111111111:<resource:1>&Token=<token:1>",
+        "Timestamp": "date",
+        "Token": "<token:1>",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "SubscriptionConfirmation"
+      },
+      "broken-topic-arn-confirm": {
+        "ErrorResponse": {
+          "Error": {
+            "Code": "InvalidParameter",
+            "Message": "Invalid parameter: Topic",
+            "Type": "Sender"
+          },
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "broken-token-confirm": {
+        "ErrorResponse": {
+          "Error": {
+            "Code": "InvalidParameter",
+            "Message": "Invalid parameter: Token",
+            "Type": "Sender"
+          },
+          "RequestId": "<request-id:2>"
+        }
+      },
+      "different-region-arn-confirm": {
+        "ErrorResponse": {
+          "Error": {
+            "Code": "InvalidParameter",
+            "Message": "Invalid parameter: Topic",
+            "Type": "Sender"
+          },
+          "RequestId": "<request-id:3>"
+        }
+      },
+      "nonexistent-token-confirm": {
+        "ConfirmSubscriptionResponse": {
+          "ConfirmSubscriptionResult": {
+            "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        }
+      },
+      "confirm-subscribe": {
+        "ConfirmSubscriptionResponse": {
+          "ConfirmSubscriptionResult": {
+            "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        }
+      },
+      "http-message": {
+        "Message": "test_external_http_endpoint",
+        "MessageId": "<uuid:2>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "Timestamp": "date",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "Notification",
+        "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+      },
+      "unsubscribe-response": {
+        "UnsubscribeResponse": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        }
+      },
+      "unsubscribe-request": {
+        "Message": "You have chosen to deactivate subscription arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message.",
+        "MessageId": "<uuid:3>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "SubscribeURL": "<subscribe-domain>/?Action=ConfirmSubscription&TopicArn=arn:aws:sns:<region>:111111111111:<resource:1>&Token=<token:2>",
+        "Timestamp": "date",
+        "Token": "<token:2>",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Type": "UnsubscribeConfirmation"
       }
     }
   }

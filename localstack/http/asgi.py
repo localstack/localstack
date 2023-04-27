@@ -6,7 +6,7 @@ import math
 import typing as t
 from asyncio import AbstractEventLoop
 from concurrent.futures import Executor
-from tempfile import SpooledTemporaryFile
+from io import BufferedReader, RawIOBase
 from urllib.parse import quote, unquote, urlparse
 
 if t.TYPE_CHECKING:
@@ -110,10 +110,25 @@ async def to_async_generator(
         yield val
 
 
-class HTTPRequestEventStreamAdapter:
+def create_wsgi_input(
+    receive: "ASGIReceiveCallable", event_loop: t.Optional[AbstractEventLoop] = None
+) -> t.IO[bytes]:
     """
-    An adapter to expose an ASGIReceiveCallable coroutine that returns HTTPRequestEvent
-    instances, as a PEP 3333 InputStream for consumption in synchronous WSGI/Werkzeug code.
+    Factory for exposing an ASGIReceiveCallable as an IO stream.
+
+    :param receive: the receive callable
+    :param event_loop: the event loop used by the event stream adapter
+    :return: a new IO stream that wraps the given receive callable.
+    """
+    return BufferedReader(RawHTTPRequestEventStreamAdapter(receive, event_loop))
+
+
+class RawHTTPRequestEventStreamAdapter(RawIOBase):
+    """
+    An adapter to expose an ASGIReceiveCallable coroutine that returns HTTPRequestEvent instances as an IO
+    stream for synchronous WSGI/Werkzeug code. The adapter is a Raw IO stream, meaning it does not have
+    optimized ``read``, ``readline``, or ``readlines`` methods. Make sure to use a ``BufferedReader`` around
+    the stream adapter.
     """
 
     def __init__(
@@ -123,111 +138,54 @@ class HTTPRequestEventStreamAdapter:
         self.receive = receive
         self.event_loop = event_loop or asyncio.get_event_loop()
 
+        # internal state
         self._more_body = True
-        self._buffer = bytearray()
-        self._buffer_file = SpooledTemporaryFile()
+        self._buffered_body = None
+        self._buffered_body_pos = 0
 
-    def _read_into(self, buf: bytearray) -> t.Tuple[int, bool]:
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, buf: bytearray | memoryview) -> int:
         if not self._more_body:
-            return 0, False
+            return 0
 
-        recv_future = asyncio.run_coroutine_threadsafe(self.receive(), self.event_loop)
-        event = recv_future.result()
-        # TODO: disconnect events
-        body = event["body"]
-        more = event.get("more_body", False)
-        buf.extend(body)
-        self._more_body = more
-        return len(body), more
+        # max bytes we can write into the buffer
+        buf_size = len(buf)
 
-    def read(self, size: t.Optional[int] = None) -> bytes:
-        """
-        Reads up to ``size`` bytes from the object and returns them. As a convenience, if ``size`` is unspecified or
-        ``-1``, all bytes until EOF are returned. Like RawIOBase specifies, only one system call is ever made (in
-        this case, a call to the ASGI receive callable). Fewer than ``size`` bytes may be returned if the underlying
-        call returns fewer than ``size`` bytes.
+        # _buffered_body holds the carry-over of what we didn't read in the last iteration
+        if self._buffered_body is None:
+            # read from the underlying socket stream
+            recv_future = asyncio.run_coroutine_threadsafe(self.receive(), self.event_loop)
+            event = recv_future.result()
+            # TODO: disconnect events
+            more = event.get("more_body", False)
 
-        :param size: the number of bytes to read
-        :return:
-        """
-        buf = self._buffer
-
-        if not buf and not self._more_body:
-            return b""
-
-        if size is None or size == -1:
-            while True:
-                read, more = self._read_into(buf)
-                if not more:
-                    break
-
-            arr = bytes(buf)
-            buf.clear()
-            return arr
-
-        if len(buf) < size:
-            self._read_into(buf)
-
-        copy = bytes(buf[:size])
-        self._buffer = buf[size:]
-        return copy
-
-    def readline(self, size: t.Optional[int] = None) -> bytes:
-        buf = self._buffer
-        size = size if size is not None else -1
-
-        while True:
-            i = buf.find(b"\n")  # FIXME: scans the whole buffer every time
-
-            if i >= 0:
-                if 0 < size < i:
-                    break  # no '\n' in range
-                else:
-                    arr = bytes(buf[: (i + 1)])
-                    self._buffer = buf[(i + 1) :]
-                    return arr
-
-            # ensure the buffer has at least `size` bytes (or all)
-            if size > 0:
-                if len(buf) >= size:
-                    break
-            _, more = self._read_into(buf)
             if not more:
-                break
+                self._more_body = False
+                return 0
 
-        if size > 0:
-            arr = bytes(buf[:size])
-            self._buffer = buf[size:]
-            return arr
+            body = self._buffered_body = event["body"]
+            pos = self._buffered_body_pos = 0
         else:
-            arr = bytes(buf)
-            buf.clear()
-            return arr
+            body = self._buffered_body
+            pos = self._buffered_body_pos
 
-    def readlines(self, size: t.Optional[int] = None) -> t.List[bytes]:
-        if size is None or size < 0:
-            return [line for line in self]
+        remaining = len(body) - pos
 
-        lines = []
-        while size > 0:
-            try:
-                line = self.__next__()
-            except StopIteration:
-                return lines
+        if remaining <= buf_size:
+            # the easiest case, where we write the entire remaining event body into the buffer. we may return
+            # less than the buffer size allows, but that's ok for raw IO streams.
+            buf[:remaining] = body[pos:]
+            self._buffered_body = None
+            return remaining
 
-            lines.append(line)
-            size = size - len(line)
+        # in this case, we can read at max buf_size from the body into the buffer, and need to save the
+        # rest for the next call
+        buf[:buf_size] = body[pos : pos + buf_size]
+        self._buffered_body_pos = pos + buf_size
 
-        return lines
-
-    def __next__(self):
-        line = self.readline()
-        if line == b"" and not self._more_body:
-            raise StopIteration()
-        return line
-
-    def __iter__(self):
-        return self
+        return buf_size
 
 
 class WsgiStartResponse:
@@ -309,6 +267,19 @@ class WsgiStartResponse:
             await self.send({"type": "http.response.body", "body": b"", "more_body": False})
 
 
+class ASGILifespanListener:
+    """
+    Simple event handler that is attached to the ASGIAdapter and called on ASGI lifespan events. See
+    https://asgi.readthedocs.io/en/latest/specs/lifespan.html.
+    """
+
+    def on_startup(self):
+        pass
+
+    def on_shutdown(self):
+        pass
+
+
 class ASGIAdapter:
     """
     Adapter to expose a WSGIApplication as an ASGI3Application. This allows you to serve synchronous WSGI applications
@@ -325,10 +296,12 @@ class ASGIAdapter:
         wsgi_app: "WSGIApplication",
         event_loop: AbstractEventLoop = None,
         executor: Executor = None,
+        lifespan_listener: ASGILifespanListener = None,
     ):
         self.wsgi_app = wsgi_app
         self.event_loop = event_loop or asyncio.get_event_loop()
         self.executor = executor
+        self.lifespan_listener = lifespan_listener or ASGILifespanListener()
 
     async def __call__(
         self, scope: "Scope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
@@ -342,6 +315,9 @@ class ASGIAdapter:
         """
         if scope["type"] == "http":
             return await self.handle_http(scope, receive, send)
+
+        if scope["type"] == "lifespan":
+            return await self.handle_lifespan(scope, receive, send)
 
         raise NotImplementedError("Unhandled protocol %s" % scope["type"])
 
@@ -360,7 +336,7 @@ class ASGIAdapter:
         environ: "WSGIEnvironment" = {}
         populate_wsgi_environment(environ, scope)
         # add IO wrappers
-        environ["wsgi.input"] = HTTPRequestEventStreamAdapter(receive, event_loop=self.event_loop)
+        environ["wsgi.input"] = create_wsgi_input(receive, event_loop=self.event_loop)
         environ[
             "wsgi.input_terminated"
         ] = True  # indicates that the stream is EOF terminated per request
@@ -401,29 +377,28 @@ class ASGIAdapter:
         finally:
             await response.close()
 
+    async def handle_lifespan(
+        self, scope: "HTTPScope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
+    ):
+        while True:
+            message = await receive()
+            if message["type"] == "lifespan.startup":
+                try:
+                    await self.event_loop.run_in_executor(
+                        self.executor, self.lifespan_listener.on_startup
+                    )
+                    await send({"type": "lifespan.startup.complete"})
+                except Exception as e:
+                    await send({"type": "lifespan.startup.failed", "message": f"{e}"})
 
-def patch_werkzeug():
-    from werkzeug.wsgi import LimitedStream
-
-    from localstack.utils.patch import patch
-
-    @patch(LimitedStream.read, pass_target=False)
-    def _read(self, size: t.Optional[int] = None):
-        # FIXME: This is a bandaid for https://github.com/pallets/werkzeug/issues/2558 and should be removed once the
-        #  issue is fixed
-        if self._pos >= self.limit:
-            return self.on_exhausted()
-        if size is None or size == -1:
-            size = self.limit
-        to_read = min(self.limit - self._pos, size)
-        try:
-            read = self._read(to_read)
-        except (OSError, ValueError):
-            return self.on_disconnect()
-        if to_read and not len(read):  # this line is affected by the original code
-            return self.on_disconnect()
-        self._pos += len(read)
-        return read
-
-
-patch_werkzeug()
+            elif message["type"] == "lifespan.shutdown":
+                try:
+                    await self.event_loop.run_in_executor(
+                        self.executor, self.lifespan_listener.on_shutdown
+                    )
+                    await send({"type": "lifespan.shutdown.complete"})
+                except Exception as e:
+                    await send({"type": "lifespan.shutdown.failed", "message": f"{e}"})
+                return
+            else:
+                return

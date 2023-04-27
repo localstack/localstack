@@ -3,7 +3,6 @@ import json
 
 import pytest as pytest
 import requests
-from botocore.exceptions import ClientError
 from pytest_httpserver import HTTPServer
 
 from localstack import config
@@ -229,53 +228,6 @@ class TestFirehoseIntegration:
         retry(assert_s3_contents)
 
     @pytest.mark.skip_offline
-    def test_kinesis_firehose_incompatible_with_opensearch_2_3(
-        self, opensearch_create_domain, kinesis_create_stream, aws_client
-    ):
-        # Kinesis Firehose does not support OpenSearch 2.3
-        domain_name = f"test-domain-{short_uid()}"
-        stream_name = f"test-stream-{short_uid()}"
-        role_arn = "arn:aws:iam::000000000000:role/Firehose-Role"
-        bucket_arn = "arn:aws:s3:::foo"
-        delivery_stream_name = f"test-delivery-stream-{short_uid()}"
-
-        opensearch_create_domain(DomainName=domain_name, EngineVersion="OpenSearch_2.3")
-        opensearch_arn = aws_client.opensearch.describe_domain(DomainName=domain_name)[
-            "DomainStatus"
-        ]["ARN"]
-
-        # create kinesis stream
-        kinesis_create_stream(StreamName=stream_name, ShardCount=2)
-        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
-            "StreamDescription"
-        ]["StreamARN"]
-
-        kinesis_stream_source_def = {
-            "KinesisStreamARN": stream_arn,
-            "RoleARN": role_arn,
-        }
-        opensearch_destination_configuration = {
-            "RoleARN": role_arn,
-            "DomainARN": opensearch_arn,
-            "IndexName": "activity",
-            "TypeName": "activity",
-            "S3BackupMode": "AllDocuments",
-            "S3Configuration": {
-                "RoleARN": role_arn,
-                "BucketARN": bucket_arn,
-            },
-        }
-        with pytest.raises(ClientError) as exc:
-            aws_client.firehose.create_delivery_stream(
-                DeliveryStreamName=delivery_stream_name,
-                DeliveryStreamType="KinesisStreamAsSource",
-                KinesisStreamSourceConfiguration=kinesis_stream_source_def,
-                AmazonopensearchserviceDestinationConfiguration=opensearch_destination_configuration,
-            )
-        exc.match("ServiceUnavailableException")
-        exc.match("Delivery stream destination is not supported: OpenSearch 2.3")
-
-    @pytest.mark.skip_offline
     @pytest.mark.parametrize("opensearch_endpoint_strategy", ["domain", "path", "port"])
     def test_kinesis_firehose_opensearch_s3_backup(
         self,
@@ -291,9 +243,7 @@ class TestFirehoseIntegration:
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", opensearch_endpoint_strategy)
         try:
-            opensearch_create_response = aws_client.opensearch.create_domain(
-                DomainName=domain_name, EngineVersion="OpenSearch_1.3"
-            )
+            opensearch_create_response = aws_client.opensearch.create_domain(DomainName=domain_name)
             opensearch_url = f"http://{opensearch_create_response['DomainStatus']['Endpoint']}"
             opensearch_arn = opensearch_create_response["DomainStatus"]["ARN"]
 

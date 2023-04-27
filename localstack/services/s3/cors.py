@@ -12,7 +12,6 @@ from localstack.aws.chain import Handler, HandlerChain
 # TODO: refactor those to expose the needed methods
 from localstack.aws.handlers.cors import CorsEnforcer, CorsResponseEnricher
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
-from localstack.aws.protocol.serializer import gen_amzn_requestid_long
 from localstack.aws.protocol.service_router import get_service_catalog
 from localstack.constants import S3_VIRTUAL_HOSTNAME
 from localstack.http import Request, Response
@@ -104,7 +103,7 @@ class S3CorsHandler(Handler):
             Stops the chain to avoid the OPTIONS request being parsed. The request is ready to be returned to the
             client. We also need to add specific headers normally added by the serializer for regular requests.
             """
-            request_id = gen_amzn_requestid_long()
+            request_id = context.request_id
             response.headers["x-amz-request-id"] = request_id
             response.headers[
                 "x-amz-id-2"

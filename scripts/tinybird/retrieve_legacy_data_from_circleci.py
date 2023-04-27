@@ -223,7 +223,9 @@ def collect_workflows_past_30_days():
                 os.environ["CIRCLE_WORKFLOW_ID"] = str(workflow_id)
 
                 # trigger the tinybird_upload
-                send_metric_report(metric_report_file_path, timestamp)
+                send_metric_report(
+                    metric_report_file_path, source_type="community", timestamp=timestamp
+                )
                 send_implemented_coverage(
                     community_coverage_file_path, timestamp=timestamp, type="community"
                 )

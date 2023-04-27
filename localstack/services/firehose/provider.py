@@ -59,7 +59,6 @@ from localstack.aws.api.firehose import (
     S3DestinationConfiguration,
     S3DestinationDescription,
     S3DestinationUpdate,
-    ServiceUnavailableException,
     SplunkDestinationConfiguration,
     SplunkDestinationUpdate,
     TagDeliveryStreamInputTagList,
@@ -69,6 +68,7 @@ from localstack.aws.api.firehose import (
     UntagDeliveryStreamOutput,
     UpdateDestinationOutput,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.firehose.mappers import (
     convert_es_config_to_desc,
     convert_es_update_to_desc,
@@ -83,7 +83,6 @@ from localstack.services.firehose.mappers import (
     convert_source_config_to_desc,
 )
 from localstack.services.firehose.models import FirehoseStore, firehose_stores
-from localstack.services.opensearch import versions
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import (
     extract_region_from_arn,
@@ -91,6 +90,7 @@ from localstack.utils.aws.arns import (
     opensearch_domain_name,
     s3_bucket_name,
 )
+from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.common import (
     TIMESTAMP_FORMAT_MICROS,
     first_char_to_lower,
@@ -207,7 +207,7 @@ class FirehoseProvider(FirehoseApi):
         self,
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
-        delivery_stream_type: DeliveryStreamType = DeliveryStreamType.DirectPut,
+        delivery_stream_type: DeliveryStreamType = None,
         kinesis_stream_source_configuration: KinesisStreamSourceConfiguration = None,
         delivery_stream_encryption_configuration_input: DeliveryStreamEncryptionConfigurationInput = None,
         s3_destination_configuration: S3DestinationConfiguration = None,
@@ -236,21 +236,6 @@ class FirehoseProvider(FirehoseApi):
             db_description = convert_opensearch_config_to_desc(
                 amazonopensearchservice_destination_configuration
             )
-
-            domain_arn = db_description.get("DomainARN")
-            domain_name = opensearch_domain_name(domain_arn)
-
-            domain = aws_stack.connect_to_service("opensearch").describe_domain(
-                DomainName=domain_name
-            )
-            engine_version = domain["DomainStatus"]["EngineVersion"]
-
-            if versions.get_install_version(engine_version).startswith("2.3"):
-                # See https://docs.aws.amazon.com/opensearch-service/latest/developerguide/version-migration.html
-                raise ServiceUnavailableException(
-                    "Delivery stream destination is not supported: OpenSearch 2.3"
-                )
-
             destinations.append(
                 DestinationDescription(
                     DestinationId=short_uid(),
@@ -390,10 +375,7 @@ class FirehoseProvider(FirehoseApi):
         )
 
     def put_record(
-        self,
-        context: RequestContext,
-        delivery_stream_name: DeliveryStreamName,
-        record: Record,
+        self, context: RequestContext, delivery_stream_name: DeliveryStreamName, record: Record
     ) -> PutRecordOutput:
         record = self._reencode_record(record)
         return self._put_record(delivery_stream_name, record)
@@ -721,13 +703,21 @@ class FirehoseProvider(FirehoseApi):
         bucket = s3_bucket_name(s3_destination_description["BucketARN"])
         prefix = s3_destination_description.get("Prefix", "")
 
-        s3 = aws_stack.connect_to_resource("s3")
+        if role_arn := s3_destination_description.get("RoleARN"):
+            factory = connect_to.with_assumed_role(
+                role_arn=role_arn, service_principal=ServicePrincipal.firehose
+            )
+        else:
+            factory = connect_to()
+        s3 = factory.s3.request_metadata(
+            source_arn=stream_name, service_principal=ServicePrincipal.firehose
+        )
         batched_data = b"".join([base64.b64decode(r.get("Data") or r.get("data")) for r in records])
 
         obj_path = self._get_s3_object_path(stream_name, prefix)
         try:
             LOG.debug("Publishing to S3 destination: %s. Data: %s", bucket, batched_data)
-            s3.Object(bucket, obj_path).put(Body=batched_data)
+            s3.put_object(Bucket=bucket, Key=obj_path, Body=batched_data)
         except Exception as e:
             LOG.exception(f"Unable to put records {records} to s3 bucket.")
             raise e

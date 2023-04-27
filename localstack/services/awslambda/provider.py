@@ -64,6 +64,7 @@ from localstack.aws.api.lambda_ import (
     InvocationResponse,
     InvocationType,
     InvokeAsyncResponse,
+    InvokeMode,
     LambdaApi,
     LastUpdateStatus,
     LayerName,
@@ -134,6 +135,7 @@ from localstack.aws.api.lambda_ import (
     UpdateFunctionUrlConfigResponse,
     Version,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.awslambda import api_utils
 from localstack.services.awslambda import hooks as lambda_hooks
 from localstack.services.awslambda.api_utils import STATEMENT_ID_REGEX
@@ -184,7 +186,6 @@ from localstack.services.awslambda.urlrouter import FunctionUrlRouter
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import extract_service_from_arn
 from localstack.utils.collections import PaginatedList
 from localstack.utils.files import load_file
@@ -384,16 +385,25 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
                 Type="User",
             )
-        current_hash = current_latest_version.config.code.code_sha256
-        if (
-            code_sha256
-            and current_hash != code_sha256
-            and not current_latest_version.config.code.is_hot_reloading()
-        ):
+
+        # check if code hashes match if they are specified
+        current_hash = (
+            current_latest_version.config.code.code_sha256
+            if current_latest_version.config.package_type == PackageType.Zip
+            else current_latest_version.config.image.code_sha256
+        )
+        # if the code is a zip package and hot reloaded (hot reloading is currently only supported for zip packagetypes)
+        # we cannot enforce the codesha256 check
+        is_hot_reloaded_zip_package = (
+            current_latest_version.config.package_type == PackageType.Zip
+            and current_latest_version.config.code.is_hot_reloading()
+        )
+        if code_sha256 and current_hash != code_sha256 and not is_hot_reloaded_zip_package:
             raise InvalidParameterValueException(
                 f"CodeSHA256 ({code_sha256}) is different from current CodeSHA256 in $LATEST ({current_hash}). Please try again with the CodeSHA256 in $LATEST.",
                 Type="User",
             )
+
         state = lambda_stores[account_id][region]
         function = state.functions.get(function_name)
         changes = {}
@@ -657,6 +667,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ValidationException(
                 f"1 validation error detected: Value '{request.get('Role')}'"
                 + " at 'role' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:iam::\\d{12}:role/?[a-zA-Z_0-9+=,.@\\-_/]+"
+            )
+        if not self.lambda_service.can_assume_role(request.get("Role")):
+            raise InvalidParameterValueException(
+                "The role defined for the function cannot be assumed by Lambda.", Type="User"
             )
         package_type = request.get("PackageType", PackageType.Zip)
         runtime = request.get("Runtime")
@@ -1193,7 +1207,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     ),
                     mode="rb",
                 )
-                lambda_client = aws_stack.connect_to_service("lambda")
+                lambda_client = connect_to().awslambda
                 lambda_client.create_function(
                     FunctionName="localstack-internal-awssdk",
                     Runtime=Runtime.nodejs16_x,
@@ -1212,6 +1226,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             account_id=context.account_id,
             invocation_type=invocation_type,
             client_context=client_context,
+            request_id=context.request_id,
             payload=payload.read() if payload else None,
         )
         if invocation_type == "Event":
@@ -1675,6 +1690,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         auth_type: FunctionUrlAuthType,
         qualifier: FunctionUrlQualifier = None,
         cors: Cors = None,
+        invoke_mode: InvokeMode = None,
     ) -> CreateFunctionUrlConfigResponse:
         state = lambda_stores[context.account_id][context.region]
 
@@ -1787,6 +1803,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: FunctionUrlQualifier = None,
         auth_type: FunctionUrlAuthType = None,
         cors: Cors = None,
+        invoke_mode: InvokeMode = None,
     ) -> UpdateFunctionUrlConfigResponse:
         state = lambda_stores[context.account_id][context.region]
 

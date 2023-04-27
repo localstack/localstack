@@ -6,8 +6,13 @@ from base64 import b64encode
 import dateutil.parser
 import pytest
 
+from localstack.aws.api.sns import InvalidParameterException
 from localstack.services.sns.models import SnsMessage
-from localstack.services.sns.provider import is_raw_message_delivery
+from localstack.services.sns.provider import (
+    encode_subscription_token_with_region,
+    get_region_from_subscription_token,
+    is_raw_message_delivery,
+)
 from localstack.services.sns.publisher import SubscriptionFilter, create_sns_message_body
 
 
@@ -579,3 +584,19 @@ class TestSns:
                 assert expected == sub_filter.check_filter_policy_on_message_body(
                     filter_policy, message_body=json.dumps(message_body)
                 ), (filter_policy, message_body)
+
+    @pytest.mark.parametrize("region", ["us-east-1", "eu-central-1", "us-west-2", "my-region"])
+    def test_region_encoded_subscription_token(self, region):
+        token = encode_subscription_token_with_region(region)
+        assert len(token) == 64
+        token_region = get_region_from_subscription_token(token)
+        assert token_region == region
+
+    @pytest.mark.parametrize(
+        "token", ["abcdef123", "mynothexstring", "us-west-2", b"test", b"test2f", "test2f"]
+    )
+    def test_decode_token_with_no_region_encoded(self, token):
+        with pytest.raises(InvalidParameterException) as e:
+            get_region_from_subscription_token(token)
+
+        assert e.match("Invalid parameter: Token")

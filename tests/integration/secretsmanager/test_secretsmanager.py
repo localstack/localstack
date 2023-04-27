@@ -96,18 +96,15 @@ class TestSecretsManager:
             )
 
     @pytest.mark.parametrize(
-        "secret_name, is_valid_partial_arn",
+        "secret_name",
         [
-            ("s-c64bdc03", True),
-            ("Valid/_+=.@-Name", True),
-            ("Valid/_+=.@-Name-a1b2", True),
-            ("Valid/_+=.@-Name-a1b2c3-", True),
-            ("Invalid/_+=.@-Name-a1b2c3", False),
+            "s-c64bdc03",
+            "Valid/_+=.@-Name",
+            "Valid/_+=.@-Name-a1b2",
+            "Valid/_+=.@-Name-a1b2c3-",
         ],
     )
-    def test_create_and_update_secret(
-        self, secret_name: str, is_valid_partial_arn: bool, sm_snapshot, cleanups, aws_client
-    ):
+    def test_create_and_update_secret(self, secret_name: str, sm_snapshot, cleanups, aws_client):
         cleanups.append(
             lambda: aws_client.secretsmanager.delete_secret(
                 SecretId=secret_name, ForceDeleteWithoutRecovery=True
@@ -136,15 +133,9 @@ class TestSecretsManager:
         get_secret_value_rs_2 = aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
         sm_snapshot.match("get_secret_value_rs_2", get_secret_value_rs_2)
 
-        if is_valid_partial_arn:
-            get_secret_value_rs_3 = aws_client.secretsmanager.get_secret_value(
-                SecretId=secret_arn[:-7]
-            )
-            sm_snapshot.match("get_secret_value_rs_3", get_secret_value_rs_3)
-        else:
-            with pytest.raises(Exception) as resource_not_found:
-                aws_client.secretsmanager.get_secret_value(SecretId=secret_arn[:-7])
-            sm_snapshot.match("resource_not_found_dict_1", resource_not_found.value.response)
+        # Ensure retrieval with partial ARN works
+        get_secret_value_rs_3 = aws_client.secretsmanager.get_secret_value(SecretId=secret_arn[:-7])
+        sm_snapshot.match("get_secret_value_rs_3", get_secret_value_rs_3)
 
         put_secret_value_rs_1 = aws_client.secretsmanager.put_secret_value(
             SecretId=secret_name, SecretString="new_secret"

@@ -590,8 +590,7 @@ class TestSNSProvider:
         assert sub_attr["Attributes"]["PendingConfirmation"] == "true"
 
         def check_subscription():
-            topic_tokens = store.subscription_tokens.get(topic_arn, {})
-            for token, sub_arn in topic_tokens.items():
+            for token, sub_arn in store.subscription_tokens.items():
                 if sub_arn == subscription_arn:
                     aws_client.sns.confirm_subscription(TopicArn=topic_arn, Token=token)
 
@@ -1349,6 +1348,9 @@ class TestSNSProvider:
             "$.topic-attrs.Attributes.DeliveryPolicy",
             "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
             "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
+            "$.sub-attrs-raw-true.Attributes.SubscriptionPrincipal",
+            "$.republish-batch-response-fifo.Successful..MessageId",  # TODO: SNS doesnt keep track of duplicate
+            "$.republish-batch-response-fifo.Successful..SequenceNumber",  # TODO: SNS doesnt keep track of duplicate
         ]
     )
     @pytest.mark.parametrize("content_based_deduplication", [True, False])
@@ -1467,11 +1469,24 @@ class TestSNSProvider:
 
         retry(get_messages, retries=5, sleep=1)
         snapshot.match("messages", {"Messages": messages})
-        # todo add test for deduplication
-        # https://docs.aws.amazon.com/cli/latest/reference/sns/publish-batch.html
-        # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
-        # > The SQS FIFO queue consumer processes the message and deletes it from the queue before the visibility
-        # > timeout expires.
+
+        publish_batch_response = aws_client.sns.publish_batch(
+            TopicArn=topic_arn,
+            PublishBatchRequestEntries=publish_batch_request_entries,
+        )
+
+        snapshot.match("republish-batch-response-fifo", publish_batch_response)
+        get_deduplicated_messages = aws_client.sqs.receive_message(
+            QueueUrl=queue_url,
+            MessageAttributeNames=["All"],
+            AttributeNames=["All"],
+            MaxNumberOfMessages=10,
+            WaitTimeSeconds=3,
+            VisibilityTimeout=0,
+        )
+        # there should not be any messages here, as they are duplicate
+        # see https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
+        snapshot.match("duplicate-messages", get_deduplicated_messages)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -1482,7 +1497,7 @@ class TestSNSProvider:
         ]
     )
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
-    def test_publish_fifo_batch_messages_to_dlq(
+    def test_publish_fifo_messages_to_dlq(
         self,
         sns_create_topic,
         sqs_create_queue,
@@ -1597,7 +1612,7 @@ class TestSNSProvider:
         message_ids_received = set()
         messages = []
 
-        def get_messages_from_dlq():
+        def get_messages_from_dlq(amount_msg: int):
             # due to the random nature of receiving SQS messages, we need to consolidate a single object to match
             # MaxNumberOfMessages could return less than 3 messages
             sqs_response = aws_client.sqs.receive_message(
@@ -1620,9 +1635,20 @@ class TestSNSProvider:
                     QueueUrl=dlq_url, ReceiptHandle=message["ReceiptHandle"]
                 )
 
-            assert len(messages) == 3
+            assert len(messages) == amount_msg
 
-        retry(get_messages_from_dlq, retries=5, sleep=1)
+        retry(get_messages_from_dlq, retries=5, sleep=1, amount_msg=3)
+        snapshot.match("batch-messages-in-dlq", {"Messages": messages})
+        messages.clear()
+
+        publish_response = aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message="test-message",
+            MessageGroupId="message-group-id-1",
+            MessageDeduplicationId="message-deduplication-id-1",
+        )
+        snapshot.match("publish-response-fifo", publish_response)
+        retry(get_messages_from_dlq, retries=5, sleep=1, amount_msg=1)
         snapshot.match("messages-in-dlq", {"Messages": messages})
 
     @pytest.mark.aws_validated
@@ -1676,8 +1702,6 @@ class TestSNSProvider:
                 ],
             )
         snapshot.match("no-dedup-id", e.value.response)
-
-        # todo add test and implement behaviour for ContentBasedDeduplication or MessageDeduplicationId
 
     @pytest.mark.aws_validated
     def test_subscribe_to_sqs_with_queue_url(
@@ -1812,31 +1836,34 @@ class TestSNSProvider:
             QueueName=queue_name,
             Attributes=queue_attributes,
         )
-        # todo check both ContentBasedDeduplication and MessageDeduplicationId when implemented
-        # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
 
         sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
         message = "Test"
-        if content_based_deduplication:
-            aws_client.sns.publish(
-                TopicArn=topic_arn, Message=message, MessageGroupId="message-group-id-1"
-            )
-        else:
-            aws_client.sns.publish(
-                TopicArn=topic_arn,
-                Message=message,
-                MessageGroupId="message-group-id-1",
-                MessageDeduplicationId="message-deduplication-id-1",
-            )
+        kwargs = {"MessageGroupId": "message-group-id-1"}
+        if not content_based_deduplication:
+            kwargs["MessageDeduplicationId"] = "message-deduplication-id-1"
+
+        aws_client.sns.publish(TopicArn=topic_arn, Message=message, **kwargs)
 
         response = aws_client.sqs.receive_message(
             QueueUrl=queue_url,
-            VisibilityTimeout=0,
             WaitTimeSeconds=10,
             AttributeNames=["All"],
         )
         snapshot.match("messages", response)
+
+        aws_client.sqs.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+        # republish the message, to check deduplication
+        aws_client.sns.publish(TopicArn=topic_arn, Message=message, **kwargs)
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url,
+            WaitTimeSeconds=1,
+            AttributeNames=["All"],
+        )
+        snapshot.match("dedup-messages", response)
 
     @pytest.mark.aws_validated
     def test_validations_for_fifo(
@@ -2146,8 +2173,28 @@ class TestSNSProvider:
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     def test_subscribe_external_http_endpoint(
-        self, sns_create_http_endpoint, raw_message_delivery, aws_client
+        self, sns_create_http_endpoint, raw_message_delivery, aws_client, snapshot
     ):
+        def _get_snapshot_requests_response(response: requests.Response) -> dict:
+            parsed_xml_body = xmltodict.parse(response.content)
+            for root_tag, fields in parsed_xml_body.items():
+                fields.pop("@xmlns", None)
+                if "ResponseMetadata" in fields:
+                    fields["ResponseMetadata"]["HTTPHeaders"] = dict(response.headers)
+                    fields["ResponseMetadata"]["HTTPStatusCode"] = response.status_code
+            return parsed_xml_body
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("RequestId"),
+                snapshot.transform.key_value("Token"),
+                snapshot.transform.regex(
+                    r"(?<=(?i)SubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=ConfirmSubscription)",
+                    replacement="<subscribe-domain>",
+                ),
+            ]
+        )
+
         # Necessitate manual set up to allow external access to endpoint, only in local testing
         topic_arn, subscription_arn, endpoint_url, server = sns_create_http_endpoint(
             raw_message_delivery
@@ -2158,6 +2205,7 @@ class TestSNSProvider:
         )
         sub_request, _ = server.log[0]
         payload = sub_request.get_json(force=True)
+        snapshot.match("subscription-confirmation", payload)
         assert payload["Type"] == "SubscriptionConfirmation"
         assert sub_request.headers["x-amz-sns-message-type"] == "SubscriptionConfirmation"
         assert "Signature" in payload
@@ -2167,8 +2215,56 @@ class TestSNSProvider:
         subscribe_url = payload["SubscribeURL"]
         service_url, subscribe_url_path = payload["SubscribeURL"].rsplit("/", maxsplit=1)
         assert subscribe_url == (
-            f"{service_url}/?Action=ConfirmSubscription" f"&TopicArn={topic_arn}&Token={token}"
+            f"{service_url}/?Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}"
         )
+
+        test_broken_confirm_url = (
+            f"{service_url}/?Action=ConfirmSubscription&TopicArn=not-an-arn&Token={token}"
+        )
+        broken_confirm_subscribe_request = requests.get(test_broken_confirm_url)
+        snapshot.match(
+            "broken-topic-arn-confirm",
+            _get_snapshot_requests_response(broken_confirm_subscribe_request),
+        )
+
+        test_broken_token_confirm_url = (
+            f"{service_url}/?Action=ConfirmSubscription&TopicArn={topic_arn}&Token=abc123"
+        )
+        broken_token_confirm_subscribe_request = requests.get(test_broken_token_confirm_url)
+        snapshot.match(
+            "broken-token-confirm",
+            _get_snapshot_requests_response(broken_token_confirm_subscribe_request),
+        )
+
+        # using the right topic name with a different region will fail when confirming the subscription
+        parsed_arn = parse_arn(topic_arn)
+        different_region = "eu-central-1" if parsed_arn["region"] != "eu-central-1" else "us-east-1"
+        different_region_topic = topic_arn.replace(parsed_arn["region"], different_region)
+        different_region_topic_confirm_url = f"{service_url}/?Action=ConfirmSubscription&TopicArn={different_region_topic}&Token={token}"
+        region_topic_confirm_subscribe_request = requests.get(different_region_topic_confirm_url)
+        snapshot.match(
+            "different-region-arn-confirm",
+            _get_snapshot_requests_response(region_topic_confirm_subscribe_request),
+        )
+
+        # but a nonexistent topic in the right region will succeed
+        last_fake_topic_char = "a" if topic_arn[-1] != "a" else "b"
+        nonexistent = topic_arn[:-1] + last_fake_topic_char
+        assert nonexistent != topic_arn
+        test_wrong_topic_confirm_url = (
+            f"{service_url}/?Action=ConfirmSubscription&TopicArn={nonexistent}&Token={token}"
+        )
+        wrong_topic_confirm_subscribe_request = requests.get(test_wrong_topic_confirm_url)
+        snapshot.match(
+            "nonexistent-token-confirm",
+            _get_snapshot_requests_response(wrong_topic_confirm_subscribe_request),
+        )
+
+        # weirdly, even with a wrong topic, SNS will confirm the topic
+        subscription_attributes = aws_client.sns.get_subscription_attributes(
+            SubscriptionArn=subscription_arn
+        )
+        assert subscription_attributes["Attributes"]["PendingConfirmation"] == "false"
 
         confirm_subscribe_request = requests.get(subscribe_url)
         confirm_subscribe = xmltodict.parse(confirm_subscribe_request.content)
@@ -2177,6 +2273,10 @@ class TestSNSProvider:
                 "SubscriptionArn"
             ]
             == subscription_arn
+        )
+        # also confirm that ConfirmSubscription is idempotent
+        snapshot.match(
+            "confirm-subscribe", _get_snapshot_requests_response(confirm_subscribe_request)
         )
 
         subscription_attributes = aws_client.sns.get_subscription_attributes(
@@ -2207,10 +2307,12 @@ class TestSNSProvider:
             assert "SigningCertURL" in payload
             assert payload["Message"] == message
             assert payload["UnsubscribeURL"] == expected_unsubscribe_url
+            snapshot.match("http-message", payload)
 
         unsub_request = requests.get(expected_unsubscribe_url)
         unsubscribe_confirmation = xmltodict.parse(unsub_request.content)
         assert "UnsubscribeResponse" in unsubscribe_confirmation
+        snapshot.match("unsubscribe-response", _get_snapshot_requests_response(unsub_request))
 
         assert poll_condition(
             lambda: len(server.log) >= 3,
@@ -2227,6 +2329,7 @@ class TestSNSProvider:
         assert payload["SubscribeURL"] == (
             f"{service_url}/?" f"Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}"
         )
+        snapshot.match("unsubscribe-request", payload)
 
     @pytest.mark.only_localstack
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
@@ -3224,21 +3327,111 @@ class TestSNSProvider:
 
         # Topic has ContentBasedDeduplication set to true, the queue should receive only one message
         # SNS will create a MessageDeduplicationId for the SQS queue, as it does not have ContentBasedDeduplication
+        for _ in range(2):
+            aws_client.sns.publish(
+                TopicArn=topic_arn, Message="Test single", MessageGroupId="message-group-id-1"
+            )
+            aws_client.sns.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "1",
+                        "MessageGroupId": "message-group-id-1",
+                        "Message": "Test batched",
+                    }
+                ],
+            )
+
+        messages = []
+        message_ids_received = set()
+
+        def get_messages():
+            # due to the random nature of receiving SQS messages, we need to consolidate a single object to match
+            # MaxNumberOfMessages could return less than 2 messages
+            sqs_response = aws_client.sqs.receive_message(
+                QueueUrl=queue_url,
+                MessageAttributeNames=["All"],
+                AttributeNames=["All"],
+                MaxNumberOfMessages=10,
+                WaitTimeSeconds=1,
+                VisibilityTimeout=10,
+            )
+
+            for message in sqs_response["Messages"]:
+                if message["MessageId"] in message_ids_received:
+                    continue
+
+                message_ids_received.add(message["MessageId"])
+                messages.append(message)
+                aws_client.sqs.delete_message(
+                    QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"]
+                )
+
+            assert len(messages) == 2
+
+        retry(get_messages, retries=5, sleep=1)
+        messages.sort(key=lambda x: x["Attributes"]["MessageDeduplicationId"])
+        snapshot.match("messages", {"Messages": messages})
+
+    @pytest.mark.aws_validated
+    def test_publish_to_fifo_topic_deduplication_on_topic_level(
+        self,
+        sns_create_topic,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
+        snapshot,
+        aws_client,
+    ):
+        topic_name = f"topic-{short_uid()}.fifo"
+        queue_name = f"queue-{short_uid()}.fifo"
+        topic_attributes = {"FifoTopic": "true", "ContentBasedDeduplication": "true"}
+        queue_attributes = {"FifoQueue": "true"}
+
+        topic_arn = sns_create_topic(
+            Name=topic_name,
+            Attributes=topic_attributes,
+        )["TopicArn"]
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes=queue_attributes,
+        )
+
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        # TODO: for message deduplication, we are using the underlying features of the SQS queue
+        # however, SQS queue only deduplicate at the Queue level, where the SNS topic deduplicate on the topic level
+        # we will need to implement this
+        # TODO: add a test with 2 subscriptions and a filter, to validate deduplication at topic level
         message = "Test"
         aws_client.sns.publish(
             TopicArn=topic_arn, Message=message, MessageGroupId="message-group-id-1"
         )
+        time.sleep(
+            0.5
+        )  # this is to ensure order of arrival, because we do not deduplicate at SNS level yet
         aws_client.sns.publish(
-            TopicArn=topic_arn, Message=message, MessageGroupId="message-group-id-1"
+            TopicArn=topic_arn, Message=message, MessageGroupId="message-group-id-2"
         )
 
+        # get the deduplicated message and delete it
         response = aws_client.sqs.receive_message(
             QueueUrl=queue_url,
-            VisibilityTimeout=0,
+            VisibilityTimeout=10,
             WaitTimeSeconds=10,
             AttributeNames=["All"],
         )
         snapshot.match("messages", response)
+        aws_client.sqs.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+        # assert there are no more messages in the queue
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url,
+            VisibilityTimeout=10,
+            WaitTimeSeconds=1,
+            AttributeNames=["All"],
+        )
+        snapshot.match("dedup-messages", response)
 
     @pytest.mark.aws_validated
     def test_publish_to_fifo_with_target_arn(self, sns_create_topic, aws_client):

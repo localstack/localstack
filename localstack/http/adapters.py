@@ -1,3 +1,4 @@
+# TODO: remove with 2.1, this is defunct/dead code.
 """Adapters and other utilities to use the HTTP framework together with the edge proxy. These tools facilitate the
 migration from the edge proxy to the new HTTP framework, and will be removed in the future. """
 from urllib.parse import urlsplit

@@ -1,8 +1,8 @@
 {
   "tests/integration/cloudformation/resources/test_s3.py::test_cors_configuration": {
-    "recorded-date": "16-03-2023, 10:22:58",
+    "recorded-date": "20-04-2023, 20:17:17",
     "recorded-content": {
-      "cors_info": {
+      "cors-info-optional": {
         "CORSRules": [
           {
             "AllowedHeaders": [
@@ -20,6 +20,22 @@
             ],
             "ID": "test-cors-id",
             "MaxAgeSeconds": 3600
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "cors-info-only-required": {
+        "CORSRules": [
+          {
+            "AllowedMethods": [
+              "GET"
+            ],
+            "AllowedOrigins": [
+              "*"
+            ]
           }
         ],
         "ResponseMetadata": {
