@@ -289,6 +289,8 @@ class CmdDockerClient(ContainerClient):
         except subprocess.CalledProcessError as e:
             if "is denied" in to_str(e.stdout):
                 raise AccessDenied(docker_image)
+            if "requesting higher privileges than access token allows" in to_str(e.stdout):
+                raise AccessDenied(docker_image)
             if "does not exist" in to_str(e.stdout):
                 raise NoSuchImage(docker_image)
             if "connection refused" in to_str(e.stdout):
