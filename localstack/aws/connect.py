@@ -468,7 +468,7 @@ class ExternalClientFactory(ClientFactory):
 
         return self._get_client(
             service_name=service_name,
-            region_name=region_name or self._get_region(),
+            region_name=region_name or config.region_name or self._get_region(),
             use_ssl=self._use_ssl,
             verify=self._verify,
             endpoint_url=endpoint_url,
