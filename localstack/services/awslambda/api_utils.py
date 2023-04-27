@@ -20,6 +20,7 @@ from localstack.aws.api.lambda_ import (
     InvalidParameterValueException,
     LayerVersionContentOutput,
     PublishLayerVersionResponse,
+    ResourceNotFoundException,
     Runtime,
     TracingConfig,
 )
@@ -179,14 +180,15 @@ def qualifier_is_alias(qualifier: str) -> bool:
     return bool(ALIAS_REGEX.match(qualifier))
 
 
-def get_function_name(function_arn_or_name: str) -> str:
+def get_function_name(function_arn_or_name: str, context: RequestContext) -> str:
     """
     Return function name from a given arn.
+    Will check if the context region matches the arn region in the arn, if an arn is provided.
 
     :param function_arn_or_name: Function arn or only name
     :return: function name
     """
-    name, _ = get_name_and_qualifier(function_arn_or_name, qualifier=None)
+    name, _ = get_name_and_qualifier(function_arn_or_name, qualifier=None, context=context)
     return name
 
 
@@ -212,7 +214,7 @@ def get_account_and_region(function_arn_or_name: str, context: RequestContext) -
 
 
 def get_name_and_qualifier(
-    function_arn_or_name: str, qualifier: str | None
+    function_arn_or_name: str, qualifier: str | None, context: RequestContext
 ) -> tuple[str, str | None]:
     """
     Takes a full or partial arn, or a name and a qualifier
@@ -220,12 +222,18 @@ def get_name_and_qualifier(
 
     :param function_arn_or_name: Given arn (or name)
     :param qualifier: A qualifier for the function (or None)
+    :param context: Request context
     :return: tuple with (name, qualifier). Qualifier is none if missing
     """
-    function_name, arn_qualifier, _, _ = function_locators_from_arn(function_arn_or_name)
+    function_name, arn_qualifier, _, arn_region = function_locators_from_arn(function_arn_or_name)
     if qualifier and arn_qualifier and arn_qualifier != qualifier:
         raise InvalidParameterValueException(
             "The derived qualifier from the function name does not match the specified qualifier.",
+            Type="User",
+        )
+    if arn_region and arn_region != context.region:
+        raise ResourceNotFoundException(
+            f"Functions from '{arn_region}' are not reachable in this region ('{context.region}')",
             Type="User",
         )
     qualifier = qualifier or arn_qualifier

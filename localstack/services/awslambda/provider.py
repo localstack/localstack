@@ -934,7 +934,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         function_name = request.get("FunctionName")
         account_id, region = api_utils.get_account_and_region(function_name, context)
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier=None)
+        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, None, context)
 
         store = lambda_stores[account_id][region]
         if function_name not in store.functions:
@@ -1029,7 +1029,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: Qualifier = None,
     ) -> None:
         account_id, region = api_utils.get_account_and_region(function_name, context)
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
         store = lambda_stores[account_id][region]
         if qualifier == "$LATEST":
             raise InvalidParameterValueException(
@@ -1104,7 +1106,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: Qualifier = None,
     ) -> GetFunctionResponse:
         account_id, region = api_utils.get_account_and_region(function_name, context)
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
         fn = lambda_stores[account_id][region].functions.get(function_name)
         if fn is None:
             if qualifier is None:
@@ -1166,7 +1170,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> FunctionConfiguration:
         account_id, region = api_utils.get_account_and_region(function_name, context)
         # CAVE: THIS RETURN VALUE IS *NOT* THE SAME AS IN get_function (!) but seems to be only configuration part?
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
         version = self._get_function_version(
             function_name=function_name,
             qualifier=qualifier,
@@ -1186,7 +1192,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: Qualifier = None,
     ) -> InvocationResponse:
         account_id, region = api_utils.get_account_and_region(function_name, context)
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
         try:
             self._get_function(function_name=function_name, account_id=account_id, region=region)
         except ResourceNotFoundException:
@@ -1263,7 +1271,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         revision_id: String = None,
     ) -> FunctionConfiguration:
         account_id, region = api_utils.get_account_and_region(function_name, context)
-        function_name = api_utils.get_function_name(function_name)
+        function_name = api_utils.get_function_name(function_name, context)
         new_version = self._publish_version_from_existing_version(
             function_name=function_name,
             description=description,
@@ -1282,7 +1290,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         max_items: MaxListItems = None,
     ) -> ListVersionsByFunctionResponse:
         account_id, region = api_utils.get_account_and_region(function_name, context)
-        function_name = api_utils.get_function_name(function_name)
+        function_name = api_utils.get_function_name(function_name, context)
         function = self._get_function(
             function_name=function_name, region=region, account_id=account_id
         )
@@ -1350,7 +1358,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         routing_config: AliasRoutingConfiguration = None,
     ) -> AliasConfiguration:
         account_id, region = api_utils.get_account_and_region(function_name, context)
-        function_name = api_utils.get_function_name(function_name)
+        function_name = api_utils.get_function_name(function_name, context)
         target_version = self._get_function_version(
             function_name=function_name,
             qualifier=function_version,
@@ -1395,7 +1403,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         max_items: MaxListItems = None,
     ) -> ListAliasesResponse:
         account_id, region = api_utils.get_account_and_region(function_name, context)
-        function_name = api_utils.get_function_name(function_name)
+        function_name = api_utils.get_function_name(function_name, context)
         function = self._get_function(
             function_name=function_name, region=region, account_id=account_id
         )
@@ -1418,7 +1426,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self, context: RequestContext, function_name: FunctionName, name: Alias
     ) -> None:
         account_id, region = api_utils.get_account_and_region(function_name, context)
-        function_name = api_utils.get_function_name(function_name)
+        function_name = api_utils.get_function_name(function_name, context)
         function = self._get_function(
             function_name=function_name, region=region, account_id=account_id
         )
@@ -1434,7 +1442,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self, context: RequestContext, function_name: FunctionName, name: Alias
     ) -> AliasConfiguration:
         account_id, region = api_utils.get_account_and_region(function_name, context)
-        function_name = api_utils.get_function_name(function_name)
+        function_name = api_utils.get_function_name(function_name, context)
         function = self._get_function(
             function_name=function_name, region=region, account_id=account_id
         )
@@ -1456,7 +1464,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         revision_id: String = None,
     ) -> AliasConfiguration:
         account_id, region = api_utils.get_account_and_region(function_name, context)
-        function_name = api_utils.get_function_name(function_name)
+        function_name = api_utils.get_function_name(function_name, context)
         function = self._get_function(
             function_name=function_name, region=region, account_id=account_id
         )
@@ -1514,7 +1522,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if api_utils.FULL_FN_ARN_PATTERN.match(function_name):
             fn_arn = function_name
-            function_name = api_utils.get_function_name(function_name)
+            function_name = api_utils.get_function_name(function_name, context)
         else:
             fn_arn = api_utils.unqualified_lambda_arn(
                 function_name, context.account_id, context.region
@@ -1697,7 +1705,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> CreateFunctionUrlConfigResponse:
         state = lambda_stores[context.account_id][context.region]
 
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
         if qualifier == "$LATEST":
             raise ValidationException(
                 "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
@@ -1769,7 +1779,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> GetFunctionUrlConfigResponse:
         state = lambda_stores[context.account_id][context.region]
 
-        fn_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        fn_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier, context)
 
         if qualifier == "$LATEST":
             raise ValidationException(
@@ -1806,7 +1816,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> UpdateFunctionUrlConfigResponse:
         state = lambda_stores[context.account_id][context.region]
 
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
         if qualifier == "$LATEST":
             raise ValidationException(
                 "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
@@ -1860,7 +1872,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> None:
         state = lambda_stores[context.account_id][context.region]
 
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
         if qualifier == "$LATEST":
             raise ValidationException(
                 "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
@@ -1893,7 +1907,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> ListFunctionUrlConfigsResponse:
         state = lambda_stores[context.account_id][context.region]
 
-        fn_name = api_utils.get_function_name(function_name)
+        fn_name = api_utils.get_function_name(function_name, context)
         resolved_fn = state.functions.get(fn_name)
         if not resolved_fn:
             raise ResourceNotFoundException("Function does not exist", Type="User")
@@ -1922,7 +1936,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         request: AddPermissionRequest,
     ) -> AddPermissionResponse:
         function_name, qualifier = api_utils.get_name_and_qualifier(
-            request.get("FunctionName"), request.get("Qualifier")
+            request.get("FunctionName"), request.get("Qualifier"), context
         )
 
         # validate qualifier
@@ -2004,7 +2018,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: Qualifier = None,
         revision_id: String = None,
     ) -> None:
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
         if qualifier is not None:
             self._validate_qualifier_expression(qualifier)
 
@@ -2067,7 +2083,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: Qualifier = None,
     ) -> GetPolicyResponse:
         account_id, region = api_utils.get_account_and_region(function_name, context)
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
 
         if qualifier is not None:
             self._validate_qualifier_expression(qualifier)
@@ -2131,7 +2149,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: FunctionName,
     ) -> PutFunctionCodeSigningConfigResponse:
         state = lambda_stores[context.account_id][context.region]
-        function_name = api_utils.get_function_name(function_name)
+        function_name = api_utils.get_function_name(function_name, context)
 
         csc = state.code_signing_configs.get(code_signing_config_arn)
         if not csc:
@@ -2195,7 +2213,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self, context: RequestContext, function_name: FunctionName
     ) -> GetFunctionCodeSigningConfigResponse:
         state = lambda_stores[context.account_id][context.region]
-        function_name = api_utils.get_function_name(function_name)
+        function_name = api_utils.get_function_name(function_name, context)
         fn = state.functions.get(function_name)
         fn_arn = api_utils.unqualified_lambda_arn(function_name, context.account_id, context.region)
         if not fn:
@@ -2212,7 +2230,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self, context: RequestContext, function_name: FunctionName
     ) -> None:
         state = lambda_stores[context.account_id][context.region]
-        function_name = api_utils.get_function_name(function_name)
+        function_name = api_utils.get_function_name(function_name, context)
         fn = state.functions.get(function_name)
         fn_arn = api_utils.unqualified_lambda_arn(function_name, context.account_id, context.region)
         if not fn:
@@ -2366,7 +2384,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
 
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
         state = lambda_stores[context.account_id][context.region]
         fn = state.functions.get(function_name)
 
@@ -2459,7 +2479,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "The function resource provided must be an alias or a published version.",
                 Type="User",
             )
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
 
         provisioned_config = self._get_provisioned_config(context, function_name, qualifier)
         if not provisioned_config:
@@ -2554,7 +2576,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "The function resource provided must be an alias or a published version.",
                 Type="User",
             )
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
         state = lambda_stores[context.account_id][context.region]
         fn = state.functions.get(function_name)
 
@@ -2667,7 +2691,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         state = lambda_stores[context.account_id][context.region]
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
         fn = state.functions.get(function_name)
         if not fn or (qualifier and not (qualifier in fn.aliases or qualifier in fn.versions)):
             raise ResourceNotFoundException("The function doesn't exist.", Type="User")
@@ -2713,7 +2739,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier = None
     ) -> FunctionEventInvokeConfig:
         state = lambda_stores[context.account_id][context.region]
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
 
         qualifier = qualifier or "$LATEST"
         fn = state.functions.get(function_name)
@@ -2784,7 +2812,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def delete_function_event_invoke_config(
         self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier = None
     ) -> None:
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
         state = lambda_stores[context.account_id][context.region]
         fn = state.functions.get(function_name)
         resolved_qualifier = qualifier or "$LATEST"
@@ -2815,7 +2845,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> FunctionEventInvokeConfig:
         # like put but only update single fields via replace
         state = lambda_stores[context.account_id][context.region]
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, qualifier)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, qualifier, context
+        )
 
         if (
             maximum_event_age_in_seconds is None
@@ -3289,7 +3321,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def get_function_concurrency(
         self, context: RequestContext, function_name: FunctionName
     ) -> GetFunctionConcurrencyResponse:
-        function_name = api_utils.get_function_name(function_arn_or_name=function_name)
+        function_name = api_utils.get_function_name(function_name, context)
         fn = self._get_function(
             function_name=function_name, region=context.region, account_id=context.account_id
         )
@@ -3305,7 +3337,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> Concurrency:
         account_id, region = api_utils.get_account_and_region(function_name, context)
 
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, None)
+        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, None, context)
         if qualifier:
             raise InvalidParameterValueException(
                 "This operation is permitted on Lambda functions only. Aliases and versions do not support this operation. Please specify either a function name or an unqualified function ARN.",
@@ -3354,7 +3386,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self, context: RequestContext, function_name: FunctionName
     ) -> None:
         account_id, region = api_utils.get_account_and_region(function_name, context)
-        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, None)
+        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, None, context)
         store = lambda_stores[account_id][region]
         fn = store.functions.get(function_name)
         fn.reserved_concurrent_executions = None
@@ -3414,7 +3446,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     def list_tags(self, context: RequestContext, resource: FunctionArn) -> ListTagsResponse:
         account_id, region = api_utils.get_account_and_region(resource, context)
-        function_name = api_utils.get_function_name(resource)
+        function_name = api_utils.get_function_name(resource, context)
         fn = self._get_function(function_name=function_name, account_id=account_id, region=region)
 
         return ListTagsResponse(Tags=self._get_tags(fn))
@@ -3428,7 +3460,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )  # should probably be generalized a bit
 
         account_id, region = api_utils.get_account_and_region(resource, context)
-        function_name = api_utils.get_function_name(resource)
+        function_name = api_utils.get_function_name(resource, context)
         fn = self._get_function(function_name=function_name, account_id=account_id, region=region)
 
         # copy first, then set explicitly in store tags
