@@ -170,11 +170,11 @@ except Exception:
     MAX_POOL_CONNECTIONS = 150
 
 # credentials used in the test suite
-TEST_AWS_ACCESS_KEY_ID = "LSIAQAAAAAAAQAATEST1"  # Account ID: 000000000001
-TEST_AWS_SECRET_ACCESS_KEY = "test1"
+TEST_AWS_ACCESS_KEY_ID = "test"
+TEST_AWS_SECRET_ACCESS_KEY = "test"
 
 # additional credentials used in the test suite (mainly for cross-account access)
-SECONDARY_TEST_AWS_ACCESS_KEY_ID = "LSIAQAAAAAABAAATEST2"  # Account ID: 000000000002
+SECONDARY_TEST_AWS_ACCESS_KEY_ID = "test2"
 SECONDARY_TEST_AWS_SECRET_ACCESS_KEY = "test2"
 
 # credentials being used for internal calls
