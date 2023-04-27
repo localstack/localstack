@@ -965,7 +965,13 @@ def deploy_cfn_template(
 
         assert wait_until(is_change_set_created_and_available(change_set_id), _max_wait=60)
         aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
-        assert wait_until(is_change_set_finished(change_set_id), _max_wait=max_wait or 60)
+        assert wait_until(
+            is_change_set_finished(change_set_id),
+            _max_wait=max_wait or 60,
+            max_retries=60,
+            wait=5,
+            strategy="linear",
+        )
 
         outputs = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0].get(
             "Outputs", []
@@ -1075,7 +1081,7 @@ def is_change_set_finished(aws_client):
 
             check_set = aws_client.cloudformation.describe_change_set(**kwargs)
 
-            if check_set.get("ExecutionStatus") == "ROLLBACK_COMPLETE":
+            if check_set.get("ExecutionStatus") == "EXECUTE_FAILED":
                 LOG.warning("Change set failed")
                 raise ShortCircuitWaitException()
 
