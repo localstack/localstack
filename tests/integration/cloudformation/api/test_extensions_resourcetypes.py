@@ -8,7 +8,7 @@ from localstack.utils.strings import short_uid
 class TestExtensionsResourceTypes:
     @pytest.mark.skip(reason="feature not implemented")
     def test_deploy_resource_type(
-        self, deploy_cfn_template, cfn_client, register_extension, snapshot
+        self, deploy_cfn_template, register_extension, snapshot, aws_client
     ):
 
         artifact_path = os.path.join(
@@ -31,7 +31,7 @@ class TestExtensionsResourceTypes:
         stack = deploy_cfn_template(
             template_path=template_path, parameters={"Name": resource_name}, max_wait=900
         )
-        resources = cfn_client.describe_stack_resources(StackName=stack.stack_name)[
+        resources = aws_client.cloudformation.describe_stack_resources(StackName=stack.stack_name)[
             "StackResources"
         ]
 

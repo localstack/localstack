@@ -7,7 +7,7 @@ from localstack.utils.strings import short_uid
 
 class TestExtensionsModules:
     @pytest.mark.skip(reason="feature not supported")
-    def test_module_usage(self, deploy_cfn_template, cfn_client, register_extension, snapshot):
+    def test_module_usage(self, deploy_cfn_template, register_extension, snapshot, aws_client):
 
         artifact_path = os.path.join(
             os.path.dirname(__file__),
@@ -30,7 +30,7 @@ class TestExtensionsModules:
             parameters={"BucketName": module_bucket_name},
             max_wait=300,
         )
-        resources = cfn_client.describe_stack_resources(StackName=stack.stack_name)[
+        resources = aws_client.cloudformation.describe_stack_resources(StackName=stack.stack_name)[
             "StackResources"
         ]
 
