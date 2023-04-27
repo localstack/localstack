@@ -2052,9 +2052,9 @@ class TestRequestIdHandling:
             runtime=Runtime.python3_9,
         )["CreateFunctionResponse"]["FunctionArn"]
 
+        # Create client with secondary credentials but stick to default region
         client = aws_client_factory.get_client(
             "lambda",
-            "ap-south-1",
             aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
         )
