@@ -191,7 +191,7 @@ def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
     else:
         if not config:
             config = botocore.config.Config()
-            
+
         # Prevent this fixture from using the region configured in system config
         config = config.merge(botocore.config.Config(region_name=TEST_AWS_REGION_NAME))
         return ExternalClientFactory(session=session, config=config)
