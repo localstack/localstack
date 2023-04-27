@@ -3,7 +3,7 @@
     "recorded-date": "06-03-2023, 15:00:08",
     "recorded-content": {
       "event_error": {
-        "EventId": "myb3B4550BC-c83dd440-a485-48d7-a301-03f580e2eb6e",
+        "EventId": "<event-id>",
         "HookFailureMode": "FAIL",
         "HookInvocationPoint": "PRE_PROVISION",
         "HookStatus": "HOOK_COMPLETE_FAILED",
@@ -23,7 +23,7 @@
     "recorded-date": "06-03-2023, 15:01:59",
     "recorded-content": {
       "event_error": {
-        "EventId": "myb3B4550BC-e518633f-f754-4ac4-9e06-679471f41aab",
+        "EventId": "<event-id>",
         "HookFailureMode": "WARN",
         "HookInvocationPoint": "PRE_PROVISION",
         "HookStatus": "HOOK_COMPLETE_FAILED",

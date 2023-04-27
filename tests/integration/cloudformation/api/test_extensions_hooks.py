@@ -9,10 +9,10 @@ from localstack.utils.strings import short_uid
 
 
 class TestExtensionsHooks:
-    @pytest.mark.skip(reason="feature not implemented")
+    # @pytest.mark.skip(reason="feature not implemented")
     @pytest.mark.parametrize("failure_mode", ["FAIL", "WARN"])
     def test_hook_deployment(
-        self, failure_mode, register_extension, cfn_client, snapshot, cleanups
+        self, failure_mode, register_extension, snapshot, cleanups, aws_client
     ):
         artifact_path = os.path.join(
             os.path.dirname(__file__),
@@ -31,7 +31,7 @@ class TestExtensionsHooks:
                 }
             }
         )
-        cfn_client.set_type_configuration(
+        aws_client.cloudformation.set_type_configuration(
             TypeArn=extension["TypeArn"], Configuration=extension_configuration
         )
 
@@ -43,21 +43,30 @@ class TestExtensionsHooks:
         )
 
         stack_name = f"stack-{short_uid()}"
-        cfn_client.create_stack(
+        aws_client.cloudformation.create_stack(
             StackName=stack_name,
             TemplateBody=template,
             Parameters=[{"ParameterKey": "Name", "ParameterValue": f"bucket-{short_uid()}"}],
         )
-        cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
 
         if failure_mode == "WARN":
-            cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
+            aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
         else:
             with pytest.raises(botocore.exceptions.WaiterError):
-                cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
+                aws_client.cloudformation.get_waiter("stack_create_complete").wait(
+                    StackName=stack_name
+                )
 
-        events = cfn_client.describe_stack_events(StackName=stack_name)["StackEvents"]
+        events = aws_client.cloudformation.describe_stack_events(StackName=stack_name)[
+            "StackEvents"
+        ]
 
         failed_events = [e for e in events if "HookStatusReason" in e]
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "EventId", value_replacement="<event-id>", reference_replacement=False
+            )
+        )
         snapshot.match("event_error", failed_events[0])
