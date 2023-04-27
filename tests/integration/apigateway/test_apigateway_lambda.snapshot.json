@@ -1,6 +1,6 @@
 {
   "tests/integration/apigateway/test_apigateway_lambda.py::test_lambda_aws_proxy_integration": {
-    "recorded-date": "31-03-2023, 10:49:13",
+    "recorded-date": "26-04-2023, 20:03:23",
     "recorded-content": {
       "invocation-payload-without-trailing-slash": {
         "body": null,
@@ -14,7 +14,7 @@
           "CloudFront-Is-Tablet-Viewer": "false",
           "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
           "CloudFront-Viewer-Country": "<cloudfront-country:1>",
-          "Host": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "Host": "<api-id>.execute-api.<region>.amazonaws.com",
           "User-Agent": "python-requests/testing",
           "Via": "<via:1>",
           "X-Amz-Cf-Id": "<cf-id:1>",
@@ -55,7 +55,7 @@
             "<cloudfront-country:1>"
           ],
           "Host": [
-            "5muvrp9gkh.execute-api.<region>.amazonaws.com"
+            "<api-id>.execute-api.<region>.amazonaws.com"
           ],
           "User-Agent": [
             "python-requests/testing"
@@ -90,9 +90,9 @@
         "queryStringParameters": null,
         "requestContext": {
           "accountId": "111111111111",
-          "apiId": "5muvrp9gkh",
-          "domainName": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
-          "domainPrefix": "5muvrp9gkh",
+          "apiId": "<api-id>",
+          "domainName": "<api-id>.execute-api.<region>.amazonaws.com",
+          "domainPrefix": "<api-id>",
           "extendedRequestId": "<extended-request-id:1>",
           "httpMethod": "GET",
           "identity": {
@@ -133,7 +133,7 @@
           "CloudFront-Is-Tablet-Viewer": "false",
           "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
           "CloudFront-Viewer-Country": "<cloudfront-country:1>",
-          "Host": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "Host": "<api-id>.execute-api.<region>.amazonaws.com",
           "User-Agent": "python-requests/testing",
           "Via": "<via:2>",
           "X-Amz-Cf-Id": "<cf-id:2>",
@@ -174,7 +174,7 @@
             "<cloudfront-country:1>"
           ],
           "Host": [
-            "5muvrp9gkh.execute-api.<region>.amazonaws.com"
+            "<api-id>.execute-api.<region>.amazonaws.com"
           ],
           "User-Agent": [
             "python-requests/testing"
@@ -209,9 +209,9 @@
         "queryStringParameters": null,
         "requestContext": {
           "accountId": "111111111111",
-          "apiId": "5muvrp9gkh",
-          "domainName": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
-          "domainPrefix": "5muvrp9gkh",
+          "apiId": "<api-id>",
+          "domainName": "<api-id>.execute-api.<region>.amazonaws.com",
+          "domainPrefix": "<api-id>",
           "extendedRequestId": "<extended-request-id:2>",
           "httpMethod": "GET",
           "identity": {
@@ -252,7 +252,7 @@
           "CloudFront-Is-Tablet-Viewer": "false",
           "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
           "CloudFront-Viewer-Country": "<cloudfront-country:1>",
-          "Host": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "Host": "<api-id>.execute-api.<region>.amazonaws.com",
           "User-Agent": "python-requests/testing",
           "Via": "<via:3>",
           "X-Amz-Cf-Id": "<cf-id:3>",
@@ -293,7 +293,7 @@
             "<cloudfront-country:1>"
           ],
           "Host": [
-            "5muvrp9gkh.execute-api.<region>.amazonaws.com"
+            "<api-id>.execute-api.<region>.amazonaws.com"
           ],
           "User-Agent": [
             "python-requests/testing"
@@ -334,9 +334,9 @@
         },
         "requestContext": {
           "accountId": "111111111111",
-          "apiId": "5muvrp9gkh",
-          "domainName": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
-          "domainPrefix": "5muvrp9gkh",
+          "apiId": "<api-id>",
+          "domainName": "<api-id>.execute-api.<region>.amazonaws.com",
+          "domainPrefix": "<api-id>",
           "extendedRequestId": "<extended-request-id:3>",
           "httpMethod": "GET",
           "identity": {
@@ -377,7 +377,7 @@
           "CloudFront-Is-Tablet-Viewer": "false",
           "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
           "CloudFront-Viewer-Country": "<cloudfront-country:1>",
-          "Host": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "Host": "<api-id>.execute-api.<region>.amazonaws.com",
           "User-Agent": "python-requests/testing",
           "Via": "<via:4>",
           "X-Amz-Cf-Id": "<cf-id:4>",
@@ -418,7 +418,7 @@
             "<cloudfront-country:1>"
           ],
           "Host": [
-            "5muvrp9gkh.execute-api.<region>.amazonaws.com"
+            "<api-id>.execute-api.<region>.amazonaws.com"
           ],
           "User-Agent": [
             "python-requests/testing"
@@ -459,9 +459,9 @@
         },
         "requestContext": {
           "accountId": "111111111111",
-          "apiId": "5muvrp9gkh",
-          "domainName": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
-          "domainPrefix": "5muvrp9gkh",
+          "apiId": "<api-id>",
+          "domainName": "<api-id>.execute-api.<region>.amazonaws.com",
+          "domainPrefix": "<api-id>",
           "extendedRequestId": "<extended-request-id:4>",
           "httpMethod": "GET",
           "identity": {
@@ -502,7 +502,7 @@
           "CloudFront-Is-Tablet-Viewer": "false",
           "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
           "CloudFront-Viewer-Country": "<cloudfront-country:1>",
-          "Host": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "Host": "<api-id>.execute-api.<region>.amazonaws.com",
           "User-Agent": "python-requests/testing",
           "Via": "<via:5>",
           "X-Amz-Cf-Id": "<cf-id:5>",
@@ -543,7 +543,7 @@
             "<cloudfront-country:1>"
           ],
           "Host": [
-            "5muvrp9gkh.execute-api.<region>.amazonaws.com"
+            "<api-id>.execute-api.<region>.amazonaws.com"
           ],
           "User-Agent": [
             "python-requests/testing"
@@ -578,9 +578,9 @@
         "queryStringParameters": null,
         "requestContext": {
           "accountId": "111111111111",
-          "apiId": "5muvrp9gkh",
-          "domainName": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
-          "domainPrefix": "5muvrp9gkh",
+          "apiId": "<api-id>",
+          "domainName": "<api-id>.execute-api.<region>.amazonaws.com",
+          "domainPrefix": "<api-id>",
           "extendedRequestId": "<extended-request-id:5>",
           "httpMethod": "GET",
           "identity": {
@@ -621,7 +621,7 @@
           "CloudFront-Is-Tablet-Viewer": "false",
           "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
           "CloudFront-Viewer-Country": "<cloudfront-country:1>",
-          "Host": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "Host": "<api-id>.execute-api.<region>.amazonaws.com",
           "User-Agent": "python-requests/testing",
           "Via": "<via:6>",
           "X-Amz-Cf-Id": "<cf-id:6>",
@@ -662,7 +662,7 @@
             "<cloudfront-country:1>"
           ],
           "Host": [
-            "5muvrp9gkh.execute-api.<region>.amazonaws.com"
+            "<api-id>.execute-api.<region>.amazonaws.com"
           ],
           "User-Agent": [
             "python-requests/testing"
@@ -723,9 +723,9 @@
         },
         "requestContext": {
           "accountId": "111111111111",
-          "apiId": "5muvrp9gkh",
-          "domainName": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
-          "domainPrefix": "5muvrp9gkh",
+          "apiId": "<api-id>",
+          "domainName": "<api-id>.execute-api.<region>.amazonaws.com",
+          "domainPrefix": "<api-id>",
           "extendedRequestId": "<extended-request-id:6>",
           "httpMethod": "GET",
           "identity": {
@@ -770,9 +770,9 @@
           "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
           "CloudFront-Viewer-Country": "<cloudfront-country:1>",
           "Content-Type": "application/json;charset=utf-8",
-          "Host": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
-          "User-Agent": "python-requests/2.28.2",
-          "Via": "<via:7>",
+          "Host": "<api-id>.execute-api.<region>.amazonaws.com",
+          "User-Agent": "python-requests/testing",
+          "Via": "<via:6>",
           "X-Amz-Cf-Id": "<cf-id:7>",
           "X-Amzn-Trace-Id": "<trace-id:7>",
           "X-Forwarded-For": "<source-ip:1>, <ip>",
@@ -816,13 +816,13 @@
             "application/json;charset=utf-8"
           ],
           "Host": [
-            "5muvrp9gkh.execute-api.<region>.amazonaws.com"
+            "<api-id>.execute-api.<region>.amazonaws.com"
           ],
           "User-Agent": [
-            "python-requests/2.28.2"
+            "python-requests/testing"
           ],
           "Via": [
-            "<via:7>"
+            "<via:6>"
           ],
           "X-Amz-Cf-Id": [
             "<cf-id:7>"
@@ -861,9 +861,9 @@
         },
         "requestContext": {
           "accountId": "111111111111",
-          "apiId": "5muvrp9gkh",
-          "domainName": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
-          "domainPrefix": "5muvrp9gkh",
+          "apiId": "<api-id>",
+          "domainName": "<api-id>.execute-api.<region>.amazonaws.com",
+          "domainPrefix": "<api-id>",
           "extendedRequestId": "<extended-request-id:7>",
           "httpMethod": "POST",
           "identity": {
@@ -877,7 +877,7 @@
             "principalOrgId": null,
             "sourceIp": "<source-ip:1>",
             "user": null,
-            "userAgent": "python-requests/2.28.2",
+            "userAgent": "python-requests/testing",
             "userArn": null
           },
           "path": "/test/test-path",
