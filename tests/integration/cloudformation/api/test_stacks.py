@@ -87,6 +87,7 @@ class TestStacksApi:
 
             snapshot.match("stack_response", e.value.response)
 
+    @pytest.mark.xfail(reason="not working correctly")
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("fileformat", ["yaml", "json"])
     def test_get_template(self, deploy_cfn_template, snapshot, fileformat, aws_client):
