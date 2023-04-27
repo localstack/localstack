@@ -28,13 +28,13 @@ P = ParamSpec("P")
 
 
 @pytest.fixture
-def create_resource(cloudcontrol_client):
+def create_resource(aws_client):
     resource_requests = []
 
     def _create(_: Callable[P, T]) -> Callable[P, T]:
         def _inner_create(*args: P.args, **kwargs: P.kwargs) -> T:
             try:
-                result = cloudcontrol_client.create_resource(*args, **kwargs)
+                result = aws_client.cloudcontrol.create_resource(*args, **kwargs)
                 resource_requests.append(result["ProgressEvent"]["RequestToken"])
                 return result
             except Exception:
@@ -42,24 +42,24 @@ def create_resource(cloudcontrol_client):
 
         return _inner_create
 
-    yield _create(cloudcontrol_client.create_resource)
+    yield _create(aws_client.cloudcontrol.create_resource)
 
     # cleanup
     for rr in resource_requests:
         try:
-            progress_event = cloudcontrol_client.get_resource_request_status(RequestToken=rr)[
+            progress_event = aws_client.cloudcontrol.get_resource_request_status(RequestToken=rr)[
                 "ProgressEvent"
             ]
             if progress_event["OperationStatus"] in [
                 OperationStatus.IN_PROGRESS,
                 OperationStatus.PENDING,
             ]:
-                cloudcontrol_client.get_waiter("resource_request_success").wait(RequestToken=rr)
+                aws_client.cloudcontrol.get_waiter("resource_request_success").wait(RequestToken=rr)
 
-            delete_request = cloudcontrol_client.delete_resource(
+            delete_request = aws_client.cloudcontrol.delete_resource(
                 TypeName=progress_event["TypeName"], Identifier=progress_event["Identifier"]
             )
-            cloudcontrol_client.get_waiter("resource_request_success").wait(
+            aws_client.cloudcontrol.get_waiter("resource_request_success").wait(
                 RequestToken=delete_request["ProgressEvent"]["RequestToken"]
             )
         except Exception:
@@ -68,11 +68,11 @@ def create_resource(cloudcontrol_client):
 
 class TestCloudControlResourceApi:
     @pytest.mark.aws_validated
-    def test_lifecycle(self, cloudcontrol_client, snapshot, create_resource, s3_client):
+    def test_lifecycle(self, snapshot, create_resource, aws_client):
         """simple create/delete lifecycle for a resource"""
 
         snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "uuid"))
-        waiter = cloudcontrol_client.get_waiter("resource_request_success")
+        waiter = aws_client.cloudcontrol.get_waiter("resource_request_success")
 
         request_token = long_uid()
         bucket_name = f"cc-test-bucket-{short_uid()}"
@@ -88,26 +88,28 @@ class TestCloudControlResourceApi:
         waiter.wait(RequestToken=create_response["ProgressEvent"]["RequestToken"])
 
         # stabilized state
-        get_status_response = cloudcontrol_client.get_resource_request_status(
+        get_status_response = aws_client.cloudcontrol.get_resource_request_status(
             RequestToken=create_response["ProgressEvent"]["RequestToken"]
         )
         snapshot.match("get_status_response", get_status_response)
         assert get_status_response["ProgressEvent"]["OperationStatus"] == "SUCCESS"
-        get_response = cloudcontrol_client.get_resource(
+        get_response = aws_client.cloudcontrol.get_resource(
             TypeName="AWS::S3::Bucket",
             Identifier=get_status_response["ProgressEvent"]["Identifier"],
         )
         snapshot.match("get_response", get_response)
 
         # delete the resource again
-        delete_response = cloudcontrol_client.delete_resource(
+        delete_response = aws_client.cloudcontrol.delete_resource(
             TypeName="AWS::S3::Bucket", Identifier=bucket_name
         )
         snapshot.match("delete_response", delete_response)
         waiter.wait(RequestToken=delete_response["ProgressEvent"]["RequestToken"])
 
-        get_request_status_response_postdelete = cloudcontrol_client.get_resource_request_status(
-            RequestToken=delete_response["ProgressEvent"]["RequestToken"]
+        get_request_status_response_postdelete = (
+            aws_client.cloudcontrol.get_resource_request_status(
+                RequestToken=delete_response["ProgressEvent"]["RequestToken"]
+            )
         )
         snapshot.match(
             "get_request_status_response_postdelete", get_request_status_response_postdelete
@@ -115,17 +117,17 @@ class TestCloudControlResourceApi:
 
         # verify bucket is not here anymore
         with pytest.raises(
-            cloudcontrol_client.exceptions.ResourceNotFoundException
+            aws_client.cloudcontrol.exceptions.ResourceNotFoundException
         ) as res_not_found_exc:
-            cloudcontrol_client.get_resource(TypeName="AWS::S3::Bucket", Identifier=bucket_name)
+            aws_client.cloudcontrol.get_resource(TypeName="AWS::S3::Bucket", Identifier=bucket_name)
         snapshot.match("res_not_found_exc", res_not_found_exc.value.response)
 
         # also verify with s3 API
-        with pytest.raises(s3_client.exceptions.ClientError):
-            s3_client.head_bucket(Bucket=bucket_name)
+        with pytest.raises(aws_client.s3.exceptions.ClientError):
+            aws_client.s3.head_bucket(Bucket=bucket_name)
 
     @pytest.mark.aws_validated
-    def test_api_exceptions(self, cloudcontrol_client, snapshot):
+    def test_api_exceptions(self, snapshot, aws_client):
         """
         Test a few edge cases in the API which do not need the creating of resources
 
@@ -138,57 +140,57 @@ class TestCloudControlResourceApi:
         nonexisting_identifier = f"localstack-doesnotexist-{short_uid()}"
 
         # create
-        with pytest.raises(cloudcontrol_client.exceptions.TypeNotFoundException) as e:
-            cloudcontrol_client.create_resource(
+        with pytest.raises(aws_client.cloudcontrol.exceptions.TypeNotFoundException) as e:
+            aws_client.cloudcontrol.create_resource(
                 TypeName="AWS::LocalStack::DoesNotExist", DesiredState=json.dumps({})
             )
         snapshot.match("create_nonexistingtype", e.value.response)
 
         # delete
-        with pytest.raises(cloudcontrol_client.exceptions.TypeNotFoundException) as e:
-            cloudcontrol_client.delete_resource(
+        with pytest.raises(aws_client.cloudcontrol.exceptions.TypeNotFoundException) as e:
+            aws_client.cloudcontrol.delete_resource(
                 TypeName="AWS::LocalStack::DoesNotExist", Identifier=nonexisting_identifier
             )
         snapshot.match("delete_nonexistingtype", e.value.response)
 
-        delete_nonexistingresource = cloudcontrol_client.delete_resource(
+        delete_nonexistingresource = aws_client.cloudcontrol.delete_resource(
             TypeName="AWS::S3::Bucket", Identifier=nonexisting_identifier
         )
         snapshot.match("delete_nonexistingresource", delete_nonexistingresource)
 
         # get
-        with pytest.raises(cloudcontrol_client.exceptions.TypeNotFoundException) as e:
-            cloudcontrol_client.get_resource(
+        with pytest.raises(aws_client.cloudcontrol.exceptions.TypeNotFoundException) as e:
+            aws_client.cloudcontrol.get_resource(
                 TypeName="AWS::LocalStack::DoesNotExist", Identifier=nonexisting_identifier
             )
         snapshot.match("get_nonexistingtype", e.value.response)
 
-        with pytest.raises(cloudcontrol_client.exceptions.ResourceNotFoundException) as e:
-            cloudcontrol_client.get_resource(
+        with pytest.raises(aws_client.cloudcontrol.exceptions.ResourceNotFoundException) as e:
+            aws_client.cloudcontrol.get_resource(
                 TypeName="AWS::S3::Bucket", Identifier=nonexisting_identifier
             )
         # TODO
         # snapshot.match("get_nonexisting", e.value.response)
 
         # update
-        with pytest.raises(cloudcontrol_client.exceptions.TypeNotFoundException) as e:
-            cloudcontrol_client.update_resource(
+        with pytest.raises(aws_client.cloudcontrol.exceptions.TypeNotFoundException) as e:
+            aws_client.cloudcontrol.update_resource(
                 TypeName="AWS::LocalStack::DoesNotExist",
                 Identifier=nonexisting_identifier,
                 PatchDocument=json.dumps([{"op": "replace", "path": "/something", "value": 30}]),
             )
         snapshot.match("update_nonexistingtype", e.value.response)
 
-        with pytest.raises(cloudcontrol_client.exceptions.ClientError) as e:
-            cloudcontrol_client.update_resource(
+        with pytest.raises(aws_client.cloudcontrol.exceptions.ClientError) as e:
+            aws_client.cloudcontrol.update_resource(
                 TypeName="AWS::LocalStack::DoesNotExist",
                 Identifier=nonexisting_identifier,
                 PatchDocument=json.dumps([]),
             )
         snapshot.match("update_invalidpatchdocument", e.value.response)
 
-        with pytest.raises(cloudcontrol_client.exceptions.ResourceNotFoundException) as e:
-            cloudcontrol_client.update_resource(
+        with pytest.raises(aws_client.cloudcontrol.exceptions.ResourceNotFoundException) as e:
+            aws_client.cloudcontrol.update_resource(
                 TypeName="AWS::S3::Bucket",
                 Identifier=nonexisting_identifier,
                 PatchDocument=json.dumps([{"op": "replace", "path": "/something", "value": 30}]),
@@ -197,12 +199,12 @@ class TestCloudControlResourceApi:
         # snapshot.match("update_nonexisting", e.value.response)
 
         # list
-        with pytest.raises(cloudcontrol_client.exceptions.TypeNotFoundException) as e:
-            cloudcontrol_client.list_resources(TypeName="AWS::LocalStack::DoesNotExist")
+        with pytest.raises(aws_client.cloudcontrol.exceptions.TypeNotFoundException) as e:
+            aws_client.cloudcontrol.list_resources(TypeName="AWS::LocalStack::DoesNotExist")
         snapshot.match("list_nonexistingtype", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_list_resources(self, cloudcontrol_client, create_resource, snapshot):
+    def test_list_resources(self, create_resource, snapshot, aws_client):
         # TODO: test if only "terminal" states are included in lists (blocked by cfn registry)
         # TODO: test with custom type-version-id  (blocked by cfn registry)
         # TODO: test empty (blocked by cfn registry)
@@ -210,7 +212,7 @@ class TestCloudControlResourceApi:
         bucket_name_prefix = f"cc-test-bucket-{short_uid()}"
         bucket_name_1 = f"{bucket_name_prefix}-1"
         bucket_name_2 = f"{bucket_name_prefix}-2"
-        waiter = cloudcontrol_client.get_waiter("resource_request_success")
+        waiter = aws_client.cloudcontrol.get_waiter("resource_request_success")
 
         create_bucket_1 = create_resource(
             TypeName="AWS::S3::Bucket", DesiredState=json.dumps({"BucketName": bucket_name_1})
@@ -222,7 +224,7 @@ class TestCloudControlResourceApi:
         waiter.wait(RequestToken=create_bucket_2["ProgressEvent"]["RequestToken"])
 
         # test pagination
-        paginator = cloudcontrol_client.get_paginator("list_resources")
+        paginator = aws_client.cloudcontrol.get_paginator("list_resources")
 
         list_paginated_first = paginator.paginate(
             TypeName="AWS::S3::Bucket", PaginationConfig={"MaxItems": 1}
@@ -255,25 +257,23 @@ class TestCloudControlResourceApi:
         ]
         snapshot.match("list_paginated_all_filtered", list_paginated_all)
 
-        with pytest.raises(cloudcontrol_client.exceptions.TypeNotFoundException) as e:
-            cloudcontrol_client.list_resources(TypeName="AWS::DoesNot::Exist")
+        with pytest.raises(aws_client.cloudcontrol.exceptions.TypeNotFoundException) as e:
+            aws_client.cloudcontrol.list_resources(TypeName="AWS::DoesNot::Exist")
         snapshot.match("list_typenotfound_exc", e.value.response)
 
     @pytest.mark.skip(reason="advanced feature, will be added later")
-    def test_list_resources_with_resource_model(
-        self, cloudcontrol_client, create_resource, snapshot
-    ):
+    def test_list_resources_with_resource_model(self, create_resource, snapshot, aws_client):
         """
         See: https://docs.aws.amazon.com/cloudcontrolapi/latest/userguide/resource-operations-list.html
         """
-        with pytest.raises(cloudcontrol_client.exceptions.InvalidRequestException) as e:
-            cloudcontrol_client.list_resources(TypeName="AWS::ApiGateway::Stage")
+        with pytest.raises(aws_client.cloudcontrol.exceptions.InvalidRequestException) as e:
+            aws_client.cloudcontrol.list_resources(TypeName="AWS::ApiGateway::Stage")
         snapshot.match("missing_resource_model_exc", e.value.response)
 
         # TODO: actually set up rest API and AWS::ApiGateway::Stage for a positive sample
 
     @pytest.mark.aws_validated
-    def test_double_create_with_client_token(self, cloudcontrol_client, create_resource, snapshot):
+    def test_double_create_with_client_token(self, create_resource, snapshot, aws_client):
         """
         ClientToken is used to deduplicate requests
         """
@@ -288,7 +288,7 @@ class TestCloudControlResourceApi:
         snapshot.match("create_response", create_response)
 
         # another create, same token => request fails (even though it's a new desired state now!)
-        with pytest.raises(cloudcontrol_client.exceptions.ClientTokenConflictException) as e:
+        with pytest.raises(aws_client.cloudcontrol.exceptions.ClientTokenConflictException) as e:
             create_resource(
                 TypeName="AWS::S3::Bucket",
                 DesiredState=json.dumps({"BucketName": f"{bucket_name_prefix}-2"}),
@@ -297,14 +297,14 @@ class TestCloudControlResourceApi:
         snapshot.match("create_response_duplicate_exc", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_create_exceptions(self, cloudcontrol_client, create_resource, snapshot):
+    def test_create_exceptions(self, create_resource, snapshot, aws_client):
         """
         learnings:
         - the create call basically always passes, independent of desired state. The failure only shows up by checking the status
         - the exception to this is when specifying something that isn't included at all in the schema. (extra keys)
         """
         bucket_name = f"localstack-testing-{short_uid()}-1"
-        waiter = cloudcontrol_client.get_waiter("resource_request_success")
+        waiter = aws_client.cloudcontrol.get_waiter("resource_request_success")
 
         create_bucket_response = create_resource(
             TypeName="AWS::S3::Bucket", DesiredState=json.dumps({"BucketName": bucket_name})
@@ -320,7 +320,7 @@ class TestCloudControlResourceApi:
         with pytest.raises(WaiterError):
             waiter.wait(RequestToken=create_duplicate_response["ProgressEvent"]["RequestToken"])
 
-        post_wait_response = cloudcontrol_client.get_resource_request_status(
+        post_wait_response = aws_client.cloudcontrol.get_resource_request_status(
             RequestToken=create_duplicate_response["ProgressEvent"]["RequestToken"]
         )
         snapshot.match("duplicate_post_wait_response", post_wait_response)
@@ -334,13 +334,13 @@ class TestCloudControlResourceApi:
         )
         snapshot.match("create_missingproperty_response", create_missingproperty_response)
         waiter.wait(RequestToken=create_missingproperty_response["ProgressEvent"]["RequestToken"])
-        missing_post_wait_response = cloudcontrol_client.get_resource_request_status(
+        missing_post_wait_response = aws_client.cloudcontrol.get_resource_request_status(
             RequestToken=create_missingproperty_response["ProgressEvent"]["RequestToken"]
         )
         snapshot.match("missing_post_wait_response", missing_post_wait_response)
 
         # 3. additional properties not in spec
-        with pytest.raises(cloudcontrol_client.exceptions.ClientError) as e:
+        with pytest.raises(aws_client.cloudcontrol.exceptions.ClientError) as e:
             create_resource(
                 TypeName="AWS::S3::Bucket",
                 DesiredState=json.dumps({"BucketName": bucket_name, "BucketSomething": "hello"}),
@@ -348,35 +348,35 @@ class TestCloudControlResourceApi:
         snapshot.match("create_extra_property_exc", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_create_invalid_desiredstate(self, cloudcontrol_client, snapshot):
-        with pytest.raises(cloudcontrol_client.exceptions.ClientError) as e:
-            cloudcontrol_client.create_resource(
+    def test_create_invalid_desiredstate(self, snapshot, aws_client):
+        with pytest.raises(aws_client.cloudcontrol.exceptions.ClientError) as e:
+            aws_client.cloudcontrol.create_resource(
                 TypeName="AWS::S3::Bucket",
                 DesiredState=json.dumps({"DOESNOTEXIST": "invalidvalue"}),
             )
         snapshot.match("create_invalid_state_exc_invalid_field", e.value.response)
 
-        with pytest.raises(cloudcontrol_client.exceptions.ClientError) as e:
-            cloudcontrol_client.create_resource(
+        with pytest.raises(aws_client.cloudcontrol.exceptions.ClientError) as e:
+            aws_client.cloudcontrol.create_resource(
                 TypeName="AWS::S3::Bucket", DesiredState=json.dumps({"BucketName": True})
             )
         snapshot.match("create_invalid_state_exc_invalid_type", e.value.response)
 
     # TODO: updates
     @pytest.mark.aws_validated
-    def test_update(self, cloudcontrol_client, create_resource, snapshot):
+    def test_update(self, create_resource, snapshot, aws_client):
         bucket_name = f"localstack-testing-cc-{short_uid()}"
         initial_state = {"BucketName": bucket_name}
         create_response = create_resource(
             TypeName="AWS::S3::Bucket", DesiredState=json.dumps(initial_state)
         )
-        waiter = cloudcontrol_client.get_waiter("resource_request_success")
+        waiter = aws_client.cloudcontrol.get_waiter("resource_request_success")
         waiter.wait(RequestToken=create_response["ProgressEvent"]["RequestToken"])
 
         # add a property that didn't exist before
         second_state = {"BucketName": bucket_name, "Tags": [{"Key": "a", "Value": "123"}]}
         patch = jsonpatch.make_patch(initial_state, second_state).patch
-        update_response = cloudcontrol_client.update_resource(
+        update_response = aws_client.cloudcontrol.update_resource(
             TypeName="AWS::S3::Bucket",
             Identifier=create_response["ProgressEvent"]["Identifier"],
             PatchDocument=json.dumps(patch),
@@ -386,7 +386,7 @@ class TestCloudControlResourceApi:
         # update something that doesn't require a replacement
         third_state = {"BucketName": bucket_name, "Tags": [{"Key": "b", "Value": "234"}]}
         patch = jsonpatch.make_patch(second_state, third_state).patch
-        update_response = cloudcontrol_client.update_resource(
+        update_response = aws_client.cloudcontrol.update_resource(
             TypeName="AWS::S3::Bucket",
             Identifier=create_response["ProgressEvent"]["Identifier"],
             PatchDocument=json.dumps(patch),
@@ -397,8 +397,8 @@ class TestCloudControlResourceApi:
         # this leads to an NotUpdatableException while on cloudformation this would cause a replacement
         final_state = {"BucketName": f"{bucket_name}plus", "Tags": [{"Key": "b", "Value": "234"}]}
         patch = jsonpatch.make_patch(third_state, final_state).patch
-        with pytest.raises(cloudcontrol_client.exceptions.NotUpdatableException) as e:
-            cloudcontrol_client.update_resource(
+        with pytest.raises(aws_client.cloudcontrol.exceptions.NotUpdatableException) as e:
+            aws_client.cloudcontrol.update_resource(
                 TypeName="AWS::S3::Bucket",
                 Identifier=create_response["ProgressEvent"]["Identifier"],
                 PatchDocument=json.dumps(patch),
@@ -408,18 +408,18 @@ class TestCloudControlResourceApi:
 
 class TestCloudControlResourceRequestApi:
     @pytest.mark.aws_validated
-    def test_invalid_request_token_exc(self, cloudcontrol_client, snapshot):
+    def test_invalid_request_token_exc(self, snapshot, aws_client):
         """Test behavior of methods when invoked with non-existing RequestToken"""
-        with pytest.raises(cloudcontrol_client.exceptions.RequestTokenNotFoundException) as e1:
-            cloudcontrol_client.get_resource_request_status(RequestToken="DOESNOTEXIST")
+        with pytest.raises(aws_client.cloudcontrol.exceptions.RequestTokenNotFoundException) as e1:
+            aws_client.cloudcontrol.get_resource_request_status(RequestToken="DOESNOTEXIST")
         snapshot.match("get_token_not_found", e1.value.response)
 
-        with pytest.raises(cloudcontrol_client.exceptions.RequestTokenNotFoundException) as e2:
-            cloudcontrol_client.cancel_resource_request(RequestToken="DOESNOTEXIST")
+        with pytest.raises(aws_client.cloudcontrol.exceptions.RequestTokenNotFoundException) as e2:
+            aws_client.cloudcontrol.cancel_resource_request(RequestToken="DOESNOTEXIST")
         snapshot.match("cancel_token_not_found", e2.value.response)
 
     @pytest.mark.aws_validated
-    def test_list_request_status(self, cloudcontrol_client, snapshot, create_resource):
+    def test_list_request_status(self, snapshot, create_resource, aws_client):
         """
         This is a bit tricky to test against AWS because these lists are not manually "clearable" and instead are cleared after some time (7 days?)
         To accommodate for this we manually filter the resources here before snapshotting the response list.
@@ -451,7 +451,7 @@ class TestCloudControlResourceRequestApi:
         snapshot.match("create_bucket_resource", create_bucket_resource)
 
         # by default no filter should be equal to specifying all OperationStatuses
-        paginator = cloudcontrol_client.get_paginator("list_resource_requests")
+        paginator = aws_client.cloudcontrol.get_paginator("list_resource_requests")
         list_requests_response_default = paginator.paginate().build_full_result()
         list_requests_response_all = paginator.paginate(
             ResourceRequestStatusFilter={
@@ -496,7 +496,7 @@ class TestCloudControlResourceRequestApi:
 
     @pytest.mark.skip(reason="needs a more complicated test setup")
     @pytest.mark.aws_validated
-    def test_get_request_status(self, cloudcontrol_client, snapshot):
+    def test_get_request_status(self, snapshot, aws_client):
         """
         Tries to trigger all states ("CANCEL_COMPLETE", "CANCEL_IN_PROGRESS", "FAILED", "IN_PROGRESS", "PENDING", "SUCCESS")
 
@@ -512,7 +512,7 @@ class TestCloudControlResourceRequestApi:
         pass
 
     @pytest.mark.aws_validated
-    def test_cancel_request(self, cloudcontrol_client, snapshot, create_resource, s3_client):
+    def test_cancel_request(self, snapshot, create_resource, aws_client):
         """
         Creates a resource & immediately cancels the create request
 
@@ -531,7 +531,7 @@ class TestCloudControlResourceRequestApi:
         snapshot.match("create_response", create_response)
 
         # this is not 100% reliable, depending on how fast the request above is processed.
-        cancel_response = cloudcontrol_client.cancel_resource_request(
+        cancel_response = aws_client.cloudcontrol.cancel_resource_request(
             RequestToken=create_response["ProgressEvent"]["RequestToken"]
         )
         assert cancel_response["ProgressEvent"]["OperationStatus"] in [
@@ -541,7 +541,9 @@ class TestCloudControlResourceRequestApi:
 
         def wait_for_cc_canceled(request_token):
             def _wait_for_canceled():
-                resp = cloudcontrol_client.get_resource_request_status(RequestToken=request_token)
+                resp = aws_client.cloudcontrol.get_resource_request_status(
+                    RequestToken=request_token
+                )
                 op_status = resp["ProgressEvent"]["OperationStatus"]
                 if op_status in [OperationStatus.FAILED, OperationStatus.SUCCESS]:
                     raise ShortCircuitWaitException()
@@ -552,12 +554,12 @@ class TestCloudControlResourceRequestApi:
         assert wait_until(wait_for_cc_canceled(cancel_response["ProgressEvent"]["RequestToken"]))
         snapshot.match(
             "cancel_request_status",
-            cloudcontrol_client.get_resource_request_status(
+            aws_client.cloudcontrol.get_resource_request_status(
                 RequestToken=cancel_response["ProgressEvent"]["RequestToken"]
             ),
         )
 
-        cancel_again_response = cloudcontrol_client.cancel_resource_request(
+        cancel_again_response = aws_client.cloudcontrol.cancel_resource_request(
             RequestToken=create_response["ProgressEvent"]["RequestToken"]
         )
         snapshot.match("cancel_again_response", cancel_again_response)
@@ -571,7 +573,7 @@ class TestCloudControlResourceRequestApi:
         ids=["SUCCESS", "FAIL"],
     )
     @pytest.mark.aws_validated
-    def test_cancel_edge_cases(self, cloudcontrol_client, create_resource, snapshot, desired_state):
+    def test_cancel_edge_cases(self, create_resource, snapshot, desired_state, aws_client):
         """tests canceling a resource request that is in a SUCCESS or FAILED terminal state"""
 
         # success
@@ -587,14 +589,14 @@ class TestCloudControlResourceRequestApi:
         )
         snapshot.match("create_response", create_response)
         try:
-            cloudcontrol_client.get_waiter("resource_request_success").wait(
+            aws_client.cloudcontrol.get_waiter("resource_request_success").wait(
                 RequestToken=create_response["ProgressEvent"]["RequestToken"]
             )
         except Exception:
             pass  # just want to make sure it's in a terminal state here
 
-        with pytest.raises(cloudcontrol_client.exceptions.ClientError) as e:
-            cloudcontrol_client.cancel_resource_request(
+        with pytest.raises(aws_client.cloudcontrol.exceptions.ClientError) as e:
+            aws_client.cloudcontrol.cancel_resource_request(
                 RequestToken=create_response["ProgressEvent"]["RequestToken"]
             )
         snapshot.match("cancel_in_success_exc", e.value.response)
