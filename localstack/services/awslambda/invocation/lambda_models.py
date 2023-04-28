@@ -31,6 +31,7 @@ from localstack.aws.api.lambda_ import (
     StateReasonCode,
     TracingMode,
 )
+from localstack.constants import AWS_REGION_US_EAST_1, INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.awslambda.api_utils import qualified_lambda_arn, unqualified_lambda_arn
 from localstack.utils.archives import unzip
 from localstack.utils.aws import aws_stack
@@ -172,6 +173,7 @@ class S3Code(ArchiveCode):
     """
 
     id: str
+    account_id: str
     s3_bucket: str
     s3_key: str
     s3_object_version: str | None
@@ -185,7 +187,12 @@ class S3Code(ArchiveCode):
 
         :param target_file: File the code archive should be downloaded into (IO object)
         """
-        s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
+        s3_client: "S3Client" = aws_stack.connect_to_service(
+            "s3",
+            region_name=AWS_REGION_US_EAST_1,
+            aws_access_key_id=self.account_id,
+            aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
+        )
         extra_args = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
         s3_client.download_fileobj(
             Bucket=self.s3_bucket, Key=self.s3_key, Fileobj=target_file, ExtraArgs=extra_args
@@ -197,7 +204,10 @@ class S3Code(ArchiveCode):
         Generates a presigned url pointing to the code archive
         """
         s3_client: "S3Client" = aws_stack.connect_to_service(
-            "s3", region_name="us-east-1", endpoint_url=endpoint_url
+            "s3",
+            region_name=AWS_REGION_US_EAST_1,
+            aws_access_key_id=self.account_id,
+            aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
         )
         params = {"Bucket": self.s3_bucket, "Key": self.s3_key}
         if self.s3_object_version:
@@ -256,7 +266,12 @@ class S3Code(ArchiveCode):
         """
         LOG.debug("Final code destruction for %s", self.id)
         self.destroy_cached()
-        s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
+        s3_client: "S3Client" = aws_stack.connect_to_service(
+            "s3",
+            region_name=AWS_REGION_US_EAST_1,
+            aws_access_key_id=self.account_id,
+            aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
+        )
         kwargs = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
         try:
             s3_client.delete_object(Bucket=self.s3_bucket, Key=self.s3_key, **kwargs)

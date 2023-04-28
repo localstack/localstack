@@ -195,6 +195,7 @@ def create_lambda_function(
     role=None,
     timeout=None,
     region_name=None,
+    s3_client=None,
     **kwargs,
 ):
     """Utility method to create a new function via the Lambda API
@@ -234,7 +235,7 @@ def create_lambda_function(
 
     lambda_code = {"ZipFile": zip_file}
     if len(zip_file) > MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE:
-        s3 = aws_stack.connect_to_service("s3")
+        s3 = s3_client or aws_stack.connect_to_service("s3")
         resource_utils.get_or_create_bucket(LAMBDA_ASSETS_BUCKET_NAME)
         asset_key = f"{short_uid()}.zip"
         s3.upload_fileobj(
