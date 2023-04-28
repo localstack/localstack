@@ -2489,20 +2489,25 @@ class TestSqsProvider:
 
     @pytest.mark.aws_validated
     def test_purge_queue_clears_fifo_deduplication_cache(self, sqs_create_queue, aws_client):
-        queue_name = f"test-queue-{short_uid()}.fifo"
+        fifo_queue_name = f"test-queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
-        message_content = f"test{short_uid()}"
         dedup_id = f"fifo_dedup-{short_uid()}"
         group_id = f"fifo_group-{short_uid()}"
 
         aws_client.sqs.send_message(
-            QueueUrl=queue_url, MessageBody=f"message-1", MessageGroupId=group_id, MessageDeduplicationId=dedup_id
+            QueueUrl=queue_url,
+            MessageBody="message-1",
+            MessageGroupId=group_id,
+            MessageDeduplicationId=dedup_id,
         )
 
         aws_client.sqs.purge_queue(QueueUrl=queue_url)
 
         aws_client.sqs.send_message(
-            QueueUrl=queue_url, MessageBody=f"message-2", MessageGroupId=group_id, MessageDeduplicationId=dedup_id
+            QueueUrl=queue_url,
+            MessageBody="message-2",
+            MessageGroupId=group_id,
+            MessageDeduplicationId=dedup_id,
         )
 
         receive_result = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
