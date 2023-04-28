@@ -3178,10 +3178,15 @@ class TestSqsQueryApi:
         assert response.status_code == 400
 
     @pytest.mark.aws_validated
+    @pytest.mark.parametrize("strategy", ["domain", "path"])
     def test_get_queue_url_works_for_same_queue(
-        self, monkeypatch, sqs_create_queue, sqs_http_client
+        self,
+        monkeypatch,
+        sqs_create_queue,
+        sqs_http_client,
+        strategy,
     ):
-        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "path")
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
         queue_url = sqs_create_queue()
 
