@@ -3010,7 +3010,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if not layer_version_parts.get("layer_version"):
             raise ValidationException(
                 f"1 validation error detected: Value '{arn}' at 'arn' failed to satisfy constraint: Member must satisfy regular expression pattern: "
-                + "arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+"
+                + "arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+"
             )
 
         layer_name = layer_version_parts["layer_name"]
