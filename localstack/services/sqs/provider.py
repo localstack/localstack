@@ -93,6 +93,7 @@ from localstack.utils.time import now
 LOG = logging.getLogger(__name__)
 
 MAX_NUMBER_OF_MESSAGES = 10
+_STORE_LOCK = threading.RLock()
 
 
 class InvalidAddress(ServiceException):
@@ -558,7 +559,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def __init__(self) -> None:
         super().__init__()
-        self._mutex = threading.RLock()
         self._queue_update_worker = QueueUpdateWorker()
         self._cloudwatch_publish_worker = CloudwatchPublishWorker()
         self._cloudwatch_dispatcher = CloudwatchDispatcher()
@@ -581,7 +581,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._cloudwatch_publish_worker.stop()
         self._cloudwatch_dispatcher.shutdown()
 
-    def _require_queue(self, account_id: str, region_name: str, name: str) -> SqsQueue:
+    @staticmethod
+    def _require_queue(account_id: str, region_name: str, name: str) -> SqsQueue:
         """
         Returns the queue for the given name, or raises QueueDoesNotExist if it does not exist.
 
@@ -590,8 +591,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         :returns: the queue
         :raises QueueDoesNotExist: if the queue does not exist
         """
-        store = self.get_store(account_id, region_name)
-        with self._mutex:
+        store = SqsProvider.get_store(account_id, region_name)
+        with _STORE_LOCK:
             if name not in store.queues.keys():
                 raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
 
@@ -637,7 +638,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         store = self.get_store(context.account_id, context.region)
 
-        with self._mutex:
+        with _STORE_LOCK:
             if queue_name in store.queues:
                 queue = store.queues[queue_name]
 
@@ -766,12 +767,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         )
 
     def delete_queue(self, context: RequestContext, queue_url: String) -> None:
-        store = self.get_store(context.account_id, context.region)
-
-        with self._mutex:
-            queue = self._resolve_queue(context, queue_url=queue_url)
-            del store.queues[queue.name]
-            store.deleted[queue.name] = time.time()
+        with _STORE_LOCK:
+            account_id, region_name, queue_name = resolve_queue_location(
+                context, queue_name=None, queue_url=queue_url
+            )
+            store = self.get_store(account_id, region_name)
+            del store.queues[queue_name]
+            store.deleted[queue_name] = time.time()
 
     def get_queue_attributes(
         self, context: RequestContext, queue_url: String, attribute_names: AttributeNameList = None
