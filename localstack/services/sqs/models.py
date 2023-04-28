@@ -611,6 +611,10 @@ class FifoQueue(SqsQueue):
 
         return fifo_message
 
+    def clear(self):
+        super().clear()
+        self.deduplication.clear()
+
     def _assert_queue_name(self, name):
         if not name.endswith(".fifo"):
             raise InvalidParameterValue(
