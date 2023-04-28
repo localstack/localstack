@@ -10,32 +10,28 @@ from localstack.utils.aws.aws_stack import connect_to_service, get_region, get_v
 # set up logger
 LOG = logging.getLogger(__name__)
 
-# maps SQS queue ARNs to queue URLs
-SQS_ARN_TO_URL_CACHE = {}
-
 # TODO: extract ARN utils into separate file!
 
 _arn_parser = ArnParser()
 
 
-def sqs_queue_url_for_arn(queue_arn):
+def sqs_queue_url_for_arn(queue_arn: str) -> str:
+    """
+    Return the SQS queue URL given the queue ARN.
+    """
     if "://" in queue_arn:
         return queue_arn
-    if queue_arn in SQS_ARN_TO_URL_CACHE:
-        return SQS_ARN_TO_URL_CACHE[queue_arn]
 
-    try:
-        arn = parse_arn(queue_arn)
-        region_name = arn["region"]
-        queue_name = arn["resource"]
-    except InvalidArnException:
-        region_name = None
-        queue_name = queue_arn
+    arn = parse_arn(queue_arn)
+    account_id = arn["account"]
+    region_name = arn["region"]
+    queue_name = arn["resource"]
 
-    sqs_client = connect_to_service("sqs", region_name=region_name)
-    result = sqs_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
-    SQS_ARN_TO_URL_CACHE[queue_arn] = result
-    return result
+    from localstack.services.sqs.provider import SqsProvider
+
+    queue = SqsProvider._require_queue(account_id, region_name, queue_name)
+
+    return queue.url()
 
 
 # TODO: remove and merge with sqs_queue_url_for_arn(..) above!!
