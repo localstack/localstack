@@ -16,9 +16,11 @@ from localstack.aws.protocol.parser import OperationNotFoundParserError, create_
 from localstack.aws.protocol.serializer import create_serializer
 from localstack.aws.protocol.validate import MissingRequiredField, validate_request
 from localstack.aws.spec import load_service
+from localstack.constants import AWS_REGION_US_EAST_1, INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.http import Request, Response, Router, route
 from localstack.http.dispatcher import Handler
 from localstack.services.sqs.exceptions import MissingParameter
+from localstack.services.sqs.utils import parse_queue_url
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.strings import long_uid
@@ -167,9 +169,19 @@ def try_call_sqs(request: Request, region: str) -> Tuple[Dict, OperationModel]:
     except MissingRequiredField as e:
         raise MissingParameter(f"The request must contain the parameter {e.required_name}.")
 
+    account_id, region, queue_name = parse_queue_url(request.url)
+
+    # Region is not available when no endpoint strategy is used, so fallback to default
+    region = region or AWS_REGION_US_EAST_1
+
     # TODO: permissions encoded in URL as AUTHPARAMS cannot be accounted for in this method, which is not a big
     #  problem yet since we generally don't enforce permissions.
-    client = aws_stack.connect_to_service("sqs", region_name=region)
+    client = aws_stack.connect_to_service(
+        "sqs",
+        region_name=region,
+        aws_access_key_id=account_id,
+        aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
+    )
     try:
         # using the layer below boto3.client("sqs").<operation>(...) to make the call
         boto_response = client._make_api_call(operation.name, service_request)
