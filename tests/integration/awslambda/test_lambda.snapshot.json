@@ -448,6 +448,24 @@
       }
     }
   },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaFeatures::test_invocation_with_logs[python3.10]": {
+    "recorded-date": "26-04-2023, 19:26:27",
+    "recorded-content": {
+      "invoke": {
+        "ExecutedVersion": "$LATEST",
+        "LogResult": "log-result",
+        "Payload": {},
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "logs": {
+        "logs": "START RequestId: <request-id> Version: $LATEST\n{}\nEND RequestId: <request-id>\nREPORT RequestId: <request-id>\tDuration: <duration> ms\tBilled Duration: <duration> ms\tMemory Size: 128 MB\tMax Memory Used: <memory> MB\tInit Duration: <duration> ms\t\n"
+      }
+    }
+  },
   "tests/integration/awslambda/test_lambda.py::TestLambdaFeatures::test_invocation_with_logs[nodejs16.x]": {
     "recorded-date": "17-02-2023, 14:01:30",
     "recorded-content": {
@@ -468,6 +486,20 @@
   },
   "tests/integration/awslambda/test_lambda.py::TestLambdaFeatures::test_invocation_type_request_response[python3.9]": {
     "recorded-date": "17-02-2023, 14:01:34",
+    "recorded-content": {
+      "invoke-result": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {},
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaFeatures::test_invocation_type_request_response[python3.10]": {
+    "recorded-date": "26-04-2023, 19:38:02",
     "recorded-content": {
       "invoke-result": {
         "ExecutedVersion": "$LATEST",
@@ -507,6 +539,19 @@
       }
     }
   },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaFeatures::test_invocation_type_event[python3.10]": {
+    "recorded-date": "26-04-2023, 19:39:23",
+    "recorded-content": {
+      "invoke-result": {
+        "Payload": "",
+        "StatusCode": 202,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      }
+    }
+  },
   "tests/integration/awslambda/test_lambda.py::TestLambdaFeatures::test_invocation_type_event[nodejs16.x]": {
     "recorded-date": "17-02-2023, 14:01:43",
     "recorded-content": {
@@ -522,6 +567,19 @@
   },
   "tests/integration/awslambda/test_lambda.py::TestLambdaFeatures::test_invocation_type_dry_run[python3.9]": {
     "recorded-date": "09-09-2022, 19:15:23",
+    "recorded-content": {
+      "invoke-result": {
+        "Payload": "",
+        "StatusCode": 204,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaFeatures::test_invocation_type_dry_run[python3.10]": {
+    "recorded-date": "26-04-2023, 19:37:23",
     "recorded-content": {
       "invoke-result": {
         "Payload": "",

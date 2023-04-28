@@ -220,6 +220,7 @@ class Runtime(str):
     python3_7 = "python3.7"
     python3_8 = "python3.8"
     python3_9 = "python3.9"
+    python3_10 = "python3.10"
     dotnetcore1_0 = "dotnetcore1.0"
     dotnetcore2_0 = "dotnetcore2.0"
     dotnetcore2_1 = "dotnetcore2.1"

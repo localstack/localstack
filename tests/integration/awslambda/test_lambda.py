@@ -96,6 +96,7 @@ PYTHON_TEST_RUNTIMES = (
         Runtime.python3_7,
         Runtime.python3_8,
         Runtime.python3_9,
+        Runtime.python3_10,
     ]
     if (not is_old_provider() or use_docker()) and get_arch() != "arm64"
     else [Runtime.python3_9]
@@ -913,8 +914,12 @@ class TestLambdaPermissions:
 
 class TestLambdaFeatures:
     @pytest.fixture(
-        params=[("python3.9", TEST_LAMBDA_PYTHON_ECHO), ("nodejs16.x", TEST_LAMBDA_NODEJS_ECHO)],
-        ids=["python3.9", "nodejs16.x"],
+        params=[
+            ("python3.9", TEST_LAMBDA_PYTHON_ECHO),
+            ("nodejs16.x", TEST_LAMBDA_NODEJS_ECHO),
+            ("python3.10", TEST_LAMBDA_PYTHON_ECHO),
+        ],
+        ids=["python3.9", "nodejs16.x", "python3.10"],
     )
     def invocation_echo_lambda(self, create_lambda_function, request):
         function_name = f"echo-func-{short_uid()}"

@@ -710,6 +710,10 @@
     "recorded-date": "27-02-2023, 17:22:41",
     "recorded-content": {}
   },
+  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.10]": {
+    "recorded-date": "26-04-2023, 20:23:41",
+    "recorded-content": {}
+  },
   "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.7]": {
     "recorded-date": "27-02-2023, 17:22:44",
     "recorded-content": {}
@@ -720,6 +724,10 @@
   },
   "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.9]": {
     "recorded-date": "27-02-2023, 17:22:51",
+    "recorded-content": {}
+  },
+  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.10]": {
+    "recorded-date": "26-04-2023, 20:24:51",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.7]": {
@@ -856,6 +864,73 @@
   },
   "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.9]": {
     "recorded-date": "27-02-2023, 17:23:01",
+    "recorded-content": {
+      "creation_response": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<<code-sha-256>:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "invocation_response": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorMessage": "some error occurred",
+          "errorType": "CustomException",
+          "requestId": "<uuid:2>",
+          "stackTrace": [
+            "  File \"/var/task/handler.py\", line 6, in handler\n    raise CustomException(\"some error occurred\")\n"
+          ]
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.10]": {
+    "recorded-date": "26-04-2023, 20:23:01",
     "recorded-content": {
       "creation_response": {
         "CreateEventSourceMappingResponse": null,
