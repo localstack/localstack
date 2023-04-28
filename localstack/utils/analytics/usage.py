@@ -10,7 +10,6 @@ collector_registry: dict[str, Any] = dict()
 
 
 class UsageSetCounter:
-
     state: list[str]
     namespace: str
 
@@ -68,38 +67,7 @@ class UsageCounter:
         return result
 
 
-class UsageLogger:
-    handler: EventHandler
-    usage_events: dict[str, dict[str, list]]
-
-    def __init__(self, handler: EventHandler):
-        self.handler = handler
-        self.session_id = get_session_id()
-        self.usage_events = dict()
-
-    def usage(self, partition_name: str, usage_type: str, processing_fn: list, value: object):
-        self.usage_events.setdefault(partition_name)
-
-    def _metadata(self) -> EventMetadata:
-        return EventMetadata(
-            session_id=self.session_id,
-            client_time=str(datetime.datetime.now()),
-        )
-
-    def aggregate(self) -> dict:
-        aggregated_payload = {}
-        for ns, collector in collector_registry.items():
-            aggregated_payload[ns] = collector.aggregate()
-        return aggregated_payload
-
-    def flush(self):
-        self.handler.handle(
-            Event(name="hackystacky:usage", metadata=self._metadata(), payload=self.aggregate())
-        )
-
-
 class UsageEventHandler(EventHandler):
-
     events: list[Event]
 
     def __init__(self):
@@ -109,3 +77,20 @@ class UsageEventHandler(EventHandler):
     def handle(self, event: Event):
         self.events.append(event)
         self.publisher.publish(self.events)
+
+
+def aggregate_and_send():
+    """
+    Aggregates data from all registered usage trackers and immediately sends the aggregated result to the analytics service.
+    """
+    metadata = EventMetadata(
+        session_id=get_session_id(),
+        client_time=str(datetime.datetime.now()),
+    )
+
+    aggregated_payload = {}
+    for ns, collector in collector_registry.items():
+        aggregated_payload[ns] = collector.aggregate()
+
+    usage_event_handler = UsageEventHandler()
+    usage_event_handler.handle(Event(name="usage", metadata=metadata, payload=aggregated_payload))

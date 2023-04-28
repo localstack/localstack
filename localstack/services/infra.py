@@ -21,6 +21,7 @@ from localstack.services import generic_proxy, motoserver
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
 from localstack.utils import config_listener, files, objects
+from localstack.utils.analytics import usage
 from localstack.utils.aws.request_context import patch_moto_request_handling
 from localstack.utils.bootstrap import is_api_enabled, log_duration, setup_logging
 from localstack.utils.container_networking import get_main_container_id
@@ -272,7 +273,7 @@ def stop_infra():
     if events.infra_stopping.is_set():
         return
 
-    analytics.usage_log.flush()
+    usage.aggregate_and_send()
     # analytics.log.event("infra_stop")
 
     # also used to signal shutdown for edge proxy so that any further requests will be rejected
