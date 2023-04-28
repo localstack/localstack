@@ -607,7 +607,7 @@ def store_s3_bucket_archive(
     :return: S3 Code object representing the archive stored in S3
     """
     if archive_bucket == config.BUCKET_MARKER_LOCAL:
-        usage.hotreload()
+        usage.hotreload.increment()
         return create_hot_reloading_code(path=archive_key)
     s3_client: "S3Client" = connect_to().s3
     kwargs = {"VersionId": archive_version} if archive_version else {}
