@@ -1521,7 +1521,7 @@ class OpenApiExporter:
     def _add_paths(cls, spec, resources):
         for item in resources.get("items"):
             path = item.get("path")
-            for method, method_config in item.get("resourceMethods").items():
+            for method, method_config in item.get("resourceMethods", {}).items():
                 method = method.lower()
                 integration_responses = (
                     method_config.get("methodIntegration", {})
