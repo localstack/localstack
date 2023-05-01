@@ -400,7 +400,7 @@ def cmd_update_docker_images():
             image.startswith(image_prefix) or image.startswith(f"docker.io/{image_prefix}")
             for image_prefix in image_prefixes
         )
-        and not image.endswith(":<none>")  # ignore dangling images
+           and not image.endswith(":<none>")  # ignore dangling images
     ]
     update_images(localstack_images)
 
@@ -424,8 +424,8 @@ def update_images(image_list: List[str]):
                 hash_before_pull = DOCKER_CLIENT.inspect_image(image_name=image, pull=False)["Id"]
                 DOCKER_CLIENT.pull_image(image)
                 if (
-                    hash_before_pull
-                    != DOCKER_CLIENT.inspect_image(image_name=image, pull=False)["Id"]
+                        hash_before_pull
+                        != DOCKER_CLIENT.inspect_image(image_name=image, pull=False)["Id"]
                 ):
                     updated = True
                     updated_count += 1
@@ -573,4 +573,3 @@ def print_error(format, error):
 
 def print_banner():
     print(BANNER)
-    
