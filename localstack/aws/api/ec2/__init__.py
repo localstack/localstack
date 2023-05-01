@@ -30,6 +30,7 @@ CarrierGatewayId = str
 CarrierGatewayMaxResults = int
 CertificateArn = str
 CertificateId = str
+ClientSecretType = str
 ClientVpnAssociationId = str
 ClientVpnEndpointId = str
 CloudWatchLogGroupArn = str
@@ -384,6 +385,11 @@ class AllocationType(str):
 class AllowsMultipleInstanceTypes(str):
     on = "on"
     off = "off"
+
+
+class AmdSevSnpSpecification(str):
+    enabled = "enabled"
+    disabled = "disabled"
 
 
 class AnalysisStatus(str):
@@ -2605,6 +2611,10 @@ class SummaryStatus(str):
     initializing = "initializing"
 
 
+class SupportedAdditionalProcessorFeature(str):
+    amd_sev_snp = "amd-sev-snp"
+
+
 class TargetCapacityUnitType(str):
     vcpu = "vcpu"
     memory_mib = "memory-mib"
@@ -4284,7 +4294,7 @@ class OidcOptions(TypedDict, total=False):
     TokenEndpoint: Optional[String]
     UserInfoEndpoint: Optional[String]
     ClientId: Optional[String]
-    ClientSecret: Optional[String]
+    ClientSecret: Optional[ClientSecretType]
     Scope: Optional[String]
 
 
@@ -5210,7 +5220,7 @@ class DiskImageVolumeDescription(TypedDict, total=False):
 class DiskImageDescription(TypedDict, total=False):
     Checksum: Optional[String]
     Format: Optional[DiskImageFormat]
-    ImportManifestUrl: Optional[String]
+    ImportManifestUrl: Optional[ImportManifestUrl]
     Size: Optional[Long]
 
 
@@ -5307,11 +5317,13 @@ CpuManufacturerSet = List[CpuManufacturer]
 class CpuOptions(TypedDict, total=False):
     CoreCount: Optional[Integer]
     ThreadsPerCore: Optional[Integer]
+    AmdSevSnp: Optional[AmdSevSnpSpecification]
 
 
 class CpuOptionsRequest(TypedDict, total=False):
     CoreCount: Optional[Integer]
     ThreadsPerCore: Optional[Integer]
+    AmdSevSnp: Optional[AmdSevSnpSpecification]
 
 
 class ReservationFleetInstanceSpecification(TypedDict, total=False):
@@ -6217,6 +6229,7 @@ class LaunchTemplateCapacityReservationSpecificationRequest(TypedDict, total=Fal
 class LaunchTemplateCpuOptionsRequest(TypedDict, total=False):
     CoreCount: Optional[Integer]
     ThreadsPerCore: Optional[Integer]
+    AmdSevSnp: Optional[AmdSevSnpSpecification]
 
 
 class CreditSpecificationRequest(TypedDict, total=False):
@@ -6486,6 +6499,7 @@ class LaunchTemplateCapacityReservationSpecificationResponse(TypedDict, total=Fa
 class LaunchTemplateCpuOptions(TypedDict, total=False):
     CoreCount: Optional[Integer]
     ThreadsPerCore: Optional[Integer]
+    AmdSevSnp: Optional[AmdSevSnpSpecification]
 
 
 class CreditSpecification(TypedDict, total=False):
@@ -8014,7 +8028,7 @@ class CreateVerifiedAccessTrustProviderOidcOptions(TypedDict, total=False):
     TokenEndpoint: Optional[String]
     UserInfoEndpoint: Optional[String]
     ClientId: Optional[String]
-    ClientSecret: Optional[String]
+    ClientSecret: Optional[ClientSecretType]
     Scope: Optional[String]
 
 
@@ -10744,9 +10758,13 @@ class VCpuInfo(TypedDict, total=False):
     ValidThreadsPerCore: Optional[ThreadsPerCoreList]
 
 
+SupportedAdditionalProcessorFeatureList = List[SupportedAdditionalProcessorFeature]
+
+
 class ProcessorInfo(TypedDict, total=False):
     SupportedArchitectures: Optional[ArchitectureTypeList]
     SustainedClockSpeedInGhz: Optional[ProcessorSustainedClockSpeed]
+    SupportedFeatures: Optional[SupportedAdditionalProcessorFeatureList]
 
 
 VirtualizationTypeList = List[VirtualizationType]
@@ -15991,6 +16009,12 @@ class ModifyVerifiedAccessInstanceResult(TypedDict, total=False):
 
 
 class ModifyVerifiedAccessTrustProviderOidcOptions(TypedDict, total=False):
+    Issuer: Optional[String]
+    AuthorizationEndpoint: Optional[String]
+    TokenEndpoint: Optional[String]
+    UserInfoEndpoint: Optional[String]
+    ClientId: Optional[String]
+    ClientSecret: Optional[ClientSecretType]
     Scope: Optional[String]
 
 
