@@ -11,8 +11,8 @@ class SnsTopicProperties:
     TopicName: str
 
 
-class ResourceProvider:
-    def perform_action(
+# class ResourceProvider:
+#     def perform_action(
 
 
 @ResourceProvider(TYPE_NAME)
@@ -189,3 +189,88 @@ class Deployer:
                 progress_event = provider.perform_action(action, provider_payload)
                 # save progress event
                 self.state[progress_event.request_token] = something_based_on_progress_event
+
+
+"""
+ROLES AND RESPONSIBILITIES
+
+Entities:
+- stack
+- template
+  - user-supplied (raw)
+  - hydrated
+- resource
+- resource provider
+    - resource provider adaptors:
+        - (internal) generic base model,
+        - (internal) new
+        - (external) extension
+- changeset
+- registry
+- template (pre-)processor
+- template deployer
+- internal change set plan (DON'T CALL CHANGESET) - changes? plan?
+- CFn provider
+
+Roles:
+- stack:
+    - behaviourless
+    - aggregates current "state"
+    - state of a resource
+- stackset:
+    - behaviourless
+    - list of stacks per region
+- registry:
+    - stores extensions
+- resource:
+    - status
+
+-
+
+PERSISTENCE
+
+Store tree:
+    registry:
+        - global[type][version] -> resource provider
+        - public[account][region][type][version] -> resource provider
+        - private[account][region][type][version] -> resource provider
+        - default version for provider
+
+    stacks[account][region]:
+        - latest_changeset
+        - template (user-provided original, last successful create_stack, execute_changeset, update_stack) TODO: test "successful"
+        - processed_template (after create_stack, execute_changeset, update_stack)
+        - events: List[StackEvent] (after create_stack, execute_changeset, update_stack)
+        - parent stack
+        - parameters
+        - outputs
+
+        - metadata
+
+        resources[logical_id] -> Resource:
+          - deployment status
+          - physical id
+          - request token
+          - callback context
+
+        changesets[id] -> Changeset:
+          - changes
+          - parameters
+          - template
+          - status
+
+    resource provider: STATELESS
+    template processor: STATELESS
+    template deployer: AS STATELESS AS POSSIBLE, STATE MACHINE
+
+"""
+
+
+class Stack:
+    def create_changeset(self, desired_state: ...) -> Changes:
+        ...
+
+
+class Changes:
+    def render_changeset(self) -> Changeset:
+        pass
