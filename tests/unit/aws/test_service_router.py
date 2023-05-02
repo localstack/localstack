@@ -38,6 +38,8 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 "iot1click",
                 "iot1click-devices",
                 "iot1click-projects",
+                "ivs",
+                "ivs-realtime",
                 "kinesis-video-archived",
                 "kinesis-video-archived-media",
                 "kinesis-video-media",
@@ -182,7 +184,7 @@ def test_service_router_works_for_every_service(
     detected_service_name = determine_aws_service_name(request)
 
     # Make sure the detected service is the same as the one we generated the request for
-    assert service.service_name == detected_service_name
+    assert detected_service_name == service.service_name
 
 
 def test_endpoint_prefix_based_routing():
