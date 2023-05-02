@@ -43,11 +43,14 @@ class KinesisStream(GenericBaseModel):
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
-        name = resource["Properties"].get("Name")
+        props = resource["Properties"]
+        name = props.get("Name")
         if not name:
-            resource["Properties"]["Name"] = generate_default_name(
-                stack_name, resource["LogicalResourceId"]
-            )
+            props["Name"] = generate_default_name(stack_name, resource["LogicalResourceId"])
+
+        shard_count = props.get("ShardCount")
+        if shard_count is None:
+            props["ShardCount"] = 1
 
     @staticmethod
     def get_deploy_templates():
@@ -71,7 +74,6 @@ class KinesisStream(GenericBaseModel):
             "create": {
                 "function": "create_stream",
                 "parameters": {"StreamName": "Name", "ShardCount": "ShardCount"},
-                "defaults": {"ShardCount": 1},
                 "result_handler": _store_arn,
             },
             "delete": {"function": "delete_stream", "parameters": get_delete_params},
