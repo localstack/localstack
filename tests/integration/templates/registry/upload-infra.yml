@@ -1,0 +1,142 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  This CloudFormation template provisions all the infrastructure that is
+  required to upload artifacts to CloudFormation's managed experience.
+
+Resources:
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      AccessControl: BucketOwnerFullControl
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: !Ref EncryptionKey
+      LifecycleConfiguration:
+        Rules:
+          - Id: MultipartUploadLifecycleRule
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+      VersioningConfiguration:
+        Status: Enabled
+      LoggingConfiguration:
+        DestinationBucketName: !Ref AccessLogsBucket
+        LogFilePrefix: ArtifactBucket
+
+  AccessLogsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AccessControl: LogDeliveryWrite
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: !Ref EncryptionKey
+      LifecycleConfiguration:
+        Rules:
+          - Status: Enabled
+            ExpirationInDays: 3653
+      VersioningConfiguration:
+        Status: Enabled
+
+  ArtifactCopyPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ArtifactBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: Require Secure Transport
+            Action: "s3:*"
+            Effect: Deny
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::${ArtifactBucket}"
+              - !Sub "arn:${AWS::Partition}:s3:::${ArtifactBucket}/*"
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
+            Principal: "*"
+
+  AccessLogsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AccessLogsBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: Require Secure Transport
+            Action: "s3:*"
+            Effect: Deny
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::${AccessLogsBucket}"
+              - !Sub "arn:${AWS::Partition}:s3:::${AccessLogsBucket}/*"
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
+            Principal: "*"
+
+  EncryptionKey:
+    Type: AWS::KMS::Key
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: KMS key used to encrypt the resource type artifacts
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: Enable full access for owning account
+            Effect: Allow
+            Principal:
+              AWS: !Ref AWS::AccountId
+            Action: kms:*
+            Resource: "*"
+
+  DummyResource:
+    Type: AWS::CloudFormation::WaitConditionHandle
+
+  LogAndMetricsDeliveryRole:
+    Type: AWS::IAM::Role
+    Properties:
+      MaxSessionDuration: 43200
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - resources.cloudformation.amazonaws.com
+                - hooks.cloudformation.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount:
+                  Ref: AWS::AccountId
+      Path: "/"
+      Policies:
+        - PolicyName: LogAndMetricsDeliveryRolePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                  - cloudwatch:ListMetrics
+                  - cloudwatch:PutMetricData
+                Resource: "*"
+
+Outputs:
+  CloudFormationManagedUploadBucketName:
+    Value: !Ref ArtifactBucket
+  LogAndMetricsDeliveryRoleArn:
+    Value: !GetAtt LogAndMetricsDeliveryRole.Arn
