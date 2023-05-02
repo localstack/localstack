@@ -11,12 +11,25 @@ class SnsTopicProperties:
     TopicName: str
 
 
+class ResourceProvider:
+    def perform_action(
+
+
 @ResourceProvider(TYPE_NAME)
 class AwsSnsTopic(ResourceProvider):
     def __init__(self):
         self.client = connect_to()
 
     def create(self, desiredState: SnsTopicProperties, context) -> ProgressEvent:
+
+        # 0. Assign physical resource id / ARN
+        # 1. GetTopicAttributes
+        # 2. if exists:
+        #      raise error
+        #    else:
+        # 3.   CreateTopic
+        # 4. GetTopicAttributes
+
         create_response = self.client.sns.create_topic(Name=desiredState.TopicName)
         return ProgressEvent()
 
@@ -27,6 +40,7 @@ class AwsSnsTopic(ResourceProvider):
         ...
 
     def delete(self):
+        # 1. DeleteTopic
         ...
 
     # cloud control
@@ -92,6 +106,10 @@ class Provider:
                 * build set of changes
                     * TODO (????) What's the semantics here?
                     * TODO: is this even important?
+                        - SRW: yes we have to dispatch to the correct provider method, and
+                               we have to return something for `DescribeChangeset`
+                               it would make sense if that format was approximately the same
+                               though it's more than the resource provider needs.
 
                 * set processed template & update state to AVAILABLE / Failed / ...?
 

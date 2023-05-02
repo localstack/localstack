@@ -1,5 +1,7 @@
 import json
+import logging
 import os
+import textwrap
 import time
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
@@ -8,6 +10,7 @@ import pytest
 from botocore.exceptions import ClientError, ParamValidationError, WaiterError
 from dateutil.parser import parse as parse_datetime
 
+from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.files import load_file as _load_file
 from localstack.utils.strings import short_uid
 
@@ -17,6 +20,7 @@ if TYPE_CHECKING:
 
 
 THIS_DIR = os.path.dirname(__file__)
+LOG = logging.getLogger(__name__)
 
 # CreateStack does it fail synchronously when trying to resolve an SSM parameter but it isn't allowed to
 # CreateStack - point CFn parameter to an SSM parameter that doesn't exist
@@ -49,13 +53,19 @@ def load_file(path):
 create_args = {
     "resolve_ssm_parameter_as_stack_parameter_permission_denied": {
         "Parameters": [
-            {"ParameterKey": "TopicName", "ParameterValue": "ssm-parameter-cannot-access"},
+            {
+                "ParameterKey": "TopicName",
+                "ParameterValue": "ssm-parameter-cannot-access",
+            },
         ],
         "denied_services": ["ssm"],
     },
     "resolve_ssm_parameter_as_stack_parameter_does_not_exist": {
         "Parameters": [
-            {"ParameterKey": "TopicName", "ParameterValue": "ssm-parameter-does-not-exist"},
+            {
+                "ParameterKey": "TopicName",
+                "ParameterValue": "ssm-parameter-does-not-exist",
+            },
         ],
     },
     "create_resource_permission_denied": {
@@ -95,17 +105,24 @@ create_args = {
     "failing_rule_resource_permissions": {
         "Parameters": [
             {"ParameterKey": "Param1", "ParameterValue": "HelloWorld"},
-            {"ParameterKey": "Param2", "ParameterValue": "HelloWorld"},  # correct: HelloWorld2
+            {
+                "ParameterKey": "Param2",
+                "ParameterValue": "HelloWorld",
+            },  # correct: HelloWorld2
         ],
         "denied_services": ["sns"],
     },
     "failing_rule_missing_import": {
         "Parameters": [
             {"ParameterKey": "Param1", "ParameterValue": "HelloWorld"},
-            {"ParameterKey": "Param2", "ParameterValue": "HelloWorld"},  # correct: HelloWorld2
+            {
+                "ParameterKey": "Param2",
+                "ParameterValue": "HelloWorld",
+            },  # correct: HelloWorld2
         ],
     },
     "additional_field_missing_field": {},
+    "passing": {},
 }
 
 scenarios = list(create_args.keys())
@@ -157,6 +174,7 @@ def setup_role(create_iam_role_with_policy, aws_client):
 
 @pytest.mark.parametrize("scenario", scenarios)
 def test_skeleton_changeset(aws_client, snapshot, cleanups, scenario, setup_role):
+    snapshot.add_transformer(SortingTransformer("StackEvents", lambda x: x["Timestamp"]))
     template_body = load_file(os.path.join(THIS_DIR, f"./templates/{scenario}.yaml"))
 
     cfn_client: CloudFormationClient = aws_client.cloudformation
@@ -360,8 +378,9 @@ def capture_cloudtrail_events(aws_client, snapshot, create_iam_role_with_policy)
     snapshot.match("cloudtrail-events", events)
 
 
+# FIXTURE
 @pytest.fixture
-def store_events(request, create_iam_role_with_policy, aws_client):
+def store_events_role(request, create_iam_role_with_policy, aws_client):
     test_name = request.node.name
     start_time = datetime.now(tz=timezone.utc) - timedelta(hours=1)
 
@@ -393,6 +412,11 @@ def store_events(request, create_iam_role_with_policy, aws_client):
         PolicyDefinition=policy_document,
     )
 
+    # wait for the role :( ffs
+    if os.getenv("TEST_TARGET") == "AWS_CLOUD":
+        LOG.warning("targeting AWS cloud: sleeping for role creation")
+        time.sleep(20)
+
     yield role_arn
 
     end_time = datetime.now(tz=timezone.utc) + timedelta(hours=1)
@@ -413,5 +437,244 @@ def store_events(request, create_iam_role_with_policy, aws_client):
     )
 
 
-def test_foo(store_events):
+# TEST
+def test_simple_sns_topic(store_events_role, aws_client, cleanups):
+    template_contents = textwrap.dedent(
+        """
+        Resources:
+          MyTopic:
+            Type: AWS::SNS::Topic
+"""
+    )
+
+    cfn_client: CloudFormationClient = aws_client.cloudformation
+    stack_name = f"cfnv2-test-stack-{short_uid()}"
+    res = cfn_client.create_stack(
+        StackName=stack_name,
+        TemplateBody=template_contents,
+        RoleARN=store_events_role,
+        Capabilities=["CAPABILITY_IAM"],
+    )
+    stack_arn = res["StackId"]
+    cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_arn, RoleARN=store_events_role))
+
+    cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_arn)
+
+
+def test_simple_sns_topic_already_exists(store_events_role, sns_topic, aws_client, cleanups):
+    template_contents = textwrap.dedent(
+        """
+        Parameters:
+          TopicName:
+            Type: String
+        Resources:
+          MyTopic:
+            Type: AWS::SNS::Topic
+            Properties:
+              TopicName: !Ref TopicName
+"""
+    )
+    topic_name = sns_topic["Attributes"]["TopicArn"].split(":")[-1]
+
+    cfn_client: CloudFormationClient = aws_client.cloudformation
+    stack_name = f"cfnv2-test-stack-{short_uid()}"
+
+    res = cfn_client.create_stack(
+        StackName=stack_name,
+        TemplateBody=template_contents,
+        RoleARN=store_events_role,
+        Capabilities=["CAPABILITY_IAM"],
+        Parameters=[{"ParameterKey": "TopicName", "ParameterValue": topic_name}],
+    )
+    stack_arn = res["StackId"]
+    cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_arn, RoleARN=store_events_role))
+
+    cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_arn)
+
+
+def parameter(name, value):
+    return {"ParameterKey": name, "ParameterValue": value}
+
+
+update_scenarios = {
+    "passing": {
+        "create": {
+            "Parameters": [
+                parameter("TopicName", f"topic-{short_uid()}"),
+                parameter("ParameterName", f"param-{short_uid()}"),
+            ],
+        },
+        "update": {
+            "Parameters": [
+                parameter("TopicName", f"topic-2-{short_uid()}"),
+                parameter("ParameterName", f"param-{short_uid()}"),
+                parameter("OtherParameterName", f"param-2-{short_uid()}"),
+            ],
+        },
+    }
+}
+
+
+class CreateFailed(Exception):
     pass
+
+
+class WaitFailed(Exception):
+    pass
+
+
+@pytest.mark.parametrize("scenario", update_scenarios)
+def test_skeleton_update_changeset(aws_client, snapshot, cleanups, scenario):
+    def load_template(stub):
+        return load_file(os.path.join(THIS_DIR, f"templates/{stub}.yaml"))
+
+    create_template_body = load_template(f"{scenario}_1")
+    update_template_body = load_template(f"{scenario}_2")
+
+    cfn_client: CloudFormationClient = aws_client.cloudformation
+    stack_name = f"cfnv2-test-stack-{short_uid()}"
+    create_change_set_name = f"cfnv2-test-changeset-create-{short_uid()}"
+    update_change_set_name = f"cfnv2-test-changeset-update-{short_uid()}"
+
+    # create: create changeset
+    try:
+        create_change_set_result = cfn_client.create_change_set(
+            TemplateBody=create_template_body,
+            StackName=stack_name,
+            ChangeSetName=create_change_set_name,
+            ChangeSetType="CREATE",
+            **update_scenarios[scenario]["create"],
+        )
+    except ClientError as e:
+        snapshot.match("create:create_change_set_exc", e.response)
+        raise CreateFailed()
+    except ParamValidationError as e:
+        snapshot.match("create:create_change_set_exc", {"args": e.args, "kwargs": e.kwargs})
+        raise CreateFailed()
+
+    change_set_arn = create_change_set_result["Id"]
+    stack_arn = create_change_set_result["StackId"]
+
+    snapshot.match("create:describe_stack", cfn_client.describe_stacks(StackName=stack_arn))
+    snapshot.match(
+        "create:describe_changeset_byarnalone",
+        cfn_client.describe_change_set(ChangeSetName=change_set_arn),
+    )
+    try:
+        cfn_client.get_waiter("change_set_create_complete").wait(ChangeSetName=change_set_arn)
+    except Exception as e:
+        snapshot.match("create:wait_for_create_change_set_exc", str(e))
+        raise WaitFailed()
+
+    snapshot.match(
+        "create:describe_changeset_bynames_postwait",
+        cfn_client.describe_change_set(ChangeSetName=create_change_set_name, StackName=stack_name),
+    )
+
+    cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_arn))
+
+    # create: execute create changeset
+    try:
+        cfn_client.execute_change_set(ChangeSetName=change_set_arn)
+    except ClientError as e:
+        snapshot.match("create:execute_change_set_exc", e.response)
+    except Exception as e:
+        snapshot.match("create:postcreate_processed_template_exc", str(e))
+
+    try:
+        cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_arn)
+    except WaiterError:
+        pass
+
+    snapshot.match(
+        "create:describe_stack_postexecute",
+        cfn_client.describe_stacks(StackName=stack_arn),
+    )
+    snapshot.match(
+        "create:postcreate_original_template",
+        cfn_client.get_template(StackName=stack_name, TemplateStage="Original"),
+    )
+    try:
+        snapshot.match(
+            "create:postcreate_processed_template",
+            cfn_client.get_template(StackName=stack_name, TemplateStage="Processed"),
+        )
+    except ClientError as e:
+        snapshot.match("postcreate_processed_template_exc", e.response)
+    except Exception as e:
+        snapshot.match("postcreate_processed_template_exc", str(e))
+
+    # update: create changeset
+    try:
+        update_change_set_result = cfn_client.create_change_set(
+            TemplateBody=update_template_body,
+            StackName=stack_name,
+            ChangeSetName=update_change_set_name,
+            ChangeSetType="UPDATE",
+            **update_scenarios[scenario]["update"],
+        )
+    except ClientError as e:
+        snapshot.match("update:create_change_set_exc", e.response)
+        return
+    except ParamValidationError as e:
+        snapshot.match("update:create_change_set_exc", {"args": e.args, "kwargs": e.kwargs})
+        return
+
+    update_change_set_arn = update_change_set_result["Id"]
+
+    snapshot.match("update:describe_stack", cfn_client.describe_stacks(StackName=stack_arn))
+    snapshot.match(
+        "update:describe_changeset_byarnalone",
+        cfn_client.describe_change_set(ChangeSetName=update_change_set_arn),
+    )
+    try:
+        cfn_client.get_waiter("change_set_create_complete").wait(
+            ChangeSetName=update_change_set_arn
+        )
+    except Exception as e:
+        snapshot.match("update:wait_for_create_change_set_exc", str(e))
+
+    snapshot.match(
+        "update:describe_changeset_bynames_postwait",
+        cfn_client.describe_change_set(ChangeSetName=update_change_set_name, StackName=stack_name),
+    )
+
+    # update: execute changeset
+    try:
+        cfn_client.execute_change_set(ChangeSetName=update_change_set_arn)
+    except ClientError as e:
+        snapshot.match("update:execute_change_set_exc", e.response)
+    except Exception as e:
+        snapshot.match("update:postcreate_processed_template_exc", str(e))
+
+    try:
+        cfn_client.get_waiter("stack_update_complete").wait(StackName=stack_arn)
+    except WaiterError:
+        pass
+
+    # capture post-state
+    snapshot.match(
+        "update:describe_stack_postexecute",
+        cfn_client.describe_stacks(StackName=stack_arn),
+    )
+
+    snapshot.match(
+        "update:postcreate_original_template",
+        cfn_client.get_template(StackName=stack_name, TemplateStage="Original"),
+    )
+    try:
+        postcreate_processed_template = cfn_client.get_template(
+            StackName=stack_name, TemplateStage="Processed"
+        )
+        snapshot.match("update:postcreate_processed_template", postcreate_processed_template)
+    except ClientError as e:
+        snapshot.match("update:postcreate_processed_template_exc", e.response)
+    except Exception as e:
+        snapshot.match("update:postcreate_processed_template_exc", str(e))
+
+    stack_events = (
+        cfn_client.get_paginator("describe_stack_events")
+        .paginate(StackName=stack_arn)
+        .build_full_result()
+    )
+    snapshot.match("stack_events", stack_events)

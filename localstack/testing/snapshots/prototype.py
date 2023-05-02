@@ -24,6 +24,13 @@ SNAPSHOT_LOGGER = logging.getLogger(__name__)
 SNAPSHOT_LOGGER.setLevel(logging.DEBUG if os.environ.get("DEBUG_SNAPSHOT") else logging.WARNING)
 
 
+class Encoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, datetime):
+            return o.isoformat()
+        return super().default(o)
+
+
 class SnapshotMatchResult:
     def __init__(self, a: dict, b: dict, key: str = ""):
         self.a = a
@@ -109,7 +116,7 @@ class SnapshotSession:
                         "recorded-content": self.observed_state,
                     }
                     full_state[self.scope_key] = recorded
-                    state_to_dump = json.dumps(full_state, indent=2)
+                    state_to_dump = json.dumps(full_state, indent=2, cls=Encoder)
                     fd.seek(0)
                     fd.truncate()
                     # add line ending to be compatible with pre-commit-hooks (end-of-file-fixer)

@@ -1,0 +1,27 @@
+Parameters:
+  TopicName:
+    Type: String
+  ParameterName:
+    Type: String
+  OtherParameterName:
+    Type: String
+
+Resources:
+  MyTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref TopicName
+
+  MyParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Ref ParameterName
+      Value: !Ref MyTopic
+
+  MyOtherParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Ref OtherParameterName
+      Value: foobar
