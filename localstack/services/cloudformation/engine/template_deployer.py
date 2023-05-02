@@ -696,7 +696,10 @@ def get_resource_model_instance(resource_id: str, resources) -> Optional[Generic
     return instance
 
 
-def execute_resource_action(resource_id: str, stack_name, resources, action_name: str):
+# yeah `Any | None` is a bit pointless, but I want to ensure that None values are represented
+def execute_resource_action(
+    resource_id: str, stack_name: str, resources: dict, action_name: str
+) -> List[Any | None]:
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
     if action_name == ACTION_CREATE and resource_type:
@@ -763,7 +766,7 @@ def invoke_function(
     func_details: FuncDetails,
     action_name: str,
     resource: Any,
-):
+) -> Any:
     try:
         LOG.debug(
             'Request for resource type "%s" in region %s: %s %s',
