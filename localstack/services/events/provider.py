@@ -71,16 +71,19 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         return events_stores[get_aws_account_id()][aws_stack.get_region()]
 
     @staticmethod
-    def get_scheduled_rule_func(rule_name: RuleName):
+    def get_scheduled_rule_func(rule_name: RuleName, event_bus_name: Optional[EventBusNameOrArn]):
         def func(*args, **kwargs):
             client = aws_stack.connect_to_service("events")
-            targets = client.list_targets_by_rule(Rule=rule_name)["Targets"]
+            targets = client.list_targets_by_rule(Rule=rule_name, EventBusName=event_bus_name)[
+                "Targets"
+            ]
             if targets:
                 LOG.debug(
                     "Notifying %s targets in response to triggered Events rule %s",
                     len(targets),
                     rule_name,
                 )
+            rule_arn = client.describe_rule(Name=rule_name, EventBusName=event_bus_name)["Arn"]
             for target in targets:
                 arn = target.get("Arn")
                 # TODO generate event matching aws in case no Input has been specified
@@ -88,7 +91,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 event = json.loads(event_str)
                 attr = pick_attributes(target, ["$.SqsParameters", "$.KinesisParameters"])
                 try:
-                    send_event_to_target(arn, event, target_attributes=attr, target=target)
+                    send_event_to_target(
+                        arn,
+                        event,
+                        target_attributes=attr,
+                        target=target,
+                        source_arn=rule_arn,
+                        source_service="events",
+                    )
                 except Exception as e:
                     LOG.info(
                         f"Unable to send event notification {truncate(event)} to target {target}: {e}"
@@ -121,11 +131,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def put_rule_job_scheduler(
         name: Optional[RuleName],
         state: Optional[RuleState],
+        event_bus_name: Optional[EventBusNameOrArn],
         schedule_expression: Optional[ScheduleExpression],
     ):
         enabled = state != "DISABLED"
         if schedule_expression:
-            job_func = EventsProvider.get_scheduled_rule_func(name)
+            job_func = EventsProvider.get_scheduled_rule_func(name, event_bus_name)
             cron = EventsProvider.convert_schedule_to_cron(schedule_expression)
             LOG.debug("Adding new scheduled Events rule with cron schedule %s", cron)
 
