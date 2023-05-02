@@ -2,6 +2,7 @@ import datetime
 import math
 from typing import Any
 
+from localstack import config
 from localstack.utils.analytics import get_session_id
 from localstack.utils.analytics.events import Event, EventMetadata
 from localstack.utils.analytics.publisher import AnalyticsClientPublisher
@@ -104,6 +105,9 @@ def aggregate_and_send():
     """
     Aggregates data from all registered usage trackers and immediately sends the aggregated result to the analytics service.
     """
+    if config.DISABLE_EVENTS:
+        return
+
     metadata = EventMetadata(
         session_id=get_session_id(),
         client_time=str(datetime.datetime.now()),
