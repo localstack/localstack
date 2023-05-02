@@ -61,6 +61,43 @@ RESOURCE_MODELS: dict[str, Type[GenericBaseModel]] = {
     model.cloudformation_type(): model for model in get_all_subclasses(GenericBaseModel)
 }
 
+# ---------------------
+# TYPES
+# ---------------------
+
+ResourceDefinition = dict
+
+
+class FuncDetailsValue(TypedDict):
+    # Callable here takes the arguments:
+    # - resource_id
+    # - resources
+    # - resource_type
+    # - func
+    # - stack_name
+    function: str | Callable[[str, List[dict], str, Any, str], Any]
+    """Either an api method to call directly with `parameters` or a callable to directly invoke"""
+    # Callable here takes the arguments:
+    # - resource_props
+    # - stack_name
+    # - resources
+    # - resource_id
+    parameters: Optional[ResourceDefinition | Callable[[dict, str, List[dict], str], dict]]
+    """arguments to the function, or a function that generates the arguments to the function"""
+    # Callable here takes the arguments
+    # - result
+    # - resource_id
+    # - resources
+    # - resource_type
+    result_handler: Optional[Callable[[dict, str, List[dict], str], None]]
+    """Take the result of the operation and patch the state of the resources, yuck..."""
+    types: Optional[Dict[str, Callable]]
+    """Possible type conversions"""
+
+
+# Type definition for func_details supplied to invoke_function and configure_resource_via_sdk
+FuncDetails = List[FuncDetailsValue] | FuncDetailsValue | Any
+
 
 class NoStackUpdates(Exception):
     """Exception indicating that no actions are to be performed in a stack update (which is not allowed)"""
@@ -693,8 +730,7 @@ def execute_resource_action(resource_id: str, stack_name, resources, action_name
             results.append(result)
             executed = True
 
-        if not executed and get_client(resource):
-            resource = resources[resource_id]
+        elif not executed and get_client(resource):
             # get the service client to invoke
             client = get_client(resource)
 
@@ -718,38 +754,6 @@ def execute_resource_action(resource_id: str, stack_name, resources, action_name
             func["result_handler"](result, resource_id, resources, resource_type)
 
     return (results or [None])[0]
-
-
-ResourceDefinition = dict
-
-
-class FuncDetailsValue(TypedDict):
-    # Callable here takes the arguments:
-    # - resource_id
-    # - resources
-    # - resource_type
-    # - func
-    # - stack_name
-    function: str | Callable[[str, List[dict], str, Any, str], Any]
-    """Either an api method to call directly with `parameters` or a callable to directly invoke"""
-    # Callable here takes the arguments:
-    # - resource_props
-    # - stack_name
-    # - resources
-    # - resource_id
-    parameters: Optional[ResourceDefinition | Callable[[dict, str, List[dict], str], dict]]
-    """arguments to the function, or a function that generates the arguments to the function"""
-    # Callable here takes the arguments
-    # - result
-    # - resource_id
-    # - resources
-    # - resource_type
-    result_handler: Optional[Callable[[dict, str, List[dict], str], None]]
-    """Take the result of the operation and patch the state of the resources, yuck..."""
-
-
-# Type definition for func_details supplied to invoke_function and configure_resource_via_sdk
-FuncDetails = List[FuncDetailsValue] | FuncDetailsValue | Any
 
 
 def invoke_function(
@@ -860,7 +864,7 @@ def resolve_resource_parameters(
     params = fix_account_id_in_arns(params)
     # convert data types (e.g., boolean strings to bool)
     # TODO: this might not be needed anymore
-    params = convert_data_types(func_details, params)
+    params = convert_data_types(func_details.get("types", {}), params)
     # remove None values, as they usually raise boto3 errors
     params = remove_none_values(params)
 

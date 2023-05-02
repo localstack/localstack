@@ -221,11 +221,10 @@ def fix_account_id_in_arns(params: dict) -> dict:
     return result
 
 
-def convert_data_types(func_details, params):
+def convert_data_types(type_conversions: dict[str, Callable], params: dict) -> dict:
     """Convert data types in the "params" object, with the type defs
     specified in the 'types' attribute of "func_details"."""
-    types = func_details.get("types") or {}
-    attr_names = types.keys() or []
+    attr_names = type_conversions.keys() or []
 
     def cast(_obj, _type):
         if _type == bool:
@@ -242,7 +241,7 @@ def convert_data_types(func_details, params):
         if isinstance(o, dict):
             for k, v in o.items():
                 if k in attr_names:
-                    o[k] = cast(v, types[k])
+                    o[k] = cast(v, type_conversions[k])
         return o
 
     result = recurse_object(params, fix_types)
