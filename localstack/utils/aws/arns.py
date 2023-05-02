@@ -1,10 +1,12 @@
 import logging
 import re
+from functools import cache
 from typing import Optional, TypedDict
 
 from botocore.utils import ArnParser, InvalidArnException
 
 from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws.aws_stack import connect_to_service, get_region, get_valid_regions
 
 # set up logger
@@ -15,9 +17,10 @@ LOG = logging.getLogger(__name__)
 _arn_parser = ArnParser()
 
 
+@cache
 def sqs_queue_url_for_arn(queue_arn: str) -> str:
     """
-    Return the SQS queue URL given the queue ARN.
+    Return the SQS queue URL for the given queue ARN.
     """
     if "://" in queue_arn:
         return queue_arn
@@ -27,11 +30,15 @@ def sqs_queue_url_for_arn(queue_arn: str) -> str:
     region_name = arn["region"]
     queue_name = arn["resource"]
 
-    from localstack.services.sqs.provider import SqsProvider
+    sqs_client = connect_to_service(
+        "sqs",
+        region_name=region_name,
+        aws_access_key_id=account_id,
+        aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
+    )
+    result = sqs_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
 
-    queue = SqsProvider._require_queue(account_id, region_name, queue_name)
-
-    return queue.url()
+    return result
 
 
 # TODO: remove and merge with sqs_queue_url_for_arn(..) above!!
