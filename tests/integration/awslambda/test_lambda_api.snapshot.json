@@ -1,6 +1,6 @@
 {
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_function_lifecycle": {
-    "recorded-date": "27-04-2023, 20:34:59",
+    "recorded-date": "02-05-2023, 17:33:02",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -303,7 +303,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_redundant_updates": {
-    "recorded-date": "27-04-2023, 20:35:04",
+    "recorded-date": "02-05-2023, 17:33:07",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -574,7 +574,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[delete_function]": {
-    "recorded-date": "27-04-2023, 20:35:04",
+    "recorded-date": "02-05-2023, 17:33:07",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -603,7 +603,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function]": {
-    "recorded-date": "27-04-2023, 20:35:04",
+    "recorded-date": "02-05-2023, 17:33:07",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -632,7 +632,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function_configuration]": {
-    "recorded-date": "27-04-2023, 20:35:05",
+    "recorded-date": "02-05-2023, 17:33:07",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -661,7 +661,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function]": {
-    "recorded-date": "27-04-2023, 20:35:07",
+    "recorded-date": "02-05-2023, 17:33:09",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -678,7 +678,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_configuration]": {
-    "recorded-date": "27-04-2023, 20:35:09",
+    "recorded-date": "02-05-2023, 17:33:11",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -695,7 +695,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_event_invoke_config]": {
-    "recorded-date": "27-04-2023, 20:35:11",
+    "recorded-date": "02-05-2023, 17:33:13",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -712,7 +712,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_delete_on_nonexisting_version": {
-    "recorded-date": "27-04-2023, 20:35:13",
+    "recorded-date": "02-05-2023, 17:33:16",
     "recorded-content": {
       "delete_function_response_non_existent": {
         "Error": {
@@ -741,7 +741,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[delete_function]": {
-    "recorded-date": "27-04-2023, 20:35:13",
+    "recorded-date": "02-05-2023, 17:33:16",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -758,7 +758,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function]": {
-    "recorded-date": "27-04-2023, 20:35:14",
+    "recorded-date": "02-05-2023, 17:33:16",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -775,7 +775,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_configuration]": {
-    "recorded-date": "27-04-2023, 20:35:14",
+    "recorded-date": "02-05-2023, 17:33:16",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -792,7 +792,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_url_config]": {
-    "recorded-date": "27-04-2023, 20:35:14",
+    "recorded-date": "02-05-2023, 17:33:16",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -809,7 +809,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_code_signing_config]": {
-    "recorded-date": "27-04-2023, 20:35:14",
+    "recorded-date": "02-05-2023, 17:33:16",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -826,7 +826,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_event_invoke_config]": {
-    "recorded-date": "27-04-2023, 20:35:14",
+    "recorded-date": "02-05-2023, 17:33:16",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -843,7 +843,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_concurrency]": {
-    "recorded-date": "27-04-2023, 20:35:14",
+    "recorded-date": "02-05-2023, 17:33:17",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -860,7 +860,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function]": {
-    "recorded-date": "27-04-2023, 20:35:16",
+    "recorded-date": "02-05-2023, 17:33:18",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -877,7 +877,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_configuration]": {
-    "recorded-date": "27-04-2023, 20:35:18",
+    "recorded-date": "02-05-2023, 17:33:20",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -894,7 +894,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_url_config]": {
-    "recorded-date": "27-04-2023, 20:35:20",
+    "recorded-date": "02-05-2023, 17:33:22",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -911,7 +911,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_code_signing_config]": {
-    "recorded-date": "27-04-2023, 20:35:22",
+    "recorded-date": "02-05-2023, 17:33:24",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -928,7 +928,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_event_invoke_config]": {
-    "recorded-date": "27-04-2023, 20:35:24",
+    "recorded-date": "02-05-2023, 17:33:26",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -945,7 +945,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_concurrency]": {
-    "recorded-date": "27-04-2023, 20:35:26",
+    "recorded-date": "02-05-2023, 17:33:28",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -962,7 +962,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[delete_function]": {
-    "recorded-date": "27-04-2023, 20:35:28",
+    "recorded-date": "02-05-2023, 17:33:29",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -979,7 +979,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[invoke]": {
-    "recorded-date": "27-04-2023, 20:35:30",
+    "recorded-date": "02-05-2023, 17:33:31",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -996,7 +996,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_zipfile": {
-    "recorded-date": "27-04-2023, 20:35:32",
+    "recorded-date": "02-05-2023, 17:33:34",
     "recorded-content": {
       "create-response-zip-file": {
         "Architectures": [
@@ -1170,7 +1170,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_s3": {
-    "recorded-date": "27-04-2023, 20:35:37",
+    "recorded-date": "02-05-2023, 17:33:40",
     "recorded-content": {
       "create_response_s3": {
         "Architectures": [
@@ -1344,7 +1344,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_publish_version_on_create": {
-    "recorded-date": "27-02-2023, 21:39:19",
+    "recorded-date": "02-05-2023, 17:35:44",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -1690,7 +1690,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_version_lifecycle": {
-    "recorded-date": "27-02-2023, 21:39:27",
+    "recorded-date": "02-05-2023, 17:35:49",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2391,7 +2391,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_publish_with_wrong_sha256": {
-    "recorded-date": "27-02-2023, 21:39:29",
+    "recorded-date": "02-05-2023, 17:35:51",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2529,7 +2529,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_publish_with_update": {
-    "recorded-date": "27-02-2023, 21:41:30",
+    "recorded-date": "02-05-2023, 17:35:53",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2747,7 +2747,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAlias::test_alias_lifecycle": {
-    "recorded-date": "21-03-2023, 07:41:08",
+    "recorded-date": "02-05-2023, 17:35:58",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -3319,7 +3319,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAlias::test_notfound_and_invalid_routingconfigs": {
-    "recorded-date": "27-02-2023, 21:42:10",
+    "recorded-date": "02-05-2023, 17:36:09",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -3617,7 +3617,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTag::test_create_tag_on_fn_create": {
-    "recorded-date": "17-02-2023, 11:39:18",
+    "recorded-date": "02-05-2023, 17:36:21",
     "recorded-content": {
       "get_function_result": {
         "Code": {
@@ -3681,7 +3681,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTag::test_tag_lifecycle": {
-    "recorded-date": "17-02-2023, 11:39:23",
+    "recorded-date": "02-05-2023, 17:36:23",
     "recorded-content": {
       "tag_single_response": {
         "ResponseMetadata": {
@@ -3796,7 +3796,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTag::test_tag_nonexisting_resource": {
-    "recorded-date": "17-02-2023, 11:39:27",
+    "recorded-date": "02-05-2023, 17:36:25",
     "recorded-content": {
       "pre_delete_get_function": {
         "Code": {
@@ -3884,7 +3884,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_exceptions": {
-    "recorded-date": "17-02-2023, 11:39:54",
+    "recorded-date": "02-05-2023, 17:36:39",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -4541,7 +4541,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency_exceptions": {
-    "recorded-date": "17-02-2023, 12:35:56",
+    "recorded-date": "02-05-2023, 17:36:41",
     "recorded-content": {
       "put_concurrency_unknown_fn": {
         "Error": {
@@ -4601,7 +4601,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency": {
-    "recorded-date": "17-02-2023, 12:38:26",
+    "recorded-date": "02-05-2023, 17:36:43",
     "recorded-content": {
       "put_function_concurrency": {
         "ReservedConcurrentExecutions": 1,
@@ -4632,7 +4632,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_aws": {
-    "recorded-date": "17-02-2023, 11:40:18",
+    "recorded-date": "02-05-2023, 17:36:54",
     "recorded-content": {
       "create_lambda": {
         "CreateEventSourceMappingResponse": null,
@@ -4729,7 +4729,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_remove_multi_permissions": {
-    "recorded-date": "17-02-2023, 11:40:33",
+    "recorded-date": "02-05-2023, 17:37:02",
     "recorded-content": {
       "add_permission_1": {
         "Statement": {
@@ -4873,7 +4873,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_create_multiple_lambda_permissions": {
-    "recorded-date": "17-02-2023, 11:40:36",
+    "recorded-date": "02-05-2023, 17:37:04",
     "recorded-content": {
       "add_permission_response_1": {
         "Statement": {
@@ -4939,7 +4939,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaUrl::test_url_config_lifecycle": {
-    "recorded-date": "17-02-2023, 11:41:05",
+    "recorded-date": "02-05-2023, 17:37:23",
     "recorded-content": {
       "url_creation": {
         "AuthType": "NONE",
@@ -5061,7 +5061,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_variables_fails": {
-    "recorded-date": "17-02-2023, 11:42:51",
+    "recorded-date": "02-05-2023, 17:38:37",
     "recorded-content": {
       "failed_create_fn_result": {
         "Error": {
@@ -5078,7 +5078,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_fails_multiple_keys": {
-    "recorded-date": "17-02-2023, 11:43:08",
+    "recorded-date": "02-05-2023, 17:38:54",
     "recorded-content": {
       "failured_create_fn_result_multi_key": {
         "Error": {
@@ -5095,7 +5095,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_lambda_envvars_near_limit_succeeds": {
-    "recorded-date": "17-02-2023, 11:43:11",
+    "recorded-date": "02-05-2023, 17:38:56",
     "recorded-content": {
       "successful_create_fn_result": {
         "CreateEventSourceMappingResponse": null,
@@ -5147,7 +5147,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestCodeSigningConfig::test_function_code_signing_config": {
-    "recorded-date": "17-02-2023, 11:43:16",
+    "recorded-date": "02-05-2023, 17:38:58",
     "recorded-content": {
       "create_code_signing_config": {
         "CodeSigningConfig": {
@@ -5230,6 +5230,48 @@
           {
             "AllowedPublishers": {
               "SigningProfileVersionArns": [
+                "arn:aws:signer:us-east-1:000000000000:/signing-profiles/test"
+              ]
+            },
+            "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:2>",
+            "CodeSigningConfigId": "<resource:2>",
+            "CodeSigningPolicies": {
+              "UntrustedArtifactOnDeployment": "Enforce"
+            },
+            "Description": "Testing CodeSigning Config",
+            "LastModified": "date"
+          },
+          {
+            "AllowedPublishers": {
+              "SigningProfileVersionArns": [
+                "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
+              ]
+            },
+            "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:3>",
+            "CodeSigningConfigId": "<resource:3>",
+            "CodeSigningPolicies": {
+              "UntrustedArtifactOnDeployment": "Enforce"
+            },
+            "Description": "Testing CodeSigning Config",
+            "LastModified": "date"
+          },
+          {
+            "AllowedPublishers": {
+              "SigningProfileVersionArns": [
+                "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
+              ]
+            },
+            "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:4>",
+            "CodeSigningConfigId": "<resource:4>",
+            "CodeSigningPolicies": {
+              "UntrustedArtifactOnDeployment": "Enforce"
+            },
+            "Description": "Testing CodeSigning Config",
+            "LastModified": "date"
+          },
+          {
+            "AllowedPublishers": {
+              "SigningProfileVersionArns": [
                 "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
               ]
             },
@@ -5237,6 +5279,20 @@
             "CodeSigningConfigId": "<resource:1>",
             "CodeSigningPolicies": {
               "UntrustedArtifactOnDeployment": "Warn"
+            },
+            "Description": "Testing CodeSigning Config",
+            "LastModified": "date"
+          },
+          {
+            "AllowedPublishers": {
+              "SigningProfileVersionArns": [
+                "arn:aws:signer:us-east-1:000000000000:/signing-profiles/test"
+              ]
+            },
+            "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:5>",
+            "CodeSigningConfigId": "<resource:5>",
+            "CodeSigningPolicies": {
+              "UntrustedArtifactOnDeployment": "Enforce"
             },
             "Description": "Testing CodeSigning Config",
             "LastModified": "date"
@@ -5271,7 +5327,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestCodeSigningConfig::test_code_signing_not_found_excs": {
-    "recorded-date": "30-09-2022, 15:35:33",
+    "recorded-date": "02-05-2023, 17:39:03",
     "recorded-content": {
       "create_code_signing_config": {
         "CodeSigningConfig": {
@@ -5450,7 +5506,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings": {
-    "recorded-date": "17-02-2023, 11:43:17",
+    "recorded-date": "02-05-2023, 17:39:03",
     "recorded-content": {
       "acc_settings_modded": {
         "AccountLimit": [
@@ -5472,7 +5528,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_exceptions": {
-    "recorded-date": "17-02-2023, 11:43:39",
+    "recorded-date": "02-05-2023, 17:39:20",
     "recorded-content": {
       "get_unknown_uuid": {
         "Error": {
@@ -5537,7 +5593,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle": {
-    "recorded-date": "23-11-2022, 10:09:53",
+    "recorded-date": "02-05-2023, 17:39:31",
     "recorded-content": {
       "update_table_response": {
         "TableDescription": {
@@ -5552,6 +5608,7 @@
             "LastUpdateToPayPerRequestDateTime": "datetime"
           },
           "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
             {
@@ -5665,7 +5722,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTags::test_tag_exceptions": {
-    "recorded-date": "30-09-2022, 15:36:19",
+    "recorded-date": "02-05-2023, 17:39:46",
     "recorded-content": {
       "tag_lambda_invalidarn": {
         "Error": {
@@ -5739,7 +5796,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTags::test_tag_limits": {
-    "recorded-date": "27-02-2023, 21:42:31",
+    "recorded-date": "02-05-2023, 17:39:48",
     "recorded-content": {
       "tag_lambda_too_many_tags": {
         "Error": {
@@ -5931,7 +5988,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTags::test_tag_lifecycle": {
-    "recorded-date": "27-02-2023, 21:42:57",
+    "recorded-date": "02-05-2023, 17:39:53",
     "recorded-content": {
       "list_tags_response_postfncreate": {
         "Tags": {
@@ -6270,7 +6327,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_provisioned_concurrency_exceptions": {
-    "recorded-date": "15-03-2023, 15:21:53",
+    "recorded-date": "02-05-2023, 17:36:46",
     "recorded-content": {
       "publish_version_result": {
         "Architectures": [
@@ -6519,7 +6576,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_lambda_provisioned_lifecycle": {
-    "recorded-date": "17-02-2023, 12:32:55",
+    "recorded-date": "02-05-2023, 17:36:49",
     "recorded-content": {
       "publish_version_result": {
         "Architectures": [
@@ -6665,7 +6722,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_request_create_lambda": {
-    "recorded-date": "17-02-2023, 11:41:24",
+    "recorded-date": "02-05-2023, 17:37:36",
     "recorded-content": {
       "invalid_param_exc": {
         "Error": {
@@ -6680,7 +6737,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTags::test_tag_versions": {
-    "recorded-date": "03-10-2022, 20:42:55",
+    "recorded-date": "02-05-2023, 17:39:50",
     "recorded-content": {
       "tag_resource_exception": {
         "Error": {
@@ -6709,7 +6766,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaUrl::test_url_config_list_paging": {
-    "recorded-date": "17-02-2023, 11:41:01",
+    "recorded-date": "02-05-2023, 17:37:20",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -6827,7 +6884,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaUrl::test_url_config_exceptions": {
-    "recorded-date": "17-02-2023, 11:40:55",
+    "recorded-date": "02-05-2023, 17:37:17",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -7261,7 +7318,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_permission_exceptions": {
-    "recorded-date": "28-02-2023, 11:08:16",
+    "recorded-date": "02-05-2023, 17:36:52",
     "recorded-content": {
       "add_permission_invalid_statement_id": {
         "Error": {
@@ -7442,7 +7499,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_unzipped_lambda": {
-    "recorded-date": "17-02-2023, 11:42:33",
+    "recorded-date": "02-05-2023, 17:38:20",
     "recorded-content": {
       "invalid_param_exc": {
         "Error": {
@@ -7459,7 +7516,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_create_lambda_exceptions": {
-    "recorded-date": "27-04-2023, 20:35:38",
+    "recorded-date": "02-05-2023, 17:33:41",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7531,7 +7588,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_update_lambda_exceptions": {
-    "recorded-date": "27-04-2023, 20:35:39",
+    "recorded-date": "02-05-2023, 17:33:43",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7570,7 +7627,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_list_functions": {
-    "recorded-date": "27-04-2023, 20:35:52",
+    "recorded-date": "02-05-2023, 17:33:54",
     "recorded-content": {
       "create_response_1": {
         "CreateEventSourceMappingResponse": null,
@@ -7843,7 +7900,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_exceptions": {
-    "recorded-date": "27-04-2023, 20:39:18",
+    "recorded-date": "02-05-2023, 17:40:03",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8041,7 +8098,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_lifecycle": {
-    "recorded-date": "27-04-2023, 20:40:59",
+    "recorded-date": "02-05-2023, 17:41:41",
     "recorded-content": {
       "get_fn_result": {
         "Code": {
@@ -8445,7 +8502,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_policy_exceptions": {
-    "recorded-date": "27-04-2023, 20:41:04",
+    "recorded-date": "02-05-2023, 17:41:52",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8628,7 +8685,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_policy_lifecycle": {
-    "recorded-date": "27-04-2023, 20:41:09",
+    "recorded-date": "02-05-2023, 17:41:57",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8756,7 +8813,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_s3_content": {
-    "recorded-date": "27-04-2023, 21:01:08",
+    "recorded-date": "02-05-2023, 17:41:47",
     "recorded-content": {
       "publish_layer_result": {
         "Content": {
@@ -8777,7 +8834,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_function_exceptions": {
-    "recorded-date": "27-04-2023, 20:39:58",
+    "recorded-date": "02-05-2023, 17:40:41",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8971,7 +9028,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaImages::test_lambda_image_crud": {
-    "recorded-date": "17-02-2023, 11:36:22",
+    "recorded-date": "02-05-2023, 17:34:33",
     "recorded-content": {
       "create-image-response": {
         "Architectures": [
@@ -9233,7 +9290,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaImages::test_lambda_image_and_image_config_crud": {
-    "recorded-date": "17-02-2023, 11:38:24",
+    "recorded-date": "02-05-2023, 17:35:08",
     "recorded-content": {
       "create-image-with-config-response": {
         "Architectures": [
@@ -9669,7 +9726,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaImages::test_lambda_zip_file_to_image": {
-    "recorded-date": "17-02-2023, 11:36:41",
+    "recorded-date": "02-05-2023, 17:34:42",
     "recorded-content": {
       "create-image-response": {
         "Architectures": [
@@ -9889,7 +9946,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings_total_code_size": {
-    "recorded-date": "17-02-2023, 11:43:31",
+    "recorded-date": "02-05-2023, 17:39:15",
     "recorded-content": {
       "total_code_size_diff_create_function": 276,
       "total_code_size_diff_update_function": 276,
@@ -9898,7 +9955,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings_total_code_size_config_update": {
-    "recorded-date": "17-02-2023, 11:43:37",
+    "recorded-date": "02-05-2023, 17:39:18",
     "recorded-content": {
       "is_total_code_size_diff_create_function_more_than_200": true,
       "total_code_size_diff_update_function_configuration": 0,
@@ -9906,7 +9963,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_lifecycle": {
-    "recorded-date": "22-03-2023, 18:49:13",
+    "recorded-date": "02-05-2023, 17:36:29",
     "recorded-content": {
       "put_invokeconfig_retries_0": {
         "DestinationConfig": {
@@ -10269,126 +10326,57 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_fields": {
-    "recorded-date": "17-02-2023, 11:40:29",
+    "recorded-date": "02-05-2023, 17:37:00",
     "recorded-content": {
       "add_permission_principal_wildcard": {
-        "Statement": {
-          "Sid": "wilcard",
-          "Effect": "Allow",
-          "Principal": "*",
-          "Action": "lambda:InvokeFunction",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-          "Condition": {
-            "StringEquals": {
-              "AWS:SourceAccount": "111111111111"
-            }
-          }
-        },
+        "Statement": "{\"Sid\":\"wilcard\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"lambda:InvokeFunction\",\"Resource\":\"arn:aws:lambda:eu-central-1:869636330914:function:lambda_func-e460529e\",\"Condition\":{\"StringEquals\":{\"AWS:SourceAccount\":\"869636330914\"}}}",
         "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
+          "HTTPHeaders": {
+            "connection": "keep-alive",
+            "content-length": "277",
+            "content-type": "application/json",
+            "date": "Tue, 02 May 2023 15:36:58 GMT",
+            "x-amzn-requestid": "a6efaabd-6879-4101-b95a-48a5c7cf7f8f"
+          },
+          "HTTPStatusCode": 201,
+          "RequestId": "a6efaabd-6879-4101-b95a-48a5c7cf7f8f",
+          "RetryAttempts": 0
         }
       },
       "add_permission_principal_service": {
-        "Statement": {
-          "Sid": "lambda",
-          "Effect": "Allow",
-          "Principal": {
-            "Service": "lambda.amazonaws.com"
-          },
-          "Action": "lambda:InvokeFunction",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-          "Condition": {
-            "StringEquals": {
-              "AWS:SourceAccount": "111111111111"
-            }
-          }
-        },
+        "Statement": "{\"Sid\":\"lambda\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"lambda:InvokeFunction\",\"Resource\":\"arn:aws:lambda:eu-central-1:869636330914:function:lambda_func-e460529e\",\"Condition\":{\"StringEquals\":{\"AWS:SourceAccount\":\"869636330914\"}}}",
         "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
+          "HTTPHeaders": {
+            "connection": "keep-alive",
+            "content-length": "309",
+            "content-type": "application/json",
+            "date": "Tue, 02 May 2023 15:36:59 GMT",
+            "x-amzn-requestid": "eff7ee5e-d49d-49e9-8e1d-df6c59af2b79"
+          },
+          "HTTPStatusCode": 201,
+          "RequestId": "eff7ee5e-d49d-49e9-8e1d-df6c59af2b79",
+          "RetryAttempts": 0
         }
       },
       "add_permission_principal_account": {
-        "Statement": {
-          "Sid": "account-id",
-          "Effect": "Allow",
-          "Principal": {
-            "AWS": "arn:aws:iam::111111111111:<resource:2>"
+        "Statement": "{\"Sid\":\"account-id\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::869636330914:root\"},\"Action\":\"lambda:InvokeFunction\",\"Resource\":\"arn:aws:lambda:eu-central-1:869636330914:function:lambda_func-e460529e\"}",
+        "ResponseMetadata": {
+          "HTTPHeaders": {
+            "connection": "keep-alive",
+            "content-length": "245",
+            "content-type": "application/json",
+            "date": "Tue, 02 May 2023 15:36:59 GMT",
+            "x-amzn-requestid": "45bdbc21-da9e-42c9-8d25-26e510333243"
           },
-          "Action": "lambda:InvokeFunction",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "add_permission_principal_arn": {
-        "Statement": {
-          "Sid": "user-arn",
-          "Effect": "Allow",
-          "Principal": {
-            "AWS": "<user_arn>"
-          },
-          "Action": "lambda:InvokeFunction",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-          "Condition": {
-            "StringEquals": {
-              "AWS:SourceAccount": "111111111111"
-            }
-          }
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "add_permission_optional_fields": {
-        "Statement": {
-          "Sid": "urlPermission",
-          "Effect": "Allow",
-          "Principal": "*",
-          "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-          "Condition": {
-            "StringEquals": {
-              "AWS:SourceAccount": "111111111111",
-              "lambda:FunctionUrlAuthType": "NONE",
-              "aws:PrincipalOrgID": "o-1234567890"
-            },
-            "ArnLike": {
-              "AWS:SourceArn": "arn:aws:s3:::<resource:3>"
-            }
-          }
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "add_permission_alexa_skill": {
-        "Statement": {
-          "Sid": "alexaSkill",
-          "Effect": "Allow",
-          "Principal": "*",
-          "Action": "lambda:InvokeFunction",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-          "Condition": {
-            "StringEquals": {
-              "lambda:EventSourceToken": "amzn1.ask.skill.xxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-            }
-          }
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
+          "HTTPStatusCode": 201,
+          "RequestId": "45bdbc21-da9e-42c9-8d25-26e510333243",
+          "RetryAttempts": 0
         }
       }
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_lambda_permission_fn_versioning": {
-    "recorded-date": "17-02-2023, 11:40:24",
+    "recorded-date": "02-05-2023, 17:36:57",
     "recorded-content": {
       "add_permission": {
         "Statement": {
@@ -11021,7 +11009,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_basic": {
-    "recorded-date": "17-02-2023, 11:39:05",
+    "recorded-date": "02-05-2023, 17:36:14",
     "recorded-content": {
       "create_function_response_rev1": {
         "CreateEventSourceMappingResponse": null,
@@ -11322,7 +11310,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_version_and_alias": {
-    "recorded-date": "17-02-2023, 11:39:10",
+    "recorded-date": "02-05-2023, 17:36:16",
     "recorded-content": {
       "create_function_response_rev1": {
         "CreateEventSourceMappingResponse": null,
@@ -11694,7 +11682,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_permissions": {
-    "recorded-date": "17-02-2023, 11:39:14",
+    "recorded-date": "02-05-2023, 17:36:19",
     "recorded-content": {
       "add_permission_revision_exception": {
         "Error": {
@@ -11766,7 +11754,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_function_quota_exception": {
-    "recorded-date": "27-04-2023, 20:40:38",
+    "recorded-date": "02-05-2023, 17:41:18",
     "recorded-content": {
       "create_function_with_six_layers": {
         "Error": {
@@ -11783,7 +11771,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventSourceMappings::test_create_event_source_validation": {
-    "recorded-date": "15-02-2023, 11:03:02",
+    "recorded-date": "02-05-2023, 17:39:44",
     "recorded-content": {
       "error": {
         "Error": {
@@ -11800,7 +11788,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_exceptions": {
-    "recorded-date": "17-02-2023, 11:46:20",
+    "recorded-date": "02-05-2023, 17:45:12",
     "recorded-content": {
       "create_function_unsupported_snapstart_runtime": {
         "Error": {
@@ -11826,245 +11814,8 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle": {
-    "recorded-date": "17-02-2023, 11:46:16",
-    "recorded-content": {
-      "create_function_response": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<code-sha256:1>",
-          "CodeSize": "<code-size>",
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "java11",
-          "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
-          },
-          "SnapStart": {
-            "ApplyOn": "PublishedVersions",
-            "OptimizationStatus": "Off"
-          },
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          }
-        }
-      },
-      "get_function_response_latest": {
-        "Code": {
-          "Location": "<location>",
-          "RepositoryType": "S3"
-        },
-        "Configuration": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<code-sha256:1>",
-          "CodeSize": "<code-size>",
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
-          "LastModified": "date",
-          "LastUpdateStatus": "Successful",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:2>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "java11",
-          "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
-          },
-          "SnapStart": {
-            "ApplyOn": "PublishedVersions",
-            "OptimizationStatus": "Off"
-          },
-          "State": "Active",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_function_response_version_1": {
-        "Code": {
-          "Location": "<location>",
-          "RepositoryType": "S3"
-        },
-        "Configuration": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<code-sha256:1>",
-          "CodeSize": "<code-size>",
-          "Description": "version1",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
-          "FunctionName": "<function-name:1>",
-          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
-          "LastModified": "date",
-          "LastUpdateStatus": "Successful",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:3>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "java11",
-          "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
-          },
-          "SnapStart": {
-            "ApplyOn": "PublishedVersions",
-            "OptimizationStatus": "On"
-          },
-          "State": "Active",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "1"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration": {
-    "recorded-date": "17-02-2023, 11:46:19",
-    "recorded-content": {
-      "create_function_response": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<code-sha256:1>",
-          "CodeSize": "<code-size>",
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "java11",
-          "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
-          },
-          "SnapStart": {
-            "ApplyOn": "None",
-            "OptimizationStatus": "Off"
-          },
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          }
-        }
-      },
-      "update_function_response": {
-        "Architectures": [
-          "x86_64"
-        ],
-        "CodeSha256": "<code-sha256:1>",
-        "CodeSize": "<code-size>",
-        "Description": "",
-        "Environment": {
-          "Variables": {}
-        },
-        "EphemeralStorage": {
-          "Size": 512
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-        "FunctionName": "<function-name:1>",
-        "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
-        "LastModified": "date",
-        "LastUpdateStatus": "InProgress",
-        "LastUpdateStatusReason": "The function is being created.",
-        "LastUpdateStatusReasonCode": "Creating",
-        "MemorySize": 128,
-        "PackageType": "Zip",
-        "RevisionId": "<uuid:2>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "java11",
-        "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
-        },
-        "SnapStart": {
-          "ApplyOn": "PublishedVersions",
-          "OptimizationStatus": "Off"
-        },
-        "State": "Active",
-        "Timeout": 30,
-        "TracingConfig": {
-          "Mode": "PassThrough"
-        },
-        "Version": "$LATEST",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaImages::test_lambda_image_versions": {
-    "recorded-date": "21-04-2023, 17:05:08",
+    "recorded-date": "02-05-2023, 17:35:35",
     "recorded-content": {
       "create_image_response": {
         "Architectures": [
@@ -12478,6 +12229,480 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[java11]": {
+    "recorded-date": "02-05-2023, 17:43:31",
+    "recorded-content": {
+      "create_function_response": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+          "LastModified": "date",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java11",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "PublishedVersions",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "get_function_response_latest": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java11",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "PublishedVersions",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_response_version_1": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "version1",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:3>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java11",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "PublishedVersions",
+            "OptimizationStatus": "On"
+          },
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[java17]": {
+    "recorded-date": "02-05-2023, 17:45:07",
+    "recorded-content": {
+      "create_function_response": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+          "LastModified": "date",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java17",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "PublishedVersions",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "get_function_response_latest": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java17",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "PublishedVersions",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_response_version_1": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "version1",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:3>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java17",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "PublishedVersions",
+            "OptimizationStatus": "On"
+          },
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[java11]": {
+    "recorded-date": "02-05-2023, 17:45:09",
+    "recorded-content": {
+      "create_function_response": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+          "LastModified": "date",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java11",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "update_function_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+        "LastModified": "date",
+        "LastUpdateStatus": "InProgress",
+        "LastUpdateStatusReason": "The function is being created.",
+        "LastUpdateStatusReasonCode": "Creating",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:2>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "java11",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "PublishedVersions",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Active",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[java17]": {
+    "recorded-date": "02-05-2023, 17:45:11",
+    "recorded-content": {
+      "create_function_response": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+          "LastModified": "date",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java17",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "update_function_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+        "LastModified": "date",
+        "LastUpdateStatus": "InProgress",
+        "LastUpdateStatusReason": "The function is being created.",
+        "LastUpdateStatusReasonCode": "Creating",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:2>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "java17",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "PublishedVersions",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Active",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

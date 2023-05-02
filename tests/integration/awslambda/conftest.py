@@ -36,7 +36,7 @@ RUNTIMES_AGGREGATED = {
     "python": [Runtime.python3_7, Runtime.python3_8, Runtime.python3_9, Runtime.python3_10],
     "nodejs": [Runtime.nodejs12_x, Runtime.nodejs14_x, Runtime.nodejs16_x, Runtime.nodejs18_x],
     "ruby": [Runtime.ruby2_7],
-    "java": [Runtime.java8, Runtime.java8_al2, Runtime.java11],
+    "java": [Runtime.java8, Runtime.java8_al2, Runtime.java11, Runtime.java17],
     "dotnet": [
         Runtime.dotnetcore3_1,
         Runtime.dotnet6,
