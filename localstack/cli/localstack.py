@@ -194,6 +194,7 @@ def cmd_stop():
     default=False,
 )
 @click.option(
+    "-n",
     "--tail",
     type=int,
     help="Print only the last N lines of the log output",
@@ -226,7 +227,7 @@ def cmd_logs(follow: bool, tail: int):
 
     else:
         logs = DOCKER_CLIENT.get_container_logs(container_name)
-        if tail is not None and isinstance(tail, int):
+        if tail is not None:
             logs = "\n".join(logs.split("\n")[-tail:])
         print(logs)
 
