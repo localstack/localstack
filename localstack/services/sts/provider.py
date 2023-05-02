@@ -10,7 +10,7 @@ LOG = logging.getLogger(__name__)
 
 class StsProvider(StsApi, ServiceLifecycleHook):
     def get_caller_identity(self, context: RequestContext) -> GetCallerIdentityResponse:
-        result = call_moto(context)
-        if "user/moto" in result["Arn"] and "sts" in result["Arn"]:
-            result["Arn"] = f"arn:aws:iam::{result['Account']}:root"
-        return result
+        response = call_moto(context)
+        if "user/moto" in response["Arn"] and "sts" in response["Arn"]:
+            response["Arn"] = f"arn:aws:iam::{response['Account']}:root"
+        return response

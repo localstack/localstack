@@ -21,6 +21,7 @@ from localstack.http.dispatcher import Handler
 from localstack.services.sqs.exceptions import MissingParameter
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import extract_region_from_headers
+from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -116,16 +117,18 @@ def handle_request(request: Request, region: str) -> Response:
         # TODO: the response should be sent as JSON response
         raise NotImplementedError
 
+    request_id = long_uid()
+
     try:
         response, operation = try_call_sqs(request, region)
         del response["ResponseMetadata"]
-        return serializer.serialize_to_response(response, operation, request.headers)
+        return serializer.serialize_to_response(response, operation, request.headers, request_id)
     except UnknownOperationException:
         return Response("<UnknownOperationException/>", 404)
     except CommonServiceException as e:
         # use a dummy operation for the serialization to work
         op = service.operation_model(service.operation_names[0])
-        return serializer.serialize_error_to_response(e, op, request.headers)
+        return serializer.serialize_error_to_response(e, op, request.headers, request_id)
     except Exception as e:
         LOG.exception("exception")
         op = service.operation_model(service.operation_names[0])
@@ -135,6 +138,7 @@ def handle_request(request: Request, region: str) -> Response:
             ),
             op,
             request.headers,
+            request_id,
         )
 
 

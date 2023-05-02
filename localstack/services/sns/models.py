@@ -106,6 +106,7 @@ class SnsSubscription(TypedDict):
     FilterPolicyScope: Literal["MessageAttributes", "MessageBody"]
     RawMessageDelivery: Literal["true", "false"]
     ConfirmationWasAuthenticated: Literal["true", "false"]
+    SubscriptionRoleArn: Optional[str]
 
 
 class SnsStore(BaseStore):

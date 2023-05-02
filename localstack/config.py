@@ -1002,6 +1002,9 @@ LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
 
+# Whether to return and parse access key ids starting with an "A", like on AWS
+PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
+
 # HINT: Please add deprecated environment variables to deprecations.py
 
 # list of environment variable names used for configuration.
@@ -1097,6 +1100,7 @@ CONFIG_ENV_VARS = [
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "OUTBOUND_HTTP_PROXY",
     "OUTBOUND_HTTPS_PROXY",
+    "PARITY_AWS_ACCESS_KEY_ID",
     "PERSISTENCE",
     "PORTS_CHECK_DOCKER_IMAGE",
     "REQUESTS_CA_BUNDLE",

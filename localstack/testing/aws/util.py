@@ -22,6 +22,7 @@ from localstack.aws.forwarder import create_http_request
 from localstack.aws.protocol.parser import create_parser
 from localstack.aws.proxy import get_account_id_from_request
 from localstack.aws.spec import load_service
+from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.utils.aws import aws_stack
 from localstack.utils.sync import poll_condition
 
@@ -180,12 +181,19 @@ def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
     config = None
     if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS"):
         config = botocore.config.Config(
-            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+            connect_timeout=1_000,
+            read_timeout=1_000,
+            retries={"total_max_attempts": 1},
         )
 
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         return ExternalAwsClientFactory(session=session, config=config)
     else:
+        if not config:
+            config = botocore.config.Config()
+
+        # Prevent this fixture from using the region configured in system config
+        config = config.merge(botocore.config.Config(region_name=TEST_AWS_REGION_NAME))
         return ExternalClientFactory(session=session, config=config)
 
 

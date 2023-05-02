@@ -34,6 +34,7 @@ from localstack.utils.aws.arns import (
     sqs_queue_url_for_arn,
 )
 from localstack.utils.aws.aws_responses import create_sqs_system_attributes
+from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.objects import not_none_or
@@ -182,10 +183,9 @@ class LambdaTopicPublisher(TopicPublisher):
             if payload:
                 delivery = {
                     "statusCode": status_code,
-                    # TODO: normally, this is the lambda RequestId (invocation id)
-                    # but we don't get it from the response, this could change if we set the RequestId when we receive
-                    # the request instead of when sending the response. For now, mock it with a random UUID
-                    "providerResponse": json.dumps({"lambdaRequestId": long_uid()}),
+                    "providerResponse": json.dumps(
+                        {"lambdaRequestId": inv_result["ResponseMetadata"]["RequestId"]}
+                    ),
                 }
                 store_delivery_log(context.message, subscriber, success=True, delivery=delivery)
 
@@ -289,6 +289,10 @@ class SqsTopicPublisher(TopicPublisher):
             # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
             content = msg_context.message_content("sqs")
             kwargs["MessageDeduplicationId"] = hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+        # TODO: for message deduplication, we are using the underlying features of the SQS queue
+        # however, SQS queue only deduplicate at the Queue level, where the SNS topic deduplicate on the topic level
+        # we will need to implement this
         return kwargs
 
 
@@ -578,8 +582,14 @@ class FirehoseTopicPublisher(TopicPublisher):
         message_body = self.prepare_message(context.message, subscriber)
         try:
             region = extract_region_from_arn(subscriber["Endpoint"])
-            firehose_client = connect_to(region_name=region).firehose.request_metadata(
-                source_arn=subscriber["TopicArn"], service_principal="sns"
+            if role_arn := subscriber.get("SubscriptionRoleArn"):
+                factory = connect_to.with_assumed_role(
+                    role_arn=role_arn, service_principal=ServicePrincipal.sns, region_name=region
+                )
+            else:
+                factory = connect_to(region_name=region)
+            firehose_client = factory.firehose.request_metadata(
+                source_arn=subscriber["TopicArn"], service_principal=ServicePrincipal.sns
             )
             endpoint = subscriber["Endpoint"]
             if endpoint:

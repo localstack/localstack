@@ -26,7 +26,7 @@ class TestServiceResponseHandler:
         context = create_aws_request_context("sqs", "CreateQueue", {"QueueName": "foobar"})
         backend_response = {"QueueUrl": "http://localhost:4566/000000000000/foobar"}
         http_response = create_serializer(context.service).serialize_to_response(
-            backend_response, context.operation, context.request.headers
+            backend_response, context.operation, context.request.headers, context.request_id
         )
 
         service_response_handler_chain.handle(context, http_response)
@@ -36,7 +36,7 @@ class TestServiceResponseHandler:
         context = create_aws_request_context("s3", "GetObject", {"Bucket": "foo", "Key": "bar.bin"})
         backend_response = {"Body": b"\x00\x01foo", "ContentType": "application/octet-stream"}
         http_response = create_serializer(context.service).serialize_to_response(
-            backend_response, context.operation, context.request.headers
+            backend_response, context.operation, context.request.headers, context.request_id
         )
 
         service_response_handler_chain.handle(context, http_response)

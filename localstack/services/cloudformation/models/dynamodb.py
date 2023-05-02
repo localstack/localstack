@@ -8,17 +8,30 @@ from localstack.utils.aws import aws_stack
 
 
 def get_ddb_provisioned_throughput(params, **kwargs):
+    # see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html#cfn-dynamodb-table-provisionedthroughput
     args = params.get("ProvisionedThroughput")
     if args == PLACEHOLDER_AWS_NO_VALUE:
-        return {}
+        return None
     is_ondemand = params.get("BillingMode") == "PAY_PER_REQUEST"
-    if is_ondemand and args is None:
-        return
-    if args:
-        if isinstance(args["ReadCapacityUnits"], str):
-            args["ReadCapacityUnits"] = int(args["ReadCapacityUnits"])
-        if isinstance(args["WriteCapacityUnits"], str):
-            args["WriteCapacityUnits"] = int(args["WriteCapacityUnits"])
+    # if the BillingMode is set to PAY_PER_REQUEST, you cannot specify ProvisionedThroughput
+    # if the BillingMode is set to PROVISIONED (default), you have to specify ProvisionedThroughput
+
+    if args is None:
+        if is_ondemand:
+            # do not return default value if it's on demand
+            return
+
+        # return default values if it's not on demand
+        return {
+            "ReadCapacityUnits": 5,
+            "WriteCapacityUnits": 5,
+        }
+
+    if isinstance(args["ReadCapacityUnits"], str):
+        args["ReadCapacityUnits"] = int(args["ReadCapacityUnits"])
+    if isinstance(args["WriteCapacityUnits"], str):
+        args["WriteCapacityUnits"] = int(args["WriteCapacityUnits"])
+
     return args
 
 
@@ -78,14 +91,6 @@ class DynamoDBTable(GenericBaseModel):
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
-        is_pay_per_request = resource.get("Properties", {}).get("BillingMode") == "PAY_PER_REQUEST"
-
-        if not is_pay_per_request:
-            resource["Properties"]["ProvisionedThroughput"] = {
-                "ReadCapacityUnits": 5,
-                "WriteCapacityUnits": 5,
-            }
-
         table_name = resource.get("Properties", {}).get("TableName")
         resource["Properties"]["TableName"] = table_name or generate_default_name(
             stack_name, resource["LogicalResourceId"]

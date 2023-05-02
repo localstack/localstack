@@ -385,16 +385,25 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
                 Type="User",
             )
-        current_hash = current_latest_version.config.code.code_sha256
-        if (
-            code_sha256
-            and current_hash != code_sha256
-            and not current_latest_version.config.code.is_hot_reloading()
-        ):
+
+        # check if code hashes match if they are specified
+        current_hash = (
+            current_latest_version.config.code.code_sha256
+            if current_latest_version.config.package_type == PackageType.Zip
+            else current_latest_version.config.image.code_sha256
+        )
+        # if the code is a zip package and hot reloaded (hot reloading is currently only supported for zip packagetypes)
+        # we cannot enforce the codesha256 check
+        is_hot_reloaded_zip_package = (
+            current_latest_version.config.package_type == PackageType.Zip
+            and current_latest_version.config.code.is_hot_reloading()
+        )
+        if code_sha256 and current_hash != code_sha256 and not is_hot_reloaded_zip_package:
             raise InvalidParameterValueException(
                 f"CodeSHA256 ({code_sha256}) is different from current CodeSHA256 in $LATEST ({current_hash}). Please try again with the CodeSHA256 in $LATEST.",
                 Type="User",
             )
+
         state = lambda_stores[account_id][region]
         function = state.functions.get(function_name)
         changes = {}
@@ -658,6 +667,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ValidationException(
                 f"1 validation error detected: Value '{request.get('Role')}'"
                 + " at 'role' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:iam::\\d{12}:role/?[a-zA-Z_0-9+=,.@\\-_/]+"
+            )
+        if not self.lambda_service.can_assume_role(request.get("Role")):
+            raise InvalidParameterValueException(
+                "The role defined for the function cannot be assumed by Lambda.", Type="User"
             )
         package_type = request.get("PackageType", PackageType.Zip)
         runtime = request.get("Runtime")
@@ -1213,6 +1226,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             account_id=context.account_id,
             invocation_type=invocation_type,
             client_context=client_context,
+            request_id=context.request_id,
             payload=payload.read() if payload else None,
         )
         if invocation_type == "Event":

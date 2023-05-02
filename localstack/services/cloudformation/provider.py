@@ -153,6 +153,11 @@ class CloudformationProvider(CloudformationApi):
 
         template = template_preparer.parse_template(request["TemplateBody"])
         stack_name = template["StackName"] = request.get("StackName")
+        if api_utils.validate_stack_name(stack_name) is False:
+            raise ValidationError(
+                f"1 validation error detected: Value '{stack_name}' at 'stackName' failed to satisfy constraint:\
+                Member must satisfy regular expression pattern: [a-zA-Z][-a-zA-Z0-9]*|arn:[-a-zA-Z0-9:/._+]*"
+            )
 
         # find existing stack with same name, and remove it if this stack is in DELETED state
         existing = ([s for s in state.stacks.values() if s.stack_name == stack_name] or [None])[0]

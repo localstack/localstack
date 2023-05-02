@@ -617,6 +617,36 @@ class TestDockerClient:
         assert "foo" in out.decode(config.DEFAULT_ENCODING)
         assert "bar" in out.decode(config.DEFAULT_ENCODING)
 
+    def test_copy_directory_structure_into_container(
+        self, tmpdir, docker_client: ContainerClient, create_container
+    ):
+        container = create_container(
+            image_name="public.ecr.aws/lambda/python:3.9",
+            entrypoint="",
+            command=["sh", "-c", "while true; do sleep 1; done"],
+        )
+        local_path = tmpdir.join("fancy_folder")
+        local_path.mkdir()
+        sub_path = local_path.join("inner_folder")
+        sub_path.mkdir()
+        sub_sub_path = sub_path.join("innerinner_folder")
+        sub_sub_path.mkdir()
+
+        file_path = sub_sub_path.join("myfile.txt")
+        with file_path.open(mode="w") as fd:
+            fd.write("foo\n")
+        container_path = "/"
+        docker_client.copy_into_container(container.container_id, str(local_path), container_path)
+        docker_client.start_container(container.container_id)
+        out, _ = docker_client.exec_in_container(
+            container.container_id,
+            command=[
+                "cat",
+                "/fancy_folder/inner_folder/innerinner_folder/myfile.txt",
+            ],
+        )
+        assert "foo" in out.decode(config.DEFAULT_ENCODING)
+
     def test_get_network_non_existing_container(self, docker_client: ContainerClient):
         with pytest.raises(ContainerException):
             docker_client.get_networks("this_container_does_not_exist")

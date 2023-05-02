@@ -21,7 +21,7 @@ from requests.models import Request, Response
 
 from localstack import config, constants
 from localstack.aws.api import CommonServiceException
-from localstack.aws.protocol.serializer import gen_amzn_requestid_long
+from localstack.aws.protocol.serializer import gen_amzn_requestid
 from localstack.config import get_protocol as get_service_protocol
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.generic_proxy import append_cors_headers as _append_default_cors_headers
@@ -249,7 +249,7 @@ def get_event_message(
                 "userIdentity": {"principalId": "AIDAJDPLRKLG7UEXAMPLE"},
                 "requestParameters": {"sourceIPAddress": source_ip},
                 "responseElements": {
-                    "x-amz-request-id": gen_amzn_requestid_long(),
+                    "x-amz-request-id": gen_amzn_requestid(),  # TODO: replace with context request ID
                     "x-amz-id-2": "eftixk72aD6Ap51TnqcoF8eFidJG9Z/2",  # Amazon S3 host that processed the request
                 },
                 "s3": {
@@ -417,7 +417,7 @@ def send_notification_for_subscriber(
                     "etag": object_data.get("ETag", ""),
                     "sequencer": "0062E99A88DC407460",
                 },
-                "request-id": gen_amzn_requestid_long(),
+                "request-id": gen_amzn_requestid(),  # TODO: replace with context request ID
                 "requester": "074255357339",
                 "source-ip-address": source_ip,
             },
