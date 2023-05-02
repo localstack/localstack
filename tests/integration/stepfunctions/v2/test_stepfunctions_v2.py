@@ -404,7 +404,7 @@ class TestStateMachine:
             assert {"Hello": TEST_RESULT_VALUE_2} == result.get("handled")
 
         # assert that the lambda has been invoked by the SM execution
-        retry(check_invocations, sleep=10, retries=1000000)
+        retry(check_invocations, sleep=1, retries=10)
 
         # clean up
         cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
