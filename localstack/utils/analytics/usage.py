@@ -93,6 +93,13 @@ class UsageCounter:
         return result
 
 
+def aggregate() -> dict:
+    aggregated_payload = {}
+    for ns, collector in collector_registry.items():
+        aggregated_payload[ns] = collector.aggregate()
+    return aggregated_payload
+
+
 def aggregate_and_send():
     """
     Aggregates data from all registered usage trackers and immediately sends the aggregated result to the analytics service.
@@ -102,9 +109,7 @@ def aggregate_and_send():
         client_time=str(datetime.datetime.now()),
     )
 
-    aggregated_payload = {}
-    for ns, collector in collector_registry.items():
-        aggregated_payload[ns] = collector.aggregate()
+    aggregated_payload = aggregate()
 
     publisher = AnalyticsClientPublisher()
     publisher.publish([Event(name="usage", metadata=metadata, payload=aggregated_payload)])
