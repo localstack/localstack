@@ -107,7 +107,7 @@ def get_service_name(resource):
     return parts[1].lower()
 
 
-def get_client(resource: dict, func_config: dict):
+def get_client(resource: dict):
     resource_type = get_resource_type(resource)
     service = get_service_name(resource)
     resource_config = get_deployment_config(resource_type)
@@ -693,7 +693,7 @@ def execute_resource_action(resource_id: str, stack_name, resources, action_name
             results.append(result)
             executed = True
 
-        if not executed and get_client(resource, func):
+        if not executed and get_client(resource):
             result = configure_resource_via_sdk(
                 stack_name,
                 resources,
@@ -797,7 +797,7 @@ def configure_resource_via_sdk(
 ):
     resource = resources[resource_id]
 
-    client = get_client(resource, func_details)
+    client = get_client(resource)
 
     function = getattr(client, func_details["function"])
     params = func_details.get("parameters") or (lambda params, **kwargs: params)
