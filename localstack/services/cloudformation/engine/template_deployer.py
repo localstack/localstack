@@ -12,8 +12,13 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import FALSE_STRINGS
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
+    convert_data_types,
+    dump_resource_as_json,
+    fix_account_id_in_arns,
     fix_boto_parameters_based_on_report,
+    get_action_name_for_resource_change,
     is_none_or_empty_value,
+    log_not_available_message,
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.entities import (
@@ -28,10 +33,10 @@ from localstack.services.cloudformation.service_models import (
 )
 from localstack.services.cloudformation.stores import exports_map
 from localstack.utils.aws import aws_stack
-from localstack.utils.functions import prevent_stack_overflow, run_safe
+from localstack.utils.functions import prevent_stack_overflow
 from localstack.utils.json import clone_safe, json_safe
-from localstack.utils.objects import get_all_subclasses, recurse_object
-from localstack.utils.strings import first_char_to_lower, is_string, to_bytes, to_str
+from localstack.utils.objects import get_all_subclasses
+from localstack.utils.strings import first_char_to_lower, to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
@@ -655,63 +660,6 @@ def get_resource_model_instance(resource_id: str, resources) -> Optional[Generic
     return instance
 
 
-# TODO: move (util)
-def fix_account_id_in_arns(params):
-    def fix_ids(o, **kwargs):
-        if isinstance(o, dict):
-            for k, v in o.items():
-                if is_string(v, exclude_binary=True):
-                    o[k] = aws_stack.fix_account_id_in_arns(v)
-        elif is_string(o, exclude_binary=True):
-            o = aws_stack.fix_account_id_in_arns(o)
-        return o
-
-    result = recurse_object(params, fix_ids)
-    return result
-
-
-# TODO: move (util)
-def convert_data_types(func_details, params):
-    """Convert data types in the "params" object, with the type defs
-    specified in the 'types' attribute of "func_details"."""
-    types = func_details.get("types") or {}
-    attr_names = types.keys() or []
-
-    def cast(_obj, _type):
-        if _type == bool:
-            return _obj in ["True", "true", True]
-        if _type == str:
-            if isinstance(_obj, bool):
-                return str(_obj).lower()
-            return str(_obj)
-        if _type in (int, float):
-            return _type(_obj)
-        return _obj
-
-    def fix_types(o, **kwargs):
-        if isinstance(o, dict):
-            for k, v in o.items():
-                if k in attr_names:
-                    o[k] = cast(v, types[k])
-        return o
-
-    result = recurse_object(params, fix_types)
-    return result
-
-
-# TODO: move (util)
-def log_not_available_message(resource_type: str, message: str):
-    LOG.warning(
-        f"{message}. To find out if {resource_type} is supported in LocalStack Pro, "
-        "please check out our docs at https://docs.localstack.cloud/user-guide/aws/cloudformation/#resources-pro--enterprise-edition"
-    )
-
-
-# TODO: move (util)
-def dump_resource_as_json(resource: Dict) -> str:
-    return str(run_safe(lambda: json.dumps(json_safe(resource))) or resource)
-
-
 def execute_resource_action(resource_id: str, stack_name, resources, action_name: str):
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
@@ -887,11 +835,6 @@ def configure_resource_via_sdk(
     params = remove_none_values(params)
 
     return invoke_function(resource_type, func_details, action_name, params, function, resource)
-
-
-# TODO: move (util)
-def get_action_name_for_resource_change(res_change: str) -> str:
-    return {"Add": "CREATE", "Remove": "DELETE", "Modify": "UPDATE"}.get(res_change)
 
 
 # TODO: this shouldn't be called for stack parameters
