@@ -31,6 +31,7 @@ from localstack.services.stepfunctions.asl.eval.programstate.program_ended impor
 from localstack.services.stepfunctions.asl.eval.programstate.program_error import ProgramError
 from localstack.services.stepfunctions.asl.eval.programstate.program_state import ProgramState
 from localstack.services.stepfunctions.asl.eval.programstate.program_stopped import ProgramStopped
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.execution_worker import ExecutionWorker
 from localstack.services.stepfunctions.backend.execution_worker_comm import ExecutionWorkerComm
 from localstack.services.stepfunctions.backend.state_machine import StateMachine
@@ -44,7 +45,7 @@ class Execution:
         def terminated(self) -> None:
             exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
             self.execution.stop_date = datetime.datetime.now()
-            self.execution.output = json.dumps(self.execution.exec_worker.env.inp)
+            self.execution.output = to_json_str(self.execution.exec_worker.env.inp)
             if isinstance(exit_program_state, ProgramEnded):
                 self.execution.exec_status = ExecutionStatus.SUCCEEDED
             elif isinstance(exit_program_state, ProgramStopped):

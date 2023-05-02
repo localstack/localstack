@@ -10,7 +10,9 @@ from localstack.services.stepfunctions.asl.component.common.catch.catcher_props 
 from localstack.services.stepfunctions.asl.component.common.error_name.error_equals_decl import (
     ErrorEqualsDecl,
 )
-from localstack.services.stepfunctions.asl.component.common.error_name.error_name import ErrorName
+from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
+    FailureEvent,
+)
 from localstack.services.stepfunctions.asl.component.common.flow.next import Next
 from localstack.services.stepfunctions.asl.component.common.path.result_path import ResultPath
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
@@ -46,17 +48,41 @@ class CatcherDecl(EvalComponent):
             result_path=props.get(typ=ResultPath),
         )
 
+    @staticmethod
+    def _extract_error_cause(failure_event: FailureEvent) -> dict:
+        # TODO: consider formalising all EventDetails to ensure FailureEvent can always reach the state below.
+        #  As per AWS's Api specification, all failure event carry one
+        #  details field, with at least fields 'cause and 'error'
+        specs_event_details = list(failure_event.event_details.values())
+        if (
+            len(specs_event_details) != 1
+            and "error" in specs_event_details
+            and "cause" in specs_event_details
+        ):
+            raise RuntimeError(
+                f"Internal Error: invalid event details declaration in FailureEvent: '{failure_event}'."
+            )
+        spec_event_details: dict = list(failure_event.event_details.values())[0]
+        # Stepfunctions renames these fields to capital in this scenario.
+        return {
+            "Error": spec_event_details["error"],
+            "Cause": spec_event_details["cause"],
+        }
+
     def _eval_body(self, env: Environment) -> None:
-        error_name: ErrorName = env.stack[-1]
+        failure_event: FailureEvent = env.stack.pop()
+
+        env.stack.append(failure_event.error_name)
         self.error_equals.eval(env)
 
         equals: bool = env.stack.pop()
         if equals:
-            env.stack.append(error_name.error_name)
+            error_cause: dict = self._extract_error_cause(failure_event)
+            env.stack.append(error_cause)
+
             self.result_path.eval(env)
-
             env.next_state_name = self.next_decl.name
-
             env.stack.append(CatcherOutcomeCaught())
         else:
+            env.stack.append(failure_event)
             env.stack.append(CatcherOutcomeNotCaught())
