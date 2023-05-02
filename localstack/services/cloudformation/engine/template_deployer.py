@@ -1098,7 +1098,9 @@ class TemplateDeployer:
         """Return whether the given resource can be updated or not."""
         if not self.is_deployable_resource(resource) or not self.is_deployed(resource):
             return False
-        resource_instance = get_resource_model_instance(resource["LogicalResourceId"], self.stack)
+        resource_instance = get_resource_model_instance(
+            resource["LogicalResourceId"], self.stack.resources
+        )
         return resource_instance.is_updatable()
 
     def all_resource_dependencies_satisfied(self, resource):
