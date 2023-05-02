@@ -3,13 +3,27 @@ import math
 from typing import Any
 
 from localstack.utils.analytics import get_session_id
-from localstack.utils.analytics.events import Event, EventHandler, EventMetadata
+from localstack.utils.analytics.events import Event, EventMetadata
 from localstack.utils.analytics.publisher import AnalyticsClientPublisher
 
+# Counters have to register with the registry
 collector_registry: dict[str, Any] = dict()
+
+# TODO: introduce some base abstraction for the counters after gather some initial experience working with it
 
 
 class UsageSetCounter:
+    """
+    Use this counter to count occurrences of unique values
+
+    Example:
+        my_feature_counter = UsageSetCounter("lambda:runtime")
+        my_feature_counter.record("python3.7")
+        my_feature_counter.record("nodejs16.x")
+        my_feature_counter.record("nodejs16.x")
+        my_feature_counter.aggregate() # returns {"python3.7": 1, "nodejs16.x": 2}
+    """
+
     state: list[str]
     namespace: str
 
@@ -30,6 +44,18 @@ class UsageSetCounter:
 
 
 class UsageCounter:
+    """
+    Use this counter to count numeric values and perform aggregations
+
+    Available aggregations: min, max, sum, mean, median
+
+    Example:
+        my_feature_counter = UsageCounter("lambda:somefeature", aggregations=["max", "sum"])
+        my_feature_counter.increment()  # equivalent to my_feature_counter.record_value(1)
+        my_feature_counter.record_value(3)
+        my_feature_counter.aggregate()  # returns {"min": 1, "max": 3, "sum": 4}
+    """
+
     state: list[int | float]
     namespace: str
     aggregations: list[str]
@@ -67,18 +93,6 @@ class UsageCounter:
         return result
 
 
-class UsageEventHandler(EventHandler):
-    events: list[Event]
-
-    def __init__(self):
-        self.publisher = AnalyticsClientPublisher()
-        self.events = list()
-
-    def handle(self, event: Event):
-        self.events.append(event)
-        self.publisher.publish(self.events)
-
-
 def aggregate_and_send():
     """
     Aggregates data from all registered usage trackers and immediately sends the aggregated result to the analytics service.
@@ -92,5 +106,5 @@ def aggregate_and_send():
     for ns, collector in collector_registry.items():
         aggregated_payload[ns] = collector.aggregate()
 
-    usage_event_handler = UsageEventHandler()
-    usage_event_handler.handle(Event(name="usage", metadata=metadata, payload=aggregated_payload))
+    publisher = AnalyticsClientPublisher()
+    publisher.publish([Event(name="usage", metadata=metadata, payload=aggregated_payload)])
