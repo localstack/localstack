@@ -10,7 +10,7 @@ else:
 
 def serializedATN():
     return [
-        4,1,115,654,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,
+        4,1,116,654,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,
         7,6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,
         13,2,14,7,14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,2,
         20,7,20,2,21,7,21,2,22,7,22,2,23,7,23,2,24,7,24,2,25,7,25,2,26,7,
@@ -123,30 +123,30 @@ def serializedATN():
         5,25,0,0,250,251,5,2,0,0,251,252,3,134,67,0,252,35,1,0,0,0,253,254,
         5,89,0,0,254,255,5,2,0,0,255,256,3,134,67,0,256,37,1,0,0,0,257,258,
         5,88,0,0,258,259,5,2,0,0,259,260,3,134,67,0,260,39,1,0,0,0,261,262,
-        5,70,0,0,262,263,5,2,0,0,263,264,5,113,0,0,264,41,1,0,0,0,265,266,
+        5,70,0,0,262,263,5,2,0,0,263,264,5,114,0,0,264,41,1,0,0,0,265,266,
         5,69,0,0,266,267,5,2,0,0,267,268,3,134,67,0,268,43,1,0,0,0,269,270,
         5,72,0,0,270,271,5,2,0,0,271,272,3,134,67,0,272,45,1,0,0,0,273,274,
         5,71,0,0,274,275,5,2,0,0,275,276,3,134,67,0,276,47,1,0,0,0,277,278,
         5,81,0,0,278,279,5,2,0,0,279,280,3,134,67,0,280,49,1,0,0,0,281,282,
-        5,77,0,0,282,283,5,2,0,0,283,284,5,113,0,0,284,51,1,0,0,0,285,286,
+        5,77,0,0,282,283,5,2,0,0,283,284,5,114,0,0,284,51,1,0,0,0,285,286,
         5,84,0,0,286,287,5,2,0,0,287,288,3,54,27,0,288,53,1,0,0,0,289,290,
         5,5,0,0,290,295,3,56,28,0,291,292,5,1,0,0,292,294,3,56,28,0,293,
         291,1,0,0,0,294,297,1,0,0,0,295,293,1,0,0,0,295,296,1,0,0,0,296,
         298,1,0,0,0,297,295,1,0,0,0,298,299,5,6,0,0,299,303,1,0,0,0,300,
-        301,5,3,0,0,301,303,5,4,0,0,302,289,1,0,0,0,302,300,1,0,0,0,303,
-        55,1,0,0,0,304,305,5,109,0,0,305,306,5,2,0,0,306,318,5,111,0,0,307,
-        308,5,109,0,0,308,309,5,2,0,0,309,318,5,110,0,0,310,311,5,109,0,
+        301,5,5,0,0,301,303,5,6,0,0,302,289,1,0,0,0,302,300,1,0,0,0,303,
+        55,1,0,0,0,304,305,5,110,0,0,305,306,5,2,0,0,306,318,5,112,0,0,307,
+        308,5,110,0,0,308,309,5,2,0,0,309,318,5,111,0,0,310,311,5,110,0,
         0,311,312,5,2,0,0,312,318,3,58,29,0,313,314,3,134,67,0,314,315,5,
         2,0,0,315,316,3,62,31,0,316,318,1,0,0,0,317,304,1,0,0,0,317,307,
         1,0,0,0,317,310,1,0,0,0,317,313,1,0,0,0,318,57,1,0,0,0,319,320,5,
-        112,0,0,320,59,1,0,0,0,321,322,5,3,0,0,322,327,3,62,31,0,323,324,
+        113,0,0,320,59,1,0,0,0,321,322,5,3,0,0,322,327,3,62,31,0,323,324,
         5,1,0,0,324,326,3,62,31,0,325,323,1,0,0,0,326,329,1,0,0,0,327,325,
         1,0,0,0,327,328,1,0,0,0,328,330,1,0,0,0,329,327,1,0,0,0,330,331,
         5,4,0,0,331,335,1,0,0,0,332,333,5,3,0,0,333,335,5,4,0,0,334,321,
         1,0,0,0,334,332,1,0,0,0,335,61,1,0,0,0,336,341,3,56,28,0,337,341,
         3,60,30,0,338,341,3,54,27,0,339,341,3,64,32,0,340,336,1,0,0,0,340,
         337,1,0,0,0,340,338,1,0,0,0,340,339,1,0,0,0,341,63,1,0,0,0,342,348,
-        5,114,0,0,343,348,5,113,0,0,344,348,7,0,0,0,345,348,5,9,0,0,346,
+        5,115,0,0,343,348,5,114,0,0,344,348,7,0,0,0,345,348,5,9,0,0,346,
         348,3,134,67,0,347,342,1,0,0,0,347,343,1,0,0,0,347,344,1,0,0,0,347,
         345,1,0,0,0,347,346,1,0,0,0,348,65,1,0,0,0,349,350,5,85,0,0,350,
         351,5,2,0,0,351,352,3,54,27,0,352,67,1,0,0,0,353,354,7,1,0,0,354,
@@ -195,9 +195,9 @@ def serializedATN():
         0,500,501,5,3,0,0,501,506,3,124,62,0,502,503,5,1,0,0,503,505,3,124,
         62,0,504,502,1,0,0,0,505,508,1,0,0,0,506,504,1,0,0,0,506,507,1,0,
         0,0,507,509,1,0,0,0,508,506,1,0,0,0,509,510,5,4,0,0,510,105,1,0,
-        0,0,511,512,5,92,0,0,512,513,5,2,0,0,513,514,5,113,0,0,514,107,1,
-        0,0,0,515,516,5,93,0,0,516,517,5,2,0,0,517,518,5,113,0,0,518,109,
-        1,0,0,0,519,520,5,94,0,0,520,521,5,2,0,0,521,522,5,114,0,0,522,111,
+        0,0,511,512,5,92,0,0,512,513,5,2,0,0,513,514,5,114,0,0,514,107,1,
+        0,0,0,515,516,5,93,0,0,516,517,5,2,0,0,517,518,5,114,0,0,518,109,
+        1,0,0,0,519,520,5,94,0,0,520,521,5,2,0,0,521,522,5,115,0,0,522,111,
         1,0,0,0,523,524,5,95,0,0,524,525,5,2,0,0,525,526,5,3,0,0,526,531,
         3,114,57,0,527,528,5,1,0,0,528,530,3,114,57,0,529,527,1,0,0,0,530,
         533,1,0,0,0,531,529,1,0,0,0,531,532,1,0,0,0,532,534,1,0,0,0,533,
@@ -219,13 +219,13 @@ def serializedATN():
         0,586,589,1,0,0,0,587,585,1,0,0,0,587,588,1,0,0,0,588,590,1,0,0,
         0,589,587,1,0,0,0,590,591,5,4,0,0,591,595,1,0,0,0,592,593,5,3,0,
         0,593,595,5,4,0,0,594,581,1,0,0,0,594,592,1,0,0,0,595,131,1,0,0,
-        0,596,606,5,114,0,0,597,606,5,113,0,0,598,606,5,7,0,0,599,606,5,
+        0,596,606,5,115,0,0,597,606,5,114,0,0,598,606,5,7,0,0,599,606,5,
         8,0,0,600,606,5,9,0,0,601,606,3,128,64,0,602,606,3,130,65,0,603,
         606,3,126,63,0,604,606,3,134,67,0,605,596,1,0,0,0,605,597,1,0,0,
         0,605,598,1,0,0,0,605,599,1,0,0,0,605,600,1,0,0,0,605,601,1,0,0,
         0,605,602,1,0,0,0,605,603,1,0,0,0,605,604,1,0,0,0,606,133,1,0,0,
-        0,607,652,5,112,0,0,608,652,5,109,0,0,609,652,5,111,0,0,610,652,
-        5,110,0,0,611,652,5,10,0,0,612,652,5,11,0,0,613,652,5,12,0,0,614,
+        0,607,652,5,113,0,0,608,652,5,110,0,0,609,652,5,112,0,0,610,652,
+        5,111,0,0,611,652,5,10,0,0,612,652,5,11,0,0,613,652,5,12,0,0,614,
         652,5,13,0,0,615,652,5,14,0,0,616,652,5,15,0,0,617,652,5,16,0,0,
         618,652,5,23,0,0,619,652,5,17,0,0,620,652,5,20,0,0,621,652,5,21,
         0,0,622,652,5,22,0,0,623,652,5,18,0,0,624,652,5,24,0,0,625,652,5,
@@ -300,7 +300,8 @@ class ASLParser ( Parser ):
                      "'\"States.ResultPathMatchFailure\"'", "'\"States.ParameterPathFailure\"'", 
                      "'\"States.BranchFailed\"'", "'\"States.NoChoiceMatched\"'", 
                      "'\"States.IntrinsicFailure\"'", "'\"States.ExceedToleratedFailureThreshold\"'", 
-                     "'\"States.ItemReaderFailed\"'", "'\"States.ResultWriterFailed\"'" ]
+                     "'\"States.ItemReaderFailed\"'", "'\"States.ResultWriterFailed\"'", 
+                     "'\"States.Runtime\"'" ]
 
     symbolicNames = [ "<INVALID>", "COMMA", "COLON", "LBRACK", "RBRACK", 
                       "LBRACE", "RBRACE", "TRUE", "FALSE", "NULL", "COMMENT", 
@@ -334,8 +335,8 @@ class ASLParser ( Parser ):
                       "ERRORNAMEStatesBranchFailed", "ERRORNAMEStatesNoChoiceMatched", 
                       "ERRORNAMEStatesIntrinsicFailure", "ERRORNAMEStatesExceedToleratedFailureThreshold", 
                       "ERRORNAMEStatesItemReaderFailed", "ERRORNAMEStatesResultWriterFailed", 
-                      "STRINGDOLLAR", "STRINGPATHCONTEXTOBJ", "STRINGPATH", 
-                      "STRING", "INT", "NUMBER", "WS" ]
+                      "ERRORNAMEStatesRuntime", "STRINGDOLLAR", "STRINGPATHCONTEXTOBJ", 
+                      "STRINGPATH", "STRING", "INT", "NUMBER", "WS" ]
 
     RULE_program_decl = 0
     RULE_top_layer_stmt = 1
@@ -536,13 +537,14 @@ class ASLParser ( Parser ):
     ERRORNAMEStatesExceedToleratedFailureThreshold=106
     ERRORNAMEStatesItemReaderFailed=107
     ERRORNAMEStatesResultWriterFailed=108
-    STRINGDOLLAR=109
-    STRINGPATHCONTEXTOBJ=110
-    STRINGPATH=111
-    STRING=112
-    INT=113
-    NUMBER=114
-    WS=115
+    ERRORNAMEStatesRuntime=109
+    STRINGDOLLAR=110
+    STRINGPATHCONTEXTOBJ=111
+    STRINGPATH=112
+    STRING=113
+    INT=114
+    NUMBER=115
+    WS=116
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -2448,12 +2450,6 @@ class ASLParser ( Parser ):
             else:
                 return self.getToken(ASLParser.COMMA, i)
 
-        def LBRACK(self):
-            return self.getToken(ASLParser.LBRACK, 0)
-
-        def RBRACK(self):
-            return self.getToken(ASLParser.RBRACK, 0)
-
         def getRuleIndex(self):
             return ASLParser.RULE_payload_tmpl_decl
 
@@ -2482,8 +2478,8 @@ class ASLParser ( Parser ):
         try:
             self.state = 302
             self._errHandler.sync(self)
-            token = self._input.LA(1)
-            if token in [5]:
+            la_ = self._interp.adaptivePredict(self._input,6,self._ctx)
+            if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 289
                 self.match(ASLParser.LBRACE)
@@ -2504,15 +2500,15 @@ class ASLParser ( Parser ):
                 self.state = 298
                 self.match(ASLParser.RBRACE)
                 pass
-            elif token in [3]:
+
+            elif la_ == 2:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 300
-                self.match(ASLParser.LBRACK)
+                self.match(ASLParser.LBRACE)
                 self.state = 301
-                self.match(ASLParser.RBRACK)
+                self.match(ASLParser.RBRACE)
                 pass
-            else:
-                raise NoViableAltException(self)
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -3095,13 +3091,13 @@ class ASLParser ( Parser ):
             self.state = 347
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [114]:
+            if token in [115]:
                 localctx = ASLParser.Payload_value_floatContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 342
                 self.match(ASLParser.NUMBER)
                 pass
-            elif token in [113]:
+            elif token in [114]:
                 localctx = ASLParser.Payload_value_intContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
                 self.state = 343
@@ -3124,7 +3120,7 @@ class ASLParser ( Parser ):
                 self.state = 345
                 self.match(ASLParser.NULL)
                 pass
-            elif token in [10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 78, 79, 80, 81, 82, 83, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112]:
+            elif token in [10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 78, 79, 80, 81, 82, 83, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 110, 111, 112, 113]:
                 localctx = ASLParser.Payload_value_strContext(self, localctx)
                 self.enterOuterAlt(localctx, 5)
                 self.state = 346
@@ -4210,7 +4206,7 @@ class ASLParser ( Parser ):
             self.state = 457
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while ((_la) & ~0x3f) == 0 and ((1 << _la) & -67634176) != 0 or (((_la - 64)) & ~0x3f) == 0 and ((1 << (_la - 64)) & 562949946068991) != 0:
+            while ((_la) & ~0x3f) == 0 and ((1 << _la) & -67634176) != 0 or (((_la - 64)) & ~0x3f) == 0 and ((1 << (_la - 64)) & 1090715527401471) != 0:
                 self.state = 455
                 self._errHandler.sync(self)
                 la_ = self._interp.adaptivePredict(self._input,22,self._ctx)
@@ -6036,22 +6032,22 @@ class ASLParser ( Parser ):
             self.state = 651
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [112]:
+            if token in [113]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 607
                 self.match(ASLParser.STRING)
                 pass
-            elif token in [109]:
+            elif token in [110]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 608
                 self.match(ASLParser.STRINGDOLLAR)
                 pass
-            elif token in [111]:
+            elif token in [112]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 609
                 self.match(ASLParser.STRINGPATH)
                 pass
-            elif token in [110]:
+            elif token in [111]:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 610
                 self.match(ASLParser.STRINGPATHCONTEXTOBJ)

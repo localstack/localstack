@@ -96,6 +96,7 @@ PYTHON_TEST_RUNTIMES = (
         Runtime.python3_7,
         Runtime.python3_8,
         Runtime.python3_9,
+        Runtime.python3_10,
     ]
     if (not is_old_provider() or use_docker()) and get_arch() != "arm64"
     else [Runtime.python3_9]
@@ -913,8 +914,11 @@ class TestLambdaPermissions:
 
 class TestLambdaFeatures:
     @pytest.fixture(
-        params=[("python3.9", TEST_LAMBDA_PYTHON_ECHO), ("nodejs16.x", TEST_LAMBDA_NODEJS_ECHO)],
-        ids=["python3.9", "nodejs16.x"],
+        params=[
+            ("nodejs16.x", TEST_LAMBDA_NODEJS_ECHO),
+            ("python3.10", TEST_LAMBDA_PYTHON_ECHO),
+        ],
+        ids=["nodejs16.x", "python3.10"],
     )
     def invocation_echo_lambda(self, create_lambda_function, request):
         function_name = f"echo-func-{short_uid()}"
@@ -1014,7 +1018,7 @@ class TestLambdaFeatures:
         creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
-            runtime="python3.9",
+            runtime=Runtime.python3_10,
         )
         snapshot.match("creation_response", creation_response)
         invocation_response = aws_client.awslambda.invoke(
@@ -1066,14 +1070,14 @@ class TestLambdaFeatures:
         zip_file = create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
             get_content=True,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
         )
         aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
         # create lambda function
         response = create_lambda_function_aws(
             FunctionName=function_name,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_10,
             Role=lambda_su_role,
             Publish=True,
             Handler="handler.handler",
@@ -1120,14 +1124,14 @@ class TestLambdaFeatures:
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
             get_content=True,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
         )
         aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
         # create lambda function
         create_response = create_lambda_function_aws(
             FunctionName=function_name,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_10,
             Handler="handler.handler",
             Role=lambda_su_role,
             Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},

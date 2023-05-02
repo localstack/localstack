@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.resource import (
@@ -13,7 +15,7 @@ class StateTaskService(StateTask, abc.ABC):
     resource: ServiceResource
 
     @classmethod
-    def for_service(cls, service_name: str):
+    def for_service(cls, service_name: str) -> StateTaskService:
         match service_name:
             case "aws-sdk":
                 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task_service_aws_sdk import (

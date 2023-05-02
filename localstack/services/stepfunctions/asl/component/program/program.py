@@ -1,4 +1,3 @@
-import json
 from typing import Final, Optional
 
 from localstack.aws.api.stepfunctions import (
@@ -18,6 +17,7 @@ from localstack.services.stepfunctions.asl.eval.programstate.program_ended impor
 from localstack.services.stepfunctions.asl.eval.programstate.program_error import ProgramError
 from localstack.services.stepfunctions.asl.eval.programstate.program_state import ProgramState
 from localstack.services.stepfunctions.asl.eval.programstate.program_stopped import ProgramStopped
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
 class Program(EvalComponent):
@@ -59,7 +59,7 @@ class Program(EvalComponent):
                 hist_type_event=HistoryEventType.ExecutionSucceeded,
                 event_detail=EventDetails(
                     executionSucceededEventDetails=ExecutionSucceededEventDetails(
-                        output=json.dumps(env.inp),
+                        output=to_json_str(env.inp),
                         outputDetails=HistoryEventExecutionDataDetails(
                             truncated=False
                         ),  # Always False for api calls.

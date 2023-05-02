@@ -1,0 +1,10 @@
+Parameters:
+  BucketName:
+    Type: String
+
+Resources:
+  BucketModule:
+    Type: LocalStack::Testing::TestModule::MODULE
+    Properties:
+      BucketName:
+        Ref: BucketName

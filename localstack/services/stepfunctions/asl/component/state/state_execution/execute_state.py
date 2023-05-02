@@ -1,7 +1,7 @@
 import abc
 from typing import Optional
 
-from localstack.aws.api.stepfunctions import HistoryEventType
+from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, HistoryEventType
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import (
     CatchOutcome,
@@ -9,8 +9,8 @@ from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome 
     CatchOutcomeNotCaught,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.error_name import ErrorName
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
-    StatesErrorName,
+from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
+    FailureEvent,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
@@ -22,6 +22,7 @@ from localstack.services.stepfunctions.asl.component.common.retry.retry_outcome 
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 
 
 class ExecutionState(CommonStateField, abc.ABC):
@@ -60,17 +61,35 @@ class ExecutionState(CommonStateField, abc.ABC):
         self.retry = state_props.get(RetryDecl)
         self.catch = state_props.get(CatchDecl)
 
-    def _to_error_name(self, ex: Exception) -> ErrorName:  # noqa
-        error_name: ErrorName = StatesErrorName(StatesErrorNameType.StatesTaskFailed)
-        return error_name
+    def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        # This implements the default handling of exceptions which
+        # corresponds to an ExecutionFailed due to States.Runtime.
+
+        error_name: str = StatesErrorNameType.StatesRuntime.to_name()
+        state_name: str = self.name
+        entered_event_id: str = env.context_object["Execution"]["Id"]
+
+        failure_event = FailureEvent(
+            error_name=ErrorName(error_name),
+            event_type=HistoryEventType.ExecutionFailed,
+            event_details=EventDetails(
+                executionFailedEventDetails=ExecutionFailedEventDetails(
+                    error=f"An error occurred while executing the state {state_name} "
+                    f"(entered at the event id #{entered_event_id}). {ex}",
+                    cause=error_name,
+                )
+            ),
+        )
+
+        return failure_event
 
     @abc.abstractmethod
     def _eval_execution(self, env: Environment) -> None:
         ...
 
     def _handle_retry(self, ex: Exception, env: Environment) -> None:
-        error_name: ErrorName = self._to_error_name(ex)
-        env.stack.append(error_name)
+        failure_event: FailureEvent = self._from_error(env=env, ex=ex)
+        env.stack.append(failure_event.error_name)
 
         self.retry.eval(env)
         res: RetryOutcome = env.stack.pop()
@@ -85,8 +104,13 @@ class ExecutionState(CommonStateField, abc.ABC):
                 raise RuntimeError(f"No Retriers when dealing with exception '{ex}'.")
 
     def _handle_catch(self, ex: Exception, env: Environment) -> None:
-        error_name: ErrorName = self._to_error_name(ex)
-        env.stack.append(error_name)
+        failure_event: FailureEvent = self._from_error(env=env, ex=ex)
+
+        env.event_history.add_event(
+            hist_type_event=failure_event.event_type, event_detail=failure_event.event_details
+        )
+
+        env.stack.append(failure_event)
 
         self.catch.eval(env)
         res: CatchOutcome = env.stack.pop()

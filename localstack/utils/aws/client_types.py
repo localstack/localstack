@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from mypy_boto3_backup import BackupClient
     from mypy_boto3_batch import BatchClient
     from mypy_boto3_ce import CostExplorerClient
+    from mypy_boto3_cloudcontrol import CloudControlApiClient
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_cloudfront import CloudFrontClient
     from mypy_boto3_cloudtrail import CloudTrailClient
@@ -104,6 +105,7 @@ class TypedServiceClientFactory(abc.ABC):
     backup: Union["BackupClient", "MetadataRequestInjector[BackupClient]"]
     batch: Union["BatchClient", "MetadataRequestInjector[BatchClient]"]
     ce: Union["CostExplorerClient", "MetadataRequestInjector[CostExplorerClient]"]
+    cloudcontrol: Union["CloudControlApiClient", "MetadataRequestInjector[CloudControlApiClient]"]
     cloudformation: Union["CloudFormationClient", "MetadataRequestInjector[CloudFormationClient]"]
     cloudfront: Union["CloudFrontClient", "MetadataRequestInjector[CloudFrontClient]"]
     cloudtrail: Union["CloudTrailClient", "MetadataRequestInjector[CloudTrailClient]"]
