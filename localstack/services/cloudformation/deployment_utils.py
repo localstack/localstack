@@ -1,10 +1,10 @@
 import builtins
 import json
+import logging
 import re
 from copy import deepcopy
 from typing import Callable, List
 
-from localstack.services.cloudformation.engine.template_deployer import LOG
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import select_attributes, short_uid
@@ -15,6 +15,8 @@ from localstack.utils.strings import is_string
 
 # placeholders
 PLACEHOLDER_AWS_NO_VALUE = "__aws_no_value__"
+
+LOG = logging.getLogger(__name__)
 
 
 def dump_json_params(param_func=None, *param_names):

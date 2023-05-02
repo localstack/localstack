@@ -73,8 +73,7 @@ class NoStackUpdates(Exception):
 
 
 def get_deployment_config(res_type):
-    canonical_type = canonical_resource_type(res_type)
-    resource_class = RESOURCE_MODELS.get(canonical_type)
+    resource_class = RESOURCE_MODELS.get(res_type)
     if resource_class:
         return resource_class.get_deploy_templates()
 
@@ -260,14 +259,7 @@ def extract_resource_attribute(
     return result
 
 
-def canonical_resource_type(resource_type):
-    if "::" in resource_type and not resource_type.startswith("AWS::"):
-        resource_type = "AWS::%s" % resource_type
-    return resource_type
-
-
 def get_attr_from_model_instance(resource, attribute, resource_type, resource_id=None):
-    resource_type = canonical_resource_type(resource_type)
     model_class = RESOURCE_MODELS.get(resource_type)
     if not model_class:
         if resource_type not in ["AWS::Parameter", "Parameter"]:
@@ -652,8 +644,7 @@ def get_resource_model_instance(resource_id: str, resources) -> Optional[Generic
     """Obtain a typed resource entity instance representing the given stack resource."""
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
-    canonical_type = canonical_resource_type(resource_type)
-    resource_class = RESOURCE_MODELS.get(canonical_type)
+    resource_class = RESOURCE_MODELS.get(resource_type)
     if not resource_class:
         return None
     instance = resource_class(resource)
@@ -850,8 +841,7 @@ def determine_resource_physical_id(
     resource_type = get_resource_type(resource)
 
     # determine result from resource class
-    canonical_type = canonical_resource_type(resource_type)  # FIXME: remove
-    resource_class = RESOURCE_MODELS.get(canonical_type)
+    resource_class = RESOURCE_MODELS.get(resource_type)
     if resource_class:
         resource_inst = resource_class(resource)
         resource_inst.fetch_state_if_missing(stack_name=stack_name, resources=resources)
@@ -893,8 +883,7 @@ def add_default_resource_props(
     """Apply some fixes to resource props which otherwise cause deployments to fail"""
 
     res_type = resource["Type"]
-    canonical_type = canonical_resource_type(res_type)
-    resource_class = RESOURCE_MODELS.get(canonical_type)
+    resource_class = RESOURCE_MODELS.get(res_type)
     if resource_class is not None:
         resource_class.add_defaults(resource, stack_name)
 
