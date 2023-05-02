@@ -694,19 +694,27 @@ def execute_resource_action(resource_id: str, stack_name, resources, action_name
             executed = True
 
         if not executed and get_client(resource):
-            result = configure_resource_via_sdk(
-                stack_name,
-                resources,
-                resource_id,
-                resource_type,
-                func,
-                action_name,
-            )
+            resource = resources[resource_id]
+            # get the service client to invoke
+            client = get_client(resource)
+
+            # get the method on that function
+            function = getattr(client, func["function"])
+
+            # unify the resource parameters
+            params = resolve_resource_parameters(stack_name, resource, resources, resource_id, func)
+            if params is None:
+                result = None
+            else:
+                result = invoke_function(
+                    function, params, resource_type, func, action_name, resource
+                )
             results.append(result)
             executed = True
 
         if "result_handler" in func and executed:
             LOG.debug(f"Executing callback method for {resource_type}:{resource_id}")
+            # TODO: pass resource directly here
             func["result_handler"](result, resource_id, resources, resource_type)
 
     return (results or [None])[0]
@@ -745,11 +753,11 @@ FuncDetails = List[FuncDetailsValue] | FuncDetailsValue | Any
 
 
 def invoke_function(
+    function: Callable,
+    params: dict,
     resource_type: str,
     func_details: FuncDetails,
     action_name: str,
-    params: dict,
-    function: Callable,
     resource: Any,
 ):
     try:
@@ -783,30 +791,21 @@ def invoke_function(
     return result
 
 
-# TODO: move and refactor (make independent of stack)
-# TODO: split into:
-#  - processing of func_details "function"
-#  - execution of "function"
-def configure_resource_via_sdk(
+def resolve_resource_parameters(
     stack_name: str,
-    resources,
+    resource_definition: ResourceDefinition,
+    resources: Dict[str, ResourceDefinition],
     resource_id: str,
-    resource_type: str,
-    func_details: FuncDetails,
-    action_name,
-):
-    resource = resources[resource_id]
-
-    client = get_client(resource)
-
-    function = getattr(client, func_details["function"])
+    func_details: FuncDetailsValue,
+) -> dict | None:
     params = func_details.get("parameters") or (lambda params, **kwargs: params)
-    resource_props = resource["Properties"] = resource.get("Properties", {})
+    resource_props = resource_definition["Properties"] = resource_definition.get("Properties", {})
     resource_props = dict(resource_props)
-    resource_state = resource.get(KEY_RESOURCE_STATE, {})
+    resource_state = resource_definition.get(KEY_RESOURCE_STATE, {})
 
     if callable(params):
         # resolve parameter map via custom function
+        # TODO(srw): 1 - callable for resolving params
         params = params(
             resource_props,
             stack_name=stack_name,
@@ -825,6 +824,7 @@ def configure_resource_via_sdk(
             params = _params
 
         params = dict(params)
+        # TODO: mutably mapping params :(
         for param_key, prop_keys in dict(params).items():
             params.pop(param_key, None)
             if not isinstance(prop_keys, list):
@@ -840,7 +840,7 @@ def configure_resource_via_sdk(
                 else:
                     prop_value = resource_props.get(
                         prop_key,
-                        resource.get(prop_key, resource_state.get(prop_key)),
+                        resource_definition.get(prop_key, resource_state.get(prop_key)),
                     )
                 if prop_value is not None:
                     params[param_key] = prop_value
@@ -851,7 +851,7 @@ def configure_resource_via_sdk(
         return
 
     # convert refs
-    for param_key, param_value in dict(params).items():
+    for param_key, param_value in params.items():
         if param_value is not None:
             params[param_key] = resolve_refs_recursively(stack_name, resources, param_value)
 
@@ -864,7 +864,7 @@ def configure_resource_via_sdk(
     # remove None values, as they usually raise boto3 errors
     params = remove_none_values(params)
 
-    return invoke_function(resource_type, func_details, action_name, params, function, resource)
+    return params
 
 
 # TODO: this shouldn't be called for stack parameters
