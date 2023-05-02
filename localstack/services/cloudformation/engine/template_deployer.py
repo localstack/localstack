@@ -3,7 +3,7 @@ import json
 import logging
 import re
 import traceback
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Type, TypedDict
 
 import botocore
 
@@ -712,8 +712,36 @@ def execute_resource_action(resource_id: str, stack_name, resources, action_name
     return (results or [None])[0]
 
 
-# TODO: model the func details structure as a type
-FuncDetails = dict
+ResourceDefinition = dict
+
+
+class FuncDetailsValue(TypedDict):
+    # Callable here takes the arguments:
+    # - resource_id
+    # - resources
+    # - resource_type
+    # - func
+    # - stack_name
+    function: str | Callable[[str, List[dict], str, Any, str], Any]
+    """Either an api method to call directly with `parameters` or a callable to directly invoke"""
+    # Callable here takes the arguments:
+    # - resource_props
+    # - stack_name
+    # - resources
+    # - resource_id
+    parameters: Optional[ResourceDefinition | Callable[[dict, str, List[dict], str], dict]]
+    """arguments to the function, or a function that generates the arguments to the function"""
+    # Callable here takes the arguments
+    # - result
+    # - resource_id
+    # - resources
+    # - resource_type
+    result_handler: Optional[Callable[[dict, str, List[dict], str], None]]
+    """Take the result of the operation and patch the state of the resources, yuck..."""
+
+
+# Type definition for func_details supplied to invoke_function and configure_resource_via_sdk
+FuncDetails = List[FuncDetailsValue] | FuncDetailsValue | Any
 
 
 def invoke_function(
