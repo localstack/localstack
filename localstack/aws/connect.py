@@ -232,7 +232,7 @@ class ClientFactory(ABC):
         separately, either as call attribute or using request_metadata()
 
         :param role_arn: Role to assume
-        :param service_principal: Service the role should be assumed as
+        :param service_principal: Service the role should be assumed as, must not be set for test clients
         :param session_name: Session name for the role session
         :param region_name: Region for the returned client
         :param endpoint_url: Endpoint for both the assume_role call and the returned client
@@ -243,9 +243,8 @@ class ClientFactory(ABC):
         sts_client = self(endpoint_url=endpoint_url, config=config).sts
 
         metadata = {}
-        # TODO enable once IAM resource based policies are available
-        # if service_principal:
-        #     metadata["service_principal"] = service_principal
+        if service_principal:
+            metadata["service_principal"] = service_principal
 
         sts_client = sts_client.request_metadata(**metadata)
         credentials = sts_client.assume_role(RoleArn=role_arn, RoleSessionName=session_name)[
@@ -469,7 +468,7 @@ class ExternalClientFactory(ClientFactory):
 
         return self._get_client(
             service_name=service_name,
-            region_name=region_name or self._get_region(),
+            region_name=region_name or config.region_name or self._get_region(),
             use_ssl=self._use_ssl,
             verify=self._verify,
             endpoint_url=endpoint_url,

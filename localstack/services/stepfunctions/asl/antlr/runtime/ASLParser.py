@@ -1,4 +1,4 @@
-# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLParser.g4 by ANTLR 4.11.1
+# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLParser.g4 by ANTLR 4.12.0
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -548,7 +548,7 @@ class ASLParser ( Parser ):
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.11.1")
+        self.checkVersion("4.12.0")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 
@@ -3256,7 +3256,7 @@ class ASLParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 353
             _la = self._input.LA(1)
-            if not(((_la) & ~0x3f) == 0 and ((1 << _la) & 8355840) != 0):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 8355840) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -4206,7 +4206,7 @@ class ASLParser ( Parser ):
             self.state = 457
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while ((_la) & ~0x3f) == 0 and ((1 << _la) & -67634176) != 0 or (((_la - 64)) & ~0x3f) == 0 and ((1 << (_la - 64)) & 1090715527401471) != 0:
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & -67634176) != 0) or ((((_la - 64)) & ~0x3f) == 0 and ((1 << (_la - 64)) & 1090715527401471) != 0):
                 self.state = 455
                 self._errHandler.sync(self)
                 la_ = self._interp.adaptivePredict(self._input,22,self._ctx)
@@ -5256,7 +5256,7 @@ class ASLParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 552
             _la = self._input.LA(1)
-            if not((((_la - 28)) & ~0x3f) == 0 and ((1 << (_la - 28)) & 2199022731007) != 0):
+            if not(((((_la - 28)) & ~0x3f) == 0 and ((1 << (_la - 28)) & 2199022731007) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -5315,7 +5315,7 @@ class ASLParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 554
             _la = self._input.LA(1)
-            if not(((_la) & ~0x3f) == 0 and ((1 << _la) & 140806342049792) != 0):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 140806342049792) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -5404,7 +5404,7 @@ class ASLParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 556
             _la = self._input.LA(1)
-            if not((((_la - 96)) & ~0x3f) == 0 and ((1 << (_la - 96)) & 8191) != 0):
+            if not(((((_la - 96)) & ~0x3f) == 0 and ((1 << (_la - 96)) & 8191) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)

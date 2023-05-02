@@ -67,22 +67,35 @@ class S3Bucket(GenericBaseModel):
             return re.sub("(?<!^)(?=[A-Z])", "-", acl).lower()
 
         def transform_cfn_cors(cors_config):
+            # See https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketCors.html
+            # https://docs.aws.amazon.com/AmazonS3/latest/API/API_CORSRule.html
+            # only AllowedMethods and AllowedOrigins are required
             if not cors_config:
                 return {}
 
-            transformed_cors = cors_config.copy()
-            transformed_cors["CORSRules"] = [
-                {
-                    "ID": rule.get("Id"),
-                    "AllowedHeaders": rule.get("AllowedHeaders"),
-                    "AllowedMethods": rule.get("AllowedMethods"),
-                    "AllowedOrigins": rule.get("AllowedOrigins"),
-                    "ExposeHeaders": rule.get("ExposedHeaders"),
-                    "MaxAgeSeconds": rule.get("MaxAge"),
+            cors_rules = []
+            for cfn_rule in cors_config.get("CorsRules", []):
+                rule = {
+                    "AllowedOrigins": cfn_rule.get("AllowedOrigins"),
+                    "AllowedMethods": cfn_rule.get("AllowedMethods"),
                 }
-                for rule in transformed_cors.pop("CorsRules", [])
-            ]
-            return transformed_cors
+                # we should not pass those to PutBucketCors if they are None, as S3 will provide default values and
+                # does not accept None
+                if (allowed_headers := cfn_rule.get("AllowedHeaders")) is not None:
+                    rule["AllowedHeaders"] = allowed_headers
+
+                if (allowed_headers := cfn_rule.get("ExposedHeaders")) is not None:
+                    rule["ExposeHeaders"] = allowed_headers
+
+                if (allowed_headers := cfn_rule.get("MaxAge")) is not None:
+                    rule["MaxAgeSeconds"] = allowed_headers
+
+                if (allowed_headers := cfn_rule.get("Id")) is not None:
+                    rule["ID"] = allowed_headers
+
+                cors_rules.append(rule)
+
+            return {"CORSRules": cors_rules}
 
         def s3_bucket_notification_config(params, **kwargs):
             notif_config = params.get("NotificationConfiguration")

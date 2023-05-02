@@ -526,7 +526,7 @@ class StandardQueue(SqsQueue):
 
 
 class FifoQueue(SqsQueue):
-    deduplication: Dict[str, Dict[str, SqsMessage]]
+    deduplication: Dict[str, SqsMessage]
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
         super().__init__(name, region, account_id, attributes, tags)
@@ -593,14 +593,10 @@ class FifoQueue(SqsQueue):
         else:
             fifo_message.delay_seconds = self.delay_seconds
 
-        original_message = None
-        original_message_group = self.deduplication.get(message_group_id)
-        if original_message_group:
-            original_message = original_message_group.get(dedup_id)
+        original_message = self.deduplication.get(dedup_id)
 
         if (
             original_message
-            and not original_message.deleted
             and original_message.priority + sqs_constants.DEDUPLICATION_INTERVAL_IN_SEC
             > fifo_message.priority
         ):
@@ -611,9 +607,7 @@ class FifoQueue(SqsQueue):
             else:
                 self.visible.put_nowait(fifo_message)
 
-            if not original_message_group:
-                self.deduplication[message_group_id] = {}
-            self.deduplication[message_group_id][dedup_id] = fifo_message
+            self.deduplication[dedup_id] = fifo_message
 
         return fifo_message
 

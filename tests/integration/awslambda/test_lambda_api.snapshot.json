@@ -12062,5 +12062,424 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaImages::test_lambda_image_versions": {
+    "recorded-date": "21-04-2023, 17:05:08",
+    "recorded-content": {
+      "create_image_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "CUSTOM_ENV": "test"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "LastModified": "date",
+        "MemorySize": 128,
+        "PackageType": "Image",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_function_result": {
+        "Code": {
+          "ImageUri": "<repo_uri>:latest",
+          "RepositoryType": "ECR",
+          "ResolvedImageUri": "<repo_uri>@sha256:<code-sha256:1>"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {
+              "CUSTOM_ENV": "test"
+            }
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Image",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_versions_result": {
+        "Versions": [
+          {
+            "Architectures": [
+              "x86_64"
+            ],
+            "CodeSha256": "<code-sha256:1>",
+            "CodeSize": "<code-size>",
+            "Description": "",
+            "Environment": {
+              "Variables": {
+                "CUSTOM_ENV": "test"
+              }
+            },
+            "EphemeralStorage": {
+              "Size": 512
+            },
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+            "FunctionName": "<function-name:1>",
+            "LastModified": "date",
+            "MemorySize": 128,
+            "PackageType": "Image",
+            "RevisionId": "<uuid:2>",
+            "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+            "SnapStart": {
+              "ApplyOn": "None",
+              "OptimizationStatus": "Off"
+            },
+            "Timeout": 3,
+            "TracingConfig": {
+              "Mode": "PassThrough"
+            },
+            "Version": "$LATEST"
+          },
+          {
+            "Architectures": [
+              "x86_64"
+            ],
+            "CodeSha256": "<code-sha256:1>",
+            "CodeSize": "<code-size>",
+            "Description": "",
+            "Environment": {
+              "Variables": {
+                "CUSTOM_ENV": "test"
+              }
+            },
+            "EphemeralStorage": {
+              "Size": 512
+            },
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+            "FunctionName": "<function-name:1>",
+            "LastModified": "date",
+            "MemorySize": 128,
+            "PackageType": "Image",
+            "RevisionId": "<uuid:3>",
+            "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+            "SnapStart": {
+              "ApplyOn": "None",
+              "OptimizationStatus": "Off"
+            },
+            "Timeout": 3,
+            "TracingConfig": {
+              "Mode": "PassThrough"
+            },
+            "Version": "1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "first_update_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "Second version :)",
+        "Environment": {
+          "Variables": {
+            "CUSTOM_ENV": "test"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "LastModified": "date",
+        "LastUpdateStatus": "InProgress",
+        "LastUpdateStatusReason": "The function is being created.",
+        "LastUpdateStatusReasonCode": "Creating",
+        "MemorySize": 128,
+        "PackageType": "Image",
+        "RevisionId": "<uuid:4>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Active",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "first_update_get_function": {
+        "Code": {
+          "ImageUri": "<repo_uri>:latest",
+          "RepositoryType": "ECR",
+          "ResolvedImageUri": "<repo_uri>@sha256:<code-sha256:1>"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "Second version :)",
+          "Environment": {
+            "Variables": {
+              "CUSTOM_ENV": "test"
+            }
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Image",
+          "RevisionId": "<uuid:5>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invalid_sha_publish": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "CodeSHA256 (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) is different from current CodeSHA256 in $LATEST (<code-sha256:1>). Please try again with the CodeSHA256 in $LATEST."
+        },
+        "Type": "User",
+        "message": "CodeSHA256 (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) is different from current CodeSHA256 in $LATEST (<code-sha256:1>). Please try again with the CodeSHA256 in $LATEST.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "first_publish_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "Second version description :)",
+        "Environment": {
+          "Variables": {
+            "CUSTOM_ENV": "test"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:2",
+        "FunctionName": "<function-name:1>",
+        "LastModified": "date",
+        "LastUpdateStatus": "Successful",
+        "MemorySize": 128,
+        "PackageType": "Image",
+        "RevisionId": "<uuid:6>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Active",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "2",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "second_update_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "Third version :)",
+        "Environment": {
+          "Variables": {
+            "CUSTOM_ENV": "test"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "LastModified": "date",
+        "LastUpdateStatus": "InProgress",
+        "LastUpdateStatusReason": "The function is being created.",
+        "LastUpdateStatusReasonCode": "Creating",
+        "MemorySize": 128,
+        "PackageType": "Image",
+        "RevisionId": "<uuid:7>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Active",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_update_get_function": {
+        "Code": {
+          "ImageUri": "<repo_uri>:latest",
+          "RepositoryType": "ECR",
+          "ResolvedImageUri": "<repo_uri>@sha256:<code-sha256:1>"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "Third version :)",
+          "Environment": {
+            "Variables": {
+              "CUSTOM_ENV": "test"
+            }
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Image",
+          "RevisionId": "<uuid:8>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_publish_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "Third version description :)",
+        "Environment": {
+          "Variables": {
+            "CUSTOM_ENV": "test"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:3",
+        "FunctionName": "<function-name:1>",
+        "LastModified": "date",
+        "LastUpdateStatus": "Successful",
+        "MemorySize": 128,
+        "PackageType": "Image",
+        "RevisionId": "<uuid:9>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Active",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "3",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
   }
 }

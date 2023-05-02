@@ -28,7 +28,9 @@ class MissingAuthHeaderInjector(Handler):
         headers = context.request.headers
 
         if not headers.get("Authorization"):
-            headers["Authorization"] = aws_stack.mock_aws_request_headers(api)["Authorization"]
+            headers["Authorization"] = aws_stack.mock_aws_request_headers(
+                api, access_key="injectedaccesskey"
+            )["Authorization"]
 
 
 class AccountIdEnricher(Handler):

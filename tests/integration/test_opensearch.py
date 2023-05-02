@@ -97,6 +97,7 @@ class TestOpensearchProvider:
         versions = response["Versions"]
 
         expected_versions = [
+            "OpenSearch_2.5",
             "OpenSearch_2.3",
             "OpenSearch_1.3",
             "OpenSearch_1.2",
@@ -134,6 +135,10 @@ class TestOpensearchProvider:
         assert len(compatible_versions) >= 20
         expected_compatible_versions = [
             {
+                "SourceVersion": "OpenSearch_2.3",
+                "TargetVersions": ["OpenSearch_2.5"],
+            },
+            {
                 "SourceVersion": "OpenSearch_1.0",
                 "TargetVersions": ["OpenSearch_1.1", "OpenSearch_1.2", "OpenSearch_1.3"],
             },
@@ -147,7 +152,7 @@ class TestOpensearchProvider:
             },
             {
                 "SourceVersion": "OpenSearch_1.3",
-                "TargetVersions": ["OpenSearch_2.3"],
+                "TargetVersions": ["OpenSearch_2.3", "OpenSearch_2.5"],
             },
             {
                 "SourceVersion": "Elasticsearch_7.10",
@@ -333,7 +338,8 @@ class TestOpensearchProvider:
     @pytest.mark.only_localstack
     @pytest.mark.parametrize(
         "engine_version",
-        ["OpenSearch_1.0", "OpenSearch_1.1", "OpenSearch_1.2", "OpenSearch_1.3", "OpenSearch_2.3"],
+        # Test once per major version
+        ["OpenSearch_1.3", "OpenSearch_2.5"],
     )
     def test_security_plugin(self, opensearch_create_domain, engine_version, aws_client):
         master_user_auth = ("master-user", "12345678Aa!")
@@ -590,7 +596,7 @@ class TestEdgeProxiedOpensearchCluster:
 
             response = requests.get(cluster_url)
             assert response.ok, f"cluster endpoint returned an error: {response.text}"
-            assert response.json()["version"]["number"] == "2.3.0"
+            assert response.json()["version"]["number"] == "2.5.0"
 
             response = requests.get(f"{cluster_url}/_cluster/health")
             assert response.ok, f"cluster health endpoint returned an error: {response.text}"

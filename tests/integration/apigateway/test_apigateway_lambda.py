@@ -116,6 +116,8 @@ def test_lambda_aws_proxy_integration(
         name=f"test-api-{short_uid()}",
         description="Integration test API",
     )
+    # use a regex transform as create_rest_apigw fixture does not return the original response
+    snapshot.add_transformer(snapshot.transform.regex(api_id, replacement="<api-id>"), priority=-1)
     resource_id = aws_client.apigateway.create_resource(
         restApiId=api_id, parentId=root, pathPart="{proxy+}"
     )["id"]
@@ -219,6 +221,7 @@ def test_lambda_aws_proxy_integration(
         headers = {
             "Content-Type": "application/json;charset=utf-8",
             "Authorization": "Bearer token123;API key456",
+            "User-Agent": "python-requests/testing",
         }
 
         params = {"category": ["electronics", "books"], "price": ["10", "20", "30"]}
