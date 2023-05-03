@@ -78,9 +78,8 @@ def get_deployment_config(res_type):
         return resource_class.get_deploy_templates()
 
 
-# FIXME: still too many cases
 def get_resource_type(resource):
-    return resource.get("ResourceType") or resource.get("Type") or ""
+    return resource.get("Type")
 
 
 def get_service_name(resource):
@@ -962,7 +961,9 @@ class TemplateDeployer:
         stack_resources = list(self.stack.resources.values())
         resources = {r["LogicalResourceId"]: clone_safe(r) for r in stack_resources}
         for key, resource in resources.items():
-            resource["Properties"] = resource.get("Properties", clone_safe(resource))
+            resource["Properties"] = resource.get(
+                "Properties", clone_safe(resource)
+            )  # TODO: why is there a fallback?
             resource["ResourceType"] = resource.get("ResourceType") or resource.get("Type")
 
         def _safe_lookup_is_deleted(r_id):
