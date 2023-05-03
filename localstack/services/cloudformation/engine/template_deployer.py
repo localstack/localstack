@@ -115,6 +115,10 @@ def get_client(resource: dict, func_config: dict):
     try:
         return aws_stack.connect_to_service(service)
     except Exception as e:
+        if config.CFN_RAISE_ON_ERROR:
+            LOG.exception(f"Unable to get client for {service} API")
+            raise e
+
         LOG.warning('Unable to get client for "%s" API, skipping deployment: %s', service, e)
         return None
 
@@ -211,8 +215,10 @@ def extract_resource_attribute(
         if hasattr(resource_state, "get_cfn_attribute"):
             try:
                 return resource_state.get_cfn_attribute(attribute)
-            except Exception:
-                pass
+            except Exception as e:
+                if config.CFN_RAISE_ON_ERROR:
+                    LOG.exception(f"could not get cloudformation attribute {attribute}")
+                    raise e
         raise Exception(
             f'Unable to extract attribute "{attribute}" from "{resource_type}" model class {type(resource_state)}'
         )
