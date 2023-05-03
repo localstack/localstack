@@ -1,8 +1,8 @@
 import json
-from typing import Callable
 
 from moto.ec2.utils import generate_route_id
 
+from localstack.services.cloudformation.cfn_utils import get_tags_param
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
 from localstack.utils.aws import aws_stack
@@ -582,16 +582,3 @@ class EC2Instance(GenericBaseModel):
                 },
             },
         }
-
-
-def get_tags_param(resource_type: str) -> Callable:
-    """Return a tag parameters creation function for the given resource type"""
-
-    def _param(params, **kwargs):
-        tags = params.get("Tags")
-        if not tags:
-            return None
-
-        return [{"ResourceType": resource_type, "Tags": tags}]
-
-    return _param
