@@ -40,6 +40,7 @@ from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import event_bus_arn
+from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.collections import pick_attributes
 from localstack.utils.common import TMP_FILES, mkdir, save_file, truncate
@@ -100,7 +101,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                         target_attributes=attr,
                         target=target,
                         source_arn=rule_arn,
-                        source_service="events",
+                        source_service=ServicePrincipal.events,
                     )
                 except Exception as e:
                     LOG.info(
@@ -491,7 +492,7 @@ def process_events(event: Dict, targets: List[Dict]):
                 changed_event,
                 pick_attributes(target, ["$.SqsParameters", "$.KinesisParameters"]),
                 target=target,
-                source_service="events",
+                source_service=ServicePrincipal.events,
                 source_arn=target.get("RuleArn"),
             )
         except Exception as e:
@@ -543,9 +544,7 @@ def events_handler_put_events(self):
                     rule.name, event_bus_arn(event_bus_name)
                 ).get("Targets", [])
 
-                targets.extend(
-                    [target.update({"RuleArn": rule.arn}) or target for target in rule_targets]
-                )
+                targets.extend([{"RuleArn": rule.arn} | target for target in rule_targets])
 
         # process event
         process_events(formatted_event, targets)
