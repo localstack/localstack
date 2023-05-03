@@ -101,8 +101,11 @@ class FuncDetailsValue(TypedDict):
     """Possible type conversions"""
 
 
-# Type definition for func_details supplied to invoke_function and configure_resource_via_sdk
-FuncDetails = list[FuncDetailsValue] | FuncDetailsValue | Any
+# Type definition for func_details supplied to invoke_function
+FuncDetails = list[FuncDetailsValue] | FuncDetailsValue
+
+# Type definition returned by GenericBaseModel.get_deploy_templates
+DeployTemplates = dict[str, FuncDetails | Callable]
 
 
 class NoStackUpdates(Exception):
@@ -116,7 +119,7 @@ class NoStackUpdates(Exception):
 # ---------------------
 
 
-def get_deployment_config(res_type: str) -> FuncDetailsValue | None:
+def get_deployment_config(res_type: str) -> DeployTemplates | None:
     resource_class = RESOURCE_MODELS.get(res_type)
     if resource_class:
         return resource_class.get_deploy_templates()
