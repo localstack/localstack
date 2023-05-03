@@ -1005,6 +1005,8 @@ MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER
 # Whether to return and parse access key ids starting with an "A", like on AWS
 PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 
+CFN_RAISE_ON_ERROR = is_env_true("CFN_RAISE_ON_ERROR")
+
 # HINT: Please add deprecated environment variables to deprecations.py
 
 # list of environment variable names used for configuration.
@@ -1013,7 +1015,7 @@ PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 CONFIG_ENV_VARS = [
     "ALLOW_NONSTANDARD_REGIONS",
     "BUCKET_MARKER_LOCAL",
-    "CFN_ENABLE_RESOLVE_REFS_IN_MODELS",
+    "CFN_RAISE_ON_ERROR",
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEBUG_HANDLER_CHAIN",

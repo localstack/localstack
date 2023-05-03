@@ -1004,6 +1004,8 @@ class TemplateDeployer:
                             resource_id,
                             e,
                         )
+                        if config.CFN_RAISE_ON_ERROR:
+                            raise e
                     else:
                         LOG.warning(
                             "Failed delete of resource with id %s in iteration cycle %d. Retrying in next cycle.",
@@ -1319,6 +1321,8 @@ class TemplateDeployer:
                     traceback.format_exc(),
                 )
                 status = f"{action}_FAILED"
+                if config.CFN_RAISE_ON_ERROR:
+                    raise e
             stack.set_stack_status(status)
             if isinstance(new_stack, StackChangeSet):
                 new_stack.metadata["Status"] = status
