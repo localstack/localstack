@@ -53,6 +53,7 @@ if TYPE_CHECKING:
     from mypy_boto3_lakeformation import LakeFormationClient
     from mypy_boto3_lambda import LambdaClient
     from mypy_boto3_logs import CloudWatchLogsClient
+    from mypy_boto3_mediaconvert import MediaConvertClient
     from mypy_boto3_mediastore import MediaStoreClient
     from mypy_boto3_mq import MQClient
     from mypy_boto3_mwaa import MWAAClient
@@ -160,6 +161,7 @@ class TypedServiceClientFactory(abc.ABC):
     kms: Union["KMSClient", "MetadataRequestInjector[KMSClient]"]
     lakeformation: Union["LakeFormationClient", "MetadataRequestInjector[LakeFormationClient]"]
     logs: Union["CloudWatchLogsClient", "MetadataRequestInjector[CloudWatchLogsClient]"]
+    mediaconvert: Union["MediaConvertClient", "MetadataRequestInjector[MediaConvertClient]"]
     mediastore: Union["MediaStoreClient", "MetadataRequestInjector[MediaStoreClient]"]
     mq: Union["MQClient", "MetadataRequestInjector[MQClient]"]
     mwaa: Union["MWAAClient", "MetadataRequestInjector[MWAAClient]"]
