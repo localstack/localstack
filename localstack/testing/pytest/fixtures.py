@@ -1083,7 +1083,7 @@ def is_change_set_finished(aws_client):
 
             check_set = aws_client.cloudformation.describe_change_set(**kwargs)
 
-            if check_set.get("ExecutionStatus") == "ROLLBACK_COMPLETE":
+            if check_set.get("ExecutionStatus") == "EXECUTE_FAILED":
                 LOG.warning("Change set failed")
                 raise ShortCircuitWaitException()
 
