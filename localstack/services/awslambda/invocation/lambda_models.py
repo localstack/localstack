@@ -75,13 +75,14 @@ IMAGE_MAPPING = {
     "java8": "java:8",
     "java8.al2": "java:8.al2",
     "java11": "java:11",
+    "java17": "java:17",
     "dotnetcore3.1": "dotnet:core3.1",
     "dotnet6": "dotnet:6",
     "go1.x": "go:1",
     "provided": "provided:alami",
     "provided.al2": "provided:al2",
 }
-SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11]
+SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11, Runtime.java17]
 
 
 # TODO: maybe we should make this more "transient" by always initializing to Pending and *not* persisting it?

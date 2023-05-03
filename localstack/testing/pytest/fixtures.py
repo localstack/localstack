@@ -236,6 +236,14 @@ def s3_create_bucket(s3_resource, aws_client):
         if "Bucket" not in kwargs:
             kwargs["Bucket"] = "test-bucket-%s" % short_uid()
 
+        if (
+            "CreateBucketConfiguration" not in kwargs
+            and aws_client.s3.meta.region_name != "us-east-1"
+        ):
+            kwargs["CreateBucketConfiguration"] = {
+                "LocationConstraint": aws_client.s3.meta.region_name
+            }
+
         aws_client.s3.create_bucket(**kwargs)
         buckets.append(kwargs["Bucket"])
         return kwargs["Bucket"]

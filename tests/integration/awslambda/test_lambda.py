@@ -99,7 +99,7 @@ PYTHON_TEST_RUNTIMES = (
         Runtime.python3_10,
     ]
     if (not is_old_provider() or use_docker()) and get_arch() != "arm64"
-    else [Runtime.python3_9]
+    else [Runtime.python3_10]
 )
 NODE_TEST_RUNTIMES = (
     [Runtime.nodejs12_x, Runtime.nodejs14_x, Runtime.nodejs16_x]
@@ -107,11 +107,7 @@ NODE_TEST_RUNTIMES = (
     else [Runtime.nodejs16_x]
 )
 JAVA_TEST_RUNTIMES = (
-    [
-        Runtime.java8,
-        Runtime.java8_al2,
-        Runtime.java11,
-    ]
+    [Runtime.java8, Runtime.java8_al2, Runtime.java11, Runtime.java17]
     if (not is_old_provider() or use_docker()) and get_arch() != "arm64"
     else [Runtime.java11]
 )
@@ -183,7 +179,7 @@ class TestLambdaBaseFeatures:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
         )
         large_value = "test123456" * 100 * 1000 * 5
         snapshot.add_transformer(snapshot.transform.regex(large_value, "<large-value>"))
@@ -213,7 +209,7 @@ class TestLambdaBaseFeatures:
         # create_response is the original create call response, even though the fixture waits until it's not pending
         create_response = create_lambda_function_aws(
             FunctionName=function_name,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_10,
             Handler="handler.handler",
             Role=lambda_su_role,
             Code={"ZipFile": zip_file},
@@ -238,7 +234,7 @@ class TestLambdaBaseFeatures:
         create_result = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_SLEEP_ENVIRONMENT,
-            runtime=Runtime.python3_8,
+            runtime=Runtime.python3_10,
             role=lambda_su_role,
         )
         snapshot.match("create-result", create_result)
@@ -335,7 +331,7 @@ class TestLambdaBehavior:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
             timeout=9,
             Architectures=[Architecture.x86_64],
         )
@@ -364,7 +360,7 @@ class TestLambdaBehavior:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
             timeout=9,
             Architectures=[Architecture.arm64],
         )
@@ -384,14 +380,14 @@ class TestLambdaBehavior:
         monkeypatch.setattr(
             config,
             "LAMBDA_DOCKER_FLAGS",
-            "--ulimit nofile=1024:1024 --ulimit nproc=735:735 --ulimit core=-1:-1 --ulimit stack=8388608:-1",
+            "--ulimit nofile=1024:1024 --ulimit nproc=735:735 --ulimit core=-1:-1 --ulimit stack=8388608:-1 --ulimit memlock=65536:65536",
         )
 
         func_name = f"test_lambda_ulimits_{short_uid()}"
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_ULIMITS,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
         )
 
         invoke_result = aws_client.awslambda.invoke(FunctionName=func_name)
@@ -403,7 +399,7 @@ class TestLambdaBehavior:
         reason="Monkey-patching of Docker flags is not applicable because no new container is spawned",
     )
     @pytest.mark.only_localstack
-    def test_ignore_architecture(self, create_lambda_function, snapshot, monkeypatch, aws_client):
+    def test_ignore_architecture(self, create_lambda_function, monkeypatch, aws_client):
         """Test configuration to ignore lambda architecture by creating a lambda with non-native architecture."""
         monkeypatch.setattr(config, "LAMBDA_IGNORE_ARCHITECTURE", True)
 
@@ -417,7 +413,7 @@ class TestLambdaBehavior:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
             Architectures=[non_native_architecture],
         )
 
@@ -437,7 +433,7 @@ class TestLambdaBehavior:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
             Architectures=[Architecture.x86_64],
         )
 
@@ -450,7 +446,7 @@ class TestLambdaBehavior:
         create_lambda_function(
             func_name=func_name_arm,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
             Architectures=[Architecture.arm64],
         )
 
@@ -494,7 +490,7 @@ class TestLambdaBehavior:
         ["lambda_fn", "lambda_runtime"],
         [
             (TEST_LAMBDA_CACHE_NODEJS, Runtime.nodejs12_x),
-            (TEST_LAMBDA_CACHE_PYTHON, Runtime.python3_8),
+            (TEST_LAMBDA_CACHE_PYTHON, Runtime.python3_10),
         ],
         ids=["nodejs", "python"],
     )
@@ -634,7 +630,7 @@ class TestLambdaBehavior:
         create_result = create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_TIMEOUT_ENV_PYTHON,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
             client=aws_client.awslambda,
             timeout=1,
         )
@@ -768,7 +764,7 @@ class TestLambdaURL:
         create_lambda_function(
             func_name=function_name,
             handler_file=handler_file,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
         )
 
         url_config = aws_client.awslambda.create_function_url_config(
@@ -858,7 +854,7 @@ class TestLambdaURL:
         create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
         )
         get_fn_result = aws_client.awslambda.get_function(FunctionName=function_name)
         snapshot.match("get_fn_result", get_fn_result)
@@ -887,7 +883,7 @@ class TestLambdaURL:
         assert result.status_code == 502
 
 
-@pytest.mark.skip(reason="Not yet implemented")
+@pytest.mark.skipif(not is_aws(), reason="Not yet implemented")
 class TestLambdaPermissions:
     @pytest.mark.aws_validated
     def test_lambda_permission_url_invocation(self, create_lambda_function, snapshot, aws_client):
@@ -1203,7 +1199,7 @@ class TestLambdaConcurrency:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
         )
 
         default_concurrency_result = aws_client.awslambda.get_function_concurrency(
@@ -1242,7 +1238,7 @@ class TestLambdaConcurrency:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
         )
 
         # reserved concurrency
@@ -1443,7 +1439,7 @@ class TestLambdaConcurrency:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INVOCATION_TYPE,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
             client=aws_client.awslambda,
         )
 
@@ -1482,7 +1478,7 @@ class TestLambdaConcurrency:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
             client=aws_client.awslambda,
             timeout=20,
         )
@@ -1554,7 +1550,7 @@ class TestLambdaConcurrency:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
             client=aws_client.awslambda,
             timeout=20,
         )
@@ -1608,7 +1604,7 @@ class TestLambdaConcurrency:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INVOCATION_TYPE,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
             client=aws_client.awslambda,
         )
 
@@ -1692,7 +1688,7 @@ class TestLambdaVersions:
             Code={"ZipFile": zip_file_v1},
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_10,
             Description="No version :(",
         )
         snapshot.match("create_response", create_response)
@@ -1773,7 +1769,7 @@ class TestLambdaAliases:
             Code={"ZipFile": zip_file_v1},
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_10,
             Description="No version :(",
         )
         snapshot.match("create_response", create_response)
@@ -1860,7 +1856,7 @@ class TestLambdaAliases:
             Code={"ZipFile": zip_file_v1},
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_10,
             Description="First version :)",
             Publish=True,
         )
@@ -1915,7 +1911,7 @@ class TestRequestIdHandling:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
             client=aws_client.awslambda,
         )
 
@@ -1956,7 +1952,7 @@ class TestRequestIdHandling:
         create_lambda_function(
             func_name=fn_name,
             handler_file=handler_file,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
             client=aws_client.awslambda,
         )
 
@@ -2015,7 +2011,7 @@ class TestRequestIdHandling:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_CONTEXT_REQID,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_10,
             client=aws_client.awslambda,
         )
 
