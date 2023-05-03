@@ -966,7 +966,7 @@ class TemplateDeployer:
             resource["Properties"] = resource.get(
                 "Properties", clone_safe(resource)
             )  # TODO: why is there a fallback?
-            resource["ResourceType"] = resource.get["Type"]  # why?
+            resource["ResourceType"] = resource["Type"]
 
         def _safe_lookup_is_deleted(r_id):
             """handles the case where self.stack.resource_status(..) fails for whatever reason"""
