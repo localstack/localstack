@@ -24,8 +24,7 @@ from tests.integration.apigateway.conftest import DEFAULT_STAGE_NAME
 from tests.integration.awslambda.test_lambda import TEST_LAMBDA_LIBS
 
 
-@pytest.mark.skip_offline
-def test_http_integration(create_rest_apigw, aws_client):
+def test_http_integration(create_rest_apigw, aws_client, echo_http_server):
     api_id, _, root_id = create_rest_apigw(name="my_api", description="this is my api")
 
     aws_client.apigateway.put_method(
@@ -41,8 +40,7 @@ def test_http_integration(create_rest_apigw, aws_client):
         resourceId=root_id,
         httpMethod="GET",
         type="HTTP",
-        # TODO: replace httpbin.org requests with httpserver/echo_http_server fixture
-        uri="http://httpbin.org/robots.txt",
+        uri=echo_http_server,
         integrationHttpMethod="GET",
     )
 
@@ -55,7 +53,7 @@ def test_http_integration(create_rest_apigw, aws_client):
     assert response.status_code == 200
 
 
-def test_put_integration_responses(aws_client):
+def test_put_integration_responses(aws_client, echo_http_server):
     response = aws_client.apigateway.create_rest_api(name="my_api", description="this is my api")
     api_id = response["id"]
 
@@ -75,8 +73,7 @@ def test_put_integration_responses(aws_client):
         resourceId=root_id,
         httpMethod="GET",
         type="HTTP",
-        # TODO: replace httpbin.org requests with httpserver/echo_http_server fixture
-        uri="http://httpbin.org/robots.txt",
+        uri=echo_http_server,
         integrationHttpMethod="POST",
     )
 
@@ -162,8 +159,7 @@ def test_put_integration_responses(aws_client):
         resourceId=root_id,
         httpMethod="PUT",
         type="HTTP",
-        # TODO: replace httpbin.org requests with httpserver/echo_http_server fixture
-        uri="http://httpbin.org/robots.txt",
+        uri=echo_http_server,
         integrationHttpMethod="POST",
     )
 
@@ -209,7 +205,7 @@ def test_put_integration_responses(aws_client):
     )
 
 
-def test_put_integration_response_with_response_template(aws_client):
+def test_put_integration_response_with_response_template(aws_client, echo_http_server_post):
     response = aws_client.apigateway.create_rest_api(name="my_api", description="this is my api")
     api_id = response["id"]
     resources = aws_client.apigateway.get_resources(restApiId=api_id)
@@ -226,8 +222,7 @@ def test_put_integration_response_with_response_template(aws_client):
         resourceId=root_id,
         httpMethod="GET",
         type="HTTP",
-        # TODO: replace httpbin.org requests with httpserver/echo_http_server fixture
-        uri="http://httpbin.org/robots.txt",
+        uri=echo_http_server_post,
         integrationHttpMethod="POST",
     )
 
@@ -257,7 +252,7 @@ def test_put_integration_response_with_response_template(aws_client):
 
 
 # TODO: add snapshot test!
-def test_put_integration_validation(aws_client):
+def test_put_integration_validation(aws_client, echo_http_server, echo_http_server_post):
     response = aws_client.apigateway.create_rest_api(name="my_api", description="this is my api")
     api_id = response["id"]
     resources = aws_client.apigateway.get_resources(restApiId=api_id)
@@ -275,8 +270,6 @@ def test_put_integration_validation(aws_client):
     types_requiring_integration_method = http_types + ["AWS"]
     types_not_requiring_integration_method = ["MOCK"]
 
-    # TODO: replace httpbin.org requests below with httpserver/echo_http_server fixture
-
     for _type in types_requiring_integration_method:
         # Ensure that integrations of these types fail if no integrationHttpMethod is provided
         with pytest.raises(ClientError) as ex:
@@ -285,7 +278,7 @@ def test_put_integration_validation(aws_client):
                 resourceId=root_id,
                 httpMethod="GET",
                 type=_type,
-                uri="http://httpbin.org/robots.txt",
+                uri=echo_http_server,
             )
         assert ex.value.response["Error"]["Code"] == "BadRequestException"
         assert (
@@ -300,7 +293,7 @@ def test_put_integration_validation(aws_client):
             resourceId=root_id,
             httpMethod="GET",
             type=_type,
-            uri="http://httpbin.org/robots.txt",
+            uri=echo_http_server,
         )
     for _type in http_types:
         # Ensure that it works fine when providing the integrationHttpMethod-argument
@@ -309,7 +302,7 @@ def test_put_integration_validation(aws_client):
             resourceId=root_id,
             httpMethod="GET",
             type=_type,
-            uri="http://httpbin.org/robots.txt",
+            uri=echo_http_server_post,
             integrationHttpMethod="POST",
         )
     for _type in ["AWS"]:
