@@ -586,7 +586,7 @@ def layer_version_arn(layer_name: str, account: str, region: str, version: str):
     return f"arn:aws:lambda:{region}:{account}:layer:{layer_name}:{version}"
 
 
-def parse_layer_arn(layer_version_arn: str):
+def parse_layer_arn(layer_version_arn: str) -> Tuple[str, str, str, str]:
     return LAYER_VERSION_ARN_PATTERN.match(layer_version_arn).group(
         "region_name", "account_id", "layer_name", "layer_version"
     )

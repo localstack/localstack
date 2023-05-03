@@ -6,7 +6,7 @@ import logging
 import os
 import threading
 import time
-from typing import IO
+from typing import IO, Optional, Tuple
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
@@ -2908,6 +2908,22 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # ======  Layer & Layer Versions  =======
     # =======================================
 
+    @staticmethod
+    def _resolve_layer(
+        layer_name_or_arn: str, context: RequestContext
+    ) -> Tuple[str, str, str, Optional[str]]:
+        """
+        Return locator attributes for a given Lambda layer.
+
+        :param layer_name_or_arn: Layer name or ARN
+        :param context: Request context
+        :return: Tuple of region, account ID, layer name, layer version
+        """
+        if api_utils.is_layer_arn(layer_name_or_arn):
+            return api_utils.parse_layer_arn(layer_name_or_arn)
+
+        return context.region, context.account_id, layer_name_or_arn, None
+
     def publish_layer_version(
         self,
         context: RequestContext,
@@ -2992,10 +3008,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> GetLayerVersionResponse:
         # TODO: handle layer_name as an ARN
 
-        account_id = context.account_id
-        region_name = context.region
-        if api_utils.is_layer_arn(layer_name):
-            region_name, account_id, layer_name, _ = api_utils.parse_layer_arn(layer_name)
+        region_name, account_id, layer_name, _ = LambdaProvider._resolve_layer(layer_name, context)
         state = lambda_stores[account_id][region_name]
 
         layer = state.layers.get(layer_name)
@@ -3015,21 +3028,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def get_layer_version_by_arn(
         self, context: RequestContext, arn: LayerVersionArn
     ) -> GetLayerVersionResponse:
-        match = api_utils.LAYER_VERSION_ARN_PATTERN.search(arn)
-        layer_version_parts = match.groupdict()
-        if not layer_version_parts.get("layer_version"):
+        region_name, account_id, layer_name, layer_version = LambdaProvider._resolve_layer(
+            arn, context
+        )
+
+        if not layer_version:
             raise ValidationException(
                 f"1 validation error detected: Value '{arn}' at 'arn' failed to satisfy constraint: Member must satisfy regular expression pattern: "
                 + "arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+"
             )
 
-        layer_name = layer_version_parts["layer_name"]
-        layer_version = layer_version_parts["layer_version"]
-        account_id = layer_version_parts["account_id"]
-        region_name = layer_version_parts["region_name"]
-
-        state = lambda_stores[account_id][region_name]
-        layer_version = state.layers.get(layer_name, {}).layer_versions.get(layer_version)
+        store = lambda_stores[account_id][region_name]
+        layer_version = store.layers.get(layer_name, {}).layer_versions.get(layer_version)
 
         if not layer_version:
             raise ResourceNotFoundException(
@@ -3109,10 +3119,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"{len(validation_errors)} validation error{'s' if len(validation_errors) > 1 else ''} detected: {';'.join(validation_errors)}"
             )
 
-        account_id = context.account_id
-        region_name = context.region
-        if api_utils.is_layer_arn(layer_name):
-            region_name, account_id, layer_name, _ = api_utils.parse_layer_arn(layer_name)
+        region_name, account_id, layer_name, layer_version = LambdaProvider._resolve_layer(
+            layer_name, context
+        )
         state = lambda_stores[account_id][region_name]
 
         # TODO: Test & handle filter: compatible_runtime
@@ -3138,14 +3147,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if version_number < 1:
             raise InvalidParameterValueException("Layer Version Cannot be less than 1", Type="User")
 
-        # TODO: test cross-region? (e.g. with functions it doesnt work and raises an exception)
-        account_id = context.account_id
-        region_name = context.region
-        if api_utils.is_layer_arn(layer_name):
-            region_name, account_id, layer_name, _ = api_utils.parse_layer_arn(layer_name)
+        region_name, account_id, layer_name, layer_version = LambdaProvider._resolve_layer(
+            layer_name, context
+        )
 
-        state = lambda_stores[account_id][region_name]
-        layer = state.layers.get(layer_name, {})
+        store = lambda_stores[account_id][region_name]
+        layer = store.layers.get(layer_name, {})
         if layer:
             layer.layer_versions.pop(str(version_number), None)
 
@@ -3165,19 +3172,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         organization_id: OrganizationId = None,
         revision_id: String = None,
     ) -> AddLayerVersionPermissionResponse:
-        # TODO: add layer ARN as layer_name support
-
-        layer_version_arn = api_utils.layer_version_arn(
-            layer_name, context.account_id, context.region, str(version_number)
-        )
+        region_name, account_id, layer_n, _ = LambdaProvider._resolve_layer(layer_name, context)
 
         if action != "lambda:GetLayerVersion":
             raise ValidationException(
                 f"1 validation error detected: Value '{action}' at 'action' failed to satisfy constraint: Member must satisfy regular expression pattern: lambda:GetLayerVersion"
             )
 
-        state = lambda_stores[context.account_id][context.region]
-        layer = state.layers.get(layer_name)
+        store = lambda_stores[account_id][region_name]
+        layer = store.layers.get(layer_n)
+
+        layer_version_arn = api_utils.layer_version_arn(
+            layer_name, account_id, region_name, str(version_number)
+        )
+
         if layer is None:
             raise ResourceNotFoundException(
                 f"Layer version {layer_version_arn} does not exist.", Type="User"
@@ -3234,12 +3242,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         statement_id: StatementId,
         revision_id: String = None,
     ) -> None:
-        # TODO: add layer ARN as layer_name support
-        layer_version_arn = api_utils.layer_version_arn(
-            layer_name, context.account_id, context.region, str(version_number)
+        region_name, account_id, layer_n, layer_version = LambdaProvider._resolve_layer(
+            layer_name, context
         )
-        state = lambda_stores[context.account_id][context.region]
-        layer = state.layers.get(layer_name)
+
+        layer_version_arn = api_utils.layer_version_arn(
+            layer_name, account_id, region_name, str(version_number)
+        )
+
+        state = lambda_stores[account_id][region_name]
+        layer = state.layers.get(layer_n)
         if layer is None:
             raise ResourceNotFoundException(
                 f"Layer version {layer_version_arn} does not exist.", Type="User"
@@ -3271,12 +3283,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def get_layer_version_policy(
         self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
     ) -> GetLayerVersionPolicyResponse:
-        # TODO: add layer ARN as layer_name support
+        region_name, account_id, layer_n, _ = LambdaProvider._resolve_layer(layer_name, context)
+
         layer_version_arn = api_utils.layer_version_arn(
-            layer_name, context.account_id, context.region, str(version_number)
+            layer_name, account_id, region_name, str(version_number)
         )
-        state = lambda_stores[context.account_id][context.region]
-        layer = state.layers.get(layer_name)
+
+        store = lambda_stores[account_id][region_name]
+        layer = store.layers.get(layer_n)
+
         if layer is None:
             raise ResourceNotFoundException(
                 f"Layer version {layer_version_arn} does not exist.", Type="User"

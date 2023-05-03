@@ -1194,14 +1194,20 @@ class TestLambdaFeatures:
 
         retry(check_logs, retries=15)
 
-    def test_cross_account_access(self, aws_client_factory, create_lambda_function):
+    def test_cross_account_access(
+        self, aws_client, aws_client_factory, create_lambda_function, dummylayer
+    ):
         func_name = f"func-{short_uid()}"
-
         func_arn = create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
             runtime=Runtime.python3_9,
         )["CreateFunctionResponse"]["FunctionArn"]
+
+        layer_name = f"layer-{short_uid()}"
+        layer_arn = aws_client.awslambda.publish_layer_version(
+            LayerName=layer_name, Content={"ZipFile": dummylayer}
+        )["LayerArn"]
 
         # Create client with secondary credentials but stick to default region
         client = aws_client_factory.get_client(
@@ -1210,8 +1216,38 @@ class TestLambdaFeatures:
             aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
         )
 
-        # Following operation in Lambda support cross-account access. This test
-        # asserts that these operations work for an ARN in cross-account scenario.
+        # Operations related to Lambda layers
+        # - GetLayerVersion
+        # - GetLayerVersionByArn
+        # - ListLayerVersions
+        # - DeleteLayerVersion
+        # - AddLayerVersionPermission
+        # - GetLayerVersionPolicy
+        # - RemoveLayerVersionPermission
+
+        assert client.get_layer_version(LayerName=layer_arn, VersionNumber=1)
+
+        assert client.get_layer_version_by_arn(Arn=layer_arn + ":1")
+
+        assert client.list_layer_versions(LayerName=layer_arn)
+
+        assert client.add_layer_version_permission(
+            LayerName=layer_arn,
+            VersionNumber=1,
+            Action="lambda:GetLayerVersion",
+            Principal="*",
+            StatementId="s1",
+        )
+
+        assert client.get_layer_version_policy(LayerName=layer_arn, VersionNumber=1)
+
+        assert client.remove_layer_version_permission(
+            LayerName=layer_arn, VersionNumber=1, StatementId="s1"
+        )
+
+        assert client.delete_layer_version(LayerName=layer_arn, VersionNumber=1)
+
+        # Operations related to functions.
         # See: https://docs.aws.amazon.com/lambda/latest/dg/access-control-resource-based.html#permissions-resource-xaccountinvoke
         #
         # - Invoke
