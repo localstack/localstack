@@ -79,11 +79,11 @@ def get_deployment_config(res_type):
 
 
 def get_resource_type(resource):
-    return resource.get("Type")
+    return resource["Type"]
 
 
 def get_service_name(resource):
-    res_type = resource.get("Type", resource.get("ResourceType", ""))
+    res_type = resource["Type"]
     parts = res_type.split("::")
     if len(parts) == 1:
         return None
@@ -960,11 +960,13 @@ class TemplateDeployer:
         self.stack.set_stack_status("DELETE_IN_PROGRESS")
         stack_resources = list(self.stack.resources.values())
         resources = {r["LogicalResourceId"]: clone_safe(r) for r in stack_resources}
+
+        # TODO: what is this doing?
         for key, resource in resources.items():
             resource["Properties"] = resource.get(
                 "Properties", clone_safe(resource)
             )  # TODO: why is there a fallback?
-            resource["ResourceType"] = resource.get("ResourceType") or resource.get("Type")
+            resource["ResourceType"] = resource.get["Type"]  # why?
 
         def _safe_lookup_is_deleted(r_id):
             """handles the case where self.stack.resource_status(..) fails for whatever reason"""
@@ -1116,7 +1118,7 @@ class TemplateDeployer:
                 "Action": action,
                 "LogicalResourceId": resource.get("LogicalResourceId"),
                 "PhysicalResourceId": resource.get("PhysicalResourceId"),
-                "ResourceType": resource.get("Type"),
+                "ResourceType": resource["Type"],
                 # TODO ChangeSetId is only set for *nested* change sets
                 # "ChangeSetId": change_set_id,
                 "Scope": [],  # TODO
