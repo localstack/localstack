@@ -72,21 +72,17 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         return events_stores[get_aws_account_id()][aws_stack.get_region()]
 
     @staticmethod
-    def get_scheduled_rule_func(rule_name: RuleName, event_bus_name: Optional[EventBusNameOrArn]):
+    def get_scheduled_rule_func(rule_name: RuleName):
         def func(*args, **kwargs):
             client = aws_stack.connect_to_service("events")
-            targets_args = {"Rule": rule_name}
-            if event_bus_name:
-                targets_args["EventBusName"] = event_bus_name
-            targets = client.list_targets_by_rule(**targets_args)["Targets"]
+            targets = client.list_targets_by_rule(Rule=rule_name)["Targets"]
             if targets:
                 LOG.debug(
                     "Notifying %s targets in response to triggered Events rule %s",
                     len(targets),
                     rule_name,
                 )
-            targets_args.update({"Name": targets_args.pop("Rule")})
-            rule_arn = client.describe_rule(**targets_args)["Arn"]
+            rule_arn = client.describe_rule(Name=rule_name)["Arn"]
             for target in targets:
                 arn = target.get("Arn")
                 # TODO generate event matching aws in case no Input has been specified
@@ -136,11 +132,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         name: Optional[RuleName],
         state: Optional[RuleState],
         schedule_expression: Optional[ScheduleExpression],
-        event_bus_name: Optional[EventBusNameOrArn],
     ):
         enabled = state != "DISABLED"
         if schedule_expression:
-            job_func = EventsProvider.get_scheduled_rule_func(name, event_bus_name)
+            job_func = EventsProvider.get_scheduled_rule_func(name)
             cron = EventsProvider.convert_schedule_to_cron(schedule_expression)
             LOG.debug("Adding new scheduled Events rule with cron schedule %s", cron)
 
@@ -160,7 +155,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         tags: TagList = None,
         event_bus_name: EventBusNameOrArn = None,
     ) -> PutRuleResponse:
-        self.put_rule_job_scheduler(name, state, schedule_expression, event_bus_name)
+        self.put_rule_job_scheduler(name, state, schedule_expression)
         return call_moto(context)
 
     def delete_rule(
