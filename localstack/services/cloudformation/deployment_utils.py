@@ -1,14 +1,22 @@
 import builtins
 import json
+import logging
 import re
 from copy import deepcopy
 from typing import Callable, List
 
 from localstack.utils import common
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import select_attributes, short_uid
+from localstack.utils.functions import run_safe
+from localstack.utils.json import json_safe
+from localstack.utils.objects import recurse_object
+from localstack.utils.strings import is_string
 
 # placeholders
 PLACEHOLDER_AWS_NO_VALUE = "__aws_no_value__"
+
+LOG = logging.getLogger(__name__)
 
 
 def dump_json_params(param_func=None, *param_names):
@@ -197,3 +205,60 @@ def fix_boto_parameters_based_on_report(original_params: dict, report: str) -> d
             new_value = cast_class(old_value)
         set_nested(params, param_name, new_value)
     return params
+
+
+def fix_account_id_in_arns(params: dict) -> dict:
+    def fix_ids(o, **kwargs):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if is_string(v, exclude_binary=True):
+                    o[k] = aws_stack.fix_account_id_in_arns(v)
+        elif is_string(o, exclude_binary=True):
+            o = aws_stack.fix_account_id_in_arns(o)
+        return o
+
+    result = recurse_object(params, fix_ids)
+    return result
+
+
+def convert_data_types(func_details, params):
+    """Convert data types in the "params" object, with the type defs
+    specified in the 'types' attribute of "func_details"."""
+    types = func_details.get("types") or {}
+    attr_names = types.keys() or []
+
+    def cast(_obj, _type):
+        if _type == bool:
+            return _obj in ["True", "true", True]
+        if _type == str:
+            if isinstance(_obj, bool):
+                return str(_obj).lower()
+            return str(_obj)
+        if _type in (int, float):
+            return _type(_obj)
+        return _obj
+
+    def fix_types(o, **kwargs):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if k in attr_names:
+                    o[k] = cast(v, types[k])
+        return o
+
+    result = recurse_object(params, fix_types)
+    return result
+
+
+def log_not_available_message(resource_type: str, message: str):
+    LOG.warning(
+        f"{message}. To find out if {resource_type} is supported in LocalStack Pro, "
+        "please check out our docs at https://docs.localstack.cloud/user-guide/aws/cloudformation/#resources-pro--enterprise-edition"
+    )
+
+
+def dump_resource_as_json(resource: dict) -> str:
+    return str(run_safe(lambda: json.dumps(json_safe(resource))) or resource)
+
+
+def get_action_name_for_resource_change(res_change: str) -> str:
+    return {"Add": "CREATE", "Remove": "DELETE", "Modify": "UPDATE"}.get(res_change)

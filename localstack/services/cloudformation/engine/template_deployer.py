@@ -12,8 +12,13 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import FALSE_STRINGS
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
+    convert_data_types,
+    dump_resource_as_json,
+    fix_account_id_in_arns,
     fix_boto_parameters_based_on_report,
+    get_action_name_for_resource_change,
     is_none_or_empty_value,
+    log_not_available_message,
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.entities import (
@@ -28,10 +33,10 @@ from localstack.services.cloudformation.service_models import (
 )
 from localstack.services.cloudformation.stores import exports_map
 from localstack.utils.aws import aws_stack
-from localstack.utils.functions import prevent_stack_overflow, run_safe
+from localstack.utils.functions import prevent_stack_overflow
 from localstack.utils.json import clone_safe, json_safe
-from localstack.utils.objects import get_all_subclasses, recurse_object
-from localstack.utils.strings import first_char_to_lower, is_string, to_bytes, to_str
+from localstack.utils.objects import get_all_subclasses
+from localstack.utils.strings import first_char_to_lower, to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
@@ -68,19 +73,17 @@ class NoStackUpdates(Exception):
 
 
 def get_deployment_config(res_type):
-    canonical_type = canonical_resource_type(res_type)
-    resource_class = RESOURCE_MODELS.get(canonical_type)
+    resource_class = RESOURCE_MODELS.get(res_type)
     if resource_class:
         return resource_class.get_deploy_templates()
 
 
-# FIXME: still too many cases
 def get_resource_type(resource):
-    return resource.get("ResourceType") or resource.get("Type") or ""
+    return resource["Type"]
 
 
 def get_service_name(resource):
-    res_type = resource.get("Type", resource.get("ResourceType", ""))
+    res_type = resource["Type"]
     parts = res_type.split("::")
     if len(parts) == 1:
         return None
@@ -255,14 +258,7 @@ def extract_resource_attribute(
     return result
 
 
-def canonical_resource_type(resource_type):
-    if "::" in resource_type and not resource_type.startswith("AWS::"):
-        resource_type = "AWS::%s" % resource_type
-    return resource_type
-
-
 def get_attr_from_model_instance(resource, attribute, resource_type, resource_id=None):
-    resource_type = canonical_resource_type(resource_type)
     model_class = RESOURCE_MODELS.get(resource_type)
     if not model_class:
         if resource_type not in ["AWS::Parameter", "Parameter"]:
@@ -647,69 +643,11 @@ def get_resource_model_instance(resource_id: str, resources) -> Optional[Generic
     """Obtain a typed resource entity instance representing the given stack resource."""
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
-    canonical_type = canonical_resource_type(resource_type)
-    resource_class = RESOURCE_MODELS.get(canonical_type)
+    resource_class = RESOURCE_MODELS.get(resource_type)
     if not resource_class:
         return None
     instance = resource_class(resource)
     return instance
-
-
-# TODO: move (util)
-def fix_account_id_in_arns(params):
-    def fix_ids(o, **kwargs):
-        if isinstance(o, dict):
-            for k, v in o.items():
-                if is_string(v, exclude_binary=True):
-                    o[k] = aws_stack.fix_account_id_in_arns(v)
-        elif is_string(o, exclude_binary=True):
-            o = aws_stack.fix_account_id_in_arns(o)
-        return o
-
-    result = recurse_object(params, fix_ids)
-    return result
-
-
-# TODO: move (util)
-def convert_data_types(func_details, params):
-    """Convert data types in the "params" object, with the type defs
-    specified in the 'types' attribute of "func_details"."""
-    types = func_details.get("types") or {}
-    attr_names = types.keys() or []
-
-    def cast(_obj, _type):
-        if _type == bool:
-            return _obj in ["True", "true", True]
-        if _type == str:
-            if isinstance(_obj, bool):
-                return str(_obj).lower()
-            return str(_obj)
-        if _type in (int, float):
-            return _type(_obj)
-        return _obj
-
-    def fix_types(o, **kwargs):
-        if isinstance(o, dict):
-            for k, v in o.items():
-                if k in attr_names:
-                    o[k] = cast(v, types[k])
-        return o
-
-    result = recurse_object(params, fix_types)
-    return result
-
-
-# TODO: move (util)
-def log_not_available_message(resource_type: str, message: str):
-    LOG.warning(
-        f"{message}. To find out if {resource_type} is supported in LocalStack Pro, "
-        "please check out our docs at https://docs.localstack.cloud/user-guide/aws/cloudformation/#resources-pro--enterprise-edition"
-    )
-
-
-# TODO: move (util)
-def dump_resource_as_json(resource: Dict) -> str:
-    return str(run_safe(lambda: json.dumps(json_safe(resource))) or resource)
 
 
 def execute_resource_action(resource_id: str, stack_name, resources, action_name: str):
@@ -889,11 +827,6 @@ def configure_resource_via_sdk(
     return invoke_function(resource_type, func_details, action_name, params, function, resource)
 
 
-# TODO: move (util)
-def get_action_name_for_resource_change(res_change: str) -> str:
-    return {"Add": "CREATE", "Remove": "DELETE", "Modify": "UPDATE"}.get(res_change)
-
-
 # TODO: this shouldn't be called for stack parameters
 # TODO: refactor / remove (should just be a lookup on the resource state)
 def determine_resource_physical_id(
@@ -907,8 +840,7 @@ def determine_resource_physical_id(
     resource_type = get_resource_type(resource)
 
     # determine result from resource class
-    canonical_type = canonical_resource_type(resource_type)  # FIXME: remove
-    resource_class = RESOURCE_MODELS.get(canonical_type)
+    resource_class = RESOURCE_MODELS.get(resource_type)
     if resource_class:
         resource_inst = resource_class(resource)
         resource_inst.fetch_state_if_missing(stack_name=stack_name, resources=resources)
@@ -950,8 +882,7 @@ def add_default_resource_props(
     """Apply some fixes to resource props which otherwise cause deployments to fail"""
 
     res_type = resource["Type"]
-    canonical_type = canonical_resource_type(res_type)
-    resource_class = RESOURCE_MODELS.get(canonical_type)
+    resource_class = RESOURCE_MODELS.get(res_type)
     if resource_class is not None:
         resource_class.add_defaults(resource, stack_name)
 
@@ -1029,9 +960,13 @@ class TemplateDeployer:
         self.stack.set_stack_status("DELETE_IN_PROGRESS")
         stack_resources = list(self.stack.resources.values())
         resources = {r["LogicalResourceId"]: clone_safe(r) for r in stack_resources}
+
+        # TODO: what is this doing?
         for key, resource in resources.items():
-            resource["Properties"] = resource.get("Properties", clone_safe(resource))
-            resource["ResourceType"] = resource.get("ResourceType") or resource.get("Type")
+            resource["Properties"] = resource.get(
+                "Properties", clone_safe(resource)
+            )  # TODO: why is there a fallback?
+            resource["ResourceType"] = resource["Type"]
 
         def _safe_lookup_is_deleted(r_id):
             """handles the case where self.stack.resource_status(..) fails for whatever reason"""
@@ -1183,7 +1118,7 @@ class TemplateDeployer:
                 "Action": action,
                 "LogicalResourceId": resource.get("LogicalResourceId"),
                 "PhysicalResourceId": resource.get("PhysicalResourceId"),
-                "ResourceType": resource.get("Type"),
+                "ResourceType": resource["Type"],
                 # TODO ChangeSetId is only set for *nested* change sets
                 # "ChangeSetId": change_set_id,
                 "Scope": [],  # TODO
