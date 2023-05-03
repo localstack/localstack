@@ -65,7 +65,13 @@ RESOURCE_MODELS: dict[str, Type[GenericBaseModel]] = {
 # TYPES
 # ---------------------
 
-ResourceDefinition = dict
+# Callable here takes the arguments:
+# - resource_props
+# - stack_name
+# - resources
+# - resource_id
+ResourceProp = str | Callable[[dict, str, dict, str], dict]
+ResourceDefinition = Dict[str, ResourceProp]
 
 
 class FuncDetailsValue(TypedDict):
@@ -110,7 +116,7 @@ class NoStackUpdates(Exception):
 # ---------------------
 
 
-def get_deployment_config(res_type):
+def get_deployment_config(res_type: str) -> FuncDetailsValue | None:
     resource_class = RESOURCE_MODELS.get(res_type)
     if resource_class:
         return resource_class.get_deploy_templates()
@@ -699,7 +705,7 @@ def get_resource_model_instance(resource_id: str, resources) -> Optional[Generic
 # yeah `Any | None` is a bit pointless, but I want to ensure that None values are represented
 def execute_resource_action(
     resource_id: str, stack_name: str, resources: dict, action_name: str
-) -> List[Any | None]:
+) -> List[Any | None] | None:
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
     if action_name == ACTION_CREATE and resource_type:
@@ -728,6 +734,7 @@ def execute_resource_action(
     for func in func_details:
         result = None
         executed = False
+        # TODO(srw) 3 - callable function
         if callable(func.get("function")):
             result = func["function"](resource_id, resources, resource_type, func, stack_name)
             results.append(result)
@@ -838,6 +845,7 @@ def resolve_resource_parameters(
                 prop_keys = [prop_keys]
             for prop_key in prop_keys:
                 if callable(prop_key):
+                    # TODO(srw): 2 - callable for a property value
                     prop_value = prop_key(
                         resource_props,
                         stack_name=stack_name,
@@ -1085,7 +1093,7 @@ class TemplateDeployer:
         )
         return resource_instance.is_updatable()
 
-    def all_resource_dependencies_satisfied(self, resource):
+    def all_resource_dependencies_satisfied(self, resource) -> bool:
         unsatisfied = self.get_unsatisfied_dependencies(resource)
         return not unsatisfied
 
@@ -1379,6 +1387,7 @@ class TemplateDeployer:
 
         # apply default props before running the loop
         for resource_id, resource in new_resources.items():
+            # TODO(srw): this should be done earlier
             add_default_resource_props(
                 resource,
                 stack.stack_name,
