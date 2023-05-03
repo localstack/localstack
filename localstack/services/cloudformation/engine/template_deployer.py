@@ -3,7 +3,7 @@ import json
 import logging
 import re
 import traceback
-from typing import Any, Callable, Dict, List, Optional, Type, TypedDict
+from typing import Any, Callable, Optional, Type, TypedDict
 
 import botocore
 
@@ -71,7 +71,7 @@ RESOURCE_MODELS: dict[str, Type[GenericBaseModel]] = {
 # - resources
 # - resource_id
 ResourceProp = str | Callable[[dict, str, dict, str], dict]
-ResourceDefinition = Dict[str, ResourceProp]
+ResourceDefinition = dict[str, ResourceProp]
 
 
 class FuncDetailsValue(TypedDict):
@@ -81,28 +81,28 @@ class FuncDetailsValue(TypedDict):
     # - resource_type
     # - func
     # - stack_name
-    function: str | Callable[[str, List[dict], str, Any, str], Any]
+    function: str | Callable[[str, list[dict], str, Any, str], Any]
     """Either an api method to call directly with `parameters` or a callable to directly invoke"""
     # Callable here takes the arguments:
     # - resource_props
     # - stack_name
     # - resources
     # - resource_id
-    parameters: Optional[ResourceDefinition | Callable[[dict, str, List[dict], str], dict]]
+    parameters: Optional[ResourceDefinition | Callable[[dict, str, list[dict], str], dict]]
     """arguments to the function, or a function that generates the arguments to the function"""
     # Callable here takes the arguments
     # - result
     # - resource_id
     # - resources
     # - resource_type
-    result_handler: Optional[Callable[[dict, str, List[dict], str], None]]
+    result_handler: Optional[Callable[[dict, str, list[dict], str], None]]
     """Take the result of the operation and patch the state of the resources, yuck..."""
-    types: Optional[Dict[str, Callable]]
+    types: Optional[dict[str, Callable]]
     """Possible type conversions"""
 
 
 # Type definition for func_details supplied to invoke_function and configure_resource_via_sdk
-FuncDetails = List[FuncDetailsValue] | FuncDetailsValue | Any
+FuncDetails = list[FuncDetailsValue] | FuncDetailsValue | Any
 
 
 class NoStackUpdates(Exception):
@@ -165,7 +165,9 @@ def get_client(resource: dict):
         return None
 
 
-def retrieve_resource_details(resource_id, resource_status, resources, stack_name):
+def retrieve_resource_details(
+    resource_id, resource_status, resources: dict[str, Type[GenericBaseModel]], stack_name
+):
 
     resource = resources.get(resource_id)
     resource_id = resource_status.get("PhysicalResourceId") or resource_id
@@ -178,6 +180,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             f'Unable to find properties for resource "{resource_id}": {resource} - {resources}'
         )
     try:
+        # TODO(srw): assign resource objects rather than fetching state all the time
         # convert resource props to resource entity
         instance = get_resource_model_instance(resource_id, resources)
         if instance:
@@ -229,6 +232,7 @@ def check_not_found_exception(e, resource_type, resource, resource_status=None):
     return True
 
 
+# TODO(srw): this becomes a property lookup
 def extract_resource_attribute(
     resource_type,
     resource_state,
@@ -705,7 +709,7 @@ def get_resource_model_instance(resource_id: str, resources) -> Optional[Generic
 # yeah `Any | None` is a bit pointless, but I want to ensure that None values are represented
 def execute_resource_action(
     resource_id: str, stack_name: str, resources: dict, action_name: str
-) -> List[Any | None] | None:
+) -> list[Any | None] | None:
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
     if action_name == ACTION_CREATE and resource_type:
@@ -760,7 +764,7 @@ def execute_resource_action(
 
         if "result_handler" in func and executed:
             LOG.debug(f"Executing callback method for {resource_type}:{resource_id}")
-            # TODO: pass resource directly here
+            # TODO(srw): 4 - pass resource directly here
             func["result_handler"](result, resource_id, resources, resource_type)
 
     return (results or [None])[0]
@@ -808,7 +812,7 @@ def invoke_function(
 def resolve_resource_parameters(
     stack_name: str,
     resource_definition: ResourceDefinition,
-    resources: Dict[str, ResourceDefinition],
+    resources: dict[str, ResourceDefinition],
     resource_id: str,
     func_details: FuncDetailsValue,
 ) -> dict | None:
@@ -838,7 +842,7 @@ def resolve_resource_parameters(
             params = _params
 
         params = dict(params)
-        # TODO: mutably mapping params :(
+        # TODO(srw): mutably mapping params :(
         for param_key, prop_keys in dict(params).items():
             params.pop(param_key, None)
             if not isinstance(prop_keys, list):
@@ -1251,7 +1255,7 @@ class TemplateDeployer:
 
             parameters[logical_id] = param
 
-        def _update_params(params_list: List[Dict]):
+        def _update_params(params_list: list[dict]):
             for param in params_list:
                 # make sure we preserve parameter values if UsePreviousValue=true
                 if not param.get("UsePreviousValue"):
@@ -1405,6 +1409,8 @@ class TemplateDeployer:
                 action = res_change["Action"]
                 is_add_or_modify = action in ["Add", "Modify"]
                 resource_id = res_change["LogicalResourceId"]
+
+                # TODO: do resolve_refs_recursively once here
                 try:
                     if is_add_or_modify:
                         resource = new_resources[resource_id]
@@ -1537,7 +1543,7 @@ class TemplateDeployer:
 
 
 # FIXME: resolve_refs_recursively should not be needed, the resources themselves should have those values available already
-def resolve_outputs(stack) -> List[Dict]:
+def resolve_outputs(stack) -> list[dict]:
     result = []
     for k, details in stack.outputs.items():
         value = None
