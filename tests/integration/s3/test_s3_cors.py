@@ -112,9 +112,7 @@ class TestS3Cors:
         response = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=body, ACL="public-read")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        # key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
-        # TODO: replace with vhost again: investigate
-        key_url = f"{config.get_edge_url()}/{s3_bucket}/{key}"
+        key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
 
         response = requests.get(key_url)
         assert response.status_code == 200
@@ -211,8 +209,7 @@ class TestS3Cors:
             "$..Headers.Transfer-Encoding",  # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
         ]
     )
-    def test_cors_match_origins(self, s3_bucket, match_headers, monkeypatch, aws_client):
-        # monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_S3", False)
+    def test_cors_match_origins(self, s3_bucket, match_headers, aws_client):
         bucket_cors_config = {
             "CORSRules": [
                 {
@@ -232,9 +229,7 @@ class TestS3Cors:
 
         aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
 
-        # key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{object_key}"
-        # TODO: replace with vhost again: investigate
-        key_url = f"{config.get_edge_url()}/{s3_bucket}/{object_key}"
+        key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{object_key}"
 
         # no origin, akin to no CORS
         opt_req = requests.options(key_url)
@@ -293,8 +288,7 @@ class TestS3Cors:
             "$.put-op.Headers.Content-Type",  # issue with default Response values
         ]
     )
-    def test_cors_match_methods(self, s3_create_bucket, match_headers, monkeypatch, aws_client):
-        # monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_S3", False)
+    def test_cors_match_methods(self, s3_create_bucket, match_headers, aws_client):
         origin = "https://localhost:4200"
         bucket_cors_config = {
             "CORSRules": [
@@ -316,9 +310,7 @@ class TestS3Cors:
 
         aws_client.s3.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
 
-        # key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}"
-        # TODO: replace with vhost again: investigate
-        key_url = f"{config.get_edge_url()}/{bucket_name}/{object_key}"
+        key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}"
 
         # test with allowed method: GET
         opt_req = requests.options(
@@ -336,9 +328,7 @@ class TestS3Cors:
 
         # test with method: PUT
 
-        # new_key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}new"
-        # TODO: replace with vhost again: investigate
-        new_key_url = f"{config.get_edge_url()}/{bucket_name}/{object_key}new"
+        new_key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}new"
 
         opt_req = requests.options(
             new_key_url, headers={"Origin": origin, "Access-Control-Request-Method": "PUT"}
@@ -360,8 +350,7 @@ class TestS3Cors:
             "$.put-op.Headers.Content-Type",  # issue with default Response values
         ]
     )
-    def test_cors_match_headers(self, s3_create_bucket, match_headers, monkeypatch, aws_client):
-        # monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_S3", False)
+    def test_cors_match_headers(self, s3_create_bucket, match_headers, aws_client):
         origin = "https://localhost:4200"
         bucket_cors_config = {
             "CORSRules": [
