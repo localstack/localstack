@@ -52,7 +52,7 @@ class GenericBaseModel:
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         """Determine the physical resource ID (Ref) of this resource (to be overwritten by subclasses)"""
-        return None
+        return self.physical_resource_id
 
     def fetch_state(self, stack_name, resources):
         """Fetch the latest deployment state of this resource, or return None if not currently deployed (NOTE: THIS IS NOT ALWAYS TRUE)."""
