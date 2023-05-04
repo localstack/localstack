@@ -2,7 +2,7 @@ import copy
 import datetime
 import logging
 import os
-from typing import Dict
+from typing import Dict, Tuple
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -106,6 +106,7 @@ from localstack.services.kms.models import (
     kms_stores,
     validate_alias_name,
 )
+from localstack.services.kms.utils import is_valid_key_arn, parse_key_arn
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import kms_alias_arn
 from localstack.utils.collections import PaginatedList
@@ -151,6 +152,20 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     @staticmethod
     def _get_key(account_id: str, region_name: str, key_id: str, **kwargs) -> KmsKey:
         return KmsProvider._get_store(account_id, region_name).get_key(key_id, **kwargs)
+
+    @staticmethod
+    def _parse_key_id(key_id_or_arn: str, context: RequestContext) -> Tuple[str, str, str]:
+        """
+        Return locator attributes of a given KMS key. If an ARN is provided, this is extracted from it. Otherwise, context data is used.
+
+        :param key_id_or_arn: KMS key ID or ARN
+        :param context: request context
+        :return: Tuple of account ID, region name and key ID
+        """
+        if is_valid_key_arn(key_id_or_arn):
+            return parse_key_arn(key_id_or_arn)
+
+        return context.account_id, context.region, key_id_or_arn
 
     @handler("CreateKey", expand=False)
     def create_key(
