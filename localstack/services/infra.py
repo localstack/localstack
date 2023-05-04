@@ -274,7 +274,6 @@ def stop_infra():
         return
 
     usage.aggregate_and_send()
-    # analytics.log.event("infra_stop")
 
     # also used to signal shutdown for edge proxy so that any further requests will be rejected
     events.infra_stopping.set()

@@ -654,7 +654,6 @@ def get_resource_model_instance(resource_id: str, resources) -> Optional[Generic
     resource_type = get_resource_type(resource)
     resource_class = RESOURCE_MODELS.get(resource_type)
     if not resource_class:
-        # usage.missing_resource_types.record(canonical_type)
         return None
     instance = resource_class(resource)
     return instance

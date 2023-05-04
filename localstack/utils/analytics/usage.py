@@ -51,7 +51,7 @@ class UsageCounter:
     Available aggregations: min, max, sum, mean, median
 
     Example:
-        my_feature_counter = UsageCounter("lambda:somefeature", aggregations=["max", "sum"])
+        my_feature_counter = UsageCounter("lambda:somefeature", aggregations=["min", "max", "sum"])
         my_feature_counter.increment()  # equivalent to my_feature_counter.record_value(1)
         my_feature_counter.record_value(3)
         my_feature_counter.aggregate()  # returns {"min": 1, "max": 3, "sum": 4}
@@ -75,22 +75,22 @@ class UsageCounter:
 
     def aggregate(self) -> dict:
         result = {}
-        for a in self.aggregations:
+        for aggregation in self.aggregations:
             if self.state:
-                match a:
+                match aggregation:
                     case "sum":
-                        result[a] = sum(self.state)
+                        result[aggregation] = sum(self.state)
                     case "min":
-                        result[a] = min(self.state)
+                        result[aggregation] = min(self.state)
                     case "max":
-                        result[a] = max(self.state)
+                        result[aggregation] = max(self.state)
                     case "mean":
-                        result[a] = sum(self.state) / len(self.state)
+                        result[aggregation] = sum(self.state) / len(self.state)
                     case "median":
                         median_index = math.floor(len(self.state) / 2)
-                        result[a] = self.state[median_index]
+                        result[aggregation] = self.state[median_index]
                     case _:
-                        raise Exception("unknown")
+                        raise Exception(f"Unsupported aggregation: {aggregation}")
         return result
 
 
