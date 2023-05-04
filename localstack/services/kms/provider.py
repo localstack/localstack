@@ -266,9 +266,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def describe_key(
         self, context: RequestContext, request: DescribeKeyRequest
     ) -> DescribeKeyResponse:
-        key = self._get_key(
-            context.account_id, context.region, request.get("KeyId"), any_key_state_allowed=True
-        )
+        account_id, region_name, key_id = self._parse_key_id(request["KeyId"])
+        key = self._get_key(account_id, region_name, key_id, any_key_state_allowed=True)
         return DescribeKeyResponse(KeyMetadata=key.metadata)
 
     @handler("ReplicateKey", expand=False)
@@ -314,10 +313,12 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def create_grant(
         self, context: RequestContext, request: CreateGrantRequest
     ) -> CreateGrantResponse:
-        store = self._get_store(context.account_id, context.region)
+        account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
+        store = self._get_store(account_id, region_name)
+        key = store.get_key(key_id)
+
         # KeyId can potentially hold one of multiple different types of key identifiers. Here we find a key no
         # matter which type of id is used.
-        key = store.get_key(request.get("KeyId"))
         key_id = key.metadata.get("KeyId")
         request["KeyId"] = key_id
         self._validate_grant_request(request, store)
@@ -347,7 +348,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     ) -> ListGrantsResponse:
         if not request.get("KeyId"):
             raise ValidationError("Required input parameter KeyId not specified")
-        store = self._get_store(context.account_id, context.region)
+        account_id, region_name, _ = self._parse_key_id(request["KeyId"])
+        store = self._get_store(account_id, region_name)
         # KeyId can potentially hold one of multiple different types of key identifiers. Here we find a key no
         # matter which type of id is used.
         key = store.get_key(request.get("KeyId"), any_key_state_allowed=True)
@@ -430,8 +432,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def revoke_grant(
         self, context: RequestContext, key_id: KeyIdType, grant_id: GrantIdType
     ) -> None:
+        account_id, region_name, key_id = self._parse_key_id(key_id)
         self._delete_grant(
-            store=self._get_store(context.account_id, context.region),
+            store=self._get_store(account_id, region_name),
             grant_id=grant_id,
             key_id=key_id,
         )
@@ -443,10 +446,11 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_id: KeyIdType = None,
         grant_id: GrantIdType = None,
     ) -> None:
+        account_id, region_name, key_id = self._parse_key_id(key_id)
         if not grant_token and (not grant_id or not key_id):
             raise ValidationException("Grant token OR (grant ID, key ID) must be specified")
         self._delete_grant(
-            store=self._get_store(context.account_id, context.region),
+            store=self._get_store(account_id, region_name),
             grant_id=grant_id,
             key_id=key_id,
             grant_token=grant_token,
@@ -483,9 +487,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     ) -> GetPublicKeyResponse:
         # According to https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html, GetPublicKey is supposed
         # to fail for disabled keys. But it actually doesn't fail in AWS.
+        account_id, region_name, key_id = self._parse_key_id(key_id)
         key = self._get_key(
-            context.account_id,
-            context.region,
+            account_id,
+            region_name,
             key_id,
             enabled_key_allowed=True,
             disabled_key_allowed=True,
@@ -923,9 +928,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
         # "If the KMS key has imported key material or is in a custom key store: UnsupportedOperationException."
         # We do not model that here, though.
-        key = self._get_key(
-            context.account_id, context.region, request.get("KeyId"), any_key_state_allowed=True
-        )
+        account_id, region_name, key_id = self._parse_key_id(request["KeyId"])
+        key = self._get_key(account_id, region_name, key_id, any_key_state_allowed=True)
         return GetKeyRotationStatusResponse(KeyRotationEnabled=key.is_key_rotation_enabled)
 
     @handler("DisableKeyRotation", expand=False)
