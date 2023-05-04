@@ -3,7 +3,7 @@ import json
 import logging
 import re
 import traceback
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Callable, Optional, Type, TypedDict
 
 import botocore
 
@@ -61,6 +61,52 @@ RESOURCE_MODELS: dict[str, Type[GenericBaseModel]] = {
     model.cloudformation_type(): model for model in get_all_subclasses(GenericBaseModel)
 }
 
+# ---------------------
+# TYPES
+# ---------------------
+
+# Callable here takes the arguments:
+# - resource_props
+# - stack_name
+# - resources
+# - resource_id
+ResourceProp = str | Callable[[dict, str, dict, str], dict]
+ResourceDefinition = dict[str, ResourceProp]
+
+
+class FuncDetailsValue(TypedDict):
+    # Callable here takes the arguments:
+    # - resource_id
+    # - resources
+    # - resource_type
+    # - func
+    # - stack_name
+    function: str | Callable[[str, list[dict], str, Any, str], Any]
+    """Either an api method to call directly with `parameters` or a callable to directly invoke"""
+    # Callable here takes the arguments:
+    # - resource_props
+    # - stack_name
+    # - resources
+    # - resource_id
+    parameters: Optional[ResourceDefinition | Callable[[dict, str, list[dict], str], dict]]
+    """arguments to the function, or a function that generates the arguments to the function"""
+    # Callable here takes the arguments
+    # - result
+    # - resource_id
+    # - resources
+    # - resource_type
+    result_handler: Optional[Callable[[dict, str, list[dict], str], None]]
+    """Take the result of the operation and patch the state of the resources, yuck..."""
+    types: Optional[dict[str, Callable]]
+    """Possible type conversions"""
+
+
+# Type definition for func_details supplied to invoke_function
+FuncDetails = list[FuncDetailsValue] | FuncDetailsValue
+
+# Type definition returned by GenericBaseModel.get_deploy_templates
+DeployTemplates = dict[str, FuncDetails | Callable]
+
 
 class NoStackUpdates(Exception):
     """Exception indicating that no actions are to be performed in a stack update (which is not allowed)"""
@@ -73,7 +119,7 @@ class NoStackUpdates(Exception):
 # ---------------------
 
 
-def get_deployment_config(res_type):
+def get_deployment_config(res_type: str) -> DeployTemplates | None:
     resource_class = RESOURCE_MODELS.get(res_type)
     if resource_class:
         return resource_class.get_deploy_templates()
@@ -107,7 +153,7 @@ def get_service_name(resource):
     return parts[1].lower()
 
 
-def get_client(resource: dict, func_config: dict):
+def get_client(resource: dict):
     resource_type = get_resource_type(resource)
     service = get_service_name(resource)
     resource_config = get_deployment_config(resource_type)
@@ -122,7 +168,9 @@ def get_client(resource: dict, func_config: dict):
         return None
 
 
-def retrieve_resource_details(resource_id, resource_status, resources, stack_name):
+def retrieve_resource_details(
+    resource_id, resource_status, resources: dict[str, Type[GenericBaseModel]], stack_name
+):
 
     resource = resources.get(resource_id)
     resource_id = resource_status.get("PhysicalResourceId") or resource_id
@@ -135,6 +183,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             f'Unable to find properties for resource "{resource_id}": {resource} - {resources}'
         )
     try:
+        # TODO(srw): assign resource objects rather than fetching state all the time
         # convert resource props to resource entity
         instance = get_resource_model_instance(resource_id, resources)
         if instance:
@@ -186,6 +235,7 @@ def check_not_found_exception(e, resource_type, resource, resource_status=None):
     return True
 
 
+# TODO(srw): this becomes a property lookup
 def extract_resource_attribute(
     resource_type,
     resource_state,
@@ -659,7 +709,10 @@ def get_resource_model_instance(resource_id: str, resources) -> Optional[Generic
     return instance
 
 
-def execute_resource_action(resource_id: str, stack_name, resources, action_name: str):
+# yeah `Any | None` is a bit pointless, but I want to ensure that None values are represented
+def execute_resource_action(
+    resource_id: str, stack_name: str, resources: dict, action_name: str
+) -> list[Any | None] | None:
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
     if action_name == ACTION_CREATE and resource_type:
@@ -688,42 +741,46 @@ def execute_resource_action(resource_id: str, stack_name, resources, action_name
     for func in func_details:
         result = None
         executed = False
+        # TODO(srw) 3 - callable function
         if callable(func.get("function")):
             result = func["function"](resource_id, resources, resource_type, func, stack_name)
             results.append(result)
             executed = True
 
-        if not executed and get_client(resource, func):
-            result = configure_resource_via_sdk(
-                stack_name,
-                resources,
-                resource_id,
-                resource_type,
-                func,
-                action_name,
-            )
+        elif not executed and get_client(resource):
+            # get the service client to invoke
+            client = get_client(resource)
+
+            # get the method on that function
+            function = getattr(client, func["function"])
+
+            # unify the resource parameters
+            params = resolve_resource_parameters(stack_name, resource, resources, resource_id, func)
+            if params is None:
+                result = None
+            else:
+                result = invoke_function(
+                    function, params, resource_type, func, action_name, resource
+                )
             results.append(result)
             executed = True
 
         if "result_handler" in func and executed:
             LOG.debug(f"Executing callback method for {resource_type}:{resource_id}")
+            # TODO(srw): 4 - pass resource directly here
             func["result_handler"](result, resource_id, resources, resource_type)
 
     return (results or [None])[0]
 
 
-# TODO: model the func details structure as a type
-FuncDetails = dict
-
-
 def invoke_function(
+    function: Callable,
+    params: dict,
     resource_type: str,
     func_details: FuncDetails,
     action_name: str,
-    params: dict,
-    function: Callable,
     resource: Any,
-):
+) -> Any:
     try:
         LOG.debug(
             'Request for resource type "%s" in region %s: %s %s',
@@ -755,30 +812,21 @@ def invoke_function(
     return result
 
 
-# TODO: move and refactor (make independent of stack)
-# TODO: split into:
-#  - processing of func_details "function"
-#  - execution of "function"
-def configure_resource_via_sdk(
+def resolve_resource_parameters(
     stack_name: str,
-    resources,
+    resource_definition: ResourceDefinition,
+    resources: dict[str, ResourceDefinition],
     resource_id: str,
-    resource_type: str,
-    func_details: FuncDetails,
-    action_name,
-):
-    resource = resources[resource_id]
-
-    client = get_client(resource, func_details)
-
-    function = getattr(client, func_details["function"])
+    func_details: FuncDetailsValue,
+) -> dict | None:
     params = func_details.get("parameters") or (lambda params, **kwargs: params)
-    resource_props = resource["Properties"] = resource.get("Properties", {})
+    resource_props = resource_definition["Properties"] = resource_definition.get("Properties", {})
     resource_props = dict(resource_props)
-    resource_state = resource.get(KEY_RESOURCE_STATE, {})
+    resource_state = resource_definition.get(KEY_RESOURCE_STATE, {})
 
     if callable(params):
         # resolve parameter map via custom function
+        # TODO(srw): 1 - callable for resolving params
         params = params(
             resource_props,
             stack_name=stack_name,
@@ -797,12 +845,14 @@ def configure_resource_via_sdk(
             params = _params
 
         params = dict(params)
+        # TODO(srw): mutably mapping params :(
         for param_key, prop_keys in dict(params).items():
             params.pop(param_key, None)
             if not isinstance(prop_keys, list):
                 prop_keys = [prop_keys]
             for prop_key in prop_keys:
                 if callable(prop_key):
+                    # TODO(srw): 2 - callable for a property value
                     prop_value = prop_key(
                         resource_props,
                         stack_name=stack_name,
@@ -812,7 +862,7 @@ def configure_resource_via_sdk(
                 else:
                     prop_value = resource_props.get(
                         prop_key,
-                        resource.get(prop_key, resource_state.get(prop_key)),
+                        resource_definition.get(prop_key, resource_state.get(prop_key)),
                     )
                 if prop_value is not None:
                     params[param_key] = prop_value
@@ -823,7 +873,7 @@ def configure_resource_via_sdk(
         return
 
     # convert refs
-    for param_key, param_value in dict(params).items():
+    for param_key, param_value in params.items():
         if param_value is not None:
             params[param_key] = resolve_refs_recursively(stack_name, resources, param_value)
 
@@ -832,11 +882,11 @@ def configure_resource_via_sdk(
     params = fix_account_id_in_arns(params)
     # convert data types (e.g., boolean strings to bool)
     # TODO: this might not be needed anymore
-    params = convert_data_types(func_details, params)
+    params = convert_data_types(func_details.get("types", {}), params)
     # remove None values, as they usually raise boto3 errors
     params = remove_none_values(params)
 
-    return invoke_function(resource_type, func_details, action_name, params, function, resource)
+    return params
 
 
 # TODO: this shouldn't be called for stack parameters
@@ -1050,7 +1100,7 @@ class TemplateDeployer:
         )
         return resource_instance.is_updatable()
 
-    def all_resource_dependencies_satisfied(self, resource):
+    def all_resource_dependencies_satisfied(self, resource) -> bool:
         unsatisfied = self.get_unsatisfied_dependencies(resource)
         return not unsatisfied
 
@@ -1208,7 +1258,7 @@ class TemplateDeployer:
 
             parameters[logical_id] = param
 
-        def _update_params(params_list: List[Dict]):
+        def _update_params(params_list: list[dict]):
             for param in params_list:
                 # make sure we preserve parameter values if UsePreviousValue=true
                 if not param.get("UsePreviousValue"):
@@ -1344,6 +1394,7 @@ class TemplateDeployer:
 
         # apply default props before running the loop
         for resource_id, resource in new_resources.items():
+            # TODO(srw): this should be done earlier
             add_default_resource_props(
                 resource,
                 stack.stack_name,
@@ -1361,6 +1412,8 @@ class TemplateDeployer:
                 action = res_change["Action"]
                 is_add_or_modify = action in ["Add", "Modify"]
                 resource_id = res_change["LogicalResourceId"]
+
+                # TODO: do resolve_refs_recursively once here
                 try:
                     if is_add_or_modify:
                         resource = new_resources[resource_id]
@@ -1493,7 +1546,7 @@ class TemplateDeployer:
 
 
 # FIXME: resolve_refs_recursively should not be needed, the resources themselves should have those values available already
-def resolve_outputs(stack) -> List[Dict]:
+def resolve_outputs(stack) -> list[dict]:
     result = []
     for k, details in stack.outputs.items():
         value = None
