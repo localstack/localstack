@@ -11,6 +11,10 @@ from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import (
+    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.utils.strings import short_uid
 
@@ -1105,3 +1109,51 @@ class TestKMS:
         with pytest.raises(ClientError) as e:
             aws_client.kms.encrypt(KeyId=key_id, Plaintext=base64.b64encode(message * 100))
         snapshot.match("invalid-plaintext-size-encrypt", e.value.response)
+
+    def test_cross_accounts_access(self, aws_client, aws_client_factory, kms_create_key):
+        key_arn = kms_create_key()["Arn"]
+
+        # Create client with secondary test credentials
+        client = aws_client_factory.get_client(
+            "lambda",
+            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+        )
+
+        # Cross-account access is supported for following operations in KMS:
+        # - CreateGrant
+        # - DescribeKey
+        # - GetKeyRotationStatus
+        # - GetPublicKey
+        # - ListGrants
+        # - RetireGrant
+        # - RevokeGrant
+        #
+        # Additionally following cryptographic operations
+        # - Decrypt
+        # - DescribeKey
+        # - Encrypt
+        # - GenerateDataKey
+        # - GenerateDataKeyPair
+        # - GenerateDataKeyPairWithoutPlaintext
+        # - GenerateDataKeyWithoutPlaintext
+        # - GenerateMac
+        # - GetPublicKey
+        # - ReEncrypt
+        # - Sign
+        # - Verify
+        # - VerifyMac
+
+        assert client.create_grant()
+
+        assert client.describe_key()
+
+        assert client.get_key_rotation_status()
+
+        assert client.get_public_key()
+
+        assert client.list_grants()
+
+        assert client.retire_grants()
+
+        assert client.revoke_grant()
