@@ -290,7 +290,7 @@ def ssm_parameter_arn(param_name: str, account_id: str = None, region_name: str 
 
 def s3_bucket_arn(bucket_name_or_arn: str, account_id=None):
     bucket_name = s3_bucket_name(bucket_name_or_arn)
-    return "arn:aws:s3:::%s" % bucket_name
+    return f"arn:aws:s3:::{bucket_name}"
 
 
 def s3_bucket_name(bucket_name_or_arn: str) -> str:

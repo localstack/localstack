@@ -684,14 +684,14 @@
     }
   },
   "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_invalid_sqs_arn": {
-    "recorded-date": "22-09-2022, 19:40:45",
+    "recorded-date": "04-05-2023, 18:28:16",
     "recorded-content": {
       "invalid_not_skip": {
         "Error": {
           "ArgumentName": "Queue",
           "ArgumentValue": "invalid-queue",
           "Code": "InvalidArgument",
-          "Message": "The ARN is not well formed"
+          "Message": "The ARN could not be parsed"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -703,7 +703,7 @@
           "ArgumentName": "Queue",
           "ArgumentValue": "invalid-queue",
           "Code": "InvalidArgument",
-          "Message": "The ARN is not well formed"
+          "Message": "The ARN could not be parsed"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -946,6 +946,49 @@
             }
           }
         ]
+      }
+    }
+  },
+  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_multiple_invalid_sqs_arns": {
+    "recorded-date": "04-05-2023, 18:13:38",
+    "recorded-content": {
+      "two-queue-arns-invalid": {
+        "Error": {
+          "ArgumentName": "Queue",
+          "ArgumentValue": "invalid_arn",
+          "Code": "InvalidArgument",
+          "Message": "The ARN could not be parsed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "one-queue-invalid-one-not-existent": {
+        "Error": {
+          "ArgumentName": "Queue",
+          "ArgumentValue": "invalid_arn_2",
+          "Code": "InvalidArgument",
+          "Message": "The ARN could not be parsed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "multiple-queues-do-not-exist": {
+        "Error": {
+          "ArgumentName1": "arn:aws:sqs:<region>:111111111111:my-queue-2",
+          "ArgumentName2": "arn:aws:sqs:<region>:111111111111:my-queue",
+          "ArgumentValue1": "The destination queue does not exist",
+          "ArgumentValue2": "The destination queue does not exist",
+          "Code": "InvalidArgument",
+          "Message": "Unable to validate the following destination configurations"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
       }
     }
   }
