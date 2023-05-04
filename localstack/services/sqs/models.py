@@ -1,12 +1,12 @@
-import copy
 import hashlib
 import heapq
 import inspect
+import json
 import logging
 import re
 import threading
 import time
-from queue import PriorityQueue
+from queue import Empty, PriorityQueue
 from typing import Dict, NamedTuple, Optional, Set
 
 from localstack import config
@@ -15,7 +15,6 @@ from localstack.aws.api.sqs import (
     InvalidAttributeName,
     Message,
     MessageNotInflight,
-    MessageSystemAttributeName,
     QueueAttributeMap,
     QueueAttributeName,
     ReceiptHandleIsInvalid,
@@ -39,12 +38,14 @@ from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
+ReceiptHandle = str
+
 
 class SqsMessage:
     message: Message
     created: float
     visibility_timeout: int
-    receive_times: int
+    receive_count: int
     delay_seconds: Optional[int]
     receipt_handles: Set[str]
     last_received: Optional[float]
@@ -66,7 +67,7 @@ class SqsMessage:
     ) -> None:
         self.created = time.time()
         self.message = message
-        self.receive_times = 0
+        self.receive_count = 0
         self.receipt_handles = set()
 
         self.delay_seconds = None
@@ -160,6 +161,17 @@ class Permission(NamedTuple):
     label: str
     account_id: str
     action: str
+
+
+class ReceiveMessageResult:
+    successful: list[SqsMessage]
+    receipt_handles: list[str]
+    dead_letters: list[SqsMessage]
+
+    def __init__(self):
+        self.successful = []
+        self.receipt_handles = []
+        self.dead_letters = []
 
 
 class SqsQueue:
@@ -270,6 +282,22 @@ class SqsQueue:
         )
 
     @property
+    def redrive_policy(self) -> Optional[dict]:
+        if policy_document := self.attributes.get(QueueAttributeName.RedrivePolicy):
+            return json.loads(policy_document)
+        return None
+
+    @property
+    def max_receive_count(self) -> Optional[int]:
+        """
+        Returns the maxReceiveCount attribute of the redrive policy. If not redrive policy is set, then it
+        returns None.
+        """
+        if redrive_policy := self.redrive_policy:
+            return int(redrive_policy["maxReceiveCount"])
+        return None
+
+    @property
     def visibility_timeout(self) -> int:
         return int(self.attributes[QueueAttributeName.VisibilityTimeout])
 
@@ -375,52 +403,84 @@ class SqsQueue:
     ) -> SqsMessage:
         raise NotImplementedError
 
-    def get(self, block=True, timeout=None, visibility_timeout: int = None) -> SqsMessage:
+    def receive(
+        self,
+        num_messages: int = None,
+        wait_time_seconds: int = None,
+        visibility_timeout: int = None,
+    ) -> ReceiveMessageResult:
+        result = ReceiveMessageResult()
+
+        max_receive_count = self.max_receive_count
+        visibility_timeout = (
+            self.visibility_timeout if visibility_timeout is None else visibility_timeout
+        )
+
+        block = True if wait_time_seconds else False
+        timeout = wait_time_seconds or 0
         start = time.time()
+
+        # TODO: need custom locking using wait conditions like the priority queue does
+
+        # collect messages
         while True:
-            standard_message: SqsMessage = self.visible.get(block=block, timeout=timeout)
-            LOG.debug(
-                "de-queued message %s from %s", standard_message.message["MessageId"], self.arn
-            )
+            try:
+                message = self.visible.get(block=block, timeout=wait_time_seconds)
+            except Empty:
+                break
+            # setting block to false guarantees that, if we've already waited before, we don't wait the
+            # full time again in the next iteration if max_number_of_messages is set but there are no more
+            # messages in the queue. see https://github.com/localstack/localstack/issues/5824
+            block = False
+            # TODO: blocking behavior needs to be aligned with custom locking
+            timeout -= time.time() - start
+            if timeout < 0:
+                timeout = 0
 
-            with self.mutex:
-                if standard_message.deleted:
-                    # TODO: check what the behavior of AWS is here. should we return a deleted message?
-                    timeout -= time.time() - start
-                    if timeout < 0:
-                        timeout = 0
-                    continue
+            if message.deleted:
+                # can only happen due to a race condition with remove()
+                continue
 
-                # update message attributes
-                standard_message.visibility_timeout = (
-                    self.visibility_timeout if visibility_timeout is None else visibility_timeout
+            # update message attributes
+            message.receive_count += 1
+            message.visibility_timeout = visibility_timeout
+            message.set_last_received(time.time())
+            if message.first_received is None:
+                message.first_received = message.last_received
+
+            message_id = message.message["MessageId"]
+            LOG.debug("de-queued message %s from %s", message_id, self.arn)
+            if max_receive_count and message.receive_count > max_receive_count:
+                # the message needs to move to the DLQ
+                LOG.debug(
+                    "message %s has been received %d times, marking it for DLQ",
+                    message_id,
+                    message.receive_count,
                 )
-                standard_message.receive_times += 1
-                standard_message.set_last_received(time.time())
-                if standard_message.first_received is None:
-                    standard_message.first_received = standard_message.last_received
+                result.dead_letters.append(message)
+            else:
+                result.successful.append(message)
 
-                # create and manage receipt handle
-                receipt_handle = self.create_receipt_handle(standard_message)
-                standard_message.receipt_handles.add(receipt_handle)
-                self.receipts[receipt_handle] = standard_message
+                # now we can return
+                if len(result.successful) == num_messages:
+                    break
 
-                if standard_message.visibility_timeout == 0:
-                    self.visible.put_nowait(standard_message)
-                else:
-                    self.inflight.add(standard_message)
+        # now process the successful result messages: create receipt handles and manage visibility
+        for message in result.successful:
+            # manage receipt handle
+            receipt_handle = self.create_receipt_handle(message)
+            message.receipt_handles.add(receipt_handle)
+            self.receipts[receipt_handle] = message
+            # array index position in `successful` and `receipt_handles` will be the same
+            result.receipt_handles.append(receipt_handle)
 
-            # prepare message for receiver
-            copied_message = copy.deepcopy(standard_message)
-            copied_message.message["Attributes"][
-                MessageSystemAttributeName.ApproximateReceiveCount
-            ] = str(standard_message.receive_times)
-            copied_message.message["Attributes"][
-                MessageSystemAttributeName.ApproximateFirstReceiveTimestamp
-            ] = str(int(standard_message.first_received * 1000))
-            copied_message.message["ReceiptHandle"] = receipt_handle
+            # manage message visibility
+            if message.visibility_timeout == 0:
+                self.visible.put_nowait(message)
+            else:
+                self.inflight.add(message)
 
-            return copied_message
+        return result
 
     def clear(self):
         """

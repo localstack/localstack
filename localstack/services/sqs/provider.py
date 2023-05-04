@@ -6,7 +6,6 @@ import re
 import threading
 import time
 from concurrent.futures.thread import ThreadPoolExecutor
-from queue import Empty
 from typing import Dict, List, Optional, Tuple
 
 from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
@@ -495,11 +494,8 @@ class SqsDeveloperEndpoints:
 
     def _collect_visible_messages(self, queue: SqsQueue) -> List[Message]:
         """
-        Retrieves from a given SqsQueue all visible messages without causing any side-effects (not setting any
+        Retrieves from a given SqsQueue all visible messages without causing any side effects (not setting any
         receive timestamps, receive counts, or visibility state).
-
-        FIXME: There's a bit of code-duplication here with the two layers of receive_message calls, which we
-         should consolidate at some point.
 
         :param queue: the queue
         :return: a list of messages
@@ -509,27 +505,9 @@ class SqsDeveloperEndpoints:
         messages = []
 
         for sqs_message in queue.visible.queue:
-            message: Message = copy.deepcopy(sqs_message.message)
+            message: Message = to_sqs_api_message(sqs_message, QueueAttributeName.All, ["All"])
             messages.append(message)
-
-            message["Attributes"][MessageSystemAttributeName.ApproximateReceiveCount] = str(
-                sqs_message.receive_times
-            )
-            message["Attributes"][
-                MessageSystemAttributeName.ApproximateFirstReceiveTimestamp
-            ] = str(int((sqs_message.first_received or time.time()) * 1000))
             message["ReceiptHandle"] = receipt_handle
-
-            message_filter_attributes(message, [QueueAttributeName.All])
-            message_filter_message_attributes(message, ["All"])
-
-            if message.get("MessageAttributes"):
-                message["MD5OfMessageAttributes"] = _create_message_attribute_hash(
-                    message["MessageAttributes"]
-                )
-            else:
-                # delete the value that was computed when creating the message
-                message.pop("MD5OfMessageAttributes")
 
         return messages
 
@@ -965,79 +943,39 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 f"Reason: Must be between 1 and 10, if provided."
             )
 
-        block = True if wait_time_seconds else False
-        # collect messages
-        messages = []
-
         # we chose to always return the maximum possible number of messages, even though AWS will typically return
         # fewer messages than requested on small queues. at some point we could maybe change this to randomly sample
         # between 1 and max_number_of_messages.
         # see https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ReceiveMessage.html
-        while num:
-            try:
-                standard_message = queue.get(
-                    block=block, timeout=wait_time_seconds, visibility_timeout=visibility_timeout
+        result = queue.receive(num, wait_time_seconds, visibility_timeout)
+
+        # process dead letter messages
+        if result.dead_letters:
+            dead_letter_target_arn = queue.redrive_policy["deadLetterTargetArn"]
+            dl_queue = self._require_queue_by_arn(context, dead_letter_target_arn)
+            # TODO: does this need to be atomic?
+            for standard_message in result.dead_letters:
+                message = to_sqs_api_message(
+                    standard_message, attribute_names, message_attribute_names
                 )
-                msg = standard_message.message
-            except Empty:
-                break
-
-            # setting block to false guarantees that, if we've already waited before, we don't wait the full time
-            # again in the next iteration if max_number_of_messages is set but there are no more messages in the
-            # queue. see https://github.com/localstack/localstack/issues/5824
-            block = False
-
-            moved_to_dlq = False
-            if (
-                queue.attributes
-                and queue.attributes.get(QueueAttributeName.RedrivePolicy) is not None
-            ):
-                moved_to_dlq = self._dead_letter_check(queue, standard_message, context)
-            if moved_to_dlq:
-                continue
-
-            msg = copy.deepcopy(msg)
-            message_filter_attributes(msg, attribute_names)
-            message_filter_message_attributes(msg, message_attribute_names)
-
-            if msg.get("MessageAttributes"):
-                msg["MD5OfMessageAttributes"] = _create_message_attribute_hash(
-                    msg["MessageAttributes"]
+                dl_queue.put(
+                    message=message,
+                    message_deduplication_id=standard_message.message_deduplication_id,
+                    message_group_id=standard_message.message_group_id,
                 )
-            else:
-                # delete the value that was computed when creating the message
-                msg.pop("MD5OfMessageAttributes")
 
-            # add message to result
-            messages.append(msg)
-            num -= 1
+        # prepare result
+        messages = []
+        for i, standard_message in enumerate(result.successful):
+            message = to_sqs_api_message(standard_message, attribute_names, message_attribute_names)
+            message["ReceiptHandle"] = result.receipt_handles[i]
+            messages.append(message)
 
         if self._cloudwatch_dispatcher:
             self._cloudwatch_dispatcher.dispatch_metric_received(queue, received=len(messages))
 
         # TODO: how does receiving behave if the queue was deleted in the meantime?
         return ReceiveMessageResult(Messages=messages)
-
-    def _dead_letter_check(
-        self, queue: SqsQueue, std_m: SqsMessage, context: RequestContext
-    ) -> bool:
-        redrive_policy = json.loads(queue.attributes.get(QueueAttributeName.RedrivePolicy))
-        # TODO: include the names of the dictionary sub - attributes in the autogenerated code?
-        max_receive_count = int(redrive_policy["maxReceiveCount"])
-        if std_m.receive_times > max_receive_count:
-            dead_letter_target_arn = redrive_policy["deadLetterTargetArn"]
-            dl_queue = self._require_queue_by_arn(context, dead_letter_target_arn)
-            # TODO: this needs to be atomic?
-            dead_message = std_m.message
-            dl_queue.put(
-                message=dead_message,
-                message_deduplication_id=std_m.message_deduplication_id,
-                message_group_id=std_m.message_group_id,
-            )
-            queue.remove(std_m.message["ReceiptHandle"])
-            return True
-        else:
-            return False
 
     def list_dead_letter_source_queues(
         self,
@@ -1144,7 +1082,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 raise InvalidParameterValue(
                     "The required parameter 'deadLetterTargetArn' is missing"
                 )
-            if not max_receive_count:
+            if max_receive_count is None:
                 raise InvalidParameterValue("The required parameter 'maxReceiveCount' is missing")
             try:
                 max_receive_count = int(max_receive_count)
@@ -1154,7 +1092,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             if not valid_count:
                 raise InvalidParameterValue(
                     f"Value {redrive_policy} for parameter RedrivePolicy is invalid. Reason: Invalid value for "
-                    f"maxReceiveCount: {max_receive_count}, valid values are from 1 to 1000 both inclusive. "
+                    f"maxReceiveCount: {max_receive_count}, valid values are from 1 to 1000 both inclusive."
                 )
 
     def tag_queue(self, context: RequestContext, queue_url: String, tags: TagMap) -> None:
@@ -1334,6 +1272,44 @@ def resolve_queue_location(
             return context.account_id, context.region, queue_url
 
     return context.account_id, context.region, queue_name
+
+
+def to_sqs_api_message(
+    standard_message: SqsMessage,
+    attribute_names: AttributeNameList = None,
+    message_attribute_names: MessageAttributeNameList = None,
+) -> Message:
+    """
+    Utility function to convert an SQS message from LocalStack's internal representation to the AWS API
+    concept 'Message', which is the format returned by the ``ReceiveMessage`` operation.
+
+    :param standard_message: A LocalStack SQS message
+    :param attribute_names: the attribute name list to filter
+    :param message_attribute_names: the message attribute names to filter
+    :return: a copy of the original Message with updated message attributes and MD5 attribute hash sums
+    """
+    # prepare message for receiver
+    message = copy.deepcopy(standard_message.message)
+
+    # update system attributes of the message copy
+    message["Attributes"][MessageSystemAttributeName.ApproximateReceiveCount] = str(
+        (standard_message.receive_count or 0)
+    )
+    message["Attributes"][MessageSystemAttributeName.ApproximateFirstReceiveTimestamp] = str(
+        int((standard_message.first_received or 0) * 1000)
+    )
+
+    # filter attributes for receiver
+    message_filter_attributes(message, attribute_names)
+    message_filter_message_attributes(message, message_attribute_names)
+    if message.get("MessageAttributes"):
+        message["MD5OfMessageAttributes"] = _create_message_attribute_hash(
+            message["MessageAttributes"]
+        )
+    else:
+        # delete the value that was computed when creating the message
+        message.pop("MD5OfMessageAttributes", None)
+    return message
 
 
 def message_filter_attributes(message: Message, names: Optional[AttributeNameList]):
