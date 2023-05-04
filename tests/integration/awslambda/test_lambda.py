@@ -1194,6 +1194,7 @@ class TestLambdaFeatures:
 
         retry(check_logs, retries=15)
 
+    @pytest.mark.skipif(is_old_provider(), reason="Not supported by old provider")
     def test_cross_account_access(
         self, aws_client, aws_client_factory, create_lambda_function, dummylayer
     ):
