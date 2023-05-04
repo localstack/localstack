@@ -872,11 +872,6 @@ def resolve_resource_parameters(
     if params is None:
         return
 
-    # convert refs
-    for param_key, param_value in params.items():
-        if param_value is not None:
-            params[param_key] = resolve_refs_recursively(stack_name, resources, param_value)
-
     # FIXME: move this to a single place after template processing is finished
     # convert any moto account IDs (123456789012) in ARNs to our format (000000000000)
     params = fix_account_id_in_arns(params)
