@@ -58,7 +58,7 @@ class GenericBaseModel:
     # TODO: this shouldn't have an attribute parameter
     def get_physical_resource_id(self, attribute=None, **kwargs):
         """Determine the physical resource ID (Ref) of this resource (to be overwritten by subclasses)"""
-        return None
+        return self.physical_resource_id
 
     # TODO: change the signature to pass in a Stack instance (instead of stack_name and resources)
     def fetch_state(self, stack_name, resources):
