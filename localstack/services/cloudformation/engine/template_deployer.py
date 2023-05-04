@@ -78,7 +78,7 @@ def get_deployment_config(res_type):
     if resource_class:
         return resource_class.get_deploy_templates()
     else:
-        usage.missing_resource_types.record(canonical_type)
+        usage.missing_resource_types.record(res_type)
 
 
 def get_resource_type(resource):
