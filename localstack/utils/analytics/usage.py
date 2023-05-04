@@ -116,4 +116,6 @@ def aggregate_and_send():
     aggregated_payload = aggregate()
 
     publisher = AnalyticsClientPublisher()
-    publisher.publish([Event(name="usage", metadata=metadata, payload=aggregated_payload)])
+    publisher.publish(
+        [Event(name="ls:usage_analytics", metadata=metadata, payload=aggregated_payload)]
+    )
