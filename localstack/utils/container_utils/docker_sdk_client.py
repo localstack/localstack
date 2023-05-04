@@ -251,6 +251,8 @@ class SdkDockerClient(ContainerClient):
                     raise AccessDenied(docker_image)
                 if "requesting higher privileges than access token allows" in to_str(result):
                     raise AccessDenied(docker_image)
+                if "access token has insufficient scopes" in to_str(result):
+                    raise AccessDenied(docker_image)
                 if "connection refused" in to_str(result):
                     raise RegistryConnectionError(result)
                 raise ContainerException(result)
