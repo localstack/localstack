@@ -257,14 +257,14 @@ class LambdaService:
                     f"Failed to create the runtime executor for the function {function_name}. "
                     "Please ensure that Docker is available in the LocalStack container by adding the volume mount "
                     '"/var/run/docker.sock:/var/run/docker.sock" to your LocalStack startup. '
-                    "Check out https://docs.localstack.cloud/references/lambda-provider-v2/#docker-not-available"
+                    "Check out https://docs.localstack.cloud/user-guide/aws/lambda/#docker-not-available"
                 )
             elif state == State.Pending:
                 HINT_LOG.warning(
                     "Lambda functions are created and updated asynchronously in the new lambda provider like in AWS. "
                     f"Before invoking {function_name}, please wait until the function transitioned from the state "
                     f'Pending to Active using: "aws lambda wait function-active-v2 --function-name {function_name}" '
-                    "Check out https://docs.localstack.cloud/references/lambda-provider-v2/#function-in-pending-state"
+                    "Check out https://docs.localstack.cloud/user-guide/aws/lambda/#function-in-pending-state"
                 )
             raise ResourceConflictException(
                 f"The operation cannot be performed at this time. The function is currently in the following state: {state}"
