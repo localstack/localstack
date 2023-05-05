@@ -104,7 +104,7 @@
     }
   },
   "tests/integration/test_events.py::TestEvents::test_put_events_nonexistent_event_bus": {
-    "recorded-date": "05-05-2023, 11:51:33",
+    "recorded-date": "05-05-2023, 12:00:22",
     "recorded-content": {
       "put-events": {
         "Entries": [
@@ -140,7 +140,17 @@
             }
           }
         }
-      ]
+      ],
+      "non-existent-bus": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Event bus <custom-event-bus> does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   }
 }

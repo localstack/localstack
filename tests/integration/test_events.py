@@ -1749,16 +1749,17 @@ class TestEvents:
         events_allow_event_rule_to_sqs_queue,
         snapshot,
     ):
-        snapshot.add_transformer(
-            [
-                snapshot.transform.key_value("MD5OfBody"),  # the event contains a timestamp
-                snapshot.transform.key_value("ReceiptHandle"),
-            ]
-        )
         default_bus_rule_name = f"rule-{short_uid()}"
         default_bus_target_id = f"test-target-default-b-{short_uid()}"
         nonexistent_event_bus = f"event-bus-{short_uid()}"
 
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("MD5OfBody"),  # the event contains a timestamp
+                snapshot.transform.key_value("ReceiptHandle"),
+                snapshot.transform.regex(nonexistent_event_bus, "<custom-event-bus>"),
+            ]
+        )
         # create SQS queue + add rules & targets so that we can check the default event bus received the message
         # even if one entry was wrong
 
@@ -1813,3 +1814,8 @@ class TestEvents:
 
         messages = retry(_get_sqs_messages, retries=5, sleep=0.1)
         snapshot.match("get-events", messages)
+
+        # try to get the custom EventBus we passed the Event to
+        with pytest.raises(ClientError) as e:
+            aws_client.events.describe_event_bus(Name=nonexistent_event_bus)
+        snapshot.match("non-existent-bus", e.value.response)
