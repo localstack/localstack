@@ -57,8 +57,16 @@ class EventBus(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
+        def result_handler(result, resource_id, resources, resource_type):
+            resources[resource_id]["Properties"]["Arn"] = result["EventBusArn"]
+            resources[resource_id]["PhysicalResourceId"] = result["EventBusArn"]
+
         return {
-            "create": {"function": "create_event_bus", "parameters": ["Name"]},
+            "create": {
+                "function": "create_event_bus",
+                "parameters": ["Name"],
+                "result_handler": result_handler,
+            },
             "delete": {"function": "delete_event_bus", "parameters": ["Name"]},
         }
 
