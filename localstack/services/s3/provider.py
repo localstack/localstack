@@ -364,9 +364,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise NoSuchKey("The specified key does not exist.", Key=key)
 
         response: GetObjectOutput = call_moto(context)
-        # check for the presence in the response, might be fixed by moto one day
-        if "VersionId" in response and bucket not in self.get_store().bucket_versioning_status:
-            response.pop("VersionId")
+        # check for the presence in the response, was fixed by moto but incompletely
+        if bucket in self.get_store().bucket_versioning_status and "VersionId" not in response:
+            response["VersionId"] = "null"
 
         for request_param, response_param in s3_constants.ALLOWED_HEADER_OVERRIDES.items():
             if request_param_value := request.get(request_param):  # noqa
