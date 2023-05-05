@@ -199,7 +199,7 @@ class TestTranscribe:
             )
         snapshot.match("MalformedLanguageCode", e_info.value.response)
 
-    # @pytest.mark.aws_validated
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=["$..TranscriptionJob..Settings", "$..TranscriptionJob..Transcript"]
     )
