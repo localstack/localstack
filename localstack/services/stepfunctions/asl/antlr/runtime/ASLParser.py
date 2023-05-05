@@ -4206,7 +4206,7 @@ class ASLParser ( Parser ):
             self.state = 457
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while ((_la) & ~0x3f) == 0 and ((1 << _la) & -67634176) != 0 or (((_la - 64)) & ~0x3f) == 0 and ((1 << (_la - 64)) & 1090715527401471) != 0:
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & -67634176) != 0) or ((((_la - 64)) & ~0x3f) == 0 and ((1 << (_la - 64)) & 1090715527401471) != 0):
                 self.state = 455
                 self._errHandler.sync(self)
                 la_ = self._interp.adaptivePredict(self._input,22,self._ctx)
