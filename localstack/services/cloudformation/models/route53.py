@@ -8,9 +8,6 @@ class Route53RecordSet(GenericBaseModel):
     def cloudformation_type():
         return "AWS::Route53::RecordSet"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("Name")  # Ref attribute is the domain name itself
-
     def fetch_state(self, stack_name, resources):
         route53 = aws_stack.connect_to_service("route53")
         props = self.props
@@ -70,6 +67,10 @@ class Route53RecordSet(GenericBaseModel):
                 hosted_zone_id = hosted_zone.get("Id")
             return hosted_zone_id
 
+        def _handle_result(result, resource_id, resources, resource_type):
+            resource = resources[resource_id]
+            resource["PhysicalResourceId"] = resource["Properties"]["Name"]
+
         return {
             "create": {
                 "function": "change_resource_record_sets",
@@ -77,5 +78,6 @@ class Route53RecordSet(GenericBaseModel):
                     "HostedZoneId": hosted_zone_id_change_batch,
                     "ChangeBatch": param_change_batch,
                 },
+                "result_handler": _handle_result,
             }
         }
