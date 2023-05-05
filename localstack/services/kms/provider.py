@@ -192,7 +192,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         :return: Tuple of account ID, region name and key ID
         """
         if is_valid_key_arn(key_id_or_arn):
-            return parse_key_arn(key_id_or_arn)
+            account_id, region_name, key_id = parse_key_arn(key_id_or_arn)
+            if region_name != context.region:
+                raise NotFoundException(f"Invalid arn {region_name}")
+            return account_id, region_name, key_id
 
         return context.account_id, context.region, key_id_or_arn
 

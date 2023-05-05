@@ -14,6 +14,7 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+    TEST_AWS_REGION_NAME,
 )
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.utils.strings import short_uid, to_str
@@ -1121,6 +1122,7 @@ class TestKMS:
             "kms",
             aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+            region_name=TEST_AWS_REGION_NAME,
         )
 
         # Cross-account access is supported for following operations in KMS:
