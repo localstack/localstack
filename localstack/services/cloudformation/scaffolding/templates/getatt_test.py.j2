@@ -1,0 +1,97 @@
+import pytest
+from botocore.exceptions import ClientError, ParamValidationError, WaiterError
+
+from localstack.utils.strings import short_uid
+
+TEMPLATE = """
+Parameters:
+  PropertyName:
+    Type: String
+
+Resources:
+  MyResource:
+    Type: {{ resource_type }}
+    # TODO: add required properties here
+    Properties: {}
+
+Outputs:
+  ResourceName:
+    Value:
+        Fn::GetAtt:
+        - MyResource
+        - !Ref PropertyName
+
+  ResourceRef:
+    Value: !Ref MyResource
+"""
+
+RESOURCE_SCHEMA_ATTRIBUTES = {{attributes}}
+
+# TODO(srw): fetch attributes from the documentation
+DOCUMENTATION_ATTRIBUTES = set()
+
+GLOBAL_ATTRIBUTES = {
+    "Arn",
+    "Id",
+    "PhysicalResourceId",
+}
+
+ATTRIBUTES = set(
+    list(GLOBAL_ATTRIBUTES) + list(RESOURCE_SCHEMA_ATTRIBUTES) + list(DOCUMENTATION_ATTRIBUTES)
+)
+
+
+@pytest.mark.parametrize("attribute", ATTRIBUTES)
+def test_getting_all_attributes(attribute, aws_client, snapshot, cleanups):
+    cfn_client = aws_client.cloudformation
+    stack_name = f"cfnv2-test-stack-{short_uid()}"
+
+    try:
+        create_stack_result = cfn_client.create_stack(
+            StackName=stack_name,
+            TemplateBody=TEMPLATE,
+            Parameters=[{"ParameterKey": "ParameterName", "ParameterValue": attribute}],
+        )
+    except ClientError as e:
+        snapshot.match("create_stack_exc", e.response)
+        return
+    except ParamValidationError as e:
+        snapshot.match("create_stack_exc", {"args": e.args, "kwargs": e.kwargs})
+        return
+
+    stack_arn = create_stack_result["StackId"]
+    cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_arn))
+
+    try:
+        cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_arn)
+    except WaiterError:
+        pass
+
+    describe_stack = cfn_client.describe_stacks(StackName=stack_arn)
+    snapshot.match("describe_stack", describe_stack)
+
+    stack_events = (
+        cfn_client.get_paginator("describe_stack_events")
+        .paginate(StackName=stack_arn)
+        .build_full_result()
+    )
+    snapshot.match("stack_events", stack_events)
+
+    postcreate_original_template = cfn_client.get_template(
+        StackName=stack_name, TemplateStage="Original"
+    )
+    snapshot.match("postcreate_original_template", postcreate_original_template)
+
+    try:
+        postcreate_processed_template = cfn_client.get_template(
+            StackName=stack_name, TemplateStage="Processed"
+        )
+        snapshot.match("postcreate_processed_template", postcreate_processed_template)
+    except ClientError as e:
+        snapshot.match("postcreate_processed_template_exc", e.response)
+    except Exception as e:
+        snapshot.match("postcreate_processed_template_exc", str(e))
+
+    res = aws_client.cloudformation.describe_stacks(StackName=stack_arn)
+
+    snapshot.match("stack-state", res)
