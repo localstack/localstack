@@ -16,7 +16,7 @@ from localstack.constants import (
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.services.kms.utils import get_hash_algorithm
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import short_uid, to_str
 
 
 @pytest.fixture(autouse=True)
@@ -1111,11 +1111,12 @@ class TestKMS:
         snapshot.match("invalid-plaintext-size-encrypt", e.value.response)
 
     def test_cross_accounts_access(self, aws_client, aws_client_factory, kms_create_key, user_arn):
-        # Create the keys with primary test credentials
+        # Create the keys in the primary AWS account. They will only be referred to by their ARNs hereon
         key_arn_1 = kms_create_key()["Arn"]
-        key_arn_2 = kms_create_key()["Arn"]
+        key_arn_2 = kms_create_key(KeyUsage="SIGN_VERIFY", KeySpec="RSA_4096")["Arn"]
+        key_arn_3 = kms_create_key(KeyUsage="GENERATE_VERIFY_MAC", KeySpec="HMAC_512")["Arn"]
 
-        # Create client with secondary test credentials and use it for assertions
+        # Create client in secondary account and attempt to run operations with the above keys
         client = aws_client_factory.get_client(
             "kms",
             aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
@@ -1157,7 +1158,7 @@ class TestKMS:
 
         assert client.revoke_grant(GrantId=grant_id, KeyId=key_arn_2)
 
-        # Additionally following cryptographic operations
+        # And additionally, the following cryptographic operations:
         # - Decrypt
         # - Encrypt
         # - GenerateDataKey
@@ -1170,22 +1171,41 @@ class TestKMS:
         # - Verify
         # - VerifyMac
 
-        assert client.generate_data_key()
+        assert client.generate_data_key(KeyId=key_arn_1)
 
-        assert client.generate_data_key_pair()
+        assert client.generate_data_key_without_plaintext(KeyId=key_arn_1)
 
-        assert client.generate_data_key_pair_without_plaintext()
+        assert client.generate_data_key_pair(KeyId=key_arn_1, KeyPairSpec="RSA_2048")
 
-        assert client.generate_data_key_without_plaintext()
+        assert client.generate_data_key_pair_without_plaintext(
+            KeyId=key_arn_1, KeyPairSpec="RSA_2048"
+        )
 
-        assert client.encrypt()
+        plaintext = "hello"
+        ciphertext = client.encrypt(KeyId=key_arn_1, Plaintext="hello")["CiphertextBlob"]
 
-        assert client.decrypt()
+        response = client.decrypt(CiphertextBlob=ciphertext, KeyId=key_arn_1)
+        assert plaintext == to_str(response["Plaintext"])
 
-        assert client.sign()
+        message = "world"
+        signature = client.sign(
+            KeyId=key_arn_2,
+            MessageType="RAW",
+            Message=message,
+            SigningAlgorithm="RSASSA_PKCS1_V1_5_SHA_256",
+        )["Signature"]
 
-        assert client.verify()
+        assert client.verify(
+            KeyId=key_arn_2,
+            Signature=signature,
+            Message=message,
+            SigningAlgorithm="RSASSA_PKCS1_V1_5_SHA_256",
+        )["SignatureValid"]
 
-        assert client.generate_mac()
+        mac = client.generate_mac(KeyId=key_arn_3, Message=message, MacAlgorithm="HMAC_SHA_512")[
+            "Mac"
+        ]
 
-        assert client.verify_mac()
+        assert client.verify_mac(
+            KeyId=key_arn_3, Message=message, MacAlgorithm="HMAC_SHA_512", Mac=mac
+        )["MacValid"]
