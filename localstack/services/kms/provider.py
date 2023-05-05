@@ -1,3 +1,4 @@
+import base64
 import copy
 import datetime
 import logging
@@ -294,7 +295,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def describe_key(
         self, context: RequestContext, request: DescribeKeyRequest
     ) -> DescribeKeyResponse:
-        account_id, region_name, key_id = self._parse_key_id(request["KeyId"])
+        account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
         key = self._get_key(account_id, region_name, key_id, any_key_state_allowed=True)
         return DescribeKeyResponse(KeyMetadata=key.metadata)
 
@@ -341,20 +342,22 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def create_grant(
         self, context: RequestContext, request: CreateGrantRequest
     ) -> CreateGrantResponse:
-        account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
-        store = self._get_store(account_id, region_name)
-        key = store.get_key(key_id)
+        key_account_id, key_region_name, key_id = self._parse_key_id(request["KeyId"], context)
+        store_kms_key = self._get_store(key_account_id, key_region_name)
+        key = store_kms_key.get_key(key_id)
 
         # KeyId can potentially hold one of multiple different types of key identifiers. Here we find a key no
         # matter which type of id is used.
         key_id = key.metadata.get("KeyId")
         request["KeyId"] = key_id
-        self._validate_grant_request(request, store)
+        self._validate_grant_request(request)
         grant_name = request.get("Name")
+
+        store = self._get_store(context.account_id, context.region)
         if grant_name and (grant_name, key_id) in store.grant_names:
             grant = store.grants[store.grant_names[(grant_name, key_id)]]
         else:
-            grant = KmsGrant(request)
+            grant = KmsGrant(request, context.account_id, context.region)
             grant_id = grant.metadata["GrantId"]
             store.grants[grant_id] = grant
             if grant_name:
@@ -376,13 +379,14 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     ) -> ListGrantsResponse:
         if not request.get("KeyId"):
             raise ValidationError("Required input parameter KeyId not specified")
-        account_id, region_name, _ = self._parse_key_id(request["KeyId"])
-        store = self._get_store(account_id, region_name)
+        key_account_id, key_region_name, _ = self._parse_key_id(request["KeyId"], context)
+        key_store = self._get_store(key_account_id, key_region_name)
         # KeyId can potentially hold one of multiple different types of key identifiers. Here we find a key no
         # matter which type of id is used.
-        key = store.get_key(request.get("KeyId"), any_key_state_allowed=True)
+        key = key_store.get_key(request.get("KeyId"), any_key_state_allowed=True)
         key_id = key.metadata.get("KeyId")
 
+        store = self._get_store(context.account_id, context.region)
         grant_id = request.get("GrantId")
         if grant_id:
             if grant_id not in store.grants:
@@ -393,7 +397,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         grantee_principal = request.get("GranteePrincipal")
         for grant in store.grants.values():
             # KeyId is a mandatory field of ListGrants request, so is going to be present.
-            if grant.metadata["KeyId"] != key_id:
+            _, _, grant_key_id = parse_key_arn(grant.metadata["KeyId"])
+            if grant_key_id != key_id:
                 continue
             # GranteePrincipal is a mandatory field for CreateGrant, should be in grants. But it is an optional field
             # for ListGrants, so might not be there.
@@ -411,48 +416,14 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         return ListGrantsResponse(Grants=page, **kwargs)
 
-    # Honestly, this is a mess in AWS KMS. Hashtag "do we follow specifications that are a pain to customers or do we
-    # diverge from AWS and make the life of our customers easier?"
-    #
-    # Both RetireGrant and RevokeGrant operations delete a grant. The differences between them are described here:
-    # https://docs.aws.amazon.com/kms/latest/developerguide/grant-manage.html#grant-delete
-    # Essentially:
-    # - Permissions to RevokeGrant are controlled through IAM policies or through key policies, while permissions to
-    # RetireGrant are controlled by settings inside the grant itself.
-    # - A grant to be retired can be specified by its GrantToken or its GrantId/KeyId pair. While revoking grants can
-    # only be done with a GrantId/KeyId pair.
-    # - For RevokeGrant, KeyId can be either an actual key ID, or an ARN of that key. While for RetireGrant only key
-    # ARN is accepted as a KeyId.
-    #
-    # We currently do not model permissions for retirement and revocation of grants. At least not in KMS,
-    # maybe IAM in LocalStack has some modelling though. We also accept both key IDs and key ARNs for both
-    # operations. So apart from RevokeGrant not accepting GrantToken parameter, we treat these two operations the same.
     @staticmethod
-    def _delete_grant(
-        store: KmsStore, grant_id: str = None, key_id: str = None, grant_token: str = None
-    ):
-        if grant_token:
-            if grant_token not in store.grant_tokens:
-                raise NotFoundException(f"Unable to find grant token {grant_token}")
-            grant_id = store.grant_tokens[grant_token]
-            # Do not really care about the key ID if a grant is identified by a token. But since a key has to be
-            # validated when a grant is identified by GrantId/KeyId pair, and since we want to use the same code in
-            # both cases - when we have a grant token or a GrantId/KeyId pair - have to set key_id.
-            key_id = store.grants[grant_id].metadata["KeyId"]
+    def _delete_grant(store: KmsStore, grant_id: str, key_id: str):
+        grant = store.grants[grant_id]
 
-        # KeyId can potentially hold one of multiple different types of key identifiers. Here we find a key no
-        # matter which type of id is used.
-        key = store.get_key(key_id, any_key_state_allowed=True)
-        key_id = key.metadata.get("KeyId")
-
-        if grant_id not in store.grants:
-            raise InvalidGrantIdException()
-        if store.grants[grant_id].metadata["KeyId"] != key_id:
+        _, _, grant_key_id = parse_key_arn(grant.metadata.get("KeyId"))
+        if key_id != grant_key_id:
             raise ValidationError(f"Invalid KeyId={key_id} specified for grant {grant_id}")
 
-        grant = store.grants[grant_id]
-        # In AWS grants have one or more tokens. But we have a simplified modeling of grants, where they have exactly
-        # one token.
         store.grant_tokens.pop(grant.token)
         store.grant_names.pop((grant.metadata.get("Name"), key_id), None)
         store.grants.pop(grant_id)
@@ -460,12 +431,18 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def revoke_grant(
         self, context: RequestContext, key_id: KeyIdType, grant_id: GrantIdType
     ) -> None:
-        account_id, region_name, key_id = self._parse_key_id(key_id)
-        self._delete_grant(
-            store=self._get_store(account_id, region_name),
-            grant_id=grant_id,
-            key_id=key_id,
+        key_account_id, key_region_name, key_id = self._parse_key_id(key_id, context)
+        key = self._get_store(key_account_id, key_region_name).get_key(
+            key_id, any_key_state_allowed=True
         )
+        key_id = key.metadata.get("KeyId")
+
+        store = self._get_store(context.account_id, context.region)
+
+        if grant_id not in store.grants:
+            raise InvalidGrantIdException()
+
+        self._delete_grant(store, grant_id, key_id)
 
     def retire_grant(
         self,
@@ -474,15 +451,30 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_id: KeyIdType = None,
         grant_id: GrantIdType = None,
     ) -> None:
-        account_id, region_name, key_id = self._parse_key_id(key_id)
         if not grant_token and (not grant_id or not key_id):
             raise ValidationException("Grant token OR (grant ID, key ID) must be specified")
-        self._delete_grant(
-            store=self._get_store(account_id, region_name),
-            grant_id=grant_id,
-            key_id=key_id,
-            grant_token=grant_token,
-        )
+
+        if grant_token:
+            decoded_token = to_str(base64.b64decode(grant_token))
+            grant_account_id, grant_region_name, _ = decoded_token.split(":")
+            grant_store = self._get_store(grant_account_id, grant_region_name)
+
+            if grant_token not in grant_store.grant_tokens:
+                raise NotFoundException(f"Unable to find grant token {grant_token}")
+
+            grant_id = grant_store.grant_tokens[grant_token]
+        else:
+            grant_store = self._get_store(context.account_id, context.region)
+
+        if key_id:
+            key_account_id, key_region_name, key_id = self._parse_key_id(key_id)
+            key_store = self._get_store(key_account_id, key_region_name)
+            key = key_store.get_key(key_id, any_key_state_allowed=True)
+            key_id = key.metadata.get("KeyId")
+        else:
+            _, _, key_id = parse_key_arn(grant_store.grants[grant_id].metadata.get("KeyId"))
+
+        self._delete_grant(grant_store, grant_id, key_id)
 
     def list_retirable_grants(
         self,
@@ -515,7 +507,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     ) -> GetPublicKeyResponse:
         # According to https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html, GetPublicKey is supposed
         # to fail for disabled keys. But it actually doesn't fail in AWS.
-        account_id, region_name, key_id = self._parse_key_id(key_id)
+        account_id, region_name, key_id = self._parse_key_id(key_id, context)
         key = self._get_key(
             account_id,
             region_name,
@@ -981,7 +973,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
         # "If the KMS key has imported key material or is in a custom key store: UnsupportedOperationException."
         # We do not model that here, though.
-        account_id, region_name, key_id = self._parse_key_id(request["KeyId"])
+        account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
         key = self._get_key(account_id, region_name, key_id, any_key_state_allowed=True)
         return GetKeyRotationStatusResponse(KeyRotationEnabled=key.is_key_rotation_enabled)
 
@@ -1135,7 +1127,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 "Member must have length less than or equal to 4096"
             )
 
-    def _validate_grant_request(self, data: Dict, store: KmsStore):
+    def _validate_grant_request(self, data: Dict):
         if "KeyId" not in data or "GranteePrincipal" not in data or "Operations" not in data:
             raise ValidationError("Grant ID, key ID and grantee principal must be specified")
 
