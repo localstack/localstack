@@ -1110,12 +1110,14 @@ class TestKMS:
             aws_client.kms.encrypt(KeyId=key_id, Plaintext=base64.b64encode(message * 100))
         snapshot.match("invalid-plaintext-size-encrypt", e.value.response)
 
-    def test_cross_accounts_access(self, aws_client, aws_client_factory, kms_create_key):
-        key_arn = kms_create_key()["Arn"]
+    def test_cross_accounts_access(self, aws_client, aws_client_factory, kms_create_key, user_arn):
+        # Create the keys with primary test credentials
+        key_arn_1 = kms_create_key()["Arn"]
+        key_arn_2 = kms_create_key()["Arn"]
 
-        # Create client with secondary test credentials
+        # Create client with secondary test credentials and use it for assertions
         client = aws_client_factory.get_client(
-            "lambda",
+            "kms",
             aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
         )
@@ -1128,7 +1130,33 @@ class TestKMS:
         # - ListGrants
         # - RetireGrant
         # - RevokeGrant
-        #
+
+        response = client.create_grant(
+            KeyId=key_arn_1,
+            GranteePrincipal=user_arn,
+            Operations=["Decrypt", "Encrypt"],
+        )
+        grant_token = response["GrantToken"]
+
+        response = client.create_grant(
+            KeyId=key_arn_2,
+            GranteePrincipal=user_arn,
+            Operations=["Sign", "Verify"],
+        )
+        grant_id = response["GrantId"]
+
+        assert client.describe_key(KeyId=key_arn_1)["KeyMetadata"]
+
+        assert client.get_key_rotation_status(KeyId=key_arn_1)
+
+        assert client.get_public_key(KeyId=key_arn_1)
+
+        assert client.list_grants(KeyId=key_arn_1)["Grants"]
+
+        assert client.retire_grant(GrantToken=grant_token)
+
+        assert client.revoke_grant(GrantId=grant_id, KeyId=key_arn_2)
+
         # Additionally following cryptographic operations
         # - Decrypt
         # - Encrypt
@@ -1137,21 +1165,27 @@ class TestKMS:
         # - GenerateDataKeyPairWithoutPlaintext
         # - GenerateDataKeyWithoutPlaintext
         # - GenerateMac
-        # - ReEncrypt
+        # - ReEncrypt (NOT IMPLEMENTED IN LOCALSTACK)
         # - Sign
         # - Verify
         # - VerifyMac
 
-        assert client.create_grant()
+        assert client.generate_data_key()
 
-        assert client.describe_key()
+        assert client.generate_data_key_pair()
 
-        assert client.get_key_rotation_status()
+        assert client.generate_data_key_pair_without_plaintext()
 
-        assert client.get_public_key()
+        assert client.generate_data_key_without_plaintext()
 
-        assert client.list_grants()
+        assert client.encrypt()
 
-        assert client.retire_grants()
+        assert client.decrypt()
 
-        assert client.revoke_grant()
+        assert client.sign()
+
+        assert client.verify()
+
+        assert client.generate_mac()
+
+        assert client.verify_mac()
