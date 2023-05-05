@@ -400,7 +400,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         grantee_principal = request.get("GranteePrincipal")
         for grant in store.grants.values():
             # KeyId is a mandatory field of ListGrants request, so is going to be present.
-            _, _, grant_key_id = parse_key_arn(grant.metadata["KeyId"])
+            _, _, grant_key_id = parse_key_arn(grant.metadata["KeyArn"])
             if grant_key_id != key_id:
                 continue
             # GranteePrincipal is a mandatory field for CreateGrant, should be in grants. But it is an optional field
@@ -423,7 +423,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def _delete_grant(store: KmsStore, grant_id: str, key_id: str):
         grant = store.grants[grant_id]
 
-        _, _, grant_key_id = parse_key_arn(grant.metadata.get("KeyId"))
+        _, _, grant_key_id = parse_key_arn(grant.metadata.get("KeyArn"))
         if key_id != grant_key_id:
             raise ValidationError(f"Invalid KeyId={key_id} specified for grant {grant_id}")
 
@@ -475,7 +475,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             key = key_store.get_key(key_id, any_key_state_allowed=True)
             key_id = key.metadata.get("KeyId")
         else:
-            _, _, key_id = parse_key_arn(grant_store.grants[grant_id].metadata.get("KeyId"))
+            _, _, key_id = parse_key_arn(grant_store.grants[grant_id].metadata.get("KeyArn"))
 
         self._delete_grant(grant_store, grant_id, key_id)
 

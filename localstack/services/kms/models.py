@@ -548,8 +548,10 @@ class KmsGrant:
     def __init__(self, create_grant_request: CreateGrantRequest, account_id: str, region_name: str):
         self.metadata = dict(create_grant_request)
 
-        if not is_valid_key_arn(self.metadata["KeyId"]):
-            self.metadata["KeyId"] = kms_key_arn(self.metadata["KeyId"], account_id, region_name)
+        if is_valid_key_arn(self.metadata["KeyId"]):
+            self.metadata["KeyArn"] = self.metadata["KeyId"]
+        else:
+            self.metadata["KeyArn"] = kms_key_arn(self.metadata["KeyId"], account_id, region_name)
 
         self.metadata["GrantId"] = long_uid()
         self.metadata["CreationDate"] = datetime.datetime.now()
