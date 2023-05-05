@@ -147,6 +147,13 @@ class CloudFormationUi:
         return Response(deploy_html, mimetype="text/html")
 
 
+class UsageResource:
+    def on_get(self, request):
+        from localstack.utils import diagnose
+
+        return call_safe(diagnose.get_usage) or {}
+
+
 class DiagnoseResource:
     def on_get(self, request):
         from localstack.utils import diagnose
@@ -166,6 +173,7 @@ class DiagnoseResource:
             "file-tree": call_safe(diagnose.get_file_tree),
             "important-endpoints": call_safe(diagnose.resolve_endpoints),
             "logs": call_safe(diagnose.get_localstack_logs),
+            "usage": call_safe(diagnose.get_usage),
         }
 
 
@@ -308,6 +316,7 @@ class LocalstackResources(Router):
                 "please be aware that this can expose sensitive information via your network."
             )
             self.add(Resource("/_localstack/diagnose", DiagnoseResource()))
+            self.add(Resource("/_localstack/usage", UsageResource()))
 
 
 class LocalstackResourceHandler(RouterListener):

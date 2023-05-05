@@ -1,0 +1,15 @@
+# configuration for automatically generated GitHub release notes
+changelog:
+  exclude:
+    labels:
+      - "area: dependencies"
+  categories:
+    - title: Breaking Changes 🛠
+      labels:
+        - "semver: major"
+    - title: Exciting New Features 🎉
+      labels:
+        - "semver: minor"
+    - title: Other Changes
+      labels:
+        - "*"

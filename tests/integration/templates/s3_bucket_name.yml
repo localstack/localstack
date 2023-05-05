@@ -1,0 +1,14 @@
+Parameters:
+  Name:
+    Type: String
+
+Resources:
+  myb3B4550BC:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Ref: Name
+Outputs:
+  BucketNameOutput:
+    Value:
+      Ref: myb3B4550BC

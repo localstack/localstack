@@ -1,8 +1,8 @@
 import json
-from typing import Callable
 
 from moto.ec2.utils import generate_route_id
 
+from localstack.services.cloudformation.cfn_utils import get_tags_param
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
 from localstack.utils.aws import aws_stack
@@ -530,6 +530,18 @@ class EC2Instance(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.physical_resource_id or self.props.get("InstanceId")
 
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        props = resource["Properties"]
+
+        min_count = props.get("MinCount")
+        if min_count is None:
+            props["MinCount"] = 1
+
+        max_count = props.get("MaxCount")
+        if max_count is None:
+            props["MaxCount"] = 1
+
     def get_cfn_attribute(self, attribute_name):
         if attribute_name in REF_ID_ATTRS:
             return self.props.get("InstanceId")
@@ -546,22 +558,19 @@ class EC2Instance(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        # TODO: validate again
         def _store_instance_id(result, resource_id, resources, resource_type):
-            if isinstance(result, list) and hasattr(result[0], "id"):
-                resources[resource_id]["PhysicalResourceId"] = result[0].id
-            if isinstance(result, dict) and result.get("InstanceId"):
-                resources[resource_id]["PhysicalResourceId"] = result["InstanceId"]
+            resources[resource_id]["PhysicalResourceId"] = result["Instances"][0]["InstanceId"]
 
         return {
             "create": {
-                "function": "create_instances",
+                "function": "run_instances",
                 "parameters": {
                     "InstanceType": "InstanceType",
                     "SecurityGroups": "SecurityGroups",
                     "KeyName": "KeyName",
                     "ImageId": "ImageId",
                 },
-                "defaults": {"MinCount": 1, "MaxCount": 1},
                 "result_handler": _store_instance_id,
             },
             "delete": {
@@ -573,16 +582,3 @@ class EC2Instance(GenericBaseModel):
                 },
             },
         }
-
-
-def get_tags_param(resource_type: str) -> Callable:
-    """Return a tag parameters creation function for the given resource type"""
-
-    def _param(params, **kwargs):
-        tags = params.get("Tags")
-        if not tags:
-            return None
-
-        return [{"ResourceType": resource_type, "Tags": tags}]
-
-    return _param

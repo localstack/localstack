@@ -770,11 +770,14 @@ class GatewayModel(GenericBaseModel):
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
-        role_name = resource.get("Properties", {}).get("Name")
+        props = resource.get("Properties", {})
+        role_name = props.get("Name")
         if not role_name:
-            resource["Properties"]["Name"] = generate_default_name(
-                stack_name, resource["LogicalResourceId"]
-            )
+            props["Name"] = generate_default_name(stack_name, resource["LogicalResourceId"])
+
+        content_type = props.get("contentType")
+        if not content_type:
+            props["contentType"] = "application/json"
 
     @staticmethod
     def get_deploy_templates():
@@ -791,7 +794,6 @@ class GatewayModel(GenericBaseModel):
                     "contentType": "ContentType",
                 },
                 "types": {"schema": str},
-                "defaults": {"contentType": "application/json"},
                 "result_handler": _store_id,
             }
         }

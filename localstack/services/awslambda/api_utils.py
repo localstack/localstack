@@ -602,7 +602,7 @@ def validate_layer_runtimes_and_architectures(
     validations = []
 
     if compatible_runtimes and set(compatible_runtimes).difference(RUNTIMES):
-        constraint = "Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9]"
+        constraint = "Member must satisfy enum value set: [nodejs12.x, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9]"
         validation_msg = f"Value '[{', '.join([s for s in compatible_runtimes])}]' at 'compatibleRuntimes' failed to satisfy constraint: {constraint}"
         validations.append(validation_msg)
 

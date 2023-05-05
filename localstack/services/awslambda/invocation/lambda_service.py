@@ -23,7 +23,7 @@ from localstack.aws.api.lambda_ import (
     State,
 )
 from localstack.aws.connect import connect_to
-from localstack.services.awslambda import api_utils
+from localstack.services.awslambda import api_utils, usage
 from localstack.services.awslambda.api_utils import (
     lambda_arn,
     qualified_lambda_arn,
@@ -247,6 +247,7 @@ class LambdaService:
         qualified_arn = qualified_lambda_arn(function_name, version_qualifier, account_id, region)
         try:
             version_manager = self.get_lambda_version_manager(qualified_arn)
+            usage.runtime.record(version_manager.function_version.config.runtime)
         except ValueError:
             version = function.versions.get(version_qualifier)
             state = version and version.config.state.state
@@ -606,6 +607,7 @@ def store_s3_bucket_archive(
     :return: S3 Code object representing the archive stored in S3
     """
     if archive_bucket == config.BUCKET_MARKER_LOCAL:
+        usage.hotreload.increment()
         return create_hot_reloading_code(path=archive_key)
     s3_client: "S3Client" = connect_to().s3
     kwargs = {"VersionId": archive_version} if archive_version else {}
