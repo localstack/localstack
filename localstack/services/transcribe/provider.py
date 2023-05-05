@@ -34,7 +34,6 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.files import new_tmp_file
 from localstack.utils.http import download
 from localstack.utils.run import run
-from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_thread
 
 LOG = logging.getLogger(__name__)
@@ -122,6 +121,21 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             raise BadRequestException(f"Language code must be one of {LANGUAGE_MODELS.keys()}")
 
         store = transcribe_stores[context.account_id][context.region]
+
+        s3_path = request["Media"]["MediaFileUri"]
+        output_bucket = request.get(
+            "OutputBucketName", s3_path.removeprefix("s3://").partition("/")[0]
+        )
+        output_key = request.get("OutputKey", None)
+
+        if output_key:
+            if not output_key.endswith(".json"):
+                output_key = f"{output_key}/{job_name}.json"
+        else:
+            output_key = f"{job_name}.json"
+
+        transcript = Transcript(TranscriptFileUri=f"s3://{output_bucket}/{output_key}")
+
         job = TranscriptionJob(
             TranscriptionJobName=job_name,
             LanguageCode=language_code,
@@ -129,6 +143,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             CreationTime=datetime.datetime.utcnow(),
             StartTime=datetime.datetime.utcnow(),
             TranscriptionJobStatus=TranscriptionJobStatus.QUEUED,
+            Transcript=transcript,
         )
         store.transcription_jobs[job_name] = job
 
@@ -321,13 +336,13 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             }
 
             # Save to S3
-            output_key = short_uid() + ".json"
-            s3_client.put_object(Bucket=bucket, Key=output_key, Body=json.dumps(output))
+            output_s3_path = job["Transcript"]["TranscriptFileUri"]
+            output_bucket, _, output_key = output_s3_path.removeprefix("s3://").partition("/")
+            s3_client.put_object(Bucket=output_bucket, Key=output_key, Body=json.dumps(output))
 
             # Update job details
             job["CompletionTime"] = datetime.datetime.utcnow()
             job["TranscriptionJobStatus"] = TranscriptionJobStatus.COMPLETED
-            job["Transcript"] = Transcript(TranscriptFileUri=f"s3://{bucket}/{output_key}")
             job["MediaFormat"] = MediaFormat.wav
 
             LOG.info("Transcription job completed: %s", job_name)

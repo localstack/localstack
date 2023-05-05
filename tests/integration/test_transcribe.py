@@ -1,3 +1,4 @@
+import logging
 import os
 from urllib.parse import urlparse
 
@@ -12,6 +13,8 @@ from localstack.utils.sync import poll_condition, retry
 
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 
+LOG = logging.getLogger(__name__)
+
 
 @pytest.fixture(autouse=True)
 def transcribe_snapshot_transformer(snapshot):
@@ -23,6 +26,21 @@ def transcribe_snapshot_transformer(snapshot):
     reason="Vosk transcription library has issues running on Circle CI arm64 executors.",
 )
 class TestTranscribe:
+    @staticmethod
+    def _wait_transcription_job(client, transcribe_job_name):
+        def is_transcription_done():
+            transcription_status = client.get_transcription_job(
+                TranscriptionJobName=transcribe_job_name
+            )
+            return transcription_status["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
+
+        if not poll_condition(condition=is_transcription_done, timeout=100, interval=2):
+            LOG.warning(
+                f"Timed out while awaiting for transcription of job with transcription job name:'{transcribe_job_name}'."
+            )
+        else:
+            return True
+
     @pytest.mark.skip_offline
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -180,3 +198,70 @@ class TestTranscribe:
                 Media={"MediaFileUri": f"s3://{s3_bucket}/{test_key}"},
             )
         snapshot.match("MalformedLanguageCode", e_info.value.response)
+
+    # @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..TranscriptionJob..Settings", "$..TranscriptionJob..Transcript"]
+    )
+    @pytest.mark.parametrize(
+        "output_bucket,output_key",
+        [
+            ("test-output-bucket-2", None),  # with output bucket and without output key
+            (
+                "test-output-bucket-3",
+                "test-output",
+            ),  # with output bucket and output key without .json
+            (
+                "test-output-bucket-4",
+                "test-output.json",
+            ),  # with output bucket and output key with .json
+            (
+                "test-output-bucket-5",
+                "test-files/test-output.json",
+            ),  # with output bucket and with folder key with .json
+            (
+                "test-output-bucket-6",
+                "test-files/test-output",
+            ),  # with output bucket and with folder key without .json
+            (None, None),  # without output bucket and output key
+        ],
+    )
+    def test_transcribe_start_job(self, output_bucket, output_key, s3_bucket, snapshot, aws_client):
+        file_path = os.path.join(BASEDIR, "files/en-gb.wav")
+        test_key = "test-clip.wav"
+        transcribe_job_name = f"test-transcribe-job-{short_uid()}"
+        params = {
+            "TranscriptionJobName": transcribe_job_name,
+            "LanguageCode": "en-GB",
+            "Media": {"MediaFileUri": f"s3://{s3_bucket}/{test_key}"},
+        }
+
+        if output_bucket is not None:
+            params["OutputBucketName"] = output_bucket
+            aws_client.s3.create_bucket(Bucket=output_bucket)
+        if output_key is not None:
+            params["OutputKey"] = output_key
+
+        with open(file_path, "rb") as f:
+            aws_client.s3.upload_fileobj(f, s3_bucket, test_key)
+
+        response_start_job = aws_client.transcribe.start_transcription_job(**params)
+        if self._wait_transcription_job(aws_client.transcribe, params["TranscriptionJobName"]):
+            response_start_job["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
+        snapshot.match("response-start-job", response_start_job)
+        response_get_transcribe_job = aws_client.transcribe.get_transcription_job(
+            TranscriptionJobName=transcribe_job_name
+        )
+        snapshot.match("response-get-transcribe-job", response_get_transcribe_job)
+
+        res_delete_transcription_job = aws_client.transcribe.delete_transcription_job(
+            TranscriptionJobName=transcribe_job_name
+        )
+        snapshot.match("delete-transcription-job", res_delete_transcription_job)
+
+        if output_bucket:
+            objects = aws_client.s3.list_objects_v2(Bucket=output_bucket)
+            if "Contents" in objects:
+                for obj in objects["Contents"]:
+                    aws_client.s3.delete_object(Bucket=output_bucket, Key=obj["Key"])
+            aws_client.s3.delete_bucket(Bucket=output_bucket)
