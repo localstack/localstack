@@ -288,7 +288,10 @@ class CloudwatchPublishWorker:
             return
 
         self.scheduler = Scheduler()
-        self.scheduler.schedule(self.publish_approximate_cloudwatch_metrics, period=60)
+        self.scheduler.schedule(
+            self.publish_approximate_cloudwatch_metrics,
+            period=config.SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL,
+        )
 
         def _run(*_args):
             self.scheduler.run()
@@ -560,9 +563,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         super().__init__()
         self._mutex = threading.RLock()
         self._queue_update_worker = QueueUpdateWorker()
-        self._cloudwatch_publish_worker = CloudwatchPublishWorker()
-        self._cloudwatch_dispatcher = CloudwatchDispatcher()
         self._router_rules = []
+        self._init_cloudwatch_metrics_reporting()
 
     @staticmethod
     def get_store(account_id: str = None, region: str = None) -> SqsStore:
@@ -571,15 +573,14 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def on_before_start(self):
         self._router_rules = ROUTER.add(SqsDeveloperEndpoints())
         self._queue_update_worker.start()
-        self._cloudwatch_publish_worker.start()
+        self._start_cloudwatch_metrics_reporting()
 
     def on_before_stop(self):
         for rule in self._router_rules:
             ROUTER.remove_rule(rule)
 
         self._queue_update_worker.stop()
-        self._cloudwatch_publish_worker.stop()
-        self._cloudwatch_dispatcher.shutdown()
+        self._stop_cloudwatch_metrics_reporting()
 
     def _require_queue(self, account_id: str, region_name: str, name: str) -> SqsQueue:
         """
@@ -923,10 +924,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             MD5OfMessageAttributes=_create_message_attribute_hash(message_attributes),
             MessageAttributes=message_attributes,
         )
-
-        self._cloudwatch_dispatcher.dispatch_metric_message_sent(
-            queue=queue, message_body_size=len(message_body.encode("utf-8"))
-        )
+        if self._cloudwatch_dispatcher:
+            self._cloudwatch_dispatcher.dispatch_metric_message_sent(
+                queue=queue, message_body_size=len(message_body.encode("utf-8"))
+            )
 
         return queue.put(
             message=message,
@@ -1011,7 +1012,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             messages.append(msg)
             num -= 1
 
-        self._cloudwatch_dispatcher.dispatch_metric_received(queue, received=len(messages))
+        if self._cloudwatch_dispatcher:
+            self._cloudwatch_dispatcher.dispatch_metric_received(queue, received=len(messages))
 
         # TODO: how does receiving behave if the queue was deleted in the meantime?
         return ReceiveMessageResult(Messages=messages)
@@ -1061,7 +1063,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
         queue.remove(receipt_handle)
-        self._cloudwatch_dispatcher.dispatch_metric_message_deleted(queue)
+        if self._cloudwatch_dispatcher:
+            self._cloudwatch_dispatcher.dispatch_metric_message_deleted(queue)
 
     def delete_message_batch(
         self,
@@ -1090,7 +1093,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                             Message=str(e),
                         )
                     )
-        self._cloudwatch_dispatcher.dispatch_metric_message_deleted(queue, deleted=len(successful))
+        if self._cloudwatch_dispatcher:
+            self._cloudwatch_dispatcher.dispatch_metric_message_deleted(
+                queue, deleted=len(successful)
+            )
 
         return DeleteMessageBatchResult(
             Successful=successful,
@@ -1259,6 +1265,23 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                     "A batch entry id can only contain alphanumeric characters, "
                     "hyphens and underscores. It can be at most 80 letters long."
                 )
+
+    def _init_cloudwatch_metrics_reporting(self):
+        self._cloudwatch_publish_worker = (
+            None if config.SQS_DISABLE_CLOUDWATCH_METRICS else CloudwatchPublishWorker()
+        )
+        self._cloudwatch_dispatcher = (
+            None if config.SQS_DISABLE_CLOUDWATCH_METRICS else CloudwatchDispatcher()
+        )
+
+    def _start_cloudwatch_metrics_reporting(self):
+        if not config.SQS_DISABLE_CLOUDWATCH_METRICS:
+            self._cloudwatch_publish_worker.start()
+
+    def _stop_cloudwatch_metrics_reporting(self):
+        if not config.SQS_DISABLE_CLOUDWATCH_METRICS:
+            self._cloudwatch_publish_worker.stop()
+            self._cloudwatch_dispatcher.shutdown()
 
 
 # Method from moto's attribute_md5 of moto/sqs/models.py, separated from the Message Object
