@@ -1131,14 +1131,12 @@ class TestKMS:
         #
         # Additionally following cryptographic operations
         # - Decrypt
-        # - DescribeKey
         # - Encrypt
         # - GenerateDataKey
         # - GenerateDataKeyPair
         # - GenerateDataKeyPairWithoutPlaintext
         # - GenerateDataKeyWithoutPlaintext
         # - GenerateMac
-        # - GetPublicKey
         # - ReEncrypt
         # - Sign
         # - Verify

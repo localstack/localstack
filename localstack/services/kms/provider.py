@@ -78,6 +78,7 @@ from localstack.aws.api.kms import (
     PlaintextType,
     PrincipalIdType,
     PutKeyPolicyRequest,
+    ReEncryptResponse,
     ReplicateKeyRequest,
     ReplicateKeyResponse,
     ScheduleKeyDeletionRequest,
@@ -156,7 +157,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     @staticmethod
     def _parse_key_id(key_id_or_arn: str, context: RequestContext) -> Tuple[str, str, str]:
         """
-        Return locator attributes of a given KMS key. If an ARN is provided, this is extracted from it. Otherwise, context data is used.
+        Return locator attributes (account ID, region_name, key ID) of a given KMS key.
+
+        If an ARN is provided, this is extracted from it. Otherwise, context data is used.
 
         :param key_id_or_arn: KMS key ID or ARN
         :param context: request context
@@ -507,7 +510,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return GetPublicKeyResponse(**result)
 
     def _generate_data_key_pair(self, key_id: str, key_pair_spec: str, context: RequestContext):
-        key = self._get_key(context.account_id, context.region, key_id)
+        account_id, region_name, key_id = self._parse_key_id(key_id, context)
+        key = self._get_key(account_id, region_name, key_id)
         self._validate_key_for_encryption_decryption(context, key)
         crypto_key = KmsCryptoKey(key_pair_spec)
         return {
@@ -567,7 +571,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     #
     # TODO We also do not use the encryption context. Should reuse the way we do it in encrypt / decrypt.
     def _generate_data_key(self, key_id: str, context: RequestContext):
-        key = self._get_key(context.account_id, context.region, key_id)
+        account_id, region_name, key_id = self._parse_key_id(key_id, context)
+        key = self._get_key(account_id, region_name, key_id)
         # TODO Should also have a validation for the key being a symmetric one.
         self._validate_key_for_encryption_decryption(context, key)
         crypto_key = KmsCryptoKey("SYMMETRIC_DEFAULT")
@@ -601,7 +606,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         msg = request.get("Message")
         self._validate_mac_msg_length(msg)
 
-        key = self._get_key(context.account_id, context.region, request.get("KeyId"))
+        account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
+        key = self._get_key(account_id, region_name, key_id)
+
         self._validate_key_for_generate_verify_mac(context, key)
 
         algorithm = request.get("MacAlgorithm")
@@ -620,7 +627,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         msg = request.get("Message")
         self._validate_mac_msg_length(msg)
 
-        key = self._get_key(context.account_id, context.region, request.get("KeyId"))
+        account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
+        key = self._get_key(account_id, region_name, key_id)
+
         self._validate_key_for_generate_verify_mac(context, key)
 
         algorithm = request.get("MacAlgorithm")
@@ -634,7 +643,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
     @handler("Sign", expand=False)
     def sign(self, context: RequestContext, request: SignRequest) -> SignResponse:
-        key = self._get_key(context.account_id, context.region, request.get("KeyId"))
+        account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
+        key = self._get_key(account_id, region_name, key_id)
+
         self._validate_key_for_sign_verify(context, key)
 
         # TODO Add constraints on KeySpec / SigningAlgorithm pairs:
@@ -653,7 +664,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     # Currently LocalStack only calculates SHA256 digests no matter what the signing algorithm is.
     @handler("Verify", expand=False)
     def verify(self, context: RequestContext, request: VerifyRequest) -> VerifyResponse:
-        key = self._get_key(context.account_id, context.region, request.get("KeyId"))
+        account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
+        key = self._get_key(account_id, region_name, key_id)
+
         self._validate_key_for_sign_verify(context, key)
 
         signing_algorithm = request.get("SigningAlgorithm")
@@ -671,6 +684,21 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         }
         return VerifyResponse(**result)
 
+    def re_encrypt(
+        self,
+        context: RequestContext,
+        ciphertext_blob: CiphertextType,
+        destination_key_id: KeyIdType,
+        source_encryption_context: EncryptionContextType = None,
+        source_key_id: KeyIdType = None,
+        destination_encryption_context: EncryptionContextType = None,
+        source_encryption_algorithm: EncryptionAlgorithmSpec = None,
+        destination_encryption_algorithm: EncryptionAlgorithmSpec = None,
+        grant_tokens: GrantTokenList = None,
+    ) -> ReEncryptResponse:
+        # TODO: when implementing, ensure cross-account support for source_key_id and destination_key_id
+        raise NotImplementedError
+
     def encrypt(
         self,
         context: RequestContext,
@@ -680,7 +708,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         grant_tokens: GrantTokenList = None,
         encryption_algorithm: EncryptionAlgorithmSpec = None,
     ) -> EncryptResponse:
-        key = self._get_key(context.account_id, context.region, key_id)
+        account_id, region_name, key_id = self._parse_key_id(key_id, context)
+        key = self._get_key(account_id, region_name, key_id)
         self._validate_plaintext_length(plaintext)
         self._validate_plaintext_key_type_based(plaintext, key, encryption_algorithm)
         self._validate_key_for_encryption_decryption(context, key)
@@ -715,10 +744,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 "LocalStack is unable to deserialize the ciphertext blob. Perhaps the "
                 "blob didn't come from LocalStack"
             )
-        key_id = key_id or ciphertext.key_id
-        key = self._get_key(context.account_id, context.region, key_id)
-        key_id = key.metadata["KeyId"]
-        if key_id != ciphertext.key_id:
+        account_id, region_name, key_id = self._parse_key_id(key_id or ciphertext.key_id, context)
+        key = self._get_key(account_id, region_name, key_id)
+        if key.metadata["KeyId"] != ciphertext.key_id:
             raise IncorrectKeyException(
                 "The key ID in the request does not identify a CMK that can perform this operation."
             )
