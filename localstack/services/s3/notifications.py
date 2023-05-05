@@ -10,6 +10,7 @@ from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.events import PutEventsRequestEntry
+from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.api.s3 import (
     BucketName,
     BucketRegion,
@@ -36,8 +37,8 @@ from localstack.services.s3.utils import (
     get_bucket_from_moto,
     get_key_from_moto_bucket,
 )
-from localstack.utils.aws import arns, aws_stack
-from localstack.utils.aws.arns import ArnData, parse_arn, s3_bucket_arn
+from localstack.utils.aws import arns
+from localstack.utils.aws.arns import parse_arn, s3_bucket_arn
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.strings import short_uid
 from localstack.utils.time import timestamp_millis
@@ -499,15 +500,28 @@ class LambdaNotifier(BaseNotifier):
     ) -> Tuple[LambdaFunctionArn, str]:
         return lambda_configuration.get("LambdaFunctionArn", ""), "LambdaFunctionArn"
 
-    def _verify_target(self, target_arn: str, arn_data: ArnData) -> None:
-        client = aws_stack.connect_to_service(self.service_name, region_name=arn_data["region"])
+    def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
+        arn_data = parse_arn(arn=target_arn)
+        lambda_client = connect_to(region_name=arn_data["region"]).awslambda
         try:
-            client.get_function(FunctionName=arn_data["resource"])
+            lambda_client.get_function(FunctionName=target_arn)
         except ClientError:
             raise _create_invalid_argument_exc(
                 "Unable to validate the following destination configurations",
                 name=target_arn,
                 value="The destination Lambda does not exist",
+            )
+        lambda_client = lambda_client.request_metadata(
+            source_arn=s3_bucket_arn(verification_ctx.bucket_name),
+            service_principal=ServicePrincipal.s3,
+        )
+        try:
+            lambda_client.invoke(FunctionName=target_arn, InvocationType=InvocationType.DryRun)
+        except ClientError:
+            raise _create_invalid_argument_exc(
+                "Unable to validate the following destination configurations",
+                name=f"{target_arn}, null",
+                value=f"Not authorized to invoke function [{target_arn}]",
             )
 
     def notify(self, ctx: S3EventNotificationContext, config: LambdaFunctionConfiguration):
@@ -516,7 +530,9 @@ class LambdaNotifier(BaseNotifier):
         lambda_arn = config["LambdaFunctionArn"]
 
         region_name = arns.extract_region_from_arn(lambda_arn)
-        lambda_client = aws_stack.connect_to_service("lambda", region_name=region_name)
+        lambda_client = connect_to(region_name=region_name).awslambda.request_metadata(
+            source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
+        )
         lambda_function_config = arns.lambda_function_name(lambda_arn)
         try:
             lambda_client.invoke(
@@ -609,13 +625,15 @@ class EventBridgeNotifier(BaseNotifier):
         # There are no configuration for EventBridge, simply passing an empty dict will enable notifications
         return
 
-    def _verify_target(self, target_arn: str, arn_data: ArnData) -> None:
+    def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
         # There are no target for EventBridge
         return
 
     def notify(self, ctx: S3EventNotificationContext, config: EventBridgeConfiguration):
         region = ctx.bucket_location or DEFAULT_REGION
-        events_client = aws_stack.connect_to_service("events", region_name=region)
+        # does not require permissions
+        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-permissions.html
+        events_client = connect_to(region_name=region).events
         entry = self._get_event_payload(ctx)
         try:
             events_client.put_events(Entries=[entry])

@@ -327,9 +327,10 @@ def sqs_queue_name(queue_arn):
         return queue_arn
 
 
-def sns_topic_arn(topic_name, account_id=None):
+def sns_topic_arn(topic_name, account_id=None, region_name=None):
     account_id = account_id or get_aws_account_id()
-    return "arn:aws:sns:%s:%s:%s" % (get_region(), account_id, topic_name)
+    region_name = region_name or get_region()
+    return f"arn:aws:sns:{region_name}:{account_id}:{topic_name}"
 
 
 def firehose_name(firehose_arn):

@@ -274,6 +274,8 @@ class LambdaService:
             payload = b"{}"
         if invocation_type is None:
             invocation_type = "RequestResponse"
+        if invocation_type == InvocationType.DryRun:
+            return None
         # TODO payload verification  An error occurred (InvalidRequestContentException) when calling the Invoke operation: Could not parse request body into json: Could not parse payload into json: Unexpected character (''' (code 39)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')
         #  at [Source: (byte[])"'test'"; line: 1, column: 2]
 

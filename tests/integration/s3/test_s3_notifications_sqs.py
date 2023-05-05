@@ -615,6 +615,9 @@ class TestS3NotificationsToSQS:
             )
             for m in resp["Messages"]:
                 if "s3:TestEvent" in m["Body"]:
+                    aws_client.sqs.delete_message(
+                        QueueUrl=queue_url, ReceiptHandle=m["ReceiptHandle"]
+                    )
                     continue
                 recv_messages.append(m)
 
