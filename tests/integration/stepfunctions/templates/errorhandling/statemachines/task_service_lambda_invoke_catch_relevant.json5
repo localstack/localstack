@@ -1,0 +1,55 @@
+{
+  "Comment": "TASK_SERVICE_LAMBDA_CATCH_RELEVANT",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName.$": "$.FunctionName",
+        "Payload.$": "$.Payload",
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "Lambda.Unknown",
+          ],
+          "Next": "EndWithLambdaUnknownHandler"
+        },
+        {
+          "ErrorEquals": [
+            "States.TaskFailed",
+          ],
+          "Next": "EndWithStateTaskFailedHandler"
+        },
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "EndWithAllHandler"
+        }
+      ],
+      "Next": "EndWithFinal",
+    },
+    "EndWithLambdaUnknownHandler": {
+      "Type": "Pass",
+      "ResultPath": "$.lambda_unknown",
+      "End": true
+    },
+    "EndWithStateTaskFailedHandler": {
+      "Type": "Pass",
+      "ResultPath": "$.task_failed_error",
+      "End": true
+    },
+    "EndWithAllHandler": {
+      "Type": "Pass",
+      "ResultPath": "$.all_error",
+      "End": true
+    },
+    "EndWithFinal": {
+      "Type": "Pass",
+      "ResultPath": "$.final",
+      "End": true,
+    },
+  },
+}

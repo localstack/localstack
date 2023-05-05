@@ -2,12 +2,12 @@ from typing import Final
 
 from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import (
     CatchOutcomeCaught,
+    CatchOutcomeNotCaught,
 )
 from localstack.services.stepfunctions.asl.component.common.catch.catcher_decl import CatcherDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catcher_outcome import (
     CatcherOutcome,
     CatcherOutcomeCaught,
-    CatcherOutcomeNotCaught,
 )
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
@@ -26,4 +26,4 @@ class CatchDecl(EvalComponent):
                 env.stack.append(CatchOutcomeCaught())
                 return
 
-        env.stack.append(CatcherOutcomeNotCaught())
+        env.stack.append(CatchOutcomeNotCaught())
