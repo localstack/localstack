@@ -146,6 +146,31 @@ class ValidationError(CommonServiceException):
 # For all operations constraints for states of keys are based on
 # https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
 class KmsProvider(KmsApi, ServiceLifecycleHook):
+    """
+    The LocalStack Key Management Service (KMS) provider.
+
+    Cross-account access is supported by following operations where key ID belonging
+    to another account can be used with the key ARN.
+    - CreateGrant
+    - DescribeKey
+    - GetKeyRotationStatus
+    - GetPublicKey
+    - ListGrants
+    - RetireGrant
+    - RevokeGrant
+    - Decrypt
+    - Encrypt
+    - GenerateDataKey
+    - GenerateDataKeyPair
+    - GenerateDataKeyPairWithoutPlaintext
+    - GenerateDataKeyWithoutPlaintext
+    - GenerateMac
+    - ReEncrypt
+    - Sign
+    - Verify
+    - VerifyMac
+    """
+
     @staticmethod
     def _get_store(account_id: str, region_name: str) -> KmsStore:
         return kms_stores[account_id][region_name]
