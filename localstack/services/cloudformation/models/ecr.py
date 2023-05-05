@@ -60,9 +60,14 @@ class ECRRepository(GenericBaseModel):
             if default_repos_per_stack.get(stack_name):
                 del default_repos_per_stack[stack_name]
 
+        def _set_physical_resource_id(result, resource_id, resources, resource_type):
+            repo_name = resources[resource_id]["Properties"]["RepositoryName"]
+            resources[resource_id]["PhysicalResourceId"] = arns.get_ecr_repository_arn(repo_name)
+
         return {
             "create": {
                 "function": _create_repo,
+                "result_handler": _set_physical_resource_id,
             },
             "delete": {
                 "function": _delete_repo,
