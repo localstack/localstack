@@ -4406,6 +4406,89 @@ class TestS3:
         response = aws_client.s3.get_object(Bucket=bucket_1, Key=key_name)
         snapshot.match("get-obj-default-kms-s3-key-from-bucket", response)
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_s3_legal_hold_lock_versioned(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "locked-object"
+        # creating a bucket with ObjectLockEnabledForBucket enables versioning by default, as it's not allowed otherwise
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
+
+        # create an object, get version1
+        resp = aws_client.s3.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='{"key": "value"}',
+        )
+        snapshot.match("put-object", resp)
+        version_id = resp["VersionId"]
+
+        # put a legal hold on the object with version1
+        resp = aws_client.s3.put_object_legal_hold(
+            Bucket=bucket_name,
+            Key=object_key,
+            VersionId=version_id,
+            LegalHold={"Status": "ON"},
+        )
+        snapshot.match("put-object-legal-hold-ver1", resp)
+
+        head_object = aws_client.s3.head_object(
+            Bucket=bucket_name, Key=object_key, VersionId=version_id
+        )
+        snapshot.match("head-object-ver1", head_object)
+
+        resp = aws_client.s3.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='{"key": "value"}',
+        )
+        snapshot.match("put-object-2", resp)
+        version_id_2 = resp["VersionId"]
+
+        # put a legal hold on the object with version2
+        resp = aws_client.s3.put_object_legal_hold(
+            Bucket=bucket_name,
+            Key=object_key,
+            VersionId=version_id_2,
+            LegalHold={"Status": "ON"},
+        )
+        snapshot.match("put-object-legal-hold-ver2", resp)
+
+        head_object = aws_client.s3.head_object(
+            Bucket=bucket_name, Key=object_key, VersionId=version_id_2
+        )
+        snapshot.match("head-object-ver2", head_object)
+
+        # remove the legal hold from the version1
+        resp = aws_client.s3.put_object_legal_hold(
+            Bucket=bucket_name,
+            Key=object_key,
+            VersionId=version_id,
+            LegalHold={"Status": "OFF"},
+        )
+        snapshot.match("remove-object-legal-hold-ver1", resp)
+
+        head_object = aws_client.s3.head_object(
+            Bucket=bucket_name, Key=object_key, VersionId=version_id
+        )
+        snapshot.match("head-object-ver1-no-lock", head_object)
+
+        # now delete the object with version1, the legal hold should be off
+        resp = aws_client.s3.delete_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            VersionId=version_id,
+        )
+        snapshot.match("delete-object-ver1", resp)
+
+        # disabled the Legal Hold so that the fixture can clean up
+        aws_client.s3.put_object_legal_hold(
+            Bucket=bucket_name,
+            Key=object_key,
+            LegalHold={"Status": "OFF"},
+            VersionId=version_id_2,
+        )
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack
