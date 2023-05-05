@@ -331,7 +331,7 @@ def moto_smb_create_secret(fn, self, name, *args, **kwargs):
 
     # Creating a secret with a SecretId equal to one that is scheduled for
     # deletion should raise an 'InvalidRequestException'.
-    secret: Optional[FakeSecret] = self.secrets.get(name, None)
+    secret: Optional[FakeSecret] = self.secrets.get(name)
     if secret is not None and secret.deleted_date is not None:
         raise InvalidRequestException(AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION)
 
@@ -485,8 +485,7 @@ def backend_update_secret_version_stage(
     for version_no_stages in versions_no_stages:
         del secret.versions[version_no_stages]
 
-    res = UpdateSecretVersionStageResponse(ARN=secret.arn, Name=secret.name)
-    return json.dumps(res)
+    return secret.arn, secret.name
 
 
 @patch(FakeSecret.reset_default_version)
