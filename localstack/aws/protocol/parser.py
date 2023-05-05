@@ -88,6 +88,11 @@ from werkzeug.exceptions import BadRequest, NotFound
 from localstack.aws.api import HttpRequest
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
 from localstack.config import LEGACY_V2_S3_PROVIDER
+from localstack.constants import (
+    APPLICATION_AMZ_JSON_1_0,
+    APPLICATION_AMZ_JSON_1_1,
+    APPLICATION_JSON,
+)
 
 
 def _text_content(func):
@@ -185,17 +190,7 @@ class RequestParser(abc.ABC):
     The request parser is responsible for parsing an incoming HTTP request.
     It determines which operation the request was aiming for and parses the incoming request such that the resulting
     dictionary can be used to invoke the service's function implementation.
-    It is the base class for all parsers and therefore contains the basic logic which is used among all of them.
     """
-
-    service: ServiceModel
-    DEFAULT_ENCODING = "utf-8"
-    # The default timestamp format is ISO8601, but this can be overwritten by subclasses.
-    TIMESTAMP_FORMAT = "iso8601"
-    # The default timestamp format for header fields
-    HEADER_TIMESTAMP_FORMAT = "rfc822"
-    # The default timestamp format for query fields
-    QUERY_TIMESTAMP_FORMAT = "iso8601"
 
     def __init__(self, service: ServiceModel) -> None:
         super().__init__()
@@ -213,6 +208,25 @@ class RequestParser(abc.ABC):
         :raises: RequestParserError (either a ProtocolParserError or an UnknownParserError)
         """
         raise NotImplementedError
+
+
+class BaseRequestParser(RequestParser):
+    """
+    This class is the base implementation for all parsers.
+    It contains the default implementation for traversing the different shapes in the service protocol specifications.
+    """
+
+    service: ServiceModel
+    DEFAULT_ENCODING = "utf-8"
+    # The default timestamp format is ISO8601, but this can be overwritten by subclasses.
+    TIMESTAMP_FORMAT = "iso8601"
+    # The default timestamp format for header fields
+    HEADER_TIMESTAMP_FORMAT = "rfc822"
+    # The default timestamp format for query fields
+    QUERY_TIMESTAMP_FORMAT = "iso8601"
+
+    def __init__(self, service: ServiceModel) -> None:
+        super().__init__(service)
 
     def _parse_shape(
         self, request: HttpRequest, shape: Shape, node: Any, uri_params: Mapping[str, Any] = None
@@ -353,7 +367,7 @@ class RequestParser(abc.ABC):
         return parsed
 
 
-class QueryRequestParser(RequestParser):
+class QueryRequestParser(BaseRequestParser):
     """
     The ``QueryRequestParser`` is responsible for parsing incoming requests for services which use the ``query``
     protocol. The requests for these services encode the majority of their parameters in the URL query string.
@@ -539,7 +553,7 @@ class QueryRequestParser(RequestParser):
         return key_prefix
 
 
-class BaseRestRequestParser(RequestParser):
+class BaseRestRequestParser(BaseRequestParser):
     """
     The ``BaseRestRequestParser`` is the base class for all "resty" AWS service protocols.
     The operation which should be invoked is determined based on the HTTP method and the path suffix.
@@ -802,7 +816,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
         raise NotImplementedError("_create_event_stream")
 
 
-class BaseJSONRequestParser(RequestParser, ABC):
+class BaseJSONRequestParser(BaseRequestParser, ABC):
     """
     The ``BaseJSONRequestParser`` is the base class for all JSON-based AWS service protocols.
     This base-class handles parsing the payload / body as JSON.
@@ -1083,7 +1097,7 @@ class S3RequestParser(RestXMLRequestParser):
         return super()._parse_shape(request, shape, node, uri_params)
 
 
-class SQSRequestParser(QueryRequestParser):
+class SQSQueryRequestParser(QueryRequestParser):
     def _get_serialized_name(self, shape: Shape, default_name: str, node: dict) -> str:
         """
         SQS allows using both - the proper serialized name of a map as well as the member name - as name for maps.
@@ -1117,6 +1131,23 @@ class SQSRequestParser(QueryRequestParser):
         return primary_name
 
 
+class SQSRequestParserFacade(RequestParser):
+    def __init__(self, service: ServiceModel) -> None:
+        super().__init__(service)
+        self.query_parser = SQSQueryRequestParser(service)
+        self.json_parser = JSONRequestParser(service)
+
+    def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
+        if request.mimetype in [
+            APPLICATION_JSON,
+            APPLICATION_AMZ_JSON_1_0,
+            APPLICATION_AMZ_JSON_1_1,
+        ]:
+            return self.json_parser.parse(request)
+        else:
+            return self.query_parser.parse(request)
+
+
 def create_parser(service: ServiceModel) -> RequestParser:
     """
     Creates the right parser for the given service model.
@@ -1131,7 +1162,7 @@ def create_parser(service: ServiceModel) -> RequestParser:
     # informally more specific protocol implementation) has precedence over the more general protocol-specific parsers.
     service_specific_parsers = {
         "s3": S3RequestParser,
-        "sqs": SQSRequestParser,
+        "sqs": SQSRequestParserFacade,
     }
     protocol_specific_parsers = {
         "query": QueryRequestParser,

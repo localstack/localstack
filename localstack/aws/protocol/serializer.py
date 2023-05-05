@@ -112,6 +112,8 @@ from localstack.utils.xml import strip_xmlns
 LOG = logging.getLogger(__name__)
 
 REQUEST_ID_CHARACTERS = string.digits + string.ascii_uppercase
+JSON_TYPES = [APPLICATION_JSON, APPLICATION_AMZ_JSON_1_0, APPLICATION_AMZ_JSON_1_1]
+CBOR_TYPES = [APPLICATION_CBOR, APPLICATION_AMZ_CBOR_1_1]
 
 
 class ResponseSerializerError(Exception):
@@ -164,6 +166,65 @@ def _handle_exceptions(func):
 
 
 class ResponseSerializer(abc.ABC):
+    # Defines the supported mime types of the specific serializer. Sorted by priority (preferred / default first).
+    # Needs to be specified by subclasses.
+    SUPPORTED_MIME_TYPES: List[str] = []
+
+    @_handle_exceptions
+    def serialize_to_response(
+        self,
+        response: dict,
+        operation_model: OperationModel,
+        headers: Optional[Dict | Headers],
+        request_id: str,
+    ) -> HttpResponse:
+        raise NotImplementedError
+
+    @_handle_exceptions
+    def serialize_error_to_response(
+        self,
+        error: ServiceException,
+        operation_model: OperationModel,
+        headers: Optional[Dict | Headers],
+        request_id: str,
+    ) -> HttpResponse:
+        raise NotImplementedError
+
+    def _get_mime_type(self, headers: Optional[Dict | Headers]) -> str:
+        """
+        Extracts the accepted mime type from the request headers and returns a matching, supported mime type for the
+        serializer or the default mime type of the service if there is no match.
+        :param headers: to extract the "Accept" header from
+        :return: preferred mime type to be used by the serializer (if it is not accepted by the client,
+                 an error is logged)
+        """
+        accept_header = None
+        if headers and "Accept" in headers and not headers.get("Accept") == "*/*":
+            accept_header = headers.get("Accept")
+        elif headers and headers.get("Content-Type"):
+            # If there is no specific Accept header given, we use the given Content-Type as a fallback.
+            # i.e. if the request content was JSON encoded and the client doesn't send a specific an Accept header, the
+            # serializer should prefer JSON encoding.
+            content_type = headers.get("Content-Type")
+            LOG.debug(
+                "No accept header given. Using request's Content-Type (%s) as preferred response Content-Type.",
+                content_type,
+            )
+            accept_header = content_type + ", */*"
+        mime_accept: MIMEAccept = parse_accept_header(accept_header, MIMEAccept)
+        mime_type = mime_accept.best_match(self.SUPPORTED_MIME_TYPES)
+        if not mime_type:
+            # There is no match between the supported mime types and the requested one(s)
+            mime_type = self.SUPPORTED_MIME_TYPES[0]
+            LOG.debug(
+                "Determined accept type (%s) is not supported by this serializer. Using default of this serializer: %s",
+                accept_header,
+                mime_type,
+            )
+        return mime_type
+
+
+class BaseResponseSerializer(ResponseSerializer):
     """
     The response serializer is responsible for the serialization of a service implementation's result to an actual
     HTTP response (which will be sent to the calling client).
@@ -175,9 +236,6 @@ class ResponseSerializer(abc.ABC):
     TIMESTAMP_FORMAT = "iso8601"
     # Event streaming binary data type mapping for type "string"
     AWS_BINARY_DATA_TYPE_STRING = 7
-    # Defines the supported mime types of the specific serializer. Sorted by priority (preferred / default first).
-    # Needs to be specified by subclasses.
-    SUPPORTED_MIME_TYPES: List[str] = []
 
     @_handle_exceptions
     def serialize_to_response(
@@ -468,39 +526,6 @@ class ResponseSerializer(abc.ABC):
         """
         return HttpResponse(status=operation_model.http.get("responseCode", 200))
 
-    def _get_mime_type(self, headers: Optional[Dict | Headers]) -> str:
-        """
-        Extracts the accepted mime type from the request headers and returns a matching, supported mime type for the
-        serializer or the default mime type of the service if there is no match.
-        :param headers: to extract the "Accept" header from
-        :return: preferred mime type to be used by the serializer (if it is not accepted by the client,
-                 an error is logged)
-        """
-        accept_header = None
-        if headers and "Accept" in headers and not headers.get("Accept") == "*/*":
-            accept_header = headers.get("Accept")
-        elif headers and headers.get("Content-Type"):
-            # If there is no specific Accept header given, we use the given Content-Type as a fallback.
-            # i.e. if the request content was JSON encoded and the client doesn't send a specific an Accept header, the
-            # serializer should prefer JSON encoding.
-            content_type = headers.get("Content-Type")
-            LOG.debug(
-                "No accept header given. Using request's Content-Type (%s) as preferred response Content-Type.",
-                content_type,
-            )
-            accept_header = content_type + ", */*"
-        mime_accept: MIMEAccept = parse_accept_header(accept_header, MIMEAccept)
-        mime_type = mime_accept.best_match(self.SUPPORTED_MIME_TYPES)
-        if not mime_type:
-            # There is no match between the supported mime types and the requested one(s)
-            mime_type = self.SUPPORTED_MIME_TYPES[0]
-            LOG.debug(
-                "Determined accept type (%s) is not supported by this serializer. Using default of this serializer: %s",
-                accept_header,
-                mime_type,
-            )
-        return mime_type
-
     # Some extra utility methods subclasses can use.
 
     @staticmethod
@@ -585,7 +610,7 @@ class ResponseSerializer(abc.ABC):
         return str(error) if error is not None and str(error) != "None" else None
 
 
-class BaseXMLResponseSerializer(ResponseSerializer):
+class BaseXMLResponseSerializer(BaseResponseSerializer):
     """
     The BaseXMLResponseSerializer performs the basic logic for the XML response serialization.
     It is slightly adapted by the QueryResponseSerializer.
@@ -870,7 +895,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             return content
 
 
-class BaseRestResponseSerializer(ResponseSerializer, ABC):
+class BaseRestResponseSerializer(BaseResponseSerializer, ABC):
     """
     The BaseRestResponseSerializer performs the basic logic for the ReST response serialization.
     In our case it basically only adds the request metadata to the HTTP header.
@@ -1199,15 +1224,13 @@ class EC2ResponseSerializer(QueryResponseSerializer):
         request_id_element.text = request_id
 
 
-class JSONResponseSerializer(ResponseSerializer):
+class JSONResponseSerializer(BaseResponseSerializer):
     """
     The ``JSONResponseSerializer`` is responsible for the serialization of responses from services with the ``json``
     protocol. It implements the JSON response body serialization, which is also used by the
     ``RestJSONResponseSerializer``.
     """
 
-    JSON_TYPES = [APPLICATION_JSON, APPLICATION_AMZ_JSON_1_0, APPLICATION_AMZ_JSON_1_1]
-    CBOR_TYPES = [APPLICATION_CBOR, APPLICATION_AMZ_CBOR_1_1]
     SUPPORTED_MIME_TYPES = JSON_TYPES + CBOR_TYPES
 
     TIMESTAMP_FORMAT = "unixtimestamp"
@@ -1246,7 +1269,7 @@ class JSONResponseSerializer(ResponseSerializer):
             if message is not None:
                 body["message"] = message
 
-        if mime_type in self.CBOR_TYPES:
+        if mime_type in CBOR_TYPES:
             response.set_response(cbor2.dumps(body))
             response.content_type = mime_type
         else:
@@ -1262,7 +1285,7 @@ class JSONResponseSerializer(ResponseSerializer):
         mime_type: str,
         request_id: str,
     ) -> None:
-        if mime_type in self.CBOR_TYPES:
+        if mime_type in CBOR_TYPES:
             response.content_type = mime_type
         else:
             json_version = operation_model.metadata.get("jsonVersion")
@@ -1284,7 +1307,7 @@ class JSONResponseSerializer(ResponseSerializer):
         if shape is not None:
             self._serialize(body, params, shape, None, mime_type)
 
-        if mime_type in self.CBOR_TYPES:
+        if mime_type in CBOR_TYPES:
             return cbor2.dumps(body)
         else:
             return json.dumps(body)
@@ -1370,7 +1393,7 @@ class JSONResponseSerializer(ResponseSerializer):
         timestamp_format = (
             shape.serialization.get("timestampFormat")
             # CBOR always uses unix timestamp milliseconds
-            if mime_type not in self.CBOR_TYPES
+            if mime_type not in CBOR_TYPES
             else "unixtimestampmillis"
         )
         body[key] = self._convert_timestamp_to_str(value, timestamp_format)
@@ -1378,7 +1401,7 @@ class JSONResponseSerializer(ResponseSerializer):
     def _serialize_type_blob(
         self, body: dict, value: Union[str, bytes], _, key: str, mime_type: str
     ):
-        if mime_type in self.CBOR_TYPES:
+        if mime_type in CBOR_TYPES:
             body[key] = value
         else:
             body[key] = self._get_base64(value)
@@ -1578,7 +1601,7 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
             root.tail = "\n"
 
 
-class SqsResponseSerializer(QueryResponseSerializer):
+class SqsQueryResponseSerializer(QueryResponseSerializer):
     """
     Unfortunately, SQS uses a rare interpretation of the XML protocol: It uses HTML entities within XML tag text nodes.
     For example:
@@ -1621,6 +1644,47 @@ class SqsResponseSerializer(QueryResponseSerializer):
         )
 
 
+class SqsResponseSerializerFacade(ResponseSerializer):
+    SUPPORTED_MIME_TYPES = ["application/x-www-form-urlencoded"] + JSON_TYPES
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.query_serializer = SqsQueryResponseSerializer()
+        self.json_serializer = JSONResponseSerializer()
+
+    def serialize_to_response(
+        self,
+        response: dict,
+        operation_model: OperationModel,
+        headers: Optional[Dict | Headers],
+        request_id: str,
+    ) -> HttpResponse:
+        if self._get_mime_type(headers) in JSON_TYPES:
+            return self.json_serializer.serialize_to_response(
+                response, operation_model, headers, request_id
+            )
+        else:
+            return self.query_serializer.serialize_to_response(
+                response, operation_model, headers, request_id
+            )
+
+    def serialize_error_to_response(
+        self,
+        error: ServiceException,
+        operation_model: OperationModel,
+        headers: Optional[Dict | Headers],
+        request_id: str,
+    ) -> HttpResponse:
+        if self._get_mime_type(headers) in JSON_TYPES:
+            return self.json_serializer.serialize_error_to_response(
+                error, operation_model, headers, request_id
+            )
+        else:
+            return self.query_serializer.serialize_error_to_response(
+                error, operation_model, headers, request_id
+            )
+
+
 def gen_amzn_requestid():
     """
     Generate generic AWS request ID.
@@ -1648,7 +1712,7 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
     # specific services as close as possible.
     # Therefore, the service-specific serializer implementations (basically the implicit / informally more specific
     # protocol implementation) has precedence over the more general protocol-specific serializers.
-    service_specific_serializers = {"sqs": SqsResponseSerializer, "s3": S3ResponseSerializer}
+    service_specific_serializers = {"sqs": SqsResponseSerializerFacade, "s3": S3ResponseSerializer}
     protocol_specific_serializers = {
         "query": QueryResponseSerializer,
         "json": JSONResponseSerializer,
