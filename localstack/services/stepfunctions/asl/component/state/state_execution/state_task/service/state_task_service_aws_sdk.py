@@ -9,9 +9,11 @@ from localstack.aws.api.stepfunctions import (
     TaskSucceededEventDetails,
 )
 from localstack.aws.protocol.service_router import get_service_catalog
-from localstack.services.stepfunctions.asl.component.common.error_name.error_name import ErrorName
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
@@ -92,7 +94,7 @@ class StateTaskServiceAwsSdk(StateTaskService):
 
     def _get_task_failure_event(self, error: str, cause: str) -> FailureEvent:
         return FailureEvent(
-            error_name=ErrorName(StatesErrorNameType.StatesTaskFailed.to_name()),
+            error_name=StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed),
             event_type=HistoryEventType.TaskFailed,
             event_details=EventDetails(
                 taskFailedEventDetails=TaskFailedEventDetails(
@@ -123,14 +125,6 @@ class StateTaskServiceAwsSdk(StateTaskService):
             failure_event = self._get_task_failure_event(error=error, cause=cause)
             return failure_event
 
-        failure_event = self._get_task_failure_event(
-            error=error, cause=str(ex)  # TODO: update cause decoration.
-        )
-        return failure_event
-
-    def _from_uncaught_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        norm_service_name: str = self._normalise_service_name(self.resource.api_name)
-        error: str = self._normalise_exception_name(norm_service_name, ex)
         failure_event = self._get_task_failure_event(
             error=error, cause=str(ex)  # TODO: update cause decoration.
         )

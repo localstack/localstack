@@ -8,6 +8,7 @@ from http import HTTPStatus
 from localstack import config
 from localstack.aws.api import HttpResponse
 from localstack.aws.api.lambda_ import InvocationType
+from localstack.aws.protocol.serializer import gen_amzn_requestid
 from localstack.http import Request, Router
 from localstack.http.dispatcher import Handler
 from localstack.services.awslambda.api_utils import FULL_FN_ARN_PATTERN
@@ -84,6 +85,7 @@ class FunctionUrlRouter:
             invocation_type=InvocationType.RequestResponse,
             client_context="{}",  # TODO: test
             payload=to_bytes(json.dumps(event)),
+            request_id=gen_amzn_requestid(),
         )
         result = result_ft.result(timeout=900)
 
@@ -173,8 +175,8 @@ def lambda_result_to_response(result: InvocationResult):
         {
             "Content-Type": "application/json",
             "Connection": "keep-alive",
-            "x-amzn-requestid": long_uid(),
-            "x-amzn-trace-id": long_uid(),
+            "x-amzn-requestid": result.request_id,
+            "x-amzn-trace-id": long_uid(),  # TODO: get the proper trace id here
         }
     )
 

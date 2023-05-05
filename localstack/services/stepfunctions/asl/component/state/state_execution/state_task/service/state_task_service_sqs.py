@@ -71,23 +71,6 @@ class StateTaskServiceSqs(StateTaskService):
                 ),
             )
 
-    def _from_uncaught_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        error_name: str = (
-            self._ERROR_NAME_CLIENT if isinstance(ex, ClientError) else self._ERROR_NAME_AWS
-        )
-        return FailureEvent(
-            error_name=CustomErrorName(error_name),
-            event_type=HistoryEventType.TaskFailed,
-            event_details=EventDetails(
-                taskFailedEventDetails=TaskFailedEventDetails(
-                    error=error_name,
-                    cause=str(ex),  # TODO: update to report expected cause.
-                    resource=self.resource.api_action,
-                    resourceType=self.resource.service_name,
-                )
-            ),
-        )
-
     def _eval_parameters(self, env: Environment) -> dict:
         api_action: str = self.resource.api_action
         supported_parameters: Optional[set[str]] = self._SUPPORTED_API_PARAM_BINDINGS.get(

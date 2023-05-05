@@ -70,7 +70,7 @@ class ExecutionState(CommonStateField, abc.ABC):
         self.catch = state_props.get(CatchDecl)
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        LOG.warning("State Task executed generig failure event reporting logic.")
+        LOG.warning("State Task executed generic failure event reporting logic.")
         return FailureEvent(
             error_name=StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed),
             event_type=HistoryEventType.TaskFailed,
@@ -81,10 +81,6 @@ class ExecutionState(CommonStateField, abc.ABC):
                 )
             ),
         )
-
-    def _from_uncaught_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        LOG.warning("State Task executed generic uncaught failure event reporting logic.")
-        return self._from_error(env=env, ex=ex)
 
     @abc.abstractmethod
     def _eval_execution(self, env: Environment) -> None:
@@ -123,7 +119,7 @@ class ExecutionState(CommonStateField, abc.ABC):
 
     def _handle_uncaught(self, ex: Exception, env: Environment):
         # Log state failure.
-        state_failure_event = self._from_uncaught_error(env=env, ex=ex)
+        state_failure_event = self._from_error(env=env, ex=ex)
         env.event_history.add_event(
             hist_type_event=state_failure_event.event_type,
             event_detail=state_failure_event.event_details,

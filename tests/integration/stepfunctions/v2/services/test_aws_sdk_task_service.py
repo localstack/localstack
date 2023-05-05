@@ -23,6 +23,7 @@ pytestmark = pytest.mark.skipif(
     ]
 )
 class TestTaskServiceAwsSdk:
+    @pytest.mark.skip_snapshot_verify(paths=["$..SecretList"])
     def test_list_secrets(
         self, aws_client, create_iam_role_for_sfn, create_state_machine, snapshot
     ):

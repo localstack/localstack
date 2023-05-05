@@ -7,6 +7,7 @@ from typing import Callable, Optional
 
 from localstack import config
 from localstack.aws.api.lambda_ import InvocationType
+from localstack.aws.protocol.serializer import gen_amzn_requestid
 from localstack.services.awslambda import api_utils
 from localstack.services.awslambda.invocation.lambda_models import InvocationError, InvocationResult
 from localstack.services.awslambda.invocation.lambda_service import LambdaService
@@ -132,6 +133,7 @@ class EventSourceAsfAdapter(EventSourceAdapter):
             invocation_type=invocation_type,
             client_context=json.dumps(context or {}),
             payload=to_bytes(json.dumps(payload or {})),
+            request_id=gen_amzn_requestid(),
         )
 
         if callback:
@@ -188,6 +190,7 @@ class EventSourceAsfAdapter(EventSourceAdapter):
                 invocation_type=invocation_type,
                 client_context=json.dumps(context or {}),
                 payload=to_bytes(json.dumps(payload or {})),
+                request_id=gen_amzn_requestid(),
             )
 
             if callback:

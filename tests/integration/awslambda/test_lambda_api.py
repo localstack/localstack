@@ -593,7 +593,7 @@ class TestLambdaImages:
             )
 
     @pytest.fixture(scope="class")
-    def test_image(self, aws_client):
+    def test_image(self, aws_client, login_docker_client):
         repository_names = []
         image_names = []
 
@@ -793,6 +793,74 @@ class TestLambdaImages:
         snapshot.match(
             "get-function-config-response-after-delete-imageconfig", get_function_config_response
         )
+
+    @pytest.mark.aws_validated
+    def test_lambda_image_versions(
+        self, create_lambda_function_aws, lambda_su_role, test_image, snapshot, aws_client
+    ):
+        """Test lambda versions with package type image"""
+        image = test_image("alpine")
+        repo_uri = image.rpartition(":")[0]
+        snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
+        function_name = f"test-function-{short_uid()}"
+        create_image_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Role=lambda_su_role,
+            Code={"ImageUri": image},
+            PackageType="Image",
+            Environment={"Variables": {"CUSTOM_ENV": "test"}},
+            Publish=True,
+        )
+        snapshot.match("create_image_response", create_image_response)
+
+        get_function_result = aws_client.awslambda.get_function(FunctionName=function_name)
+        snapshot.match("get_function_result", get_function_result)
+
+        list_versions_result = aws_client.awslambda.list_versions_by_function(
+            FunctionName=function_name
+        )
+        snapshot.match("list_versions_result", list_versions_result)
+
+        first_update_response = aws_client.awslambda.update_function_configuration(
+            FunctionName=function_name, Description="Second version :)"
+        )
+        snapshot.match("first_update_response", first_update_response)
+        waiter = aws_client.awslambda.get_waiter("function_updated_v2")
+        waiter.wait(FunctionName=function_name)
+        first_update_get_function = aws_client.awslambda.get_function(FunctionName=function_name)
+        snapshot.match("first_update_get_function", first_update_get_function)
+
+        # Try publishing with wrong codesha256
+        with pytest.raises(ClientError) as e:
+            aws_client.awslambda.publish_version(
+                FunctionName=function_name,
+                Description="Second version description :)",
+                CodeSha256="a" * 64,
+            )
+        snapshot.match("invalid_sha_publish", e.value.response)
+
+        # publish with correct codesha256
+        first_publish_response = aws_client.awslambda.publish_version(
+            FunctionName=function_name,
+            Description="Second version description :)",
+            CodeSha256=get_function_result["Configuration"]["CodeSha256"],
+        )
+        snapshot.match("first_publish_response", first_publish_response)
+
+        second_update_response = aws_client.awslambda.update_function_configuration(
+            FunctionName=function_name, Description="Third version :)"
+        )
+        snapshot.match("second_update_response", second_update_response)
+        waiter = aws_client.awslambda.get_waiter("function_updated_v2")
+        waiter.wait(FunctionName=function_name)
+        second_update_get_function = aws_client.awslambda.get_function(FunctionName=function_name)
+        snapshot.match("second_update_get_function", second_update_get_function)
+
+        # publish without codesha256
+        second_publish_response = aws_client.awslambda.publish_version(
+            FunctionName=function_name, Description="Third version description :)"
+        )
+        snapshot.match("second_publish_response", second_publish_response)
 
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
@@ -4816,7 +4884,8 @@ class TestLambdaLayer:
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaSnapStart:
     @pytest.mark.aws_validated
-    def test_snapstart_lifecycle(self, create_lambda_function, snapshot, aws_client):
+    @pytest.mark.parametrize("runtime", [Runtime.java11, Runtime.java17])
+    def test_snapstart_lifecycle(self, create_lambda_function, snapshot, aws_client, runtime):
         """Test the API of the SnapStart feature. The optimization behavior is not supported in LocalStack.
         Slow (~1-2min) against AWS.
         """
@@ -4825,7 +4894,7 @@ class TestLambdaSnapStart:
         create_response = create_lambda_function(
             func_name=function_name,
             zip_file=java_jar_with_lib,
-            runtime=Runtime.java11,
+            runtime=runtime,
             handler="cloud.localstack.sample.LambdaHandlerWithLib",
             SnapStart={"ApplyOn": "PublishedVersions"},
         )
@@ -4849,8 +4918,9 @@ class TestLambdaSnapStart:
         snapshot.match("get_function_response_version_1", get_function_response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.parametrize("runtime", [Runtime.java11, Runtime.java17])
     def test_snapstart_update_function_configuration(
-        self, create_lambda_function, snapshot, aws_client
+        self, create_lambda_function, snapshot, aws_client, runtime
     ):
         """Test enabling SnapStart when updating a function."""
         function_name = f"fn-{short_uid()}"
@@ -4858,7 +4928,7 @@ class TestLambdaSnapStart:
         create_response = create_lambda_function(
             func_name=function_name,
             zip_file=java_jar_with_lib,
-            runtime=Runtime.java11,
+            runtime=runtime,
             handler="cloud.localstack.sample.LambdaHandlerWithLib",
         )
         snapshot.match("create_function_response", create_response)

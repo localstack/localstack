@@ -66,6 +66,7 @@ IMAGE_MAPPING = {
     "python3.7": "python:3.7",
     "python3.8": "python:3.8",
     "python3.9": "python:3.9",
+    "python3.10": "python:3.10",
     "nodejs12.x": "nodejs:12",
     "nodejs14.x": "nodejs:14",
     "nodejs16.x": "nodejs:16",
@@ -74,13 +75,14 @@ IMAGE_MAPPING = {
     "java8": "java:8",
     "java8.al2": "java:8.al2",
     "java11": "java:11",
+    "java17": "java:17",
     "dotnetcore3.1": "dotnet:core3.1",
     "dotnet6": "dotnet:6",
     "go1.x": "go:1",
     "provided": "provided:alami",
     "provided.al2": "provided:al2",
 }
-SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11]
+SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11, Runtime.java17]
 
 
 # TODO: maybe we should make this more "transient" by always initializing to Pending and *not* persisting it?
@@ -98,6 +100,7 @@ class Invocation:
     client_context: Optional[str]
     invocation_type: InvocationType
     invoke_time: datetime
+    request_id: str
 
 
 class ArchiveCode(metaclass=ABCMeta):
@@ -455,7 +458,7 @@ class EventInvokeConfig:
 # Result Models
 @dataclasses.dataclass
 class InvocationResult:
-    invocation_id: str
+    request_id: str
     payload: bytes | None
     executed_version: str | None = None
     logs: str | None = None
@@ -463,7 +466,7 @@ class InvocationResult:
 
 @dataclasses.dataclass
 class InvocationError:
-    invocation_id: str
+    request_id: str
     payload: bytes | None
     executed_version: str | None = None
     logs: str | None = None
@@ -471,7 +474,7 @@ class InvocationError:
 
 @dataclasses.dataclass
 class InvocationLogs:
-    invocation_id: str
+    request_id: str
     logs: str
 
 

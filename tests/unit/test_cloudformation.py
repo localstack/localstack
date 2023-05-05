@@ -83,4 +83,4 @@ def _resolve_refs_in_template(template, stack_params: Dict = None):
     stack_params = stack_params or {}
     stack_params = [{"ParameterKey": k, "ParameterValue": v} for k, v in stack_params.items()]
     stack.metadata["Parameters"].extend(stack_params)
-    return template_deployer.resolve_refs_recursively(stack, template)
+    return template_deployer.resolve_refs_recursively(stack.stack_name, stack.resources, template)

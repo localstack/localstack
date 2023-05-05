@@ -1,5 +1,6 @@
 import re
 from contextlib import contextmanager
+from typing import Optional
 
 import requests
 from werkzeug.datastructures import Headers
@@ -15,8 +16,9 @@ from localstack.utils.serving import Server
 
 
 @contextmanager
-def server_context(server: Server):
+def server_context(server: Server, timeout: Optional[float] = 10):
     server.start()
+    server.wait_is_up(timeout)
     try:
         yield server
     finally:

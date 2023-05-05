@@ -55,6 +55,7 @@ def test_globalindex_read_write_provisioned_throughput_dynamodb_table(
         assert isinstance(test_write_capacity, int)
 
 
+@pytest.mark.aws_validated
 @pytest.mark.skip_snapshot_verify(
     paths=[
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",

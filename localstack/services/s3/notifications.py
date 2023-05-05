@@ -28,7 +28,6 @@ from localstack.aws.api.s3 import (
     TopicArn,
     TopicConfiguration,
 )
-from localstack.aws.protocol.serializer import gen_amzn_requestid_long
 from localstack.config import DEFAULT_REGION
 from localstack.services.s3.models import get_moto_s3_backend
 from localstack.services.s3.utils import (
@@ -83,6 +82,7 @@ class Notification(TypedDict):
 
 @dataclass
 class S3EventNotificationContext:
+    request_id: str
     event_type: str
     region: str
     bucket_name: BucketName
@@ -136,6 +136,7 @@ class S3EventNotificationContext:
             key_size = key.contentsize
 
         return cls(
+            request_id=request_context.request_id,
             event_type=EVENT_OPERATION_MAP.get(request_context.operation.wire_name, ""),
             region=request_context.region,
             bucket_name=bucket_name,
@@ -474,7 +475,7 @@ class EventBridgeNotifier(BaseNotifier):
                 "etag": ctx.key_etag,
                 "sequencer": "0062E99A88DC407460",
             },
-            "request-id": gen_amzn_requestid_long(),
+            "request-id": ctx.request_id,
             "requester": "074255357339",
             "source-ip-address": "127.0.0.1",
             # TODO previously headers.get("X-Forwarded-For", "127.0.0.1").split(",")[0]

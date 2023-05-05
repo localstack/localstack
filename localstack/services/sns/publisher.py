@@ -183,10 +183,9 @@ class LambdaTopicPublisher(TopicPublisher):
             if payload:
                 delivery = {
                     "statusCode": status_code,
-                    # TODO: normally, this is the lambda RequestId (invocation id)
-                    # but we don't get it from the response, this could change if we set the RequestId when we receive
-                    # the request instead of when sending the response. For now, mock it with a random UUID
-                    "providerResponse": json.dumps({"lambdaRequestId": long_uid()}),
+                    "providerResponse": json.dumps(
+                        {"lambdaRequestId": inv_result["ResponseMetadata"]["RequestId"]}
+                    ),
                 }
                 store_delivery_log(context.message, subscriber, success=True, delivery=delivery)
 

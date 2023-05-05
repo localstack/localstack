@@ -52,7 +52,7 @@ def apply_transform_intrinsic_functions(template: dict, stack=None) -> dict:
                 transformer = transformer_class()
                 parameters = transform.get("Parameters") or {}
                 if stack:
-                    resolve_refs_recursively(stack, parameters)
+                    resolve_refs_recursively(stack.stack_name, stack.resources, parameters)
                 return transformer.transform(parameters)
         return obj
 

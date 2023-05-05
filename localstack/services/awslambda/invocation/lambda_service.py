@@ -23,7 +23,7 @@ from localstack.aws.api.lambda_ import (
     State,
 )
 from localstack.aws.connect import connect_to
-from localstack.services.awslambda import api_utils
+from localstack.services.awslambda import api_utils, usage
 from localstack.services.awslambda.api_utils import (
     lambda_arn,
     qualified_lambda_arn,
@@ -48,7 +48,7 @@ from localstack.services.awslambda.lambda_utils import HINT_LOG
 from localstack.utils.archives import get_unzipped_size, is_zip_file
 from localstack.utils.container_utils.container_client import ContainerException
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
-from localstack.utils.strings import to_str
+from localstack.utils.strings import short_uid, to_str
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -197,11 +197,13 @@ class LambdaService:
         account_id: str,
         invocation_type: InvocationType | None,
         client_context: Optional[str],
+        request_id: str,
         payload: bytes | None,
     ) -> Future[InvocationResult] | None:
         """
         Invokes a specific version of a lambda
 
+        :param request_id: context request ID
         :param function_name: Function name
         :param qualifier: Function version qualifier
         :param region: Region of the function
@@ -245,6 +247,7 @@ class LambdaService:
         qualified_arn = qualified_lambda_arn(function_name, version_qualifier, account_id, region)
         try:
             version_manager = self.get_lambda_version_manager(qualified_arn)
+            usage.runtime.record(version_manager.function_version.config.runtime)
         except ValueError:
             version = function.versions.get(version_qualifier)
             state = version and version.config.state.state
@@ -281,6 +284,7 @@ class LambdaService:
                 client_context=client_context,
                 invocation_type=invocation_type,
                 invoke_time=datetime.now(),
+                request_id=request_id,
             )
         )
 
@@ -483,6 +487,26 @@ class LambdaService:
                 provisioned_concurrency_config.provisioned_concurrent_executions
             )  # async again
 
+    def can_assume_role(self, role_arn: str) -> bool:
+        """
+        Checks whether lambda can assume the given role.
+        This _should_ only fail if IAM enforcement is enabled.
+
+        :param role_arn: Role to assume
+        :return: True if the role can be assumed by lambda, false otherwise
+        """
+        sts_client = connect_to().sts.request_metadata(service_principal="lambda")
+        try:
+            sts_client.assume_role(
+                RoleArn=role_arn,
+                RoleSessionName=f"test-assume-{short_uid()}",
+                DurationSeconds=900,
+            )
+            return True
+        except Exception as e:
+            LOG.debug("Cannot assume role %s: %s", role_arn, e)
+            return False
+
 
 def is_code_used(code: S3Code, function: Function) -> bool:
     """
@@ -583,6 +607,7 @@ def store_s3_bucket_archive(
     :return: S3 Code object representing the archive stored in S3
     """
     if archive_bucket == config.BUCKET_MARKER_LOCAL:
+        usage.hotreload.increment()
         return create_hot_reloading_code(path=archive_key)
     s3_client: "S3Client" = connect_to().s3
     kwargs = {"VersionId": archive_version} if archive_version else {}

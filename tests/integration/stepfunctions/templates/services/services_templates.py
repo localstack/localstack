@@ -13,6 +13,9 @@ class ServicesTemplates(TemplateLoader):
     )
     SQS_SEND_MESSAGE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/sqs_send_msg.json5")
     LAMBDA_INVOKE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/lambda_invoke.json5")
+    LAMBDA_INVOKE_PIPE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/lambda_invoke_pipe.json5"
+    )
 
     # Lambda Functions.
     LAMBDA_ID_FUNCTION: Final[str] = os.path.join(_THIS_FOLDER, "lambdafunctions/id_function.py")

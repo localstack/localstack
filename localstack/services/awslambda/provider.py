@@ -385,16 +385,25 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
                 Type="User",
             )
-        current_hash = current_latest_version.config.code.code_sha256
-        if (
-            code_sha256
-            and current_hash != code_sha256
-            and not current_latest_version.config.code.is_hot_reloading()
-        ):
+
+        # check if code hashes match if they are specified
+        current_hash = (
+            current_latest_version.config.code.code_sha256
+            if current_latest_version.config.package_type == PackageType.Zip
+            else current_latest_version.config.image.code_sha256
+        )
+        # if the code is a zip package and hot reloaded (hot reloading is currently only supported for zip packagetypes)
+        # we cannot enforce the codesha256 check
+        is_hot_reloaded_zip_package = (
+            current_latest_version.config.package_type == PackageType.Zip
+            and current_latest_version.config.code.is_hot_reloading()
+        )
+        if code_sha256 and current_hash != code_sha256 and not is_hot_reloaded_zip_package:
             raise InvalidParameterValueException(
                 f"CodeSHA256 ({code_sha256}) is different from current CodeSHA256 in $LATEST ({current_hash}). Please try again with the CodeSHA256 in $LATEST.",
                 Type="User",
             )
+
         state = lambda_stores[account_id][region]
         function = state.functions.get(function_name)
         changes = {}
@@ -659,11 +668,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"1 validation error detected: Value '{request.get('Role')}'"
                 + " at 'role' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:iam::\\d{12}:role/?[a-zA-Z_0-9+=,.@\\-_/]+"
             )
+        if not self.lambda_service.can_assume_role(request.get("Role")):
+            raise InvalidParameterValueException(
+                "The role defined for the function cannot be assumed by Lambda.", Type="User"
+            )
         package_type = request.get("PackageType", PackageType.Zip)
         runtime = request.get("Runtime")
         if package_type == PackageType.Zip and runtime not in IMAGE_MAPPING:
             raise InvalidParameterValueException(
-                f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
+                f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
                 Type="User",
             )
         if snap_start := request.get("SnapStart"):
@@ -852,7 +865,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if "Runtime" in request:
             if request["Runtime"] not in IMAGE_MAPPING:
                 raise InvalidParameterValueException(
-                    f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
+                    f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
                     Type="User",
                 )
             replace_kwargs["runtime"] = request["Runtime"]
@@ -1213,6 +1226,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             account_id=context.account_id,
             invocation_type=invocation_type,
             client_context=client_context,
+            request_id=context.request_id,
             payload=payload.read() if payload else None,
         )
         if invocation_type == "Event":
@@ -2996,7 +3010,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if not layer_version_parts.get("layer_version"):
             raise ValidationException(
                 f"1 validation error detected: Value '{arn}' at 'arn' failed to satisfy constraint: Member must satisfy regular expression pattern: "
-                + "arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+"
+                + "arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+"
             )
 
         layer_name = layer_version_parts["layer_name"]

@@ -265,9 +265,6 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.mark.usefixtures("setup_and_tear_down")
 class TestStateMachine:
-    @pytest.mark.skip(
-        reason="Convert to snapshot test as it diverges from lambda task output format."
-    )
     def test_create_choice_state_machine(self, aws_client):
         state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
         role_arn = arns.role_arn("sfn_role")
@@ -305,9 +302,6 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, sfn_client=aws_client.stepfunctions)
 
-    @pytest.mark.skip(
-        reason="Convert to snapshot test as it diverges from lambda task output format."
-    )
     def test_create_run_map_state_machine(self, aws_client):
         names = ["Bob", "Meg", "Joe"]
         test_input = [{"map": name} for name in names]
@@ -347,9 +341,6 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
 
-    @pytest.mark.skip(
-        reason="Convert to snapshot test as it diverges from lambda task output format."
-    )
     def test_create_run_state_machine(self, aws_client):
         state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
@@ -410,7 +401,7 @@ class TestStateMachine:
         def check_invocations():
             # assert that the result is correct
             result = _get_execution_results(sm_arn, aws_client.stepfunctions)
-            assert result.get("handled", {}).get("Payload") == {"Hello": TEST_RESULT_VALUE_2}
+            assert {"Hello": TEST_RESULT_VALUE_2} == result.get("handled")
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=10, retries=1000000)
@@ -419,9 +410,6 @@ class TestStateMachine:
         cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
 
     def test_intrinsic_functions(self, aws_client):
-        # if os.environ.get("AWS_DEFAULT_REGION") != "us-east-1":
-        #     pytest.skip("skipping non us-east-1 temporarily")
-
         state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
         # create state machine
