@@ -1,0 +1,25 @@
+Parameters:
+  TopicName:
+    Type: String
+
+Resources:
+  MyTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref TopicName
+
+Outputs:
+  TopicName:
+    Value: !GetAtt MyTopic.TopicName
+
+  MyRef:
+    Value: !Ref MyTopic
+
+  PhysicalResourceId:
+    Value: !GetAtt MyTopic.PhysicalResourceId
+
+  Id:
+    Value: !GetAtt MyTopic.Id
+
+  RefAtt:
+    Value: !GetAtt MyTopic.Ref
