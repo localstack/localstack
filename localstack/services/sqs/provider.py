@@ -502,11 +502,20 @@ class SqsDeveloperEndpoints:
         """
         receipt_handle = "SQS/BACKDOOR/ACCESS"  # dummy receipt handle
 
+        sqs_messages: List[SqsMessage] = []
+
+        if isinstance(queue, StandardQueue):
+            sqs_messages.extend(queue.visible.queue)
+        elif isinstance(queue, FifoQueue):
+            for message_group in queue.message_groups.values():
+                for sqs_message in message_group.messages:
+                    sqs_messages.append(sqs_message)
+        else:
+            raise ValueError(f"unknown queue type {type(queue)}")
+
         messages = []
 
-        # TODO: consider fifo/sqs queue
-
-        for sqs_message in queue.visible.queue:
+        for sqs_message in sqs_messages:
             message: Message = to_sqs_api_message(sqs_message, QueueAttributeName.All, ["All"])
             messages.append(message)
             message["ReceiptHandle"] = receipt_handle
