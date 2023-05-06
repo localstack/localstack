@@ -504,6 +504,8 @@ class SqsDeveloperEndpoints:
 
         messages = []
 
+        # TODO: consider fifo/sqs queue
+
         for sqs_message in queue.visible.queue:
             message: Message = to_sqs_api_message(sqs_message, QueueAttributeName.All, ["All"])
             messages.append(message)
@@ -934,7 +936,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         # backdoor to get all messages
         if num == -1:
-            num = queue.visible.qsize()
+            num = queue.approx_number_of_messages
         elif (
             num < 1 or num > MAX_NUMBER_OF_MESSAGES
         ) and not SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT:
