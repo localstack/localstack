@@ -17,12 +17,24 @@ class ErrorHandlingTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/aws_sdk_task_error_secretsmanager_crate_secret.json5"
     )
 
+    AWS_LAMBDA_INVOKE_CATCH_UNKNOWN: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/task_lambda_invoke_catch_unknown.json5"
+    )
+
+    AWS_LAMBDA_INVOKE_CATCH_RELEVANT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/task_lambda_invoke_catch_relevant.json5"
+    )
+
     AWS_SERVICE_LAMBDA_INVOKE_CATCH_UNKNOWN: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/task_service_lambda_invoke_catch_unknown.json5"
     )
 
     AWS_SERVICE_LAMBDA_INVOKE_CATCH_RELEVANT: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/task_service_lambda_invoke_catch_relevant.json5"
+    )
+
+    AWS_SERVICE_SQS_SEND_MSG_CATCH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/task_service_sqs_send_msg_catch.json5"
     )
 
     # Lambda Functions.

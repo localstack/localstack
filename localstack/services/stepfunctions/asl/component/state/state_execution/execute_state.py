@@ -1,15 +1,22 @@
 import abc
+import logging
 from typing import Optional
 
-from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, HistoryEventType
+from localstack.aws.api.stepfunctions import (
+    ExecutionFailedEventDetails,
+    HistoryEventType,
+    TaskFailedEventDetails,
+)
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import (
     CatchOutcome,
     CatchOutcomeNotCaught,
 )
-from localstack.services.stepfunctions.asl.component.common.error_name.error_name import ErrorName
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
@@ -22,6 +29,8 @@ from localstack.services.stepfunctions.asl.component.state.state import CommonSt
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
+
+LOG = logging.getLogger(__name__)
 
 
 class ExecutionState(CommonStateField, abc.ABC):
@@ -61,26 +70,17 @@ class ExecutionState(CommonStateField, abc.ABC):
         self.catch = state_props.get(CatchDecl)
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        # This implements the default handling of exceptions which
-        # corresponds to an ExecutionFailed due to States.Runtime.
-
-        error_name: str = StatesErrorNameType.StatesRuntime.to_name()
-        state_name: str = self.name
-        entered_event_id: str = env.context_object["Execution"]["Id"]
-
-        failure_event = FailureEvent(
-            error_name=ErrorName(error_name),
-            event_type=HistoryEventType.ExecutionFailed,
+        LOG.warning("State Task executed generic failure event reporting logic.")
+        return FailureEvent(
+            error_name=StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed),
+            event_type=HistoryEventType.TaskFailed,
             event_details=EventDetails(
-                executionFailedEventDetails=ExecutionFailedEventDetails(
-                    error=f"An error occurred while executing the state {state_name} "
-                    f"(entered at the event id #{entered_event_id}). {ex}",
-                    cause=error_name,
+                taskFailedEventDetails=TaskFailedEventDetails(
+                    error="Unsupported Error Handling",
+                    cause=str(ex),
                 )
             ),
         )
-
-        return failure_event
 
     @abc.abstractmethod
     def _eval_execution(self, env: Environment) -> None:
@@ -115,10 +115,23 @@ class ExecutionState(CommonStateField, abc.ABC):
         res: CatchOutcome = env.stack.pop()
 
         if isinstance(res, CatchOutcomeNotCaught):
-            env.set_error(
-                ExecutionFailedEventDetails(**(list(failure_event.event_details.values())[0]))
-            )
-            raise ex
+            self._terminate_with_event(failure_event=failure_event, env=env)
+
+    def _handle_uncaught(self, ex: Exception, env: Environment):
+        # Log state failure.
+        state_failure_event = self._from_error(env=env, ex=ex)
+        env.event_history.add_event(
+            hist_type_event=state_failure_event.event_type,
+            event_detail=state_failure_event.event_details,
+        )
+        self._terminate_with_event(state_failure_event, env)
+
+    @staticmethod
+    def _terminate_with_event(failure_event: FailureEvent, env: Environment) -> None:
+        # Halt execution with the given failure event.
+        env.set_error(
+            ExecutionFailedEventDetails(**(list(failure_event.event_details.values())[0]))
+        )
 
     def _eval_state(self, env: Environment) -> None:
         try:
@@ -138,4 +151,4 @@ class ExecutionState(CommonStateField, abc.ABC):
             elif self.catch:
                 self._handle_catch(ex, env)
             else:
-                raise ex
+                self._handle_uncaught(ex, env)

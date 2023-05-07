@@ -1,15 +1,19 @@
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.stepfunctions import (
+    HistoryEventExecutionDataDetails,
     HistoryEventType,
     TaskFailedEventDetails,
     TaskScheduledEventDetails,
     TaskStartedEventDetails,
+    TaskSucceededEventDetails,
 )
 from localstack.aws.protocol.service_router import get_service_catalog
-from localstack.services.stepfunctions.asl.component.common.error_name.error_name import ErrorName
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
@@ -25,6 +29,9 @@ from localstack.utils.common import camel_to_snake_case
 
 
 class StateTaskServiceAwsSdk(StateTaskService):
+    def _get_resource_type(self) -> str:
+        return f"{self.resource.service_name}:{self.resource.api_name}"
+
     def _eval_execution(self, env: Environment) -> None:
         super()._eval_execution(env=env)
 
@@ -58,26 +65,52 @@ class StateTaskServiceAwsSdk(StateTaskService):
 
         api_client = aws_stack.create_external_boto_client(service_name=api_name)
 
-        response = getattr(api_client, api_action)(**parameters)
-        response.pop("ResponseMetadata", None)
+        response = getattr(api_client, api_action)(**parameters) or dict()
+        if response:
+            response.pop("ResponseMetadata", None)
 
         env.stack.append(response)
+
+        env.event_history.add_event(
+            hist_type_event=HistoryEventType.TaskSucceeded,
+            event_detail=EventDetails(
+                taskSucceededEventDetails=TaskSucceededEventDetails(
+                    resourceType=self._get_resource_type(),
+                    resource=self.resource.api_action,
+                    output=to_json_str(response),
+                    outputDetails=HistoryEventExecutionDataDetails(truncated=False),
+                )
+            ),
+        )
 
     @staticmethod
     def _normalise_service_name(service_name: str) -> str:
         return get_service_catalog().get(service_name).service_id.replace(" ", "")
 
     @staticmethod
-    def _normalise_exception_name(norm_service_name: str, ex: ClientError) -> str:
+    def _normalise_exception_name(norm_service_name: str, ex: Exception) -> str:
         ex_name = ex.__class__.__name__
         return f"{norm_service_name}.{norm_service_name if ex_name == 'ClientError' else ex_name}Exception"
 
+    def _get_task_failure_event(self, error: str, cause: str) -> FailureEvent:
+        return FailureEvent(
+            error_name=StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed),
+            event_type=HistoryEventType.TaskFailed,
+            event_details=EventDetails(
+                taskFailedEventDetails=TaskFailedEventDetails(
+                    resourceType=self._get_resource_type(),
+                    resource=self.resource.api_action,
+                    error=error,
+                    cause=cause,
+                )
+            ),
+        )
+
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        norm_service_name: str = self._normalise_service_name(self.resource.api_name)
+        error: str = self._normalise_exception_name(norm_service_name, ex)
         if isinstance(ex, ClientError):
             error_message: str = ex.response["Error"]["Message"]
-
-            norm_service_name: str = self._normalise_service_name(self.resource.api_name)
-
             cause_details = [
                 f"Service: {norm_service_name}",
                 f"Status Code: {ex.response['ResponseMetadata']['HTTPStatusCode']}",
@@ -88,19 +121,11 @@ class StateTaskServiceAwsSdk(StateTaskService):
                     f'Extended Request ID: {ex.response["ResponseMetadata"]["HostId"]}'
                 )
 
-            error: str = self._normalise_exception_name(norm_service_name, ex)
             cause: str = f"{error_message} ({', '.join(cause_details)})"
+            failure_event = self._get_task_failure_event(error=error, cause=cause)
+            return failure_event
 
-            return FailureEvent(
-                error_name=ErrorName(StatesErrorNameType.StatesTaskFailed.to_name()),
-                event_type=HistoryEventType.TaskFailed,
-                event_details=EventDetails(
-                    taskFailedEventDetails=TaskFailedEventDetails(
-                        resourceType=self._get_resource_type(),
-                        resource=self.resource.api_action,
-                        error=error,
-                        cause=cause,
-                    )
-                ),
-            )
-        return super()._from_error(env=env, ex=ex)
+        failure_event = self._get_task_failure_event(
+            error=error, cause=str(ex)  # TODO: update cause decoration.
+        )
+        return failure_event
