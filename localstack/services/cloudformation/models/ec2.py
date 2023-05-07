@@ -543,8 +543,6 @@ class EC2Instance(GenericBaseModel):
             props["MaxCount"] = 1
 
     def get_cfn_attribute(self, attribute_name):
-        # if attribute_name in REF_ID_ATTRS:
-        #     return self.props.get("InstanceId")
         if attribute_name == "PublicIp":
             return self.props.get("PublicIpAddress") or "127.0.0.1"
         if attribute_name == "PublicDnsName":
