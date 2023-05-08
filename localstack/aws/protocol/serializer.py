@@ -1151,7 +1151,7 @@ class QueryResponseSerializer(BaseXMLResponseSerializer):
         attr = (
             {"xmlns": operation_model.metadata.get("xmlNamespace")}
             if "xmlNamespace" in operation_model.metadata
-            else None
+            else {}
         )
 
         # Create the root element and add the result of the XML serializer as a child node
