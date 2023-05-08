@@ -16,8 +16,8 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
-    StateTaskService,
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
+    StateTaskServiceCallback,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
@@ -26,7 +26,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.strings import camel_to_snake_case
 
 
-class StateTaskServiceSqs(StateTaskService):
+class StateTaskServiceSqs(StateTaskServiceCallback):
     _ERROR_NAME_CLIENT: Final[str] = "SQS.SdkClientException"
     _ERROR_NAME_AWS: Final[str] = "SQS.AmazonSQSException"
 
@@ -89,7 +89,7 @@ class StateTaskServiceSqs(StateTaskService):
 
         return parameters
 
-    def _eval_execution(self, env: Environment) -> None:
+    def _eval_service_task(self, env: Environment) -> None:
         parameters = self._eval_parameters(env=env)
 
         parameters_str = to_json_str(parameters)

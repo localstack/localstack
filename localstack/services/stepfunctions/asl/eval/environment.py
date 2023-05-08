@@ -6,9 +6,11 @@ import threading
 from typing import Any, Optional
 
 from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, Timestamp
+from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackPoolManager
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     ContextObject,
     ContextObjectInitData,
+    ContextObjectManager,
 )
 from localstack.services.stepfunctions.asl.eval.event.event_history import EventHistory
 from localstack.services.stepfunctions.asl.eval.programstate.program_ended import ProgramEnded
@@ -29,29 +31,32 @@ class Environment:
         self._frames: list[Environment] = list()
 
         self.event_history: EventHistory = EventHistory()
+        self.callback_pool_manager: CallbackPoolManager = CallbackPoolManager()
 
         self.heap: dict[str, Any] = dict()
         self.stack: list[Any] = list()
         self.inp: Optional[Any] = None
 
-        self.context_object: ContextObject = ContextObject(
-            Execution=context_object_init["Execution"],
-            StateMachine=context_object_init["StateMachine"],
-            State=None,
-            Task=None,
-            Map=None,
+        self.context_object_manager: ContextObjectManager = ContextObjectManager(
+            context_object=ContextObject(
+                Execution=context_object_init["Execution"],
+                StateMachine=context_object_init["StateMachine"],
+                State=None,
+                Task=None,
+                Map=None,
+            )
         )
 
     @classmethod
     def as_frame_of(cls, env: Environment):
         context_object_init = ContextObjectInitData(
-            Execution=env.context_object["Execution"],
-            StateMachine=env.context_object["StateMachine"],
+            Execution=env.context_object_manager.context_object["Execution"],
+            StateMachine=env.context_object_manager.context_object["StateMachine"],
         )
         frame = cls(context_object_init=context_object_init)
         frame.heap = env.heap
         frame.event_history = env.event_history
-        frame.context_object = env.context_object
+        frame.context_object = env.context_object_manager.context_object
         return frame
 
     @property

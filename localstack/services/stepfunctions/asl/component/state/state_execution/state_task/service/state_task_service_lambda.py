@@ -20,8 +20,8 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
-    StateTaskService,
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
+    StateTaskServiceCallback,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task_lambda import (
     LambdaFunctionErrorException,
@@ -32,7 +32,7 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
-class StateTaskServiceLambda(StateTaskService, StateTaskLambda):
+class StateTaskServiceLambda(StateTaskServiceCallback, StateTaskLambda):
     @staticmethod
     def _error_cause_from_client_error(client_error: ClientError) -> tuple[str, str]:
         error_code: str = client_error.response["Error"]["Code"]
@@ -76,7 +76,7 @@ class StateTaskServiceLambda(StateTaskService, StateTaskLambda):
             ),
         )
 
-    def _eval_execution(self, env: Environment) -> None:
+    def _eval_service_task(self, env: Environment) -> None:
         parameters = self._eval_parameters(env=env)
         parameters_str = to_json_str(parameters)
         env.event_history.add_event(
