@@ -250,28 +250,13 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             ffmpeg_bin = ffmpeg_package.get_installer().get_ffmpeg_path()
             ffprobe_bin = ffmpeg_package.get_installer().get_ffprobe_path()
 
-            ###
-            ### ffprobe_bin = /Users/nevilmacwan/Documents/project/localstack/.filesystem/var/lib/localstack/lib/ffmpeg/4.4.1/ffmpeg-4.4.1-arm64-static/ffprobe
-            ffprobe_bin_dir = os.path.dirname(ffprobe_bin)
-            ffprobe_bin_name = os.path.basename(ffprobe_bin)
-
-            ###
-
             LOG.debug("Determining media format")
             # TODO set correct failure_reason if ffprobe execution fails
-            ######
-            # ffprobe_output = json.loads(
-            #     run(
-            #         f"{ffprobe_bin} -show_streams -show_format -print_format json -hide_banner -v error {file_path}"
-            #     )
-            # )
             ffprobe_output = json.loads(
                 run(
-                    f"{ffprobe_bin_name} -show_streams -show_format -print_format json -hide_banner -v error {file_path}",
-                    cwd=ffprobe_bin_dir,
+                    f"{ffprobe_bin} -show_streams -show_format -print_format json -hide_banner -v error {file_path}"
                 )
             )
-            ######
             format = ffprobe_output["format"]["format_name"]
             LOG.debug(f"Media format detected as: {format}")
             job["MediaFormat"] = SUPPORTED_FORMAT_NAMES[format]
@@ -281,24 +266,13 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
                 sample_rate = ffprobe_output["streams"][0]["sample_rate"]
                 job["MediaSampleRateHertz"] = int(sample_rate)
 
-            ######
-            ffmpeg_bin_dir = os.path.dirname(ffmpeg_bin)
-            ffmpeg_bin_name = os.path.basename(ffmpeg_bin)
-            ######
-
             if format in SUPPORTED_FORMAT_NAMES:
                 wav_path = new_tmp_file(suffix=".wav")
                 LOG.debug("Transcoding media to wav")
                 # TODO set correct failure_reason if ffmpeg execution fails
-                ######
-                # run(
-                #     f"{ffmpeg_bin} -y -nostdin -loglevel quiet -i '{file_path}' -ar 16000 -ac 1 '{wav_path}'"
-                # )
                 run(
-                    f"{ffmpeg_bin_name} -y -nostdin -loglevel quiet -i '{file_path}' -ar 16000 -ac 1 '{wav_path}'",
-                    cwd=ffmpeg_bin_dir,
+                    f"{ffmpeg_bin} -y -nostdin -loglevel quiet -i '{file_path}' -ar 16000 -ac 1 '{wav_path}'"
                 )
-                ######
             else:
                 failure_reason = f"Unsupported media format: {format}"
                 raise RuntimeError()
@@ -363,116 +337,6 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
                     "items": items,
                 },
             }
-            #
-            # def _run_transcription_job(self, args: Tuple[TranscribeStore, str]):
-            #     store, job_name = args
-            #
-            #     job = store.transcription_jobs[job_name]
-            #     job["StartTime"] = datetime.datetime.utcnow()
-            #     job["TranscriptionJobStatus"] = TranscriptionJobStatus.IN_PROGRESS
-            #
-            #     failure_reason = None
-            #
-            #     try:
-            #         LOG.debug("Starting transcription: %s", job_name)
-            #
-            #         # Get file from S3
-            #         file_path = new_tmp_file()
-            #         s3_client = aws_stack.connect_to_service("s3")
-            #         s3_path = job["Media"]["MediaFileUri"]
-            #         bucket, _, key = s3_path.removeprefix("s3://").partition("/")
-            #         s3_client.download_file(Bucket=bucket, Key=key, Filename=file_path)
-            #
-            #         ffmpeg_bin = ffmpeg_package.get_installer().get_ffmpeg_path()
-            #         ffprobe_bin = ffmpeg_package.get_installer().get_ffprobe_path()
-            #
-            #         LOG.debug("Determining media format")
-            #         # TODO set correct failure_reason if ffprobe execution fails
-            #         ffprobe_output = json.loads(
-            #             run(
-            #                 f"{ffprobe_bin} -show_streams -show_format -print_format json -hide_banner -v error {file_path}"
-            #             )
-            #         )
-            #         format = ffprobe_output["format"]["format_name"]
-            #         LOG.debug(f"Media format detected as: {format}")
-            #         job["MediaFormat"] = SUPPORTED_FORMAT_NAMES[format]
-            #
-            #         # Determine the sample rate of input audio if possible
-            #         if len(ffprobe_output["streams"]):
-            #             sample_rate = ffprobe_output["streams"][0]["sample_rate"]
-            #             job["MediaSampleRateHertz"] = int(sample_rate)
-            #
-            #         if format in SUPPORTED_FORMAT_NAMES:
-            #             wav_path = new_tmp_file(suffix=".wav")
-            #             LOG.debug("Transcoding media to wav")
-            #             # TODO set correct failure_reason if ffmpeg execution fails
-            #             run(
-            #                 f"{ffmpeg_bin} -y -nostdin -loglevel quiet -i '{file_path}' -ar 16000 -ac 1 '{wav_path}'"
-            #             )
-            #         else:
-            #             failure_reason = f"Unsupported media format: {format}"
-            #             raise RuntimeError()
-            #
-            #         # Check if file is valid wav
-            #         audio = wave.open(wav_path, "rb")
-            #         if (
-            #             audio.getnchannels() != 1
-            #             or audio.getsampwidth() != 2
-            #             or audio.getcomptype() != "NONE"
-            #         ):
-            #             # Fail job
-            #             failure_reason = (
-            #                 "Audio file must be mono PCM WAV format. Transcoding may have failed. "
-            #             )
-            #             raise RuntimeError()
-            #
-            #         # Prepare transcriber
-            #         language_code = job["LanguageCode"]
-            #         model_name = LANGUAGE_MODELS[language_code]
-            #         self.download_model(model_name)
-            #         model = Model(model_name=model_name)
-            #
-            #         tc = KaldiRecognizer(model, audio.getframerate())
-            #         tc.SetWords(True)
-            #         tc.SetPartialWords(True)
-            #
-            #         # Start transcription
-            #         while True:
-            #             data = audio.readframes(4000)
-            #             if len(data) == 0:
-            #                 break
-            #             tc.AcceptWaveform(data)
-            #
-            #         tc_result = json.loads(tc.FinalResult())
-            #
-            #         # Convert to AWS format
-            #         items = []
-            #         for unigram in tc_result["result"]:
-            #             items.append(
-            #                 {
-            #                     "start_time": unigram["start"],
-            #                     "end_time": unigram["end"],
-            #                     "type": "pronounciation",
-            #                     "alternatives": [
-            #                         {
-            #                             "confidence": unigram["conf"],
-            #                             "content": unigram["word"],
-            #                         }
-            #                     ],
-            #                 }
-            #             )
-            #         output = {
-            #             "jobName": job_name,
-            #             "status": TranscriptionJobStatus.COMPLETED,
-            #             "results": {
-            #                 "transcripts": [
-            #                     {
-            #                         "transcript": tc_result["text"],
-            #                     }
-            #                 ],
-            #                 "items": items,
-            #             },
-            #         }
 
             # Save to S3
             output_s3_path = job["Transcript"]["TranscriptFileUri"]
