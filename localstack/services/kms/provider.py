@@ -78,6 +78,7 @@ from localstack.aws.api.kms import (
     PlaintextType,
     PrincipalIdType,
     PutKeyPolicyRequest,
+    RecipientInfo,
     ReplicateKeyRequest,
     ReplicateKeyResponse,
     ScheduleKeyDeletionRequest,
@@ -650,6 +651,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         grant_tokens: GrantTokenList = None,
         key_id: KeyIdType = None,
         encryption_algorithm: EncryptionAlgorithmSpec = None,
+        recipient: RecipientInfo = None,
     ) -> DecryptResponse:
         # In AWS, key_id is only supplied for data encrypted with an asymmetrical algorithm. For symmetrical
         # encryption, key_id is taken from the encrypted data itself.
@@ -680,6 +682,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         #
         # We return a key ARN instead of KeyId despite the name of the parameter, as this is what AWS does and states
         # in its docs.
+        # TODO add support for "recipient"
+        #  https://docs.aws.amazon.com/kms/latest/APIReference/API_Decrypt.html#API_Decrypt_RequestSyntax
         return DecryptResponse(
             KeyId=key.metadata.get("Arn"),
             Plaintext=plaintext,
