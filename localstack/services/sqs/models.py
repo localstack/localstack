@@ -171,16 +171,25 @@ class Permission(NamedTuple):
 
 
 class ReceiveMessageResult:
+    """
+    Object to communicate the result of a "receive messages" operation between the SqsProvider and
+    the underlying datastructure holding the messages.
+    """
+
     successful: list[SqsMessage]
+    """The messages that were successfully received from the queue"""
+
     receipt_handles: list[str]
-    dead_letters: list[SqsMessage]
-    new_visibility_timeout: Optional[int]
+    """The array index position in ``successful`` and ``receipt_handles`` need to be the same (this
+    assumption is needed when assembling the result in `SqsProvider.receive_message`)"""
+
+    dead_letter_messages: list[SqsMessage]
+    """All messages that were received more than maxReceiveCount in the redrive policy (if any)"""
 
     def __init__(self):
         self.successful = []
         self.receipt_handles = []
-        self.dead_letters = []
-        self.new_visibility_timeout = None
+        self.dead_letter_messages = []
 
 
 class SqsQueue:
@@ -297,7 +306,7 @@ class SqsQueue:
     @property
     def max_receive_count(self) -> Optional[int]:
         """
-        Returns the maxReceiveCount attribute of the redrive policy. If not redrive policy is set, then it
+        Returns the maxReceiveCount attribute of the redrive policy. If no redrive policy is set, then it
         returns None.
         """
         if redrive_policy := self.redrive_policy:
@@ -408,7 +417,7 @@ class SqsQueue:
 
     def receive(
         self,
-        num_messages: int = None,
+        num_messages: int = 1,
         wait_time_seconds: int = None,
         visibility_timeout: int = None,
     ) -> ReceiveMessageResult:
@@ -549,7 +558,7 @@ class StandardQueue(SqsQueue):
 
     def receive(
         self,
-        num_messages: int = None,
+        num_messages: int = 1,
         wait_time_seconds: int = None,
         visibility_timeout: int = None,
     ) -> ReceiveMessageResult:
@@ -559,7 +568,6 @@ class StandardQueue(SqsQueue):
         visibility_timeout = (
             self.visibility_timeout if visibility_timeout is None else visibility_timeout
         )
-        result.new_visibility_timeout = visibility_timeout
 
         block = True if wait_time_seconds else False
         timeout = wait_time_seconds or 0
@@ -600,7 +608,7 @@ class StandardQueue(SqsQueue):
                     message,
                     message.receive_count,
                 )
-                result.dead_letters.append(message)
+                result.dead_letter_messages.append(message)
             else:
                 result.successful.append(message)
 
@@ -614,7 +622,6 @@ class StandardQueue(SqsQueue):
             receipt_handle = self.create_receipt_handle(message)
             message.receipt_handles.add(receipt_handle)
             self.receipts[receipt_handle] = message
-            # array index position in `successful` and `receipt_handles` will be the same
             result.receipt_handles.append(receipt_handle)
 
             # manage message visibility
@@ -657,7 +664,7 @@ class MessageGroup:
         heapq.heappush(self.messages, message)
 
     def __eq__(self, other):
-        return self.message_group_id == other.message_id
+        return self.message_group_id == other.message_group_id
 
     def __hash__(self):
         return self.message_group_id.__hash__()
@@ -812,7 +819,7 @@ class FifoQueue(SqsQueue):
 
     def receive(
         self,
-        num_messages: int = None,
+        num_messages: int = 1,
         wait_time_seconds: int = None,
         visibility_timeout: int = None,
     ) -> ReceiveMessageResult:
@@ -832,7 +839,6 @@ class FifoQueue(SqsQueue):
         visibility_timeout = (
             self.visibility_timeout if visibility_timeout is None else visibility_timeout
         )
-        result.new_visibility_timeout = visibility_timeout
 
         block = True if wait_time_seconds else False
         timeout = wait_time_seconds or 0
@@ -891,7 +897,7 @@ class FifoQueue(SqsQueue):
                             message,
                             message.receive_count,
                         )
-                        result.dead_letters.append(message)
+                        result.dead_letter_messages.append(message)
                     else:
                         result.successful.append(message)
 
@@ -911,8 +917,6 @@ class FifoQueue(SqsQueue):
                 receipt_handle = self.create_receipt_handle(message)
                 message.receipt_handles.add(receipt_handle)
                 self.receipts[receipt_handle] = message
-                # array index position in `successful`
-                # l` and `receipt_handles` will be the same
                 result.receipt_handles.append(receipt_handle)
 
                 # manage message visibility

@@ -961,11 +961,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         result = queue.receive(num, wait_time_seconds, visibility_timeout)
 
         # process dead letter messages
-        if result.dead_letters:
+        if result.dead_letter_messages:
             dead_letter_target_arn = queue.redrive_policy["deadLetterTargetArn"]
             dl_queue = self._require_queue_by_arn(context, dead_letter_target_arn)
             # TODO: does this need to be atomic?
-            for standard_message in result.dead_letters:
+            for standard_message in result.dead_letter_messages:
                 message = to_sqs_api_message(
                     standard_message, attribute_names, message_attribute_names
                 )
