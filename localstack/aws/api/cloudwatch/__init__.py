@@ -791,10 +791,12 @@ class MetricStreamStatisticsConfiguration(TypedDict, total=False):
 
 
 MetricStreamStatisticsConfigurations = List[MetricStreamStatisticsConfiguration]
+MetricStreamFilterMetricNames = List[MetricName]
 
 
 class MetricStreamFilter(TypedDict, total=False):
     Namespace: Optional[Namespace]
+    MetricNames: Optional[MetricStreamFilterMetricNames]
 
 
 MetricStreamFilters = List[MetricStreamFilter]

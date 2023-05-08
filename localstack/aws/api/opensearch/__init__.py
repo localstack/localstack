@@ -11,6 +11,7 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 
 ARN = str
 AWSAccount = str
+AvailabilityZone = str
 BackendRole = str
 Boolean = bool
 ChangeProgressStageName = str
@@ -37,6 +38,7 @@ GUID = str
 IdentityPoolId = str
 InstanceCount = int
 InstanceRole = str
+InstanceTypeString = str
 Integer = int
 IntegerClass = int
 Issue = str
@@ -48,7 +50,11 @@ MaximumInstanceCount = int
 Message = str
 MinimumInstanceCount = int
 NextToken = str
+NodeId = str
 NonEmptyString = str
+NumberOfAZs = str
+NumberOfNodes = str
+NumberOfShards = str
 OwnerId = str
 PackageDescription = str
 PackageID = str
@@ -77,6 +83,7 @@ UpgradeName = str
 UserPoolId = str
 Username = str
 VersionString = str
+VolumeSize = str
 VpcEndpointId = str
 
 
@@ -141,12 +148,25 @@ class DescribePackagesFilterName(str):
     PackageStatus = "PackageStatus"
 
 
+class DomainHealth(str):
+    Red = "Red"
+    Yellow = "Yellow"
+    Green = "Green"
+    NotAvailable = "NotAvailable"
+
+
 class DomainPackageStatus(str):
     ASSOCIATING = "ASSOCIATING"
     ASSOCIATION_FAILED = "ASSOCIATION_FAILED"
     ACTIVE = "ACTIVE"
     DISSOCIATING = "DISSOCIATING"
     DISSOCIATION_FAILED = "DISSOCIATION_FAILED"
+
+
+class DomainState(str):
+    Active = "Active"
+    Processing = "Processing"
+    NotAvailable = "NotAvailable"
 
 
 class DryRunMode(str):
@@ -175,6 +195,23 @@ class LogType(str):
     SEARCH_SLOW_LOGS = "SEARCH_SLOW_LOGS"
     ES_APPLICATION_LOGS = "ES_APPLICATION_LOGS"
     AUDIT_LOGS = "AUDIT_LOGS"
+
+
+class MasterNodeStatus(str):
+    Available = "Available"
+    UnAvailable = "UnAvailable"
+
+
+class NodeStatus(str):
+    Active = "Active"
+    StandBy = "StandBy"
+    NotAvailable = "NotAvailable"
+
+
+class NodeType(str):
+    Data = "Data"
+    Ultrawarm = "Ultrawarm"
+    Master = "Master"
 
 
 class OpenSearchPartitionInstanceType(str):
@@ -404,6 +441,12 @@ class VpcEndpointStatus(str):
     DELETE_FAILED = "DELETE_FAILED"
 
 
+class ZoneStatus(str):
+    Active = "Active"
+    StandBy = "StandBy"
+    NotAvailable = "NotAvailable"
+
+
 class AccessDeniedException(ServiceException):
     code: str = "AccessDeniedException"
     sender_fault: bool = False
@@ -420,6 +463,12 @@ class ConflictException(ServiceException):
     code: str = "ConflictException"
     sender_fault: bool = False
     status_code: int = 409
+
+
+class DependencyFailureException(ServiceException):
+    code: str = "DependencyFailureException"
+    sender_fault: bool = False
+    status_code: int = 424
 
 
 class DisabledOperationException(ServiceException):
@@ -728,6 +777,19 @@ class AutoTuneOptionsStatus(TypedDict, total=False):
     Status: Optional[AutoTuneStatus]
 
 
+class AvailabilityZoneInfo(TypedDict, total=False):
+    AvailabilityZoneName: Optional[AvailabilityZone]
+    ZoneStatus: Optional[ZoneStatus]
+    ConfiguredDataNodeCount: Optional[NumberOfNodes]
+    AvailableDataNodeCount: Optional[NumberOfNodes]
+    TotalShards: Optional[NumberOfShards]
+    TotalUnAssignedShards: Optional[NumberOfShards]
+
+
+AvailabilityZoneInfoList = List[AvailabilityZoneInfo]
+AvailabilityZoneList = List[AvailabilityZone]
+
+
 class CancelServiceSoftwareUpdateRequest(ServiceRequest):
     DomainName: DomainName
 
@@ -796,6 +858,7 @@ class ClusterConfig(TypedDict, total=False):
     WarmType: Optional[OpenSearchWarmPartitionInstanceType]
     WarmCount: Optional[IntegerClass]
     ColdStorageOptions: Optional[ColdStorageOptions]
+    MultiAZWithStandbyEnabled: Optional[Boolean]
 
 
 class ClusterConfigStatus(TypedDict, total=False):
@@ -1186,6 +1249,55 @@ class DescribeDomainConfigResponse(TypedDict, total=False):
     DomainConfig: DomainConfig
 
 
+class DescribeDomainHealthRequest(ServiceRequest):
+    DomainName: DomainName
+
+
+class EnvironmentInfo(TypedDict, total=False):
+    AvailabilityZoneInformation: Optional[AvailabilityZoneInfoList]
+
+
+EnvironmentInfoList = List[EnvironmentInfo]
+
+
+class DescribeDomainHealthResponse(TypedDict, total=False):
+    DomainState: Optional[DomainState]
+    AvailabilityZoneCount: Optional[NumberOfAZs]
+    ActiveAvailabilityZoneCount: Optional[NumberOfAZs]
+    StandByAvailabilityZoneCount: Optional[NumberOfAZs]
+    DataNodeCount: Optional[NumberOfNodes]
+    DedicatedMaster: Optional[Boolean]
+    MasterEligibleNodeCount: Optional[NumberOfNodes]
+    WarmNodeCount: Optional[NumberOfNodes]
+    MasterNode: Optional[MasterNodeStatus]
+    ClusterHealth: Optional[DomainHealth]
+    TotalShards: Optional[NumberOfShards]
+    TotalUnAssignedShards: Optional[NumberOfShards]
+    EnvironmentInformation: Optional[EnvironmentInfoList]
+
+
+class DescribeDomainNodesRequest(ServiceRequest):
+    DomainName: DomainName
+
+
+class DomainNodesStatus(TypedDict, total=False):
+    NodeId: Optional[NodeId]
+    NodeType: Optional[NodeType]
+    AvailabilityZone: Optional[AvailabilityZone]
+    InstanceType: Optional[OpenSearchPartitionInstanceType]
+    NodeStatus: Optional[NodeStatus]
+    StorageType: Optional[StorageTypeName]
+    StorageVolumeType: Optional[VolumeType]
+    StorageSize: Optional[VolumeSize]
+
+
+DomainNodesStatusList = List[DomainNodesStatus]
+
+
+class DescribeDomainNodesResponse(TypedDict, total=False):
+    DomainNodesStatusList: Optional[DomainNodesStatusList]
+
+
 class DescribeDomainRequest(ServiceRequest):
     DomainName: DomainName
 
@@ -1539,6 +1651,7 @@ class InstanceTypeDetails(TypedDict, total=False):
     AdvancedSecurityEnabled: Optional[Boolean]
     WarmEnabled: Optional[Boolean]
     InstanceRole: Optional[InstanceRoleList]
+    AvailabilityZones: Optional[AvailabilityZoneList]
 
 
 InstanceTypeDetailsList = List[InstanceTypeDetails]
@@ -1568,6 +1681,8 @@ class ListInstanceTypeDetailsRequest(ServiceRequest):
     DomainName: Optional[DomainName]
     MaxResults: Optional[MaxResults]
     NextToken: Optional[NextToken]
+    RetrieveAZs: Optional[Boolean]
+    InstanceType: Optional[InstanceTypeString]
 
 
 class ListInstanceTypeDetailsResponse(TypedDict, total=False):
@@ -1928,6 +2043,18 @@ class OpensearchApi:
     ) -> DescribeDomainConfigResponse:
         raise NotImplementedError
 
+    @handler("DescribeDomainHealth")
+    def describe_domain_health(
+        self, context: RequestContext, domain_name: DomainName
+    ) -> DescribeDomainHealthResponse:
+        raise NotImplementedError
+
+    @handler("DescribeDomainNodes")
+    def describe_domain_nodes(
+        self, context: RequestContext, domain_name: DomainName
+    ) -> DescribeDomainNodesResponse:
+        raise NotImplementedError
+
     @handler("DescribeDomains")
     def describe_domains(
         self, context: RequestContext, domain_names: DomainNameList
@@ -2072,6 +2199,8 @@ class OpensearchApi:
         domain_name: DomainName = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        retrieve_azs: Boolean = None,
+        instance_type: InstanceTypeString = None,
     ) -> ListInstanceTypeDetailsResponse:
         raise NotImplementedError
 
