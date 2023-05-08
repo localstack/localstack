@@ -154,6 +154,10 @@ class S3EventNotificationContext:
 
 @dataclass
 class BucketVerificationContext:
+    """
+    Context object for data required for sending a `s3:TestEvent` like message.
+    """
+
     request_id: str
     bucket_name: str
     configuration: Dict
@@ -376,7 +380,7 @@ class SqsNotifier(BaseNotifier):
         test_payload = self._get_test_payload(verification_ctx)
         try:
             sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(test_payload))
-        except Exception:
+        except ClientError as e:
             LOG.error(
                 'Unable to send test notification for S3 bucket "%s" to SQS queue "%s"',
                 verification_ctx.bucket_name,
@@ -386,7 +390,7 @@ class SqsNotifier(BaseNotifier):
                 "Unable to validate the following destination configurations",
                 name=target_arn,
                 value="Permissions on the destination queue do not allow S3 to publish notifications from this bucket",
-            )
+            ) from e
 
     def notify(self, ctx: S3EventNotificationContext, config: QueueConfiguration):
         event_payload = self._get_event_payload(ctx, config.get("Id"))
@@ -449,7 +453,7 @@ class SnsNotifier(BaseNotifier):
                 Message=json.dumps(test_payload),
                 Subject="Amazon S3 Notification",
             )
-        except Exception:
+        except ClientError as e:
             LOG.error(
                 'Unable to send test notification for S3 bucket "%s" to SNS topic "%s"',
                 verification_ctx.bucket_name,
@@ -459,7 +463,7 @@ class SnsNotifier(BaseNotifier):
                 "Unable to validate the following destination configurations",
                 name=target_arn,
                 value="Permissions on the destination topic do not allow S3 to publish notifications from this bucket",
-            )
+            ) from e
 
     def notify(self, ctx: S3EventNotificationContext, config: TopicConfiguration):
         LOG.debug(
@@ -517,12 +521,12 @@ class LambdaNotifier(BaseNotifier):
         )
         try:
             lambda_client.invoke(FunctionName=target_arn, InvocationType=InvocationType.DryRun)
-        except ClientError:
+        except ClientError as e:
             raise _create_invalid_argument_exc(
                 "Unable to validate the following destination configurations",
                 name=f"{target_arn}, null",
                 value=f"Not authorized to invoke function [{target_arn}]",
-            )
+            ) from e
 
     def notify(self, ctx: S3EventNotificationContext, config: LambdaFunctionConfiguration):
         event_payload = self._get_event_payload(ctx, config.get("Id"))
