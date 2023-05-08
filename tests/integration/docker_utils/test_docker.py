@@ -1394,7 +1394,7 @@ class TestDockerNetworking:
         init_thread = FuncThread(func=on_demand_init)
         init_thread.start()
         # reset / fix the DOCKER_HOST config
-        # monkeypatch.delenv("DOCKER_HOST")
+        monkeypatch.delenv("DOCKER_HOST")
         # wait for the init thread to finish
         init_thread.join()
         # verify that the client is available
