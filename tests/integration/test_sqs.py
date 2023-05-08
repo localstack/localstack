@@ -1281,11 +1281,10 @@ class TestSqsProvider:
             QueueUrl=queue_url, MaxNumberOfMessages=10, VisibilityTimeout=0
         )
         ordering = [message["Body"] for message in response["Messages"]]
-        # these are in principle all valid orderings
+        # there's a race that can cause both orderings to happen, but both are valid
         assert ordering in (
-            ["g3-m1", "g1-m1", "g1-m2", "g1-m3", "g1-m4", "g2-m1"],
-            ["g3-m1", "g2-m1", "g1-m1", "g1-m2", "g1-m3", "g1-m4"],
-            ["g1-m1", "g1-m2", "g1-m3", "g1-m4", "g2-m1", "g3-m1"],
+            ["g3-m1", "g1-m1", "g1-m2", "g1-m3", "g1-m4", "g2-m1"],  # aws and localstack
+            ["g3-m1", "g2-m1", "g1-m1", "g1-m2", "g1-m3", "g1-m4"],  # localstack
         )
 
     @pytest.mark.aws_validated
@@ -1334,11 +1333,7 @@ class TestSqsProvider:
             QueueUrl=queue_url, MaxNumberOfMessages=10, VisibilityTimeout=0
         )
         ordering = [message["Body"] for message in response["Messages"]]
-        # these are in principle all valid orderings
-        assert ordering in (
-            ["g3-m1", "g1-m1", "g1-m2", "g2-m1", "g2-m2"],
-            ["g1-m1", "g1-m2", "g2-m1", "g2-m2", "g3-m1"],
-        )
+        assert ordering == ["g3-m1", "g1-m1", "g1-m2", "g2-m1", "g2-m2"]
 
     @pytest.mark.aws_validated
     def test_fifo_message_group_visibility_after_terminate_visibility_timeout(
@@ -1498,19 +1493,17 @@ class TestSqsProvider:
             QueueUrl=queue_url, ReceiptHandle=response["Messages"][1]["ReceiptHandle"]
         )
 
-        # draining the queue should now include the message from group 1 we didn't delete earlier
+        # draining the queue should include the message from group 1 we didn't delete earlier
         response = aws_client.sqs.receive_message(
             QueueUrl=queue_url,
             MaxNumberOfMessages=10,
         )
         ordering = [message["Body"] for message in response["Messages"]]
 
-        # these are in principle all valid orderings
+        # both are in principle valid orderings. it's not clear how this ordering in AWS happens
         assert ordering in (
-            ["g2-m1", "g2-m2", "g1-m3", "g1-m4", "g3-m1"],
-            ["g2-m1", "g2-m2", "g3-m1", "g1-m3", "g1-m4"],
-            ["g3-m1", "g2-m1", "g2-m2", "g1-m3", "g1-m4"],
-            ["g1-m3", "g1-m4", "g3-m1", "g2-m1", "g2-m2"],
+            ["g2-m1", "g2-m2", "g1-m3", "g1-m4", "g3-m1"],  # aws
+            ["g2-m1", "g2-m2", "g3-m1", "g1-m3", "g1-m4"],  # localstack
         )
 
     @pytest.mark.aws_validated
@@ -1571,12 +1564,7 @@ class TestSqsProvider:
             MaxNumberOfMessages=10,
         )
         ordering = [message["Body"] for message in response["Messages"]]
-
-        # these are in principle all valid orderings
-        assert ordering in (
-            ["g2-m1", "g2-m2", "g3-m1"],
-            ["g3-m1", "g2-m1", "g2-m2"],
-        )
+        assert ordering == ["g2-m1", "g2-m2", "g3-m1"]
 
     @pytest.mark.aws_validated
     def test_fifo_queue_send_message_with_delay_seconds_fails(
