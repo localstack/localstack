@@ -6,6 +6,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.transcribe import BadRequestException, NotFoundException
+from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.utils.files import new_tmp_file
 from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_str
@@ -27,17 +28,20 @@ def transcribe_snapshot_transformer(snapshot):
 )
 class TestTranscribe:
     @staticmethod
-    def _wait_transcription_job(client, transcribe_job_name):
+    def _wait_transcription_job(
+        transcribe_client: ServiceLevelClientFactory, transcribe_job_name: str
+    ) -> bool:
         def is_transcription_done():
-            transcription_status = client.get_transcription_job(
+            transcription_status = transcribe_client.get_transcription_job(
                 TranscriptionJobName=transcribe_job_name
             )
             return transcription_status["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
 
-        if not poll_condition(condition=is_transcription_done, timeout=100, interval=2):
+        if not poll_condition(condition=is_transcription_done, timeout=60, interval=2):
             LOG.warning(
                 f"Timed out while awaiting for transcription of job with transcription job name:'{transcribe_job_name}'."
             )
+            return False
         else:
             return True
 
@@ -226,7 +230,9 @@ class TestTranscribe:
             (None, None),  # without output bucket and output key
         ],
     )
-    def test_transcribe_start_job(self, output_bucket, output_key, s3_bucket, snapshot, aws_client):
+    def test_transcribe_start_job(
+        self, output_bucket, output_key, s3_bucket, cleanups, snapshot, aws_client
+    ):
         file_path = os.path.join(BASEDIR, "files/en-gb.wav")
         test_key = "test-clip.wav"
         transcribe_job_name = f"test-transcribe-job-{short_uid()}"
@@ -246,8 +252,7 @@ class TestTranscribe:
             aws_client.s3.upload_fileobj(f, s3_bucket, test_key)
 
         response_start_job = aws_client.transcribe.start_transcription_job(**params)
-        if self._wait_transcription_job(aws_client.transcribe, params["TranscriptionJobName"]):
-            response_start_job["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
+        self._wait_transcription_job(aws_client.transcribe, params["TranscriptionJobName"])
         snapshot.match("response-start-job", response_start_job)
         response_get_transcribe_job = aws_client.transcribe.get_transcription_job(
             TranscriptionJobName=transcribe_job_name
@@ -263,5 +268,7 @@ class TestTranscribe:
             objects = aws_client.s3.list_objects_v2(Bucket=output_bucket)
             if "Contents" in objects:
                 for obj in objects["Contents"]:
-                    aws_client.s3.delete_object(Bucket=output_bucket, Key=obj["Key"])
-            aws_client.s3.delete_bucket(Bucket=output_bucket)
+                    cleanups.append(
+                        lambda: aws_client.s3.delete_object(Bucket=output_bucket, Key=obj["Key"])
+                    )
+            cleanups.append(lambda: aws_client.s3.delete_bucket(Bucket=output_bucket))
