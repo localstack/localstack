@@ -21,7 +21,6 @@ LOG = logging.getLogger(__name__)
 def transcribe_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.transcribe_api())
 
-
 @pytest.mark.skipif(
     "arm" in get_arch(),
     reason="Vosk transcription library has issues running on Circle CI arm64 executors.",
@@ -32,10 +31,10 @@ class TestTranscribe:
         transcribe_client: ServiceLevelClientFactory, transcribe_job_name: str
     ) -> bool:
         def is_transcription_done():
-            transcription_status = transcribe_client.get_transcription_job(
+            transcription_job = transcribe_client.get_transcription_job(
                 TranscriptionJobName=transcribe_job_name
             )
-            return transcription_status["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
+            return transcription_job["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
 
         if not poll_condition(condition=is_transcription_done, timeout=60, interval=2):
             LOG.warning(
@@ -231,7 +230,7 @@ class TestTranscribe:
         ],
     )
     def test_transcribe_start_job(
-        self, output_bucket, output_key, s3_bucket, cleanups, snapshot, aws_client
+        self, output_bucket, output_key, s3_bucket, cleanups, snapshot, aws_client,
     ):
         file_path = os.path.join(BASEDIR, "files/en-gb.wav")
         test_key = "test-clip.wav"
@@ -242,9 +241,17 @@ class TestTranscribe:
             "Media": {"MediaFileUri": f"s3://{s3_bucket}/{test_key}"},
         }
 
+        def _cleanup():
+            objects = aws_client.s3.list_objects_v2(Bucket=output_bucket)
+            if "Contents" in objects:
+                for obj in objects["Contents"]:
+                    aws_client.s3.delete_object(Bucket=output_bucket, Key=obj["Key"])
+            aws_client.s3.delete_bucket(Bucket=output_bucket)
+
         if output_bucket is not None:
             params["OutputBucketName"] = output_bucket
             aws_client.s3.create_bucket(Bucket=output_bucket)
+            cleanups.append(lambda: _cleanup())
         if output_key is not None:
             params["OutputKey"] = output_key
 
@@ -263,12 +270,3 @@ class TestTranscribe:
             TranscriptionJobName=transcribe_job_name
         )
         snapshot.match("delete-transcription-job", res_delete_transcription_job)
-
-        if output_bucket:
-            objects = aws_client.s3.list_objects_v2(Bucket=output_bucket)
-            if "Contents" in objects:
-                for obj in objects["Contents"]:
-                    cleanups.append(
-                        lambda: aws_client.s3.delete_object(Bucket=output_bucket, Key=obj["Key"])
-                    )
-            cleanups.append(lambda: aws_client.s3.delete_bucket(Bucket=output_bucket))

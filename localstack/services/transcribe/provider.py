@@ -34,6 +34,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.files import new_tmp_file
 from localstack.utils.http import download
 from localstack.utils.run import run
+from localstack.services.s3.utils import get_bucket_and_key_from_s3_uri
 from localstack.utils.threads import start_thread
 
 LOG = logging.getLogger(__name__)
@@ -85,9 +86,6 @@ _DL_LOCK = threading.Lock()
 
 
 class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
-    def _get_bucket_and_key_from_s3_uri(self, s3_path: str) -> str:
-        return s3_path.removeprefix("s3://").partition("/")
-
     def on_before_start(self):
         ffmpeg_package.install()
 
@@ -127,7 +125,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
 
         s3_path = request["Media"]["MediaFileUri"]
         output_bucket = request.get(
-            "OutputBucketName", self._get_bucket_and_key_from_s3_uri(s3_path)[0]
+            "OutputBucketName", get_bucket_and_key_from_s3_uri(s3_path)[0]
         )
         output_key = request.get("OutputKey")
 
@@ -340,7 +338,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
 
             # Save to S3
             output_s3_path = job["Transcript"]["TranscriptFileUri"]
-            output_bucket, _, output_key = self._get_bucket_and_key_from_s3_uri(output_s3_path)
+            output_bucket, _, output_key = get_bucket_and_key_from_s3_uri(output_s3_path)
             s3_client.put_object(Bucket=output_bucket, Key=output_key, Body=json.dumps(output))
 
             # Update job details
