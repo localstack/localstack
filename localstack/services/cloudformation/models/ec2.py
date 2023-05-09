@@ -4,7 +4,7 @@ from moto.ec2.utils import generate_route_id
 
 from localstack.services.cloudformation.cfn_utils import get_tags_param
 from localstack.services.cloudformation.deployment_utils import generate_default_name
-from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
+from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import str_to_bool
 
@@ -543,8 +543,6 @@ class EC2Instance(GenericBaseModel):
             props["MaxCount"] = 1
 
     def get_cfn_attribute(self, attribute_name):
-        if attribute_name in REF_ID_ATTRS:
-            return self.props.get("InstanceId")
         if attribute_name == "PublicIp":
             return self.props.get("PublicIpAddress") or "127.0.0.1"
         if attribute_name == "PublicDnsName":

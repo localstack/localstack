@@ -4,11 +4,7 @@ from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     select_parameters,
 )
-from localstack.services.cloudformation.service_models import (
-    REF_ATTRS,
-    REF_ID_ATTRS,
-    GenericBaseModel,
-)
+from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils import common
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import short_uid
@@ -26,7 +22,7 @@ class EventConnection(GenericBaseModel):
 
     def get_cfn_attribute(self, attribute_name):
         props = self.props
-        if attribute_name in REF_ID_ATTRS:
+        if attribute_name == "Name":
             return props.get("Name")
         if attribute_name == "Arn":
             return props.get("ConnectionArn")
@@ -53,7 +49,7 @@ class EventBus(GenericBaseModel):
 
     def get_cfn_attribute(self, attribute_name):
         props = self.props
-        if attribute_name in REF_ATTRS + ["Name"]:
+        if attribute_name == "Name":
             return props.get("Name")
         if attribute_name == "Arn":
             return props.get("Arn")
@@ -61,8 +57,18 @@ class EventBus(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
+        def result_handler(result, resource_id, resources, resource_type):
+            resources[resource_id]["Properties"]["Arn"] = result["EventBusArn"]
+            resources[resource_id]["PhysicalResourceId"] = resources[resource_id]["Properties"][
+                "Name"
+            ]
+
         return {
-            "create": {"function": "create_event_bus", "parameters": ["Name"]},
+            "create": {
+                "function": "create_event_bus",
+                "parameters": ["Name"],
+                "result_handler": result_handler,
+            },
             "delete": {"function": "delete_event_bus", "parameters": ["Name"]},
         }
 

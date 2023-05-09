@@ -9,7 +9,7 @@ from localstack.services.cloudformation.deployment_utils import (
     select_parameters,
 )
 from localstack.services.cloudformation.packages import cloudformation_package
-from localstack.services.cloudformation.service_models import LOG, REF_ID_ATTRS, GenericBaseModel
+from localstack.services.cloudformation.service_models import LOG, GenericBaseModel
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import (
     cp_r,
@@ -221,9 +221,8 @@ class LambdaEventSourceMapping(GenericBaseModel):
         return mapping[0]
 
     def get_cfn_attribute(self, attribute_name):
-        if attribute_name in REF_ID_ATTRS:
+        if attribute_name == "Id":
             return self.props.get("UUID")
-        return super(LambdaEventSourceMapping, self).get_cfn_attribute(attribute_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("UUID")
