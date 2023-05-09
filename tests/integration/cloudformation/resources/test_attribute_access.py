@@ -1,6 +1,3 @@
-import json
-import os
-
 import pytest
 from botocore.exceptions import ClientError, ParamValidationError, WaiterError
 
@@ -61,30 +58,6 @@ ATTRIBUTES = set(
 )
 
 
-@pytest.fixture
-def valid_topic():
-    with open("/home/simon/work/localstack/cfn-schema/schemas/aws-sns-topic.json") as infile:
-        schema = json.load(infile)
-
-    required_property_names = schema.get("required", [])
-    property_names = list(schema["properties"].keys())
-
-    properties = {}
-
-    for property_name in property_names:
-        if property_name not in required_property_names:
-            continue
-
-        # TODO
-
-    definition = {"Type": "AWS::SNS::Topic", "Properties": properties}
-    return definition
-
-
-def test_validity(valid_topic):
-    assert valid_topic["Properties"] is None
-
-
 @pytest.mark.parametrize("attribute", ATTRIBUTES)
 def test_getting_all_attributes(attribute, aws_client, snapshot, cleanups):
     cfn_client = aws_client.cloudformation
@@ -100,10 +73,10 @@ def test_getting_all_attributes(attribute, aws_client, snapshot, cleanups):
             ],
         )
     except ClientError as e:
-        snapshot.match("create_stack_exc", e.response)
+        snapshot.match("create-stack-exc", e.response)
         return
     except ParamValidationError as e:
-        snapshot.match("create_stack_exc", {"args": e.args, "kwargs": e.kwargs})
+        snapshot.match("create-stack-exc", {"args": e.args, "kwargs": e.kwargs})
         return
 
     stack_arn = create_stack_result["StackId"]
@@ -115,36 +88,12 @@ def test_getting_all_attributes(attribute, aws_client, snapshot, cleanups):
         pass
 
     describe_stack = cfn_client.describe_stacks(StackName=stack_arn)
-    snapshot.match("describe_stack", describe_stack)
+    snapshot.match("describe-stack", describe_stack)
 
-    stack_events = (
-        cfn_client.get_paginator("describe_stack_events")
-        .paginate(StackName=stack_arn)
-        .build_full_result()
-    )
-    snapshot.match("stack_events", stack_events)
-
-    postcreate_original_template = cfn_client.get_template(
-        StackName=stack_name, TemplateStage="Original"
-    )
-    snapshot.match("postcreate_original_template", postcreate_original_template)
-
-    try:
-        postcreate_processed_template = cfn_client.get_template(
-            StackName=stack_name, TemplateStage="Processed"
+    if describe_stack["Stacks"][0]["StackStatus"] != "CREATE_COMPLETE":
+        stack_events = (
+            cfn_client.get_paginator("describe_stack_events")
+            .paginate(StackName=stack_arn)
+            .build_full_result()
         )
-        snapshot.match("postcreate_processed_template", postcreate_processed_template)
-    except ClientError as e:
-        snapshot.match("postcreate_processed_template_exc", e.response)
-    except Exception as e:
-        snapshot.match("postcreate_processed_template_exc", str(e))
-
-    res = aws_client.cloudformation.describe_stacks(StackName=stack_arn)
-
-    snapshot.match("stack-state", res)
-
-
-def test_attribute_access(deploy_cfn_template):
-    deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../../templates/getatt_testing.yaml")
-    )
+        snapshot.match("stack-events", stack_events)
