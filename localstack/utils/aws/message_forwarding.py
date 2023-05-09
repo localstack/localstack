@@ -80,7 +80,9 @@ def send_event_to_target(
 
     elif ":firehose:" in target_arn:
         delivery_stream_name = firehose_name(target_arn)
-        firehose_client = connect_to_service("firehose", region_name=region)
+        firehose_client = clients.firehose.request_metadata(
+            service_principal=source_service, source_arn=source_arn
+        )
         firehose_client.put_record(
             DeliveryStreamName=delivery_stream_name,
             Record={"Data": to_bytes(json.dumps(event))},
