@@ -470,7 +470,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             grant_store = self._get_store(context.account_id, context.region)
 
         if key_id:
-            key_account_id, key_region_name, key_id = self._parse_key_id(key_id)
+            key_account_id, key_region_name, key_id = self._parse_key_id(key_id, context)
             key_store = self._get_store(key_account_id, key_region_name)
             key = key_store.get_key(key_id, any_key_state_allowed=True)
             key_id = key.metadata.get("KeyId")

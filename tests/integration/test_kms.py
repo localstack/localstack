@@ -308,12 +308,23 @@ class TestKMS:
         assert len(grants_after) == len(grants_before) - 1
 
     @pytest.mark.aws_validated
-    def test_retire_grant(self, kms_grant_and_key, aws_client):
+    def test_retire_grant_with_grant_token(self, kms_grant_and_key, aws_client):
         grant = kms_grant_and_key[0]
         key_id = kms_grant_and_key[1]["KeyId"]
         grants_before = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
 
         aws_client.kms.retire_grant(GrantToken=grant["GrantToken"])
+
+        grants_after = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
+        assert len(grants_after) == len(grants_before) - 1
+
+    @pytest.mark.aws_validated
+    def test_retire_grant_with_grant_id_and_key_id(self, kms_grant_and_key, aws_client):
+        grant = kms_grant_and_key[0]
+        key_id = kms_grant_and_key[1]["KeyId"]
+        grants_before = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
+
+        aws_client.kms.retire_grant(GrantId=grant["GrantId"], KeyId=key_id)
 
         grants_after = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
         assert len(grants_after) == len(grants_before) - 1
