@@ -613,6 +613,9 @@ DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
 # Default timeout for Docker API calls sent by the Docker SDK client, in seconds.
 DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS = int(os.environ.get("DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS") or 60)
 
+# Default number of retries to connect to the Docker API by the Docker SDK client.
+DOCKER_SDK_DEFAULT_RETRIES = int(os.environ.get("DOCKER_SDK_DEFAULT_RETRIES") or 0)
+
 # whether to enable API-based updates of configuration variables at runtime
 ENABLE_CONFIG_UPDATES = is_env_true("ENABLE_CONFIG_UPDATES")
 
