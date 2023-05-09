@@ -794,12 +794,12 @@ class TestEvents:
                     ],
                     "HeaderParameters": [
                         {
-                            "Key": "connection_header_param",
+                            "Key": "connection-header-param",
                             "Value": "value",
                             "IsValueSecret": False,
                         },
                         {
-                            "Key": "overwritten_header",
+                            "Key": "overwritten-header",
                             "Value": "original",
                             "IsValueSecret": False,
                         },
@@ -844,7 +844,7 @@ class TestEvents:
                     "HttpParameters": {
                         "PathParameterValues": ["target_path"],
                         "HeaderParameters": {
-                            "target_header": "target_header_value",
+                            "target-header": "target_header_value",
                             "overwritten_header": "changed",
                         },
                         "QueryStringParameters": {
@@ -880,17 +880,17 @@ class TestEvents:
 
         # Connection data validation
         assert event["connection_body_param"] == "value"
-        assert headers["Connection_Header_Param"] == "value"
+        assert headers["Connection-Header-Param"] == "value"
         assert query_args["connection_query_param"] == "value"
 
         # Target parameters validation
         assert "/target_path" in event_request.path
         assert event["target_value"] == "value"
-        assert headers["Target_Header"] == "target_header_value"
+        assert headers["Target-Header"] == "target_header_value"
         assert query_args["target_query"] == "t_query"
 
         # connection/target overwrite test
-        assert headers["Overwritten_Header"] == "original"
+        assert headers["Overwritten-Header"] == "original"
         assert query_args["overwritten_query"] == "original"
 
         # Auth validation
