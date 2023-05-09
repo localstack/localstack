@@ -20,14 +20,16 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class CatcherDecl(EvalComponent):
+    _DEFAULT_RESULT_PATH: Final[ResultPath] = ResultPath(result_path_src="$")
+
     def __init__(
         self,
         error_equals: ErrorEqualsDecl,
         next_decl: Next,
-        result_path: ResultPath = ResultPath(result_path_src="$"),
+        result_path: ResultPath = _DEFAULT_RESULT_PATH,
     ):
         self.error_equals: Final[ErrorEqualsDecl] = error_equals
-        self.result_path: Final[ResultPath] = result_path
+        self.result_path: Final[ResultPath] = result_path or CatcherDecl._DEFAULT_RESULT_PATH
         self.next_decl: Final[Next] = next_decl
 
     @classmethod

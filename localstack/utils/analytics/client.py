@@ -61,6 +61,7 @@ class AnalyticsClient:
 
         return SessionResponse(response.json())
 
+    # TODO: naming seems confusing since this doesn't actually append, but directly sends all passed events via HTTP
     def append_events(self, events: List[Event]):
         # TODO: add compression to append_events
         #  it would maybe be useful to compress analytics data, but it's unclear how that will

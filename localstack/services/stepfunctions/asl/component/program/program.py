@@ -1,3 +1,4 @@
+import logging
 from typing import Final, Optional
 
 from localstack.aws.api.stepfunctions import (
@@ -19,6 +20,8 @@ from localstack.services.stepfunctions.asl.eval.programstate.program_state impor
 from localstack.services.stepfunctions.asl.eval.programstate.program_stopped import ProgramStopped
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
+LOG = logging.getLogger(__name__)
+
 
 class Program(EvalComponent):
     def __init__(self, start_at: StartAt, states: States, comment: Optional[Comment] = None):
@@ -37,14 +40,19 @@ class Program(EvalComponent):
         super().eval(env=env)
 
     def _eval_body(self, env: Environment) -> None:
-        while env.is_running():
-            next_state: CommonStateField = self._get_state(env.next_state_name)
-            next_state.eval(env)
+        try:
+            while env.is_running():
+                next_state: CommonStateField = self._get_state(env.next_state_name)
+                next_state.eval(env)
+        except Exception as ex:
+            LOG.debug(f"Stepfunctions computation ended with exception '{ex}'.")
 
-        # TODO: error handling.
         program_state: ProgramState = env.program_state()
         if isinstance(program_state, ProgramError):
-            raise Exception(program_state.error)
+            env.event_history.add_event(
+                hist_type_event=HistoryEventType.ExecutionFailed,
+                event_detail=EventDetails(executionFailedEventDetails=program_state.error),
+            )
         elif isinstance(program_state, ProgramStopped):
             env.event_history.add_event(
                 hist_type_event=HistoryEventType.ExecutionAborted,
@@ -61,8 +69,8 @@ class Program(EvalComponent):
                     executionSucceededEventDetails=ExecutionSucceededEventDetails(
                         output=to_json_str(env.inp),
                         outputDetails=HistoryEventExecutionDataDetails(
-                            truncated=False
-                        ),  # Always False for api calls.
+                            truncated=False  # Always False for api calls.
+                        ),
                     )
                 ),
             )

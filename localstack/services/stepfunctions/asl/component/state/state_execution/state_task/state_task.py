@@ -8,7 +8,7 @@ from localstack.services.stepfunctions.asl.component.common.parameters import Pa
 from localstack.services.stepfunctions.asl.component.state.state_execution.execute_state import (
     ExecutionState,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.resource import (
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     Resource,
 )
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
@@ -61,6 +61,6 @@ class StateTask(ExecutionState, abc.ABC):
         self.resource = state_props.get(Resource)
 
     def _eval_body(self, env: Environment) -> None:
-        env.context_object["Task"] = Task(Token="TODO")
+        env.context_object["Task"] = Task(Token="Unsupported")
         super(StateTask, self)._eval_body(env=env)
         env.context_object["Task"] = None

@@ -35,7 +35,7 @@ def validate_configuration() -> None:
             "The configuration LAMBDA_EXECUTOR=local is discontinued in the new lambda provider. "
             "Please remove the configuration LAMBDA_EXECUTOR and add the Docker volume mount "
             '"/var/run/docker.sock:/var/run/docker.sock" to your LocalStack startup. Check out '
-            "https://docs.localstack.cloud/references/lambda-provider-v2/"
+            "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2"
         )
     if LAMBDA_DOCKER_NETWORK == "host":
         LOG.warning(

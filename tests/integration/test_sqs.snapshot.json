@@ -759,5 +759,48 @@
         }
       }
     }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_fifo_delete_message_with_expired_receipt_handle": {
+    "recorded-date": "06-05-2023, 04:18:50",
+    "recorded-content": {
+      "response": {
+        "Messages": [
+          {
+            "Body": "g1-m1",
+            "MD5OfBody": "fc4286b824b39ddf3606c9f27ff664bd",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value <receipt-handle:1> for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_cross_account_access[domain]": {
+    "recorded-date": "06-05-2023, 04:43:43",
+    "recorded-content": {}
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_cross_account_access[path]": {
+    "recorded-date": "06-05-2023, 04:43:44",
+    "recorded-content": {}
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_list_queues": {
+    "recorded-date": "06-05-2023, 04:43:47",
+    "recorded-content": {}
   }
 }

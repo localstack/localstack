@@ -235,3 +235,4 @@ class ServicePrincipal(str):
     firehose = "firehose"
     sqs = "sqs"
     sns = "sns"
+    events = "events"
