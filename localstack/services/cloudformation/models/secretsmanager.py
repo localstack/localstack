@@ -4,11 +4,7 @@ import random
 import string
 
 from localstack.services.cloudformation.deployment_utils import generate_default_name
-from localstack.services.cloudformation.service_models import (
-    REF_ARN_ATTRS,
-    REF_ID_ATTRS,
-    GenericBaseModel,
-)
+from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import select_attributes
 
@@ -24,8 +20,6 @@ class SecretsManagerSecret(GenericBaseModel):
         return self.props.get("ARN")
 
     def get_cfn_attribute(self, attribute_name):
-        if attribute_name in (REF_ARN_ATTRS + REF_ID_ATTRS):
-            return self.get_physical_resource_id(attribute_name)
         return super(SecretsManagerSecret, self).get_cfn_attribute(attribute_name)
 
     def fetch_state(self, stack_name, resources):
