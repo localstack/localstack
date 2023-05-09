@@ -922,6 +922,15 @@ class DeployResult:
     destroy: Callable[[], None]
 
 
+class StackDeployError(Exception):
+    def __init__(self, describe_res: dict, events: list[dict]):
+        self.describe_result = describe_res
+        self.events = events
+        super().__init__(
+            f"Stack deploy failed - describe output: {self.describe_result} events: {self.events}"
+        )
+
+
 @pytest.fixture
 def deploy_cfn_template(
     cleanup_stacks,
@@ -973,11 +982,19 @@ def deploy_cfn_template(
 
         assert wait_until(is_change_set_created_and_available(change_set_id), _max_wait=60)
         aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
-        assert wait_until(is_change_set_finished(change_set_id), _max_wait=max_wait or 60)
+        wait_result = wait_until(is_change_set_finished(change_set_id), _max_wait=max_wait or 60)
 
-        outputs = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0].get(
-            "Outputs", []
-        )
+        describe_stack_res = aws_client.cloudformation.describe_stacks(StackName=stack_id)[
+            "Stacks"
+        ][0]
+
+        if not wait_result:
+            events = aws_client.cloudformation.describe_stack_events(StackName=stack_id)[
+                "StackEvents"
+            ]
+            raise StackDeployError(describe_stack_res, events)
+
+        outputs = describe_stack_res.get("Outputs", [])
 
         mapped_outputs = {o["OutputKey"]: o.get("OutputValue") for o in outputs}
 
