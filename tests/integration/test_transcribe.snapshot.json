@@ -458,5 +458,43 @@
         }
       }
     }
+  },
+  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_start_job_same_name": {
+    "recorded-date": "09-05-2023, 22:50:14",
+    "recorded-content": {
+      "response-start-job": {
+        "TranscriptionJob": {
+          "CreationTime": "datetime",
+          "LanguageCode": "en-GB",
+          "Media": {
+            "MediaFileUri": "s3:/<test-bucket>/test-clip.wav"
+          },
+          "StartTime": "datetime",
+          "TranscriptionJobName": "<transcription-job:1>",
+          "TranscriptionJobStatus": "IN_PROGRESS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-transcription-job-name": {
+        "Error": {
+          "Code": "ConflictException",
+          "Message": "The requested job name already exists. Use a different job name."
+        },
+        "Message": "The requested job name already exists. Use a different job name.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete-transcription-job": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

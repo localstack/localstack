@@ -12,6 +12,7 @@ from localstack import config
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.transcribe import (
     BadRequestException,
+    ConflictException,
     GetTranscriptionJobResponse,
     ListTranscriptionJobsResponse,
     MaxResults,
@@ -122,6 +123,11 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             raise BadRequestException(f"Language code must be one of {LANGUAGE_MODELS.keys()}")
 
         store = transcribe_stores[context.account_id][context.region]
+
+        if job_name in store.transcription_jobs:
+            raise ConflictException(
+                "The requested job name already exists. Use a different job name."
+            )
 
         s3_path = request["Media"]["MediaFileUri"]
         output_bucket = request.get("OutputBucketName", get_bucket_and_key_from_s3_uri(s3_path)[0])

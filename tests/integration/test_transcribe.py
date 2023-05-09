@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 import pytest
 from botocore.exceptions import ClientError
 
-from localstack.aws.api.transcribe import BadRequestException, NotFoundException
+from localstack.aws.api.transcribe import BadRequestException, ConflictException, NotFoundException
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.utils.files import new_tmp_file
 from localstack.utils.platform import get_arch
@@ -272,6 +272,41 @@ class TestTranscribe:
             TranscriptionJobName=transcribe_job_name
         )
         snapshot.match("response-get-transcribe-job", response_get_transcribe_job)
+
+        res_delete_transcription_job = aws_client.transcribe.delete_transcription_job(
+            TranscriptionJobName=transcribe_job_name
+        )
+        snapshot.match("delete-transcription-job", res_delete_transcription_job)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..TranscriptionJob..Transcript"])
+    def test_transcribe_start_job_same_name(
+        self,
+        s3_bucket,
+        snapshot,
+        aws_client,
+    ):
+        file_path = os.path.join(BASEDIR, "files/en-gb.wav")
+        test_key = "test-clip.wav"
+        transcribe_job_name = f"test-transcribe-job-{short_uid()}"
+        params = {
+            "TranscriptionJobName": transcribe_job_name,
+            "LanguageCode": "en-GB",
+            "Media": {"MediaFileUri": f"s3://{s3_bucket}/{test_key}"},
+        }
+
+        with open(file_path, "rb") as f:
+            aws_client.s3.upload_fileobj(f, s3_bucket, test_key)
+
+        response_start_job = aws_client.transcribe.start_transcription_job(**params)
+        snapshot.match("response-start-job", response_start_job)
+
+        self._wait_transcription_job(aws_client.transcribe, params["TranscriptionJobName"])
+
+        with pytest.raises((ClientError, ConflictException)) as e:
+            aws_client.transcribe.start_transcription_job(**params)
+
+        snapshot.match("same-transcription-job-name", e.value.response)
 
         res_delete_transcription_job = aws_client.transcribe.delete_transcription_job(
             TranscriptionJobName=transcribe_job_name
