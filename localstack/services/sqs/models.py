@@ -804,10 +804,6 @@ class FifoQueue(SqsQueue):
 
         return fifo_message
 
-    def clear(self):
-        super().clear()
-        self.deduplication.clear()
-
     def _put_message(self, message: SqsMessage):
         """Once a message becomes visible in a FIFO queue, its message group also becomes visible."""
         message_group = self.get_message_group(message.message_group_id)
@@ -987,7 +983,7 @@ class FifoQueue(SqsQueue):
             self.message_groups.clear()
             self.inflight_groups.clear()
             self.message_group_queue.queue.clear()
-
+            self.deduplication.clear()
 
 class SqsStore(BaseStore):
     queues: Dict[str, SqsQueue] = LocalAttribute(default=dict)
