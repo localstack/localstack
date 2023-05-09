@@ -6584,5 +6584,35 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_copy_in_place_with_bucket_encryption": {
+    "recorded-date": "09-05-2023, 15:28:00",
+    "recorded-content": {
+      "put-bucket-encryption": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-obj": {
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-obj": {
+        "CopyObjectResult": {
+          "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -1465,6 +1465,36 @@ class TestS3:
         snapshot.match("head-copy-with-aes", head_object)
 
     @pytest.mark.aws_validated
+    def test_copy_in_place_with_bucket_encryption(self, aws_client, s3_bucket, snapshot):
+        response = aws_client.s3.put_bucket_encryption(
+            Bucket=s3_bucket,
+            ServerSideEncryptionConfiguration={
+                "Rules": [
+                    {
+                        "ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"},
+                        "BucketKeyEnabled": False,
+                    },
+                ]
+            },
+        )
+        snapshot.match("put-bucket-encryption", response)
+
+        key_name = "test-enc"
+        response = aws_client.s3.put_object(
+            Body=b"",
+            Bucket=s3_bucket,
+            Key=key_name,
+        )
+        snapshot.match("put-obj", response)
+
+        response = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource={"Bucket": s3_bucket, "Key": key_name},
+            Key=key_name,
+        )
+        snapshot.match("copy-obj", response)
+
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_copy_object_in_place_metadata_directive(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
