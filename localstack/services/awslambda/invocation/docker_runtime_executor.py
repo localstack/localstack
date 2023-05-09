@@ -399,7 +399,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
                         "Failed to pull Docker image because Docker is not available in the LocalStack container "
                         "but required to run Lambda functions. Please add the Docker volume mount "
                         '"/var/run/docker.sock:/var/run/docker.sock" to your LocalStack startup. '
-                        "https://docs.localstack.cloud/references/lambda-provider-v2/#docker-not-available"
+                        "https://docs.localstack.cloud/user-guide/aws/lambda/#docker-not-available"
                     )
                     raise e
             if config.LAMBDA_PREBUILD_IMAGES:
@@ -425,7 +425,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             LOG.warning(
                 "WARNING: Docker not available in the LocalStack container but required to run Lambda "
                 'functions. Please add the Docker volume mount "/var/run/docker.sock:/var/run/docker.sock" to your '
-                "LocalStack startup. https://docs.localstack.cloud/references/lambda-provider-v2/#docker-not-available"
+                "LocalStack startup. https://docs.localstack.cloud/user-guide/aws/lambda/#docker-not-available"
             )
             return False
         return True

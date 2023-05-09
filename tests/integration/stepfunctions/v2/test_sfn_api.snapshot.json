@@ -275,7 +275,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_start_execution": {
-    "recorded-date": "06-02-2023, 08:45:35",
+    "recorded-date": "01-04-2023, 00:35:46",
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",

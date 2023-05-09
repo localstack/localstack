@@ -1195,6 +1195,378 @@ class TestSqsProvider:
         receive_and_check_order()
 
     @pytest.mark.aws_validated
+    def test_fifo_receive_message_group_id_ordering(self, sqs_create_queue, aws_client):
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "true",
+            },
+        )
+
+        # add message to group 1
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m1", MessageGroupId="group-1"
+        )
+        # we interleave one message in group 2
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g2-m1", MessageGroupId="group-2"
+        )
+        # and then continue with group 1
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m2", MessageGroupId="group-1"
+        )
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m3", MessageGroupId="group-1"
+        )
+
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=10)
+
+        # even though we sent a message from group 2 in between messages of group 1, the messages arrive in
+        # order of the message groups
+        assert response["Messages"][0]["Body"] == "g1-m1"
+        assert response["Messages"][1]["Body"] == "g1-m2"
+        assert response["Messages"][2]["Body"] == "g1-m3"
+        assert response["Messages"][3]["Body"] == "g2-m1"
+
+    @pytest.mark.aws_validated
+    def test_fifo_receive_message_visibility_timeout_shared_in_group(
+        self, sqs_create_queue, aws_client
+    ):
+        timeout = 1
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "VisibilityTimeout": f"{timeout}",
+                "ContentBasedDeduplication": "true",
+            },
+        )
+
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m1", MessageGroupId="group-1"
+        )
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m2", MessageGroupId="group-1"
+        )
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m3", MessageGroupId="group-1"
+        )
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m4", MessageGroupId="group-1"
+        )
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g2-m1", MessageGroupId="group-2"
+        )
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g3-m1", MessageGroupId="group-3"
+        )
+
+        # we receive 2 messages of the 3 in the first message group
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=2)
+        assert response["Messages"][0]["Body"] == "g1-m1"
+        assert response["Messages"][1]["Body"] == "g1-m2"
+
+        # the entire group 1 is affected by the visibility timeout, so the next receive returns a message
+        # of group 2
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
+        assert response["Messages"][0]["Body"] == "g2-m1"
+
+        # let the visibility timeout expire
+        time.sleep(timeout + 1)
+
+        # now we try to fetch all messages from the queue. since there are no guarantees about the ordering of
+        # message groups themselves, multiple orderings are valid now
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=10, VisibilityTimeout=0
+        )
+        ordering = [message["Body"] for message in response["Messages"]]
+        # there's a race that can cause both orderings to happen, but both are valid
+        assert ordering in (
+            ["g3-m1", "g1-m1", "g1-m2", "g1-m3", "g1-m4", "g2-m1"],  # aws and localstack
+            ["g3-m1", "g2-m1", "g1-m1", "g1-m2", "g1-m3", "g1-m4"],  # localstack
+        )
+
+    @pytest.mark.aws_validated
+    def test_fifo_receive_message_with_zero_visibility_timeout(self, sqs_create_queue, aws_client):
+        # this test shows that receiving messages from a fifo queue with visibility timeout = 0 terminates the
+        # group's visibility correctly.
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "true",
+            },
+        )
+
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m1", MessageGroupId="group-1"
+        )
+        # interleave g2
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g2-m1", MessageGroupId="group-2"
+        )
+        # interleave g2
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g2-m2", MessageGroupId="group-2"
+        )
+        # interleave g3
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g3-m1", MessageGroupId="group-3"
+        )
+        # send another message to g1
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m2", MessageGroupId="group-1"
+        )
+
+        # we receive messages from the first two groups with a visibility timeout of 0, ordering is preserved
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=3, VisibilityTimeout=0
+        )
+        assert response["Messages"][0]["Body"] == "g1-m1"
+        assert response["Messages"][1]["Body"] == "g1-m2"
+        assert response["Messages"][2]["Body"] == "g2-m1"
+
+        # now we try to fetch all messages from the queue. since there are no guarantees about the ordering of
+        # message groups themselves, multiple orderings are valid now
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=10, VisibilityTimeout=0
+        )
+        ordering = [message["Body"] for message in response["Messages"]]
+        assert ordering == ["g3-m1", "g1-m1", "g1-m2", "g2-m1", "g2-m2"]
+
+    @pytest.mark.aws_validated
+    def test_fifo_message_group_visibility_after_terminate_visibility_timeout(
+        self, sqs_create_queue, aws_client
+    ):
+        """
+        This test demonstrates that
+
+        1. terminating the visibility timeout of a message in a group does not affect the visibility of
+           other messages in the group
+        2. a message group becomes visible as soon as a message within it has become visible again
+        """
+        queue_name = f"queue-{short_uid()}.fifo"
+        attributes = {
+            "FifoQueue": "true",
+            "VisibilityTimeout": "30",
+            "ContentBasedDeduplication": "true",
+        }
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m1", MessageGroupId="group-1"
+        )
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m2", MessageGroupId="group-1"
+        )
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g2-m1", MessageGroupId="group-2"
+        )
+
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=2)
+        assert len(response["Messages"]) == 2
+        assert response["Messages"][0]["Body"] == "g1-m1"
+        assert response["Messages"][1]["Body"] == "g1-m2"
+
+        # both messages from group 1 have a visibility timeout of 30
+        # we now terminate the visibility timeout of message 1
+        aws_client.sqs.change_message_visibility(
+            QueueUrl=queue_url,
+            ReceiptHandle=response["Messages"][0]["ReceiptHandle"],
+            VisibilityTimeout=0,
+        )
+
+        # when we now try to receive 3 messages, we get messages from both groups, but only the visible ones
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=3, WaitTimeSeconds=2
+        )
+        assert response["Messages"][0]["Body"] == "g2-m1"
+        assert response["Messages"][1]["Body"] == "g1-m1"
+        assert len(response["Messages"]) == 2
+
+    @pytest.mark.aws_validated
+    def test_fifo_message_group_visibility_after_change_message_visibility(
+        self, sqs_create_queue, aws_client
+    ):
+        """
+        This test demonstrates that
+
+        1. changing the visibility timeout of a message in a group does not affect the visibility of
+           other messages in the group
+        2. a message group becomes visible as soon as a message within it has become visible again
+        """
+        queue_name = f"queue-{short_uid()}.fifo"
+        attributes = {
+            "FifoQueue": "true",
+            "VisibilityTimeout": "30",
+            "ContentBasedDeduplication": "true",
+        }
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m1", MessageGroupId="group-1"
+        )
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m2", MessageGroupId="group-1"
+        )
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g2-m1", MessageGroupId="group-2"
+        )
+
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=2)
+        assert len(response["Messages"]) == 2
+        assert response["Messages"][0]["Body"] == "g1-m1"
+        assert response["Messages"][1]["Body"] == "g1-m2"
+
+        # both messages from group 1 have a visibility timeout of 30
+        # we now change the visibility timeout of message 1 to 1
+        aws_client.sqs.change_message_visibility(
+            QueueUrl=queue_url,
+            ReceiptHandle=response["Messages"][0]["ReceiptHandle"],
+            VisibilityTimeout=1,
+        )
+
+        # let the updated visibility timeout expire
+        time.sleep(2)
+
+        # when we now try to receive 3 messages, we get messages from both groups, but only the visible ones
+        # g1-m2 still has a visibility timeout of 30
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url,
+            MaxNumberOfMessages=3,
+        )
+        assert response["Messages"][0]["Body"] == "g2-m1"
+        assert response["Messages"][1]["Body"] == "g1-m1"
+        assert len(response["Messages"]) == 2
+
+    @pytest.mark.aws_validated
+    def test_fifo_message_group_visibility_after_delete(self, sqs_create_queue, aws_client):
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "true",
+            },
+        )
+
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m1", MessageGroupId="group-1"
+        )
+        # we interleave a message from group 2
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g2-m1", MessageGroupId="group-2"
+        )
+        # continue with group 1
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m2", MessageGroupId="group-1"
+        )
+        # we interleave another a message from group 2
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g2-m2", MessageGroupId="group-2"
+        )
+        # continue with group 1
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m2", MessageGroupId="group-1"
+        )
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m3", MessageGroupId="group-1"
+        )
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m4", MessageGroupId="group-1"
+        )
+        # add group 3
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g3-m1", MessageGroupId="group-3"
+        )
+
+        # we receive two messages from group 1
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=2)
+        assert response["Messages"][0]["Body"] == "g1-m1"
+        assert response["Messages"][1]["Body"] == "g1-m2"
+
+        # we delete all in-flight messages we received from group 1, which will make that group visible again
+        aws_client.sqs.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+        aws_client.sqs.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][1]["ReceiptHandle"]
+        )
+
+        # draining the queue should include the message from group 1 we didn't delete earlier
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url,
+            MaxNumberOfMessages=10,
+        )
+        ordering = [message["Body"] for message in response["Messages"]]
+
+        # both are in principle valid orderings. it's not clear how this ordering in AWS happens
+        assert ordering in (
+            ["g2-m1", "g2-m2", "g1-m3", "g1-m4", "g3-m1"],  # aws
+            ["g2-m1", "g2-m2", "g3-m1", "g1-m3", "g1-m4"],  # localstack
+        )
+
+    @pytest.mark.aws_validated
+    def test_fifo_message_group_visibility_after_partial_delete(self, sqs_create_queue, aws_client):
+        # this is almost the same test case as the one above, only that it doesn't fully delete the messages
+        # it received so the message group remains in-flight.
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "true",
+            },
+        )
+
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m1", MessageGroupId="group-1"
+        )
+        # we interleave a message from group 2
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g2-m1", MessageGroupId="group-2"
+        )
+        # continue with group 1
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m2", MessageGroupId="group-1"
+        )
+        # we interleave another a message from group 2
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g2-m2", MessageGroupId="group-2"
+        )
+        # continue with group 1
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m2", MessageGroupId="group-1"
+        )
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m3", MessageGroupId="group-1"
+        )
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g1-m4", MessageGroupId="group-1"
+        )
+        # add group 3
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url, MessageBody="g3-m1", MessageGroupId="group-3"
+        )
+
+        # we receive two messages from group 1 (note that group 2 is not in there)
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=2)
+        assert response["Messages"][0]["Body"] == "g1-m1"
+        assert response["Messages"][1]["Body"] == "g1-m2"
+
+        # we delete only one in-flight messages we received from group 1
+        aws_client.sqs.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+
+        # draining the queue should now not the message from group 1, since it's not yet visible
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url,
+            MaxNumberOfMessages=10,
+        )
+        ordering = [message["Body"] for message in response["Messages"]]
+        assert ordering == ["g2-m1", "g2-m2", "g3-m1"]
+
+    @pytest.mark.aws_validated
     def test_fifo_queue_send_message_with_delay_seconds_fails(
         self, sqs_create_queue, snapshot, aws_client
     ):
@@ -1222,20 +1594,18 @@ class TestSqsProvider:
         )
 
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-1", MessageGroupId="1")
-        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-2", MessageGroupId="2")
-        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-3", MessageGroupId="3")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-2", MessageGroupId="1")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-3", MessageGroupId="1")
 
         response = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
         assert response.get("Messages", []) == []
 
-        messages = []
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, WaitTimeSeconds=3, MaxNumberOfMessages=3
+        )
+        messages = response["Messages"]
+        assert len(messages) == 3
 
-        def _collect():
-            _response = aws_client.sqs.receive_message(QueueUrl=queue_url)
-            messages.extend(_response.get("Messages", []))
-            assert len(messages) == 3
-
-        retry(_collect, sleep_before=2)  # let the delay expire first
         assert messages[0]["Body"] == "message-1"
         assert messages[1]["Body"] == "message-2"
         assert messages[2]["Body"] == "message-3"
@@ -1272,6 +1642,73 @@ class TestSqsProvider:
             QueueUrl=queue_url, AttributeNames=["All"], WaitTimeSeconds=10
         )
         snapshot.match("receive_message_1", response)
+
+    @pytest.mark.aws_validated
+    def test_fifo_approx_number_of_messages(self, sqs_create_queue, aws_client):
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "true",
+            },
+        )
+
+        assert get_qsize(aws_client.sqs, queue_url) == 0
+
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="g1-m1", MessageGroupId="1")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="g1-m2", MessageGroupId="1")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="g1-m3", MessageGroupId="1")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="g2-m1", MessageGroupId="2")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="g3-m1", MessageGroupId="3")
+
+        assert get_qsize(aws_client.sqs, queue_url) == 5
+
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=4, WaitTimeSeconds=1
+        )
+
+        if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+            time.sleep(5)
+
+        assert get_qsize(aws_client.sqs, queue_url) == 1
+
+        for message in response["Messages"]:
+            aws_client.sqs.delete_message(
+                QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"]
+            )
+
+        if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+            time.sleep(5)
+
+        assert get_qsize(aws_client.sqs, queue_url) == 1
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="not implemented in localstack at the moment")
+    def test_fifo_delete_message_with_expired_receipt_handle(
+        self, sqs_create_queue, aws_client, snapshot
+    ):
+        timeout = 1
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "VisibilityTimeout": f"{timeout}",
+                "ContentBasedDeduplication": "true",
+            },
+        )
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="g1-m1", MessageGroupId="1")
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        receipt_handle = response["Messages"][0]["ReceiptHandle"]
+
+        snapshot.match("response", response)
+
+        # let the timeout expire
+        time.sleep(timeout + 1)
+        # try to remove the message with the old receipt handle
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+
+        snapshot.match("error", e.value.response)
 
     @pytest.mark.aws_validated
     def test_list_queue_tags(self, sqs_create_queue, aws_client):
@@ -1365,7 +1802,7 @@ class TestSqsProvider:
         queue_url = sqs_create_queue(QueueName=queue_name)
         message_batch = [
             {
-                "Id": f"message:{(batch_id:=short_uid())}",
+                "Id": f"message:{(batch_id := short_uid())}",
                 "MessageBody": f"messageBody-{batch_id}",
             }
         ]

@@ -452,7 +452,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         destinations = destinations or []
 
         backend = get_ses_backend(context)
-        message = backend.send_raw_email(source, destinations, raw_data, context.region)
+        message = backend.send_raw_email(source, destinations, raw_data)
 
         emitter = SNSEmitter(context)
         for event_destination in backend.config_set_event_destination.values():

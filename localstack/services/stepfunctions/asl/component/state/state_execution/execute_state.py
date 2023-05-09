@@ -1,14 +1,20 @@
 import abc
+import logging
 from typing import Optional
 
-from localstack.aws.api.stepfunctions import HistoryEventType
+from localstack.aws.api.stepfunctions import (
+    ExecutionFailedEventDetails,
+    HistoryEventType,
+    TaskFailedEventDetails,
+)
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import (
     CatchOutcome,
-    CatchOutcomeCaught,
     CatchOutcomeNotCaught,
 )
-from localstack.services.stepfunctions.asl.component.common.error_name.error_name import ErrorName
+from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
+    FailureEvent,
+)
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
     StatesErrorName,
 )
@@ -22,6 +28,9 @@ from localstack.services.stepfunctions.asl.component.common.retry.retry_outcome 
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
+
+LOG = logging.getLogger(__name__)
 
 
 class ExecutionState(CommonStateField, abc.ABC):
@@ -60,17 +69,26 @@ class ExecutionState(CommonStateField, abc.ABC):
         self.retry = state_props.get(RetryDecl)
         self.catch = state_props.get(CatchDecl)
 
-    def _to_error_name(self, ex: Exception) -> ErrorName:  # noqa
-        error_name: ErrorName = StatesErrorName(StatesErrorNameType.StatesTaskFailed)
-        return error_name
+    def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        LOG.warning("State Task executed generic failure event reporting logic.")
+        return FailureEvent(
+            error_name=StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed),
+            event_type=HistoryEventType.TaskFailed,
+            event_details=EventDetails(
+                taskFailedEventDetails=TaskFailedEventDetails(
+                    error="Unsupported Error Handling",
+                    cause=str(ex),
+                )
+            ),
+        )
 
     @abc.abstractmethod
     def _eval_execution(self, env: Environment) -> None:
         ...
 
     def _handle_retry(self, ex: Exception, env: Environment) -> None:
-        error_name: ErrorName = self._to_error_name(ex)
-        env.stack.append(error_name)
+        failure_event: FailureEvent = self._from_error(env=env, ex=ex)
+        env.stack.append(failure_event.error_name)
 
         self.retry.eval(env)
         res: RetryOutcome = env.stack.pop()
@@ -85,16 +103,35 @@ class ExecutionState(CommonStateField, abc.ABC):
                 raise RuntimeError(f"No Retriers when dealing with exception '{ex}'.")
 
     def _handle_catch(self, ex: Exception, env: Environment) -> None:
-        error_name: ErrorName = self._to_error_name(ex)
-        env.stack.append(error_name)
+        failure_event: FailureEvent = self._from_error(env=env, ex=ex)
+
+        env.event_history.add_event(
+            hist_type_event=failure_event.event_type, event_detail=failure_event.event_details
+        )
+
+        env.stack.append(failure_event)
 
         self.catch.eval(env)
         res: CatchOutcome = env.stack.pop()
 
-        if isinstance(res, CatchOutcomeCaught):
-            pass
-        elif isinstance(res, CatchOutcomeNotCaught):
-            raise RuntimeError(f"No Catcher when dealing with exception '{ex}'.")
+        if isinstance(res, CatchOutcomeNotCaught):
+            self._terminate_with_event(failure_event=failure_event, env=env)
+
+    def _handle_uncaught(self, ex: Exception, env: Environment):
+        # Log state failure.
+        state_failure_event = self._from_error(env=env, ex=ex)
+        env.event_history.add_event(
+            hist_type_event=state_failure_event.event_type,
+            event_detail=state_failure_event.event_details,
+        )
+        self._terminate_with_event(state_failure_event, env)
+
+    @staticmethod
+    def _terminate_with_event(failure_event: FailureEvent, env: Environment) -> None:
+        # Halt execution with the given failure event.
+        env.set_error(
+            ExecutionFailedEventDetails(**(list(failure_event.event_details.values())[0]))
+        )
 
     def _eval_state(self, env: Environment) -> None:
         try:
@@ -114,4 +151,4 @@ class ExecutionState(CommonStateField, abc.ABC):
             elif self.catch:
                 self._handle_catch(ex, env)
             else:
-                raise ex
+                self._handle_uncaught(ex, env)
