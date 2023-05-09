@@ -180,11 +180,12 @@ def get_key_from_moto_bucket(
     return fake_key
 
 
-def get_bucket_and_key_from_s3_uri(s3_uri: str) -> Tuple[str, Optional[str], Optional[str]]:
+def get_bucket_and_key_from_s3_uri(s3_uri: str) -> Tuple[str, Optional[str]]:
     """
     Extracts the bucket name and key from s3 uri
     """
-    return s3_uri.removeprefix("s3://").partition("/")
+    output_bucket, _, output_key = s3_uri.removeprefix("s3://").partition("/")
+    return output_bucket, output_key
 
 
 def _create_invalid_argument_exc(

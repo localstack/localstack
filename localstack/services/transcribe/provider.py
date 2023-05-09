@@ -336,7 +336,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
 
             # Save to S3
             output_s3_path = job["Transcript"]["TranscriptFileUri"]
-            output_bucket, _, output_key = get_bucket_and_key_from_s3_uri(output_s3_path)
+            output_bucket, output_key = get_bucket_and_key_from_s3_uri(output_s3_path)
             s3_client.put_object(Bucket=output_bucket, Key=output_key, Body=json.dumps(output))
 
             # Update job details
