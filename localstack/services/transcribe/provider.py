@@ -28,13 +28,13 @@ from localstack.aws.api.transcribe import (
     TranscriptionJobSummary,
 )
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.services.s3.utils import get_bucket_and_key_from_s3_uri
 from localstack.services.transcribe.models import TranscribeStore, transcribe_stores
 from localstack.services.transcribe.packages import ffmpeg_package
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import new_tmp_file
 from localstack.utils.http import download
 from localstack.utils.run import run
-from localstack.services.s3.utils import get_bucket_and_key_from_s3_uri
 from localstack.utils.threads import start_thread
 
 LOG = logging.getLogger(__name__)
@@ -124,9 +124,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
         store = transcribe_stores[context.account_id][context.region]
 
         s3_path = request["Media"]["MediaFileUri"]
-        output_bucket = request.get(
-            "OutputBucketName", get_bucket_and_key_from_s3_uri(s3_path)[0]
-        )
+        output_bucket = request.get("OutputBucketName", get_bucket_and_key_from_s3_uri(s3_path)[0])
         output_key = request.get("OutputKey")
 
         if output_key:

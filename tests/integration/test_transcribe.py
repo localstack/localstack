@@ -21,6 +21,7 @@ LOG = logging.getLogger(__name__)
 def transcribe_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.transcribe_api())
 
+
 @pytest.mark.skipif(
     "arm" in get_arch(),
     reason="Vosk transcription library has issues running on Circle CI arm64 executors.",
@@ -230,7 +231,13 @@ class TestTranscribe:
         ],
     )
     def test_transcribe_start_job(
-        self, output_bucket, output_key, s3_bucket, cleanups, snapshot, aws_client,
+        self,
+        output_bucket,
+        output_key,
+        s3_bucket,
+        cleanups,
+        snapshot,
+        aws_client,
     ):
         file_path = os.path.join(BASEDIR, "files/en-gb.wav")
         test_key = "test-clip.wav"

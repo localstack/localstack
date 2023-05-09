@@ -1,6 +1,6 @@
 import datetime
 import re
-from typing import Dict, Literal, Union, Tuple, Optional
+from typing import Dict, Literal, Optional, Tuple, Union
 
 import moto.s3.models as moto_s3_models
 from botocore.exceptions import ClientError
