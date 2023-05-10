@@ -2925,6 +2925,36 @@ class TestSqsProvider:
         assert "Messages" not in receive_result.keys()
 
     @pytest.mark.aws_validated
+    def test_purge_queue_clears_fifo_deduplication_cache(self, sqs_create_queue, aws_client):
+        fifo_queue_name = f"test-queue-{short_uid()}.fifo"
+        queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
+        dedup_id = f"fifo_dedup-{short_uid()}"
+        group_id = f"fifo_group-{short_uid()}"
+
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url,
+            MessageBody="message-1",
+            MessageGroupId=group_id,
+            MessageDeduplicationId=dedup_id,
+        )
+
+        aws_client.sqs.purge_queue(QueueUrl=queue_url)
+
+        aws_client.sqs.send_message(
+            QueueUrl=queue_url,
+            MessageBody="message-2",
+            MessageGroupId=group_id,
+            MessageDeduplicationId=dedup_id,
+        )
+
+        receive_result = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+
+        assert len(receive_result["Messages"]) == 1
+        message = receive_result["Messages"][0]
+
+        assert message["Body"] == "message-2"
+
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..Error.Detail"])
     def test_successive_purge_calls_fail(self, sqs_create_queue, monkeypatch, snapshot, aws_client):
         monkeypatch.setattr(config, "SQS_DELAY_PURGE_RETRY", True)

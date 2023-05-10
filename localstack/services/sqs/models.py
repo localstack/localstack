@@ -983,6 +983,7 @@ class FifoQueue(SqsQueue):
             self.message_groups.clear()
             self.inflight_groups.clear()
             self.message_group_queue.queue.clear()
+            self.deduplication.clear()
 
 
 class SqsStore(BaseStore):
