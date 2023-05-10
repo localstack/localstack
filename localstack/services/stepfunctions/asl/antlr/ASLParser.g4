@@ -98,7 +98,7 @@ result_decl
     ;
 
 result_path_decl
-    : RESULTPATH COLON keyword_or_string // TODO keywords too?
+    : RESULTPATH COLON (keyword_or_string | NULL) // TODO keywords too?
     ;
 
 output_path_decl

@@ -21,8 +21,10 @@ class PayloadBindingPathContextObj(PayloadBinding):
     def _eval_val(self, env: Environment) -> Any:
         if self.path_context_obj.endswith("Task.Token"):
             task_token = env.context_object_manager.update_task_token()
-            return env.callback_pool_manager.add(task_token)
-        value = JSONPathUtils.extract_json(
-            self.path_context_obj, env.context_object_manager.context_object
-        )
+            env.callback_pool_manager.add(task_token)
+            value = task_token
+        else:
+            value = JSONPathUtils.extract_json(
+                self.path_context_obj, env.context_object_manager.context_object
+            )
         return value

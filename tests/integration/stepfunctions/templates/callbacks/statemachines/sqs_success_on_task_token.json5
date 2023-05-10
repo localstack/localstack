@@ -1,0 +1,62 @@
+{
+  "Comment": "sqs_success_on_task_token",
+  "StartAt": "WaitAndRestart",
+  "States": {
+    "WaitAndRestart": {
+      "Type": "Wait",
+      "Seconds": 1,
+      "Next": "Receive"
+    },
+    "Receive": {
+      "Type": "Task",
+      "Parameters": {
+        "QueueUrl.$": "$.QueueUrl"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:sqs:receiveMessage",
+      "ResultPath": "$.SQSOutput",
+      "Next": "CheckMessages",
+    },
+    "CheckMessages": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.SQSOutput.Messages",
+          "IsPresent": true,
+          "Next": "SendSuccesses"
+        }
+      ],
+      "Default": "WaitAndRestart"
+    },
+    "SendSuccesses": {
+      "Type": "Map",
+      "InputPath": "$.SQSOutput.Messages",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "ParseBody",
+        "States": {
+          "ParseBody": {
+            "Type": "Pass",
+            "Parameters": {
+              "body.$": "States.StringToJson($.Body)"
+            },
+            "Next": "Send"
+          },
+          "Send": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskSuccess",
+            "Parameters": {
+              "Output.$": "States.JsonToString($.body.Message)",
+              "TaskToken.$": "$.body.TaskToken"
+            },
+            "End": true
+          }
+        },
+      },
+      "ResultPath": null,
+      "OutputPath": "$.QueueUrl",
+      "Next": "WaitAndRestart"
+    }
+  },
+}

@@ -55,6 +55,7 @@ class CallbackEndpoint:
         self.callback_id = callback_id
         self._notify_event = Event()
         self._outcome = None
+        self.consumer_error = None
 
     def notify(self, outcome: CallbackOutcome):
         self._outcome = outcome
