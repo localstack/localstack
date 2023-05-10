@@ -5,15 +5,9 @@ from localstack.aws.connect import connect_to
 
 TYPE_NAME = "AWS::SNS::Topic"
 
-
 @dataclasses.dataclass
 class SnsTopicProperties:
     TopicName: str
-
-
-# class ResourceProvider:
-#     def perform_action(
-
 
 @ResourceProvider(TYPE_NAME)
 class AwsSnsTopic(ResourceProvider):
@@ -178,6 +172,7 @@ class Deployer:
             # select deployable resources (no unresolvable dependencies)
 
             for res in deployable_resources:
+
                 # TODO: async
                 resource_type = res.type
 
@@ -185,8 +180,12 @@ class Deployer:
 
                 # fetch the resource provider
                 provider = self.registry.get_provider(resource_type)
-                provider_payload = {}
-                progress_event = provider.perform_action(action, provider_payload)
+
+                # TODO: populate payload
+                provider_payload = {
+                    # meta information
+                }
+                progress_event = provider.perform_action("CREATE", provider_payload)
                 # save progress event
                 self.state[progress_event.request_token] = something_based_on_progress_event
 
