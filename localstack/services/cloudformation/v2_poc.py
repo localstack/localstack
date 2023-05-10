@@ -297,25 +297,44 @@ sns_topic_schema = {
 @dataclasses.dataclass
 class SnsTopicProperties:
     TopicName: str
+    TopicArn: str
 
-
-@dataclasses.dataclass
-class SnsTopicProperties:
-    TopicName: str
 
 @ResourceProvider(TYPE_NAME)
-class AwsSnsTopic(ResourceProvider):
+class LegacyModelProvider(ResourceProvider):
     def __init__(self):
-        self.client = connect_to()
-
+        ...
     def create(self, request: ResourceRequest[SnsTopicProperties]) -> ProgressEvent:
+        if request.desired_state.TopicArn:
+            fn_state = request.aws_client_factory.awslambda.get_function(FunctionName=request.desired_state.TopicName)
+            if fn_state['Configuration']['State'] == 'Active':
+                return ProgressEvent("CREATE_COMPLETE", state={"Arn": "asdfasdfsf"})
 
-        topic = SNSTopic(request.desired_state, request.region_name)
+        # do something (initate resource creation)
+        return ProgressEvent("IN_PROGRESS", state={"TopicArn": "asdfasdfsf"})
+        topic = SNSTopic(request.desired_state.copy(), request.region_name)
         topic.get_deploy_templates()
-
         create = topic.get_deploy_templates()["create"]
 
-        execute_action(create)
+        action = build_deployment_action(create)
+        result = action(resources, resource_id, stack_name)
+        primary_id = get_primary_id_from_result(result)
+        result_handler(result) # only identify and set the ID
+
+        # TODO: how and when do we break out of this loop?
+        # find max duration and wait time somewhat equivalent to current setup
+        while True:
+            if topic.fetch_state(primary_id):
+                break
+
+        return ProgressEvent("CREATE_COMPLETE", state=topic.props)
+
+        # 1. add defaults (GenericBaseModel.add_defaults(resource, stack_name))
+        # (2. deploy )
+        # 3. add read-only & primary id (happens in the create call + result_handler + fetch_state(!))
+        # ???????? time passed
+        # 4. CREATE_COMPLETE
+
 
         # 0. Assign physical resource id / ARN
         # 1. GetTopicAttributes
@@ -328,10 +347,7 @@ class AwsSnsTopic(ResourceProvider):
 
 
         create_response = self.client.sns.create_topic(Name=desiredState.TopicName)
-        return ProgressEvent("IN_PGRESS", state={"TopicName": "a", "TopicArn": "b"})
-
-        # don't wait, e.g. don't do
-        # self.client.awslambda.get_waiter("function_active_v2").wait(FunctionName=desiredState.FunctionName)
+        return ProgressEvent("IN_PROGRESS", state={"TopicName": "a", "TopicArn": "b"})
 
     def update(self):
         ...

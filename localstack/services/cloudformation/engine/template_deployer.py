@@ -828,10 +828,7 @@ def resolve_resource_parameters(
         # resolve parameter map via custom function
         # TODO(srw): 1 - callable for resolving params
         params = params(
-            resource_props,
-            stack_name=stack_name,
-            resources=resources,
-            resource_id=resource_id,
+            resource_props
         )
     else:
         # it could be a list like ['param1', 'param2', {'apiCallParamName': 'cfResourcePropName'}]

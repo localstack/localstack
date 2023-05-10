@@ -1,6 +1,7 @@
 import json
 from urllib.parse import urlparse
 
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     lambda_keys_to_lower,
@@ -22,7 +23,7 @@ class GatewayResponse(GenericBaseModel):
         api_id = props.get("RestApiId")
         if not api_id:
             return
-        client = aws_stack.connect_to_service("apigateway")
+        client = connect_to().apigateway
         result = client.get_gateway_response(restApiId=api_id, responseType=props["ResponseType"])
         return result if "responseType" in result else None
 
