@@ -123,7 +123,7 @@ def send_event_to_target(
         )
 
     elif ":logs:" in target_arn:
-        log_group_name = target_arn.split(":")[-1]
+        log_group_name = target_arn.split(":")[6]
         logs_client = clients.logs.request_metadata(
             service_principal=source_service, source_arn=source_arn
         )
