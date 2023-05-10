@@ -980,6 +980,7 @@ class FifoQueue(SqsQueue):
     def clear(self):
         with self.mutex:
             super().clear()
+            self.deduplication.clear()
             self.message_groups.clear()
             self.inflight_groups.clear()
             self.message_group_queue.queue.clear()
