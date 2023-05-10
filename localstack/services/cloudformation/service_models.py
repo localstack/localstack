@@ -8,11 +8,6 @@ LOG = logging.getLogger(__name__)
 # dict key used to store the deployment state of a resource
 KEY_RESOURCE_STATE = "_state_"
 
-# ref attribute definitions
-REF_ATTRS = ["PhysicalResourceId", "Ref"]
-REF_ID_ATTRS = REF_ATTRS + ["Id"]
-REF_ARN_ATTRS = ["Ref", "Arn"]
-
 
 class DependencyNotYetSatisfied(Exception):
     """Exception indicating that a resource dependency is not (yet) deployed/available."""
@@ -94,17 +89,8 @@ class GenericBaseModel:
     # ----------------------
 
     def get_cfn_attribute(self, attribute_name):
-        """Retrieve the given CF attribute for this resource (inherited from moto's CloudFormationModel)"""
-        if attribute_name in REF_ARN_ATTRS and hasattr(self, "arn"):
-            return self.arn
-        if attribute_name in REF_ATTRS:
-            result = self.get_physical_resource_id(attribute=attribute_name)
-            if result:
-                return result
-        props = self.props
-        if attribute_name in props:
-            return props.get(attribute_name)
-        return None
+        """Retrieve the given CF attribute for this resource"""
+        return self.props.get(attribute_name)
 
     # ---------------------
     # GENERIC UTIL METHODS
