@@ -11,8 +11,13 @@ from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import (
+    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.services.kms.utils import get_hash_algorithm
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import short_uid, to_str
 
 
 @pytest.fixture(autouse=True)
@@ -303,12 +308,23 @@ class TestKMS:
         assert len(grants_after) == len(grants_before) - 1
 
     @pytest.mark.aws_validated
-    def test_retire_grant(self, kms_grant_and_key, aws_client):
+    def test_retire_grant_with_grant_token(self, kms_grant_and_key, aws_client):
         grant = kms_grant_and_key[0]
         key_id = kms_grant_and_key[1]["KeyId"]
         grants_before = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
 
         aws_client.kms.retire_grant(GrantToken=grant["GrantToken"])
+
+        grants_after = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
+        assert len(grants_after) == len(grants_before) - 1
+
+    @pytest.mark.aws_validated
+    def test_retire_grant_with_grant_id_and_key_id(self, kms_grant_and_key, aws_client):
+        grant = kms_grant_and_key[0]
+        key_id = kms_grant_and_key[1]["KeyId"]
+        grants_before = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
+
+        aws_client.kms.retire_grant(GrantId=grant["GrantId"], KeyId=key_id)
 
         grants_after = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
         assert len(grants_after) == len(grants_before) - 1
@@ -1105,3 +1121,104 @@ class TestKMS:
         with pytest.raises(ClientError) as e:
             aws_client.kms.encrypt(KeyId=key_id, Plaintext=base64.b64encode(message * 100))
         snapshot.match("invalid-plaintext-size-encrypt", e.value.response)
+
+    def test_cross_accounts_access(self, aws_client, aws_client_factory, kms_create_key, user_arn):
+        # Create the keys in the primary AWS account. They will only be referred to by their ARNs hereon
+        key_arn_1 = kms_create_key()["Arn"]
+        key_arn_2 = kms_create_key(KeyUsage="SIGN_VERIFY", KeySpec="RSA_4096")["Arn"]
+        key_arn_3 = kms_create_key(KeyUsage="GENERATE_VERIFY_MAC", KeySpec="HMAC_512")["Arn"]
+
+        # Create client in secondary account and attempt to run operations with the above keys
+        client = aws_client_factory.get_client(
+            "kms",
+            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+            region_name=TEST_AWS_REGION_NAME,
+        )
+
+        # Cross-account access is supported for following operations in KMS:
+        # - CreateGrant
+        # - DescribeKey
+        # - GetKeyRotationStatus
+        # - GetPublicKey
+        # - ListGrants
+        # - RetireGrant
+        # - RevokeGrant
+
+        response = client.create_grant(
+            KeyId=key_arn_1,
+            GranteePrincipal=user_arn,
+            Operations=["Decrypt", "Encrypt"],
+        )
+        grant_token = response["GrantToken"]
+
+        response = client.create_grant(
+            KeyId=key_arn_2,
+            GranteePrincipal=user_arn,
+            Operations=["Sign", "Verify"],
+        )
+        grant_id = response["GrantId"]
+
+        assert client.describe_key(KeyId=key_arn_1)["KeyMetadata"]
+
+        assert client.get_key_rotation_status(KeyId=key_arn_1)
+
+        assert client.get_public_key(KeyId=key_arn_1)
+
+        assert client.list_grants(KeyId=key_arn_1)["Grants"]
+
+        assert client.retire_grant(GrantToken=grant_token)
+
+        assert client.revoke_grant(GrantId=grant_id, KeyId=key_arn_2)
+
+        # And additionally, the following cryptographic operations:
+        # - Decrypt
+        # - Encrypt
+        # - GenerateDataKey
+        # - GenerateDataKeyPair
+        # - GenerateDataKeyPairWithoutPlaintext
+        # - GenerateDataKeyWithoutPlaintext
+        # - GenerateMac
+        # - ReEncrypt (NOT IMPLEMENTED IN LOCALSTACK)
+        # - Sign
+        # - Verify
+        # - VerifyMac
+
+        assert client.generate_data_key(KeyId=key_arn_1)
+
+        assert client.generate_data_key_without_plaintext(KeyId=key_arn_1)
+
+        assert client.generate_data_key_pair(KeyId=key_arn_1, KeyPairSpec="RSA_2048")
+
+        assert client.generate_data_key_pair_without_plaintext(
+            KeyId=key_arn_1, KeyPairSpec="RSA_2048"
+        )
+
+        plaintext = "hello"
+        ciphertext = client.encrypt(KeyId=key_arn_1, Plaintext="hello")["CiphertextBlob"]
+
+        response = client.decrypt(CiphertextBlob=ciphertext, KeyId=key_arn_1)
+        assert plaintext == to_str(response["Plaintext"])
+
+        message = "world"
+        signature = client.sign(
+            KeyId=key_arn_2,
+            MessageType="RAW",
+            Message=message,
+            SigningAlgorithm="RSASSA_PKCS1_V1_5_SHA_256",
+        )["Signature"]
+
+        assert client.verify(
+            KeyId=key_arn_2,
+            Signature=signature,
+            Message=message,
+            SigningAlgorithm="RSASSA_PKCS1_V1_5_SHA_256",
+        )["SignatureValid"]
+
+        mac = client.generate_mac(KeyId=key_arn_3, Message=message, MacAlgorithm="HMAC_SHA_512")[
+            "Mac"
+        ]
+
+        assert client.verify_mac(
+            KeyId=key_arn_3, Message=message, MacAlgorithm="HMAC_SHA_512", Mac=mac
+        )["MacValid"]
