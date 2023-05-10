@@ -114,7 +114,9 @@ def send_event_to_target(
 
         stream_name = target_arn.split("/")[-1]
         partition_key = collections.get_safe(event, partition_key_path, event["id"])
-        kinesis_client = connect_to_service("kinesis", region_name=region)
+        kinesis_client = clients.kinesis.request_metadata(
+            service_principal=source_service, source_arn=source_arn
+        )
 
         kinesis_client.put_record(
             StreamName=stream_name,
