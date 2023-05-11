@@ -31,21 +31,21 @@ class TestMessageDisplay:
         # with cached messages file
         # start cli
         # assert messages shown before logs, exactly once
-        pytest.fail
+        pytest.fail()
 
     def test_show_messages_in_docker(self):
         # with cached messages file
         # start via docker
         # assert messages shown before other logs, exactly once
-        pytest.fail
+        pytest.fail()
 
     def test_disable_messages_in_cli(self):
         # do not show messages when user disabled them with env var
-        pytest.fail
+        pytest.fail()
 
     def test_disable_messages_in_docker(self):
         # do not show messages when user disabled them with env var
-        pytest.fail
+        pytest.fail()
 
 
 class TestNewsMessages:
@@ -54,22 +54,29 @@ class TestNewsMessages:
         # wait for polling news
         # restart
         # assert news are shown
-        pytest.fail
+        pytest.fail()
 
 class TestCLI:
     def test_show_messages_command(self):
         # with cached messages file
         # >> localstack messages
         # assert messages
-        pytest.fail
+        pytest.fail()
 
     def test_no_messages_to_display(self):
         # with cached messages file
         # >> localstack messages
         # assert messages
-        pytest.fail
+        pytest.fail()
 
     def test_poll_news_during_message_command(self):
         # polling news before showing messages
         # then show all the messages
-        pytest.fail
+        pytest.fail()
+
+class TestResilience():
+    def test_avoid_file_corruption(self):
+        pytest.fail()
+
+    def test_recover_from_corrupted_file_cache(self):
+        pytest.fail()
