@@ -324,22 +324,15 @@ def get_attr_from_model_instance(resource, attribute, resource_type, resource_id
         LOG.debug("Failed to retrieve model attribute: %s", attribute, exc_info=e)
 
 
-# TODO: abstract
-# TODO: remove stack_name again
-def get_ref_from_model(resources: dict, logical_resource_id: str, stack_name: str) -> Optional[str]:
+def get_ref_from_model(resources: dict, logical_resource_id: str) -> Optional[str]:
     resource = resources[logical_resource_id]
     resource_type: str = resource["Type"]
 
-    # TODO: remove this after splitting params/resources
-    if not resource_type.startswith("AWS::"):  # TODO: custom resources
-        LOG.warning("Invalid resource type")
-        raise Exception(f"Unexpected resource type in !Ref : {resource_type}")
-
     model_class = RESOURCE_MODELS.get(resource_type)
-    if model_class is None:
-        LOG.error("Unsupported resource type: %s", resource_type)
-        return None
-    return model_class(resource_name=logical_resource_id, resource_json=resource).get_ref()
+    if model_class:
+        return model_class(resource_name=logical_resource_id, resource_json=resource).get_ref()
+
+    LOG.error("Unsupported resource type: %s", resource_type)
 
 
 def resolve_ref(stack_name: str, resources: dict, ref: str, attribute: str):
@@ -387,7 +380,7 @@ def resolve_ref(stack_name: str, resources: dict, ref: str, attribute: str):
         if resource["Type"] == "Parameter":
             return resource["Properties"]["Value"]
         else:
-            return get_ref_from_model(resources, ref, stack_name)
+            return get_ref_from_model(resources, ref)
 
     # TODO: remove if tests pass
     is_ref_attribute = attribute in ["Arn"]
