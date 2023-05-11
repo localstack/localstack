@@ -1409,5 +1409,63 @@
         }
       }
     }
+  },
+  "tests/integration/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair_without_plaintext": {
+    "recorded-date": "11-05-2023, 14:40:23",
+    "recorded-content": {
+      "generate-data-key-pair-without-plaintext": {
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/<resource:1>",
+        "KeyPairSpec": "RSA_2048",
+        "PrivateKeyCiphertextBlob": "private-key-ciphertext-blob",
+        "PublicKey": "public-key",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair": {
+    "recorded-date": "11-05-2023, 14:40:23",
+    "recorded-content": {
+      "generate-data-key-pair": {
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/<resource:1>",
+        "KeyPairSpec": "RSA_2048",
+        "PrivateKeyCiphertextBlob": "private-key-ciphertext-blob",
+        "PrivateKeyPlaintext": "private-key-plaintext",
+        "PublicKey": "public-key",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMSGenerateKeys::test_generate_data_key": {
+    "recorded-date": "11-05-2023, 14:40:24",
+    "recorded-content": {
+      "generate-data-key-result": {
+        "CiphertextBlob": "ciphertext-blob",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/<resource:1>",
+        "Plaintext": "plaintext",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_without_plaintext": {
+    "recorded-date": "11-05-2023, 14:40:24",
+    "recorded-content": {
+      "generate-data-key-without-plaintext": {
+        "CiphertextBlob": "ciphertext-blob",
+        "KeyId": "arn:aws:kms:<region>:111111111111:key/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

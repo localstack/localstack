@@ -20,11 +20,6 @@ from localstack.services.kms.utils import get_hash_algorithm
 from localstack.utils.strings import short_uid, to_str
 
 
-@pytest.fixture(autouse=True)
-def kms_api_snapshot_transformer(snapshot):
-    snapshot.add_transformer(snapshot.transform.kms_api())
-
-
 @pytest.fixture(scope="class")
 def kms_client_for_region(aws_client_factory):
     def _kms_client(
@@ -66,6 +61,10 @@ def _get_alias(kms_client, alias_name, key_id=None):
 
 
 class TestKMS:
+    @pytest.fixture(autouse=True)
+    def kms_api_snapshot_transformer(self, snapshot):
+        snapshot.add_transformer(snapshot.transform.kms_api())
+
     @pytest.fixture(scope="class")
     def user_arn(self, aws_client):
         return aws_client.sts.get_caller_identity()["Arn"]
@@ -367,30 +366,6 @@ class TestKMS:
         assert right_grant_found
         assert not wrong_grant_found
 
-    @pytest.mark.aws_validated
-    def test_generate_data_key_pair_without_plaintext(self, kms_key, aws_client):
-        key_id = kms_key["KeyId"]
-        result = aws_client.kms.generate_data_key_pair_without_plaintext(
-            KeyId=key_id, KeyPairSpec="RSA_2048"
-        )
-        assert result.get("PrivateKeyCiphertextBlob")
-        assert "PrivateKeyPlaintext" not in result
-        assert result.get("PublicKey")
-
-    @pytest.mark.aws_validated
-    def test_generate_data_key_pair(self, kms_key, aws_client):
-        key_id = kms_key["KeyId"]
-        result = aws_client.kms.generate_data_key_pair(KeyId=key_id, KeyPairSpec="RSA_2048")
-        assert result.get("PrivateKeyCiphertextBlob")
-        assert result.get("PrivateKeyPlaintext")
-        assert result.get("PublicKey")
-
-        # assert correct value of encrypted key
-        decrypted = aws_client.kms.decrypt(
-            CiphertextBlob=result["PrivateKeyCiphertextBlob"], KeyId=key_id
-        )
-        assert decrypted["Plaintext"] == result["PrivateKeyPlaintext"]
-
     @pytest.mark.parametrize("number_of_bytes", [12, 44, 91, 1, 1024])
     @pytest.mark.aws_validated
     def test_generate_random(self, snapshot, number_of_bytes, aws_client):
@@ -414,28 +389,6 @@ class TestKMS:
             kms_client.generate_random(NumberOfBytes=number_of_bytes)
 
         snapshot.match("generate-random-exc", e.value.response)
-
-    @pytest.mark.aws_validated
-    def test_generate_data_key(self, kms_key, aws_client):
-        key_id = kms_key["KeyId"]
-        # LocalStack currently doesn't act on KeySpec or on NumberOfBytes params, but one of them has to be set.
-        result = aws_client.kms.generate_data_key(KeyId=key_id, KeySpec="AES_256")
-        assert result.get("CiphertextBlob")
-        assert result.get("Plaintext")
-        assert result.get("KeyId")
-
-        # assert correct value of encrypted key
-        decrypted = aws_client.kms.decrypt(CiphertextBlob=result["CiphertextBlob"], KeyId=key_id)
-        assert decrypted["Plaintext"] == result["Plaintext"]
-
-    @pytest.mark.aws_validated
-    def test_generate_data_key_without_plaintext(self, kms_key, aws_client):
-        key_id = kms_key["KeyId"]
-        # LocalStack currently doesn't act on KeySpec or on NumberOfBytes params, but one of them has to be set.
-        result = aws_client.kms.generate_data_key_without_plaintext(KeyId=key_id, KeySpec="AES_256")
-        assert result.get("CiphertextBlob")
-        assert "Plaintext" not in result
-        assert result.get("KeyId")
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -1222,3 +1175,74 @@ class TestKMS:
         assert client.verify_mac(
             KeyId=key_arn_3, Message=message, MacAlgorithm="HMAC_SHA_512", Mac=mac
         )["MacValid"]
+
+
+class TestKMSGenerateKeys:
+    @pytest.fixture(autouse=True)
+    def generate_key_transformers(self, snapshot):
+        snapshot.add_transformer(snapshot.transform.resource_name())
+
+    @pytest.mark.aws_validated
+    def test_generate_data_key_pair_without_plaintext(self, kms_key, aws_client, snapshot):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("PrivateKeyCiphertextBlob", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("PublicKey", reference_replacement=False)
+        )
+
+        key_id = kms_key["KeyId"]
+        result = aws_client.kms.generate_data_key_pair_without_plaintext(
+            KeyId=key_id, KeyPairSpec="RSA_2048"
+        )
+        snapshot.match("generate-data-key-pair-without-plaintext", result)
+
+    @pytest.mark.aws_validated
+    def test_generate_data_key_pair(self, kms_key, aws_client, snapshot):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("PrivateKeyCiphertextBlob", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("PrivateKeyPlaintext", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("PublicKey", reference_replacement=False)
+        )
+
+        key_id = kms_key["KeyId"]
+        result = aws_client.kms.generate_data_key_pair(KeyId=key_id, KeyPairSpec="RSA_2048")
+        snapshot.match("generate-data-key-pair", result)
+
+        # assert correct value of encrypted key
+        decrypted = aws_client.kms.decrypt(
+            CiphertextBlob=result["PrivateKeyCiphertextBlob"], KeyId=key_id
+        )
+        assert decrypted["Plaintext"] == result["PrivateKeyPlaintext"]
+
+    @pytest.mark.aws_validated
+    def test_generate_data_key(self, kms_key, aws_client, snapshot):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("CiphertextBlob", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("Plaintext", reference_replacement=False)
+        )
+
+        key_id = kms_key["KeyId"]
+        # LocalStack currently doesn't act on KeySpec or on NumberOfBytes params, but one of them has to be set.
+        result = aws_client.kms.generate_data_key(KeyId=key_id, KeySpec="AES_256")
+        snapshot.match("generate-data-key-result", result)
+
+        # assert correct value of encrypted key
+        decrypted = aws_client.kms.decrypt(CiphertextBlob=result["CiphertextBlob"], KeyId=key_id)
+        assert decrypted["Plaintext"] == result["Plaintext"]
+
+    @pytest.mark.aws_validated
+    def test_generate_data_key_without_plaintext(self, kms_key, aws_client, snapshot):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("CiphertextBlob", reference_replacement=False)
+        )
+        key_id = kms_key["KeyId"]
+        # LocalStack currently doesn't act on KeySpec or on NumberOfBytes params, but one of them has to be set.
+        result = aws_client.kms.generate_data_key_without_plaintext(KeyId=key_id, KeySpec="AES_256")
+        snapshot.match("generate-data-key-without-plaintext", result)

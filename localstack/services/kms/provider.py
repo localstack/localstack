@@ -536,7 +536,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         self._validate_key_for_encryption_decryption(context, key)
         crypto_key = KmsCryptoKey(key_pair_spec)
         return {
-            "KeyId": key_id,
+            "KeyId": key.metadata["Arn"],
             "KeyPairSpec": key_pair_spec,
             "PrivateKeyCiphertextBlob": key.encrypt(crypto_key.private_key),
             "PrivateKeyPlaintext": crypto_key.private_key,
@@ -598,7 +598,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         self._validate_key_for_encryption_decryption(context, key)
         crypto_key = KmsCryptoKey("SYMMETRIC_DEFAULT")
         return {
-            "KeyId": key_id,
+            "KeyId": key.metadata["Arn"],
             "Plaintext": crypto_key.key_material,
             "CiphertextBlob": key.encrypt(crypto_key.key_material),
         }
