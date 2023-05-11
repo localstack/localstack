@@ -324,7 +324,35 @@ def get_attr_from_model_instance(resource, attribute, resource_type, resource_id
         LOG.debug("Failed to retrieve model attribute: %s", attribute, exc_info=e)
 
 
-def resolve_ref(stack_name, resources, ref, attribute):
+# TODO: abstract
+# TODO: remove stack_name again
+def get_ref_from_model(resources: dict, logical_resource_id: str, stack_name: str) -> Optional[str]:
+    resource = resources[logical_resource_id]
+    resource_type: str = resource["Type"]
+
+    # TODO: remove this after splitting params/resources
+    if not resource_type.startswith("AWS::"):  # TODO: custom resources
+        LOG.warning("Invalid resource type")
+        raise Exception(f"Unexpected resource type in !Ref : {resource_type}")
+
+    model_class = RESOURCE_MODELS.get(resource_type)
+    if model_class is None:
+        LOG.error("Unsupported resource type: %s", resource_type)
+        return None
+    return model_class(resource_name=logical_resource_id, resource_json=resource).get_ref()
+
+
+def resolve_ref(stack_name: str, resources: dict, ref: str, attribute: str):
+    """
+    TODO: document
+    :param stack_name:
+    :param resources:
+    :param ref:
+    :param attribute:
+    :return:
+    """
+
+    # pseudo parameters
     if ref == "AWS::Region":
         return aws_stack.get_region()
     if ref == "AWS::Partition":
@@ -344,21 +372,33 @@ def resolve_ref(stack_name, resources, ref, attribute):
     if ref == "AWS::URLSuffix":
         return AWS_URL_SUFFIX
 
-    is_ref_attribute = attribute in ["Ref", "PhysicalResourceId", "Arn"]
+    if attribute == "Ref":
+        # ref always needs to be a static string
+        # ref can be one of these:
+        # 1. a parameter
+        # 2. a pseudo-parameter (e.g. AWS::Region)
+        # 3. the "value" of a resource
+
+        resource = resources.get(ref)
+        if not resource:
+            raise Exception("Should be detected earlier")
+
+        # TODO: remove after refactoring parameter resolution
+        if resource["Type"] == "Parameter":
+            return resource["Properties"]["Value"]
+        else:
+            return get_ref_from_model(resources, ref, stack_name)
+
+    # TODO: remove if tests pass
+    is_ref_attribute = attribute in ["Arn"]
     if is_ref_attribute:
-        # extract the Properties here, as we only want to recurse over the resource props...
-        resource_props = resources.get(ref, {}).get("Properties")
-        resolve_refs_recursively(stack_name, resources, resource_props)
-        return determine_resource_physical_id(
-            resource_id=ref,
-            attribute=attribute,
-            stack_name=stack_name,
-            resources=resources,
-        )
+        raise Exception("invalid")
 
     if resources.get(ref):
         if isinstance(resources[ref].get(attribute), (str, int, float, bool, dict)):
             return resources[ref][attribute]
+
+    # TODO: when do we go into the branch below?
 
     # fetch resource details
     resource_new = retrieve_resource_details(ref, {}, resources, stack_name)
@@ -487,7 +527,14 @@ def _resolve_refs_recursively(stack_name, resources, value: dict | list | str | 
         if stripped_fn_lower == "getatt":
             attr_ref = value[keys_list[0]]
             attr_ref = attr_ref.split(".") if isinstance(attr_ref, str) else attr_ref
-            return resolve_ref(stack_name, resources, attr_ref[0], attribute=attr_ref[1])
+            resource_logical_id = attr_ref[0]
+            attribute_name = attr_ref[1]
+
+            # the attribute name can be a Ref
+            attribute_name = resolve_refs_recursively(stack_name, resources, attribute_name)
+            resource = resources.get(resource_logical_id)
+
+            return get_attr_from_model_instance(resource, attribute_name, resource["Type"])
 
         if stripped_fn_lower == "join":
             join_values = value[keys_list[0]][1]
@@ -887,8 +934,8 @@ def resolve_resource_parameters(
 # TODO: this shouldn't be called for stack parameters
 # TODO: refactor / remove (should just be a lookup on the resource state)
 def determine_resource_physical_id(
-    resource_id, resources, stack_name: str, attribute: Optional[str] = None
-):
+    resource_id: str, resources: dict, stack_name: str
+) -> Optional[str]:
     assert resource_id and isinstance(resource_id, str)
 
     resource = resources.get(resource_id)
@@ -901,26 +948,14 @@ def determine_resource_physical_id(
     if resource_class:
         resource_inst = resource_class(resource)
         resource_inst.fetch_state_if_missing(stack_name=stack_name, resources=resources)
-        result = resource_inst.get_physical_resource_id(attribute=attribute)
+        result = resource_inst.get_physical_resource_id()
         if result:
             return result
 
+    # TODO: should be able to remove this as well and unify with the one above
     res_id = resource.get("PhysicalResourceId")
-    if res_id and attribute in [None, "Ref", "PhysicalResourceId"]:
+    if res_id:
         return res_id
-    result = extract_resource_attribute(
-        resource_type,
-        {},
-        attribute or "PhysicalResourceId",
-        resource_id=resource_id,
-        resource=resource,
-        resources=resources,
-        stack_name=stack_name,
-    )
-    if result is not None:
-        # note that value could be an empty string here (in case of Parameter values)
-        return result
-
     LOG.info(
         'Unable to determine PhysicalResourceId for "%s" resource, ID "%s"',
         resource_type,
