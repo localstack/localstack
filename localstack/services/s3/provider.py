@@ -228,9 +228,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self,
         notification_configuration: NotificationConfiguration,
         skip_destination_validation: SkipValidation,
+        context: RequestContext,
+        bucket_name: str,
     ):
         self._notification_dispatcher.verify_configuration(
-            notification_configuration, skip_destination_validation
+            notification_configuration, skip_destination_validation, context, bucket_name
         )
 
     @handler("CreateBucket", expand=False)
@@ -971,7 +973,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # check if the bucket exists
         get_bucket_from_moto(get_moto_s3_backend(context), bucket=bucket)
         self._verify_notification_configuration(
-            notification_configuration, skip_destination_validation
+            notification_configuration, skip_destination_validation, context, bucket
         )
         self.get_store().bucket_notification_configs[bucket] = notification_configuration
 

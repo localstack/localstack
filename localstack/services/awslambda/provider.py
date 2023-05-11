@@ -1229,9 +1229,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             request_id=context.request_id,
             payload=payload.read() if payload else None,
         )
-        if invocation_type == "Event":
+        if invocation_type == InvocationType.Event:
             # This happens when invocation type is event
             return InvocationResponse(StatusCode=202)
+        if invocation_type == InvocationType.DryRun:
+            # This happens when invocation type is dryrun
+            return InvocationResponse(StatusCode=204)
         try:
             invocation_result = result.result()
         except Exception as e:

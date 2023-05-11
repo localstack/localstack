@@ -10,6 +10,7 @@ from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.events import PutEventsRequestEntry
+from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.api.s3 import (
     BucketName,
     BucketRegion,
@@ -28,6 +29,7 @@ from localstack.aws.api.s3 import (
     TopicArn,
     TopicConfiguration,
 )
+from localstack.aws.connect import connect_to
 from localstack.config import DEFAULT_REGION
 from localstack.services.s3.models import get_moto_s3_backend
 from localstack.services.s3.utils import (
@@ -35,8 +37,9 @@ from localstack.services.s3.utils import (
     get_bucket_from_moto,
     get_key_from_moto_bucket,
 )
-from localstack.utils.aws import arns, aws_stack
-from localstack.utils.aws.arns import ArnData, parse_arn
+from localstack.utils.aws import arns
+from localstack.utils.aws.arns import parse_arn, s3_bucket_arn
+from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.strings import short_uid
 from localstack.utils.time import timestamp_millis
 
@@ -149,6 +152,18 @@ class S3EventNotificationContext:
         )
 
 
+@dataclass
+class BucketVerificationContext:
+    """
+    Context object for data required for sending a `s3:TestEvent` like message.
+    """
+
+    request_id: str
+    bucket_name: str
+    configuration: Dict
+    skip_destination_validation: bool
+
+
 def _matching_event(events: EventList, event_name: str) -> bool:
     """
     See: https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html
@@ -213,15 +228,26 @@ class BaseNotifier:
         raise NotImplementedError
 
     def validate_configuration_for_notifier(
-        self, configurations: List[Dict], skip_destination_validation=False
+        self,
+        configurations: List[Dict],
+        skip_destination_validation: bool,
+        context: RequestContext,
+        bucket_name: str,
     ):
         for configuration in configurations:
-            self._validate_notification(configuration, skip_destination_validation)
+            self._validate_notification(
+                BucketVerificationContext(
+                    configuration=configuration,
+                    bucket_name=bucket_name,
+                    request_id=context.request_id,
+                    skip_destination_validation=skip_destination_validation,
+                )
+            )
 
-    def _verify_target_exists(self, arn: str, arn_data: ArnData) -> None:
+    def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
         raise NotImplementedError
 
-    def _validate_notification(self, configuration: Dict, skip_destination_validation=False):
+    def _validate_notification(self, verification_ctx: BucketVerificationContext):
         """
         Validates the notification configuration
         - setting default ID if not provided
@@ -234,7 +260,7 @@ class BaseNotifier:
         :raises InvalidArgument if the rule is not valid, infos in ArgumentName and ArgumentValue members
         :return:
         """
-
+        configuration = verification_ctx.configuration
         # id's can be set the request, but need to be auto-generated if they are not provided
         if not configuration.get("Id"):
             configuration["Id"] = short_uid()
@@ -243,11 +269,10 @@ class BaseNotifier:
 
         if not arn.startswith(f"arn:aws:{self.service_name}:"):
             raise _create_invalid_argument_exc(
-                "The ARN is not well formed", name=argument_name, value=arn
+                "The ARN could not be parsed", name=argument_name, value=arn
             )
-        if not skip_destination_validation:
-            arn_data = parse_arn(arn)
-            self._verify_target_exists(arn, arn_data)
+        if not verification_ctx.skip_destination_validation:
+            self._verify_target(arn, verification_ctx)
 
         if filter_rules := configuration.get("Filter", {}).get("Key", {}).get("FilterRules"):
             for rule in filter_rules:
@@ -262,6 +287,17 @@ class BaseNotifier:
                     raise _create_invalid_argument_exc(
                         "filter value cannot be empty", rule["Name"], rule["Value"]
                     )
+
+    @staticmethod
+    def _get_test_payload(verification_ctx: BucketVerificationContext):
+        return {
+            "Service": "Amazon S3",
+            "Event": "s3:TestEvent",
+            "Time": timestamp_millis(),
+            "Bucket": verification_ctx.bucket_name,
+            "RequestId": verification_ctx.request_id,
+            "HostId": "eftixk72aD6Ap51TnqcoF8eFidJG9Z/2",
+        }
 
     @staticmethod
     def _get_event_payload(
@@ -321,19 +357,40 @@ class SqsNotifier(BaseNotifier):
     def _get_arn_value_and_name(queue_configuration: QueueConfiguration) -> Tuple[QueueArn, str]:
         return queue_configuration.get("QueueArn", ""), "QueueArn"
 
-    def _verify_target_exists(self, arn: str, arn_data: ArnData) -> None:
-        client = aws_stack.connect_to_service(self.service_name, region_name=arn_data["region"])
+    def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
+        arn_data = parse_arn(target_arn)
+        sqs_client = connect_to(region_name=arn_data["region"]).sqs
         try:
-            client.get_queue_url(
+            queue_url = sqs_client.get_queue_url(
                 QueueName=arn_data["resource"], QueueOwnerAWSAccountId=arn_data["account"]
-            )
+            )["QueueUrl"]
         except ClientError:
-            LOG.exception("Could not validate the notification destination %s", arn)
+            LOG.exception("Could not validate the notification destination %s", target_arn)
             raise _create_invalid_argument_exc(
                 "Unable to validate the following destination configurations",
-                name=arn,
+                name=target_arn,
                 value="The destination queue does not exist",
             )
+        # send test event
+        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types
+        sqs_client = sqs_client.request_metadata(
+            source_arn=s3_bucket_arn(verification_ctx.bucket_name),
+            service_principal=ServicePrincipal.s3,
+        )
+        test_payload = self._get_test_payload(verification_ctx)
+        try:
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(test_payload))
+        except ClientError as e:
+            LOG.error(
+                'Unable to send test notification for S3 bucket "%s" to SQS queue "%s"',
+                verification_ctx.bucket_name,
+                target_arn,
+            )
+            raise _create_invalid_argument_exc(
+                "Unable to validate the following destination configurations",
+                name=target_arn,
+                value="Permissions on the destination queue do not allow S3 to publish notifications from this bucket",
+            ) from e
 
     def notify(self, ctx: S3EventNotificationContext, config: QueueConfiguration):
         event_payload = self._get_event_payload(ctx, config.get("Id"))
@@ -341,7 +398,10 @@ class SqsNotifier(BaseNotifier):
         queue_arn = config["QueueArn"]
 
         parsed_arn = parse_arn(queue_arn)
-        sqs_client = aws_stack.connect_to_service("sqs", region_name=parsed_arn["region"])
+        region = parsed_arn["region"]
+        sqs_client = connect_to(region_name=region).sqs.request_metadata(
+            source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
+        )
         try:
             queue_url = arns.sqs_queue_url_for_arn(queue_arn)
             system_attributes = {}
@@ -370,16 +430,40 @@ class SnsNotifier(BaseNotifier):
     def _get_arn_value_and_name(topic_configuration: TopicConfiguration) -> [TopicArn, str]:
         return topic_configuration.get("TopicArn", ""), "TopicArn"
 
-    def _verify_target_exists(self, arn: str, arn_data: ArnData) -> None:
-        client = aws_stack.connect_to_service(self.service_name, region_name=arn_data["region"])
+    def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
+        arn_data = parse_arn(target_arn)
+        sns_client = connect_to(region_name=arn_data["region"]).sns
         try:
-            client.get_topic_attributes(TopicArn=arn)
+            sns_client.get_topic_attributes(TopicArn=target_arn)
         except ClientError:
             raise _create_invalid_argument_exc(
                 "Unable to validate the following destination configurations",
-                name=arn,
+                name=target_arn,
                 value="The destination topic does not exist",
             )
+
+        sns_client = sns_client.request_metadata(
+            source_arn=s3_bucket_arn(verification_ctx.bucket_name),
+            service_principal=ServicePrincipal.s3,
+        )
+        test_payload = self._get_test_payload(verification_ctx)
+        try:
+            sns_client.publish(
+                TopicArn=target_arn,
+                Message=json.dumps(test_payload),
+                Subject="Amazon S3 Notification",
+            )
+        except ClientError as e:
+            LOG.error(
+                'Unable to send test notification for S3 bucket "%s" to SNS topic "%s"',
+                verification_ctx.bucket_name,
+                target_arn,
+            )
+            raise _create_invalid_argument_exc(
+                "Unable to validate the following destination configurations",
+                name=target_arn,
+                value="Permissions on the destination topic do not allow S3 to publish notifications from this bucket",
+            ) from e
 
     def notify(self, ctx: S3EventNotificationContext, config: TopicConfiguration):
         LOG.debug(
@@ -394,7 +478,9 @@ class SnsNotifier(BaseNotifier):
         topic_arn = config["TopicArn"]
 
         region_name = arns.extract_region_from_arn(topic_arn)
-        sns_client = aws_stack.connect_to_service("sns", region_name=region_name)
+        sns_client = connect_to(region_name=region_name).sns.request_metadata(
+            source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
+        )
         try:
             sns_client.publish(
                 TopicArn=topic_arn,
@@ -418,16 +504,29 @@ class LambdaNotifier(BaseNotifier):
     ) -> Tuple[LambdaFunctionArn, str]:
         return lambda_configuration.get("LambdaFunctionArn", ""), "LambdaFunctionArn"
 
-    def _verify_target_exists(self, arn: str, arn_data: ArnData) -> None:
-        client = aws_stack.connect_to_service(self.service_name, region_name=arn_data["region"])
+    def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
+        arn_data = parse_arn(arn=target_arn)
+        lambda_client = connect_to(region_name=arn_data["region"]).awslambda
         try:
-            client.get_function(FunctionName=arn_data["resource"])
+            lambda_client.get_function(FunctionName=target_arn)
         except ClientError:
             raise _create_invalid_argument_exc(
                 "Unable to validate the following destination configurations",
-                name=arn,
+                name=target_arn,
                 value="The destination Lambda does not exist",
             )
+        lambda_client = lambda_client.request_metadata(
+            source_arn=s3_bucket_arn(verification_ctx.bucket_name),
+            service_principal=ServicePrincipal.s3,
+        )
+        try:
+            lambda_client.invoke(FunctionName=target_arn, InvocationType=InvocationType.DryRun)
+        except ClientError as e:
+            raise _create_invalid_argument_exc(
+                "Unable to validate the following destination configurations",
+                name=f"{target_arn}, null",
+                value=f"Not authorized to invoke function [{target_arn}]",
+            ) from e
 
     def notify(self, ctx: S3EventNotificationContext, config: LambdaFunctionConfiguration):
         event_payload = self._get_event_payload(ctx, config.get("Id"))
@@ -435,7 +534,9 @@ class LambdaNotifier(BaseNotifier):
         lambda_arn = config["LambdaFunctionArn"]
 
         region_name = arns.extract_region_from_arn(lambda_arn)
-        lambda_client = aws_stack.connect_to_service("lambda", region_name=region_name)
+        lambda_client = connect_to(region_name=region_name).awslambda.request_metadata(
+            source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
+        )
         lambda_function_config = arns.lambda_function_name(lambda_arn)
         try:
             lambda_client.invoke(
@@ -519,18 +620,24 @@ class EventBridgeNotifier(BaseNotifier):
         return True
 
     def validate_configuration_for_notifier(
-        self, configurations: List[Dict], skip_destination_validation=False
+        self,
+        configurations: List[Dict],
+        skip_destination_validation: bool,
+        context: RequestContext,
+        bucket_name: str,
     ):
         # There are no configuration for EventBridge, simply passing an empty dict will enable notifications
         return
 
-    def _verify_target_exists(self, arn: str, arn_data: ArnData) -> None:
+    def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
         # There are no target for EventBridge
         return
 
     def notify(self, ctx: S3EventNotificationContext, config: EventBridgeConfiguration):
         region = ctx.bucket_location or DEFAULT_REGION
-        events_client = aws_stack.connect_to_service("events", region_name=region)
+        # does not require permissions
+        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-permissions.html
+        events_client = connect_to(region_name=region).events
         entry = self._get_event_payload(ctx)
         try:
             events_client.put_events(Entries=[entry])
@@ -571,9 +678,11 @@ class NotificationDispatcher:
     def verify_configuration(
         self,
         notification_configurations: NotificationConfiguration,
-        skip_destination_validation=False,
+        skip_destination_validation,
+        context: RequestContext,
+        bucket_name: str,
     ):
         for notifier_type, notification_configuration in notification_configurations.items():
             self.notifiers[notifier_type].validate_configuration_for_notifier(
-                notification_configuration, skip_destination_validation
+                notification_configuration, skip_destination_validation, context, bucket_name
             )
