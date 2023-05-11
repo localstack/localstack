@@ -74,7 +74,6 @@ from localstack.aws.api.dynamodb import (
     ReplicaStatus,
     ReplicaUpdateList,
     ResourceArnString,
-    ResourceInUseException,
     ResourceNotFoundException,
     ReturnConsumedCapacity,
     ScanInput,
@@ -461,10 +460,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         create_table_input: CreateTableInput,
     ) -> CreateTableOutput:
-        # Check if table exists, to avoid error log output from DynamoDBLocal
         table_name = create_table_input["TableName"]
-        if self.table_exists(context.account_id, context.region, table_name):
-            raise ResourceInUseException(f"Table already exists: {table_name}")
         billing_mode = create_table_input.get("BillingMode")
         provisioned_throughput = create_table_input.get("ProvisionedThroughput")
         if billing_mode == BillingMode.PAY_PER_REQUEST and provisioned_throughput is not None:
@@ -1140,7 +1136,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def enable_kinesis_streaming_destination(
         self, context: RequestContext, table_name: TableName, stream_arn: StreamArn
     ) -> KinesisStreamingDestinationOutput:
-        # Check if table exists, to avoid error log output from DynamoDBLocal
         self.ensure_table_exists(context.account_id, context.region, table_name)
 
         stream = EventForwarder.is_kinesis_stream_exists(stream_arn=stream_arn)
@@ -1182,7 +1177,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def disable_kinesis_streaming_destination(
         self, context: RequestContext, table_name: TableName, stream_arn: StreamArn
     ) -> KinesisStreamingDestinationOutput:
-        # Check if table exists, to avoid error log output from DynamoDBLocal
         self.ensure_table_exists(context.account_id, context.region, table_name)
 
         stream = EventForwarder.is_kinesis_stream_exists(stream_arn=stream_arn)
@@ -1216,7 +1210,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def describe_kinesis_streaming_destination(
         self, context: RequestContext, table_name: TableName
     ) -> DescribeKinesisStreamingDestinationOutput:
-        # Check if table exists, to avoid error log output from DynamoDBLocal
         self.ensure_table_exists(context.account_id, context.region, table_name)
 
         table_def = (
