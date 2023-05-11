@@ -72,12 +72,12 @@ class DynamoDBTable(GenericBaseModel):
 
     def get_cfn_attribute(self, attribute_name):
         actual_attribute = "LatestStreamArn" if attribute_name == "StreamArn" else attribute_name
+        if attribute_name == "Arn":
+            return self.props.get("TableArn", self.props.get("Table", {}).get("TableArn"))
         value = self.props.get("Table", {}).get(actual_attribute)
         if value:
             return value
-        #
-        # if attribute_name == "Arn":
-        #     return self.props.get("TableArn")
+
         return super(DynamoDBTable, self).get_cfn_attribute(attribute_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):

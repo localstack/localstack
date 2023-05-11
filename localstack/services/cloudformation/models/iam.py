@@ -165,7 +165,7 @@ class IAMAccessKey(GenericBaseModel):
 
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == "SecretAccessKey":
-            return self.props("SecretAccessKey")
+            return self.props.get("SecretAccessKey")
 
     def fetch_state(self, stack_name, resources):
         user_name = self.props.get("UserName")
