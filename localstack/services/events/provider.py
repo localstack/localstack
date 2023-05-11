@@ -95,6 +95,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                         arn,
                         event,
                         target_attributes=attr,
+                        role=target.get("RoleArn"),
                         target=target,
                         source_arn=rule_arn,
                         source_service=ServicePrincipal.events,
