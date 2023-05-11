@@ -486,6 +486,7 @@ def process_events(event: Dict, targets: List[Dict]):
                 arn,
                 changed_event,
                 pick_attributes(target, ["$.SqsParameters", "$.KinesisParameters"]),
+                role=target.get("RoleArn"),
                 target=target,
                 source_service=ServicePrincipal.events,
                 source_arn=target.get("RuleArn"),
