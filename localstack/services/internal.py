@@ -17,7 +17,6 @@ from localstack.http.dispatcher import handler_dispatcher
 from localstack.services.infra import exit_infra, signal_supervisor_restart
 from localstack.utils.collections import merge_recursive
 from localstack.utils.config_listener import update_config_variable
-from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
 from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.objects import singleton_factory
@@ -114,12 +113,10 @@ class HealthResource:
 
 class CloudFormationUi:
     def on_get(self, request):
+        from localstack.services.cloudformation.deploy_ui import DEPLOY_UI_HTML
         from localstack.utils.aws.aws_stack import get_valid_regions
 
-        deploy_html_file = os.path.join(
-            constants.MODULE_MAIN_PATH, "services", "cloudformation", "deploy.html"
-        )
-        deploy_html = load_file(deploy_html_file)
+        deploy_html = DEPLOY_UI_HTML.strip()
         req_params = request.values
         params = {
             "stackName": "stack1",

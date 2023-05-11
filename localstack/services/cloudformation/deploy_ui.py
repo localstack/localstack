@@ -1,3 +1,4 @@
+DEPLOY_UI_HTML = """
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -142,3 +143,4 @@
     </script>
   </body>
 </html>
+""".strip()
