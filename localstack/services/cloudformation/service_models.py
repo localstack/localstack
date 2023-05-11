@@ -50,7 +50,7 @@ class GenericBaseModel:
     # ABSTRACT BASE METHODS
     # ----------------------
 
-    def get_physical_resource_id(self, *args, **kwargs):
+    def get_physical_resource_id(self, attribute=None, **kwargs):
         """Determine the physical resource ID (Ref) of this resource (to be overwritten by subclasses)"""
         return None
 

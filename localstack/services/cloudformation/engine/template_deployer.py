@@ -527,7 +527,13 @@ def _resolve_refs_recursively(stack_name, resources, value: dict | list | str | 
             attribute_name = resolve_refs_recursively(stack_name, resources, attribute_name)
             resource = resources.get(resource_logical_id)
 
-            return get_attr_from_model_instance(resource, attribute_name, resource["Type"])
+            resolved_getatt = get_attr_from_model_instance(
+                resource, attribute_name, resource["Type"]
+            )
+            # TODO: we should check the deployment state and not try to GetAtt from a resource that is still IN_PROGRESS or hasn't started yet.
+            if resolved_getatt is None:
+                raise DependencyNotYetSatisfied(resource_ids=resource_logical_id, message="")
+            return resolved_getatt
 
         if stripped_fn_lower == "join":
             join_values = value[keys_list[0]][1]
