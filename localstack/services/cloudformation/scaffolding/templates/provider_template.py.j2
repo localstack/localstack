@@ -1,0 +1,15 @@
+from dataclasses import dataclass
+
+from localstack.services.cloudformation.resource_provider import ProgressEvent, ResourceProvider
+
+TYPE = {{ name }}
+
+
+@dataclass
+class {{ resource }}Properties:
+    pass
+
+
+class {{ resource }}Provider(ResourceProvider[{{ resource }}Properties]):
+    def create(...) -> ProgressEvent[{{ resource }}Properties]:
+        pass

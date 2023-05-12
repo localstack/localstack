@@ -1,0 +1,10 @@
+import pytest
+
+
+class TestAttributeAccess:
+    @pytest.mark.parametrize("attribute", [])
+    @pytest.mark.xfail(reason="TODO")
+    def test_getattr(attribute, snapshot):
+        """
+        Capture the behaviour of getting all available attributes of the model
+        """
