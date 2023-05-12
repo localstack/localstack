@@ -1,7 +1,7 @@
 import datetime
 import logging
 import os
-from typing import IO, Dict, List
+from typing import IO, Dict, List, Optional
 from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
 import moto.s3.responses as moto_s3_responses
@@ -65,6 +65,7 @@ from localstack.aws.api.s3 import (
     MissingSecurityHeader,
     MultipartUpload,
     NoSuchBucket,
+    NoSuchCORSConfiguration,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
     NoSuchWebsiteConfiguration,
@@ -179,8 +180,11 @@ def get_full_default_bucket_location(bucket_name):
 
 class S3Provider(S3Api, ServiceLifecycleHook):
     @staticmethod
-    def get_store() -> S3Store:
-        return s3_stores[get_aws_account_id()][aws_stack.get_region()]
+    def get_store(context: Optional[RequestContext] = None) -> S3Store:
+        if not context:
+            return s3_stores[get_aws_account_id()][aws_stack.get_region()]
+
+        return s3_stores[context.account_id][context.region]
 
     def _clear_bucket_from_store(self, bucket: BucketName):
         store = self.get_store()
@@ -809,7 +813,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         expected_bucket_owner: AccountId = None,
     ) -> None:
         response = call_moto(context)
-        self.get_store().bucket_cors[bucket] = cors_configuration
+        self.get_store(context).bucket_cors[bucket] = cors_configuration
         self._cors_handler.invalidate_cache()
         return response
 
@@ -817,14 +821,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
     ) -> GetBucketCorsOutput:
         call_moto(context)
-        cors_rules = self.get_store().bucket_cors.get(bucket)
+        cors_rules = self.get_store(context).bucket_cors.get(bucket)
+        if not cors_rules:
+            raise NoSuchCORSConfiguration(
+                "The CORS configuration does not exist",
+                BucketName=bucket,
+            )
         return GetBucketCorsOutput(CORSRules=cors_rules["CORSRules"])
 
     def delete_bucket_cors(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
     ) -> None:
         response = call_moto(context)
-        if self.get_store().bucket_cors.pop(bucket, None):
+        if self.get_store(context).bucket_cors.pop(bucket, None):
             self._cors_handler.invalidate_cache()
         return response
 
