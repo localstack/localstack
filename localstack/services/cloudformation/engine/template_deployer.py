@@ -384,6 +384,8 @@ def resolve_ref(stack_name: str, resources: dict, ref: str, attribute: str):
         if resource["Type"] == "Parameter":
             return resource["Properties"]["Value"]
         else:
+            # TODO: this shouldn't be needed when dependency graph and deployment status is honored
+            resolve_refs_recursively(stack_name, resources, resources.get(ref))
             return get_ref_from_model(resources, ref)
 
     # TODO: remove if tests pass
