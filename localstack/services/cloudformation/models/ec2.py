@@ -116,11 +116,15 @@ class EC2InternetGateway(GenericBaseModel):
 
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == "InternetGatewayId":
-            return self.props.get(attribute_name)
+            return self.props.get("InternetGatewayId")
+        return super(EC2InternetGateway, self).get_cfn_attribute(attribute_name)
 
     @staticmethod
     def get_deploy_templates():
         def _store_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["Properties"]["InternetGatewayId"] = result["InternetGateway"][
+                "InternetGatewayId"
+            ]
             resources[resource_id]["PhysicalResourceId"] = result["InternetGateway"][
                 "InternetGatewayId"
             ]
