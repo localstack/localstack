@@ -255,7 +255,7 @@ class KmsKey:
 
     # Encrypt is a method of KmsKey and not of KmsCryptoKey only because it requires KeyId, and KmsCryptoKeys do not
     # hold KeyIds. Maybe it would be possible to remodel this better.
-    def encrypt(self, plaintext: bytes, encryption_context: EncryptionContextType) -> bytes:
+    def encrypt(self, plaintext: bytes, encryption_context: EncryptionContextType = None) -> bytes:
         iv = os.urandom(IV_LEN)
         aad = _serialize_encryption_context(encryption_context=encryption_context)
         ciphertext, tag = encrypt(self.crypto_key.key_material, plaintext, iv, aad)
