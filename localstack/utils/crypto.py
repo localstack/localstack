@@ -170,7 +170,9 @@ def encrypt(key: bytes, message: bytes, iv: bytes = None, aad: bytes = None) -> 
     return encrypted, encryptor.tag
 
 
-def decrypt(key: bytes, encrypted: bytes, iv: bytes = None, tag: bytes = None, aad: bytes = None) -> bytes:
+def decrypt(
+    key: bytes, encrypted: bytes, iv: bytes = None, tag: bytes = None, aad: bytes = None
+) -> bytes:
     iv = iv or b"0" * BLOCK_SIZE
     cipher = Cipher(algorithms.AES(key), modes.GCM(iv, tag), backend=default_backend())
     decryptor = cipher.decryptor()

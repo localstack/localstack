@@ -1184,25 +1184,26 @@ class TestKMS:
         encryption_context = {"context-key": "context-value"}
 
         encrypt_response = aws_client.kms.encrypt(
-            KeyId = key_id,
-            Plaintext = base64.b64encode(message),
-            EncryptionAlgorithm = "SYMMETRIC_DEFAULT",
-            EncryptionContext = encryption_context
+            KeyId=key_id,
+            Plaintext=base64.b64encode(message),
+            EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+            EncryptionContext=encryption_context,
         )
         snapshot.match("encrypt_response", encrypt_response)
 
         decrypt_response = aws_client.kms.decrypt(
-            KeyId = key_id,
-            CiphertextBlob = encrypt_response["CiphertextBlob"],
-            EncryptionAlgorithm = "SYMMETRIC_DEFAULT",
-            EncryptionContext = encryption_context)
+            KeyId=key_id,
+            CiphertextBlob=encrypt_response["CiphertextBlob"],
+            EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+            EncryptionContext=encryption_context,
+        )
         snapshot.match("decrypt_response_with_encryption_context", decrypt_response)
 
         with pytest.raises(ClientError) as e:
             aws_client.kms.decrypt(
-                KeyId = key_id,
-                CiphertextBlob = encrypt_response["CiphertextBlob"],
-                EncryptionAlgorithm = "SYMMETRIC_DEFAULT"
+                KeyId=key_id,
+                CiphertextBlob=encrypt_response["CiphertextBlob"],
+                EncryptionAlgorithm="SYMMETRIC_DEFAULT",
             )
         snapshot.match("decrypt_response_without_encryption_context", e.value.response)
 
@@ -1276,4 +1277,3 @@ class TestKMSGenerateKeys:
         # LocalStack currently doesn't act on KeySpec or on NumberOfBytes params, but one of them has to be set.
         result = aws_client.kms.generate_data_key_without_plaintext(KeyId=key_id, KeySpec="AES_256")
         snapshot.match("generate-data-key-without-plaintext", result)
-
