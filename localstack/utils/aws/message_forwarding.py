@@ -127,8 +127,10 @@ def send_event_to_target(
         )
 
     elif ":logs:" in target_arn:
-        log_group_name = target_arn.split(":")[-1]
-        logs_client = connect_to_service("logs", region_name=region)
+        log_group_name = target_arn.split(":")[6]
+        logs_client = clients.logs.request_metadata(
+            service_principal=source_service, source_arn=source_arn
+        )
         log_stream_name = str(uuid.uuid4())
         logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
         logs_client.put_log_events(
