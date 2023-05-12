@@ -323,7 +323,6 @@ def get_attr_from_model_instance(
         return
     try:
         inst = model_class(resource_name=resource_id, resource_json=resource)
-        TemplateDeployer.all_resource_dependencies_satisfied()
         return inst.get_cfn_attribute(attribute)
     except Exception as e:
         LOG.debug("Failed to retrieve model attribute: %s", attribute, exc_info=e)
