@@ -266,7 +266,7 @@ class KmsKey:
         )
 
     # The ciphertext has to be deserialized before this call.
-    def decrypt(self, ciphertext: Ciphertext, encryption_context: EncryptionContextType) -> bytes:
+    def decrypt(self, ciphertext: Ciphertext, encryption_context: EncryptionContextType = None) -> bytes:
         aad = _serialize_encryption_context(encryption_context=encryption_context)
         return decrypt(
             self.crypto_key.key_material, ciphertext.ciphertext, ciphertext.iv, ciphertext.tag, aad
