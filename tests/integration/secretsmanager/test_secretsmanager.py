@@ -7,6 +7,7 @@ from typing import Optional
 
 import pytest
 import requests
+from botocore.auth import SigV4Auth
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
@@ -1940,3 +1941,44 @@ class TestSecretsManager:
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res", delete_secret_res)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize(
+        "operation",
+        [
+            "CreateSecret",
+            "UpdateSecret",
+            "RotateSecret",
+            "PutSecretValue",
+        ],
+    )
+    def test_no_client_request_token(
+        self, aws_client, sm_snapshot, cleanups, aws_http_client_factory, operation
+    ):
+        # https://docs.aws.amazon.com/cli/latest/reference/secretsmanager/create-secret.html#options
+        secret_name = short_uid()
+        # we should need to clean up but better safe than sorry
+        cleanups.append(
+            lambda: aws_client.secretsmanager.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
+        )
+
+        client = aws_http_client_factory("secretsmanager", signer_factory=SigV4Auth)
+        # When using the SDK or CLI, it will automatically create and add ClientRequestToken to your request
+        # try to not append it to see what exception AWS returns
+        parameters = {"SecretString": "thisisthesecret", "Description": "My secret string"}
+        if operation == "CreateSecret":
+            parameters["Name"] = secret_name
+        else:
+            parameters["SecretId"] = secret_name
+
+        headers = {
+            "X-Amz-Target": f"secretsmanager.{operation}",
+            "Content-Type": "application/x-amz-json-1.1",
+        }
+
+        response = client.post("/", data=json.dumps(parameters), headers=headers)
+        exc_response = {"Error": response.json(), "Metadata": {"StatusCode": response.status_code}}
+
+        sm_snapshot.match("no-client-request-exc", exc_response)

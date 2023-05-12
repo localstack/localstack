@@ -133,7 +133,12 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def create_secret(
         self, context: RequestContext, request: CreateSecretRequest
     ) -> CreateSecretResponse:
+        if "ClientRequestToken" not in request:
+            raise InvalidRequestException(
+                "You must provide a ClientRequestToken value. We recommend a UUID-type value."
+            )
         self._raise_if_invalid_secret_id(request["Name"])
+
         return call_moto(context)
 
     @handler("DeleteResourcePolicy", expand=False)
@@ -192,6 +197,10 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def put_secret_value(
         self, context: RequestContext, request: PutSecretValueRequest
     ) -> PutSecretValueResponse:
+        if "ClientRequestToken" not in request:
+            raise InvalidRequestException(
+                "You must provide a ClientRequestToken value. We recommend a UUID-type value."
+            )
         self._raise_if_invalid_secret_id(request["SecretId"])
         return call_moto(context, request)
 
@@ -220,6 +229,10 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def rotate_secret(
         self, context: RequestContext, request: RotateSecretRequest
     ) -> RotateSecretResponse:
+        if "ClientRequestToken" not in request:
+            raise InvalidRequestException(
+                "You must provide a ClientRequestToken value. We recommend a UUID-type value."
+            )
         self._raise_if_invalid_secret_id(request["SecretId"])
         return call_moto(context, request)
 
@@ -244,6 +257,13 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def update_secret(
         self, context: RequestContext, request: UpdateSecretRequest
     ) -> UpdateSecretResponse:
+        # if we're modifying the value of the secret, ClientRequestToken is required
+        if "ClientRequestToken" not in request and any(
+            key for key in request if key in ("SecretBinary", "SecretString")
+        ):
+            raise InvalidRequestException(
+                "You must provide a ClientRequestToken value. We recommend a UUID-type value."
+            )
         self._raise_if_invalid_secret_id(request["SecretId"])
         return call_moto(context, request)
 
