@@ -1182,19 +1182,21 @@ class TestKMS:
         key_id = kms_create_key()["KeyId"]
         message = b"test message 123 !%$@ 1234567890"
         encryption_context = {"context-key": "context-value"}
+        algo = "SYMMETRIC_DEFAULT"
 
         encrypt_response = aws_client.kms.encrypt(
             KeyId=key_id,
             Plaintext=base64.b64encode(message),
-            EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+            EncryptionAlgorithm=algo,
             EncryptionContext=encryption_context,
         )
         snapshot.match("encrypt_response", encrypt_response)
+        ciphertext = encrypt_response["CiphertextBlob"]
 
         decrypt_response = aws_client.kms.decrypt(
             KeyId=key_id,
-            CiphertextBlob=encrypt_response["CiphertextBlob"],
-            EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+            CiphertextBlob=ciphertext,
+            EncryptionAlgorithm=algo,
             EncryptionContext=encryption_context,
         )
         snapshot.match("decrypt_response_with_encryption_context", decrypt_response)
@@ -1202,8 +1204,8 @@ class TestKMS:
         with pytest.raises(ClientError) as e:
             aws_client.kms.decrypt(
                 KeyId=key_id,
-                CiphertextBlob=encrypt_response["CiphertextBlob"],
-                EncryptionAlgorithm="SYMMETRIC_DEFAULT",
+                CiphertextBlob=ciphertext,
+                EncryptionAlgorithm=algo,
             )
         snapshot.match("decrypt_response_without_encryption_context", e.value.response)
 
