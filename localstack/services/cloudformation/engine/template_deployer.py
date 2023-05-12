@@ -664,14 +664,21 @@ def _resolve_refs_recursively(stack_name, resources, value: dict | list | str | 
     return value
 
 
-def resolve_placeholders_in_string(result, stack_name, resources):
+def resolve_placeholders_in_string(result, stack_name: str, resources: dict):
+    """
+    Resolve individual Fn::Sub variable replacements
+
+    Variables can be template parameter names, resource logical IDs, resource attributes, or a variable in a key-value map
+    """
+
     def _replace(match):
         ref_expression = match.group(1)
         parts = ref_expression.split(".")
         if len(parts) >= 2:
+            # Resource attributes specified => Use GetAtt to resolve
             resource_name, _, attr_name = ref_expression.partition(".")
-            resolved = resolve_ref(
-                stack_name, resources, resource_name.strip(), attribute=attr_name.strip()
+            resolved = get_attr_from_model_instance(
+                resources[resource_name], attr_name, resources[resource_name]["Type"], resource_name
             )
             if resolved is None:
                 raise DependencyNotYetSatisfied(
@@ -680,22 +687,15 @@ def resolve_placeholders_in_string(result, stack_name, resources):
                 )
             return resolved
         if len(parts) == 1 and parts[0] in resources:
-            resource_json = resources[parts[0]]
-            resource_type = get_resource_type(resource_json)
-            # FIXME: ???
-            result = extract_resource_attribute(
-                resource_type,
-                resource_json.get(KEY_RESOURCE_STATE, {}),
-                "Ref",
-                resource_id=parts[0],
-                resources=resources,
-                stack_name=stack_name,
-            )
+            # Logical resource ID or parameter name specified => Use Ref for lookup
+            result = resolve_ref(stack_name, resources, parts[0], "Ref")
+
             if result is None:
                 raise DependencyNotYetSatisfied(
                     resource_ids=parts[0],
                     message=f"Unable to resolve attribute ref {ref_expression}",
                 )
+            # TODO: is this valid?
             # make sure we resolve any functions/placeholders in the extracted string
             result = resolve_refs_recursively(stack_name, resources, result)
             # make sure we convert the result to string
