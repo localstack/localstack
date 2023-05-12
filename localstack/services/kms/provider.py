@@ -676,7 +676,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         signature = key.sign(request.get("Message"), request.get("MessageType"), signing_algorithm)
 
         result = {
-            "KeyId": key.metadata["KeyId"],
+            "KeyId": key.metadata["Arn"],
             "Signature": signature,
             "SigningAlgorithm": signing_algorithm,
         }
@@ -699,7 +699,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         )
 
         result = {
-            "KeyId": key.metadata["KeyId"],
+            "KeyId": key.metadata["Arn"],
             "SignatureValid": is_signature_valid,
             "SigningAlgorithm": signing_algorithm,
         }
@@ -740,7 +740,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # For compatibility, we return EncryptionAlgorithm values expected from AWS. But LocalStack currently always
         # encrypts with symmetric encryption no matter the key settings.
         return EncryptResponse(
-            CiphertextBlob=ciphertext_blob, KeyId=key_id, EncryptionAlgorithm=encryption_algorithm
+            CiphertextBlob=ciphertext_blob,
+            KeyId=key.metadata["Arn"],
+            EncryptionAlgorithm=encryption_algorithm,
         )
 
     # TODO We currently do not even check encryption_context, while moto does. Should add the corresponding logic later.
