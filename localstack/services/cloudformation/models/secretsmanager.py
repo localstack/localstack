@@ -16,7 +16,7 @@ class SecretsManagerSecret(GenericBaseModel):
     def cloudformation_type():
         return "AWS::SecretsManager::Secret"
 
-    def get_physical_resource_id(self, attribute, **kwargs):
+    def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("ARN")
 
     def get_cfn_attribute(self, attribute_name):

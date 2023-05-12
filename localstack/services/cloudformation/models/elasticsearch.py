@@ -23,7 +23,7 @@ class ElasticsearchDomain(GenericBaseModel):
         return domain_name
 
     def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "DomainArn":
+        if attribute_name in ["Arn", "DomainArn"]:
             domain_name = self._domain_name()
             return arns.elasticsearch_domain_arn(domain_name)
         if attribute_name == "DomainEndpoint":

@@ -5,6 +5,7 @@ import string
 
 from botocore.exceptions import ClientError
 
+from localstack.aws.connect import connect_to
 from localstack.services.awslambda.lambda_api import IAM_POLICY_VERSION
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
@@ -165,7 +166,7 @@ class IAMAccessKey(GenericBaseModel):
 
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == "SecretAccessKey":
-            return self.props("SecretAccessKey")
+            return self.props.get("SecretAccessKey")
 
     def fetch_state(self, stack_name, resources):
         user_name = self.props.get("UserName")
@@ -230,6 +231,11 @@ class IAMRole(GenericBaseModel):
     def cloudformation_type():
         return "AWS::IAM::Role"
 
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "Arn":
+            return self.props.get("Arn")
+        return super(IAMRole, self).get_cfn_attribute(attribute_name)
+
     def get_physical_resource_id(self, attribute=None, **kwargs):
         role_name = self.properties.get("RoleName")
         if not role_name:
@@ -240,7 +246,7 @@ class IAMRole(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         role_name = self.props.get("RoleName")
-        client = aws_stack.connect_to_service("iam")
+        client = connect_to().iam
         return client.get_role(RoleName=role_name)["Role"]
 
     def update_resource(self, new_resource, stack_name, resources):

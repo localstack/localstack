@@ -3,6 +3,7 @@ import os
 import random
 import string
 
+from localstack.aws.connect import connect_to
 from localstack.services.awslambda.lambda_utils import get_handler_file_from_name
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
@@ -33,7 +34,7 @@ class LambdaFunction(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         func_name = self.props["FunctionName"]
-        return aws_stack.connect_to_service("lambda").get_function(FunctionName=func_name)
+        return connect_to().awslambda.get_function(FunctionName=func_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         func_name = self.props.get("FunctionName")
@@ -75,6 +76,11 @@ class LambdaFunction(GenericBaseModel):
                 k: str(v) for k, v in environment_variables.items()
             }
         return client.update_function_configuration(**update_config_props)
+
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "Arn":
+            return self.props.get("Arn", self.props.get("Configuration", {}).get("FunctionArn"))
+        return super(LambdaFunction, self).get_cfn_attribute(attribute_name)
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -129,6 +135,7 @@ class LambdaFunction(GenericBaseModel):
 
         def result_handler(result, resource_id, resources, resource_type):
             """waits for the lambda to be in a "terminal" state, i.e. not pending"""
+            resources[resource_id]["Properties"]["Arn"] = result["FunctionArn"]
             lambda_client = aws_stack.connect_to_service("lambda")
             lambda_client.get_waiter("function_active_v2").wait(FunctionName=result["FunctionArn"])
 
@@ -172,15 +179,20 @@ class LambdaFunctionVersion(GenericBaseModel):
             return None
 
         function_name = props["FunctionName"]
-        qualifier = self.resource_json["Version"]
+        qualifier = props["Version"]
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = connect_to().awslambda
         return lambda_client.get_function(FunctionName=function_name, Qualifier=qualifier)
+
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "Version":
+            return self.props.get("Version")
+        return super(LambdaFunctionVersion, self).get_cfn_attribute(attribute_name)
 
     @staticmethod
     def get_deploy_templates():
         def _store_version(result, resource_id, resources, resource_type):
-            resources[resource_id]["Version"] = result["Version"]
+            resources[resource_id]["Properties"]["Version"] = result["Version"]
             resources[resource_id]["PhysicalResourceId"] = result["FunctionArn"]
 
         return {
@@ -366,10 +378,8 @@ class LambdaUrl(GenericBaseModel):
         if attribute_name == "FunctionArn":
             return self.props.get("TargetFunctionArn")
         if attribute_name == "FunctionUrl":
-            client = aws_stack.connect_to_service("lambda")
-            url_config = client.get_function_url_config(
-                FunctionName=self.props.get("TargetFunctionArn"),
-                Qualifier=self.props.get("Qualifier", "$LATEST"),
+            url_config = connect_to().awslambda.get_function_url_config(
+                FunctionName=self.props.get("TargetFunctionArn")
             )
             return url_config["FunctionUrl"]
         return super(LambdaUrl, self).get_cfn_attribute(attribute_name)
