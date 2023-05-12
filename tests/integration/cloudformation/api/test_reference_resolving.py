@@ -65,7 +65,7 @@ def test_sub_resolving(deploy_cfn_template, aws_client, snapshot):
     snapshot.match("outputs", deployment.outputs)
     topic_arn = deployment.outputs["MyTopicArn"]
 
-    # Verify the nested GetAtt Ref resolved correctly
+    # Verify the parts in the Fn::Sub string are resolved correctly.
     sub_output = deployment.outputs["MyTopicSub"]
     param, ref, getatt_topicname, getatt_topicarn = sub_output.split("|")
     assert param == topic_name
