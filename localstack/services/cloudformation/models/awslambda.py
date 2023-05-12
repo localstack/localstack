@@ -378,10 +378,8 @@ class LambdaUrl(GenericBaseModel):
         if attribute_name == "FunctionArn":
             return self.props.get("TargetFunctionArn")
         if attribute_name == "FunctionUrl":
-            client = aws_stack.connect_to_service("lambda")
-            url_config = client.get_function_url_config(
-                FunctionName=self.props.get("TargetFunctionArn"),
-                Qualifier=self.props.get("Qualifier", "$LATEST"),
+            url_config = connect_to().awslambda.get_function_url_config(
+                FunctionName=self.props.get("TargetFunctionArn")
             )
             return url_config["FunctionUrl"]
         return super(LambdaUrl, self).get_cfn_attribute(attribute_name)
