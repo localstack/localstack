@@ -1,5 +1,6 @@
 import logging
 
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.services.cloudformation.stores import get_cloudformation_store
@@ -20,8 +21,6 @@ class CloudFormationStack(GenericBaseModel):
         client = aws_stack.connect_to_service("cloudformation")
         child_stack_name = self.props["StackName"]
         result = client.describe_stacks(StackName=child_stack_name)
-        # probably not the best way to wait in a blocking manner here but the current implementation requires it
-        client.get_waiter("stack_create_complete").wait(StackName=child_stack_name)
         result = (result.get("Stacks") or [None])[0]
         return result
 
@@ -33,6 +32,8 @@ class CloudFormationStack(GenericBaseModel):
                     f"Too many parts for stack output reference found: {attribute_name=}"
                 )
             output_key = parts[1]
+            if "Outputs" not in self.props:
+                return None
             candidates = [
                 o["OutputValue"] for o in self.props["Outputs"] if o["OutputKey"] == output_key
             ]
@@ -71,10 +72,16 @@ class CloudFormationStack(GenericBaseModel):
             }
             return result
 
+        def result_handler(result, *args, **kwargs):
+            connect_to().cloudformation.get_waiter("stack_create_complete").wait(
+                StackName=result["StackId"]
+            )
+
         return {
             "create": {
                 "function": "create_stack",
                 "parameters": get_nested_stack_params,
+                "result_handler": result_handler,
             }
         }
 
