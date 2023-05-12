@@ -367,7 +367,6 @@ class TestEvents:
         sqs_client.set_queue_attributes(
             QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
         )
-        # ALLOWHERE
 
         events_client.create_event_bus(Name=bus_name)
         events_client.put_rule(
