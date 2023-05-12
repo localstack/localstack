@@ -74,6 +74,7 @@ from localstack.aws.api.dynamodb import (
     ReplicaStatus,
     ReplicaUpdateList,
     ResourceArnString,
+    ResourceInUseException,
     ResourceNotFoundException,
     ReturnConsumedCapacity,
     ScanInput,
@@ -461,6 +462,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         create_table_input: CreateTableInput,
     ) -> CreateTableOutput:
         table_name = create_table_input["TableName"]
+
+        # Return this specific error message to keep parity with AWS
+        if self.table_exists(context.account_id, context.region, table_name):
+            raise ResourceInUseException(f"Table already exists: {table_name}")
+
         billing_mode = create_table_input.get("BillingMode")
         provisioned_throughput = create_table_input.get("ProvisionedThroughput")
         if billing_mode == BillingMode.PAY_PER_REQUEST and provisioned_throughput is not None:
