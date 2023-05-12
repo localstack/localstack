@@ -608,6 +608,9 @@ class TestCloudFormation:
         topic_arns = [t["TopicArn"] for t in aws_client.sns.list_topics()["Topics"]]
         assert topic_arn not in topic_arns
 
+        certs = aws_client.acm.list_certificates()["CertificateSummaryList"]
+        assert len([c for c in certs if c.get("DomainName") == "example.com"]) == 0
+
     # TODO: refactor
     @pytest.mark.xfail(reason="fails due to / depending on other tests")
     def test_deploy_stack_with_sub_select_and_sub_getaz(
