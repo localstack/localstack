@@ -1,8 +1,15 @@
 import pytest
 
 
+RESOURCE_GETATT_TARGETS = {{ getatt_targets }}
+
+@pytest.fixture
+def deploy_cfn_template_get_outputs(cleanups):
+    pass
+
+
 class TestAttributeAccess:
-    @pytest.mark.parametrize("attribute", [])
+    @pytest.mark.parametrize("attribute", RESOURCE_GETATT_TARGETS)
     @pytest.mark.xfail(reason="TODO")
     def test_getattr(attribute, snapshot):
         """
