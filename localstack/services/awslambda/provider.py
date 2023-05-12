@@ -3172,6 +3172,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         organization_id: OrganizationId = None,
         revision_id: String = None,
     ) -> AddLayerVersionPermissionResponse:
+        # `layer_name` can either be layer name or ARN. It is used to generate error messages.
+        # `layer_n` contains the layer name.
         region_name, account_id, layer_n, _ = LambdaProvider._resolve_layer(layer_name, context)
 
         if action != "lambda:GetLayerVersion":
@@ -3242,6 +3244,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         statement_id: StatementId,
         revision_id: String = None,
     ) -> None:
+        # `layer_name` can either be layer name or ARN. It is used to generate error messages.
+        # `layer_n` contains the layer name.
         region_name, account_id, layer_n, layer_version = LambdaProvider._resolve_layer(
             layer_name, context
         )
@@ -3283,6 +3287,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def get_layer_version_policy(
         self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
     ) -> GetLayerVersionPolicyResponse:
+        # `layer_name` can either be layer name or ARN. It is used to generate error messages.
+        # `layer_n` contains the layer name.
         region_name, account_id, layer_n, _ = LambdaProvider._resolve_layer(layer_name, context)
 
         layer_version_arn = api_utils.layer_version_arn(
