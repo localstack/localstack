@@ -1,7 +1,6 @@
 import logging
 import os
 import platform
-import re
 import socket
 import subprocess
 import tempfile
@@ -15,7 +14,6 @@ from localstack.constants import (
     DEFAULT_BUCKET_MARKER_LOCAL,
     DEFAULT_DEVELOP_PORT,
     DEFAULT_LAMBDA_CONTAINER_REGISTRY,
-    DEFAULT_SERVICE_PORTS,
     DEFAULT_VOLUME_DIR,
     ENV_INTERNAL_TEST_COLLECT_METRIC,
     ENV_INTERNAL_TEST_RUN,
@@ -1016,6 +1014,44 @@ MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER
 # Whether to return and parse access key ids starting with an "A", like on AWS
 PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 
+# List of services supported by LocalStack
+SUPPORTED_SERVICES = [
+    "acm",
+    "apigateway",
+    "cloudformation",
+    "cloudwatch",
+    "config",
+    "dynamodb",
+    "dynamodbstreams",
+    "ec2",
+    "es",
+    "events",
+    "firehose",
+    "iam",
+    "kinesis",
+    "kms",
+    "lambda",
+    "logs",
+    "opensearch",
+    "redshift",
+    "resource-groups",
+    "resourcegroupstaggingapi",
+    "route53",
+    "route53resolver",
+    "s3",
+    "s3control",
+    "secretsmanager",
+    "ses",
+    "sns",
+    "sqs",
+    "ssm",
+    "stepfunctions",
+    "sts",
+    "support",
+    "swf",
+    "transcribe",
+]
+
 # HINT: Please add deprecated environment variables to deprecations.py
 
 # list of environment variable names used for configuration.
@@ -1178,47 +1214,11 @@ def collect_config_items() -> List[Tuple[str, Any]]:
     return result
 
 
-def parse_service_ports() -> Dict[str, int]:
-    """Parses the environment variable $SERVICES with a comma-separated list of services
-    and (optional) ports they should run on: 'service1:port1,service2,service3:port3'"""
-    service_ports = os.environ.get("SERVICES", "").strip()
-    if service_ports and not is_env_true("EAGER_SERVICE_LOADING"):
-        LOG.warning("SERVICES variable is ignored if EAGER_SERVICE_LOADING=0.")
-        service_ports = None  # TODO remove logic once we clear up the service ports stuff
-    if not service_ports:
-        return DEFAULT_SERVICE_PORTS
-    result = {}
-    for service_port in re.split(r"\s*,\s*", service_ports):
-        parts = re.split(r"[:=]", service_port)
-        service = parts[0]
-        key_upper = service.upper().replace("-", "_")
-        port_env_name = "%s_PORT" % key_upper
-        # (1) set default port number
-        port_number = DEFAULT_SERVICE_PORTS.get(service)
-        # (2) set port number from <SERVICE>_PORT environment, if present
-        if os.environ.get(port_env_name):
-            port_number = os.environ.get(port_env_name)
-        # (3) set port number from <service>:<port> portion in $SERVICES, if present
-        if len(parts) > 1:
-            port_number = int(parts[-1])
-        # (4) try to parse as int, fall back to 0 (invalid port)
-        try:
-            port_number = int(port_number)
-        except Exception:
-            port_number = 0
-        result[service] = port_number
-    return result
-
-
-# TODO: use functools cache, instead of global variable here
-SERVICE_PORTS = parse_service_ports()
-
-
 def populate_config_env_var_names():
     global CONFIG_ENV_VARS
 
-    for key, value in DEFAULT_SERVICE_PORTS.items():
-        clean_key = key.upper().replace("-", "_")
+    for service in SUPPORTED_SERVICES:
+        clean_key = service.upper().replace("-", "_")
         CONFIG_ENV_VARS += [
             clean_key + "_BACKEND",
             clean_key + "_PORT_EXTERNAL",
@@ -1241,14 +1241,7 @@ def service_port(service_key: str, external: bool = False) -> int:
     if external:
         if service_key == "sqs" and SQS_PORT_EXTERNAL:
             return SQS_PORT_EXTERNAL
-    if FORWARD_EDGE_INMEM:
-        if service_key == "elasticsearch":
-            # TODO Elasticsearch domains are a special case - we do not want to route them through
-            #  the edge service, as that would require too many route mappings. In the future, we
-            #  should integrate them with the port range for external services (4510-4530)
-            return SERVICE_PORTS.get(service_key, 0)
-        return get_edge_port_http()
-    return SERVICE_PORTS.get(service_key, 0)
+    return get_edge_port_http()
 
 
 def get_protocol():
