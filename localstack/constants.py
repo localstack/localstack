@@ -1,7 +1,5 @@
 import os
 
-import localstack_client.config
-
 import localstack
 
 # LocalStack version
@@ -39,9 +37,6 @@ ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 # Download URLs
 SSL_CERT_URL = f"{ARTIFACTS_REPO}/raw/master/local-certs/server.key"
 SSL_CERT_URL_FALLBACK = "{api_endpoint}/proxy/localstack.cert.key"
-
-# map of default service APIs and ports to be spun up (fetch map from localstack_client)
-DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
 
 # host to bind to when starting the services
 BIND_HOST = "0.0.0.0"
@@ -194,8 +189,7 @@ TRACE_LOG_LEVELS = [LS_LOG_TRACE, LS_LOG_TRACE_INTERNAL]
 # list of official docker images
 OFFICIAL_IMAGES = [
     "localstack/localstack",
-    "localstack/localstack-light",
-    "localstack/localstack-full",
+    "localstack/localstack-pro",
 ]
 
 # s3 virtual host name
