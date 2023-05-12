@@ -1,0 +1,2278 @@
+{
+  "tests/integration/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_put_get_item": {
+    "recorded-date": "12-05-2023, 15:11:26",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "PutItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "region": "<region>",
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "Server": [
+                      "Server"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": [
+                      "DVTSIA1RSVTJEALCUBBPB9DBENVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    ],
+                    "x-amz-crc32": [
+                      "2745614147"
+                    ],
+                    "Content-Length": [
+                      "2"
+                    ],
+                    "Date": [
+                      "Fri, 12 May 2023 13:11:24 GMT"
+                    ],
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "2",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "Fri, 12 May 2023 13:11:24 GMT",
+                    "Server": "Server",
+                    "x-amz-crc32": "2745614147",
+                    "x-amzn-RequestId": "DVTSIA1RSVTJEALCUBBPB9DBENVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "DVTSIA1RSVTJEALCUBBPB9DBENVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "PutItem",
+              "output": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "DVTSIA1RSVTJEALCUBBPB9DBENVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:11:24 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:11:24 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "DVTSIA1RSVTJEALCUBBPB9DBENVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "DVTSIA1RSVTJEALCUBBPB9DBENVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "DVTSIA1RSVTJEALCUBBPB9DBENVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:11:24 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:11:24 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "DVTSIA1RSVTJEALCUBBPB9DBENVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "DVTSIA1RSVTJEALCUBBPB9DBENVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "GetItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TableName": "<test-table>",
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "region": "<region>",
+              "resource": "getItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "taskStartedEventDetails": {
+              "resource": "getItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "Server": [
+                      "Server"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": [
+                      "09IL8FKD949SKE1TJ1HMIUSTABVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    ],
+                    "x-amz-crc32": [
+                      "1813032717"
+                    ],
+                    "Content-Length": [
+                      "53"
+                    ],
+                    "Date": [
+                      "Fri, 12 May 2023 13:11:24 GMT"
+                    ],
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "53",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "Fri, 12 May 2023 13:11:24 GMT",
+                    "Server": "Server",
+                    "x-amz-crc32": "1813032717",
+                    "x-amzn-RequestId": "09IL8FKD949SKE1TJ1HMIUSTABVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "09IL8FKD949SKE1TJ1HMIUSTABVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "getItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateExitedEventDetails": {
+              "name": "GetItem",
+              "output": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "DVTSIA1RSVTJEALCUBBPB9DBENVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:11:24 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:11:24 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "DVTSIA1RSVTJEALCUBBPB9DBENVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "DVTSIA1RSVTJEALCUBBPB9DBENVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                },
+                "getItemOutput": {
+                  "Item": {
+                    "data": {
+                      "S": "HelloWorld"
+                    },
+                    "id": {
+                      "S": "id1"
+                    }
+                  },
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "09IL8FKD949SKE1TJ1HMIUSTABVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "1813032717"
+                      ],
+                      "Content-Length": [
+                        "53"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:11:24 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "53",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:11:24 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "1813032717",
+                      "x-amzn-RequestId": "09IL8FKD949SKE1TJ1HMIUSTABVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "09IL8FKD949SKE1TJ1HMIUSTABVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "DVTSIA1RSVTJEALCUBBPB9DBENVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:11:24 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:11:24 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "DVTSIA1RSVTJEALCUBBPB9DBENVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "DVTSIA1RSVTJEALCUBBPB9DBENVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                },
+                "getItemOutput": {
+                  "Item": {
+                    "data": {
+                      "S": "HelloWorld"
+                    },
+                    "id": {
+                      "S": "id1"
+                    }
+                  },
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "09IL8FKD949SKE1TJ1HMIUSTABVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "1813032717"
+                      ],
+                      "Content-Length": [
+                        "53"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:11:24 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "53",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:11:24 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "1813032717",
+                      "x-amzn-RequestId": "09IL8FKD949SKE1TJ1HMIUSTABVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "09IL8FKD949SKE1TJ1HMIUSTABVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_put_delete_item": {
+    "recorded-date": "12-05-2023, 15:11:47",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "PutItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "region": "<region>",
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "Server": [
+                      "Server"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": [
+                      "JORVHI09VLF1A2M24VHFEQV3NVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    ],
+                    "x-amz-crc32": [
+                      "2745614147"
+                    ],
+                    "Content-Length": [
+                      "2"
+                    ],
+                    "Date": [
+                      "Fri, 12 May 2023 13:11:45 GMT"
+                    ],
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "2",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "Fri, 12 May 2023 13:11:45 GMT",
+                    "Server": "Server",
+                    "x-amz-crc32": "2745614147",
+                    "x-amzn-RequestId": "JORVHI09VLF1A2M24VHFEQV3NVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "JORVHI09VLF1A2M24VHFEQV3NVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "PutItem",
+              "output": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "JORVHI09VLF1A2M24VHFEQV3NVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:11:45 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:11:45 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "JORVHI09VLF1A2M24VHFEQV3NVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "JORVHI09VLF1A2M24VHFEQV3NVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "JORVHI09VLF1A2M24VHFEQV3NVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:11:45 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:11:45 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "JORVHI09VLF1A2M24VHFEQV3NVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "JORVHI09VLF1A2M24VHFEQV3NVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "DeleteItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TableName": "<test-table>",
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "region": "<region>",
+              "resource": "deleteItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "taskStartedEventDetails": {
+              "resource": "deleteItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "taskSucceededEventDetails": {
+              "output": {
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "Server": [
+                      "Server"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": [
+                      "CEOD4BBRA2S5C2D7JS5P26QCEVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    ],
+                    "x-amz-crc32": [
+                      "2745614147"
+                    ],
+                    "Content-Length": [
+                      "2"
+                    ],
+                    "Date": [
+                      "Fri, 12 May 2023 13:11:46 GMT"
+                    ],
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "2",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "Fri, 12 May 2023 13:11:46 GMT",
+                    "Server": "Server",
+                    "x-amz-crc32": "2745614147",
+                    "x-amzn-RequestId": "CEOD4BBRA2S5C2D7JS5P26QCEVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "CEOD4BBRA2S5C2D7JS5P26QCEVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "deleteItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateExitedEventDetails": {
+              "name": "DeleteItem",
+              "output": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "JORVHI09VLF1A2M24VHFEQV3NVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:11:45 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:11:45 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "JORVHI09VLF1A2M24VHFEQV3NVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "JORVHI09VLF1A2M24VHFEQV3NVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                },
+                "deleteItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "CEOD4BBRA2S5C2D7JS5P26QCEVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:11:46 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:11:46 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "CEOD4BBRA2S5C2D7JS5P26QCEVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "CEOD4BBRA2S5C2D7JS5P26QCEVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "JORVHI09VLF1A2M24VHFEQV3NVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:11:45 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:11:45 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "JORVHI09VLF1A2M24VHFEQV3NVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "JORVHI09VLF1A2M24VHFEQV3NVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                },
+                "deleteItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "CEOD4BBRA2S5C2D7JS5P26QCEVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:11:46 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:11:46 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "CEOD4BBRA2S5C2D7JS5P26QCEVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "CEOD4BBRA2S5C2D7JS5P26QCEVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_put_update_get_item": {
+    "recorded-date": "12-05-2023, 15:12:10",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "PutItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "region": "<region>",
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "Server": [
+                      "Server"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": [
+                      "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    ],
+                    "x-amz-crc32": [
+                      "2745614147"
+                    ],
+                    "Content-Length": [
+                      "2"
+                    ],
+                    "Date": [
+                      "Fri, 12 May 2023 13:12:08 GMT"
+                    ],
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "2",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "Fri, 12 May 2023 13:12:08 GMT",
+                    "Server": "Server",
+                    "x-amz-crc32": "2745614147",
+                    "x-amzn-RequestId": "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "putItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "PutItem",
+              "output": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:12:08 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:12:08 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:12:08 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:12:08 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "UpdateItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "ReturnValues": "UPDATED_NEW",
+                "TableName": "<test-table>",
+                "UpdateExpression": "set S=:r",
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                }
+              },
+              "region": "<region>",
+              "resource": "updateItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "taskStartedEventDetails": {
+              "resource": "updateItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Attributes": {
+                  "S": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "Server": [
+                      "Server"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": [
+                      "VUAAIST0KTTO4G58DKN41NK8DVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    ],
+                    "x-amz-crc32": [
+                      "739724371"
+                    ],
+                    "Content-Length": [
+                      "46"
+                    ],
+                    "Date": [
+                      "Fri, 12 May 2023 13:12:08 GMT"
+                    ],
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "46",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "Fri, 12 May 2023 13:12:08 GMT",
+                    "Server": "Server",
+                    "x-amz-crc32": "739724371",
+                    "x-amzn-RequestId": "VUAAIST0KTTO4G58DKN41NK8DVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "VUAAIST0KTTO4G58DKN41NK8DVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "updateItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateExitedEventDetails": {
+              "name": "UpdateItem",
+              "output": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:12:08 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:12:08 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                },
+                "updateItemOutput": {
+                  "Attributes": {
+                    "S": {
+                      "S": "HelloWorldUpdated"
+                    }
+                  },
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "VUAAIST0KTTO4G58DKN41NK8DVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "739724371"
+                      ],
+                      "Content-Length": [
+                        "46"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:12:08 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "46",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:12:08 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "739724371",
+                      "x-amzn-RequestId": "VUAAIST0KTTO4G58DKN41NK8DVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "VUAAIST0KTTO4G58DKN41NK8DVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:12:08 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:12:08 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                },
+                "updateItemOutput": {
+                  "Attributes": {
+                    "S": {
+                      "S": "HelloWorldUpdated"
+                    }
+                  },
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "VUAAIST0KTTO4G58DKN41NK8DVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "739724371"
+                      ],
+                      "Content-Length": [
+                        "46"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:12:08 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "46",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:12:08 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "739724371",
+                      "x-amzn-RequestId": "VUAAIST0KTTO4G58DKN41NK8DVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "VUAAIST0KTTO4G58DKN41NK8DVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "GetItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 13,
+            "previousEventId": 12,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TableName": "<test-table>",
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "region": "<region>",
+              "resource": "getItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 14,
+            "previousEventId": 13,
+            "taskStartedEventDetails": {
+              "resource": "getItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Item": {
+                  "S": {
+                    "S": "HelloWorldUpdated"
+                  },
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "Server": [
+                      "Server"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": [
+                      "SK03S8HG69IEVMO5I54M5V7MRRVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    ],
+                    "x-amz-crc32": [
+                      "2465835545"
+                    ],
+                    "Content-Length": [
+                      "83"
+                    ],
+                    "Date": [
+                      "Fri, 12 May 2023 13:12:08 GMT"
+                    ],
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "83",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "Fri, 12 May 2023 13:12:08 GMT",
+                    "Server": "Server",
+                    "x-amz-crc32": "2465835545",
+                    "x-amzn-RequestId": "SK03S8HG69IEVMO5I54M5V7MRRVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "SK03S8HG69IEVMO5I54M5V7MRRVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "getItem",
+              "resourceType": "dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateExitedEventDetails": {
+              "name": "GetItem",
+              "output": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:12:08 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:12:08 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                },
+                "updateItemOutput": {
+                  "Attributes": {
+                    "S": {
+                      "S": "HelloWorldUpdated"
+                    }
+                  },
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "VUAAIST0KTTO4G58DKN41NK8DVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "739724371"
+                      ],
+                      "Content-Length": [
+                        "46"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:12:08 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "46",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:12:08 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "739724371",
+                      "x-amzn-RequestId": "VUAAIST0KTTO4G58DKN41NK8DVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "VUAAIST0KTTO4G58DKN41NK8DVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                },
+                "getItemOutput": {
+                  "Item": {
+                    "S": {
+                      "S": "HelloWorldUpdated"
+                    },
+                    "data": {
+                      "S": "HelloWorld"
+                    },
+                    "id": {
+                      "S": "id1"
+                    }
+                  },
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "SK03S8HG69IEVMO5I54M5V7MRRVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2465835545"
+                      ],
+                      "Content-Length": [
+                        "83"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:12:08 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "83",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:12:08 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2465835545",
+                      "x-amzn-RequestId": "SK03S8HG69IEVMO5I54M5V7MRRVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "SK03S8HG69IEVMO5I54M5V7MRRVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "Key": {
+                  "id": {
+                    "S": "id1"
+                  }
+                },
+                "UpdateExpression": "set S=:r",
+                "ExpressionAttributeValues": {
+                  ":r": {
+                    "S": "HelloWorldUpdated"
+                  }
+                },
+                "putItemOutput": {
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2745614147"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:12:08 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:12:08 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2745614147",
+                      "x-amzn-RequestId": "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "C7TFOASLLE8OUV80UFKTC8U7RJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                },
+                "updateItemOutput": {
+                  "Attributes": {
+                    "S": {
+                      "S": "HelloWorldUpdated"
+                    }
+                  },
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "VUAAIST0KTTO4G58DKN41NK8DVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "739724371"
+                      ],
+                      "Content-Length": [
+                        "46"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:12:08 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "46",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:12:08 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "739724371",
+                      "x-amzn-RequestId": "VUAAIST0KTTO4G58DKN41NK8DVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "VUAAIST0KTTO4G58DKN41NK8DVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                },
+                "getItemOutput": {
+                  "Item": {
+                    "S": {
+                      "S": "HelloWorldUpdated"
+                    },
+                    "data": {
+                      "S": "HelloWorld"
+                    },
+                    "id": {
+                      "S": "id1"
+                    }
+                  },
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "Server": [
+                        "Server"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "SK03S8HG69IEVMO5I54M5V7MRRVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                      ],
+                      "x-amz-crc32": [
+                        "2465835545"
+                      ],
+                      "Content-Length": [
+                        "83"
+                      ],
+                      "Date": [
+                        "Fri, 12 May 2023 13:12:08 GMT"
+                      ],
+                      "Content-Type": [
+                        "application/x-amz-json-1.0"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "83",
+                      "Content-Type": "application/x-amz-json-1.0",
+                      "Date": "Fri, 12 May 2023 13:12:08 GMT",
+                      "Server": "Server",
+                      "x-amz-crc32": "2465835545",
+                      "x-amzn-RequestId": "SK03S8HG69IEVMO5I54M5V7MRRVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "SK03S8HG69IEVMO5I54M5V7MRRVV4KQNSO5AEMVJF66Q9ASUAAJG"
+                  }
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 17,
+            "previousEventId": 16,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

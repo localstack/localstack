@@ -22,6 +22,15 @@ class ServicesTemplates(TemplateLoader):
     LAMBDA_LIST_FUNCTIONS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/lambda_list_functions.json5"
     )
+    DYNAMODB_PUT_GET_ITEM: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/dynamodb_put_get_item.json5"
+    )
+    DYNAMODB_PUT_DELETE_ITEM: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/dynamodb_put_delete_item.json5"
+    )
+    DYNAMODB_PUT_UPDATE_GET_ITEM: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/dynamodb_put_update_get_item.json5"
+    )
 
     # Lambda Functions.
     LAMBDA_ID_FUNCTION: Final[str] = os.path.join(_THIS_FOLDER, "lambdafunctions/id_function.py")

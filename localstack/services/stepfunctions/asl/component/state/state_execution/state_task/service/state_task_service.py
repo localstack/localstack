@@ -41,6 +41,12 @@ class StateTaskService(StateTask, abc.ABC):
                 )
 
                 return StateTaskServiceSqs()
+            case "dynamodb":
+                from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_dynamodb import (
+                    StateTaskServiceDynamoDB,
+                )
+
+                return StateTaskServiceDynamoDB()
 
             case unknown:
                 raise NotImplementedError(f"Unsupported service: '{unknown}'.")  # noqa

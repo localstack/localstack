@@ -37,6 +37,10 @@ class ErrorHandlingTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/task_service_sqs_send_msg_catch.json5"
     )
 
+    AWS_SERVICE_DYNAMODB_PUT_ITEM: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/task_service_dynamodb_put_item.json5"
+    )
+
     # Lambda Functions.
     LAMBDA_FUNC_RAISE_EXCEPTION: Final[str] = os.path.join(
         _THIS_FOLDER, "lambdafunctions/raise_exception.py"
