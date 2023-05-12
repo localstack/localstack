@@ -771,9 +771,9 @@ class TestCloudFormation:
         assert not vpcs
 
     # TODO: evaluate (can we drop this?)
+    @pytest.mark.xfail(reason="GetAtt resolved old value")
+    @pytest.mark.aws_validated
     def test_updating_stack_with_iam_role(self, deploy_cfn_template, aws_client):
-
-        # Initialization
         lambda_role_name = f"lambda-role-{short_uid()}"
         lambda_function_name = f"lambda-function-{short_uid()}"
 

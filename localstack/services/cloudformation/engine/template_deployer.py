@@ -168,6 +168,7 @@ def get_client(resource: dict):
         return None
 
 
+# TODO(ds): remove next
 def retrieve_resource_details(
     resource_id, resource_status, resources: dict[str, Type[GenericBaseModel]], stack_name
 ):
@@ -236,6 +237,7 @@ def check_not_found_exception(e, resource_type, resource, resource_status=None):
 
 
 # TODO(srw): this becomes a property lookup
+# TODO(ds): remove next
 def extract_resource_attribute(
     resource_type,
     resource_state,
@@ -311,7 +313,9 @@ def extract_resource_attribute(
     return result
 
 
-def get_attr_from_model_instance(resource, attribute, resource_type, resource_id=None):
+def get_attr_from_model_instance(
+    resource: dict, attribute: str, resource_type: str, resource_id: Optional[str] = None
+):
     model_class = RESOURCE_MODELS.get(resource_type)
     if not model_class:
         if resource_type not in ["AWS::Parameter", "Parameter"]:
@@ -319,6 +323,7 @@ def get_attr_from_model_instance(resource, attribute, resource_type, resource_id
         return
     try:
         inst = model_class(resource_name=resource_id, resource_json=resource)
+        TemplateDeployer.all_resource_dependencies_satisfied()
         return inst.get_cfn_attribute(attribute)
     except Exception as e:
         LOG.debug("Failed to retrieve model attribute: %s", attribute, exc_info=e)
@@ -393,6 +398,7 @@ def resolve_ref(stack_name: str, resources: dict, ref: str, attribute: str):
 
     # TODO: when do we go into the branch below?
 
+    # TODO(ds): remove all below next
     # fetch resource details
     resource_new = retrieve_resource_details(ref, {}, resources, stack_name)
     if not resource_new:
@@ -1503,6 +1509,9 @@ class TemplateDeployer:
         return changes_done
 
     def prepare_should_deploy_change(self, resource_id, change, stack, new_resources):
+        """
+        TODO: document
+        """
         resource = new_resources[resource_id]
         res_change = change["ResourceChange"]
         action = res_change["Action"]
