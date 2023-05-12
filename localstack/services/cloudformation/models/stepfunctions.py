@@ -49,7 +49,9 @@ class SFNStateMachine(GenericBaseModel):
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == "Arn":
             return self.props.get("stateMachineArn")
-        super(SFNStateMachine, self).get_cfn_attribute(attribute_name)
+        if attribute_name == "Name":
+            return self.props.get("StateMachineName")
+        return super(SFNStateMachine, self).get_cfn_attribute(attribute_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("stateMachineArn")
