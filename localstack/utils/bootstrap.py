@@ -10,7 +10,7 @@ from functools import wraps
 from typing import Dict, Iterable, List, Optional, Set
 
 from localstack import config, constants
-from localstack.config import SUPPORTED_SERVICES, get_edge_port_http, is_env_true
+from localstack.config import get_edge_port_http, is_env_true
 from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
@@ -219,7 +219,9 @@ def get_enabled_apis() -> Set[str]:
         LOG.warning("SERVICES variable is ignored if EAGER_SERVICE_LOADING=0.")
         services = None
     if not services:
-        services = SUPPORTED_SERVICES
+        from localstack.services.plugins import SERVICE_PLUGINS
+
+        services = SERVICE_PLUGINS.list_available()
     return resolve_apis(services)
 
 

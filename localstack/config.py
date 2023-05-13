@@ -1014,44 +1014,6 @@ MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER
 # Whether to return and parse access key ids starting with an "A", like on AWS
 PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 
-# List of services supported by LocalStack
-SUPPORTED_SERVICES = [
-    "acm",
-    "apigateway",
-    "cloudformation",
-    "cloudwatch",
-    "config",
-    "dynamodb",
-    "dynamodbstreams",
-    "ec2",
-    "es",
-    "events",
-    "firehose",
-    "iam",
-    "kinesis",
-    "kms",
-    "lambda",
-    "logs",
-    "opensearch",
-    "redshift",
-    "resource-groups",
-    "resourcegroupstaggingapi",
-    "route53",
-    "route53resolver",
-    "s3",
-    "s3control",
-    "secretsmanager",
-    "ses",
-    "sns",
-    "sqs",
-    "ssm",
-    "stepfunctions",
-    "sts",
-    "support",
-    "swf",
-    "transcribe",
-]
-
 # HINT: Please add deprecated environment variables to deprecations.py
 
 # list of environment variable names used for configuration.
@@ -1217,19 +1179,14 @@ def collect_config_items() -> List[Tuple[str, Any]]:
 def populate_config_env_var_names():
     global CONFIG_ENV_VARS
 
-    for service in SUPPORTED_SERVICES:
-        clean_key = service.upper().replace("-", "_")
-        CONFIG_ENV_VARS += [
-            clean_key + "_BACKEND",
-            clean_key + "_PORT_EXTERNAL",
-            "PROVIDER_OVERRIDE_" + clean_key,
-        ]
-
-    # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)
-    CONFIG_ENV_VARS += [
-        "LOCALSTACK_" + v for v in CONFIG_ENV_VARS if not v.startswith("LOCALSTACK_")
+    CONFIG_ENV_VARS = [
+        key
+        for key in [key.upper() for key in os.environ]
+        if key.startswith("LOCALSTACK_")
+        if key.endswith("_BACKEND")
+        or key.endswith("_PORT_EXTERNAL")
+        or key.startswith("PROVIDER_OVERRIDE_")
     ]
-    CONFIG_ENV_VARS = list(set(CONFIG_ENV_VARS))
 
 
 # populate env var names to be passed to the container
