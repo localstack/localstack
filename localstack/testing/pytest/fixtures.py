@@ -1,4 +1,5 @@
 import contextlib
+import copy
 import dataclasses
 import json
 import logging
@@ -8,6 +9,7 @@ import socket
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+import aws_cdk
 import boto3
 import botocore.auth
 import botocore.config
@@ -18,6 +20,7 @@ from _pytest.config import Config
 from _pytest.nodes import Item
 from botocore.exceptions import ClientError
 from botocore.regions import EndpointResolver
+from constructs import Construct
 from moto.core import BackendDict, BaseBackend
 from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
@@ -2042,3 +2045,38 @@ def register_extension(s3_bucket, aws_client):
             except Exception:
                 continue
         cfn_client.deregister_type(Arn=arn)
+
+
+class CustomStack(aws_cdk.Stack):
+    def __init__(self, scope: Construct, construct_id: str, **kwargs):
+        super().__init__(scope, construct_id, **kwargs)
+        self.scope = scope
+        self.construct_id = construct_id
+
+    def build_template(self) -> dict:
+        synth = self.scope.synth()
+        raw_template = synth.get_stack_by_name(self.construct_id).template
+        return self._postprocess_template(raw_template)
+
+    @staticmethod
+    def _postprocess_template(raw_template: dict) -> dict:
+        new_template = copy.deepcopy(raw_template)
+        # Remove CDK specific resources
+        del new_template["Parameters"]["BootstrapVersion"]
+        del new_template["Rules"]["CheckBootstrapVersion"]
+        return new_template
+
+
+@pytest.fixture
+def define_infrastructure(deploy_cfn_template, aws_client):
+    app = aws_cdk.App(analytics_reporting=False)
+    stack_name = f"stack-{short_uid()}"
+    stack = CustomStack(app, stack_name)
+
+    @contextlib.contextmanager
+    def inner():
+        yield stack
+        template_str = json.dumps(stack.build_template())
+        deploy_cfn_template(stack_name=stack_name, template=template_str)
+
+    yield inner
