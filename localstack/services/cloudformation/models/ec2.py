@@ -41,7 +41,7 @@ class EC2RouteTable(GenericBaseModel):
             },
             "delete": {
                 "function": "delete_route_table",
-                "parameters": {"RouteTableId": "PhysicalResourceId"},
+                "parameters": {"RouteTableId": "RouteTableId"},
             },
         }
 
@@ -288,7 +288,7 @@ class SecurityGroup(GenericBaseModel):
             },
             "delete": {
                 "function": "delete_security_group",
-                "parameters": {"GroupId": "PhysicalResourceId"},
+                "parameters": {"GroupId": "GroupId"},
             },
         }
 
@@ -378,7 +378,7 @@ class EC2Subnet(GenericBaseModel):
             ],
             "delete": {
                 "function": "delete_subnet",
-                "parameters": {"SubnetId": "PhysicalResourceId"},
+                "parameters": ["SubnetId"],
             },
         }
 
@@ -463,7 +463,7 @@ class EC2VPC(GenericBaseModel):
                 {"function": _pre_delete},
                 {
                     "function": "delete_vpc",
-                    "parameters": {"VpcId": "PhysicalResourceId"},
+                    "parameters": ["VpcId"],
                 },
             ],
         }
@@ -506,7 +506,7 @@ class EC2NatGateway(GenericBaseModel):
             },
             "delete": {
                 "function": "delete_nat_gateway",
-                "parameters": {"NatGatewayId": "PhysicalResourceId"},
+                "parameters": ["NatGatewayId"],
             },
         }
 
@@ -595,10 +595,6 @@ class EC2Instance(GenericBaseModel):
             },
             "delete": {
                 "function": "terminate_instances",
-                "parameters": {
-                    "InstanceIds": lambda params, **kw: [
-                        kw["resources"][kw["resource_id"]]["PhysicalResourceId"]
-                    ]
-                },
+                "parameters": {"InstanceIds": ["InstanceId"]},
             },
         }
