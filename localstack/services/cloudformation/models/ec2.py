@@ -387,7 +387,7 @@ class EC2VPC(GenericBaseModel):
 
     def get_cfn_attribute(self, attribute_name):
         ec2_client = aws_stack.connect_to_service("ec2")
-        vpc_id = self.state["VpcId"]
+        vpc_id = self.props["VpcId"]
 
         if attribute_name == "DefaultSecurityGroup":
             sgs = ec2_client.describe_security_groups(
@@ -439,6 +439,7 @@ class EC2VPC(GenericBaseModel):
 
         def _store_vpc_id(result, resource_id, resources, resource_type):
             resources[resource_id]["PhysicalResourceId"] = result["Vpc"]["VpcId"]
+            resources[resource_id]["Properties"]["VpcId"] = result["Vpc"]["VpcId"]
 
         return {
             "create": {
