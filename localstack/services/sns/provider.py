@@ -5,7 +5,7 @@ from typing import Dict, List
 from botocore.utils import InvalidArnException
 from moto.core.utils import camelcase_to_pascal, underscores_to_camelcase
 from moto.sns import sns_backends
-from moto.sns.models import MAXIMUM_MESSAGE_LENGTH, SNSBackend
+from moto.sns.models import MAXIMUM_MESSAGE_LENGTH, SNSBackend, Topic
 from moto.sns.utils import is_e164
 
 from localstack.aws.accounts import get_aws_account_id
@@ -87,7 +87,6 @@ from localstack.services.sns.publisher import (
     SnsBatchPublishContext,
     SnsPublishContext,
 )
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import short_uid
@@ -109,12 +108,18 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         register_sns_api_resource(ROUTER)
 
     @staticmethod
-    def get_store(account_id: str = None, region: str = None) -> SnsStore:
-        return sns_stores[account_id or get_aws_account_id()][region or aws_stack.get_region()]
+    def get_store(account_id: str, region_name: str) -> SnsStore:
+        return sns_stores[account_id][region_name]
 
     @staticmethod
-    def _get_moto_backend(context: RequestContext) -> SNSBackend:
-        return sns_backends[context.account_id][context.region]
+    def get_moto_backend(account_id: str, region_name: str) -> SNSBackend:
+        return sns_backends[account_id][region_name]
+
+    @staticmethod
+    def _get_topic(arn: str) -> Topic:
+        arn_data = parse_arn(arn)
+        backend = SnsProvider.get_moto_backend(arn_data["account"], arn_data["region"])
+        return backend.get_topic(arn)
 
     def add_permission(
         self,
@@ -274,8 +279,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # TODO: fix some attributes by moto, see snapshot
         # TODO: very hacky way to get the attributes we need instead of a moto patch
         # would need more work to have the proper format out of moto, maybe extract the model to our store
-        moto_backend = self._get_moto_backend(context)
-        moto_topic_model = moto_backend.topics.get(topic_arn)
+        moto_topic_model = self._get_topic(topic_arn)
         for attr in vars(moto_topic_model):
             if "success_feedback" in attr:
                 key = camelcase_to_pascal(underscores_to_camelcase(attr))
@@ -310,8 +314,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
                 )
-            moto_sns_backend = self._get_moto_backend(context)
-            if moto_sns_backend.get_topic(arn=topic_arn).content_based_deduplication == "false":
+            topic = self._get_topic(topic_arn)
+            if topic.content_based_deduplication == "false":
                 if not all(
                     ["MessageDeduplicationId" in entry for entry in publish_batch_request_entries]
                 ):
@@ -441,7 +445,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     ) -> UntagResourceResponse:
         call_moto(context)
         # TODO: probably get the account_id and region from the `resource_arn`
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
         existing_tags = store.sns_tags.setdefault(resource_arn, [])
         store.sns_tags[resource_arn] = [t for t in existing_tags if t["Key"] not in tag_keys]
         return UntagResourceResponse()
@@ -450,7 +454,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         self, context: RequestContext, resource_arn: AmazonResourceName
     ) -> ListTagsForResourceResponse:
         # TODO: probably get the account_id and region from the `resource_arn`
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
         tags = store.sns_tags.setdefault(resource_arn, [])
         return ListTagsForResourceResponse(Tags=tags)
 
@@ -488,7 +492,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         except CommonServiceException as e:
             # TODO: this was unclear in the old provider, check against aws and moto
             if "DuplicateEndpoint" in e.code:
-                moto_sns_backend = self._get_moto_backend(context)
+                moto_sns_backend = self.get_moto_backend(context.account_id, context.region)
                 for e in moto_sns_backend.platform_endpoints.values():
                     if e.token == token:
                         if custom_user_data and custom_user_data != e.custom_user_data:
@@ -592,11 +596,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics",
                 )
-            moto_sns_backend = self._get_moto_backend(context)
-            if (
-                moto_sns_backend.get_topic(arn=topic_or_target_arn).content_based_deduplication
-                == "false"
-            ):
+            topic = self._get_topic(topic_or_target_arn)
+            if topic.content_based_deduplication == "false":
                 if not message_deduplication_id:
                     raise InvalidParameterException(
                         "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
@@ -636,7 +637,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         if not phone_number:
             if is_endpoint_publish:
-                moto_sns_backend = self._get_moto_backend(context)
+                moto_sns_backend = self.get_moto_backend(context.account_id, context.region)
                 if target_arn not in moto_sns_backend.platform_endpoints:
                     raise InvalidParameterException(
                         "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
@@ -795,7 +796,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise InvalidParameterException("Invalid parameter: Duplicated keys are not allowed.")
 
         call_moto(context)
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
         existing_tags = store.sns_tags.get(resource_arn, [])
 
         def existing_tag_index(_item):

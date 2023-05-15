@@ -18,6 +18,7 @@ from werkzeug import Response
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.sns.constants import PLATFORM_ENDPOINT_MSGS_ENDPOINT
 from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
@@ -464,7 +465,7 @@ class TestSNSProvider:
         self, sns_create_topic, sns_subscription, sns_create_platform_application, aws_client
     ):
 
-        sns_backend = SnsProvider.get_store()
+        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         topic_arn = sns_create_topic()["TopicArn"]
 
         app_arn = sns_create_platform_application(Name="app1", Platform="p1", Attributes={})[
@@ -1145,7 +1146,7 @@ class TestSNSProvider:
 
         aws_client.sns.publish(Message=message, TopicArn=topic_arn)
 
-        sns_backend = SnsProvider.get_store()
+        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         def check_messages():
             sms_messages = sns_backend.sms_messages
@@ -2728,7 +2729,7 @@ class TestSNSProvider:
     def test_publish_to_platform_endpoint_can_retrospect(
         self, sns_create_topic, sns_subscription, sns_create_platform_application, aws_client
     ):
-        sns_backend = SnsProvider.get_store()
+        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         # clean up the saved messages
         sns_backend_endpoint_arns = list(sns_backend.platform_endpoint_messages.keys())
         for saved_endpoint_arn in sns_backend_endpoint_arns:
@@ -2885,7 +2886,7 @@ class TestSNSProvider:
             MessageStructure="json",
         )
 
-        sns_backend = SnsProvider.get_store()
+        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         platform_endpoint_msgs = sns_backend.platform_endpoint_messages
 
         # assert that message has been received
