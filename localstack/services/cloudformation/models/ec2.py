@@ -2,6 +2,7 @@ import json
 
 from moto.ec2.utils import generate_route_id
 
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.cfn_utils import get_tags_param
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
@@ -40,7 +41,7 @@ class EC2RouteTable(GenericBaseModel):
             },
             "delete": {
                 "function": "delete_route_table",
-                "parameters": {"RouteTableId": "PhysicalResourceId"},
+                "parameters": {"RouteTableId": "RouteTableId"},
             },
         }
 
@@ -233,15 +234,22 @@ class SecurityGroup(GenericBaseModel):
         return "AWS::EC2::SecurityGroup"
 
     def fetch_state(self, stack_name, resources):
+        if not self.physical_resource_id:
+            return None
         props = self.props
         group_id = props.get("GroupId")
         group_name = props.get("GroupName")
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to().ec2
         if group_id:
             resp = client.describe_security_groups(GroupIds=[group_id])
         else:
             resp = client.describe_security_groups(GroupNames=[group_name])
         return (resp["SecurityGroups"] or [None])[0]
+
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "GroupId":
+            return self.props.get("GroupId")
+        return super(SecurityGroup, self).get_cfn_attribute(attribute_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         if self.physical_resource_id:
@@ -265,6 +273,7 @@ class SecurityGroup(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def _store_group_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["Properties"]["GroupId"] = result["GroupId"]
             resources[resource_id]["PhysicalResourceId"] = result["GroupId"]
 
         return {
@@ -279,7 +288,7 @@ class SecurityGroup(GenericBaseModel):
             },
             "delete": {
                 "function": "delete_security_group",
-                "parameters": {"GroupId": "PhysicalResourceId"},
+                "parameters": {"GroupId": "GroupId"},
             },
         }
 
@@ -290,6 +299,8 @@ class EC2Subnet(GenericBaseModel):
         return "AWS::EC2::Subnet"
 
     def fetch_state(self, stack_name, resources):
+        if not self.physical_resource_id:
+            return None
         client = aws_stack.connect_to_service("ec2")
         props = self.props
         filters = [
@@ -301,6 +312,11 @@ class EC2Subnet(GenericBaseModel):
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("SubnetId")
+
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "SubnetId":
+            return self.props.get("SubnetId")
+        return super(EC2Subnet, self).get_cfn_attribute(attribute_name)
 
     @classmethod
     def get_deploy_templates(cls):
@@ -340,6 +356,7 @@ class EC2Subnet(GenericBaseModel):
 
         def _store_id(result, resource_id, resources, resource_type):
             resources[resource_id]["PhysicalResourceId"] = result["Subnet"]["SubnetId"]
+            resources[resource_id]["Properties"]["SubnetId"] = result["Subnet"]["SubnetId"]
 
         return {
             "create": [
@@ -361,7 +378,7 @@ class EC2Subnet(GenericBaseModel):
             ],
             "delete": {
                 "function": "delete_subnet",
-                "parameters": {"SubnetId": "PhysicalResourceId"},
+                "parameters": ["SubnetId"],
             },
         }
 
@@ -378,7 +395,7 @@ class EC2VPC(GenericBaseModel):
 
     def get_cfn_attribute(self, attribute_name):
         ec2_client = aws_stack.connect_to_service("ec2")
-        vpc_id = self.state["VpcId"]
+        vpc_id = self.props["VpcId"]
 
         if attribute_name == "DefaultSecurityGroup":
             sgs = ec2_client.describe_security_groups(
@@ -430,6 +447,7 @@ class EC2VPC(GenericBaseModel):
 
         def _store_vpc_id(result, resource_id, resources, resource_type):
             resources[resource_id]["PhysicalResourceId"] = result["Vpc"]["VpcId"]
+            resources[resource_id]["Properties"]["VpcId"] = result["Vpc"]["VpcId"]
 
         return {
             "create": {
@@ -445,7 +463,7 @@ class EC2VPC(GenericBaseModel):
                 {"function": _pre_delete},
                 {
                     "function": "delete_vpc",
-                    "parameters": {"VpcId": "PhysicalResourceId"},
+                    "parameters": ["VpcId"],
                 },
             ],
         }
@@ -488,7 +506,7 @@ class EC2NatGateway(GenericBaseModel):
             },
             "delete": {
                 "function": "delete_nat_gateway",
-                "parameters": {"NatGatewayId": "PhysicalResourceId"},
+                "parameters": ["NatGatewayId"],
             },
         }
 
@@ -577,10 +595,6 @@ class EC2Instance(GenericBaseModel):
             },
             "delete": {
                 "function": "terminate_instances",
-                "parameters": {
-                    "InstanceIds": lambda params, **kw: [
-                        kw["resources"][kw["resource_id"]]["PhysicalResourceId"]
-                    ]
-                },
+                "parameters": {"InstanceIds": ["InstanceId"]},
             },
         }

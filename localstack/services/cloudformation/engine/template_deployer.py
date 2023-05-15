@@ -127,7 +127,8 @@ def get_deployment_config(res_type: str) -> DeployTemplates | None:
         usage.missing_resource_types.record(res_type)
 
 
-def get_resource_type(resource):
+def get_resource_type(resource: dict) -> str:
+    """this is currently overwritten in PRO to add support for custom resources"""
     return resource["Type"]
 
 
@@ -330,8 +331,7 @@ def get_attr_from_model_instance(
 
 def get_ref_from_model(resources: dict, logical_resource_id: str) -> Optional[str]:
     resource = resources[logical_resource_id]
-    resource_type: str = resource["Type"]
-
+    resource_type = get_resource_type(resource)
     model_class = RESOURCE_MODELS.get(resource_type)
     if model_class:
         return model_class(resource_name=logical_resource_id, resource_json=resource).get_ref()
@@ -535,7 +535,7 @@ def _resolve_refs_recursively(stack_name, resources, value: dict | list | str | 
             resource = resources.get(resource_logical_id)
 
             resolved_getatt = get_attr_from_model_instance(
-                resource, attribute_name, resource["Type"]
+                resource, attribute_name, get_resource_type(resource)
             )
             # TODO: we should check the deployment state and not try to GetAtt from a resource that is still IN_PROGRESS or hasn't started yet.
             if resolved_getatt is None:
@@ -685,13 +685,18 @@ def resolve_placeholders_in_string(result, stack_name: str, resources: dict):
             # Resource attributes specified => Use GetAtt to resolve
             resource_name, _, attr_name = ref_expression.partition(".")
             resolved = get_attr_from_model_instance(
-                resources[resource_name], attr_name, resources[resource_name]["Type"], resource_name
+                resources[resource_name],
+                attr_name,
+                get_resource_type(resources[resource_name]),
+                resource_name,
             )
             if resolved is None:
                 raise DependencyNotYetSatisfied(
                     resource_ids=resource_name,
                     message=f"Unable to resolve attribute ref {ref_expression}",
                 )
+            if not isinstance(resolved, str):
+                resolved = str(resolved)
             return resolved
         if len(parts) == 1 and parts[0] in resources:
             # Logical resource ID or parameter name specified => Use Ref for lookup
@@ -979,7 +984,7 @@ def add_default_resource_props(
 ):
     """Apply some fixes to resource props which otherwise cause deployments to fail"""
 
-    res_type = resource["Type"]
+    res_type = get_resource_type(resource)
     resource_class = RESOURCE_MODELS.get(res_type)
     if resource_class is not None:
         resource_class.add_defaults(resource, stack_name)
@@ -1064,7 +1069,7 @@ class TemplateDeployer:
             resource["Properties"] = resource.get(
                 "Properties", clone_safe(resource)
             )  # TODO: why is there a fallback?
-            resource["ResourceType"] = resource["Type"]
+            resource["ResourceType"] = get_resource_type(resource)
 
         def _safe_lookup_is_deleted(r_id):
             """handles the case where self.stack.resource_status(..) fails for whatever reason"""
