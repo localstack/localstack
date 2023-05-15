@@ -2,6 +2,7 @@ import json
 
 from moto.ec2.utils import generate_route_id
 
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.cfn_utils import get_tags_param
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
@@ -233,15 +234,22 @@ class SecurityGroup(GenericBaseModel):
         return "AWS::EC2::SecurityGroup"
 
     def fetch_state(self, stack_name, resources):
+        if not self.physical_resource_id:
+            return None
         props = self.props
         group_id = props.get("GroupId")
         group_name = props.get("GroupName")
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to().ec2
         if group_id:
             resp = client.describe_security_groups(GroupIds=[group_id])
         else:
             resp = client.describe_security_groups(GroupNames=[group_name])
         return (resp["SecurityGroups"] or [None])[0]
+
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "GroupId":
+            return self.props.get("GroupId")
+        return super(SecurityGroup, self).get_cfn_attribute(attribute_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         if self.physical_resource_id:
@@ -265,6 +273,7 @@ class SecurityGroup(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def _store_group_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["Properties"]["GroupId"] = result["GroupId"]
             resources[resource_id]["PhysicalResourceId"] = result["GroupId"]
 
         return {
