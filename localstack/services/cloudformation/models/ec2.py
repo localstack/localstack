@@ -299,6 +299,8 @@ class EC2Subnet(GenericBaseModel):
         return "AWS::EC2::Subnet"
 
     def fetch_state(self, stack_name, resources):
+        if not self.physical_resource_id:
+            return None
         client = aws_stack.connect_to_service("ec2")
         props = self.props
         filters = [
@@ -310,6 +312,11 @@ class EC2Subnet(GenericBaseModel):
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("SubnetId")
+
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "SubnetId":
+            return self.props.get("SubnetId")
+        return super(EC2Subnet, self).get_cfn_attribute(attribute_name)
 
     @classmethod
     def get_deploy_templates(cls):
@@ -349,6 +356,7 @@ class EC2Subnet(GenericBaseModel):
 
         def _store_id(result, resource_id, resources, resource_type):
             resources[resource_id]["PhysicalResourceId"] = result["Subnet"]["SubnetId"]
+            resources[resource_id]["Properties"]["SubnetId"] = result["Subnet"]["SubnetId"]
 
         return {
             "create": [
