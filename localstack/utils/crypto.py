@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import threading
+from typing import Tuple
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -161,7 +162,7 @@ def unpad(s: bytes) -> bytes:
     return s[0 : -s[-1]]
 
 
-def encrypt(key: bytes, message: bytes, iv: bytes = None, aad: bytes = None) -> bytes:
+def encrypt(key: bytes, message: bytes, iv: bytes = None, aad: bytes = None) -> Tuple[bytes, bytes]:
     iv = iv or b"0" * BLOCK_SIZE
     cipher = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend())
     encryptor = cipher.encryptor()
