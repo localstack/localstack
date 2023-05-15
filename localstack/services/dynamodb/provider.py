@@ -461,10 +461,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         create_table_input: CreateTableInput,
     ) -> CreateTableOutput:
-        # Check if table exists, to avoid error log output from DynamoDBLocal
         table_name = create_table_input["TableName"]
+
+        # Return this specific error message to keep parity with AWS
         if self.table_exists(context.account_id, context.region, table_name):
             raise ResourceInUseException(f"Table already exists: {table_name}")
+
         billing_mode = create_table_input.get("BillingMode")
         provisioned_throughput = create_table_input.get("ProvisionedThroughput")
         if billing_mode == BillingMode.PAY_PER_REQUEST and provisioned_throughput is not None:
@@ -1140,9 +1142,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def enable_kinesis_streaming_destination(
         self, context: RequestContext, table_name: TableName, stream_arn: StreamArn
     ) -> KinesisStreamingDestinationOutput:
-        # Check if table exists, to avoid error log output from DynamoDBLocal
-        if not self.table_exists(context.account_id, context.region, table_name):
-            raise ResourceNotFoundException("Cannot do operations on a non-existent table")
+        self.ensure_table_exists(context.account_id, context.region, table_name)
+
         stream = EventForwarder.is_kinesis_stream_exists(stream_arn=stream_arn)
         if not stream:
             raise ValidationException("User does not have a permission to use kinesis stream")
@@ -1182,9 +1183,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def disable_kinesis_streaming_destination(
         self, context: RequestContext, table_name: TableName, stream_arn: StreamArn
     ) -> KinesisStreamingDestinationOutput:
-        # Check if table exists, to avoid error log output from DynamoDBLocal
-        if not self.table_exists(context.account_id, context.region, table_name):
-            raise ResourceNotFoundException("Cannot do operations on a non-existent table")
+        self.ensure_table_exists(context.account_id, context.region, table_name)
+
         stream = EventForwarder.is_kinesis_stream_exists(stream_arn=stream_arn)
         if not stream:
             raise ValidationException(
@@ -1216,9 +1216,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def describe_kinesis_streaming_destination(
         self, context: RequestContext, table_name: TableName
     ) -> DescribeKinesisStreamingDestinationOutput:
-        # Check if table exists, to avoid error log output from DynamoDBLocal
-        if not self.table_exists(context.account_id, context.region, table_name):
-            raise ResourceNotFoundException("Cannot do operations on a non-existent table")
+        self.ensure_table_exists(context.account_id, context.region, table_name)
 
         table_def = (
             get_store(context.account_id, context.region).table_definitions.get(table_name) or {}
@@ -1317,30 +1315,40 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return dynamodb_table_exists(table_name, client)
 
     @staticmethod
+    def ensure_table_exists(account_id: str, region_name: str, table_name: str):
+        """
+        Raise ResourceNotFoundException if the given table does not exist.
+
+        :param account_id: account id
+        :param region_name: region name
+        :param table_name: table name
+        :raise: ResourceNotFoundException if table does not exist in DynamoDB Local
+        """
+        if not DynamoDBProvider.table_exists(account_id, region_name, table_name):
+            raise ResourceNotFoundException("Cannot do operations on a non-existent table")
+
+    @staticmethod
     def get_global_table_region(context: RequestContext, table_name: str) -> str:
         """
-        Return the table region considering that it might be a replicated table and that it exists within DDBLocal.
+        Return the table region considering that it might be a replicated table.
+
+        Replication in LocalStack works by keeping a single copy of a table and forwarding
+        requests to the region where this table exists.
+
+        This method does not check whether the table actually exists in DDBLocal.
+
         :param context: request context
         :param table_name: table name
         :return: region
-        :raise: ResourceNotFoundException if table does not exist in DynamoDB Local
         """
         replicas = get_store(context.account_id, context.region).REPLICA_UPDATES.get(table_name)
         if replicas:
             global_table_region = list(replicas.keys())[0]
             replicated_at = replicas[global_table_region]
             # Ensure that a replica exists in the current context region, and that the table exists in DDB Local
-            if (
-                context.region == global_table_region or context.region in replicated_at
-            ) and DynamoDBProvider.table_exists(
-                context.account_id, global_table_region, table_name
-            ):
+            if context.region == global_table_region or context.region in replicated_at:
                 return global_table_region
-        else:
-            if DynamoDBProvider.table_exists(context.account_id, context.region, table_name):
-                return context.region
-
-        raise ResourceNotFoundException("Cannot do operations on a non-existent table")
+        return context.region
 
     @staticmethod
     def prepare_request_headers(headers: Dict, account_id: str, region_name: str):
