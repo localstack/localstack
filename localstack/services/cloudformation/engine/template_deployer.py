@@ -535,7 +535,7 @@ def _resolve_refs_recursively(stack_name, resources, value: dict | list | str | 
             resource = resources.get(resource_logical_id)
 
             resolved_getatt = get_attr_from_model_instance(
-                resource, attribute_name, resource["Type"]
+                resource, attribute_name, get_resource_type(resource)
             )
             # TODO: we should check the deployment state and not try to GetAtt from a resource that is still IN_PROGRESS or hasn't started yet.
             if resolved_getatt is None:
