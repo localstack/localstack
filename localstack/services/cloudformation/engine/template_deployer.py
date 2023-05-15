@@ -685,7 +685,10 @@ def resolve_placeholders_in_string(result, stack_name: str, resources: dict):
             # Resource attributes specified => Use GetAtt to resolve
             resource_name, _, attr_name = ref_expression.partition(".")
             resolved = get_attr_from_model_instance(
-                resources[resource_name], attr_name, resources[resource_name]["Type"], resource_name
+                resources[resource_name],
+                attr_name,
+                get_resource_type(resources[resource_name]),
+                resource_name,
             )
             if resolved is None:
                 raise DependencyNotYetSatisfied(
@@ -979,7 +982,7 @@ def add_default_resource_props(
 ):
     """Apply some fixes to resource props which otherwise cause deployments to fail"""
 
-    res_type = resource["Type"]
+    res_type = get_resource_type(resource)
     resource_class = RESOURCE_MODELS.get(res_type)
     if resource_class is not None:
         resource_class.add_defaults(resource, stack_name)
@@ -1064,7 +1067,7 @@ class TemplateDeployer:
             resource["Properties"] = resource.get(
                 "Properties", clone_safe(resource)
             )  # TODO: why is there a fallback?
-            resource["ResourceType"] = resource["Type"]
+            resource["ResourceType"] = get_resource_type(resource)
 
         def _safe_lookup_is_deleted(r_id):
             """handles the case where self.stack.resource_status(..) fails for whatever reason"""
