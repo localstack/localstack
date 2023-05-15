@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 
 from localstack import config
 from localstack.utils.analytics.cli import publish_invocation
-from localstack.runtime.messages import Messages
+from localstack.runtime import ui_messages
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -132,7 +132,7 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
     if not no_banner:
         print_banner()
         print_version()
-        Messages.print_cached_messages()
+        ui_messages.get_instance().print_cached_messages()
         console.line()
 
     from localstack.utils import bootstrap
