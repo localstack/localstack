@@ -695,6 +695,8 @@ def resolve_placeholders_in_string(result, stack_name: str, resources: dict):
                     resource_ids=resource_name,
                     message=f"Unable to resolve attribute ref {ref_expression}",
                 )
+            if not isinstance(resolved, str):
+                resolved = str(resolved)
             return resolved
         if len(parts) == 1 and parts[0] in resources:
             # Logical resource ID or parameter name specified => Use Ref for lookup
