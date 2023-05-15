@@ -21,7 +21,14 @@ class ECRRepository(GenericBaseModel):
     def cloudformation_type():
         return "AWS::ECR::Repository"
 
-    def get_physical_resource_id(self, attribute, **kwargs):
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "Arn":
+            return self.props.get("repositoryArn")
+        if attribute_name == "RepositoryUri":
+            return self.props.get("repositoryUri")
+        return super(ECRRepository, self).get_cfn_attribute(attribute_name)
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
         repo_name = self.props.get("RepositoryName")
         return arns.get_ecr_repository_arn(repo_name)
 

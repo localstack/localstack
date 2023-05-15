@@ -1,6 +1,6 @@
 import datetime
 import re
-from typing import Dict, Literal, Union
+from typing import Dict, Literal, Optional, Tuple, Union
 
 import moto.s3.models as moto_s3_models
 from botocore.exceptions import ClientError
@@ -178,6 +178,14 @@ def get_key_from_moto_bucket(
                 )
 
     return fake_key
+
+
+def get_bucket_and_key_from_s3_uri(s3_uri: str) -> Tuple[str, Optional[str]]:
+    """
+    Extracts the bucket name and key from s3 uri
+    """
+    output_bucket, _, output_key = s3_uri.removeprefix("s3://").partition("/")
+    return output_bucket, output_key
 
 
 def _create_invalid_argument_exc(

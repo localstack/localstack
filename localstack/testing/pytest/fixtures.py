@@ -236,6 +236,14 @@ def s3_create_bucket(s3_resource, aws_client):
         if "Bucket" not in kwargs:
             kwargs["Bucket"] = "test-bucket-%s" % short_uid()
 
+        if (
+            "CreateBucketConfiguration" not in kwargs
+            and aws_client.s3.meta.region_name != "us-east-1"
+        ):
+            kwargs["CreateBucketConfiguration"] = {
+                "LocationConstraint": aws_client.s3.meta.region_name
+            }
+
         aws_client.s3.create_bucket(**kwargs)
         buckets.append(kwargs["Bucket"])
         return kwargs["Bucket"]
@@ -914,6 +922,15 @@ class DeployResult:
     destroy: Callable[[], None]
 
 
+class StackDeployError(Exception):
+    def __init__(self, describe_res: dict, events: list[dict]):
+        self.describe_result = describe_res
+        self.events = events
+        super().__init__(
+            f"Stack deploy failed - describe output: {self.describe_result} events: {self.events}"
+        )
+
+
 @pytest.fixture
 def deploy_cfn_template(
     cleanup_stacks,
@@ -965,11 +982,19 @@ def deploy_cfn_template(
 
         assert wait_until(is_change_set_created_and_available(change_set_id), _max_wait=60)
         aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
-        assert wait_until(is_change_set_finished(change_set_id), _max_wait=max_wait or 60)
+        wait_result = wait_until(is_change_set_finished(change_set_id), _max_wait=max_wait or 60)
 
-        outputs = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0].get(
-            "Outputs", []
-        )
+        describe_stack_res = aws_client.cloudformation.describe_stacks(StackName=stack_id)[
+            "Stacks"
+        ][0]
+
+        if not wait_result:
+            events = aws_client.cloudformation.describe_stack_events(StackName=stack_id)[
+                "StackEvents"
+            ]
+            raise StackDeployError(describe_stack_res, events)
+
+        outputs = describe_stack_res.get("Outputs", [])
 
         mapped_outputs = {o["OutputKey"]: o.get("OutputValue") for o in outputs}
 
@@ -1075,7 +1100,7 @@ def is_change_set_finished(aws_client):
 
             check_set = aws_client.cloudformation.describe_change_set(**kwargs)
 
-            if check_set.get("ExecutionStatus") == "ROLLBACK_COMPLETE":
+            if check_set.get("ExecutionStatus") == "EXECUTE_FAILED":
                 LOG.warning("Change set failed")
                 raise ShortCircuitWaitException()
 
@@ -1976,3 +2001,46 @@ def create_user_with_policy(create_policy_generated_document, create_user, aws_c
         return username, keys
 
     return _create_user_with_policy
+
+
+@pytest.fixture()
+def register_extension(s3_bucket, aws_client):
+    cfn_client = aws_client.cloudformation
+    extensions_arns = []
+
+    def _register(extension_name, extension_type, artifact_path):
+        bucket = s3_bucket
+        key = f"artifact-{short_uid()}"
+
+        aws_client.s3.upload_file(artifact_path, bucket, key)
+
+        register_response = cfn_client.register_type(
+            Type=extension_type,
+            TypeName=extension_name,
+            SchemaHandlerPackage=f"s3://{bucket}/{key}",
+        )
+
+        registration_token = register_response["RegistrationToken"]
+        cfn_client.get_waiter("type_registration_complete").wait(
+            RegistrationToken=registration_token
+        )
+
+        describe_response = cfn_client.describe_type_registration(
+            RegistrationToken=registration_token
+        )
+
+        extensions_arns.append(describe_response["TypeArn"])
+        cfn_client.set_type_default_version(Arn=describe_response["TypeVersionArn"])
+
+        return describe_response
+
+    yield _register
+
+    for arn in extensions_arns:
+        versions = cfn_client.list_type_versions(Arn=arn)["TypeVersionSummaries"]
+        for v in versions:
+            try:
+                cfn_client.deregister_type(Arn=v["Arn"])
+            except Exception:
+                continue
+        cfn_client.deregister_type(Arn=arn)

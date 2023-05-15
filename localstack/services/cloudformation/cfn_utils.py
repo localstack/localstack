@@ -1,4 +1,5 @@
 import json
+from typing import Callable
 
 from localstack.utils.objects import recurse_object
 
@@ -60,3 +61,16 @@ def convert_types(obj, types):
     for key, type_class in types.items():
         fix_types(key, type_class)
     return obj
+
+
+def get_tags_param(resource_type: str) -> Callable:
+    """Return a tag parameters creation function for the given resource type"""
+
+    def _param(params, **kwargs):
+        tags = params.get("Tags")
+        if not tags:
+            return None
+
+        return [{"ResourceType": resource_type, "Tags": tags}]
+
+    return _param

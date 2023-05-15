@@ -5,6 +5,7 @@
 *.iml
 .coverage.*
 htmlcov
+*.orig
 
 .cache
 .filesystem

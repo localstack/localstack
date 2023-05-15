@@ -559,6 +559,13 @@ class HTTPIntegration(BackendIntegration):
             query_params=query_string_params,
         )
         result = requests.request(method=method, url=uri, data=payload, headers=headers)
+        if not result.ok:
+            LOG.debug(
+                "Upstream response from <%s> %s returned with status code: %s",
+                method,
+                uri,
+                result.status_code,
+            )
         # apply custom response template
         invocation_context.response = result
         response_templates = ResponseTemplates()

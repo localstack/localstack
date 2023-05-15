@@ -1,0 +1,44 @@
+{
+  "Comment": "TASK_SERVICE_LAMBDA_CATCH_UNKNOWN",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage",
+      "Parameters": {
+        "QueueUrl.$": "$.QueueUrl",
+        "MessageBody.$": "$.MessageBody"
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "SQS.SdkClientException"
+          ],
+          "Next": "EndWithClientHandler"
+        },
+        {
+          "ErrorEquals": [
+            "SQS.AmazonSQSException"
+          ],
+          "Next": "EndWithSQSException"
+        }
+      ],
+      "Next": "EndWithFinal",
+    },
+    "EndWithClientHandler": {
+      "Type": "Pass",
+      "ResultPath": "$.client_error",
+      "End": true
+    },
+    "EndWithSQSException" : {
+      "Type": "Pass",
+      "ResultPath": "$.aws_error",
+      "End": true
+    },
+    "EndWithFinal": {
+      "Type": "Pass",
+      "ResultPath": "$.final",
+      "End": true,
+    },
+  },
+}

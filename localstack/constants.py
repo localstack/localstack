@@ -174,7 +174,7 @@ TEST_AWS_ACCESS_KEY_ID = "test"
 TEST_AWS_SECRET_ACCESS_KEY = "test"
 
 # additional credentials used in the test suite (mainly for cross-account access)
-SECONDARY_TEST_AWS_ACCESS_KEY_ID = "test2"
+SECONDARY_TEST_AWS_ACCESS_KEY_ID = "000000000002"
 SECONDARY_TEST_AWS_SECRET_ACCESS_KEY = "test2"
 
 # credentials being used for internal calls

@@ -31,7 +31,7 @@ def test_sns_topic_fifo_without_suffix_fails(deploy_cfn_template, aws_client):
         deploy_cfn_template(
             stack_name=stack_name, template_path=path, parameters={"TopicName": topic_name}
         )
-    assert ex.typename == "AssertionError"
+    assert ex.typename == "StackDeployError"
 
     stack = aws_client.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][0]
     if is_aws_cloud():

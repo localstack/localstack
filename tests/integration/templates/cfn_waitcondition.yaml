@@ -1,0 +1,7 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  WaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+
+  MyTopic:
+    Type: AWS::SNS::Topic

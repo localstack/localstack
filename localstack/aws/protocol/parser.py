@@ -70,7 +70,6 @@ from abc import ABC
 from email.utils import parsedate_to_datetime
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 from typing.io import IO
-from urllib.parse import quote
 from xml.etree import ElementTree as ETree
 
 import cbor2
@@ -1075,7 +1074,7 @@ class S3RequestParser(RestXMLRequestParser):
             and uri_params is not None
             and shape.serialization.get("location") == "uri"
             and shape.serialization.get("name") == "Key"
-            and request.base_url.endswith(f"{quote(uri_params['Key'])}/")
+            and request.base_url.endswith(f"{uri_params['Key']}/")
         ):
             uri_params = dict(uri_params)
             uri_params["Key"] = uri_params["Key"] + "/"

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import abc
 import datetime
-import json
 import logging
 from abc import ABC
 from typing import Final, Optional
@@ -30,6 +29,7 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.eval.programstate.program_running import ProgramRunning
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 LOG = logging.getLogger(__name__)
 
@@ -88,22 +88,20 @@ class CommonStateField(EvalComponent, ABC):
     def _get_state_entered_even_details(self, env: Environment) -> StateEnteredEventDetails:
         return StateEnteredEventDetails(
             name=self.name,
-            input=json.dumps(env.inp),
+            input=to_json_str(env.inp),
             inputDetails=HistoryEventExecutionDataDetails(
                 truncated=False  # Always False for api calls.
             ),
         )
 
     def _get_state_exited_event_details(self, env: Environment) -> StateExitedEventDetails:
-        details = StateExitedEventDetails(
+        return StateExitedEventDetails(
             name=self.name,
+            output=to_json_str(env.inp),
             outputDetails=HistoryEventExecutionDataDetails(
-                truncated=False
-            ),  # Always False for api calls.
+                truncated=False  # Always False for api calls.
+            ),
         )
-        if env.inp is not None:
-            details["output"] = json.dumps(env.inp)
-        return details
 
     @abc.abstractmethod
     def _eval_state(self, env: Environment) -> None:

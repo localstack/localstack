@@ -1,5 +1,4 @@
 import datetime
-import json
 from threading import Thread
 from typing import Final, Optional
 
@@ -17,6 +16,7 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.parse.asl_parser import AmazonStateLanguageParser
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.execution_worker_comm import ExecutionWorkerComm
 
 
@@ -52,7 +52,7 @@ class ExecutionWorker:
             hist_type_event=HistoryEventType.ExecutionStarted,
             event_detail=EventDetails(
                 executionStartedEventDetails=ExecutionStartedEventDetails(
-                    input=json.dumps(self.env.inp),
+                    input=to_json_str(self.env.inp),
                     inputDetails=HistoryEventExecutionDataDetails(
                         truncated=False
                     ),  # Always False for api calls.

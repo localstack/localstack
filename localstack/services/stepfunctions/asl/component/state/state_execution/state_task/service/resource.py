@@ -4,6 +4,7 @@ import abc
 from typing import Final, TypedDict
 
 from localstack.services.stepfunctions.asl.component.component import Component
+from localstack.utils.aws import aws_stack
 
 
 class ResourceARN(TypedDict):
@@ -37,6 +38,8 @@ class Resource(Component, abc.ABC):
     @staticmethod
     def from_resource_arn(arn: str) -> Resource:
         resource_arn: ResourceARN = Resource.parse_resource_arn(arn)
+        if not resource_arn["region"]:
+            resource_arn["region"] = aws_stack.get_region()
         match resource_arn["service"], resource_arn["task_type"]:
             case "lambda", "function":
                 return LambdaResource(
@@ -84,6 +87,10 @@ class LambdaResource(Resource):
 
 
 class ServiceResource(Resource):
+    service_name: Final[str]
+    api_name: Final[str]
+    api_action: Final[str]
+
     def __init__(
         self,
         resource_arn: str,
@@ -96,5 +103,6 @@ class ServiceResource(Resource):
         super().__init__(
             resource_arn=resource_arn, partition=partition, region=region, account=account
         )
-        self.service_name: str = service_name
-        self.api_name: str = api_name
+        self.service_name = service_name
+        self.api_name = api_name
+        self.api_action = resource_arn.split(":")[-1]
