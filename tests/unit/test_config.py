@@ -1,21 +1,6 @@
-import os
-from contextlib import contextmanager
-from typing import Any, Dict
-
 import pytest
 
 from localstack import config
-
-
-@contextmanager
-def temporary_env(env: Dict[str, Any]):
-    old = os.environ.copy()
-    try:
-        os.environ.update(env)
-        yield os.environ
-    finally:
-        os.environ.clear()
-        os.environ.update(old)
 
 
 class TestProviderConfig:

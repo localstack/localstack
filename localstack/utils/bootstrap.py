@@ -214,14 +214,25 @@ def get_enabled_apis() -> Set[str]:
 
     The result is cached, so it's safe to call. Clear the cache with get_enabled_apis.cache_clear().
     """
-    services = os.environ.get("SERVICES", "").strip()
-    if services and not is_env_true("EAGER_SERVICE_LOADING"):
+    services_env = os.environ.get("SERVICES", "").strip()
+    services = None
+    if services_env and not is_env_true("EAGER_SERVICE_LOADING"):
         LOG.warning("SERVICES variable is ignored if EAGER_SERVICE_LOADING=0.")
-        services = None
+    elif services_env:
+        # SERVICES and EAGER_SERVICE_LOADING are set
+        # SERVICES env var might contain ports, but we do not support these anymore
+        services = []
+        for service_port in re.split(r"\s*,\s*", services_env):
+            # Only extract the service name, discard the port
+            parts = re.split(r"[:=]", service_port)
+            service = parts[0]
+            services.append(service)
+
     if not services:
         from localstack.services.plugins import SERVICE_PLUGINS
 
         services = SERVICE_PLUGINS.list_available()
+
     return resolve_apis(services)
 
 
