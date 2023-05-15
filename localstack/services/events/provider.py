@@ -40,6 +40,7 @@ from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import event_bus_arn
+from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.collections import pick_attributes
 from localstack.utils.common import TMP_FILES, mkdir, save_file, truncate
@@ -81,14 +82,24 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     len(targets),
                     rule_name,
                 )
+            rule_arn = client.describe_rule(Name=rule_name)["Arn"]
             for target in targets:
                 arn = target.get("Arn")
                 # TODO generate event matching aws in case no Input has been specified
                 event_str = target.get("Input") or "{}"
                 event = json.loads(event_str)
                 attr = pick_attributes(target, ["$.SqsParameters", "$.KinesisParameters"])
+
                 try:
-                    send_event_to_target(arn, event, target_attributes=attr, target=target)
+                    send_event_to_target(
+                        arn,
+                        event,
+                        target_attributes=attr,
+                        role=target.get("RoleArn"),
+                        target=target,
+                        source_arn=rule_arn,
+                        source_service=ServicePrincipal.events,
+                    )
                 except Exception as e:
                     LOG.info(
                         f"Unable to send event notification {truncate(event)} to target {target}: {e}"
@@ -476,7 +487,10 @@ def process_events(event: Dict, targets: List[Dict]):
                 arn,
                 changed_event,
                 pick_attributes(target, ["$.SqsParameters", "$.KinesisParameters"]),
+                role=target.get("RoleArn"),
                 target=target,
+                source_service=ServicePrincipal.events,
+                source_arn=target.get("RuleArn"),
             )
         except Exception as e:
             LOG.info(f"Unable to send event notification {truncate(event)} to target {target}: {e}")
@@ -497,11 +511,13 @@ def events_handler_put_events(self):
     for event_envelope in events:
         event = event_envelope["event"]
         event_bus_name = event.get("EventBusName") or DEFAULT_EVENT_BUS_NAME
-        event_rules = self.events_backend.event_buses[event_bus_name].rules
+        event_bus = self.events_backend.event_buses.get(event_bus_name)
+        if not event_bus:
+            continue
 
         matching_rules = [
             r
-            for r in event_rules.values()
+            for r in event_bus.rules.values()
             if r.event_bus_name == event_bus_name and not r.scheduled_expression
         ]
         if not matching_rules:
@@ -523,11 +539,11 @@ def events_handler_put_events(self):
         targets = []
         for rule in matching_rules:
             if filter_event_based_on_event_format(self, rule.name, event_bus_name, formatted_event):
-                targets.extend(
-                    self.events_backend.list_targets_by_rule(
-                        rule.name, event_bus_arn(event_bus_name)
-                    )["Targets"]
-                )
+                rule_targets = self.events_backend.list_targets_by_rule(
+                    rule.name, event_bus_arn(event_bus_name)
+                ).get("Targets", [])
+
+                targets.extend([{"RuleArn": rule.arn} | target for target in rule_targets])
 
         # process event
         process_events(formatted_event, targets)

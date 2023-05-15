@@ -2,7 +2,7 @@ from typing import Any
 
 from localstack.services.stepfunctions.asl.component.common.flow.end import End
 from localstack.services.stepfunctions.asl.component.common.flow.next import Next
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.resource import (
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     Resource,
 )
 from localstack.services.stepfunctions.asl.component.state.state_wait.wait_function.wait_function import (

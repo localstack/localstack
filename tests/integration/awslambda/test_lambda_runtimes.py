@@ -501,7 +501,7 @@ class TestPythonRuntimes:
         assert "stackTrace" in payload
 
         if (
-            runtime == "python3.9" and not is_old_provider()
+            runtime in ("python3.9", "python3.10") and not is_old_provider()
         ):  # TODO: remove this after the legacy provider is gone
             assert "requestId" in payload
         else:

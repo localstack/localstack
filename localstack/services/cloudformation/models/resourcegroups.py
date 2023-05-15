@@ -1,5 +1,5 @@
 from localstack.services.cloudformation.deployment_utils import params_list_to_dict
-from localstack.services.cloudformation.service_models import REF_ARN_ATTRS, GenericBaseModel
+from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
 
 
@@ -14,9 +14,11 @@ class ResourceGroupsGroup(GenericBaseModel):
         result = [g for g in result if g["Name"] == self.props["Name"]]
         return (result or [None])[0]
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        if attribute in REF_ARN_ATTRS:
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "Arn":
             return self.props.get("GroupArn")
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("Name")
 
     @classmethod

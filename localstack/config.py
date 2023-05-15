@@ -613,6 +613,9 @@ DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
 # Default timeout for Docker API calls sent by the Docker SDK client, in seconds.
 DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS = int(os.environ.get("DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS") or 60)
 
+# Default number of retries to connect to the Docker API by the Docker SDK client.
+DOCKER_SDK_DEFAULT_RETRIES = int(os.environ.get("DOCKER_SDK_DEFAULT_RETRIES") or 0)
+
 # whether to enable API-based updates of configuration variables at runtime
 ENABLE_CONFIG_UPDATES = is_env_true("ENABLE_CONFIG_UPDATES")
 
@@ -782,6 +785,14 @@ SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "off"
 
 # Disable the check for MaxNumberOfMessage in SQS ReceiveMessage
 SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT = is_env_true("SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT")
+
+# Disable cloudwatch metrics for SQS
+SQS_DISABLE_CLOUDWATCH_METRICS = is_env_true("SQS_DISABLE_CLOUDWATCH_METRICS")
+
+# Interval for reporting "approximate" metrics to cloudwatch, default is 60 seconds
+SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL = int(
+    os.environ.get("SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL") or 60
+)
 
 # DEPRECATED: only applies to old lambda provider
 # Endpoint host under which LocalStack APIs are accessible from Lambda Docker containers.
@@ -1115,6 +1126,8 @@ CONFIG_ENV_VARS = [
     "SQS_DELAY_RECENTLY_DELETED",
     "SQS_ENDPOINT_STRATEGY",
     "SQS_PORT_EXTERNAL",
+    "SQS_DISABLE_CLOUDWATCH_METRICS",
+    "SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL",
     "STEPFUNCTIONS_LAMBDA_ENDPOINT",
     "SYNCHRONOUS_KINESIS_EVENTS",
     "SYNCHRONOUS_SNS_EVENTS",

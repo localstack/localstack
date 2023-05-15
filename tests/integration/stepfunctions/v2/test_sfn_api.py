@@ -252,7 +252,6 @@ class TestSnfApi:
         lst_resp = aws_client.stepfunctions.list_state_machines()
         snapshot.match("lst_resp_del_end", lst_resp)
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..executions..status"])
     def test_start_execution(
         self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
     ):

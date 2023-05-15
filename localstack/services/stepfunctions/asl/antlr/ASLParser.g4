@@ -151,7 +151,7 @@ parameters_decl
 
 payload_tmpl_decl
     : LBRACE payload_binding (COMMA payload_binding)* RBRACE
-    | LBRACK RBRACK
+    | LBRACE RBRACE
     ;
 
 payload_binding

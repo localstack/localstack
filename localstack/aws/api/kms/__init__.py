@@ -150,6 +150,10 @@ class GrantOperation(str):
     VerifyMac = "VerifyMac"
 
 
+class KeyEncryptionMechanism(str):
+    RSAES_OAEP_SHA_256 = "RSAES_OAEP_SHA_256"
+
+
 class KeyManagerType(str):
     AWS = "AWS"
     CUSTOMER = "CUSTOMER"
@@ -522,6 +526,7 @@ class AliasListEntry(TypedDict, total=False):
 
 
 AliasList = List[AliasListEntry]
+AttestationDocumentType = bytes
 
 
 class CancelKeyDeletionRequest(ServiceRequest):
@@ -698,12 +703,18 @@ class CustomKeyStoresListEntry(TypedDict, total=False):
 CustomKeyStoresList = List[CustomKeyStoresListEntry]
 
 
+class RecipientInfo(TypedDict, total=False):
+    KeyEncryptionAlgorithm: Optional[KeyEncryptionMechanism]
+    AttestationDocument: Optional[AttestationDocumentType]
+
+
 class DecryptRequest(ServiceRequest):
     CiphertextBlob: CiphertextType
     EncryptionContext: Optional[EncryptionContextType]
     GrantTokens: Optional[GrantTokenList]
     KeyId: Optional[KeyIdType]
     EncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
+    Recipient: Optional[RecipientInfo]
 
 
 PlaintextType = bytes
@@ -713,6 +724,7 @@ class DecryptResponse(TypedDict, total=False):
     KeyId: Optional[KeyIdType]
     Plaintext: Optional[PlaintextType]
     EncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
+    CiphertextForRecipient: Optional[CiphertextType]
 
 
 class DeleteAliasRequest(ServiceRequest):
@@ -796,6 +808,7 @@ class GenerateDataKeyPairRequest(ServiceRequest):
     KeyId: KeyIdType
     KeyPairSpec: DataKeyPairSpec
     GrantTokens: Optional[GrantTokenList]
+    Recipient: Optional[RecipientInfo]
 
 
 PublicKeyType = bytes
@@ -807,6 +820,7 @@ class GenerateDataKeyPairResponse(TypedDict, total=False):
     PublicKey: Optional[PublicKeyType]
     KeyId: Optional[KeyIdType]
     KeyPairSpec: Optional[DataKeyPairSpec]
+    CiphertextForRecipient: Optional[CiphertextType]
 
 
 class GenerateDataKeyPairWithoutPlaintextRequest(ServiceRequest):
@@ -829,12 +843,14 @@ class GenerateDataKeyRequest(ServiceRequest):
     NumberOfBytes: Optional[NumberOfBytesType]
     KeySpec: Optional[DataKeySpec]
     GrantTokens: Optional[GrantTokenList]
+    Recipient: Optional[RecipientInfo]
 
 
 class GenerateDataKeyResponse(TypedDict, total=False):
     CiphertextBlob: Optional[CiphertextType]
     Plaintext: Optional[PlaintextType]
     KeyId: Optional[KeyIdType]
+    CiphertextForRecipient: Optional[CiphertextType]
 
 
 class GenerateDataKeyWithoutPlaintextRequest(ServiceRequest):
@@ -866,10 +882,12 @@ class GenerateMacResponse(TypedDict, total=False):
 class GenerateRandomRequest(ServiceRequest):
     NumberOfBytes: Optional[NumberOfBytesType]
     CustomKeyStoreId: Optional[CustomKeyStoreIdType]
+    Recipient: Optional[RecipientInfo]
 
 
 class GenerateRandomResponse(TypedDict, total=False):
     Plaintext: Optional[PlaintextType]
+    CiphertextForRecipient: Optional[CiphertextType]
 
 
 class GetKeyPolicyRequest(ServiceRequest):
@@ -1254,6 +1272,7 @@ class KmsApi:
         grant_tokens: GrantTokenList = None,
         key_id: KeyIdType = None,
         encryption_algorithm: EncryptionAlgorithmSpec = None,
+        recipient: RecipientInfo = None,
     ) -> DecryptResponse:
         raise NotImplementedError
 
@@ -1331,6 +1350,7 @@ class KmsApi:
         number_of_bytes: NumberOfBytesType = None,
         key_spec: DataKeySpec = None,
         grant_tokens: GrantTokenList = None,
+        recipient: RecipientInfo = None,
     ) -> GenerateDataKeyResponse:
         raise NotImplementedError
 
@@ -1342,6 +1362,7 @@ class KmsApi:
         key_pair_spec: DataKeyPairSpec,
         encryption_context: EncryptionContextType = None,
         grant_tokens: GrantTokenList = None,
+        recipient: RecipientInfo = None,
     ) -> GenerateDataKeyPairResponse:
         raise NotImplementedError
 
@@ -1385,6 +1406,7 @@ class KmsApi:
         context: RequestContext,
         number_of_bytes: NumberOfBytesType = None,
         custom_key_store_id: CustomKeyStoreIdType = None,
+        recipient: RecipientInfo = None,
     ) -> GenerateRandomResponse:
         raise NotImplementedError
 

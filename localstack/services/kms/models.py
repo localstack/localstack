@@ -1,3 +1,4 @@
+import base64
 import datetime
 import io
 import json
@@ -36,10 +37,11 @@ from localstack.aws.api.kms import (
     SigningAlgorithmSpec,
     UnsupportedOperationException,
 )
+from localstack.services.kms.utils import is_valid_key_arn
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.aws.arns import kms_alias_arn, kms_key_arn, parse_arn
 from localstack.utils.crypto import decrypt, encrypt
-from localstack.utils.strings import long_uid
+from localstack.utils.strings import long_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -543,8 +545,14 @@ class KmsGrant:
     # simplicity.
     token: str
 
-    def __init__(self, create_grant_request: CreateGrantRequest):
+    def __init__(self, create_grant_request: CreateGrantRequest, account_id: str, region_name: str):
         self.metadata = dict(create_grant_request)
+
+        if is_valid_key_arn(self.metadata["KeyId"]):
+            self.metadata["KeyArn"] = self.metadata["KeyId"]
+        else:
+            self.metadata["KeyArn"] = kms_key_arn(self.metadata["KeyId"], account_id, region_name)
+
         self.metadata["GrantId"] = long_uid()
         self.metadata["CreationDate"] = datetime.datetime.now()
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_GrantListEntry.html
@@ -554,7 +562,11 @@ class KmsGrant:
         # The Name field is present with just an empty string value.
         self.metadata.setdefault("Name", "")
 
-        self.token = long_uid()
+        # Encode account ID and region in grant token.
+        # This way the grant can be located when being retired by grant principal.
+        # The token consists of account ID, region name and a UUID concatenated with ':' and encoded with base64
+        decoded_token = account_id + ":" + region_name + ":" + long_uid()
+        self.token = to_str(base64.b64encode(to_bytes(decoded_token)))
 
 
 class KmsAlias:
@@ -602,12 +614,13 @@ class KmsStore(BaseStore):
 
     # According to AWS documentation on grants https://docs.aws.amazon.com/kms/latest/APIReference/API_RetireGrant.html
     # "Cross-account use: Yes. You can retire a grant on a KMS key in a different AWS account."
-    # We, however, currently only support grants on keys inside the same account.
-    #
+
     # maps grant ids to grants
     grants: Dict[str, KmsGrant] = LocalAttribute(default=dict)
+
     # maps from (grant names (used for idempotency), key id) to grant ids
     grant_names: Dict[Tuple[str, str], str] = LocalAttribute(default=dict)
+
     # maps grant tokens to grant ids
     grant_tokens: Dict[str, str] = LocalAttribute(default=dict)
 

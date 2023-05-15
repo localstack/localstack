@@ -1,3 +1,4 @@
+import copy
 from typing import Final
 
 from jsonpath_ng import parse
@@ -14,7 +15,7 @@ class ResultPath(EvalComponent):
 
     def _eval_body(self, env: Environment) -> None:
         result_expr = parse(self.result_path_src)
-        result = env.stack.pop()
+        result = copy.deepcopy(env.stack.pop())
         if env.inp is None:
             env.inp = dict()
         env.inp = result_expr.update_or_create(env.inp, result)

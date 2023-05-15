@@ -11,5 +11,9 @@ For pull requests (PRs), please stick to the following guidelines:
   * Refer to [Development Environment Setup](https://docs.localstack.cloud/contributing/development-environment-setup/) if your local testing environment is not yet properly set up.
 * Document newly introduced methods and classes with pydoc, and add inline comments to code that is not self-documenting.
 * Separate unrelated changes into multiple PRs.
+* When creating a PR, classify the size of your change with setting a semver label:
+  * `semver: patch`: Small, non-breaking changes.
+  * `semver: minor`: Bigger, non-breaking changes (like features or bigger refactorings).
+  * `semver: major`: Breaking changes (no matter how big).
 
 Please note that by contributing any code or documentation to this repository (by raising PRs, or otherwise) you explicitly agree to the [**Contributor License Agreement**](.github/CLA.md).

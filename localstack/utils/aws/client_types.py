@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from mypy_boto3_backup import BackupClient
     from mypy_boto3_batch import BatchClient
     from mypy_boto3_ce import CostExplorerClient
+    from mypy_boto3_cloudcontrol import CloudControlApiClient
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_cloudfront import CloudFrontClient
     from mypy_boto3_cloudtrail import CloudTrailClient
@@ -52,6 +53,7 @@ if TYPE_CHECKING:
     from mypy_boto3_lakeformation import LakeFormationClient
     from mypy_boto3_lambda import LambdaClient
     from mypy_boto3_logs import CloudWatchLogsClient
+    from mypy_boto3_mediaconvert import MediaConvertClient
     from mypy_boto3_mediastore import MediaStoreClient
     from mypy_boto3_mq import MQClient
     from mypy_boto3_mwaa import MWAAClient
@@ -104,6 +106,7 @@ class TypedServiceClientFactory(abc.ABC):
     backup: Union["BackupClient", "MetadataRequestInjector[BackupClient]"]
     batch: Union["BatchClient", "MetadataRequestInjector[BatchClient]"]
     ce: Union["CostExplorerClient", "MetadataRequestInjector[CostExplorerClient]"]
+    cloudcontrol: Union["CloudControlApiClient", "MetadataRequestInjector[CloudControlApiClient]"]
     cloudformation: Union["CloudFormationClient", "MetadataRequestInjector[CloudFormationClient]"]
     cloudfront: Union["CloudFrontClient", "MetadataRequestInjector[CloudFrontClient]"]
     cloudtrail: Union["CloudTrailClient", "MetadataRequestInjector[CloudTrailClient]"]
@@ -158,6 +161,7 @@ class TypedServiceClientFactory(abc.ABC):
     kms: Union["KMSClient", "MetadataRequestInjector[KMSClient]"]
     lakeformation: Union["LakeFormationClient", "MetadataRequestInjector[LakeFormationClient]"]
     logs: Union["CloudWatchLogsClient", "MetadataRequestInjector[CloudWatchLogsClient]"]
+    mediaconvert: Union["MediaConvertClient", "MetadataRequestInjector[MediaConvertClient]"]
     mediastore: Union["MediaStoreClient", "MetadataRequestInjector[MediaStoreClient]"]
     mq: Union["MQClient", "MetadataRequestInjector[MQClient]"]
     mwaa: Union["MWAAClient", "MetadataRequestInjector[MWAAClient]"]
@@ -226,8 +230,10 @@ class ServicePrincipal(str):
     To save some space in our DTOs, we only add the `<service-name>` part of the service principal here.
     """
 
-    awslambda = "lambda"
     apigateway = "apigateway"
+    awslambda = "lambda"
+    events = "events"
     firehose = "firehose"
-    sqs = "sqs"
+    s3 = "s3"
     sns = "sns"
+    sqs = "sqs"

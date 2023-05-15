@@ -140,5 +140,361 @@
         }
       }
     }
+  },
+  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_start_job[None-None]": {
+    "recorded-date": "03-05-2023, 20:04:18",
+    "recorded-content": {
+      "response-start-job": {
+        "TranscriptionJob": {
+          "CreationTime": "datetime",
+          "LanguageCode": "en-GB",
+          "Media": {
+            "MediaFileUri": "s3:/<test-bucket>/test-clip.wav"
+          },
+          "StartTime": "datetime",
+          "TranscriptionJobName": "<transcription-job:1>",
+          "TranscriptionJobStatus": "IN_PROGRESS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "response-get-transcribe-job": {
+        "TranscriptionJob": {
+          "CompletionTime": "datetime",
+          "CreationTime": "datetime",
+          "LanguageCode": "en-GB",
+          "Media": {
+            "MediaFileUri": "s3:/<test-bucket>/test-clip.wav"
+          },
+          "MediaFormat": "wav",
+          "MediaSampleRateHertz": 22050,
+          "Settings": {
+            "ChannelIdentification": false,
+            "ShowAlternatives": false
+          },
+          "StartTime": "datetime",
+          "Transcript": {
+            "TranscriptFileUri": "<transcript-file-uri>"
+          },
+          "TranscriptionJobName": "<transcription-job:1>",
+          "TranscriptionJobStatus": "COMPLETED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-transcription-job": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-2-None]": {
+    "recorded-date": "03-05-2023, 20:01:19",
+    "recorded-content": {
+      "response-start-job": {
+        "TranscriptionJob": {
+          "CreationTime": "datetime",
+          "LanguageCode": "en-GB",
+          "Media": {
+            "MediaFileUri": "s3:/<test-bucket>/test-clip.wav"
+          },
+          "StartTime": "datetime",
+          "TranscriptionJobName": "<transcription-job:1>",
+          "TranscriptionJobStatus": "IN_PROGRESS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "response-get-transcribe-job": {
+        "TranscriptionJob": {
+          "CompletionTime": "datetime",
+          "CreationTime": "datetime",
+          "LanguageCode": "en-GB",
+          "Media": {
+            "MediaFileUri": "s3:/<test-bucket>/test-clip.wav"
+          },
+          "MediaFormat": "wav",
+          "MediaSampleRateHertz": 22050,
+          "Settings": {
+            "ChannelIdentification": false,
+            "ShowAlternatives": false
+          },
+          "StartTime": "datetime",
+          "Transcript": {
+            "TranscriptFileUri": "<transcript-file-uri>"
+          },
+          "TranscriptionJobName": "<transcription-job:1>",
+          "TranscriptionJobStatus": "COMPLETED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-transcription-job": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-3-test-output]": {
+    "recorded-date": "03-05-2023, 20:01:44",
+    "recorded-content": {
+      "response-start-job": {
+        "TranscriptionJob": {
+          "CreationTime": "datetime",
+          "LanguageCode": "en-GB",
+          "Media": {
+            "MediaFileUri": "s3:/<test-bucket>/test-clip.wav"
+          },
+          "StartTime": "datetime",
+          "TranscriptionJobName": "<transcription-job:1>",
+          "TranscriptionJobStatus": "IN_PROGRESS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "response-get-transcribe-job": {
+        "TranscriptionJob": {
+          "CompletionTime": "datetime",
+          "CreationTime": "datetime",
+          "LanguageCode": "en-GB",
+          "Media": {
+            "MediaFileUri": "s3:/<test-bucket>/test-clip.wav"
+          },
+          "MediaFormat": "wav",
+          "MediaSampleRateHertz": 22050,
+          "Settings": {
+            "ChannelIdentification": false,
+            "ShowAlternatives": false
+          },
+          "StartTime": "datetime",
+          "Transcript": {
+            "TranscriptFileUri": "<transcript-file-uri>"
+          },
+          "TranscriptionJobName": "<transcription-job:1>",
+          "TranscriptionJobStatus": "COMPLETED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-transcription-job": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-4-test-output.json]": {
+    "recorded-date": "03-05-2023, 20:02:06",
+    "recorded-content": {
+      "response-start-job": {
+        "TranscriptionJob": {
+          "CreationTime": "datetime",
+          "LanguageCode": "en-GB",
+          "Media": {
+            "MediaFileUri": "s3:/<test-bucket>/test-clip.wav"
+          },
+          "StartTime": "datetime",
+          "TranscriptionJobName": "<transcription-job:1>",
+          "TranscriptionJobStatus": "IN_PROGRESS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "response-get-transcribe-job": {
+        "TranscriptionJob": {
+          "CompletionTime": "datetime",
+          "CreationTime": "datetime",
+          "LanguageCode": "en-GB",
+          "Media": {
+            "MediaFileUri": "s3:/<test-bucket>/test-clip.wav"
+          },
+          "MediaFormat": "wav",
+          "MediaSampleRateHertz": 22050,
+          "Settings": {
+            "ChannelIdentification": false,
+            "ShowAlternatives": false
+          },
+          "StartTime": "datetime",
+          "Transcript": {
+            "TranscriptFileUri": "<transcript-file-uri>"
+          },
+          "TranscriptionJobName": "<transcription-job:1>",
+          "TranscriptionJobStatus": "COMPLETED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-transcription-job": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-5-test-files/test-output.json]": {
+    "recorded-date": "03-05-2023, 20:03:12",
+    "recorded-content": {
+      "response-start-job": {
+        "TranscriptionJob": {
+          "CreationTime": "datetime",
+          "LanguageCode": "en-GB",
+          "Media": {
+            "MediaFileUri": "s3:/<test-bucket>/test-clip.wav"
+          },
+          "StartTime": "datetime",
+          "TranscriptionJobName": "<transcription-job:1>",
+          "TranscriptionJobStatus": "IN_PROGRESS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "response-get-transcribe-job": {
+        "TranscriptionJob": {
+          "CompletionTime": "datetime",
+          "CreationTime": "datetime",
+          "LanguageCode": "en-GB",
+          "Media": {
+            "MediaFileUri": "s3:/<test-bucket>/test-clip.wav"
+          },
+          "MediaFormat": "wav",
+          "MediaSampleRateHertz": 22050,
+          "Settings": {
+            "ChannelIdentification": false,
+            "ShowAlternatives": false
+          },
+          "StartTime": "datetime",
+          "Transcript": {
+            "TranscriptFileUri": "<transcript-file-uri>"
+          },
+          "TranscriptionJobName": "<transcription-job:1>",
+          "TranscriptionJobStatus": "COMPLETED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-transcription-job": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-6-test-files/test-output]": {
+    "recorded-date": "03-05-2023, 20:03:34",
+    "recorded-content": {
+      "response-start-job": {
+        "TranscriptionJob": {
+          "CreationTime": "datetime",
+          "LanguageCode": "en-GB",
+          "Media": {
+            "MediaFileUri": "s3:/<test-bucket>/test-clip.wav"
+          },
+          "StartTime": "datetime",
+          "TranscriptionJobName": "<transcription-job:1>",
+          "TranscriptionJobStatus": "IN_PROGRESS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "response-get-transcribe-job": {
+        "TranscriptionJob": {
+          "CompletionTime": "datetime",
+          "CreationTime": "datetime",
+          "LanguageCode": "en-GB",
+          "Media": {
+            "MediaFileUri": "s3:/<test-bucket>/test-clip.wav"
+          },
+          "MediaFormat": "wav",
+          "MediaSampleRateHertz": 22050,
+          "Settings": {
+            "ChannelIdentification": false,
+            "ShowAlternatives": false
+          },
+          "StartTime": "datetime",
+          "Transcript": {
+            "TranscriptFileUri": "<transcript-file-uri>"
+          },
+          "TranscriptionJobName": "<transcription-job:1>",
+          "TranscriptionJobStatus": "COMPLETED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-transcription-job": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_start_job_same_name": {
+    "recorded-date": "09-05-2023, 22:50:14",
+    "recorded-content": {
+      "response-start-job": {
+        "TranscriptionJob": {
+          "CreationTime": "datetime",
+          "LanguageCode": "en-GB",
+          "Media": {
+            "MediaFileUri": "s3:/<test-bucket>/test-clip.wav"
+          },
+          "StartTime": "datetime",
+          "TranscriptionJobName": "<transcription-job:1>",
+          "TranscriptionJobStatus": "IN_PROGRESS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-transcription-job-name": {
+        "Error": {
+          "Code": "ConflictException",
+          "Message": "The requested job name already exists. Use a different job name."
+        },
+        "Message": "The requested job name already exists. Use a different job name.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete-transcription-job": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -1,0 +1,26 @@
+Parameters:
+  MyParam:
+    Type: String
+
+Resources:
+  MyTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref MyParam
+
+Outputs:
+  MyTopicRef:
+    Value: !Ref MyTopic
+  MyTopicName:
+    Value: !GetAtt MyTopic.TopicName
+  MyTopicArn:
+    Value: !GetAtt MyTopic.TopicArn
+  MyTopicSub:
+    Value: !Sub '${MyParam}|${MyTopic}|${MyTopic.TopicName}|${MyTopic.TopicArn}'
+  MyTopicSubWithMap:
+    Value:
+      Fn::Sub:
+        - '${AttInMap}|${RefInMap}|${StaticInMap}'
+        - AttInMap: !GetAtt MyTopic.TopicName
+          RefInMap: !Ref MyTopic
+          StaticInMap: something
