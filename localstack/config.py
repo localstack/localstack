@@ -1179,14 +1179,18 @@ def collect_config_items() -> List[Tuple[str, Any]]:
 def populate_config_env_var_names():
     global CONFIG_ENV_VARS
 
-    CONFIG_ENV_VARS = [
+    CONFIG_ENV_VARS += [
         key
         for key in [key.upper() for key in os.environ]
-        if key.startswith("LOCALSTACK_")
-        if key.endswith("_BACKEND")
-        or key.endswith("_PORT_EXTERNAL")
-        or key.startswith("PROVIDER_OVERRIDE_")
+        if key.startswith("LOCALSTACK_") or key.startswith("PROVIDER_OVERRIDE_")
     ]
+
+    # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)
+    CONFIG_ENV_VARS += [
+        "LOCALSTACK_" + v for v in CONFIG_ENV_VARS if not v.startswith("LOCALSTACK_")
+    ]
+
+    CONFIG_ENV_VARS = list(set(CONFIG_ENV_VARS))
 
 
 # populate env var names to be passed to the container
