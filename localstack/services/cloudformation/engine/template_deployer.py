@@ -127,7 +127,8 @@ def get_deployment_config(res_type: str) -> DeployTemplates | None:
         usage.missing_resource_types.record(res_type)
 
 
-def get_resource_type(resource):
+def get_resource_type(resource: dict) -> str:
+    """this is currently overwritten in PRO to add support for custom resources"""
     return resource["Type"]
 
 
@@ -330,8 +331,7 @@ def get_attr_from_model_instance(
 
 def get_ref_from_model(resources: dict, logical_resource_id: str) -> Optional[str]:
     resource = resources[logical_resource_id]
-    resource_type: str = resource["Type"]
-
+    resource_type = get_resource_type(resource)
     model_class = RESOURCE_MODELS.get(resource_type)
     if model_class:
         return model_class(resource_name=logical_resource_id, resource_json=resource).get_ref()
