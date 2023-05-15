@@ -10,7 +10,7 @@ import struct
 import uuid
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, hmac
@@ -128,7 +128,7 @@ def deserialize_ciphertext_blob(ciphertext_blob: bytes) -> Ciphertext:
     return Ciphertext(key_id=key_id.decode("utf-8"), iv=iv, ciphertext=ciphertext, tag=tag)
 
 
-def _serialize_encryption_context(encryption_context: EncryptionContextType) -> bytes:
+def _serialize_encryption_context(encryption_context: Optional[EncryptionContextType]) -> bytes:
     if encryption_context:
         aad = io.BytesIO()
         for key, value in sorted(encryption_context.items(), key=lambda x: x[0]):
