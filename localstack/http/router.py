@@ -135,15 +135,16 @@ def call_endpoint(
 
 def _clone_map_without_rules(old: Map) -> Map:
     return Map(
-        default_subdomain=old.default_subdomain,
+        # TODO charset and encoding_errors are deprecated, remove with upgrade to Werkzeug 2.4.0
         charset=old.charset,
+        encoding_errors=old.encoding_errors,
+        default_subdomain=old.default_subdomain,
         strict_slashes=old.strict_slashes,
         merge_slashes=old.merge_slashes,
         redirect_defaults=old.redirect_defaults,
         converters=old.converters,
         sort_parameters=old.sort_parameters,
         sort_key=old.sort_key,
-        encoding_errors=old.encoding_errors,
         host_matching=old.host_matching,
     )
 

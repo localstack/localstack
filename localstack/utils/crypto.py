@@ -3,7 +3,9 @@ import logging
 import os
 import re
 import threading
+from typing import Tuple
 
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .files import TMP_FILES, file_exists_not_empty, load_file, new_tmp_file, save_file
@@ -160,18 +162,22 @@ def unpad(s: bytes) -> bytes:
     return s[0 : -s[-1]]
 
 
-def encrypt(key: bytes, message: bytes, iv: bytes = None) -> bytes:
+def encrypt(key: bytes, message: bytes, iv: bytes = None, aad: bytes = None) -> Tuple[bytes, bytes]:
     iv = iv or b"0" * BLOCK_SIZE
-    cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+    cipher = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend())
     encryptor = cipher.encryptor()
+    encryptor.authenticate_additional_data(aad)
     encrypted = encryptor.update(pad(message)) + encryptor.finalize()
-    return encrypted
+    return encrypted, encryptor.tag
 
 
-def decrypt(key: bytes, encrypted: bytes, iv: bytes = None) -> bytes:
+def decrypt(
+    key: bytes, encrypted: bytes, iv: bytes = None, tag: bytes = None, aad: bytes = None
+) -> bytes:
     iv = iv or b"0" * BLOCK_SIZE
-    cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+    cipher = Cipher(algorithms.AES(key), modes.GCM(iv, tag), backend=default_backend())
     decryptor = cipher.decryptor()
+    decryptor.authenticate_additional_data(aad)
     decrypted = decryptor.update(encrypted) + decryptor.finalize()
     decrypted = unpad(decrypted)
     return decrypted

@@ -35,6 +35,7 @@ from localstack.utils.docker_utils import (
     reserve_container_port,
 )
 from localstack.utils.net import Port, PortNotAvailableException, get_free_tcp_port
+from localstack.utils.threads import FuncThread
 
 ContainerInfo = NamedTuple(
     "ContainerInfo",
@@ -1369,6 +1370,58 @@ class TestDockerNetworking:
         monkeypatch.setattr(config, "DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS", 987)
         sdk_client = SdkDockerClient()
         assert sdk_client.docker_client.api.timeout == 987
+
+    def test_docker_sdk_no_retries(self, monkeypatch):
+        monkeypatch.setattr(config, "DOCKER_SDK_DEFAULT_RETRIES", 0)
+        # change the env for the docker socket (such that it cannot be initialized)
+        monkeypatch.setenv("DOCKER_HOST", "tcp://non_existing_docker_client:2375/")
+        sdk_client = SdkDockerClient()
+        assert sdk_client.docker_client is None
+
+    def test_docker_sdk_retries_on_init(self, monkeypatch):
+        # increase the number of retries
+        monkeypatch.setattr(config, "DOCKER_SDK_DEFAULT_RETRIES", 10)
+        # change the env for the docker socket (such that it cannot be initialized)
+        monkeypatch.setenv("DOCKER_HOST", "tcp://non_existing_docker_client:2375/")
+        global sdk_client
+
+        def on_demand_init(*args):
+            global sdk_client
+            sdk_client = SdkDockerClient()
+            assert sdk_client.docker_client is not None
+
+        # start initializing the client in another thread (with 10 retries)
+        init_thread = FuncThread(func=on_demand_init)
+        init_thread.start()
+        # reset / fix the DOCKER_HOST config
+        monkeypatch.delenv("DOCKER_HOST")
+        # wait for the init thread to finish
+        init_thread.join()
+        # verify that the client is available
+        assert sdk_client.docker_client is not None
+
+    def test_docker_sdk_retries_after_init(self, monkeypatch):
+        # increase the number of retries
+        monkeypatch.setattr(config, "DOCKER_SDK_DEFAULT_RETRIES", 0)
+        # change the env for the docker socket (such that it cannot be initialized)
+        monkeypatch.setenv("DOCKER_HOST", "tcp://non_existing_docker_client:2375/")
+        sdk_client = SdkDockerClient()
+        assert sdk_client.docker_client is None
+        monkeypatch.setattr(config, "DOCKER_SDK_DEFAULT_RETRIES", 10)
+
+        def on_demand_init(*args):
+            internal_sdk_client = sdk_client.client()
+            assert internal_sdk_client is not None
+
+        # start initializing the client in another thread (with 10 retries)
+        init_thread = FuncThread(func=on_demand_init)
+        init_thread.start()
+        # reset / fix the DOCKER_HOST config
+        monkeypatch.delenv("DOCKER_HOST")
+        # wait for the init thread to finish
+        init_thread.join()
+        # verify that the client is available
+        assert sdk_client.docker_client is not None
 
 
 class TestDockerPermissions:

@@ -2189,7 +2189,7 @@ class TestSNSProvider:
                 snapshot.transform.key_value("RequestId"),
                 snapshot.transform.key_value("Token"),
                 snapshot.transform.regex(
-                    r"(?<=(?i)SubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=ConfirmSubscription)",
+                    r"(?i)(?<=SubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=ConfirmSubscription)",
                     replacement="<subscribe-domain>",
                 ),
             ]

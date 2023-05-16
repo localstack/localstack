@@ -13,6 +13,10 @@ from botocore.response import StreamingBody
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
+from localstack.constants import (
+    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.services.awslambda.lambda_api import use_docker
 from localstack.testing.aws.lambda_utils import (
     concurrency_update_done,
@@ -1189,6 +1193,127 @@ class TestLambdaFeatures:
             check_lambda_logs(function_name, expected_lines=expected)
 
         retry(check_logs, retries=15)
+
+    @pytest.mark.skipif(is_old_provider(), reason="Not supported by old provider")
+    def test_cross_account_access(
+        self, aws_client, aws_client_factory, create_lambda_function, dummylayer
+    ):
+        func_name = f"func-{short_uid()}"
+        func_arn = create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            runtime=Runtime.python3_9,
+        )["CreateFunctionResponse"]["FunctionArn"]
+
+        layer_name = f"layer-{short_uid()}"
+        layer_arn = aws_client.awslambda.publish_layer_version(
+            LayerName=layer_name, Content={"ZipFile": dummylayer}
+        )["LayerArn"]
+
+        # Create client with secondary credentials but stick to default region
+        client = aws_client_factory.get_client(
+            "lambda",
+            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+        )
+
+        # Operations related to Lambda layers
+        # - GetLayerVersion
+        # - GetLayerVersionByArn
+        # - ListLayerVersions
+        # - DeleteLayerVersion
+        # - AddLayerVersionPermission
+        # - GetLayerVersionPolicy
+        # - RemoveLayerVersionPermission
+
+        assert client.get_layer_version(LayerName=layer_arn, VersionNumber=1)
+
+        assert client.get_layer_version_by_arn(Arn=layer_arn + ":1")
+
+        assert client.list_layer_versions(LayerName=layer_arn)
+
+        assert client.add_layer_version_permission(
+            LayerName=layer_arn,
+            VersionNumber=1,
+            Action="lambda:GetLayerVersion",
+            Principal="*",
+            StatementId="s1",
+        )
+
+        assert client.get_layer_version_policy(LayerName=layer_arn, VersionNumber=1)
+
+        assert client.remove_layer_version_permission(
+            LayerName=layer_arn, VersionNumber=1, StatementId="s1"
+        )
+
+        assert client.delete_layer_version(LayerName=layer_arn, VersionNumber=1)
+
+        # Operations related to functions.
+        # See: https://docs.aws.amazon.com/lambda/latest/dg/access-control-resource-based.html#permissions-resource-xaccountinvoke
+        #
+        # - Invoke
+        # - GetFunction
+        # - GetFunctionConfiguration
+        # - UpdateFunctionCode (NOT TESTED)
+        # - DeleteFunction
+        # - PublishVersion
+        # - ListVersionsByFunction
+        # - CreateAlias
+        # - GetAlias
+        # - ListAliases
+        # - UpdateAlias
+        # - DeleteAlias
+        # - GetPolicy (NOT TESTED)
+        # - PutFunctionConcurrency
+        # - DeleteFunctionConcurrency
+        # - ListTags
+        # - TagResource
+        # - UntagResource
+
+        assert (
+            client.get_function(FunctionName=func_arn)["Configuration"]["FunctionArn"] == func_arn
+        )
+
+        assert client.get_function_configuration(FunctionName=func_arn)["FunctionArn"] == func_arn
+
+        assert client.list_versions_by_function(FunctionName=func_arn)
+
+        assert client.put_function_concurrency(
+            FunctionName=func_arn, ReservedConcurrentExecutions=1
+        )
+
+        assert client.delete_function_concurrency(FunctionName=func_arn)
+
+        alias_name = short_uid()
+        assert client.create_alias(
+            FunctionName=func_arn, FunctionVersion="$LATEST", Name=alias_name
+        )
+
+        assert client.get_alias(FunctionName=func_arn, Name=alias_name)
+
+        alias_description = "blyat"
+        assert client.update_alias(
+            FunctionName=func_arn, Name=alias_name, Description=alias_description
+        )
+
+        resp = client.list_aliases(FunctionName=func_arn)
+        assert len(resp["Aliases"]) == 1
+        assert resp["Aliases"][0]["Description"] == alias_description
+
+        assert client.delete_alias(FunctionName=func_arn, Name=alias_name)
+
+        tags = {"foo": "bar"}
+        assert client.tag_resource(Resource=func_arn, Tags=tags)
+
+        assert client.list_tags(Resource=func_arn)["Tags"] == tags
+
+        assert client.untag_resource(Resource=func_arn, TagKeys=["lorem"])
+
+        assert client.invoke(FunctionName=func_arn)
+
+        assert client.publish_version(FunctionName=func_arn)
+
+        assert client.delete_function(FunctionName=func_arn)
 
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")

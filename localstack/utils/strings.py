@@ -9,8 +9,6 @@ import uuid
 import zlib
 from typing import Dict, List, Union
 
-from botocore.httpchecksum import CrtCrc32cChecksum
-
 from localstack.config import DEFAULT_ENCODING
 
 _unprintables = (
@@ -153,6 +151,9 @@ def checksum_crc32(string: Union[str, bytes]) -> str:
 
 
 def checksum_crc32c(string: Union[str, bytes]):
+    # import botocore locally here to avoid a dependency of the CLI to botocore
+    from botocore.httpchecksum import CrtCrc32cChecksum
+
     checksum = CrtCrc32cChecksum()
     checksum.update(to_bytes(string))
     return base64.b64encode(checksum.digest()).decode()

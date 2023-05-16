@@ -93,11 +93,16 @@ class SNSTopic(GenericBaseModel):
                     TopicArn=topic_arn, Protocol=subscription["Protocol"], Endpoint=endpoint
                 )
 
+        def result_handler(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["TopicArn"]
+            resources[resource_id]["Properties"]["TopicArn"] = result["TopicArn"]
+
         return {
             "create": [
                 {
                     "function": "create_topic",
                     "parameters": _create_params,
+                    "result_handler": result_handler,
                 },
                 {"function": _add_topics},
             ],

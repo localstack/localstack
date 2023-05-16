@@ -120,14 +120,14 @@
     }
   },
   "tests/integration/s3/test_s3_notifications_lambda.py::TestS3NotificationsToLambda::test_invalid_lambda_arn": {
-    "recorded-date": "22-09-2022, 19:47:46",
+    "recorded-date": "05-05-2023, 16:10:00",
     "recorded-content": {
       "invalid_not_skip": {
         "Error": {
           "ArgumentName": "CloudFunction",
           "ArgumentValue": "invalid-queue",
           "Code": "InvalidArgument",
-          "Message": "The ARN is not well formed"
+          "Message": "The ARN could not be parsed"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -139,7 +139,7 @@
           "ArgumentName": "CloudFunction",
           "ArgumentValue": "invalid-queue",
           "Code": "InvalidArgument",
-          "Message": "The ARN is not well formed"
+          "Message": "The ARN could not be parsed"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

@@ -10,6 +10,7 @@ from functools import wraps
 from typing import Dict, Iterable, List, Optional, Set
 
 from localstack import config, constants
+from localstack.config import get_edge_port_http, is_env_true
 from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
@@ -213,7 +214,26 @@ def get_enabled_apis() -> Set[str]:
 
     The result is cached, so it's safe to call. Clear the cache with get_enabled_apis.cache_clear().
     """
-    return resolve_apis(config.parse_service_ports().keys())
+    services_env = os.environ.get("SERVICES", "").strip()
+    services = None
+    if services_env and not is_env_true("EAGER_SERVICE_LOADING"):
+        LOG.warning("SERVICES variable is ignored if EAGER_SERVICE_LOADING=0.")
+    elif services_env:
+        # SERVICES and EAGER_SERVICE_LOADING are set
+        # SERVICES env var might contain ports, but we do not support these anymore
+        services = []
+        for service_port in re.split(r"\s*,\s*", services_env):
+            # Only extract the service name, discard the port
+            parts = re.split(r"[:=]", service_port)
+            service = parts[0]
+            services.append(service)
+
+    if not services:
+        from localstack.services.plugins import SERVICE_PLUGINS
+
+        services = SERVICE_PLUGINS.list_available()
+
+    return resolve_apis(services)
 
 
 # DEPRECATED, lazy loading should be assumed
@@ -510,12 +530,7 @@ def configure_container(container: LocalstackContainer):
     hooks.configure_localstack_container.run(container)
 
     # construct default port mappings
-    service_ports = config.SERVICE_PORTS
-    if service_ports.get("edge") == 0:
-        service_ports.pop("edge")
-    for port in service_ports.values():
-        if port:
-            container.ports.add(port)
+    container.ports.add(get_edge_port_http())
     for port in range(config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END):
         container.ports.add(port)
 
