@@ -25,9 +25,9 @@ class UIMessageService:
     def __init__(self, cache_folder: str = os.path.join(config.dirs.cache, "ui_messages")):
         self._cache_folder = cache_folder
 
+        self._cache: _CacheType
         self._cache_path = os.path.join(self._cache_folder, "cache.json")
 
-        self._cache: _CacheType = {}
         self._read_file_cache()
 
 

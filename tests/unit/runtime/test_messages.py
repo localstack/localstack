@@ -72,3 +72,7 @@ class TestMessages:
 
         output: str = capsys.readouterr().out
         assert output == ""
+
+class TestNewsClient:
+    def test_fetch_news(self):
+        pytest.fail()

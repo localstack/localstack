@@ -1,16 +1,39 @@
 
+import subprocess
 import time
 import pytest
 from click.testing import CliRunner
 from localstack.cli.localstack import localstack as cli
+from tests.fixtures.HTTPMockServer import HTTPMockServer, ResponseMock
+from tests.fixtures.docker_fixture import localstack_docker, LOCALSTACK_TEST_PORT
+from localstack import constants
+
 
 @pytest.fixture
 def runner():
     return CliRunner()
 
-class TestMessages:
+@pytest.fixture(scope="module")
+def news_endpoint_mock():
+    with HTTPMockServer(7775, "/news") as response_mock:
+        yield response_mock
 
-    def test_something(self, runner: CliRunner): # pylint: disable=redefined-outer-name
+def test_news_endpoint(news_endpoint_mock: ResponseMock):
+    news_endpoint_mock.set_reponse({"foo": "bar"})
+    time.sleep(2)
+    print("test over")
+    assert True
+
+def is_pro():
+    command = f"aws --endpoint-url=http://localhost:{LOCALSTACK_TEST_PORT} ecr describe-repositories"
+    aws_process = subprocess.run(command, shell=True, check=False, timeout=10)
+    return aws_process.returncode == 0
+
+def test_docker(localstack_docker):
+    assert is_pro()
+
+class TestMessages:
+    def test_something(self, runner: CliRunner):  # pylint: disable=redefined-outer-name
         result = runner.invoke(cli, ["status", "services"])
         assert result.exit_code != 0
         assert "could not connect to LocalStack health endpoint" in result.output
@@ -25,6 +48,7 @@ class TestMessages:
         # for line in result.output.splitlines():
         #     if "dynamodb" in line:
         #         assert "available" in line
+
 
 class TestMessageDisplay:
     def test_show_messages_in_cli(self):
@@ -49,12 +73,26 @@ class TestMessageDisplay:
 
 
 class TestNewsMessages:
-    def test_get_news_async(self):
-        # start localstack
+    def test_get_news_async(self, runner: CliRunner):
+        constants.API_ENDPOINT = "http://localhost:7777"
+
+        # with capsys.disabled():
+        runner.invoke(cli, ["start", "-d"])
+        runner.invoke(cli, ["wait", "-t", "60"])
+
         # wait for polling news
+        time.sleep(10)
+
+        # stop
+        runner.invoke(cli, ["stop"])
+
         # restart
+        result = runner.invoke(cli, ["start", "-d"])
+
         # assert news are shown
-        pytest.fail()
+        assert "news" in result.output
+
+
 
 class TestCLI:
     def test_show_messages_command(self):
@@ -74,7 +112,8 @@ class TestCLI:
         # then show all the messages
         pytest.fail()
 
-class TestResilience():
+
+class TestResilience:
     def test_avoid_file_corruption(self):
         pytest.fail()
 
