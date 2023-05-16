@@ -11,6 +11,7 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 AfterTime = str
 AttachmentId = str
 AttachmentSetId = str
+AvailabilityErrorMessage = str
 BeforeTime = str
 Boolean = bool
 CaseId = str
@@ -18,9 +19,12 @@ CaseStatus = str
 CategoryCode = str
 CategoryName = str
 CcEmailAddress = str
+Code = str
 CommunicationBody = str
+Display = str
 DisplayId = str
 Double = float
+EndTime = str
 ErrorMessage = str
 ExpiryTime = str
 FileName = str
@@ -36,11 +40,19 @@ ServiceName = str
 SeverityCode = str
 SeverityLevelCode = str
 SeverityLevelName = str
+StartTime = str
 Status = str
 String = str
 Subject = str
 SubmittedBy = str
 TimeCreated = str
+Type = str
+ValidatedCategoryCode = str
+ValidatedCommunicationBody = str
+ValidatedDateTime = str
+ValidatedIssueTypeString = str
+ValidatedLanguageAvailability = str
+ValidatedServiceCode = str
 
 
 class AttachmentIdNotFound(ServiceException):
@@ -97,6 +109,12 @@ class InternalServerError(ServiceException):
     status_code: int = 400
 
 
+class ThrottlingException(ServiceException):
+    code: str = "ThrottlingException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 Data = bytes
 
 
@@ -142,7 +160,7 @@ AttachmentSet = List[AttachmentDetails]
 
 class Communication(TypedDict, total=False):
     caseId: Optional[CaseId]
-    body: Optional[CommunicationBody]
+    body: Optional[ValidatedCommunicationBody]
     submittedBy: Optional[SubmittedBy]
     timeCreated: Optional[TimeCreated]
     attachmentSet: Optional[AttachmentSet]
@@ -181,6 +199,32 @@ class Category(TypedDict, total=False):
 
 
 CategoryList = List[Category]
+
+
+class DateInterval(TypedDict, total=False):
+    startDateTime: Optional[ValidatedDateTime]
+    endDateTime: Optional[ValidatedDateTime]
+
+
+DatesWithoutSupportList = List[DateInterval]
+
+
+class SupportedHour(TypedDict, total=False):
+    startTime: Optional[StartTime]
+    endTime: Optional[EndTime]
+
+
+SupportedHoursList = List[SupportedHour]
+CommunicationTypeOptions = TypedDict(
+    "CommunicationTypeOptions",
+    {
+        "type": Optional[Type],
+        "supportedHours": Optional[SupportedHoursList],
+        "datesWithoutSupport": Optional[DatesWithoutSupportList],
+    },
+    total=False,
+)
+CommunicationTypeOptionsList = List[CommunicationTypeOptions]
 
 
 class CreateCaseRequest(ServiceRequest):
@@ -237,6 +281,18 @@ class DescribeCommunicationsResponse(TypedDict, total=False):
     nextToken: Optional[NextToken]
 
 
+class DescribeCreateCaseOptionsRequest(ServiceRequest):
+    issueType: IssueType
+    serviceCode: ServiceCode
+    language: Language
+    categoryCode: CategoryCode
+
+
+class DescribeCreateCaseOptionsResponse(TypedDict, total=False):
+    languageAvailability: Optional[ValidatedLanguageAvailability]
+    communicationTypes: Optional[CommunicationTypeOptionsList]
+
+
 ServiceCodeList = List[ServiceCode]
 
 
@@ -272,6 +328,25 @@ SeverityLevelsList = List[SeverityLevel]
 
 class DescribeSeverityLevelsResponse(TypedDict, total=False):
     severityLevels: Optional[SeverityLevelsList]
+
+
+class DescribeSupportedLanguagesRequest(ServiceRequest):
+    issueType: ValidatedIssueTypeString
+    serviceCode: ValidatedServiceCode
+    categoryCode: ValidatedCategoryCode
+
+
+class SupportedLanguage(TypedDict, total=False):
+    code: Optional[Code]
+    language: Optional[Language]
+    display: Optional[Display]
+
+
+SupportedLanguagesList = List[SupportedLanguage]
+
+
+class DescribeSupportedLanguagesResponse(TypedDict, total=False):
+    supportedLanguages: Optional[SupportedLanguagesList]
 
 
 StringList = List[String]
@@ -473,6 +548,17 @@ class SupportApi:
     ) -> DescribeCommunicationsResponse:
         raise NotImplementedError
 
+    @handler("DescribeCreateCaseOptions")
+    def describe_create_case_options(
+        self,
+        context: RequestContext,
+        issue_type: IssueType,
+        service_code: ServiceCode,
+        language: Language,
+        category_code: CategoryCode,
+    ) -> DescribeCreateCaseOptionsResponse:
+        raise NotImplementedError
+
     @handler("DescribeServices")
     def describe_services(
         self,
@@ -486,6 +572,16 @@ class SupportApi:
     def describe_severity_levels(
         self, context: RequestContext, language: Language = None
     ) -> DescribeSeverityLevelsResponse:
+        raise NotImplementedError
+
+    @handler("DescribeSupportedLanguages")
+    def describe_supported_languages(
+        self,
+        context: RequestContext,
+        issue_type: ValidatedIssueTypeString,
+        service_code: ValidatedServiceCode,
+        category_code: ValidatedCategoryCode,
+    ) -> DescribeSupportedLanguagesResponse:
         raise NotImplementedError
 
     @handler("DescribeTrustedAdvisorCheckRefreshStatuses")

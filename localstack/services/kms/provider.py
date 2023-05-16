@@ -5,6 +5,7 @@ import logging
 import os
 from typing import Dict, Tuple
 
+from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 
@@ -736,12 +737,12 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         self._validate_key_for_encryption_decryption(context, key)
         self._validate_key_state_not_pending_import(key)
 
-        ciphertext_blob = key.encrypt(plaintext)
+        ciphertext_blob = key.encrypt(plaintext, encryption_context)
         # For compatibility, we return EncryptionAlgorithm values expected from AWS. But LocalStack currently always
         # encrypts with symmetric encryption no matter the key settings.
         return EncryptResponse(
             CiphertextBlob=ciphertext_blob,
-            KeyId=key.metadata["Arn"],
+            KeyId=key.metadata.get("Arn"),
             EncryptionAlgorithm=encryption_algorithm,
         )
 
@@ -778,7 +779,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         self._validate_key_for_encryption_decryption(context, key)
         self._validate_key_state_not_pending_import(key)
 
-        plaintext = key.decrypt(ciphertext)
+        try:
+            plaintext = key.decrypt(ciphertext, encryption_context)
+        except InvalidTag:
+            raise InvalidCiphertextException()
         # For compatibility, we return EncryptionAlgorithm values expected from AWS. But LocalStack currently always
         # encrypts with symmetric encryption no matter the key settings.
         #

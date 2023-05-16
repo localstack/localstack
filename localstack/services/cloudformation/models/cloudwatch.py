@@ -8,6 +8,11 @@ class CloudWatchAlarm(GenericBaseModel):
     def cloudformation_type():
         return "AWS::CloudWatch::Alarm"
 
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "Arn":
+            return self.props.get("AlarmArn")
+        return super(CloudWatchAlarm, self).get_cfn_attribute(attribute_name)
+
     def get_physical_resource_id(self, attribute=None, **kwargs):
         if attribute == "Arn":
             return self.props.get("AlarmArn")

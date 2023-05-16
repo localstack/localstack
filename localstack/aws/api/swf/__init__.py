@@ -36,6 +36,7 @@ ResourceTagKey = str
 ResourceTagValue = str
 ReverseOrder = bool
 SignalName = str
+StartAtPreviousStartedEvent = bool
 Tag = str
 TaskPriority = str
 TaskToken = str
@@ -1239,6 +1240,7 @@ class PollForDecisionTaskInput(ServiceRequest):
     nextPageToken: Optional[PageToken]
     maximumPageSize: Optional[PageSize]
     reverseOrder: Optional[ReverseOrder]
+    startAtPreviousStartedEvent: Optional[StartAtPreviousStartedEvent]
 
 
 class RecordActivityTaskHeartbeatInput(ServiceRequest):
@@ -1637,6 +1639,7 @@ class SwfApi:
         next_page_token: PageToken = None,
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
+        start_at_previous_started_event: StartAtPreviousStartedEvent = None,
     ) -> DecisionTask:
         raise NotImplementedError
 

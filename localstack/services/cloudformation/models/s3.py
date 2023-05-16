@@ -250,6 +250,8 @@ class S3Bucket(GenericBaseModel):
         return response
 
     def get_cfn_attribute(self, attribute_name):
+        if attribute_name in ["Arn"]:
+            return arns.s3_bucket_arn(self._get_bucket_name())
         if attribute_name in ["DomainName", "RegionalDomainName"]:
             bucket_name = self._get_bucket_name()
             return "%s.%s" % (bucket_name, S3_VIRTUAL_HOSTNAME)

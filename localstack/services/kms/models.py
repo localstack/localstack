@@ -10,7 +10,7 @@ import struct
 import uuid
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, hmac
@@ -128,12 +128,15 @@ def deserialize_ciphertext_blob(ciphertext_blob: bytes) -> Ciphertext:
     return Ciphertext(key_id=key_id.decode("utf-8"), iv=iv, ciphertext=ciphertext, tag=tag)
 
 
-def _serialize_encryption_context(encryption_context: EncryptionContextType) -> bytes:
-    aad = io.BytesIO()
-    for key, value in sorted(encryption_context.items(), key=lambda x: x[0]):
-        aad.write(key.encode("utf-8"))
-        aad.write(value.encode("utf-8"))
-    return aad.getvalue()
+def _serialize_encryption_context(encryption_context: Optional[EncryptionContextType]) -> bytes:
+    if encryption_context:
+        aad = io.BytesIO()
+        for key, value in sorted(encryption_context.items(), key=lambda x: x[0]):
+            aad.write(key.encode("utf-8"))
+            aad.write(value.encode("utf-8"))
+        return aad.getvalue()
+    else:
+        return b""
 
 
 # Confusion alert!
@@ -252,19 +255,24 @@ class KmsKey:
 
     # Encrypt is a method of KmsKey and not of KmsCryptoKey only because it requires KeyId, and KmsCryptoKeys do not
     # hold KeyIds. Maybe it would be possible to remodel this better.
-    def encrypt(self, plaintext: bytes) -> bytes:
+    def encrypt(self, plaintext: bytes, encryption_context: EncryptionContextType = None) -> bytes:
         iv = os.urandom(IV_LEN)
-        ciphertext = encrypt(self.crypto_key.key_material, plaintext, iv)
-        # Moto uses GCM mode, while we use CBC, where tags do not seem to be relevant. So leaving them empty.
+        aad = _serialize_encryption_context(encryption_context=encryption_context)
+        ciphertext, tag = encrypt(self.crypto_key.key_material, plaintext, iv, aad)
         return _serialize_ciphertext_blob(
             ciphertext=Ciphertext(
-                key_id=self.metadata.get("KeyId"), iv=iv, ciphertext=ciphertext, tag=b""
+                key_id=self.metadata.get("KeyId"), iv=iv, ciphertext=ciphertext, tag=tag
             )
         )
 
     # The ciphertext has to be deserialized before this call.
-    def decrypt(self, ciphertext: Ciphertext) -> bytes:
-        return decrypt(self.crypto_key.key_material, ciphertext.ciphertext, ciphertext.iv)
+    def decrypt(
+        self, ciphertext: Ciphertext, encryption_context: EncryptionContextType = None
+    ) -> bytes:
+        aad = _serialize_encryption_context(encryption_context=encryption_context)
+        return decrypt(
+            self.crypto_key.key_material, ciphertext.ciphertext, ciphertext.iv, ciphertext.tag, aad
+        )
 
     def sign(
         self, data: bytes, message_type: MessageType, signing_algorithm: SigningAlgorithmSpec

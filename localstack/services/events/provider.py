@@ -511,11 +511,13 @@ def events_handler_put_events(self):
     for event_envelope in events:
         event = event_envelope["event"]
         event_bus_name = event.get("EventBusName") or DEFAULT_EVENT_BUS_NAME
-        event_rules = self.events_backend.event_buses[event_bus_name].rules
+        event_bus = self.events_backend.event_buses.get(event_bus_name)
+        if not event_bus:
+            continue
 
         matching_rules = [
             r
-            for r in event_rules.values()
+            for r in event_bus.rules.values()
             if r.event_bus_name == event_bus_name and not r.scheduled_expression
         ]
         if not matching_rules:
