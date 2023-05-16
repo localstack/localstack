@@ -1,6 +1,7 @@
 import json
 
-from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
+from localstack.aws.connect import connect_to
+from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import short_uid
 
@@ -10,8 +11,13 @@ class KMSKey(GenericBaseModel):
     def cloudformation_type():
         return "AWS::KMS::Key"
 
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "Arn":
+            return self.props.get("KeyMetadata", {}).get("Arn")
+        return super(KMSKey, self).get_cfn_attribute(attribute_name)
+
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("kms")
+        client = connect_to().kms
         physical_res_id = self.physical_resource_id
         props = self.props
         res_tags = props.get("Tags", [])
@@ -36,8 +42,7 @@ class KMSKey(GenericBaseModel):
         return client.describe_key(KeyId=physical_res_id)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        if attribute in REF_ID_ATTRS:
-            return self.physical_resource_id
+        # TODO: ?
         return self.physical_resource_id and arns.kms_key_arn(self.physical_resource_id)
 
     # TODO: try to remove this workaround (ensures idempotency)
@@ -110,8 +115,7 @@ class KMSAlias(GenericBaseModel):
         return self.props.get("AliasName")
 
     def fetch_state(self, stack_name, resources):
-        kms = aws_stack.connect_to_service("kms")
-        aliases = kms.list_aliases()["Aliases"]
+        aliases = connect_to().kms.list_aliases()["Aliases"]
         for alias in aliases:
             if alias["AliasName"] == self.props.get("AliasName"):
                 return alias

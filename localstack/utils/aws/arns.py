@@ -290,7 +290,7 @@ def ssm_parameter_arn(param_name: str, account_id: str = None, region_name: str 
 
 def s3_bucket_arn(bucket_name_or_arn: str, account_id=None):
     bucket_name = s3_bucket_name(bucket_name_or_arn)
-    return "arn:aws:s3:::%s" % bucket_name
+    return f"arn:aws:s3:::{bucket_name}"
 
 
 def s3_bucket_name(bucket_name_or_arn: str) -> str:
@@ -327,9 +327,10 @@ def sqs_queue_name(queue_arn):
         return queue_arn
 
 
-def sns_topic_arn(topic_name, account_id=None):
+def sns_topic_arn(topic_name, account_id=None, region_name=None):
     account_id = account_id or get_aws_account_id()
-    return "arn:aws:sns:%s:%s:%s" % (get_region(), account_id, topic_name)
+    region_name = region_name or get_region()
+    return f"arn:aws:sns:{region_name}:{account_id}:{topic_name}"
 
 
 def firehose_name(firehose_arn):

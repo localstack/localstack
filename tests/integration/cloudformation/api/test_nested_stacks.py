@@ -40,6 +40,7 @@ def test_nested_stack(deploy_cfn_template, s3_create_bucket, aws_client):
     retry(assert_bucket_exists)
 
 
+@pytest.mark.aws_validated
 def test_nested_stack_output_refs(deploy_cfn_template, s3_create_bucket, aws_client):
     """test output handling of nested stacks incl. referencing the nested output in the parent stack"""
     bucket_name = s3_create_bucket()

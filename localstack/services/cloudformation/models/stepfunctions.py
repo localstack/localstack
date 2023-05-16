@@ -46,6 +46,13 @@ class SFNStateMachine(GenericBaseModel):
     def cloudformation_type():
         return "AWS::StepFunctions::StateMachine"
 
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "Arn":
+            return self.props.get("stateMachineArn")
+        if attribute_name == "Name":
+            return self.props.get("StateMachineName")
+        return super(SFNStateMachine, self).get_cfn_attribute(attribute_name)
+
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("stateMachineArn")
 

@@ -193,8 +193,15 @@ def cmd_stop():
     help="Block the terminal and follow the log output",
     default=False,
 )
+@click.option(
+    "-n",
+    "--tail",
+    type=int,
+    help="Print only the last N lines of the log output",
+    default=None,
+)
 @publish_invocation
-def cmd_logs(follow: bool):
+def cmd_logs(follow: bool, tail: int):
     from localstack.utils.bootstrap import LocalstackContainer
     from localstack.utils.docker_utils import DOCKER_CLIENT
 
@@ -211,10 +218,18 @@ def cmd_logs(follow: bool):
         sys.exit(1)
 
     if follow:
+        num_lines = 0
         for line in DOCKER_CLIENT.stream_container_logs(container_name):
             print(line.decode("utf-8").rstrip("\r\n"))
+            num_lines += 1
+            if tail is not None and num_lines >= tail:
+                break
+
     else:
-        print(DOCKER_CLIENT.get_container_logs(container_name))
+        logs = DOCKER_CLIENT.get_container_logs(container_name)
+        if tail is not None:
+            logs = "\n".join(logs.split("\n")[-tail:])
+        print(logs)
 
 
 @localstack.command(name="wait", help="Wait on the LocalStack container to start")

@@ -46,7 +46,6 @@ DIAGNOSE_IMAGES = [
 
 EXCLUDE_CONFIG_KEYS = {
     "CONFIG_ENV_VARS",
-    "DEFAULT_SERVICE_PORTS",
     "copyright",
     "__builtins__",
     "__cached__",

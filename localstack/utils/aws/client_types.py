@@ -230,9 +230,10 @@ class ServicePrincipal(str):
     To save some space in our DTOs, we only add the `<service-name>` part of the service principal here.
     """
 
-    awslambda = "lambda"
     apigateway = "apigateway"
-    firehose = "firehose"
-    sqs = "sqs"
-    sns = "sns"
+    awslambda = "lambda"
     events = "events"
+    firehose = "firehose"
+    s3 = "s3"
+    sns = "sns"
+    sqs = "sqs"
