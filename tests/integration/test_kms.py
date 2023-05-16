@@ -1176,6 +1176,39 @@ class TestKMS:
             KeyId=key_arn_3, Message=message, MacAlgorithm="HMAC_SHA_512", Mac=mac
         )["MacValid"]
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..message"])
+    def test_encrypt_decrypt_encryption_context(self, kms_create_key, snapshot, aws_client):
+        key_id = kms_create_key()["KeyId"]
+        message = b"test message 123 !%$@ 1234567890"
+        encryption_context = {"context-key": "context-value"}
+        algo = "SYMMETRIC_DEFAULT"
+
+        encrypt_response = aws_client.kms.encrypt(
+            KeyId=key_id,
+            Plaintext=base64.b64encode(message),
+            EncryptionAlgorithm=algo,
+            EncryptionContext=encryption_context,
+        )
+        snapshot.match("encrypt_response", encrypt_response)
+        ciphertext = encrypt_response["CiphertextBlob"]
+
+        decrypt_response = aws_client.kms.decrypt(
+            KeyId=key_id,
+            CiphertextBlob=ciphertext,
+            EncryptionAlgorithm=algo,
+            EncryptionContext=encryption_context,
+        )
+        snapshot.match("decrypt_response_with_encryption_context", decrypt_response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(
+                KeyId=key_id,
+                CiphertextBlob=ciphertext,
+                EncryptionAlgorithm=algo,
+            )
+        snapshot.match("decrypt_response_without_encryption_context", e.value.response)
+
 
 class TestKMSGenerateKeys:
     @pytest.fixture(autouse=True)

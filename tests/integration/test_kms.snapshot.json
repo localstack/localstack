@@ -1467,5 +1467,38 @@
         }
       }
     }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_encrypt_decrypt_encryption_context": {
+    "recorded-date": "11-05-2023, 22:46:49",
+    "recorded-content": {
+      "encrypt_response": {
+        "CiphertextBlob": "ciphertext-blob",
+        "EncryptionAlgorithm": "SYMMETRIC_DEFAULT",
+        "KeyId": "<key-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "decrypt_response_with_encryption_context": {
+        "EncryptionAlgorithm": "SYMMETRIC_DEFAULT",
+        "KeyId": "<key-id:1>",
+        "Plaintext": "plaintext",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "decrypt_response_without_encryption_context": {
+        "Error": {
+          "Code": "InvalidCiphertextException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
