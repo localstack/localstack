@@ -518,13 +518,7 @@ class CloudformationProvider(CloudformationApi):
             new_parameters=new_parameters,
             old_parameters=old_parameters,
         )
-        # stack.resolved_parameters = resolved_parameters
 
-        # parameters = template_preparer.resolve_parameters(
-        #     template.get("Parameters", {}), request.get("Parameters", [])
-        # )
-        # TODO: if this is a create, we already have a stack with parameters
-        # TODO: enable again with new parameters
         parameters = list(resolved_parameters.values())
         template = template_preparer.transform_template(template, parameters, stack=stack)
 
