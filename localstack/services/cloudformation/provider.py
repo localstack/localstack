@@ -190,7 +190,7 @@ class CloudformationProvider(CloudformationApi):
             )
 
         new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
-            request["Parameters"]
+            request.get("Parameters")
         )
         parameter_declarations = param_resolver.extract_parameter_declarations_from_template(
             template
@@ -274,7 +274,7 @@ class CloudformationProvider(CloudformationApi):
             )
 
         new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
-            request["Parameters"]
+            request.get("Parameters")
         )
         parameter_declarations = param_resolver.extract_parameter_declarations_from_template(
             template
@@ -508,7 +508,7 @@ class CloudformationProvider(CloudformationApi):
 
         # apply template transformations
         new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
-            request["Parameters"]
+            request.get("Parameters")
         )
         parameter_declarations = param_resolver.extract_parameter_declarations_from_template(
             template

@@ -32,6 +32,7 @@ def test_bucketpolicy(deploy_cfn_template, aws_client):
     assert err.value.response["Error"]["Code"] == "NoSuchBucketPolicy"
 
 
+@pytest.mark.aws_validated
 def test_bucket_autoname(deploy_cfn_template, aws_client):
     result = deploy_cfn_template(
         template_path=os.path.join(

@@ -107,11 +107,15 @@ def resolve_dynamic_parameter(parameter_value: str) -> str:
     return connect_to().ssm.get_parameter(Name=parameter_value)["Parameter"]["Value"]
 
 
-def convert_stack_parameters_to_list(in_params: dict[str, Parameter]) -> list[Parameter]:
+def convert_stack_parameters_to_list(in_params: dict[str, Parameter] | None) -> list[Parameter]:
+    if not in_params:
+        return []
     return list(in_params.values())
 
 
-def convert_stack_parameters_to_dict(in_params: list[Parameter]) -> dict[str, Parameter]:
+def convert_stack_parameters_to_dict(in_params: list[Parameter] | None) -> dict[str, Parameter]:
+    if not in_params:
+        return {}
     return {p["ParameterKey"]: p for p in in_params}
 
 
