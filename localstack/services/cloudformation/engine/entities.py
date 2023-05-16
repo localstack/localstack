@@ -57,6 +57,7 @@ class StackTemplate(TypedDict):
     Resources: dict
 
 
+# TODO: remove metadata (flatten into individual fields)
 class Stack:
     def __init__(
         self,
@@ -103,6 +104,11 @@ class Stack:
         self.events = []
         # list of stack change sets
         self.change_sets = []
+
+    def set_resolved_parameters(self, resolved_parameters: dict[str, Parameter]):
+        self.resolved_parameters = resolved_parameters
+        if resolved_parameters:
+            self.metadata["Parameters"] = list(resolved_parameters.values())
 
     def describe_details(self):
         attrs = [

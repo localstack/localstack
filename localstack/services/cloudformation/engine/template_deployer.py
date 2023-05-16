@@ -1051,7 +1051,7 @@ class TemplateDeployer:
         )
         change_set.stack.set_stack_status(f"{action}_IN_PROGRESS")
         # update parameters
-        change_set.stack.resolved_parameters = change_set.resolved_parameters
+        change_set.stack.set_resolved_parameters(change_set.resolved_parameters)
 
         # update attributes that the stack inherits from the changeset
         change_set.stack.metadata["Capabilities"] = change_set.metadata.get("Capabilities")

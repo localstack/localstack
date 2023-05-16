@@ -219,7 +219,7 @@ class CloudformationProvider(CloudformationApi):
             return CreateStackOutput(StackId=stack.stack_id)
 
         stack = Stack(request, template)
-        stack.resolved_parameters = resolved_parameters
+        stack.set_resolved_parameters(resolved_parameters)
         stack.template_body = json.dumps(template)
         state.stacks[stack.stack_id] = stack
         LOG.debug(
@@ -302,8 +302,8 @@ class CloudformationProvider(CloudformationApi):
         deployer = template_deployer.TemplateDeployer(stack)
         # TODO: there shouldn't be a "new" stack on update
         new_stack = Stack(request, template)
-        new_stack.resolved_parameters = resolved_parameters
-        stack.resolved_parameters = resolved_parameters
+        new_stack.set_resolved_parameters(resolved_parameters)
+        stack.set_resolved_parameters(resolved_parameters)
         try:
             deployer.update_stack(new_stack)
         except Exception as e:
@@ -525,7 +525,7 @@ class CloudformationProvider(CloudformationApi):
         # create change set for the stack and apply changes
         change_set = StackChangeSet(stack, req_params, template)
         # only set parameters for the changeset, then switch to stack on execute_change_set
-        change_set.resolved_parameters = resolved_parameters
+        change_set.set_resolved_parameters(resolved_parameters)
 
         deployer = template_deployer.TemplateDeployer(change_set)
         changes = deployer.construct_changes(
@@ -585,6 +585,7 @@ class CloudformationProvider(CloudformationApi):
             "Transform",
         ]
         result = remove_attributes(deepcopy(change_set.metadata), attrs)
+        # result["Parameters"] = list(change_set.resolved_parameters.values())
         return result
 
     @handler("DeleteChangeSet")
