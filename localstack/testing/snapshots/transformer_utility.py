@@ -400,6 +400,8 @@ class TransformerUtility:
             TransformerUtility.jsonpath(
                 jsonpath="$..Mac", value_replacement="<mac>", reference_replacement=False
             ),
+            TransformerUtility.key_value("CiphertextBlob", reference_replacement=False),
+            TransformerUtility.key_value("Plaintext", reference_replacement=False),
             RegexTransformer(PATTERN_KEY_ARN, replacement="<key-arn>"),
         ]
 
@@ -429,7 +431,7 @@ class TransformerUtility:
             # this will be able to use a KeyValue based once we provide a certificate for message signing in SNS
             # a match must be made case-insensitive because the key casing is different from lambda notifications
             RegexTransformer(
-                r"(?<=(?i)UnsubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=Unsubscribe)",
+                r"(?i)(?<=UnsubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=Unsubscribe)",
                 replacement="<unsubscribe-domain>",
             ),
             KeyValueBasedTransformer(_resource_name_transformer, "resource"),

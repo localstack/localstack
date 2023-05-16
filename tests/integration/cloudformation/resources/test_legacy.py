@@ -771,23 +771,20 @@ class TestCloudFormation:
         assert not vpcs
 
     # TODO: evaluate (can we drop this?)
+    @pytest.mark.xfail(reason="GetAtt resolved old value")
+    @pytest.mark.aws_validated
     def test_updating_stack_with_iam_role(self, deploy_cfn_template, aws_client):
-
-        # Initialization
         lambda_role_name = f"lambda-role-{short_uid()}"
         lambda_function_name = f"lambda-function-{short_uid()}"
 
-        template = json.loads(
-            load_file(os.path.join(os.path.dirname(__file__), "../../templates/template7.json"))
-        )
-
-        template["Resources"]["LambdaExecutionRole"]["Properties"]["RoleName"] = lambda_role_name
-        template["Resources"]["LambdaFunction1"]["Properties"][
-            "FunctionName"
-        ] = lambda_function_name
-
         # Create stack and wait for 'CREATE_COMPLETE' status of the stack
-        stack = deploy_cfn_template(template=json.dumps(template))
+        stack = deploy_cfn_template(
+            template_path=os.path.join(os.path.dirname(__file__), "../../templates/template7.json"),
+            parameters={
+                "LambdaRoleName": lambda_role_name,
+                "LambdaFunctionName": lambda_function_name,
+            },
+        )
 
         # Checking required values for Lambda function and IAM Role
         list_functions = list_all_resources(
@@ -795,38 +792,31 @@ class TestCloudFormation:
             last_token_attr_name="nextToken",
             list_attr_name="Functions",
         )
-        list_roles = list_all_resources(
-            lambda kwargs: aws_client.iam.list_roles(**kwargs),
-            last_token_attr_name="nextToken",
-            list_attr_name="Roles",
-        )
+        all_roles = aws_client.iam.list_roles(MaxItems=1000)["Roles"]
+        filtered_roles = [r["RoleName"] for r in all_roles if lambda_role_name == r["RoleName"]]
+        assert len(filtered_roles) == 1
 
         new_function = [
             function
             for function in list_functions
             if function.get("FunctionName") == lambda_function_name
         ]
-        new_role = [role for role in list_roles if role.get("RoleName") == lambda_role_name]
-
         assert len(new_function) == 1
         assert lambda_role_name in new_function[0].get("Role")
-
-        assert len(new_role) == 1
 
         # Generate new names for lambda and IAM Role
         lambda_role_name_new = f"lambda-role-new-{short_uid()}"
         lambda_function_name_new = f"lambda-function-new-{short_uid()}"
 
-        template["Resources"]["LambdaExecutionRole"]["Properties"][
-            "RoleName"
-        ] = lambda_role_name_new
-        template["Resources"]["LambdaFunction1"]["Properties"][
-            "FunctionName"
-        ] = lambda_function_name_new
-
         # Update stack and wait for 'UPDATE_COMPLETE' status of the stack
         deploy_cfn_template(
-            is_update=True, template=json.dumps(template), stack_name=stack.stack_name
+            is_update=True,
+            template_path=os.path.join(os.path.dirname(__file__), "../../templates/template7.json"),
+            stack_name=stack.stack_name,
+            parameters={
+                "LambdaRoleName": lambda_role_name_new,
+                "LambdaFunctionName": lambda_function_name_new,
+            },
         )
 
         # Checking new required values for Lambda function and IAM Role
@@ -837,11 +827,9 @@ class TestCloudFormation:
             list_attr_name="Functions",
         )
 
-        list_roles = list_all_resources(
-            lambda kwargs: aws_client.iam.list_roles(**kwargs),
-            last_token_attr_name="nextToken",
-            list_attr_name="Roles",
-        )
+        all_roles = aws_client.iam.list_roles(MaxItems=1000)["Roles"]
+        filtered_roles = [r["RoleName"] for r in all_roles if lambda_role_name_new == r["RoleName"]]
+        assert len(filtered_roles) == 1
 
         new_function = [
             function
@@ -850,8 +838,6 @@ class TestCloudFormation:
         ]
         assert len(new_function) == 1
         assert lambda_role_name_new in new_function[0].get("Role")
-        new_role = [role for role in list_roles if role.get("RoleName") == lambda_role_name_new]
-        assert len(new_role) == 1
 
     def test_resolve_transitive_placeholders_in_strings(self, deploy_cfn_template, aws_client):
         queue_name = f"q-{short_uid()}"

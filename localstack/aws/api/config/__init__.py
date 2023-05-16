@@ -574,6 +574,31 @@ class ResourceType(str):
     AWS_CustomerProfiles_Domain = "AWS::CustomerProfiles::Domain"
     AWS_AutoScaling_WarmPool = "AWS::AutoScaling::WarmPool"
     AWS_Connect_PhoneNumber = "AWS::Connect::PhoneNumber"
+    AWS_AppConfig_DeploymentStrategy = "AWS::AppConfig::DeploymentStrategy"
+    AWS_AppFlow_Flow = "AWS::AppFlow::Flow"
+    AWS_AuditManager_Assessment = "AWS::AuditManager::Assessment"
+    AWS_CloudWatch_MetricStream = "AWS::CloudWatch::MetricStream"
+    AWS_DeviceFarm_InstanceProfile = "AWS::DeviceFarm::InstanceProfile"
+    AWS_DeviceFarm_Project = "AWS::DeviceFarm::Project"
+    AWS_EC2_EC2Fleet = "AWS::EC2::EC2Fleet"
+    AWS_EC2_SubnetRouteTableAssociation = "AWS::EC2::SubnetRouteTableAssociation"
+    AWS_ECR_PullThroughCacheRule = "AWS::ECR::PullThroughCacheRule"
+    AWS_GroundStation_Config = "AWS::GroundStation::Config"
+    AWS_ImageBuilder_ImagePipeline = "AWS::ImageBuilder::ImagePipeline"
+    AWS_IoT_FleetMetric = "AWS::IoT::FleetMetric"
+    AWS_IoTWireless_ServiceProfile = "AWS::IoTWireless::ServiceProfile"
+    AWS_NetworkManager_Device = "AWS::NetworkManager::Device"
+    AWS_NetworkManager_GlobalNetwork = "AWS::NetworkManager::GlobalNetwork"
+    AWS_NetworkManager_Link = "AWS::NetworkManager::Link"
+    AWS_NetworkManager_Site = "AWS::NetworkManager::Site"
+    AWS_Panorama_Package = "AWS::Panorama::Package"
+    AWS_Pinpoint_App = "AWS::Pinpoint::App"
+    AWS_Redshift_ScheduledAction = "AWS::Redshift::ScheduledAction"
+    AWS_Route53Resolver_FirewallRuleGroupAssociation = (
+        "AWS::Route53Resolver::FirewallRuleGroupAssociation"
+    )
+    AWS_SageMaker_AppImageConfig = "AWS::SageMaker::AppImageConfig"
+    AWS_SageMaker_Image = "AWS::SageMaker::Image"
 
 
 class ResourceValueType(str):

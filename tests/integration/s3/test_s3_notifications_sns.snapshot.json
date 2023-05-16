@@ -161,14 +161,14 @@
     }
   },
   "tests/integration/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_invalid_topic_arn": {
-    "recorded-date": "22-09-2022, 19:29:33",
+    "recorded-date": "05-05-2023, 16:14:02",
     "recorded-content": {
       "invalid_not_skip": {
         "Error": {
           "ArgumentName": "Topic",
           "ArgumentValue": "invalid-topic",
           "Code": "InvalidArgument",
-          "Message": "The ARN is not well formed"
+          "Message": "The ARN could not be parsed"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -180,7 +180,7 @@
           "ArgumentName": "Topic",
           "ArgumentValue": "invalid-topic",
           "Code": "InvalidArgument",
-          "Message": "The ARN is not well formed"
+          "Message": "The ARN could not be parsed"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

@@ -5,6 +5,7 @@ import os
 import queue
 import socket
 import threading
+from time import sleep
 from typing import Dict, List, Optional, Tuple, Union
 from urllib.parse import quote
 
@@ -45,18 +46,34 @@ class SdkDockerClient(ContainerClient):
 
     def __init__(self):
         try:
-            from localstack.config import DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS
-
-            self.docker_client = docker.from_env(timeout=DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS)
+            self.docker_client = self._create_client()
             logging.getLogger("urllib3").setLevel(logging.INFO)
-        except DockerException:
+        except DockerNotAvailable:
             self.docker_client = None
 
     def client(self):
         if self.docker_client:
             return self.docker_client
         else:
-            raise DockerNotAvailable("Docker not available")
+            # if the initialization failed before, try to initialize on-demand
+            self.docker_client = self._create_client()
+            return self.docker_client
+
+    @staticmethod
+    def _create_client():
+        from localstack.config import DOCKER_SDK_DEFAULT_RETRIES, DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS
+
+        for attempt in range(0, DOCKER_SDK_DEFAULT_RETRIES + 1):
+            try:
+                return docker.from_env(timeout=DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS)
+            except DockerException as e:
+                LOG.debug("Creating Docker SDK client failed: %s", e, exc_info=e)
+                if attempt < DOCKER_SDK_DEFAULT_RETRIES:
+                    # wait for a second before retrying
+                    sleep(1)
+                else:
+                    # we are out of attempts
+                    raise DockerNotAvailable("Docker not available") from e
 
     def _read_from_sock(self, sock: socket, tty: bool):
         """Reads multiplexed messages from a socket returned by attach_socket.

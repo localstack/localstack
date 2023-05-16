@@ -615,6 +615,9 @@ class TestS3NotificationsToSQS:
             )
             for m in resp["Messages"]:
                 if "s3:TestEvent" in m["Body"]:
+                    aws_client.sqs.delete_message(
+                        QueueUrl=queue_url, ReceiptHandle=m["ReceiptHandle"]
+                    )
                     continue
                 recv_messages.append(m)
 
@@ -839,6 +842,10 @@ class TestS3NotificationsToSQS:
 
     @pytest.mark.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="no validation implemented")
+    # AWS seems to return "ArgumentName" (without the number) if the request fails a basic verification
+    # -  basically everything it can check isolated of the structure of the request
+    # and then the "ArgumentNameX" (with the number) for each verification against the target services
+    # e.g. queues not existing, no permissions etc.
     @pytest.mark.skip_snapshot_verify(
         condition=lambda: not LEGACY_S3_PROVIDER,
         paths=[
@@ -877,9 +884,9 @@ class TestS3NotificationsToSQS:
         snapshot.match("invalid_skip", e.value.response)
 
         # set valid but not-existing queue
-        config["QueueConfigurations"][0][
-            "QueueArn"
-        ] = f"{arns.sqs_queue_arn('my-queue', account_id=account_id)}"
+        config["QueueConfigurations"][0]["QueueArn"] = arns.sqs_queue_arn(
+            "my-queue", account_id=account_id, region_name=aws_client.s3.meta.region_name
+        )
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_notification_configuration(
                 Bucket=bucket_name,
@@ -892,6 +899,63 @@ class TestS3NotificationsToSQS:
         )
         config = aws_client.s3.get_bucket_notification_configuration(Bucket=bucket_name)
         snapshot.match("skip_destination_validation", config)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="no validation implemented")
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: not LEGACY_S3_PROVIDER,
+        paths=[
+            "$..Error.ArgumentName",
+            "$..Error.ArgumentValue",
+            "$..Error.ArgumentName1",
+            "$..Error.ArgumentValue1",
+            "$..Error.ArgumentName2",
+            "$..Error.ArgumentValue2",
+            # AWS seems to validate all "form" verifications beforehand, so one error message is wrong
+            "$..Error.Message",
+        ],
+    )
+    def test_multiple_invalid_sqs_arns(self, s3_create_bucket, account_id, snapshot, aws_client):
+        bucket_name = s3_create_bucket()
+        config = {
+            "QueueConfigurations": [
+                {"Id": "id1", "Events": ["s3:ObjectCreated:*"], "QueueArn": "invalid_arn"},
+                {
+                    "Id": "id2",
+                    "Events": ["s3:ObjectRemoved:*"],
+                    "QueueArn": "invalid_arn_2",
+                },
+            ]
+        }
+        # multiple invalid arns
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_notification_configuration(
+                Bucket=bucket_name,
+                NotificationConfiguration=config,
+            )
+        snapshot.match("two-queue-arns-invalid", e.value.response)
+
+        # one invalid arn, one not existing
+        config["QueueConfigurations"][0]["QueueArn"] = arns.sqs_queue_arn(
+            "my-queue", account_id=account_id, region_name=aws_client.s3.meta.region_name
+        )
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_notification_configuration(
+                Bucket=bucket_name,
+                NotificationConfiguration=config,
+            )
+        snapshot.match("one-queue-invalid-one-not-existent", e.value.response)
+
+        # multiple not existing queues
+        config["QueueConfigurations"][1]["QueueArn"] = arns.sqs_queue_arn(
+            "my-queue-2", account_id=account_id, region_name=aws_client.s3.meta.region_name
+        )
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_notification_configuration(
+                Bucket=bucket_name,
+                NotificationConfiguration=config,
+            )
+        snapshot.match("multiple-queues-do-not-exist", e.value.response)
 
     @pytest.mark.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")

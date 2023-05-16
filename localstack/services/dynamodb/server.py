@@ -18,7 +18,7 @@ RESTART_LOCK = threading.RLock()
 
 
 def _log_listener(line, **_kwargs):
-    LOG.info(line.rstrip())
+    LOG.debug(line.rstrip())
 
 
 class DynamodbServer(Server):
@@ -148,13 +148,13 @@ class DynamodbServer(Server):
         dynamodblocal_package.install()
 
         cmd = self._create_shell_command()
-        LOG.debug("starting dynamodb process %s", cmd)
+        LOG.debug("Starting DynamoDB Local: %s", cmd)
         t = ShellCommandThread(
             cmd,
             strip_color=True,
             log_listener=_log_listener,
             auto_restart=True,
-            name="dynamodb-server",
+            name="dynamodb-local",
         )
         TMP_THREADS.append(t)
         t.start()
