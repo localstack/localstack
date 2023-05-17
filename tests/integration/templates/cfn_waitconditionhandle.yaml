@@ -1,0 +1,8 @@
+Resources:
+  WaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+
+Outputs:
+  WaitHandleId:
+    Value:
+      Ref: WaitHandle
