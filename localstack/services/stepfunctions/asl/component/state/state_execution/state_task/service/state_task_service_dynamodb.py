@@ -1,5 +1,6 @@
 from typing import Final, Optional
 
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
@@ -80,7 +81,7 @@ class StateTaskServiceDynamoDB(StateTaskServiceCallback):
         error_msg: str = client_error.response["Error"]["Message"]
         response_details = "; ".join(
             [
-                "Service: DynamoDB",
+                "Service: AmazonDynamoDBv2",
                 f"Status Code: {client_error.response['ResponseMetadata']['HTTPStatusCode']}",
                 f"Error Code: {error_code}",
                 f"Request ID: {client_error.response['ResponseMetadata']['RequestId']}",
@@ -124,7 +125,9 @@ class StateTaskServiceDynamoDB(StateTaskServiceCallback):
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
         api_action = camel_to_snake_case(self.resource.api_action)
 
-        dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
+        dynamodb_client = aws_stack.connect_to_service(
+            "dynamodb", config=Config(parameter_validation=False)
+        )
         response = getattr(dynamodb_client, api_action)(**parameters)
         response.pop("ResponseMetadata", None)
         env.stack.append(response)

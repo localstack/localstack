@@ -1,7 +1,11 @@
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.aws.protocol.service_router import get_service_catalog
+from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
+    CustomErrorName,
+)
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
@@ -26,6 +30,7 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
     _SFN_TO_BOTO_PARAM_NORMALISERS = {
         "stepfunctions": {"send_task_success": {"Output": "output", "TaskToken": "taskToken"}}
     }
+    _NORMALISED_SERVICE_NAMES = {"dynamodb": "DynamoDb"}
 
     _normalised_api_name: str
     _normalised_api_action: str
@@ -48,12 +53,20 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
 
     @staticmethod
     def _normalise_service_name(service_name: str) -> str:
+        service_name_lower = service_name.lower()
+        if service_name_lower in StateTaskServiceAwsSdk._NORMALISED_SERVICE_NAMES:
+            return StateTaskServiceAwsSdk._NORMALISED_SERVICE_NAMES[service_name_lower]
         return get_service_catalog().get(service_name).service_id.replace(" ", "")
 
     @staticmethod
     def _normalise_exception_name(norm_service_name: str, ex: Exception) -> str:
         ex_name = ex.__class__.__name__
-        return f"{norm_service_name}.{norm_service_name if ex_name == 'ClientError' else ex_name}Exception"
+        norm_ex_name = (
+            f"{norm_service_name}.{norm_service_name if ex_name == 'ClientError' else ex_name}"
+        )
+        if not norm_ex_name.endswith("Exception"):
+            norm_ex_name += "Exception"
+        return norm_ex_name
 
     def _get_task_failure_event(self, error: str, cause: str) -> FailureEvent:
         return FailureEvent(
@@ -71,8 +84,8 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         norm_service_name: str = self._normalise_service_name(self.resource.api_name)
-        error: str = self._normalise_exception_name(norm_service_name, ex)
         if isinstance(ex, ClientError):
+            error: str = self._normalise_exception_name(norm_service_name, ex)
             error_message: str = ex.response["Error"]["Message"]
             cause_details = [
                 f"Service: {norm_service_name}",
@@ -87,14 +100,25 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
             cause: str = f"{error_message} ({', '.join(cause_details)})"
             failure_event = self._get_task_failure_event(error=error, cause=cause)
             return failure_event
-
-        failure_event = self._get_task_failure_event(
-            error=error, cause=str(ex)  # TODO: update cause decoration.
-        )
-        return failure_event
+        else:
+            error = f"{norm_service_name}.{norm_service_name}Exception"
+            return FailureEvent(
+                error_name=CustomErrorName(error),
+                event_type=HistoryEventType.TaskFailed,
+                event_details=EventDetails(
+                    taskFailedEventDetails=TaskFailedEventDetails(
+                        error=error,
+                        cause=str(ex),  # TODO: update to report expected cause.
+                        resource=self._get_sfn_resource(),
+                        resourceType=self._get_sfn_resource_type(),
+                    )
+                ),
+            )
 
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
-        api_client = aws_stack.create_external_boto_client(service_name=self._normalised_api_name)
+        api_client = aws_stack.connect_to_service(
+            self._normalised_api_name, config=Config(parameter_validation=False)
+        )
         response = getattr(api_client, self._normalised_api_action)(**parameters) or dict()
         if response:
             response.pop("ResponseMetadata", None)

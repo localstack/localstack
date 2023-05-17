@@ -27,6 +27,31 @@ pytestmark = pytest.mark.skipif(
     ]
 )
 class TestTaskServiceDynamoDB:
+    def test_invalid_param(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        dynamodb_create_table,
+        snapshot,
+    ):
+        snapshot.add_transformer(snapshot.transform.dynamodb_api())
+
+        template = EHT.load_sfn_template(EHT.AWS_SERVICE_DYNAMODB_PUT_ITEM)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {"TableName": f"no_such_sfn_test_table_{short_uid()}", "Key": None, "Item": None}
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            snapshot,
+            definition,
+            exec_input,
+        )
+
     def test_put_item_no_such_table(
         self,
         aws_client,
