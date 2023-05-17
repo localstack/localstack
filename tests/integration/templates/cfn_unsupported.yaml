@@ -1,7 +1,10 @@
 AWSTemplateFormatVersion: 2010-09-09
 Resources:
-  WaitHandle:
-    Type: AWS::CloudFormation::WaitConditionHandle
+  WAFRule:
+    Type: AWS::WAF::Rule
+    Properties:
+      MetricName: foo
+      Name: bar
 
   MyTopic:
     Type: AWS::SNS::Topic
