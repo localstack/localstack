@@ -147,8 +147,7 @@ class ResourceProviderExecutor:
     Point of abstraction between our integration with generic base models, and the new providers.
     """
 
-    def __init__(self, resource_type: str, stack_name: str, stack_id: str):
-        self.resource_type = resource_type
+    def __init__(self, stack_name: str, stack_id: str):
         self.stack_name = stack_name
         self.stack_id = stack_id
 
@@ -173,7 +172,7 @@ class ResourceProviderExecutor:
 
     def execute_action(self, raw_payload: ResourceProviderPayload) -> ProgressEvent[Properties]:
         # lookup provider in private registry
-        if provider_cls := PRIVATE_REGISTRY.get(self.resource_type):
+        if provider_cls := PRIVATE_REGISTRY.get(raw_payload["resourceType"]):
             change_type = raw_payload["action"]
             request = convert_payload(
                 stack_name=self.stack_name, stack_id=self.stack_id, payload=raw_payload
