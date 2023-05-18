@@ -85,7 +85,7 @@ def convert_payload(
         stack_name=stack_name,
         stack_id=stack_id,
         account_id="000000000000",
-        region_name="us-east-1",
+        region_name=payload["region"],
         desired_state=desired_state,
         logical_resource_id=payload["requestData"]["logicalResourceId"],
         logger=logging.getLogger("abc"),
@@ -159,9 +159,14 @@ class ResourceProviderExecutor:
         for _ in range(max_iterations):
             event = self.execute_action(payload)
             if event.status == OperationStatus.SUCCESS:
+                # TODO: validate physical_resource_id is not None
                 return event
+
+            # update the shared state
             context = {**payload["callbackContext"], **event.custom_context}
             payload["callbackContext"] = context
+            payload["requestData"]["resourceProperties"] = event.resource_model
+
             time.sleep(sleep_time)
         else:
             raise TimeoutError("Could not perform deploy loop action")
