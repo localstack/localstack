@@ -773,6 +773,18 @@
         "documentation": "<p>The specified method is not allowed against this resource.</p>",
         "exception": true
       }
+    },
+    {
+      "op": "remove",
+      "path": "/shapes/ListBucketsOutput/members/Buckets"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ListBucketsOutput/members/Buckets",
+      "value": {
+        "shape":"Buckets",
+        "documentation":"<p>The list of buckets owned by the requester.</p>"
+      }
     }
   ]
 }

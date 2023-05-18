@@ -3414,6 +3414,12 @@ class TestS3:
 
         resp_dict = xmltodict.parse(resp.content)
         assert "ListAllMyBucketsResult" in resp_dict
+        # validate that the Owner tag is first, before Buckets. This is because the Java SDK is counting on the order
+        # to properly set the Owner value to the buckets.
+        resp_dict["ListAllMyBucketsResult"].pop("@xmlns", None)
+        list_buckets_tags = list(resp_dict["ListAllMyBucketsResult"].keys())
+        assert list_buckets_tags[0] == "Owner"
+        assert list_buckets_tags[1] == "Buckets"
 
         # Lists all objects in a bucket
         bucket_url = _bucket_url(s3_bucket)
