@@ -176,7 +176,6 @@ class OpenSearchServiceDomainProperties:
 
 
 class OpenSearchServiceDomainAllProperties(OpenSearchServiceDomainProperties):
-    id: Optional[str] = None
     physical_resource_id: Optional[str] = None
 
 
@@ -196,13 +195,18 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainAl
         if model.physical_resource_id is None:
             # resource is not ready
 
+            # Defaults
+
             # Idempotency
             try:
                 request.aws_client_factory.opensearch.describe_domain(DomainName=model.DomainName)
             except request.aws_client_factory.opensearch.exceptions.ResourceNotFoundException:
                 pass
-
-            # Defaults
+            else:
+                # the resource already exists
+                # for now raise an exception
+                # TODO: return progress event
+                raise RuntimeError(f"opensearch domain {model.DomainName} already exists")
 
             # Create resource
             res = request.aws_client_factory.opensearch.create_domain(DomainName=model.DomainName)
