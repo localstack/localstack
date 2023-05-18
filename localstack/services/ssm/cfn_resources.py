@@ -39,6 +39,7 @@ class SSMParameterProvider(ResourceProvider[SSMParameterAllProperties]):
         request: ResourceRequest[SSMParameterAllProperties],
     ) -> ProgressEvent[SSMParameterAllProperties]:
         model = request.desired_state
+        breakpoint()
 
         # Validations
         assert model.Type is not None
