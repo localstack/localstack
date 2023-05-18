@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import copy
 import logging
+import time
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -30,7 +32,7 @@ class ProgressEvent(Generic[Properties]):
     message: str = ""
     result: Optional[str] = None
     error_code: Optional[str] = None  # TODO: enum
-    # custom_context: Optional[dict]  # TODO
+    custom_context: dict = field(default_factory=dict)
 
 
 class Credentials(TypedDict):
@@ -87,6 +89,7 @@ def convert_payload(
         desired_state=desired_state,
         logical_resource_id=payload["requestData"]["logicalResourceId"],
         logger=logging.getLogger("abc"),
+        custom_context=payload["callbackContext"],
     )
 
 
@@ -101,13 +104,13 @@ class ResourceRequest(Generic[Properties]):
     account_id: str
     region_name: str
 
-    # custom_context: dict = field(default=dict)
-
     desired_state: Properties
 
     logical_resource_id: str
 
     logger: Logger
+
+    custom_context: dict = field(default_factory=dict)
 
     previous_state: Optional[Properties] = None
     previous_tags: Optional[dict[str, str]] = None
@@ -149,8 +152,21 @@ class ResourceProviderExecutor:
         self.stack_name = stack_name
         self.stack_id = stack_id
 
-    def execute_action(self, raw_payload: ResourceProviderPayload) -> ProgressEvent[Properties]:
+    def deploy_loop(
+        self, raw_payload: ResourceProviderPayload, max_iterations: int = 30, sleep_time: float = 5
+    ) -> ProgressEvent[Properties]:
+        payload = copy.deepcopy(raw_payload)
+        for _ in range(max_iterations):
+            event = self.execute_action(payload)
+            if event.status == OperationStatus.SUCCESS:
+                return event
+            context = {**payload["callbackContext"], **event.custom_context}
+            payload["callbackContext"] = context
+            time.sleep(sleep_time)
+        else:
+            raise TimeoutError("Could not perform deploy loop action")
 
+    def execute_action(self, raw_payload: ResourceProviderPayload) -> ProgressEvent[Properties]:
         # lookup provider in private registry
         if provider_cls := PRIVATE_REGISTRY.get(self.resource_type):
             change_type = raw_payload["action"]
