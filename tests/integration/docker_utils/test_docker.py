@@ -716,8 +716,12 @@ class TestDockerClient:
     ):
         # create custom image tag
         image_name = f"alpine:tag-{short_uid()}"
+        _pull_image_if_not_exists(docker_client, "alpine")
         docker_client.tag_image("alpine", image_name)
         cleanups.append(lambda: docker_client.remove_image(image_name))
+
+        # apply patch to simulate podman behavior
+        container_init_orig = Container.__init__
 
         def container_init(self, attrs=None, *args, **kwargs):
             # Simulate podman API response, Docker returns "sha:..." for Image, podman returns "<image-name>:<tag>".
@@ -725,8 +729,6 @@ class TestDockerClient:
             attrs["Image"] = image_name
             container_init_orig(self, attrs=attrs, *args, **kwargs)
 
-        # apply patch to simulate podman behavior
-        container_init_orig = Container.__init__
         monkeypatch.setattr(Container, "__init__", container_init)
 
         # start a container from the custom image tag
@@ -1020,7 +1022,7 @@ class TestDockerClient:
 
     @pytest.mark.skip_offline
     def test_tag_image(self, docker_client: ContainerClient):
-        docker_client.pull_image("alpine")
+        _pull_image_if_not_exists(docker_client, "alpine")
         img_refs = [
             "localstack_dummy_image",
             "localstack_dummy_image:latest",
@@ -1151,7 +1153,7 @@ class TestDockerClient:
 
     @pytest.mark.skip_offline
     def test_inspect_image(self, docker_client: ContainerClient):
-        docker_client.pull_image("alpine")
+        _pull_image_if_not_exists(docker_client, "alpine")
         assert "alpine" in docker_client.inspect_image("alpine")["RepoTags"][0]
 
     def test_inspect_network(self, docker_client: ContainerClient, create_network):
@@ -1600,3 +1602,8 @@ class TestDockerLabels:
         result = docker_client.inspect_container(container.container_id)
         result_labels = result.get("Config", {}).get("Labels")
         assert result_labels == labels
+
+
+def _pull_image_if_not_exists(docker_client: ContainerClient, image_name: str):
+    if image_name not in docker_client.get_docker_image_names():
+        docker_client.pull_image(image_name)
