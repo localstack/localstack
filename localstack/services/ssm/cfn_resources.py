@@ -26,7 +26,6 @@ class SSMParameterProperties:
 
 
 class SSMParameterAllProperties(SSMParameterProperties):
-    id: Optional[str] = None
     physical_resource_id: Optional[str] = None
 
 
@@ -38,24 +37,49 @@ class SSMParameterProvider(ResourceProvider[SSMParameterAllProperties]):
         self,
         request: ResourceRequest[SSMParameterAllProperties],
     ) -> ProgressEvent[SSMParameterAllProperties]:
+        """
+        Note: creating an SSM parameter is not an async operation, but for sake
+        of demonstration we model it here as an async operation.
+        """
         model = request.desired_state
-        breakpoint()
 
         # Validations
         assert model.Type is not None
+        assert model.Value is not None
 
-        # defaults
-        model.DataType = "text"
-        model.Name = f"param-{short_uid()}"
+        if model.physical_resource_id is None:
+            # first time being invoked
+            # defaults
+            if model.DataType is None:
+                model.DataType = "text"
 
-        # create the parameter
-        request.aws_client_factory.ssm.put_parameter(
-            Name=model.Name,
-            Type=model.Type,
-            Value=model.Value,
-        )
+            if model.Name is None:
+                model.Name = f"param-{short_uid()}"
 
-        model.id = "my-ssm-parameter"
+            # idempotency
+            try:
+                request.aws_client_factory.ssm.get_parameter(Name=model.Name)
+            except request.aws_client_factory.ssm.exceptions.ParameterNotFound:
+                pass
+            else:
+                # the resource already exists
+                # for now raise an exception
+                # TODO: return progress event
+                raise RuntimeError(f"opensearch domain {model.Name} already exists")
+
+            # create the parameter
+            request.aws_client_factory.ssm.put_parameter(
+                Name=model.Name,
+                Type=model.Type,
+                Value=model.Value,
+            )
+
+            model.physical_resource_id = "my-ssm-parameter"
+
+            return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
+
+        request.aws_client_factory.ssm.get_parameter(Name=model.Name)
+        # no error means ok
 
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
