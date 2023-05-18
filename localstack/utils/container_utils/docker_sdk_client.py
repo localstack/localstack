@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import queue
+import re
 import socket
 import threading
 from time import sleep
@@ -788,3 +789,24 @@ class SdkDockerClient(ContainerClient):
             self.client().login(username, password=password, registry=registry, reauth=True)
         except APIError as e:
             raise ContainerException() from e
+
+
+# apply patches required for podman API compatibility
+
+
+@property
+def _container_image(self):
+    image_id = self.attrs.get("ImageID", self.attrs["Image"])
+    if image_id is None:
+        return None
+    image_ref = image_id
+    # Fix for podman API response: Docker returns "sha:..." for `Image`, podman returns "<image-name>:<tag>".
+    # See https://github.com/containers/podman/issues/8329 . Without this check, the Docker client would
+    # blindly strip off the suffix after the colon `:` (which is the `<tag>` in podman's case) which would
+    # then lead to "no such image" errors.
+    if re.match("sha256:[0-9a-f]{64}", image_id, flags=re.IGNORECASE):
+        image_ref = image_id.split(":")[1]
+    return self.client.images.get(image_ref)
+
+
+Container.image = _container_image
