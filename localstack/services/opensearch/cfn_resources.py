@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Optional
 
@@ -8,6 +9,8 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceRequest,
     register_resource_provider,
 )
+
+LOG = logging.getLogger(__name__)
 
 
 @dataclass
@@ -216,7 +219,25 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainAl
     def delete(
         self, request: ResourceRequest[OpenSearchServiceDomainAllProperties]
     ) -> ProgressEvent[OpenSearchServiceDomainAllProperties]:
-        # TODO: re-entrant check that the cluster has been deleted
         name = request.desired_state.DomainName
-        request.aws_client_factory.opensearch.delete_domain(DomainName=name)
-        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=request.desired_state)
+        LOG.warning(f"deleting domain {request.custom_context=}")
+        assert name is not None
+        if not request.custom_context.get("started", False):
+            # first time in the loop
+            request.aws_client_factory.opensearch.delete_domain(DomainName=name)
+            return ProgressEvent(
+                status=OperationStatus.IN_PROGRESS,
+                resource_model=request.desired_state,
+                custom_context={"started": True},
+            )
+
+        # we have entered the loop again so check the resource status
+        try:
+            request.aws_client_factory.opensearch.describe_domain(DomainName=name)
+            return ProgressEvent(
+                status=OperationStatus.SUCCESS, resource_model=request.desired_state
+            )
+        except request.aws_client_factory.opensearch.exceptions.ResourceNotFoundException:
+            return ProgressEvent(
+                status=OperationStatus.SUCCESS, resource_model=request.desired_state
+            )
