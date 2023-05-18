@@ -134,9 +134,13 @@ def generate_waitcondition_url(stack_name: str) -> str:
 
 
 class CloudFormationWaitConditionHandle(GenericBaseModel):
-    @staticmethod
-    def cloudformation_type():
+    @classmethod
+    def cloudformation_type(cls):
         return "AWS::CloudFormation::WaitConditionHandle"
+
+    def fetch_state(self, stack_name, resources):
+        if self.physical_resource_id is not None:
+            return {"deployed": True}
 
     @staticmethod
     def get_deploy_templates():
