@@ -1,19 +1,14 @@
-import logging
-import time
 import uuid
 
 import pytest
 
 from localstack.services.cloudformation.resource_provider import (
-    OperationStatus,
     ResourceProviderExecutor,
     ResourceProviderPayload,
 )
 from localstack.services.opensearch.cfn_resources import OpenSearchServiceDomainAllProperties
 from localstack.services.ssm.cfn_resources import SSMParameterAllProperties
 from localstack.utils.strings import short_uid
-
-LOG = logging.getLogger(__name__)
 
 
 @pytest.mark.skip(reason="This is an example")
@@ -30,8 +25,6 @@ def test_ssm_deploy(aws_client, aws_client_factory):
     # definition from the template
     props = SSMParameterAllProperties(Type="String", Value=f"value-{short_uid()}")
 
-    change = {"ResourceChange": {"Action": "Add"}}
-
     creds = {
         "accessKeyId": "test",
         "secretAccessKey": "test",
@@ -46,7 +39,7 @@ def test_ssm_deploy(aws_client, aws_client_factory):
         # TODO: not actually a UUID
         "bearerToken": str(uuid.uuid4()),
         "region": "us-east-1",
-        "action": change["ResourceChange"]["Action"],
+        "action": "Add",
         "requestData": {
             "logicalResourceId": "MyParameter",
             "resourceProperties": props,
@@ -60,11 +53,10 @@ def test_ssm_deploy(aws_client, aws_client_factory):
         },
     }
 
-    event = executor.execute_action(resource_provider_payload)
-    assert event.status == OperationStatus.SUCCESS
+    deployed_resource = executor.deploy_loop(resource_provider_payload).resource_model
 
-    res = aws_client.ssm.get_parameter(Name=props.Name)
-    assert res["Parameter"]["Value"] == props.Value
+    res = aws_client.ssm.get_parameter(Name=deployed_resource.Name)
+    assert res["Parameter"]["Value"] == deployed_resource.Value
 
     # create the delete event
     resource_provider_payload: ResourceProviderPayload = {
@@ -79,7 +71,7 @@ def test_ssm_deploy(aws_client, aws_client_factory):
         "action": "Remove",
         "requestData": {
             "logicalResourceId": "MyParameter",
-            "resourceProperties": props,
+            "resourceProperties": deployed_resource,
             "previousResourceProperties": None,
             "callerCredentials": creds,
             "providerCredentials": creds,
@@ -89,8 +81,7 @@ def test_ssm_deploy(aws_client, aws_client_factory):
             "previousStackTags": {},
         },
     }
-    delete_event = executor.execute_action(resource_provider_payload)
-    assert delete_event.status == OperationStatus.SUCCESS
+    executor.deploy_loop(resource_provider_payload)
 
 
 @pytest.mark.skip(reason="This is an example")
@@ -107,8 +98,6 @@ def test_opensearch_deploy(aws_client, aws_client_factory):
     # definition from the template
     props = OpenSearchServiceDomainAllProperties(DomainName=f"domain-{short_uid()}")
 
-    change = {"ResourceChange": {"Action": "Add"}}
-
     creds = {
         "accessKeyId": "test",
         "secretAccessKey": "test",
@@ -123,7 +112,7 @@ def test_opensearch_deploy(aws_client, aws_client_factory):
         # TODO: not actually a UUID
         "bearerToken": str(uuid.uuid4()),
         "region": "us-east-1",
-        "action": change["ResourceChange"]["Action"],
+        "action": "Add",
         "requestData": {
             "logicalResourceId": "MyDomain",
             "resourceProperties": props,
@@ -137,15 +126,7 @@ def test_opensearch_deploy(aws_client, aws_client_factory):
         },
     }
 
-    for i in range(30):
-        event = executor.execute_action(resource_provider_payload)
-        if event.status == OperationStatus.SUCCESS:
-            LOG.debug(f"took {i + 1} loop iterations to deploy")
-            break
-        time.sleep(5)
-    else:
-        # we did not break the loop, so consider a timeout error here
-        raise RuntimeError("Could not deploy resource")
+    executor.deploy_loop(resource_provider_payload)
 
     # create the delete event
     resource_provider_payload: ResourceProviderPayload = {
@@ -170,5 +151,5 @@ def test_opensearch_deploy(aws_client, aws_client_factory):
             "previousStackTags": {},
         },
     }
-    delete_event = executor.execute_action(resource_provider_payload)
-    assert delete_event.status == OperationStatus.SUCCESS
+
+    executor.deploy_loop(resource_provider_payload)
