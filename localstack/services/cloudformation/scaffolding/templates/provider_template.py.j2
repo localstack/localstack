@@ -28,6 +28,7 @@ class {{ resource }}Provider(ResourceProvider[{{ resource }}AllProperties]):
         """
         Create a new resource.
         """
+        raise NotImplementedError
         model = request.desired_state
 
         # TODO: validations
