@@ -24,6 +24,7 @@ from werkzeug import Request, Response
 
 from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.stores import (
     AccountRegionBundle,
@@ -945,7 +946,7 @@ def deploy_cfn_template(
     cleanup_changesets,
     is_change_set_created_and_available,
     is_change_set_finished,
-    aws_client,
+    aws_client: ServiceLevelClientFactory,
 ):
     state = []
 

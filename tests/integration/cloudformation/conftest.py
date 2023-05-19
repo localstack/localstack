@@ -1,4 +1,5 @@
 import uuid
+from pathlib import Path
 from typing import Literal
 
 import pytest
@@ -58,3 +59,8 @@ def perform_cfn_operation(aws_client, aws_client_factory):
         return executor.deploy_loop(resource_provider_payload)
 
     return run
+
+
+@pytest.fixture
+def template_root() -> Path:
+    return Path(__file__).parent.joinpath("..", "templates")
