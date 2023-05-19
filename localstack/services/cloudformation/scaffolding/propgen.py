@@ -71,16 +71,16 @@ TYPE_MAP = {
 def render_types(
     schema: Schema,
     required_properties: list[str],
+    provider_prefix: str,
     name: Optional[str] = None,
     sub_schema: Optional[dict] = None,
-    trace_logging: bool = False,
 ) -> list[Struct]:
     """
     Render the types contained within a schema to a list of structs.
     """
     structs = []
 
-    top_level_props = Struct(name=name or "Properties", items=[])
+    top_level_props = Struct(name=name or f"{provider_prefix}Properties", items=[])
 
     if sub_schema is not None:
         current_schema = sub_schema
@@ -94,7 +94,7 @@ def render_types(
                 item = Item.new(name=name, type=python_type, required=name in required_properties)
                 top_level_props.items.append(item)
                 return structs
-        raise NotImplementedError
+        raise NotImplementedError(name, current_schema)
 
     for property, defn in current_schema["properties"].items():
         if prop_type := defn.get("type"):
@@ -137,9 +137,9 @@ def render_types(
             new_structs = render_types(
                 schema=schema,
                 required_properties=required_properties,
+                provider_prefix=provider_prefix,
                 name=property,
                 sub_schema=new_defn,
-                trace_logging=trace_logging,
             )
             structs.extend(new_structs)
             item = Item.new(name=property, type=property, required=property in required_properties)
@@ -164,7 +164,7 @@ def render_types(
     return structs
 
 
-def generate_ir_for_type(schema: list[Schema], type_name: str, trace_logging: bool = False) -> IR:
+def generate_ir_for_type(schema: list[Schema], type_name: str, provider_prefix: str = "") -> IR:
     try:
         resource_schema = [every for every in schema if every["typeName"] == type_name][0]
     except IndexError:
@@ -172,6 +172,8 @@ def generate_ir_for_type(schema: list[Schema], type_name: str, trace_logging: bo
 
     required_properties = resource_schema.get("required", [])
     structs = render_types(
-        resource_schema, required_properties=required_properties, trace_logging=trace_logging
+        resource_schema,
+        required_properties=required_properties,
+        provider_prefix=provider_prefix,
     )
     return IR(structs=structs)

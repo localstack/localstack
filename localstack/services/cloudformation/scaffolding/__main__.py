@@ -121,7 +121,11 @@ class TemplateRenderer:
             case "test":
                 kwargs["getatt_targets"] = list(self.get_getatt_targets())
             case "provider":
-                property_ir = generate_ir_for_type([self.schema], resource_name.full_name)
+                property_ir = generate_ir_for_type(
+                    [self.schema],
+                    resource_name.full_name,
+                    provider_prefix=resource_name.provider_name(),
+                )
                 kwargs["provider_properties"] = property_ir
 
         return get_formatted_template_output(

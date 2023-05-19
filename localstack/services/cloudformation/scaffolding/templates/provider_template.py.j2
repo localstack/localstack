@@ -12,19 +12,19 @@ from localstack.services.cloudformation.resource_provider import (
 {{ provider_properties }}
 
 
-class AllProperties(Properties):
+class {{ resource }}AllProperties({{ resource }}Properties):
     physical_resource_id: Optional[str] = None
 
 
 @register_resource_provider
-class {{ resource }}Provider(ResourceProvider[AllProperties]):
+class {{ resource }}Provider(ResourceProvider[{{ resource }}AllProperties]):
 
     TYPE = "{{ name }}"
 
     def create(
         self,
-        request: ResourceRequest[AllProperties],
-    ) -> ProgressEvent[AllProperties]:
+        request: ResourceRequest[{{ resource }}AllProperties],
+    ) -> ProgressEvent[{{ resource }}AllProperties]:
         """
         Create a new resource.
         """
@@ -50,6 +50,6 @@ class {{ resource }}Provider(ResourceProvider[AllProperties]):
 
     def delete(
             self,
-            request: ResourceRequest[AllProperties],
-    ) -> ProgressEvent[AllProperties]:
+            request: ResourceRequest[{{ resource }}AllProperties],
+    ) -> ProgressEvent[{{ resource }}AllProperties]:
         raise NotImplementedError
