@@ -130,14 +130,16 @@ class TemplateRenderer:
             "test": "test_template.py.j2",
         }
         kwargs = dict(
-            name=resource_name.full_name,
-            resource=resource_name.provider_name(),
+            name=resource_name.full_name,  # AWS::SNS::Topic
+            resource=resource_name.provider_name(),  # SNSTopic
         )
 
         # add extra parameters
         match file_type:
             case "test":
                 kwargs["getatt_targets"] = list(self.get_getatt_targets())
+                kwargs["service"] = resource_name.service.lower()
+                kwargs["resource"] = resource_name.resource.lower()
             case "provider":
                 property_ir = generate_ir_for_type(
                     [self.schema],
@@ -186,10 +188,10 @@ class TemplateRenderer:
         outputs = {}
 
         # ref
-        outputs["MyRef"] = {"Fn::Ref": "MyResource"}
+        outputs["MyRef"] = {"Value": {"Ref": "MyResource"}}
 
         # getatt
-        outputs["MyOutput"] = {"Fn::GetAtt": ["MyResource", {"Fn::Ref": "AttributeName"}]}
+        outputs["MyOutput"] = {"Value": {"Fn::GetAtt": ["MyResource", {"Ref": "AttributeName"}]}}
 
         return outputs
 
@@ -230,9 +232,10 @@ class PropertyRenderer:
 
 
 class FileWriter:
-    def __init__(self, root: Path, resource_name: ResourceName):
+    def __init__(self, root: Path, resource_name: ResourceName, console: Console):
         self.root = root
         self.resource_name = resource_name
+        self.console = console
 
     def write_provider(self, contents: str):
         destination = self.root.joinpath(
@@ -244,6 +247,7 @@ class FileWriter:
         )
         destination.parent.mkdir(parents=True, exist_ok=True)
         self.write_text(contents, destination)
+        self.console.print(f"written provider to {destination}")
 
     def write_tests(self, contents: str):
         destination = self.root.joinpath(
@@ -256,6 +260,7 @@ class FileWriter:
         )
         destination.parent.mkdir(parents=True, exist_ok=True)
         self.write_text(contents, destination)
+        self.console.print(f"written tests to {destination}")
 
     def write_test_template(self, contents: str):
         destination = self.root.joinpath(
@@ -268,6 +273,7 @@ class FileWriter:
         )
         destination.parent.mkdir(parents=True, exist_ok=True)
         self.write_text(contents, destination)
+        self.console.print(f"written test CFn template to {destination}")
 
     @staticmethod
     def write_text(contents: str, destination: Path):
@@ -301,8 +307,10 @@ def generate(service: str, write: bool):
     tests_file = template_renderer.render("test", resource_name)
     test_template = template_renderer.render("template", resource_name)
 
+    # for pretty printing
+    console = Console()
+
     if not write:
-        console = Console()
         console.print("\n[underline]Provider template[/underline]\n")
         console.print(Syntax(provider_file, "python"))
         console.print("\n[underline]Test template[/underline]\n")
@@ -313,7 +321,7 @@ def generate(service: str, write: bool):
 
     # render the output to the file system locations
     root_path = Path(__file__).joinpath("..", "..", "..", "..", "..").resolve()
-    writer = FileWriter(root_path, resource_name)
+    writer = FileWriter(root_path, resource_name, console)
     writer.write_provider(provider_file)
     writer.write_tests(tests_file)
     writer.write_test_template(test_template)

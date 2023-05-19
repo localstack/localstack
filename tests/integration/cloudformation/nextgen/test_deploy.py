@@ -20,11 +20,12 @@ Properties = TypeVar("Properties")
             "AWS::SSM::Parameter",
             SSMParameterAllProperties(Type="String", Value=f"value-{short_uid()}"),
         ),
+        # TODO: Add your resource definitions here!
     ],
     ids=["opensearch-domain", "ssm-parameter"],
 )
 @pytest.mark.skip(reason="Example")
-def test_roundtrip(type_name, props, perform_cfn_operation, aws_client):
+def test_roundtrip(type_name, props, perform_cfn_operation):
     # deploy
     event = perform_cfn_operation(
         logical_resource_id="MyResource",
