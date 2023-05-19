@@ -97,11 +97,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
         if topic_arn not in store.topic_subscriptions:
-            raise NotFoundException(
-                "Topic does not exist",
-            )
+            raise NotFoundException("Topic does not exist")
 
         moto_response: GetTopicAttributesResponse = call_moto(context)
         # TODO: fix some attributes by moto, see snapshot
@@ -125,7 +123,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 "The batch request contains more entries than permissible."
             )
 
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
         if topic_arn not in store.topic_subscriptions:
             raise NotFoundException(
                 "Topic does not exist",
@@ -204,7 +202,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         attribute_name: attributeName,
         attribute_value: attributeValue = None,
     ) -> None:
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
         sub = store.subscriptions.get(subscription_arn)
         if not sub:
             raise NotFoundException("Subscription does not exist")
@@ -223,7 +221,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise
 
         if attribute_name == "FilterPolicy":
-            store = self.get_store(account_id=context.account_id, region=context.region)
+            store = self.get_store(account_id=context.account_id, region_name=context.region)
             store.subscription_filter_policy[subscription_arn] = json.loads(attribute_value)
 
         sub[attribute_name] = attribute_value
@@ -244,7 +242,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         except InvalidArnException:
             raise InvalidParameterException("Invalid parameter: Topic")
 
-        store = self.get_store(account_id=parsed_arn["account"], region=parsed_arn["region"])
+        store = self.get_store(account_id=parsed_arn["account"], region_name=parsed_arn["region"])
 
         # it seems SNS is able to know what the region of the topic should be, even though a wrong topic is accepted
         if parsed_arn["region"] != get_region_from_subscription_token(token):
@@ -334,7 +332,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
     def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
         call_moto(context)
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
 
         # pop the subscription at the end, to avoid race condition by iterating over the topic subscriptions
         subscription = store.subscriptions.get(subscription_arn)
@@ -368,7 +366,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def get_subscription_attributes(
         self, context: RequestContext, subscription_arn: subscriptionARN
     ) -> GetSubscriptionAttributesResponse:
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
         sub = store.subscriptions.get(subscription_arn)
         if not sub:
             raise NotFoundException(f"Subscription with arn {subscription_arn} not found")
@@ -461,7 +459,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if message_attributes:
             validate_message_attributes(message_attributes)
 
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
 
         if not phone_number:
             if is_endpoint_publish:
@@ -555,7 +553,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         moto_response = call_moto(context)
         subscription_arn = moto_response.get("SubscriptionArn")
 
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
 
         # An endpoint may only be subscribed to a topic once. Subsequent
         # subscribe calls do nothing (subscribe is idempotent).
@@ -645,7 +643,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
     def delete_topic(self, context: RequestContext, topic_arn: topicARN) -> None:
         call_moto(context)
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
         topic_subscriptions = store.topic_subscriptions.pop(topic_arn, [])
         for topic_sub in topic_subscriptions:
             store.subscriptions.pop(topic_sub, None)
@@ -661,7 +659,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         data_protection_policy: attributeValue = None,
     ) -> CreateTopicResponse:
         moto_response = call_moto(context)
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
         topic_arn = moto_response["TopicArn"]
         tag_resource_success = extract_tags(topic_arn, tags, True, store)
         if not tag_resource_success:

@@ -112,6 +112,7 @@ class SnsSubscription(TypedDict):
 class SnsStore(BaseStore):
     # maps topic ARN to subscriptions ARN
     topic_subscriptions: Dict[str, List[str]] = LocalAttribute(default=dict)
+
     # maps subscription ARN to SnsSubscription
     subscriptions: Dict[str, SnsSubscription] = LocalAttribute(default=dict)
 
