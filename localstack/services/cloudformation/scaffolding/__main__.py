@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess as sp
 import zipfile
 from dataclasses import dataclass
 from functools import reduce
@@ -69,8 +70,13 @@ class ResourceName:
 
 def run_black(text: str) -> str:
     """Black does not have an API, so spawn a subprocess"""
-    # TODO
-    return text
+    try:
+        proc = sp.run(["black", "--code", text], capture_output=True, check=True)
+    except FileNotFoundError:
+        # The user does not have black installed
+        return text
+    output = proc.stdout.decode("utf8")
+    return output
 
 
 def get_formatted_template_output(
