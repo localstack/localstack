@@ -14,6 +14,7 @@ from typing import Optional, TypedDict
 class Item:
     name: str
     type: str
+    required: bool
 
     def __str__(self) -> str:
         return f"{self.name}: {self.type}"
@@ -21,9 +22,9 @@ class Item:
     @classmethod
     def new(cls, name: str, type: str, required: bool = False) -> Item:
         if required:
-            return cls(name=name, type=type)
+            return cls(name=name, type=type, required=required)
         else:
-            return cls(name=name, type=f"Optional[{type}]")
+            return cls(name=name, type=f"Optional[{type}] = None", required=required)
 
 
 @dataclass
@@ -33,7 +34,7 @@ class Struct:
 
     def __str__(self) -> str:
         if self.items:
-            raw_text = "\n".join(map(str, self.items))
+            raw_text = "\n".join(map(str, self.sorted_items))
         else:
             raw_text = "pass"
         formatted_items = textwrap.indent(raw_text, "    ")
@@ -42,6 +43,16 @@ class Struct:
 class {self.name}:
 {formatted_items}
 """
+
+    @property
+    def sorted_items(self) -> list[Item]:
+        required_items = sorted(
+            [item for item in self.items if item.required], key=lambda item: item.name
+        )
+        optional_items = sorted(
+            [item for item in self.items if not item.required], key=lambda item: item.name
+        )
+        return required_items + optional_items
 
 
 @dataclass
