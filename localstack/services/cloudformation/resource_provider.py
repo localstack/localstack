@@ -172,6 +172,7 @@ class ResourceProviderExecutor:
 
     def execute_action(self, raw_payload: ResourceProviderPayload) -> ProgressEvent[Properties]:
         # lookup provider in private registry
+        # TODO: delegate to a concrete subclass
         if provider_cls := PRIVATE_REGISTRY.get(raw_payload["resourceType"]):
             change_type = raw_payload["action"]
             request = convert_payload(
