@@ -28,6 +28,11 @@ from yaml import safe_dump
 
 from localstack.services.cloudformation.scaffolding.propgen import generate_ir_for_type
 
+# Some services require their names to be re-written as we know them by different names
+SERVICE_NAME_MAP = {
+    "OpenSearchService": "OpenSearch",
+}
+
 
 class Property(TypedDict):
     type: Optional[Literal["str"]]
@@ -73,9 +78,12 @@ class ResourceName:
         if len(parts) != 3 or parts[0] != "AWS":
             raise ValueError(f"Invalid CloudFormation resource name {name}")
 
+        raw_service_name = parts[1].strip()
+        renamed_service = SERVICE_NAME_MAP.get(raw_service_name, raw_service_name)
+
         return ResourceName(
             full_name=name,
-            service=parts[1].strip(),
+            service=renamed_service,
             resource=parts[2].strip(),
         )
 
