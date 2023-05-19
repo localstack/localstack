@@ -10,8 +10,20 @@ from typing import Any, Generator, Literal, Optional, TypedDict, TypeVar
 
 import click
 from jinja2 import Environment, FileSystemLoader
-from rich.console import Console
-from rich.syntax import Syntax
+
+try:
+    from rich.console import Console
+    from rich.syntax import Syntax
+except ImportError:
+
+    class Console:
+        def print(self, text: str):
+            print("# " + text.replace("[underline]", "").replace("[/underline]", ""))
+
+    def Syntax(text: str, *args, **kwargs) -> str:
+        return text
+
+
 from yaml import safe_dump
 
 from localstack.services.cloudformation.scaffolding.propgen import generate_ir_for_type
