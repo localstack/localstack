@@ -20,16 +20,16 @@ class ZoneAwarenessConfig:
 
 @dataclass
 class ClusterConfig:
-    InstanceCount: Optional[int] = None
-    WarmEnabled: Optional[bool] = None
-    WarmCount: Optional[int] = None
-    DedicatedMasterEnabled: Optional[bool] = None
-    ZoneAwarenessConfig: Optional[ZoneAwarenessConfig] = None
     DedicatedMasterCount: Optional[int] = None
-    InstanceType: Optional[str] = None
-    WarmType: Optional[str] = None
-    ZoneAwarenessEnabled: Optional[bool] = None
+    DedicatedMasterEnabled: Optional[bool] = None
     DedicatedMasterType: Optional[str] = None
+    InstanceCount: Optional[int] = None
+    InstanceType: Optional[str] = None
+    WarmCount: Optional[int] = None
+    WarmEnabled: Optional[bool] = None
+    WarmType: Optional[str] = None
+    ZoneAwarenessConfig: Optional[ZoneAwarenessConfig] = None
+    ZoneAwarenessEnabled: Optional[bool] = None
 
 
 @dataclass
@@ -50,10 +50,10 @@ class NodeToNodeEncryptionOptions:
 
 @dataclass
 class DomainEndpointOptions:
+    CustomEndpoint: Optional[str] = None
     CustomEndpointCertificateArn: Optional[str] = None
     CustomEndpointEnabled: Optional[bool] = None
     EnforceHTTPS: Optional[bool] = None
-    CustomEndpoint: Optional[str] = None
     TLSSecurityPolicy: Optional[str] = None
 
 
@@ -61,69 +61,69 @@ class DomainEndpointOptions:
 class CognitoOptions:
     Enabled: Optional[bool] = None
     IdentityPoolId: Optional[str] = None
-    UserPoolId: Optional[str] = None
     RoleArn: Optional[str] = None
+    UserPoolId: Optional[str] = None
 
 
 @dataclass
 class MasterUserOptions:
-    MasterUserPassword: Optional[str] = None
-    MasterUserName: Optional[str] = None
     MasterUserARN: Optional[str] = None
+    MasterUserName: Optional[str] = None
+    MasterUserPassword: Optional[str] = None
 
 
 @dataclass
 class Idp:
-    MetadataContent: Optional[str] = None
     EntityId: Optional[str] = None
+    MetadataContent: Optional[str] = None
 
 
 @dataclass
 class SAMLOptions:
     Enabled: Optional[bool] = None
     Idp: Optional[Idp] = None
-    MasterUserName: Optional[str] = None
     MasterBackendRole: Optional[str] = None
-    SubjectKey: Optional[str] = None
+    MasterUserName: Optional[str] = None
     RolesKey: Optional[str] = None
     SessionTimeoutMinutes: Optional[int] = None
+    SubjectKey: Optional[str] = None
 
 
 @dataclass
 class AdvancedSecurityOptions:
-    Enabled: Optional[bool] = None
-    MasterUserOptions: Optional[MasterUserOptions] = None
-    InternalUserDatabaseEnabled: Optional[bool] = None
-    AnonymousAuthEnabled: Optional[bool] = None
-    SAMLOptions: Optional[SAMLOptions] = None
     AnonymousAuthDisableDate: Optional[str] = None
+    AnonymousAuthEnabled: Optional[bool] = None
+    Enabled: Optional[bool] = None
+    InternalUserDatabaseEnabled: Optional[bool] = None
+    MasterUserOptions: Optional[MasterUserOptions] = None
+    SAMLOptions: Optional[SAMLOptions] = None
 
 
 @dataclass
 class EBSOptions:
     EBSEnabled: Optional[bool] = None
-    VolumeType: Optional[str] = None
     Iops: Optional[int] = None
-    VolumeSize: Optional[int] = None
     Throughput: Optional[int] = None
+    VolumeSize: Optional[int] = None
+    VolumeType: Optional[str] = None
 
 
 @dataclass
 class EncryptionAtRestOptions:
-    KmsKeyId: Optional[str] = None
     Enabled: Optional[bool] = None
+    KmsKeyId: Optional[str] = None
 
 
 @dataclass
 class ServiceSoftwareOptions:
-    CurrentVersion: Optional[str] = None
-    NewVersion: Optional[str] = None
-    UpdateAvailable: Optional[bool] = None
-    Cancellable: Optional[bool] = None
-    UpdateStatus: Optional[str] = None
-    Description: Optional[str] = None
     AutomatedUpdateDate: Optional[str] = None
+    Cancellable: Optional[bool] = None
+    CurrentVersion: Optional[str] = None
+    Description: Optional[str] = None
+    NewVersion: Optional[str] = None
     OptionalDeployment: Optional[bool] = None
+    UpdateAvailable: Optional[bool] = None
+    UpdateStatus: Optional[str] = None
 
 
 @dataclass
@@ -149,44 +149,44 @@ class SoftwareUpdateOptions:
 
 
 @dataclass
-class OpenSearchServiceDomainProperties:
-    ClusterConfig: Optional[ClusterConfig] = None
-    DomainName: Optional[str] = None
+class OpenSearchDomainProperties:
     AccessPolicies: Optional[dict] = None
-    EngineVersion: Optional[str] = None
     AdvancedOptions: Optional[dict] = None
-    LogPublishingOptions: Optional[dict] = None
-    SnapshotOptions: Optional[SnapshotOptions] = None
-    VPCOptions: Optional[VPCOptions] = None
-    NodeToNodeEncryptionOptions: Optional[NodeToNodeEncryptionOptions] = None
-    DomainEndpointOptions: Optional[DomainEndpointOptions] = None
-    CognitoOptions: Optional[CognitoOptions] = None
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptions] = None
-    DomainEndpoint: Optional[str] = None
-    DomainEndpoints: Optional[dict] = None
-    EBSOptions: Optional[EBSOptions] = None
-    Id: Optional[str] = None
     Arn: Optional[str] = None
+    ClusterConfig: Optional[ClusterConfig] = None
+    CognitoOptions: Optional[CognitoOptions] = None
     DomainArn: Optional[str] = None
+    DomainEndpoint: Optional[str] = None
+    DomainEndpointOptions: Optional[DomainEndpointOptions] = None
+    DomainEndpoints: Optional[dict] = None
+    DomainName: Optional[str] = None
+    EBSOptions: Optional[EBSOptions] = None
     EncryptionAtRestOptions: Optional[EncryptionAtRestOptions] = None
-    Tags: Optional[list] = None
-    ServiceSoftwareOptions: Optional[ServiceSoftwareOptions] = None
+    EngineVersion: Optional[str] = None
+    Id: Optional[str] = None
+    LogPublishingOptions: Optional[dict] = None
+    NodeToNodeEncryptionOptions: Optional[NodeToNodeEncryptionOptions] = None
     OffPeakWindowOptions: Optional[OffPeakWindowOptions] = None
+    ServiceSoftwareOptions: Optional[ServiceSoftwareOptions] = None
+    SnapshotOptions: Optional[SnapshotOptions] = None
     SoftwareUpdateOptions: Optional[SoftwareUpdateOptions] = None
+    Tags: Optional[list] = None
+    VPCOptions: Optional[VPCOptions] = None
 
 
-class OpenSearchServiceDomainAllProperties(OpenSearchServiceDomainProperties):
+class OpenSearchDomainAllProperties(OpenSearchDomainProperties):
     physical_resource_id: Optional[str] = None
 
 
 @register_resource_provider
-class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainAllProperties]):
+class OpenSearchDomainProvider(ResourceProvider[OpenSearchDomainAllProperties]):
     TYPE = "AWS::OpenSearchService::Domain"
 
     def create(
         self,
-        request: ResourceRequest[OpenSearchServiceDomainAllProperties],
-    ) -> ProgressEvent[OpenSearchServiceDomainAllProperties]:
+        request: ResourceRequest[OpenSearchDomainAllProperties],
+    ) -> ProgressEvent[OpenSearchDomainAllProperties]:
         model = request.desired_state
 
         # Validations
@@ -221,8 +221,9 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainAl
             return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
 
     def delete(
-        self, request: ResourceRequest[OpenSearchServiceDomainAllProperties]
-    ) -> ProgressEvent[OpenSearchServiceDomainAllProperties]:
+        self,
+        request: ResourceRequest[OpenSearchDomainAllProperties],
+    ) -> ProgressEvent[OpenSearchDomainAllProperties]:
         name = request.desired_state.DomainName
         LOG.warning(f"deleting domain {request.custom_context=}")
         assert name is not None
