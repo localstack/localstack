@@ -18,7 +18,12 @@ from werkzeug import Response
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.constants import (
+    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.services.sns.constants import PLATFORM_ENDPOINT_MSGS_ENDPOINT
 from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
@@ -3589,6 +3594,56 @@ class TestSNSProvider:
             )
 
         snapshot.match("token-not-exists", e.value.response)
+
+    def test_cross_account_access(self, aws_client, aws_client_factory):
+        # Cross-account access is supported for below operations.
+        # This list is taken from ActionName param of the AddPermissions operation
+        #
+        # - GetTopicAttributes
+        # - SetTopicAttributes
+        # - AddPermission
+        # - RemovePermission
+        # - Publish
+        # - Subscribe
+        # - ListSubscriptionsByTopic
+        # - DeleteTopic
+
+        topic_name = f"topic-{short_uid()}"
+        topic_arn = aws_client.sns.create_topic(Name=topic_name)["TopicArn"]
+
+        # Client for secondary account
+        client = aws_client_factory.get_client(
+            "sns",
+            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+        )
+
+        assert client.set_topic_attributes(
+            TopicArn=topic_arn, AttributeName="DisplayName", AttributeValue="xenon"
+        )
+
+        response = client.get_topic_attributes(TopicArn=topic_arn)
+        assert response["Attributes"]["DisplayName"] == "xenon"
+
+        assert client.add_permission(
+            TopicArn=topic_arn,
+            Label="foo",
+            AWSAccountId=["666666666666"],
+            ActionName=["AddPermission"],
+        )
+        assert client.remove_permission(TopicArn=topic_arn, Label="foo")
+
+        assert client.publish(TopicArn=topic_arn, Message="hello world")
+
+        subscription_arn = client.subscribe(
+            TopicArn=topic_arn, Protocol="email", Endpoint="devil@hell.com"
+        )["SubscriptionArn"]
+
+        response = client.list_subscriptions_by_topic(TopicArn=topic_arn)
+        subscriptions = [s["SubscriptionArn"] for s in response["Subscriptions"]]
+        assert subscription_arn in subscriptions
+
+        assert client.delete_topic(TopicArn=topic_arn)
 
 
 class TestSNSPublishDelivery:

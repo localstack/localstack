@@ -97,10 +97,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
-        store = self.get_store(account_id=context.account_id, region_name=context.region)
-        if topic_arn not in store.topic_subscriptions:
-            raise NotFoundException("Topic does not exist")
-
         moto_response: GetTopicAttributesResponse = call_moto(context)
         # TODO: fix some attributes by moto, see snapshot
         # TODO: very hacky way to get the attributes we need instead of a moto patch
@@ -461,18 +457,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         store = self.get_store(account_id=context.account_id, region_name=context.region)
 
-        if not phone_number:
-            if is_endpoint_publish:
-                moto_sns_backend = self.get_moto_backend(context.account_id, context.region)
-                if target_arn not in moto_sns_backend.platform_endpoints:
-                    raise InvalidParameterException(
-                        "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
-                    )
-            else:
-                if topic_or_target_arn not in store.topic_subscriptions:
-                    raise NotFoundException(
-                        "Topic does not exist",
-                    )
+        if not phone_number and is_endpoint_publish:
+            moto_sns_backend = self.get_moto_backend(context.account_id, context.region)
+            if target_arn not in moto_sns_backend.platform_endpoints:
+                raise InvalidParameterException(
+                    "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
+                )
 
         message_ctx = SnsMessage(
             type="Notification",

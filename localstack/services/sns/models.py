@@ -1,5 +1,6 @@
 import itertools
 import time
+from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Literal, Optional, TypedDict, Union
 
@@ -111,7 +112,7 @@ class SnsSubscription(TypedDict):
 
 class SnsStore(BaseStore):
     # maps topic ARN to subscriptions ARN
-    topic_subscriptions: Dict[str, List[str]] = LocalAttribute(default=dict)
+    topic_subscriptions: Dict[str, List[str]] = LocalAttribute(default=lambda: defaultdict(list))
 
     # maps subscription ARN to SnsSubscription
     subscriptions: Dict[str, SnsSubscription] = LocalAttribute(default=dict)
