@@ -3,7 +3,7 @@ from typing import TypeVar
 import pytest
 
 from localstack.services.opensearch.cfn_resources import OpenSearchServiceDomainAllProperties
-from localstack.services.ssm.cfn_resources import SSMParameterAllProperties
+from localstack.services.ssm.resource_providers.parameter import SSMParameterAllProperties
 from localstack.utils.strings import short_uid
 
 Properties = TypeVar("Properties")
