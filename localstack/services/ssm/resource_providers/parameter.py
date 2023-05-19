@@ -13,12 +13,12 @@ from localstack.utils.strings import short_uid
 
 @dataclass
 class SSMParameterProperties:
-    Value: str
     Type: str
-
+    Value: str
     AllowedPattern: Optional[str] = None
     DataType: Optional[str] = None
     Description: Optional[str] = None
+    Id: Optional[str] = None
     Name: Optional[str] = None
     Policies: Optional[str] = None
     Tags: Optional[dict] = None
@@ -31,6 +31,7 @@ class SSMParameterAllProperties(SSMParameterProperties):
 
 @register_resource_provider
 class SSMParameterProvider(ResourceProvider[SSMParameterAllProperties]):
+
     TYPE = "AWS::SSM::Parameter"
 
     def create(
@@ -38,53 +39,48 @@ class SSMParameterProvider(ResourceProvider[SSMParameterAllProperties]):
         request: ResourceRequest[SSMParameterAllProperties],
     ) -> ProgressEvent[SSMParameterAllProperties]:
         """
-        Note: creating an SSM parameter is not an async operation, but for sake
-        of demonstration we model it here as an async operation.
+        Create a new resource.
         """
         model = request.desired_state
 
-        # Validations
+        # TODO: validations
         assert model.Type is not None
         assert model.Value is not None
 
-        if model.physical_resource_id is None:
-            # first time being invoked
-            # defaults
-            if model.DataType is None:
-                model.DataType = "text"
+        # defaults
+        if model.DataType is None:
+            model.DataType = "text"
 
-            if model.Name is None:
-                model.Name = f"param-{short_uid()}"
+        if model.Name is None:
+            model.Name = f"param-{short_uid()}"
 
-            # idempotency
-            try:
-                request.aws_client_factory.ssm.get_parameter(Name=model.Name)
-            except request.aws_client_factory.ssm.exceptions.ParameterNotFound:
-                pass
-            else:
-                # the resource already exists
-                # for now raise an exception
-                # TODO: return progress event
-                raise RuntimeError(f"opensearch domain {model.Name} already exists")
+        # idempotency
+        try:
+            request.aws_client_factory.ssm.get_parameter(Name=model.Name)
+        except request.aws_client_factory.ssm.exceptions.ParameterNotFound:
+            pass
+        else:
+            # the resource already exists
+            # for now raise an exception
+            # TODO: return progress event
+            raise RuntimeError(f"opensearch domain {model.Name} already exists")
 
-            # create the parameter
-            request.aws_client_factory.ssm.put_parameter(
-                Name=model.Name,
-                Type=model.Type,
-                Value=model.Value,
-            )
+        # create the parameter
+        res = request.aws_client_factory.ssm.put_parameter(
+            Name=model.Name,
+            Type=model.Type,
+            Value=model.Value,
+        )
 
-            model.physical_resource_id = "my-ssm-parameter"
+        model.Tier = res.get("Tier", "Standard")
 
-            return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
-
-        request.aws_client_factory.ssm.get_parameter(Name=model.Name)
-        # no error means ok
+        model.physical_resource_id = "my-ssm-parameter"
 
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
     def delete(
-        self, request: ResourceRequest[SSMParameterAllProperties]
+        self,
+        request: ResourceRequest[SSMParameterAllProperties],
     ) -> ProgressEvent[SSMParameterAllProperties]:
         name = request.desired_state.Name
         request.aws_client_factory.ssm.delete_parameter(Name=name)
