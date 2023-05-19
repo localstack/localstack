@@ -13,6 +13,8 @@ from rich.console import Console
 from rich.syntax import Syntax
 from yaml import safe_dump
 
+from localstack.services.cloudformation.scaffolding.propgen import generate_ir_for_type
+
 
 class Property(TypedDict):
     type: Optional[Literal["str"]]
@@ -113,8 +115,14 @@ class TemplateRenderer:
             name=resource_name.full_name,
             resource=resource_name.provider_name(),
         )
-        if file_type == "test":
-            kwargs["getatt_targets"] = list(self.get_getatt_targets())
+
+        # add extra parameters
+        match file_type:
+            case "test":
+                kwargs["getatt_targets"] = list(self.get_getatt_targets())
+            case "provider":
+                property_ir = generate_ir_for_type([self.schema], resource_name.full_name)
+                kwargs["provider_properties"] = property_ir
 
         return get_formatted_template_output(
             self.environment, template_mapping[file_type], **kwargs
@@ -227,19 +235,7 @@ def generate(service: str, write: bool):
         console.print("\n[underline]Provider template[/underline]\n")
         console.print(Syntax(template_renderer.render("provider", resource_name), "python"))
         console.print("\n[underline]Test template[/underline]\n")
-        console.print(
-            Syntax(template_renderer.render("test", resource_name), "python")
-            # Syntax(
-            #     get_formatted_template_output(
-            #         env,
-            #         "test_template.py.j2",
-            #         name=service,
-            #         resource=resource_name.provider_name(),
-            #         getatt_targets=["a", "b"],
-            #     ),
-            #     "python",
-            # )
-        )
+        console.print(Syntax(template_renderer.render("test", resource_name), "python"))
         console.print("\n[underline]Template[/underline]\n")
         console.print(Syntax(template_renderer.render("template", resource_name), "yaml"))
 
