@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Template to exercise AWS::OpenSearchService::Domain
+Parameters:
+  AttributeName:
+    Type: String
+    Description: Name of the attribute to fetch from the resource
+Resources:
+  MyResource:
+    Type: AWS::OpenSearchService::Domain
+    Properties: {}
+Outputs:
+  MyRef:
+    Value:
+      Ref: MyResource
+  MyOutput:
+    Value:
+      Fn::GetAtt:
+      - MyResource
+      - Ref: AttributeName

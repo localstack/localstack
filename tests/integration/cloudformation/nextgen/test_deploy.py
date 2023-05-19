@@ -2,7 +2,7 @@ from typing import TypeVar
 
 import pytest
 
-from localstack.services.opensearch.cfn_resources import OpenSearchServiceDomainAllProperties
+from localstack.services.opensearch.resource_providers.domain import OpenSearchDomainAllProperties
 from localstack.services.ssm.resource_providers.parameter import SSMParameterAllProperties
 from localstack.utils.strings import short_uid
 
@@ -14,7 +14,7 @@ Properties = TypeVar("Properties")
     [
         (
             "AWS::OpenSearchService::Domain",
-            OpenSearchServiceDomainAllProperties(DomainName=f"domain-{short_uid()}"),
+            OpenSearchDomainAllProperties(DomainName=f"domain-{short_uid()}"),
         ),
         (
             "AWS::SSM::Parameter",
