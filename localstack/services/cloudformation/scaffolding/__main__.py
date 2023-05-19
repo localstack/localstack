@@ -217,6 +217,52 @@ class PropertyRenderer:
         return self.render_property(options[0])
 
 
+class FileWriter:
+    def __init__(self, root: Path, resource_name: ResourceName):
+        self.root = root
+        self.resource_name = resource_name
+
+    def write_provider(self, contents: str):
+        destination = self.root.joinpath(
+            "localstack",
+            "services",
+            self.resource_name.service.lower(),
+            "resource_providers",
+            f"{self.resource_name.resource.lower()}.py",
+        )
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        self.write_text(contents, destination)
+
+    def write_tests(self, contents: str):
+        destination = self.root.joinpath(
+            "tests",
+            "integration",
+            "cloudformation",
+            "resource_providers",
+            self.resource_name.service.lower(),
+            f"test_{self.resource_name.resource.lower()}.py",
+        )
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        self.write_text(contents, destination)
+
+    def write_test_template(self, contents: str):
+        destination = self.root.joinpath(
+            "tests",
+            "integration",
+            "templates",
+            "resource_providers",
+            self.resource_name.service.lower(),
+            f"{self.resource_name.resource.lower()}.yaml",
+        )
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        self.write_text(contents, destination)
+
+    @staticmethod
+    def write_text(contents: str, destination: Path):
+        with destination.open("wt") as outfile:
+            print(contents, file=outfile)
+
+
 @click.group()
 def cli():
     pass
@@ -239,15 +285,27 @@ def generate(service: str, write: bool):
     )
 
     template_renderer = TemplateRenderer(schema, env)
+    provider_file = template_renderer.render("provider", resource_name)
+    tests_file = template_renderer.render("test", resource_name)
+    test_template = template_renderer.render("template", resource_name)
 
     if not write:
         console = Console()
         console.print("\n[underline]Provider template[/underline]\n")
-        console.print(Syntax(template_renderer.render("provider", resource_name), "python"))
+        console.print(Syntax(provider_file, "python"))
         console.print("\n[underline]Test template[/underline]\n")
-        console.print(Syntax(template_renderer.render("test", resource_name), "python"))
+        console.print(Syntax(tests_file, "python"))
         console.print("\n[underline]Template[/underline]\n")
-        console.print(Syntax(template_renderer.render("template", resource_name), "yaml"))
+        console.print(Syntax(test_template, "yaml"))
+        return
+
+    # render the output to the file system locations
+    root_path = Path(__file__).joinpath("..", "..", "..", "..", "..").resolve()
+    writer = FileWriter(root_path, resource_name)
+    writer.write_provider(provider_file)
+    writer.write_tests(tests_file)
+    writer.write_test_template(test_template)
+    return
 
 
 @cli.command()
