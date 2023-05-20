@@ -1014,6 +1014,8 @@ MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER
 # Whether to return and parse access key ids starting with an "A", like on AWS
 PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 
+CFN_TRACING_ENABLE = is_env_true("CFN_TRACING_ENABLE")
+
 # HINT: Please add deprecated environment variables to deprecations.py
 
 # list of environment variable names used for configuration.
