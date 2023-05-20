@@ -517,9 +517,23 @@ class TestSNSProvider:
 
     @pytest.mark.only_localstack
     def test_publish_sms(self, aws_client):
-        response = aws_client.sns.publish(PhoneNumber="+33000000000", Message="This is a SMS")
+        response = aws_client.sns.publish(PhoneNumber="+33000000000", Message="This is an SMS")
+        phone_number = "+33000000000"
+        response = aws_client.sns.publish(PhoneNumber=phone_number, Message="This is an SMS")
         assert "MessageId" in response
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        
+        sns_backend = SnsProvider.get_store()
+        
+        def check_messages():
+            sms_was_found = False
+            for message in sns_backend.sms_messages:
+                if message["PhoneNumber"] == phone_number:
+                    sms_was_found = True
+                    break
+            assert sms_was_found
+        
+        retry(check_messages, sleep=0.5)    
 
     @pytest.mark.aws_validated
     def test_publish_non_existent_target(self, sns_create_topic, snapshot, aws_client):
@@ -1152,7 +1166,7 @@ class TestSNSProvider:
             for contact in list_of_contacts:
                 sms_was_found = False
                 for message in sms_messages:
-                    if message["endpoint"] == contact:
+                    if message["PhoneNumber"] == contact:
                         sms_was_found = True
                         break
 

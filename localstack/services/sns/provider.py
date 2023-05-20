@@ -1012,26 +1012,19 @@ def get_region_from_subscription_token(token: str) -> str:
 def register_sns_api_resource(router: Router):
     """Register the platform endpointmessages retrospection endpoint as an internal LocalStack endpoint."""
     router.add(SNSServicePlatformEndpointMessagesApiResource())
+    router.add(SNSServiceSMSMessagesApiResource())
 
 
-def _format_platform_endpoint_messages(sent_messages: List[Dict[str, str]]):
+def _format_messages(sent_messages: List[Dict[str,str]], validated_keys : List[str]):
     """
     This method format the messages to be more readable and undo the format change that was needed for Moto
     Should be removed once we refactor SNS.
     """
-    validated_keys = [
-        "TargetArn",
-        "TopicArn",
-        "Message",
-        "MessageAttributes",
-        "MessageStructure",
-        "Subject",
-        "MessageId",
-    ]
+    
     formatted_messages = []
     for sent_message in sent_messages:
         msg = {
-            key: value if key != "Message" else json.dumps(value)
+            key: value if key != "Message" or isinstance(value, str) else json.dumps(value)
             for key, value in sent_message.items()
             if key in validated_keys
         }
@@ -1039,6 +1032,43 @@ def _format_platform_endpoint_messages(sent_messages: List[Dict[str, str]]):
 
     return formatted_messages
 
+def _format_platform_endpoint_messages(sent_messages: List[Dict[str, str]]):
+    """
+    This method formats the messages to be more readable and undo the format change that was needed for Moto. 
+    Should be removed once we refactor SNS.
+    """
+    return _format_messages(
+        sent_messages,
+        [
+            "TargetArn",
+            "TopicArn",
+            "Message",
+            "MessageAttributes",
+            "MessageStructure",
+            "Subject",
+            "MessageId",
+        ],
+    )
+
+def _format_sms_messages(sent_messages: List[Dict[str,str]]):
+    """
+    This method formats the messages to be more readable and undo the format change that was needed for Moto.
+    Should be removed once we refactor SNS.
+    """
+
+    return _format_messages(
+        sent_messages,
+        [
+         "PhoneNumber",
+         "TopicArn",
+         "SubscriptionArn",
+         "MessageId",
+         "Message",
+         "MessageAttributes",
+         "MessageStructure",
+         "Subject",   
+        ],
+    )
 
 class SNSServicePlatformEndpointMessagesApiResource:
     """Provides a REST API for retrospective access to platform endpoint messages sent via SNS.
@@ -1089,3 +1119,38 @@ class SNSServicePlatformEndpointMessagesApiResource:
 
         store.platform_endpoint_messages = {}
         return Response("", status=204)
+
+class SNSServiceSMSMessagesApiResource:
+    """ Provides a REST API for retrospective access to SMS messages sent via SNS.
+        This is registered as a Localstack internal HTTP resource.
+        
+        This endpoint accepts:
+        - GET param `accountId`: selector for AWS account. If not specified, return fallback `000000000000` test ID 
+        - GET param `region` : selector for AWS `region`. If not specified, return default "us-east-1"
+        - GET param `phoneNumber` : filter for `phoneNumber` resource in SNS
+    """
+     
+    @route(sns_constants.SMS_MSGS_ENDPOINT, methods=["GET"])
+    def on_get(self, request: Request):
+        account_id = request.args.get("accountId", get_aws_account_id())
+        region = request.args.get("region", "us-east-1")
+        filter_phone_number = request.args.get("phoneNumber")
+        store: SnsStore = sns_stores[account_id][region]
+        if filter_phone_number:
+            messages = [
+                m for m in store.sms_messages if m.get("PhoneNumber") == filter_phone_number
+            ]
+            messages = _format_sms_messages(messages)
+            return {
+                "sms_messages": {filter_phone_number: messages},
+                "region": region,
+            }
+
+        sms_messages = {}
+        for m in _format_sms_messages(store.sms_messages):
+            sms_messages.setdefault(m.get("PhoneNumber"), []).append(m)
+
+        return {
+            "sms_messages": sms_messages,
+            "region": region,
+        }
