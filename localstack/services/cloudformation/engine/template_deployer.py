@@ -27,6 +27,7 @@ from localstack.services.cloudformation.engine.entities import (
     StackChangeSet,
     resolve_ssm_parameter_value,
 )
+from localstack.services.cloudformation.otel import TracingRecorder
 from localstack.services.cloudformation.service_models import (
     KEY_RESOURCE_STATE,
     DependencyNotYetSatisfied,
@@ -41,6 +42,13 @@ from localstack.utils.strings import first_char_to_lower, to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
+
+tracer = (
+    TracingRecorder("template_deployer")
+    .connect_to("http://localhost:4317")
+    .get_tracer("cfn.events")
+)
+
 
 ACTION_CREATE = "create"
 ACTION_DELETE = "delete"
@@ -173,7 +181,6 @@ def get_client(resource: dict):
 def retrieve_resource_details(
     resource_id, resource_status, resources: dict[str, Type[GenericBaseModel]], stack_name
 ):
-
     resource = resources.get(resource_id)
     resource_id = resource_status.get("PhysicalResourceId") or resource_id
     if not resource:
@@ -239,6 +246,7 @@ def check_not_found_exception(e, resource_type, resource, resource_status=None):
 
 # TODO(srw): this becomes a property lookup
 # TODO(ds): remove next
+@tracer.start_as_current_span("extract_resource_attribute")
 def extract_resource_attribute(
     resource_type,
     resource_state,
@@ -339,6 +347,7 @@ def get_ref_from_model(resources: dict, logical_resource_id: str) -> Optional[st
     LOG.error("Unsupported resource type: %s", resource_type)
 
 
+@tracer.start_as_current_span("resolve_ref")
 def resolve_ref(stack_name: str, resources: dict, ref: str, attribute: str):
     """
     TODO: document
@@ -508,6 +517,7 @@ def resolve_refs_recursively(stack_name, resources, value):
     return result
 
 
+@tracer.start_as_current_span("resolve_refs_recursively")
 @prevent_stack_overflow(match_parameters=True)
 def _resolve_refs_recursively(stack_name, resources, value: dict | list | str | bytes | None):
     if isinstance(value, dict):
@@ -768,6 +778,7 @@ def get_resource_model_instance(resource_id: str, resources) -> Optional[Generic
 
 
 # yeah `Any | None` is a bit pointless, but I want to ensure that None values are represented
+@tracer.start_as_current_span("extract_resource_action")
 def execute_resource_action(
     resource_id: str, stack_name: str, resources: dict, action_name: str
 ) -> list[Any | None] | None:
@@ -801,7 +812,8 @@ def execute_resource_action(
         executed = False
         # TODO(srw) 3 - callable function
         if callable(func.get("function")):
-            result = func["function"](resource_id, resources, resource_type, func, stack_name)
+            with tracer.start_as_current_span("provider_function"):
+                result = func["function"](resource_id, resources, resource_type, func, stack_name)
             results.append(result)
             executed = True
 
@@ -826,11 +838,13 @@ def execute_resource_action(
         if "result_handler" in func and executed:
             LOG.debug(f"Executing callback method for {resource_type}:{resource_id}")
             # TODO(srw): 4 - pass resource directly here
-            func["result_handler"](result, resource_id, resources, resource_type)
+            with tracer.start_as_current_span("result_handler"):
+                func["result_handler"](result, resource_id, resources, resource_type)
 
     return (results or [None])[0]
 
 
+@tracer.start_as_current_span("invoke_function")
 def invoke_function(
     function: Callable,
     params: dict,
@@ -848,7 +862,8 @@ def invoke_function(
             params,
         )
         try:
-            result = function(**params)
+            with tracer.start_as_current_span("invoking_function"):
+                result = function(**params)
         except botocore.exceptions.ParamValidationError as e:
             # alternatively we could also use the ParamValidator directly
             report = e.kwargs.get("report")
@@ -870,6 +885,7 @@ def invoke_function(
     return result
 
 
+@tracer.start_as_current_span("resolve_resource_parameters")
 def resolve_resource_parameters(
     stack_name: str,
     resource_definition: ResourceDefinition,
@@ -885,12 +901,13 @@ def resolve_resource_parameters(
     if callable(params):
         # resolve parameter map via custom function
         # TODO(srw): 1 - callable for resolving params
-        params = params(
-            resource_props,
-            stack_name=stack_name,
-            resources=resources,
-            resource_id=resource_id,
-        )
+        with tracer.start_as_current_span("provider_params_function"):
+            params = params(
+                resource_props,
+                stack_name=stack_name,
+                resources=resources,
+                resource_id=resource_id,
+            )
     else:
         # it could be a list like ['param1', 'param2', {'apiCallParamName': 'cfResourcePropName'}]
         if isinstance(params, list):
@@ -944,6 +961,7 @@ def resolve_resource_parameters(
 
 # TODO: this shouldn't be called for stack parameters
 # TODO: refactor / remove (should just be a lookup on the resource state)
+@tracer.start_as_current_span("determine_resource_physical_id")
 def determine_resource_physical_id(
     resource_id: str, resources: dict, stack_name: str
 ) -> Optional[str]:
@@ -1013,19 +1031,21 @@ class TemplateDeployer:
     # ------------------
 
     def deploy_stack(self):
-        self.stack.set_stack_status("CREATE_IN_PROGRESS")
-        try:
-            self.apply_changes(
-                self.stack,
-                self.stack,
-                initialize=True,
-                action="CREATE",
-            )
-        except Exception as e:
-            LOG.info("Unable to create stack %s: %s", self.stack.stack_name, e)
-            self.stack.set_stack_status("CREATE_FAILED")
-            raise
+        with tracer.start_as_current_span("deploy_stack"):
+            self.stack.set_stack_status("CREATE_IN_PROGRESS")
+            try:
+                self.apply_changes(
+                    self.stack,
+                    self.stack,
+                    initialize=True,
+                    action="CREATE",
+                )
+            except Exception as e:
+                LOG.info("Unable to create stack %s: %s", self.stack.stack_name, e)
+                self.stack.set_stack_status("CREATE_FAILED")
+                raise
 
+    @tracer.start_as_current_span("apply_change_set")
     def apply_change_set(self, change_set: StackChangeSet):
         action = (
             "UPDATE"
@@ -1052,10 +1072,11 @@ class TemplateDeployer:
             raise
 
     def update_stack(self, new_stack):
-        self.stack.set_stack_status("UPDATE_IN_PROGRESS")
-        # apply changes
-        self.apply_changes(self.stack, new_stack, action="UPDATE")
-        self.stack.set_time_attribute("LastUpdatedTime")
+        with tracer.start_as_current_span("update_stack"):
+            self.stack.set_stack_status("UPDATE_IN_PROGRESS")
+            # apply changes
+            self.apply_changes(self.stack, new_stack, action="UPDATE")
+            self.stack.set_time_attribute("LastUpdatedTime")
 
     def delete_stack(self):
         if not self.stack:
@@ -1116,6 +1137,7 @@ class TemplateDeployer:
     # DEPENDENCY RESOLUTION UTILS
     # ----------------------------
 
+    @tracer.start_as_current_span("is_deployable_resource")
     def is_deployable_resource(self, resource):
         resource_type = get_resource_type(resource)
         entry = get_deployment_config(resource_type)
@@ -1124,6 +1146,7 @@ class TemplateDeployer:
             LOG.warning(f'Unable to deploy resource type "{resource_type}": {resource_str}')
         return bool(entry and entry.get(ACTION_CREATE))
 
+    @tracer.start_as_current_span("is_deployed")
     def is_deployed(self, resource):
         resource_status = {}
         resource_id = resource["LogicalResourceId"]
@@ -1279,6 +1302,7 @@ class TemplateDeployer:
             return resolve_ssm_parameter_value(param_type, default_value)
         return None
 
+    @tracer.start_as_current_span("apply_parameter_changes")
     def apply_parameter_changes(self, old_stack, new_stack) -> None:
         parameters = {
             p["ParameterKey"]: p
@@ -1358,6 +1382,7 @@ class TemplateDeployer:
 
         return changes
 
+    @tracer.start_as_current_span("apply_changes")
     def apply_changes(
         self,
         existing_stack: Stack,
@@ -1403,10 +1428,12 @@ class TemplateDeployer:
             changes, existing_stack, action=action, new_stack=new_stack
         )
 
+    @tracer.start_as_current_span("apply_changes_in_loop")
     def apply_changes_in_loop(self, changes, stack, action=None, new_stack=None):
         def _run(*args):
             try:
-                self.do_apply_changes_in_loop(changes, stack)
+                with tracer.start_as_current_span("apply_changes_in_loop"):
+                    self.do_apply_changes_in_loop(changes, stack)
                 status = f"{action}_COMPLETE"
             except Exception as e:
                 LOG.debug(
@@ -1427,6 +1454,7 @@ class TemplateDeployer:
         # run deployment in background loop, to avoid client network timeouts
         return start_worker_thread(_run)
 
+    @tracer.start_as_current_span("do_apply_changes_in_loop")
     def do_apply_changes_in_loop(self, changes, stack):
         # apply changes in a retry loop, to resolve resource dependencies and converge to the target state
         changes_done = []
@@ -1445,64 +1473,65 @@ class TemplateDeployer:
 
         # start deployment loop
         for i in range(max_iters):
-            j = 0
-            updated = False
-            while j < len(changes):
-                change = changes[j]
-                res_change = change["ResourceChange"]
-                action = res_change["Action"]
-                is_add_or_modify = action in ["Add", "Modify"]
-                resource_id = res_change["LogicalResourceId"]
+            with tracer.start_as_current_span(f"iteration.{i + 1}"):
+                j = 0
+                updated = False
+                while j < len(changes):
+                    change = changes[j]
+                    res_change = change["ResourceChange"]
+                    action = res_change["Action"]
+                    is_add_or_modify = action in ["Add", "Modify"]
+                    resource_id = res_change["LogicalResourceId"]
 
-                # TODO: do resolve_refs_recursively once here
-                try:
-                    if is_add_or_modify:
-                        resource = new_resources[resource_id]
-                        should_deploy = self.prepare_should_deploy_change(
-                            resource_id, change, stack, new_resources
-                        )
+                    # TODO: do resolve_refs_recursively once here
+                    try:
+                        if is_add_or_modify:
+                            resource = new_resources[resource_id]
+                            should_deploy = self.prepare_should_deploy_change(
+                                resource_id, change, stack, new_resources
+                            )
+                            LOG.debug(
+                                'Handling "%s" for resource "%s" (%s/%s) type "%s" in loop iteration %s (should_deploy=%s)',
+                                action,
+                                resource_id,
+                                j + 1,
+                                len(changes),
+                                res_change["ResourceType"],
+                                i + 1,
+                                should_deploy,
+                            )
+                            if not should_deploy:
+                                del changes[j]
+                                stack_action = get_action_name_for_resource_change(action)
+                                stack.set_resource_status(resource_id, f"{stack_action}_COMPLETE")
+                                continue
+                            if not self.all_resource_dependencies_satisfied(resource):
+                                j += 1
+                                continue
+                        elif action == "Remove":
+                            should_remove = self.prepare_should_deploy_change(
+                                resource_id, change, stack, new_resources
+                            )
+                            if not should_remove:
+                                del changes[j]
+                                continue
+                        self.apply_change(change, stack=stack)
+                        changes_done.append(change)
+                        del changes[j]
+                        updated = True
+                    except DependencyNotYetSatisfied as e:
                         LOG.debug(
-                            'Handling "%s" for resource "%s" (%s/%s) type "%s" in loop iteration %s (should_deploy=%s)',
-                            action,
+                            'Dependencies for "%s" not yet satisfied, retrying in next loop: %s',
                             resource_id,
-                            j + 1,
-                            len(changes),
-                            res_change["ResourceType"],
-                            i + 1,
-                            should_deploy,
+                            e,
                         )
-                        if not should_deploy:
-                            del changes[j]
-                            stack_action = get_action_name_for_resource_change(action)
-                            stack.set_resource_status(resource_id, f"{stack_action}_COMPLETE")
-                            continue
-                        if not self.all_resource_dependencies_satisfied(resource):
-                            j += 1
-                            continue
-                    elif action == "Remove":
-                        should_remove = self.prepare_should_deploy_change(
-                            resource_id, change, stack, new_resources
-                        )
-                        if not should_remove:
-                            del changes[j]
-                            continue
-                    self.apply_change(change, stack=stack)
-                    changes_done.append(change)
-                    del changes[j]
-                    updated = True
-                except DependencyNotYetSatisfied as e:
-                    LOG.debug(
-                        'Dependencies for "%s" not yet satisfied, retrying in next loop: %s',
-                        resource_id,
-                        e,
+                        j += 1
+                if not changes:
+                    break
+                if not updated:
+                    raise Exception(
+                        "Resource deployment loop completed, pending resource changes: %s" % changes
                     )
-                    j += 1
-            if not changes:
-                break
-            if not updated:
-                raise Exception(
-                    "Resource deployment loop completed, pending resource changes: %s" % changes
-                )
 
         # clean up references to deleted resources in stack
         deletes = [c for c in changes_done if c["ResourceChange"]["Action"] == "Remove"]
@@ -1514,6 +1543,7 @@ class TemplateDeployer:
 
         return changes_done
 
+    @tracer.start_as_current_span("prepare_should_deploy_change")
     def prepare_should_deploy_change(self, resource_id, change, stack, new_resources):
         """
         TODO: document
@@ -1560,6 +1590,7 @@ class TemplateDeployer:
         return True
 
     # Stack is needed here
+    @tracer.start_as_current_span("apply_change")
     def apply_change(self, change, stack):
         change_details = change["ResourceChange"]
         action = change_details["Action"]
