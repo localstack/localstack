@@ -573,7 +573,7 @@ def _resolve_refs_recursively(stack_name, resources, value: dict | list | str | 
             attribute = value[keys_list[0]][1]
             attr = resolve_refs_recursively(stack_name, resources, attribute)
             selected_map = value[keys_list[0]][0]
-            if isinstance(selected_map, dict):
+            if isinstance(selected_map, dict) and "Ref" in selected_map:
                 selected_map = resolve_ref(stack_name, resources, selected_map["Ref"], "Ref")
             result = resolve_ref(stack_name, resources, selected_map, attribute=attr)
             if not result:
