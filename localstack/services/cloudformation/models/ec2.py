@@ -590,6 +590,8 @@ class EC2Instance(GenericBaseModel):
                     "SecurityGroups": "SecurityGroups",
                     "KeyName": "KeyName",
                     "ImageId": "ImageId",
+                    "MaxCount": "MaxCount",
+                    "MinCount": "MinCount",
                 },
                 "result_handler": _store_instance_id,
             },
