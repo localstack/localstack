@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import generate_default_name
@@ -134,9 +135,13 @@ def generate_waitcondition_url(stack_name: str) -> str:
 
 
 class CloudFormationWaitConditionHandle(GenericBaseModel):
-    @staticmethod
-    def cloudformation_type():
+    @classmethod
+    def cloudformation_type(cls):
         return "AWS::CloudFormation::WaitConditionHandle"
+
+    def fetch_state(self, stack_name, resources):
+        if self.physical_resource_id is not None:
+            return {"deployed": True}
 
     @staticmethod
     def get_deploy_templates():
@@ -149,6 +154,38 @@ class CloudFormationWaitConditionHandle(GenericBaseModel):
                 stack_name=result["stack_name"],
             )
             resources[resource_id]["PhysicalResourceId"] = waitcondition_url
+
+        return {
+            "create": {
+                "function": _create,
+                "result_handler": _set_physical_resource_id,
+            },
+            "delete": {
+                "function": lambda *args, **kwargs: {},
+            },
+        }
+
+
+class CloudFormationWaitCondition(GenericBaseModel):
+    @classmethod
+    def cloudformation_type(cls):
+        return "AWS::CloudFormation::WaitCondition"
+
+    def fetch_state(self, stack_name, resources):
+        if self.physical_resource_id is not None:
+            return {"deployed": True}
+
+    @staticmethod
+    def get_deploy_templates():
+        def _create(resource_id, resources, resource_type, func, stack_name) -> dict:
+            # no resources to create, but the physical resource id requires the stack name
+            return {"stack_name": stack_name}
+
+        def _set_physical_resource_id(result, resource_id, resources, resource_type):
+            stack_arn = arns.cloudformation_stack_arn(result["stack_name"])
+            resources[resource_id][
+                "PhysicalResourceId"
+            ] = f"{stack_arn}/{uuid.uuid4()}/{resource_id}"
 
         return {
             "create": {
