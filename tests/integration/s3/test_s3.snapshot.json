@@ -4524,11 +4524,12 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA256]": {
-    "recorded-date": "16-02-2023, 17:24:54",
+    "recorded-date": "10-05-2023, 12:34:01",
     "recorded-content": {
       "put-object": {
         "ChecksumSHA256": "1YQo81vx2VFUl0q5ccWISq8AkSBQQ0WO80S82TmfdIQ=",
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -4543,6 +4544,7 @@
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
         "LastModified": "datetime",
         "Metadata": {},
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -4558,6 +4560,7 @@
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
         "LastModified": "datetime",
         "Metadata": {},
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -4576,10 +4579,11 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[None]": {
-    "recorded-date": "16-02-2023, 17:24:57",
+    "recorded-date": "10-05-2023, 12:34:06",
     "recorded-content": {
       "put-object": {
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -4593,6 +4597,7 @@
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
         "LastModified": "datetime",
         "Metadata": {},
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -4606,6 +4611,7 @@
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
         "LastModified": "datetime",
         "Metadata": {},
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -5848,6 +5854,931 @@
         "Metadata": {},
         "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
         "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_in_place": {
+    "recorded-date": "26-04-2023, 20:27:10",
+    "recorded-content": {
+      "put_object": {
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head_object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "application/json",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "key": "value"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-attrs": {
+        "LastModified": "datetime",
+        "StorageClass": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-in-place-no-change": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "This copy request is illegal because it is trying to copy an object to itself without changing the object's metadata, storage class, website redirect location or encryption attributes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "copy-object-in-place-with-storage-class": {
+        "CopyObjectResult": {
+          "ChecksumSHA256": "lyTB4g5uPk1/V+0l+dTvsAblCFkNUoyQ2ll/andcE+U=",
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-attrs-after-copy": {
+        "LastModified": "datetime",
+        "StorageClass": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-acl": {
+        "Grants": [
+          {
+            "Grantee": {
+              "DisplayName": "<display-name:1>",
+              "ID": "<owner-id:1>",
+              "Type": "CanonicalUser"
+            },
+            "Permission": "FULL_CONTROL"
+          }
+        ],
+        "Owner": {
+          "DisplayName": "<display-name:2>",
+          "ID": "<owner-id:2>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-in-place-with-acl": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "This copy request is illegal because it is trying to copy an object to itself without changing the object's metadata, storage class, website redirect location or encryption attributes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_with_checksum": {
+    "recorded-date": "10-05-2023, 12:35:27",
+    "recorded-content": {
+      "put-object-no-checksum": {
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-attrs": {
+        "LastModified": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-in-place-with-checksum": {
+        "CopyObjectResult": {
+          "ChecksumSHA256": "lyTB4g5uPk1/V+0l+dTvsAblCFkNUoyQ2ll/andcE+U=",
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-attrs-after-copy": {
+        "Checksum": {
+          "ChecksumSHA256": "lyTB4g5uPk1/V+0l+dTvsAblCFkNUoyQ2ll/andcE+U="
+        },
+        "LastModified": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-to-dest-keep-checksum": {
+        "CopyObjectResult": {
+          "ChecksumSHA256": "lyTB4g5uPk1/V+0l+dTvsAblCFkNUoyQ2ll/andcE+U=",
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_metadata_directive": {
+    "recorded-date": "26-04-2023, 19:52:10",
+    "recorded-content": {
+      "put_object": {
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head_object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "application/json",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "key": "value"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "no-metadata-directive-fail": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "This copy request is illegal because it is trying to copy an object to itself without changing the object's metadata, storage class, website redirect location or encryption attributes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "copy-replace-directive": {
+        "CopyObjectResult": {
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-replace-directive": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "key2": "value2"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-copy-directive": {
+        "CopyObjectResult": {
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-copy-directive": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "key2": "value2"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-copy-directive-ignore": {
+        "CopyObjectResult": {
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-copy-directive-ignore": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "key2": "value2"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-replace-directive-empty": {
+        "CopyObjectResult": {
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-replace-directive-empty": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_legal_hold": {
+    "recorded-date": "24-04-2023, 20:50:01",
+    "recorded-content": {
+      "put_object": {
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head_object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ObjectLockLegalHoldStatus": "ON",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-legal-hold": {
+        "CopyObjectResult": {
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:1>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-dest-key": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_lock": {
+    "recorded-date": "25-04-2023, 18:19:22",
+    "recorded-content": {
+      "put-source-object": {
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-source-object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ObjectLockMode": "GOVERNANCE",
+        "ObjectLockRetainUntilDate": "datetime",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-lock": {
+        "CopyObjectResult": {
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:1>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-dest-key": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_storage_class": {
+    "recorded-date": "26-04-2023, 19:51:03",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-attrs": {
+        "LastModified": "datetime",
+        "StorageClass": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-in-place-with-storage-class": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-attrs-after-copy": {
+        "LastModified": "datetime",
+        "StorageClass": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_with_encryption": {
+    "recorded-date": "26-04-2023, 19:51:18",
+    "recorded-content": {
+      "put-object-with-kms-encryption": {
+        "BucketKeyEnabled": true,
+        "ETag": "\"857476354331170780321daf8404d0bb\"",
+        "SSEKMSKeyId": "<s-s-e-k-m-s-key-id:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object": {
+        "AcceptRanges": "bytes",
+        "BucketKeyEnabled": true,
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"857476354331170780321daf8404d0bb\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSEKMSKeyId": "<s-s-e-k-m-s-key-id:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-in-place-with-sse": {
+        "CopyObjectResult": {
+          "ETag": "\"30617745ef1ba990a6cdb6e6144569f8\"",
+          "LastModified": "datetime"
+        },
+        "SSEKMSKeyId": "<s-s-e-k-m-s-key-id:2>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-copy-with-sse": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"30617745ef1ba990a6cdb6e6144569f8\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSEKMSKeyId": "<s-s-e-k-m-s-key-id:2>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-in-place-without-kms-sse": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-copy-without-kms-sse": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-in-place-with-aes": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-copy-with-aes": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_storage_class": {
+    "recorded-date": "26-04-2023, 21:08:21",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "StorageClass": "STANDARD_IA",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-attrs": {
+        "LastModified": "datetime",
+        "StorageClass": "STANDARD_IA",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-in-place-with-storage-class": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-attrs-after-copy": {
+        "LastModified": "datetime",
+        "StorageClass": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exc-invalid-request-storage-class": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "This copy request is illegal because it is trying to copy an object to itself without changing the object's metadata, storage class, website redirect location or encryption attributes."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_metadata_directive_copy": {
+    "recorded-date": "26-04-2023, 22:03:48",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "key": "value"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-copy": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "key": "value"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_website_redirect_location": {
+    "recorded-date": "26-04-2023, 22:30:12",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "WebsiteRedirectLocation": "/test/direct",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-in-place-with-website-redirection": {
+        "CopyObjectResult": {
+          "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-after-copy": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "WebsiteRedirectLocation": "/test/direct",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_copy_in_place_with_bucket_encryption": {
+    "recorded-date": "09-05-2023, 15:28:00",
+    "recorded-content": {
+      "put-bucket-encryption": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-obj": {
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-obj": {
+        "CopyObjectResult": {
+          "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32]": {
+    "recorded-date": "10-05-2023, 12:33:43",
+    "recorded-content": {
+      "put-object": {
+        "ChecksumCRC32": "lVk/nw==",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "test-checksum",
+        "ContentEncoding": "",
+        "ContentLength": 13,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-with-checksum": {
+        "AcceptRanges": "bytes",
+        "Body": "test-checksum",
+        "ChecksumCRC32": "lVk/nw==",
+        "ContentEncoding": "",
+        "ContentLength": 13,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-attrs": {
+        "Checksum": {
+          "ChecksumCRC32": "lVk/nw=="
+        },
+        "LastModified": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32C]": {
+    "recorded-date": "10-05-2023, 12:33:49",
+    "recorded-content": {
+      "put-object": {
+        "ChecksumCRC32C": "Fz3epA==",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "test-checksum",
+        "ContentEncoding": "",
+        "ContentLength": 13,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-with-checksum": {
+        "AcceptRanges": "bytes",
+        "Body": "test-checksum",
+        "ChecksumCRC32C": "Fz3epA==",
+        "ContentEncoding": "",
+        "ContentLength": 13,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-attrs": {
+        "Checksum": {
+          "ChecksumCRC32C": "Fz3epA=="
+        },
+        "LastModified": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA1]": {
+    "recorded-date": "10-05-2023, 12:33:55",
+    "recorded-content": {
+      "put-object": {
+        "ChecksumSHA1": "jbXkHAsXUrubtL3dqDQ4w+7WXc0=",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "test-checksum",
+        "ContentEncoding": "",
+        "ContentLength": 13,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-with-checksum": {
+        "AcceptRanges": "bytes",
+        "Body": "test-checksum",
+        "ChecksumSHA1": "jbXkHAsXUrubtL3dqDQ4w+7WXc0=",
+        "ContentEncoding": "",
+        "ContentLength": 13,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-attrs": {
+        "Checksum": {
+          "ChecksumSHA1": "jbXkHAsXUrubtL3dqDQ4w+7WXc0="
+        },
+        "LastModified": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
