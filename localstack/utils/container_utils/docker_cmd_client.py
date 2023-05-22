@@ -153,12 +153,12 @@ class CmdDockerClient(ContainerClient):
         try:
             run(cmd)
         except subprocess.CalledProcessError as e:
-            if "No such image" in to_str(e.stdout):
+            # raise slightly different error messages for Docker and podman
+            if "No such image" in to_str(e.stdout) or "image not known" in to_str(e.stdout):
                 raise NoSuchImage(image, stdout=e.stdout, stderr=e.stderr)
-            else:
-                raise ContainerException(
-                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                ) from e
+            raise ContainerException(
+                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+            ) from e
 
     def commit(
         self,

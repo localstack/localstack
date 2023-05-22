@@ -20,7 +20,7 @@ on:
 jobs:
   podman-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -30,15 +30,31 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install podman
-        run:
-          apt install -y podman
-
-      - name: Install test dependencies
+      - name: Install podman and test dependencies
         run: |
-          make install-test
+          make install-test &
+
+          # install podman
+          sudo apt update
+          sudo apt install -y podman
+          podman ps
+          podman system info
+
+          # disable Docker, to ensure the tests are running against Podman only
+          docker ps
+          sudo mv /var/run/docker.sock /var/run/docker.sock.bk
+          docker ps && exit 1
+          dockerCmd=$(which docker)
+          sudo mv $dockerCmd $dockerCmd".bk"
+
+          # wait for async installation process to finish
+          wait
 
       - name: Run Podman Docker client tests
         run: |
-          # TODO: check value of $DOCKER_SOCK for podman
-          DOCKER_CMD=podman DOCKER_SOCK=/var/run/docker.sock python -m pytest tests/integration/docker_utils
+          # determine path of podman socket
+          podmanSocket=$(podman system info --format json | jq -r '.host.remoteSocket.path')
+          echo $podmanSocket
+          ls -la $podmanSocket || true
+
+          DOCKER_CMD=podman DOCKER_SOCK=$podmanSocket TEST_PATH=tests/integration/docker_utils DEBUG=1 make test
