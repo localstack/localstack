@@ -1,0 +1,44 @@
+name: Podman Docker Client Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/tests-podman.yml"
+      - "localstack/utils/container_utils"
+    branches:
+      - master
+      - release/*
+  push:
+    paths:
+      - ".github/workflows/tests-podman.yml"
+      - "localstack/utils/container_utils"
+    branches:
+      - master
+      - release/*
+
+jobs:
+  podman-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install podman
+        run:
+          apt install -y podman
+
+      - name: Install test dependencies
+        run: |
+          make install-test
+
+      - name: Run Podman Docker client tests
+        run: |
+          # TODO: check value of $DOCKER_SOCK for podman
+          DOCKER_CMD=podman DOCKER_SOCK=/var/run/docker.sock python -m pytest tests/integration/docker_utils

@@ -8,6 +8,7 @@ import subprocess
 from typing import Dict, List, Optional, Tuple, Union
 
 from localstack import config
+from localstack.utils.collections import ensure_list
 from localstack.utils.container_utils.container_client import (
     AccessDenied,
     CancellableStream,
@@ -226,9 +227,11 @@ class CmdDockerClient(ContainerClient):
         for container in container_list:
             result.append(
                 {
-                    "id": container["ID"],
+                    # support both, Docker and podman API response formats (`ID` vs `Id`)
+                    "id": container.get("ID") or container["Id"],
                     "image": container["Image"],
-                    "name": container["Names"],
+                    # Docker returns a single string for `Names`, whereas podman returns a list of names
+                    "name": ensure_list(container["Names"])[0],
                     "status": container["State"],
                     "labels": container["Labels"],
                 }
