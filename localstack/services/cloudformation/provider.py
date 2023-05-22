@@ -205,7 +205,7 @@ class CloudformationProvider(CloudformationApi):
 
         try:
             template = template_preparer.transform_template(
-                template, list(resolved_parameters.values()), stack=stack
+                template, list(resolved_parameters.values()), stack.stack_name, stack.resources
             )
         except FailedTransformationException as e:
             stack.add_stack_event(
@@ -287,7 +287,7 @@ class CloudformationProvider(CloudformationApi):
 
         try:
             template = template_preparer.transform_template(
-                template, list(resolved_parameters.values()), stack=stack
+                template, list(resolved_parameters.values()), stack.stack_name, stack.resources
             )
         except FailedTransformationException as e:
             stack.add_stack_event(
@@ -396,6 +396,7 @@ class CloudformationProvider(CloudformationApi):
             stack = find_stack(stack_name)
             if not stack:
                 return stack_not_found_error(stack_name)
+            template = stack.template
         else:
             api_utils.prepare_template_body(request)
             template = template_preparer.parse_template(request["TemplateBody"])
@@ -403,7 +404,12 @@ class CloudformationProvider(CloudformationApi):
             stack = Stack(request, template)
 
         result: GetTemplateSummaryOutput = stack.describe_details()
-        result["Parameters"] = result.get("Parameters") or []
+
+        # build parameter declarations
+        result["Parameters"] = list(
+            param_resolver.extract_parameter_declarations_from_template(template).values()
+        )
+
         id_summaries = defaultdict(list)
         for resource_id, resource in stack.template_resources.items():
             res_type = resource["Type"]
@@ -520,10 +526,20 @@ class CloudformationProvider(CloudformationApi):
         )
 
         parameters = list(resolved_parameters.values())
-        template = template_preparer.transform_template(template, parameters, stack=stack)
+
+        # TODO: remove this when fixing Stack.resources and transformation order
+        #   currently we need to create a stack with existing resources + parameters so that resolve refs recursively in here will work.
+        #   The correct way to do it would be at a later stage anyway just like a normal intrinsic function
+        req_params_copy = clone_stack_params(req_params)
+        temp_stack = Stack(req_params_copy, template)
+        temp_stack.set_resolved_parameters(resolved_parameters)
+
+        transformed_template = template_preparer.transform_template(
+            template, parameters, stack_name=temp_stack.stack_name, resources=temp_stack.resources
+        )
 
         # create change set for the stack and apply changes
-        change_set = StackChangeSet(stack, req_params, template)
+        change_set = StackChangeSet(stack, req_params, transformed_template)
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.set_resolved_parameters(resolved_parameters)
 

@@ -39,7 +39,7 @@ class AwsIncludeTransformer(Transformer):
 transformers: Dict[str, Type] = {"AWS::Include": AwsIncludeTransformer}
 
 
-def apply_transform_intrinsic_functions(template: dict, stack=None) -> dict:
+def apply_transform_intrinsic_functions(template: dict, stack_name: str, resources: dict) -> dict:
     """Resolve constructs using the 'Fn::Transform' intrinsic function."""
     from localstack.services.cloudformation.engine.template_deployer import resolve_refs_recursively
 
@@ -51,8 +51,7 @@ def apply_transform_intrinsic_functions(template: dict, stack=None) -> dict:
             if transformer_class:
                 transformer = transformer_class()
                 parameters = transform.get("Parameters") or {}
-                if stack:
-                    resolve_refs_recursively(stack.stack_name, stack.resources, parameters)
+                parameters = resolve_refs_recursively(stack_name, resources, parameters)
                 return transformer.transform(parameters)
         return obj
 
