@@ -1,5 +1,5 @@
 <p align="center">
-:zap: We are thrilled to announce <a href="https://localstack.cloud/blog/2023-03-29-announcing-localstack-2.0-general-availability/">LocalStack 2.0</a> which brings new features, enhancements and bugfixes :zap:
+:zap: We are thrilled to announce <a href="#">LocalStack 2.1</a> which brings new features, enhancements and bugfixes :zap:
 </p>
 
 <p align="center">
