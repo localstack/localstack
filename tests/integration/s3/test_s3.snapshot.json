@@ -6878,5 +6878,84 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_analytics_configurations": {
+    "recorded-date": "23-05-2023, 11:57:28",
+    "recorded-content": {
+      "err_config_without_storage_analysis": "Parameter validation failed:\nMissing required parameter in AnalyticsConfiguration: \"StorageClassAnalysis\"",
+      "err_config_without_filter_and_storage_analysis": "Parameter validation failed:\nMissing required parameter in AnalyticsConfiguration: \"StorageClassAnalysis\"",
+      "err_config_without_id_and_storage_analysis": "Parameter validation failed:\nMissing required parameter in AnalyticsConfiguration: \"Id\"\nMissing required parameter in AnalyticsConfiguration: \"StorageClassAnalysis\"",
+      "err_config_without_id": "Parameter validation failed:\nMissing required parameter in AnalyticsConfiguration: \"Id\"",
+      "get_config_without_filter": {
+        "AnalyticsConfiguration": {
+          "Id": "config_without_filter",
+          "StorageClassAnalysis": {
+            "DataExport": {
+              "Destination": {
+                "S3BucketDestination": {
+                  "Bucket": "<bucket>",
+                  "Format": "CSV",
+                  "Prefix": "test"
+                }
+              },
+              "OutputSchemaVersion": "V_1"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_config_with_storage_analysis": {
+        "AnalyticsConfiguration": {
+          "Filter": {
+            "Prefix": "test_ls"
+          },
+          "Id": "config_with_storage_analysis",
+          "StorageClassAnalysis": {
+            "DataExport": {
+              "Destination": {
+                "S3BucketDestination": {
+                  "Bucket": "<bucket>",
+                  "Format": "CSV",
+                  "Prefix": "test"
+                }
+              },
+              "OutputSchemaVersion": "V_1"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_config_with_filter_update": {
+        "AnalyticsConfiguration": {
+          "Filter": {
+            "Prefix": "test_ls_2"
+          },
+          "Id": "config_with_storage_analysis",
+          "StorageClassAnalysis": {
+            "DataExport": {
+              "Destination": {
+                "S3BucketDestination": {
+                  "Bucket": "<bucket>",
+                  "Format": "CSV",
+                  "Prefix": "test"
+                }
+              },
+              "OutputSchemaVersion": "V_1"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "err_delete_incorrect_id": "An error occurred (NoSuchConfiguration) when calling the DeleteBucketAnalyticsConfiguration operation: The specified configuration does not exist."
+    }
   }
 }
