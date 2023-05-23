@@ -278,6 +278,9 @@ class SdkDockerClient(ContainerClient):
         except ImageNotFound:
             raise NoSuchImage(docker_image)
         except APIError as e:
+            # note: error message 'image not known' raised by Podman API
+            if "image not known" in str(e):
+                raise NoSuchImage(docker_image)
             raise ContainerException() from e
 
     def build_image(
@@ -461,6 +464,8 @@ class SdkDockerClient(ContainerClient):
             if not force:
                 raise NoSuchImage(image)
         except APIError as e:
+            if "image not known" in str(e):
+                raise NoSuchImage(image)
             raise ContainerException() from e
 
     def commit(

@@ -715,7 +715,7 @@ class ContainerClient(metaclass=ABCMeta):
         :return: Image entrypoint
         """
         LOG.debug("Getting the entrypoint for image: %s", docker_image)
-        entrypoint_list = self.inspect_image(docker_image, pull)["Config"]["Entrypoint"] or []
+        entrypoint_list = self.inspect_image(docker_image, pull)["Config"].get("Entrypoint") or []
         return shlex.join(entrypoint_list)
 
     @abstractmethod
@@ -949,7 +949,7 @@ class Util:
                     # strip only one of the matching prefixes (avoid multi-stripping)
                     break
             result.append(image)
-        return image_names
+        return result
 
     @staticmethod
     def tar_path(path: str, target_path: str, is_dir: bool):

@@ -28,7 +28,7 @@ from localstack.utils.container_utils.container_client import (
     VolumeBind,
 )
 from localstack.utils.run import run
-from localstack.utils.strings import to_str
+from localstack.utils.strings import first_char_to_upper, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ class CmdDockerClient(ContainerClient):
         try:
             run(cmd)
         except subprocess.CalledProcessError as e:
-            # raise slightly different error messages for Docker and podman
+            # handle different error messages for Docker and podman
             error_messages = ["No such image", "image not known"]
             if any(msg in to_str(e.stdout) for msg in error_messages):
                 raise NoSuchImage(image, stdout=e.stdout, stderr=e.stderr)
@@ -251,6 +251,9 @@ class CmdDockerClient(ContainerClient):
             run(cmd)
         except subprocess.CalledProcessError as e:
             self._check_and_raise_no_such_container_error(container_name, error=e)
+            # additional check to support Podman CLI output
+            if re.match(".*container .+ does not exist", to_str(e.stdout)):
+                raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             ) from e
@@ -287,6 +290,9 @@ class CmdDockerClient(ContainerClient):
                 raise NoSuchImage(docker_image)
             if "connection refused" in to_str(e.stdout):
                 raise RegistryConnectionError(e.stdout)
+            # note: error message 'image not known' raised by Podman client
+            if "image not known" in to_str(e.stdout):
+                raise NoSuchImage(docker_image)
             raise ContainerException(
                 f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
@@ -320,7 +326,9 @@ class CmdDockerClient(ContainerClient):
         try:
             run(cmd)
         except subprocess.CalledProcessError as e:
-            if "No such image" in to_str(e.stdout):
+            # handle different error messages for Docker and podman
+            error_messages = ["No such image", "image not known"]
+            if any(msg in to_str(e.stdout) for msg in error_messages):
                 raise NoSuchImage(source_ref)
             raise ContainerException(
                 f"Docker process returned with error code {e.returncode}", e.stdout, e.stderr
@@ -383,8 +391,20 @@ class CmdDockerClient(ContainerClient):
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             ) from e
-        image_data = json.loads(cmd_result.strip())
-        return image_data
+        object_data = json.loads(cmd_result.strip())
+        if isinstance(object_data, list):
+            # return first list item, for compatibility with Podman API
+            if len(object_data) == 1:
+                result = object_data[0]
+                # convert first character to uppercase (e.g., `name` -> `Name`), for Podman/Docker compatibility
+                result = {first_char_to_upper(k): v for k, v in result.items()}
+                return result
+            LOG.info(
+                "Expected a single object for `inspect` on ID %s, got %s",
+                object_name_or_id,
+                len(object_data),
+            )
+        return object_data
 
     def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
         try:
@@ -487,6 +507,9 @@ class CmdDockerClient(ContainerClient):
             return result.split(" ")[0] if result else ""
         except subprocess.CalledProcessError as e:
             self._check_and_raise_no_such_container_error(container_name_or_id, error=e)
+            # consider different error messages for Podman
+            if "no such object" in to_str(e.stdout).lower():
+                raise NoSuchContainer(container_name_or_id, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             ) from e
@@ -532,9 +555,13 @@ class CmdDockerClient(ContainerClient):
     def run_container(self, image_name: str, stdin=None, **kwargs) -> Tuple[bytes, bytes]:
         cmd, env_file = self._build_run_create_cmd("run", image_name, **kwargs)
         LOG.debug("Run container with cmd: %s", cmd)
-        result = self._run_async_cmd(cmd, stdin, kwargs.get("name") or "", image_name)
-        Util.rm_env_vars_file(env_file)
-        return result
+        try:
+            return self._run_async_cmd(cmd, stdin, kwargs.get("name") or "", image_name)
+        except ContainerException as e:
+            if "Trying to pull" in str(e) and "access to the resource is denied" in str(e):
+                raise NoSuchImage(image_name, stdout=e.stdout, stderr=e.stderr) from e
+        finally:
+            Util.rm_env_vars_file(env_file)
 
     def exec_in_container(
         self,
@@ -600,6 +627,7 @@ class CmdDockerClient(ContainerClient):
         if stdin:
             kwargs["stdin"] = True
         try:
+            print("!!!cmd", cmd, kwargs)
             process = run(cmd, **kwargs)
             stdout, stderr = process.communicate(input=stdin)
             if process.returncode != 0:
