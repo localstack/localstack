@@ -1115,6 +1115,7 @@ class TestS3:
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", None])
     @pytest.mark.xfail(condition=LEGACY_S3_PROVIDER, reason="Patched only in ASF provider")
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_get_object_checksum(self, s3_bucket, snapshot, algorithm, aws_client):
         key = "test-checksum-retrieval"
         body = b"test-checksum"
