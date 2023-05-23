@@ -517,6 +517,10 @@ def _resolve_refs_recursively(stack_name, resources, value: dict | list | str | 
         # process special operators
         if keys_list == ["Ref"]:
             ref = resolve_ref(stack_name, resources, value["Ref"], attribute="Ref")
+            if ref is None and not evaluate_resource_condition(
+                stack_name, resources, resources[value["Ref"]]
+            ):
+                return PLACEHOLDER_AWS_NO_VALUE
             if ref is None:
                 msg = 'Unable to resolve Ref for resource "%s" (yet)' % value["Ref"]
                 LOG.debug("%s - %s", msg, resources.get(value["Ref"]) or set(resources.keys()))
@@ -1162,7 +1166,10 @@ class TemplateDeployer:
         result = {}
         for resource_id, resource in resources.items():
             if self.is_deployable_resource(resource):
-                if not self.is_deployed(resource):
+                conditional_deployable = evaluate_resource_condition(
+                    self.stack_name, self.resources, resource
+                )
+                if not self.is_deployed(resource) and conditional_deployable:
                     LOG.debug(
                         "Dependency for resource %s not yet deployed: %s %s",
                         depending_resource,
