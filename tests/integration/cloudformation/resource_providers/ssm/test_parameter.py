@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from localstack.aws.connect import ServiceLevelClientFactory
@@ -29,15 +31,17 @@ class TestAttributeAccess:
         aws_client: ServiceLevelClientFactory,
         deploy_cfn_template,
         attribute,
-        template_root,
         snapshot,
     ):
         """
         Capture the behaviour of getting all available attributes of the model
         """
         stack = deploy_cfn_template(
-            template_path=template_root.joinpath("resource_providers", "ssm", "parameter.yaml"),
-            parameters={"AttributeName": attribute},
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../../../templates/resource_providers/ssm/parameter.yaml",
+            ),
+            parameter={"AttributeName": attribute},
         )
         snapshot.match("stack_outputs", stack.outputs)
 
