@@ -68,6 +68,7 @@ class SdkDockerClient(ContainerClient):
             try:
                 return docker.from_env(timeout=DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS)
             except DockerException as e:
+                print("!!!!_create_client err", e, type(e))
                 LOG.debug("Creating Docker SDK client failed: %s", e, exc_info=e)
                 if attempt < DOCKER_SDK_DEFAULT_RETRIES:
                     # wait for a second before retrying
@@ -310,19 +311,26 @@ class SdkDockerClient(ContainerClient):
                 raise NoSuchImage(source_ref)
             raise ContainerException("Unable to tag Docker image") from e
 
-    def get_docker_image_names(self, strip_latest=True, include_tags=True):
+    def get_docker_image_names(
+        self,
+        strip_latest: bool = True,
+        include_tags: bool = True,
+        strip_wellknown_repo_prefixes: bool = True,
+    ):
         try:
             images = self.client().images.list()
             image_names = [tag for image in images for tag in image.tags if image.tags]
             if not include_tags:
-                image_names = list(map(lambda image_name: image_name.split(":")[0], image_names))
+                image_names = [image_name.rpartition(":")[0] for image_name in image_names]
+            if strip_wellknown_repo_prefixes:
+                image_names = Util.strip_wellknown_repo_prefixes(image_names)
             if strip_latest:
                 Util.append_without_latest(image_names)
             return image_names
         except APIError as e:
             raise ContainerException() from e
 
-    def get_container_logs(self, container_name_or_id: str, safe=False) -> str:
+    def get_container_logs(self, container_name_or_id: str, safe: bool = False) -> str:
         try:
             container = self.client().containers.get(container_name_or_id)
             return to_str(container.logs())
@@ -379,8 +387,10 @@ class SdkDockerClient(ContainerClient):
 
     def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
         try:
+            print("!!self.client().networks", [n.name for n in self.client().networks.list()])
             return self.client().networks.get(network_name).attrs
-        except NotFound:
+        except NotFound as e:
+            print("!!err", e)
             raise NoSuchNetwork(network_name)
         except APIError as e:
             raise ContainerException() from e
@@ -431,12 +441,16 @@ class SdkDockerClient(ContainerClient):
         return networks[network_names[0]]["IPAddress"]
 
     def has_docker(self) -> bool:
+        # TODO remove - CI debugging
+        print("!!!has_docker", self, self.docker_client)
         try:
             if not self.docker_client:
                 return False
             self.client().ping()
+            print("!!!has_docker TRUE!")
             return True
-        except APIError:
+        except APIError as e:
+            print("!!!has_docker ERR", self, e, type(e))
             return False
 
     def remove_image(self, image: str, force: bool = True):

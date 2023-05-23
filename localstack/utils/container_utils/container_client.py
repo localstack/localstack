@@ -27,6 +27,9 @@ from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
+# list of well-known image repo prefixes that should be stripped off to canonicalize image names
+WELL_KNOWN_IMAGE_REPO_PREFIXES = ("localhost/", "docker.io/library/")
+
 
 @unique
 class DockerContainerStatus(Enum):
@@ -433,6 +436,7 @@ class ContainerClient(metaclass=ABCMeta):
     def get_networks(self, container_name: str) -> List[str]:
         LOG.debug("Getting networks for container: %s", container_name)
         container_attrs = self.inspect_container(container_name_or_id=container_name)
+        print("!!!container_attrs get_networks", container_attrs)
         return list(container_attrs["NetworkSettings"]["Networks"].keys())
 
     def get_container_ipv4_for_network(
@@ -452,6 +456,7 @@ class ContainerClient(metaclass=ABCMeta):
         # we always need the ID for this
         container_id = self.get_container_id(container_name=container_name_or_id)
         network_attrs = self.inspect_network(container_network)
+        print("!!!network_attrs", network_attrs)
         containers = network_attrs["Containers"]
         if container_id not in containers:
             raise ContainerException(
@@ -574,17 +579,24 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_docker_image_names(self, strip_latest=True, include_tags=True) -> List[str]:
+    def get_docker_image_names(
+        self,
+        strip_latest: bool = True,
+        include_tags: bool = True,
+        strip_wellknown_repo_prefixes: bool = True,
+    ) -> List[str]:
         """
         Get all names of docker images available to the container engine
         :param strip_latest: return images both with and without :latest tag
-        :param include_tags: Include tags of the images in the names
+        :param include_tags: include tags of the images in the names
+        :param strip_wellknown_repo_prefixes: whether to strip off well-known repo prefixes like
+               "localhost/" or "docker.io/library/" which are added by the Podman API, but not by Docker
         :return: List of image names
         """
         pass
 
     @abstractmethod
-    def get_container_logs(self, container_name_or_id: str, safe=False) -> str:
+    def get_container_logs(self, container_name_or_id: str, safe: bool = False) -> str:
         """Get all logs of a given container"""
         pass
 
@@ -916,14 +928,31 @@ class Util:
         return f
 
     @staticmethod
-    def append_without_latest(image_names):
+    def append_without_latest(image_names: list[str]):
         suffix = ":latest"
         for image in list(image_names):
             if image.endswith(suffix):
                 image_names.append(image[: -len(suffix)])
 
     @staticmethod
-    def tar_path(path, target_path, is_dir: bool):
+    def strip_wellknown_repo_prefixes(image_names: list[str]) -> list[str]:
+        """
+        Remove well-known repo prefixes like `localhost/` or `docker.io/library/` from the list of given
+        image names. This is mostly to ensure compatibility of our Docker client with Podman API responses.
+        :return: a copy of the list of image names, with well-known repo prefixes removed
+        """
+        result = []
+        for image in image_names:
+            for prefix in WELL_KNOWN_IMAGE_REPO_PREFIXES:
+                if image.startswith(prefix):
+                    image = image.removeprefix(prefix)
+                    # strip only one of the matching prefixes (avoid multi-stripping)
+                    break
+            result.append(image)
+        return image_names
+
+    @staticmethod
+    def tar_path(path: str, target_path: str, is_dir: bool):
         f = tempfile.NamedTemporaryFile()
         with tarfile.open(mode="w", fileobj=f) as t:
             abs_path = os.path.abspath(path)

@@ -57,4 +57,4 @@ jobs:
           echo $podmanSocket
           ls -la $podmanSocket || true
 
-          DOCKER_CMD=podman DOCKER_SOCK=$podmanSocket TEST_PATH=tests/integration/docker_utils DEBUG=1 make test
+          DOCKER_CMD=podman DOCKER_HOST=$podmanSocket TEST_PATH=tests/integration/docker_utils DEBUG=1 make test
