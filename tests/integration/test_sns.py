@@ -557,9 +557,8 @@ class TestSNSProvider:
         snapshot.match("error", e.value.response)
 
     @pytest.mark.only_localstack
-    def test_publish_sms(self, sns_client):
-        phone_number = "+33000000000"
-        response = sns_client.publish(PhoneNumber=phone_number, Message="This is a SMS")
+    def test_publish_sms(self, aws_client):
+        response = aws_client.sns.publish(PhoneNumber="+33000000000", Message="This is a SMS")
         assert "MessageId" in response
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
