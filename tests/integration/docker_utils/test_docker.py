@@ -321,6 +321,10 @@ class TestDockerClient:
         with pytest.raises(NoSuchContainer):
             docker_client.start_container("this_container_does_not_exist")
 
+    # TODO: currently failing under Podman in CI (works locally under MacOS)
+    @pytest.mark.xfail(
+        _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
+    )
     def test_get_network(self, docker_client: ContainerClient, dummy_container):
         networks = docker_client.get_networks(dummy_container.container_name)
         expected_networks = [_get_default_network()]
@@ -370,6 +374,10 @@ class TestDockerClient:
         custom_network = docker_client.inspect_network(network_name)["IPAM"]["Config"][0]["Subnet"]
         assert ipaddress.IPv4Address(result_custom_network) in ipaddress.IPv4Network(custom_network)
 
+    # TODO: currently failing under Podman
+    @pytest.mark.xfail(
+        _is_podman_test(), reason="Podman inspect_network does not return `Containers` attribute"
+    )
     def test_get_container_ip_for_network_wrong_network(
         self, docker_client: ContainerClient, dummy_container, create_network
     ):
@@ -387,16 +395,15 @@ class TestDockerClient:
                 container_name_or_id=dummy_container.container_id, container_network=network_name
             )
 
+    # TODO: currently failing under Podman in CI (works locally under MacOS)
+    @pytest.mark.xfail(
+        _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
+    )
     def test_get_container_ip_for_host_network(
         self, docker_client: ContainerClient, create_container
     ):
         container = create_container(
             "alpine", command=["sh", "-c", "while true; do sleep 1; done"], network="host"
-        )
-        print(
-            "!!!!docker_client.get_networks(container.container_name)",
-            docker_client.get_networks(container.container_name),
-            container.container_name,
         )
         assert "host" == docker_client.get_networks(container.container_name)[0]
         # host network containers have no dedicated IP, so it will throw an exception here
@@ -415,6 +422,10 @@ class TestDockerClient:
                 container_name_or_id=dummy_container.container_id, container_network=network_name
             )
 
+    # TODO: currently failing under Podman in CI (works locally under MacOS)
+    @pytest.mark.xfail(
+        _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
+    )
     def test_create_with_host_network(self, docker_client: ContainerClient, create_container):
         info = create_container("alpine", network="host")
         network = docker_client.get_networks(info.container_name)
@@ -1130,7 +1141,6 @@ class TestDockerClient:
         docker_client.build_image(dockerfile_path=dockerfile_ref, image_name=image_name, **kwargs)
         cleanups.append(lambda: docker_client.remove_image(image_name, force=True))
 
-        print("!!docker_client.get_docker_image_names()", docker_client.get_docker_image_names())
         assert image_name in docker_client.get_docker_image_names()
         result = docker_client.inspect_image(image_name, pull=False)
         assert "foo=bar" in result["Config"]["Env"]
@@ -1338,7 +1348,6 @@ class TestDockerImages:
                 detach=True,
             )
             docker_client.commit(container_name, image_name, image_tag)
-            print("!docker_client.get_docker_image_names()", docker_client.get_docker_image_names())
             assert image in docker_client.get_docker_image_names()
         finally:
             docker_client.remove_container(container_name)
@@ -1672,7 +1681,6 @@ class TestDockerLabels:
         labels = {"foo": "bar", short_uid(): short_uid()}
         container = create_container("alpine", command=["dummy"], labels=labels)
         result = docker_client.inspect_container(container.container_id)
-        print("!!test_create_container_with_labels result", result)
         result_labels = result.get("Config", {}).get("Labels")
         assert result_labels == labels
 

@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/tests-podman.yml"
       - "localstack/utils/container_utils"
+      - "tests/integration/docker_utils"
     branches:
       - master
       - release/*
@@ -13,6 +14,7 @@ on:
     paths:
       - ".github/workflows/tests-podman.yml"
       - "localstack/utils/container_utils"
+      - "tests/integration/docker_utils"
     branches:
       - master
       - release/*
@@ -54,7 +56,6 @@ jobs:
         run: |
           # determine path of podman socket
           podmanSocket=$(podman system info --format json | jq -r '.host.remoteSocket.path')
-          echo $podmanSocket
-          ls -la $podmanSocket || true
+          echo "Running tests against local podman socket $podmanSocket"
 
           DOCKER_CMD=podman DOCKER_HOST=$podmanSocket TEST_PATH=tests/integration/docker_utils DEBUG=1 make test

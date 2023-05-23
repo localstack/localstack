@@ -54,7 +54,13 @@ class CancellableProcessStream(CancellableStream):
 
 
 class CmdDockerClient(ContainerClient):
-    """Class for managing docker containers using the command line executable"""
+    """
+    Class for managing Docker (or Podman) containers using the command line executable.
+
+    The client also supports targeting Podman engines, as Podman is almost a drop-in replacement
+    for Docker these days. The majority of compatibility switches in this class is to handle slightly
+    different response payloads or error messages returned by the `docker` vs `podman` commands.
+    """
 
     default_run_outfile: Optional[str] = None
 
@@ -649,7 +655,6 @@ class CmdDockerClient(ContainerClient):
         try:
             process = run(cmd, **kwargs)
             stdout, stderr = process.communicate(input=stdin)
-            print("!!!cmd", cmd, kwargs, process.returncode)
             if process.returncode != 0:
                 raise subprocess.CalledProcessError(
                     process.returncode,

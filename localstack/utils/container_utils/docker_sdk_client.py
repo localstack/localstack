@@ -41,7 +41,13 @@ SDK_ISDIR = 1 << 31
 
 
 class SdkDockerClient(ContainerClient):
-    """Class for managing docker using the python docker sdk"""
+    """
+    Class for managing Docker (or Podman) using the Python Docker SDK.
+
+    The client also supports targeting Podman engines, as Podman is almost a drop-in replacement
+    for Docker these days (with ongoing efforts to further streamline the two), and the Docker SDK
+    is doing some of the heavy lifting for us to support both target platforms.
+    """
 
     docker_client: Optional[DockerClient]
 
@@ -68,7 +74,6 @@ class SdkDockerClient(ContainerClient):
             try:
                 return docker.from_env(timeout=DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS)
             except DockerException as e:
-                print("!!!!_create_client err", e, type(e))
                 LOG.debug("Creating Docker SDK client failed: %s", e, exc_info=e)
                 if attempt < DOCKER_SDK_DEFAULT_RETRIES:
                     # wait for a second before retrying
@@ -403,10 +408,8 @@ class SdkDockerClient(ContainerClient):
 
     def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
         try:
-            print("!!self.client().networks", [n.name for n in self.client().networks.list()])
             return self.client().networks.get(network_name).attrs
-        except NotFound as e:
-            print("!!err", e)
+        except NotFound:
             raise NoSuchNetwork(network_name)
         except APIError as e:
             raise ContainerException() from e
@@ -457,16 +460,12 @@ class SdkDockerClient(ContainerClient):
         return networks[network_names[0]]["IPAddress"]
 
     def has_docker(self) -> bool:
-        # TODO remove - CI debugging
-        print("!!!has_docker", self, self.docker_client)
         try:
             if not self.docker_client:
                 return False
             self.client().ping()
-            print("!!!has_docker TRUE!")
             return True
-        except APIError as e:
-            print("!!!has_docker ERR", self, e, type(e))
+        except APIError:
             return False
 
     def remove_image(self, image: str, force: bool = True):

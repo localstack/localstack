@@ -455,8 +455,7 @@ class ContainerClient(metaclass=ABCMeta):
         # we always need the ID for this
         container_id = self.get_container_id(container_name=container_name_or_id)
         network_attrs = self.inspect_network(container_network)
-        print("!!!network_attrs", network_attrs)
-        containers = network_attrs["Containers"]
+        containers = network_attrs.get("Containers") or {}
         if container_id not in containers:
             raise ContainerException(
                 "Container %s is not connected to target network %s",
@@ -931,14 +930,14 @@ class Util:
         return f
 
     @staticmethod
-    def append_without_latest(image_names: list[str]):
+    def append_without_latest(image_names: List[str]):
         suffix = ":latest"
         for image in list(image_names):
             if image.endswith(suffix):
                 image_names.append(image[: -len(suffix)])
 
     @staticmethod
-    def strip_wellknown_repo_prefixes(image_names: list[str]) -> list[str]:
+    def strip_wellknown_repo_prefixes(image_names: List[str]) -> List[str]:
         """
         Remove well-known repo prefixes like `localhost/` or `docker.io/library/` from the list of given
         image names. This is mostly to ensure compatibility of our Docker client with Podman API responses.
