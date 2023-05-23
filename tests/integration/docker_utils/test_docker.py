@@ -443,6 +443,7 @@ class TestDockerClient:
     @pytest.mark.skipif(
         condition=in_docker(), reason="cannot test volume mounts from host when in docker"
     )
+    @skip_for_podman  # TODO: Volume mounting test currently not working against Podman
     def test_inspect_container_volumes(
         self, tmpdir, docker_client: ContainerClient, create_container
     ):
@@ -721,7 +722,8 @@ class TestDockerClient:
         assert 1 == len(container_list)
         assert c2.container_id.startswith(container_list[0]["id"])
         assert c2.container_name == container_list[0]["name"]
-        assert "created" == container_list[0]["status"]
+        # note: Docker returns "created", Podman returns "configured"
+        assert container_list[0]["status"] in ["created", "configured"]
 
         # per name pattern
         container_list = docker_client.list_containers(filter=f"name={name_prefix}")
@@ -837,9 +839,14 @@ class TestDockerClient:
         finally:
             docker_client.remove_container(container_name)
 
+    @pytest.mark.parametrize("attach", [True, False])
     def test_create_start_container_with_stdin_to_file(
-        self, tmpdir, docker_client: ContainerClient
+        self, tmpdir, attach, docker_client: ContainerClient
     ):
+        if isinstance(docker_client, CmdDockerClient) and _is_podman_test() and not attach:
+            # TODO: Podman behavior deviates from Docker if attach=False (prints container ID instead of stdin)
+            pytest.skip("Podman output deviates from Docker if attach=False")
+
         container_name = _random_container_name()
         message = "test_message_stdin"
         try:
@@ -851,7 +858,10 @@ class TestDockerClient:
             )
 
             output, _ = docker_client.start_container(
-                container_name, interactive=True, stdin=message.encode(config.DEFAULT_ENCODING)
+                container_name,
+                interactive=True,
+                stdin=message.encode(config.DEFAULT_ENCODING),
+                attach=attach,
             )
             target_path = tmpdir.join("test_file")
             docker_client.copy_from_container(container_name, str(target_path), "test_file")
@@ -1078,7 +1088,10 @@ class TestDockerClient:
                 assert expected in images
         finally:
             for img_ref in img_refs:
-                docker_client.remove_image(img_ref)
+                try:
+                    docker_client.remove_image(img_ref)
+                except Exception as e:
+                    LOG.info("Unable to remove image '%s': %s", img_ref, e)
 
     @pytest.mark.skip_offline
     def test_tag_non_existing_image(self, docker_client: ContainerClient):
@@ -1301,6 +1314,8 @@ class TestDockerClient:
         with pytest.raises(NoSuchContainer):
             docker_client.get_container_ip(f"hopefully_non_existent_container_{short_uid()}")
 
+    # TODO: getting container IP not yet working against Podman
+    @skip_for_podman
     def test_get_container_ip(self, docker_client: ContainerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
         ip = docker_client.get_container_ip(dummy_container.container_id)

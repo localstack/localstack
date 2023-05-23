@@ -237,6 +237,8 @@ class CmdDockerClient(ContainerClient):
             run(cmd)
         except subprocess.CalledProcessError as e:
             self._check_and_raise_no_such_container_error(container_name, error=e)
+            if "does not exist" in to_str(e.stdout):
+                raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
                 f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
@@ -267,8 +269,12 @@ class CmdDockerClient(ContainerClient):
         try:
             run(cmd)
         except subprocess.CalledProcessError as e:
-            if "pull access denied" in to_str(e.stdout):
-                raise NoSuchImage(docker_image)
+            stdout_str = to_str(e.stdout)
+            if "pull access denied" in stdout_str:
+                raise NoSuchImage(docker_image, stdout=e.stdout, stderr=e.stderr)
+            # note: error message 'access to the resource is denied' raised by Podman client
+            if "Trying to pull" in stdout_str and "access to the resource is denied" in stdout_str:
+                raise NoSuchImage(docker_image, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             ) from e
@@ -379,7 +385,7 @@ class CmdDockerClient(ContainerClient):
 
         return CancellableProcessStream(process)
 
-    def _inspect_object(self, object_name_or_id: str) -> Dict[str, Union[Dict, str]]:
+    def _inspect_object(self, object_name_or_id: str) -> Dict[str, Union[dict, list, str]]:
         cmd = self._docker_cmd()
         cmd += ["inspect", "--format", "{{json .}}", object_name_or_id]
         try:
@@ -412,9 +418,22 @@ class CmdDockerClient(ContainerClient):
         except NoSuchObject as e:
             raise NoSuchContainer(container_name_or_id=e.object_id)
 
-    def inspect_image(self, image_name: str, pull: bool = True) -> Dict[str, Union[Dict, str]]:
+    def inspect_image(
+        self,
+        image_name: str,
+        pull: bool = True,
+        strip_wellknown_repo_prefixes: bool = True,
+    ) -> Dict[str, Union[dict, list, str]]:
         try:
-            return self._inspect_object(image_name)
+            result = self._inspect_object(image_name)
+            if strip_wellknown_repo_prefixes:
+                if result.get("RepoDigests"):
+                    result["RepoDigests"] = Util.strip_wellknown_repo_prefixes(
+                        result["RepoDigests"]
+                    )
+                if result.get("RepoTags"):
+                    result["RepoTags"] = Util.strip_wellknown_repo_prefixes(result["RepoTags"])
+            return result
         except NoSuchObject as e:
             if pull:
                 self.pull_image(image_name)
@@ -560,6 +579,7 @@ class CmdDockerClient(ContainerClient):
         except ContainerException as e:
             if "Trying to pull" in str(e) and "access to the resource is denied" in str(e):
                 raise NoSuchImage(image_name, stdout=e.stdout, stderr=e.stderr) from e
+            raise
         finally:
             Util.rm_env_vars_file(env_file)
 
@@ -627,9 +647,9 @@ class CmdDockerClient(ContainerClient):
         if stdin:
             kwargs["stdin"] = True
         try:
-            print("!!!cmd", cmd, kwargs)
             process = run(cmd, **kwargs)
             stdout, stderr = process.communicate(input=stdin)
+            print("!!!cmd", cmd, kwargs, process.returncode)
             if process.returncode != 0:
                 raise subprocess.CalledProcessError(
                     process.returncode,

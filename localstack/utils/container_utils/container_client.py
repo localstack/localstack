@@ -436,8 +436,7 @@ class ContainerClient(metaclass=ABCMeta):
     def get_networks(self, container_name: str) -> List[str]:
         LOG.debug("Getting networks for container: %s", container_name)
         container_attrs = self.inspect_container(container_name_or_id=container_name)
-        print("!!!container_attrs get_networks", container_attrs)
-        return list(container_attrs["NetworkSettings"]["Networks"].keys())
+        return list(container_attrs["NetworkSettings"].get("Networks", {}).keys())
 
     def get_container_ipv4_for_network(
         self, container_name_or_id: str, container_network: str
@@ -626,11 +625,15 @@ class ContainerClient(metaclass=ABCMeta):
         return volumes
 
     @abstractmethod
-    def inspect_image(self, image_name: str, pull: bool = True) -> Dict[str, Union[Dict, str]]:
+    def inspect_image(
+        self, image_name: str, pull: bool = True, strip_wellknown_repo_prefixes: bool = True
+    ) -> Dict[str, Union[dict, list, str]]:
         """Get detailed attributes of an image.
 
         :param image_name: Image name to inspect
         :param pull: Whether to pull image if not existent
+        :param strip_wellknown_repo_prefixes: whether to strip off well-known repo prefixes like
+               "localhost/" or "docker.io/library/" which are added by the Podman API, but not by Docker
         :return: Dict containing docker attributes as returned by the daemon
         """
         pass

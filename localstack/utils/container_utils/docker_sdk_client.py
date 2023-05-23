@@ -363,9 +363,22 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
-    def inspect_image(self, image_name: str, pull: bool = True) -> Dict[str, Union[Dict, str]]:
+    def inspect_image(
+        self,
+        image_name: str,
+        pull: bool = True,
+        strip_wellknown_repo_prefixes: bool = True,
+    ) -> Dict[str, Union[dict, list, str]]:
         try:
-            return self.client().images.get(image_name).attrs
+            result = self.client().images.get(image_name).attrs
+            if strip_wellknown_repo_prefixes:
+                if result.get("RepoDigests"):
+                    result["RepoDigests"] = Util.strip_wellknown_repo_prefixes(
+                        result["RepoDigests"]
+                    )
+                if result.get("RepoTags"):
+                    result["RepoTags"] = Util.strip_wellknown_repo_prefixes(result["RepoTags"])
+            return result
         except NotFound:
             if pull:
                 self.pull_image(image_name)
