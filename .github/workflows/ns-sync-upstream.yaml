@@ -1,0 +1,70 @@
+# A workflow to keep up nscloud-demos with upstream.
+#
+# The setup is a bit funky:
+#   - `upstream` branch mirrors the upstream `master`.
+#   - `patches` grows from upstream and should have commits that a rebasable.
+#   - `master` grows from `patches` and rewrites workflow files.
+#
+# Master is rewritten every time from scratch in order to avoid rebase conflicts
+# in the workflow files and handle newly introduced workflows.
+
+name: ns-sync-upstream
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 2 * * *" # daily at 2:30am
+
+env:
+  main_branch: master
+  upstream_url: https://github.com/localstack/localstack.git
+
+jobs:
+  sync:
+    name: sync
+    runs-on: nscloud
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.main_branch }}
+          fetch-depth: 0
+          # Use a custom PAT to push to enable triggering on_push workflows:
+          # https://github.com/orgs/community/discussions/25702
+          token: ${{ secrets.PUSH_TOKEN }}
+
+      - name: git config
+        run: |
+          git config --global user.name github-actions
+          git config --global user.email noreply+github-actions@namespacelabs.com
+      - name: fetch upstream
+        run: |
+          git remote add upstream ${upstream_url}
+          git fetch upstream ${main_branch}
+          git checkout -t origin/upstream
+          git rebase upstream/${main_branch}
+      - name: rebase patches
+        run: |
+          # Branch patches contains updates that should cleanly rebase.
+          # For instance it contains this workflow.
+          git checkout -t origin/patches
+          git rebase upstream
+      - name: sync main
+        run: |
+          git checkout ${main_branch}
+          git reset --hard patches
+      - name: update workflows
+        run: |
+          # Only tests-cli/circleci workflows have non-trivial tests.
+          shopt -s extglob
+          rm -- .github/workflows/!(tests-cli|ns-sync-upstream).y*ml
+
+          # Update them to run on nscloud.
+          sed -e 's/^\([[:space:]]*\)runs-on: .*/\1runs-on: nscloud/' -i .github/workflows/!(circleci|ns-sync-upstream).y*ml
+          git add .
+          git commit -m "Update workflows to run on nscloud."
+      - name: push
+        run: |
+          # Push separately to trigger workflows on main.
+          git push -f origin upstream
+          git push -f origin patches
+          git push -f origin ${main_branch}
