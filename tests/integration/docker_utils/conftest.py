@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from localstack.config import is_env_not_false
@@ -23,3 +25,14 @@ def docker_client(request):
         client
     )  # this is a hack to get a global skip for all tests that require the docker client
     yield client
+
+
+def is_podman_test():
+    return os.environ.get("DOCKER_CMD") == "podman"
+
+
+# marker to indicate tests that don't work against Podman (i.e., should only be run against Docker)
+skip_for_podman = pytest.mark.skipif(
+    is_podman_test(),
+    reason="Test not applicable when run against Podman (only Docker)",
+)
