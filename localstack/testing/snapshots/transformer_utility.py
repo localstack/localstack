@@ -400,6 +400,8 @@ class TransformerUtility:
             TransformerUtility.jsonpath(
                 jsonpath="$..Mac", value_replacement="<mac>", reference_replacement=False
             ),
+            TransformerUtility.key_value("CiphertextBlob", reference_replacement=False),
+            TransformerUtility.key_value("Plaintext", reference_replacement=False),
             RegexTransformer(PATTERN_KEY_ARN, replacement="<key-arn>"),
         ]
 
