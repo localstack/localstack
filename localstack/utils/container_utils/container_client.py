@@ -425,6 +425,8 @@ class DockerRunFlags:
     user: Optional[str]
 
 
+# TODO: remove Docker/Podman compatibility switches (in particular strip_wellknown_repo_prefixes=...)
+#  from the container client base interface and introduce derived Podman client implementations instead!
 class ContainerClient(metaclass=ABCMeta):
     STOP_TIMEOUT = 0
 
@@ -477,7 +479,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param timeout: Timeout after which SIGKILL is sent to the container.
                         If not specified, defaults to `STOP_TIMEOUT`
         """
-        pass
 
     @abstractmethod
     def restart_container(self, container_name: str, timeout: int = 10):
@@ -497,7 +498,6 @@ class ContainerClient(metaclass=ABCMeta):
     @abstractmethod
     def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
         """Removes container with given name"""
-        pass
 
     @abstractmethod
     def remove_image(self, image: str, force: bool = True) -> None:
@@ -506,7 +506,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param image: Image name and tag
         :param force: Force removal
         """
-        pass
 
     @abstractmethod
     def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
@@ -514,7 +513,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         :return: A list of dicts with keys id, image, name, labels, status
         """
-        pass
 
     def get_running_container_names(self) -> List[str]:
         """Returns a list of the names of all running containers"""
@@ -531,24 +529,20 @@ class ContainerClient(metaclass=ABCMeta):
         self, container_name: str, local_path: str, container_path: str
     ) -> None:
         """Copy contents of the given local path into the container"""
-        pass
 
     @abstractmethod
     def copy_from_container(
         self, container_name: str, local_path: str, container_path: str
     ) -> None:
         """Copy contents of the given container to the host"""
-        pass
 
     @abstractmethod
     def pull_image(self, docker_image: str, platform: Optional[DockerPlatform] = None) -> None:
         """Pulls an image with a given name from a Docker registry"""
-        pass
 
     @abstractmethod
     def push_image(self, docker_image: str) -> None:
         """Pushes an image with a given name to a Docker registry"""
-        pass
 
     @abstractmethod
     def build_image(
@@ -565,7 +559,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param context_path: Path for build context (defaults to dirname of Dockerfile)
         :param platform: Target platform for build (defaults to platform of Docker host)
         """
-        pass
 
     @abstractmethod
     def tag_image(self, source_ref: str, target_name: str) -> None:
@@ -574,7 +567,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param source_ref: Name or ID of the image to be tagged
         :param target_name: New name (tag) of the tagged image
         """
-        pass
 
     @abstractmethod
     def get_docker_image_names(
@@ -591,17 +583,14 @@ class ContainerClient(metaclass=ABCMeta):
                "localhost/" or "docker.io/library/" which are added by the Podman API, but not by Docker
         :return: List of image names
         """
-        pass
 
     @abstractmethod
     def get_container_logs(self, container_name_or_id: str, safe: bool = False) -> str:
         """Get all logs of a given container"""
-        pass
 
     @abstractmethod
     def stream_container_logs(self, container_name_or_id: str) -> CancellableStream:
         """Returns a blocking generator you can iterate over to retrieve log output as it happens."""
-        pass
 
     @abstractmethod
     def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
@@ -609,7 +598,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         :return: Dict containing docker attributes as returned by the daemon
         """
-        pass
 
     def inspect_container_volumes(self, container_name_or_id) -> List[VolumeInfo]:
         """Return information about the volumes mounted into the given container.
@@ -635,7 +623,6 @@ class ContainerClient(metaclass=ABCMeta):
                "localhost/" or "docker.io/library/" which are added by the Podman API, but not by Docker
         :return: Dict containing docker attributes as returned by the daemon
         """
-        pass
 
     @abstractmethod
     def create_network(self, network_name: str) -> str:
@@ -644,7 +631,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param network_name: Name of the network
         :return Network ID
         """
-        pass
 
     @abstractmethod
     def delete_network(self, network_name: str) -> None:
@@ -652,7 +638,6 @@ class ContainerClient(metaclass=ABCMeta):
         Delete a network with the given name
         :param network_name: Name of the network
         """
-        pass
 
     @abstractmethod
     def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
@@ -660,7 +645,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         :return: Dict containing docker attributes as returned by the daemon
         """
-        pass
 
     @abstractmethod
     def connect_container_to_network(
@@ -672,7 +656,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param container_name_or_id: Container to connect to the network
         :param aliases: List of dns names the container should be available under in the network
         """
-        pass
 
     @abstractmethod
     def disconnect_container_from_network(
@@ -683,7 +666,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param network_name: Network to disconnect the container from
         :param container_name_or_id: Container to disconnect from the network
         """
-        pass
 
     def get_container_name(self, container_id: str) -> str:
         """Get the name of a container by a given identifier"""
@@ -699,7 +681,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         If container has multiple networks, it will return the IP of the first
         """
-        pass
 
     def get_image_cmd(self, docker_image: str, pull: bool = True) -> List[str]:
         """Get the command for the given image
@@ -723,7 +704,6 @@ class ContainerClient(metaclass=ABCMeta):
     @abstractmethod
     def has_docker(self) -> bool:
         """Check if system has docker available"""
-        pass
 
     @abstractmethod
     def commit(
@@ -738,7 +718,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param image_name: Destination image name
         :param image_tag: Destination image tag
         """
-        pass
 
     def create_container_from_config(self, container_config: ContainerConfiguration) -> str:
         """
@@ -801,7 +780,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         :return: Container ID
         """
-        pass
 
     @abstractmethod
     def run_container(
@@ -835,7 +813,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         :return: A tuple (stdout, stderr)
         """
-        pass
 
     @abstractmethod
     def exec_in_container(
@@ -853,7 +830,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         :return: A tuple (stdout, stderr)
         """
-        pass
 
     @abstractmethod
     def start_container(
@@ -868,7 +844,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         :return: A tuple (stdout, stderr) if attach or interactive is set, otherwise a tuple (b"container_name_or_id", b"")
         """
-        pass
 
     @abstractmethod
     def login(self, username: str, password: str, registry: Optional[str] = None) -> None:
@@ -879,7 +854,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param password: Password / token for the registry
         :param registry: Registry url
         """
-        pass
 
 
 class Util:

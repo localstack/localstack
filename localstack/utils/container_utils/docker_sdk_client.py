@@ -61,10 +61,9 @@ class SdkDockerClient(ContainerClient):
     def client(self):
         if self.docker_client:
             return self.docker_client
-        else:
-            # if the initialization failed before, try to initialize on-demand
-            self.docker_client = self._create_client()
-            return self.docker_client
+        # if the initialization failed before, try to initialize on-demand
+        self.docker_client = self._create_client()
+        return self.docker_client
 
     @staticmethod
     def _create_client():

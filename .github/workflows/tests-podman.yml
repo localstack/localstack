@@ -5,16 +5,18 @@ on:
   pull_request:
     paths:
       - ".github/workflows/tests-podman.yml"
-      - "localstack/utils/container_utils"
-      - "tests/integration/docker_utils"
+      - "localstack/utils/container_utils/"
+      - "localstack/utils/docker_utils.py"
+      - "tests/integration/docker_utils/"
     branches:
       - master
       - release/*
   push:
     paths:
       - ".github/workflows/tests-podman.yml"
-      - "localstack/utils/container_utils"
-      - "tests/integration/docker_utils"
+      - "localstack/utils/container_utils/"
+      - "localstack/utils/docker_utils.py"
+      - "tests/integration/docker_utils/"
     branches:
       - master
       - release/*
