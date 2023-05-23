@@ -1175,7 +1175,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         validate_analytics_configuration(analytics_configuration)
         store = self.get_store()
         if bucket not in store.bucket_analytics_configuration:
-            store.bucket_analytics_configuration[bucket] = []
+            store.bucket_analytics_configuration[bucket] = [analytics_configuration]
+            return
+        for analytics_config in store.bucket_analytics_configuration[bucket]:
+            if analytics_config["Id"] == id:
+                analytics_config.update(analytics_configuration)
+                return
         store.bucket_analytics_configuration[bucket].append(analytics_configuration)
 
     def get_bucket_analytics_configuration(
