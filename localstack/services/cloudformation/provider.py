@@ -192,9 +192,7 @@ class CloudformationProvider(CloudformationApi):
         new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
             request.get("Parameters")
         )
-        parameter_declarations = param_resolver.extract_parameter_declarations_from_template(
-            template
-        )
+        parameter_declarations = param_resolver.extract_stack_parameter_declarations(template)
         resolved_parameters = param_resolver.resolve_parameters(
             parameter_declarations=parameter_declarations,
             new_parameters=new_parameters,
@@ -276,9 +274,7 @@ class CloudformationProvider(CloudformationApi):
         new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
             request.get("Parameters")
         )
-        parameter_declarations = param_resolver.extract_parameter_declarations_from_template(
-            template
-        )
+        parameter_declarations = param_resolver.extract_stack_parameter_declarations(template)
         resolved_parameters = param_resolver.resolve_parameters(
             parameter_declarations=parameter_declarations,
             new_parameters=new_parameters,
@@ -370,8 +366,6 @@ class CloudformationProvider(CloudformationApi):
         change_set_name: ChangeSetNameOrId = None,
         template_stage: TemplateStage = None,
     ) -> GetTemplateOutput:
-
-        stack = None
         if change_set_name:
             stack = find_change_set(stack_name=stack_name, cs_name=change_set_name)
         else:
@@ -407,7 +401,7 @@ class CloudformationProvider(CloudformationApi):
 
         # build parameter declarations
         result["Parameters"] = list(
-            param_resolver.extract_parameter_declarations_from_template(template).values()
+            param_resolver.extract_stack_parameter_declarations(template).values()
         )
 
         id_summaries = defaultdict(list)
@@ -516,9 +510,7 @@ class CloudformationProvider(CloudformationApi):
         new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
             request.get("Parameters")
         )
-        parameter_declarations = param_resolver.extract_parameter_declarations_from_template(
-            template
-        )
+        parameter_declarations = param_resolver.extract_stack_parameter_declarations(template)
         resolved_parameters = param_resolver.resolve_parameters(
             parameter_declarations=parameter_declarations,
             new_parameters=new_parameters,
