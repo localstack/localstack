@@ -132,8 +132,10 @@ def _serialize_encryption_context(encryption_context: Optional[EncryptionContext
     if encryption_context:
         aad = io.BytesIO()
         for key, value in sorted(encryption_context.items(), key=lambda x: x[0]):
-            aad.write(key.encode("utf-8"))
-            aad.write(value.encode("utf-8"))
+            # remove the reserved key-value pair from additional authentication data
+            if key != "`aws-crypto-public-key`":
+                aad.write(key.encode("utf-8"))
+                aad.write(value.encode("utf-8"))
         return aad.getvalue()
     else:
         return b""
