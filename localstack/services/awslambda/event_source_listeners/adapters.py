@@ -64,6 +64,11 @@ class EventSourceLegacyAdapter(EventSourceAdapter):
     def invoke(self, function_arn, context, payload, invocation_type, callback=None):
         from localstack.services.awslambda.lambda_api import run_lambda
 
+        try:
+            json.dumps(payload)
+        except TypeError:
+            payload = json.loads(json.dumps(payload or {}, cls=BytesEncoder))
+
         run_lambda(
             func_arn=function_arn,
             event=payload,
@@ -92,6 +97,11 @@ class EventSourceLegacyAdapter(EventSourceAdapter):
             )
         else:
             lock_discriminator = None
+
+        try:
+            json.dumps(payload)
+        except TypeError:
+            payload = json.loads(json.dumps(payload or {}, cls=BytesEncoder))
 
         result = run_lambda(
             func_arn=function_arn,
