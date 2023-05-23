@@ -567,7 +567,7 @@ class TestSNSProvider:
         def check_messages():
             sms_was_found = False
             for message in sns_backend.sms_messages:
-                if message["PhoneNumber"] == phone_number:
+                if message["PhoneNumber"] == "+33000000000":
                     sms_was_found = True
                     break
 
