@@ -16,6 +16,7 @@ from localstack.aws.protocol.parser import OperationNotFoundParserError, create_
 from localstack.aws.protocol.serializer import create_serializer
 from localstack.aws.protocol.validate import MissingRequiredField, validate_request
 from localstack.aws.spec import load_service
+from localstack.constants import INTERNAL_AWS_ACCESS_KEY_ID, INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.http import Request, Response, Router, route
 from localstack.http.dispatcher import Handler
 from localstack.services.sqs.exceptions import MissingParameter
@@ -174,8 +175,8 @@ def try_call_sqs(request: Request, region: str) -> Tuple[Dict, OperationModel]:
     client = aws_stack.connect_to_service(
         "sqs",
         region_name=region,
-        aws_access_key_id=account_id,
-        aws_secret_access_key=account_id,
+        aws_access_key_id=account_id or INTERNAL_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
     )
     try:
         # using the layer below boto3.client("sqs").<operation>(...) to make the call

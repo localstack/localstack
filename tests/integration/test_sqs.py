@@ -15,6 +15,7 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+    TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.services.sqs.models import sqs_stores
@@ -3538,13 +3539,13 @@ class TestSqsQueryApi:
             service_name="sqs",
             region_name="us-east-1",
             aws_access_key_id="000000000001",
-            aws_secret_access_key="__test_key__",
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
         client2 = aws_client_factory.get_client(
             service_name="sqs",
             region_name="us-east-1",
             aws_access_key_id="000000000002",
-            aws_secret_access_key="__test_key__",
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
 
         # set up the queues in the two accounts
@@ -3564,14 +3565,14 @@ class TestSqsQueryApi:
             service="sqs",
             region="us-east-1",
             aws_access_key_id="000000000001",
-            aws_secret_access_key="__test_key__",
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
 
         client2_http = aws_http_client_factory(
             service="sqs",
             region="us-east-1",
             aws_access_key_id="000000000002",
-            aws_secret_access_key="__test_key__",
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
 
         # try and delete the queue from one account using the query API and make sure a) it works, and b) it's not deleting the queue from the other account
