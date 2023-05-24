@@ -1586,12 +1586,13 @@ class TestSqsProvider:
 
     @pytest.mark.aws_validated
     def test_fifo_queue_send_message_with_delay_on_queue_works(self, sqs_create_queue, aws_client):
+        delay_seconds = 2
         queue_url = sqs_create_queue(
             QueueName=f"queue-{short_uid()}.fifo",
             Attributes={
                 "FifoQueue": "true",
                 "ContentBasedDeduplication": "true",
-                "DelaySeconds": "2",
+                "DelaySeconds": str(delay_seconds),
             },
         )
 
@@ -1602,9 +1603,9 @@ class TestSqsProvider:
         response = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
         assert response.get("Messages", []) == []
 
-        response = aws_client.sqs.receive_message(
-            QueueUrl=queue_url, WaitTimeSeconds=3, MaxNumberOfMessages=3
-        )
+        time.sleep(delay_seconds + 1)
+
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=3)
         messages = response["Messages"]
         assert len(messages) == 3
 
