@@ -5,6 +5,7 @@ from typing import Dict, List
 from botocore.utils import InvalidArnException
 from moto.core.utils import camelcase_to_pascal, underscores_to_camelcase
 from moto.sns import sns_backends
+from moto.sns.exceptions import SNSNotFoundError
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH, SNSBackend, Topic
 from moto.sns.utils import is_e164
 
@@ -97,7 +98,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
-        moto_response: GetTopicAttributesResponse = call_moto(context)
+        try:
+            moto_response: GetTopicAttributesResponse = call_moto(context)
+        except CommonServiceException as exc:
+            if exc.code == "NotFound":
+                raise NotFoundException("Topic does not exist")
+            raise
         # TODO: fix some attributes by moto, see snapshot
         # TODO: very hacky way to get the attributes we need instead of a moto patch
         # would need more work to have the proper format out of moto, maybe extract the model to our store
@@ -457,12 +463,18 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         store = self.get_store(account_id=context.account_id, region_name=context.region)
 
-        if not phone_number and is_endpoint_publish:
+        if not phone_number:
             moto_sns_backend = self.get_moto_backend(context.account_id, context.region)
-            if target_arn not in moto_sns_backend.platform_endpoints:
-                raise InvalidParameterException(
-                    "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
-                )
+            if is_endpoint_publish:
+                if target_arn not in moto_sns_backend.platform_endpoints:
+                    raise InvalidParameterException(
+                        "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
+                    )
+            else:
+                try:
+                    moto_sns_backend.get_topic(topic_or_target_arn)
+                except SNSNotFoundError:
+                    raise NotFoundException("Topic does not exist")
 
         message_ctx = SnsMessage(
             type="Notification",
