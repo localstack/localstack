@@ -785,6 +785,30 @@
         "shape":"Buckets",
         "documentation":"<p>The list of buckets owned by the requester.</p>"
       }
+    },
+    {
+      "op": "remove",
+      "path": "/shapes/ListObjectsOutput/members/Contents"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ListObjectsOutput/members/Contents",
+      "value": {
+        "shape":"ObjectList",
+        "documentation":"<p>Metadata about each object returned.</p>"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "/shapes/ListObjectsV2Output/members/Contents"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ListObjectsV2Output/members/Contents",
+      "value": {
+        "shape":"ObjectList",
+        "documentation":"<p>Metadata about each object returned.</p>"
+      }
     }
   ]
 }

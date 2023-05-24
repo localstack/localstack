@@ -3910,6 +3910,7 @@ class TestS3:
         """
         Test that the response structure is correct for the S3 API
         """
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="test", Body="test")
         headers = {"x-amz-content-sha256": "UNSIGNED-PAYLOAD"}
 
         s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
@@ -3940,6 +3941,11 @@ class TestS3:
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
+        # validate that the Contents tag is last, after BucketName. Again for the Java SDK to properly set the
+        # BucketName value to the objects.
+        list_objects_tags = list(resp_dict["ListBucketResult"].keys())
+        assert list_objects_tags.index("Name") < list_objects_tags.index("Contents")
+        assert list_objects_tags[-1] == "Contents"
 
         # Lists all objects V2 in a bucket
         list_objects_v2_url = f"{bucket_url}?list-type=2"
@@ -3947,6 +3953,10 @@ class TestS3:
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
+        # same as ListObjects
+        list_objects_v2_tags = list(resp_dict["ListBucketResult"].keys())
+        assert list_objects_v2_tags.index("Name") < list_objects_v2_tags.index("Contents")
+        assert list_objects_v2_tags[-1] == "Contents"
 
         # Lists all multipart uploads in a bucket
         list_multipart_uploads_url = f"{bucket_url}?uploads"

@@ -1,0 +1,63 @@
+name: Podman Docker Client Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/tests-podman.yml"
+      - "localstack/utils/container_utils/"
+      - "localstack/utils/docker_utils.py"
+      - "tests/integration/docker_utils/"
+    branches:
+      - master
+      - release/*
+  push:
+    paths:
+      - ".github/workflows/tests-podman.yml"
+      - "localstack/utils/container_utils/"
+      - "localstack/utils/docker_utils.py"
+      - "tests/integration/docker_utils/"
+    branches:
+      - master
+      - release/*
+
+jobs:
+  podman-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install podman and test dependencies
+        run: |
+          make install-test &
+
+          # install podman
+          sudo apt update
+          sudo apt install -y podman
+          podman ps
+          podman system info
+
+          # disable Docker, to ensure the tests are running against Podman only
+          docker ps
+          sudo mv /var/run/docker.sock /var/run/docker.sock.bk
+          docker ps && exit 1
+          dockerCmd=$(which docker)
+          sudo mv $dockerCmd $dockerCmd".bk"
+
+          # wait for async installation process to finish
+          wait
+
+      - name: Run Podman Docker client tests
+        run: |
+          # determine path of podman socket
+          podmanSocket=$(podman system info --format json | jq -r '.host.remoteSocket.path')
+          echo "Running tests against local podman socket $podmanSocket"
+
+          DOCKER_CMD=podman DOCKER_HOST=$podmanSocket TEST_PATH=tests/integration/docker_utils DEBUG=1 make test

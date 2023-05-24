@@ -183,7 +183,7 @@ class TestIntrinsicFunctions:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip(reason="functions not currently supported")
-    def test_json_and_find_in_map_functions(self, deploy_cfn_template):
+    def test_to_json_functions(self, deploy_cfn_template):
         template_path = os.path.join(
             os.path.dirname(__file__), "../templates/function_to_json_string.yml"
         )
@@ -203,6 +203,18 @@ class TestIntrinsicFunctions:
         assert json_result["key1"] == first_value
         assert json_result["key2"] == second_value
         assert "value1" == deployed.outputs["Result2"]
+
+    @pytest.mark.aws_validated
+    def test_find_map_function(self, deploy_cfn_template):
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../templates/function_find_in_map.yml"
+        )
+
+        deployed = deploy_cfn_template(
+            template_path=template_path,
+        )
+
+        assert deployed.outputs["Result"] == "us-east-1"
 
     @pytest.mark.aws_validated
     @pytest.mark.skip(reason="function not currently supported")
