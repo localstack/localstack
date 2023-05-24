@@ -637,7 +637,7 @@ class TestS3:
         snapshot.match("list-object-special-char", resp)
         resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
         snapshot.match("get-object-special-char", resp)
-        aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
+        resp = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
         snapshot.match("del-object-special-char", resp)
 
     @pytest.mark.aws_validated

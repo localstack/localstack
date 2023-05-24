@@ -7416,7 +7416,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_put_get_object_special_character": {
-    "recorded-date": "09-05-2023, 13:27:18",
+    "recorded-date": "24-05-2023, 19:17:18",
     "recorded-content": {
       "put-object-special-char": {
         "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
@@ -7462,17 +7462,9 @@
         }
       },
       "del-object-special-char": {
-        "AcceptRanges": "bytes",
-        "Body": "",
-        "ContentLength": 4,
-        "ContentType": "binary/octet-stream",
-        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
-        "LastModified": "datetime",
-        "Metadata": {},
-        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPStatusCode": 204
         }
       }
     }
