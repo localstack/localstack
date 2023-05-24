@@ -175,6 +175,8 @@ def create_aws_request_context(
     # The endpoint URL is mandatory here, set a dummy if not given (doesn't _need_ to be localstack specific)
     if not endpoint_url:
         endpoint_url = "http://localhost.localstack.cloud"
+    # pre-process the request args (some params are modified using botocore event handlers)
+    parameters = client._emit_api_params(parameters, operation, request_context)
     request_dict = client._convert_to_request_dict(
         parameters, operation, endpoint_url, context=request_context
     )

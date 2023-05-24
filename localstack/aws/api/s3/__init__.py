@@ -2271,8 +2271,8 @@ class ListBucketMetricsConfigurationsRequest(ServiceRequest):
 
 
 class ListBucketsOutput(TypedDict, total=False):
-    Buckets: Optional[Buckets]
     Owner: Optional[Owner]
+    Buckets: Optional[Buckets]
 
 
 class MultipartUpload(TypedDict, total=False):

@@ -677,7 +677,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         signature = key.sign(request.get("Message"), request.get("MessageType"), signing_algorithm)
 
         result = {
-            "KeyId": key.metadata["KeyId"],
+            "KeyId": key.metadata["Arn"],
             "Signature": signature,
             "SigningAlgorithm": signing_algorithm,
         }
@@ -700,7 +700,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         )
 
         result = {
-            "KeyId": key.metadata["KeyId"],
+            "KeyId": key.metadata["Arn"],
             "SignatureValid": is_signature_valid,
             "SigningAlgorithm": signing_algorithm,
         }

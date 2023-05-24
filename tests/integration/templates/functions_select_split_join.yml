@@ -14,7 +14,7 @@ Resources:
     Properties:
       Type: String
       Value: !Select
-        - 0
+        - "0"
         - !Split
           - ";"
           - !Ref MultipleValues

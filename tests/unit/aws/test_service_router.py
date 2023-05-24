@@ -172,6 +172,8 @@ def test_service_router_works_for_every_service(
     }
     request_args = _create_dummy_request_args(operation)
 
+    # pre-process the request args (some params are modified using botocore event handlers)
+    request_args = client._emit_api_params(request_args, operation, request_context)
     # The endpoint URL is mandatory here, just set a dummy (doesn't _need_ to be localstack specific)
     request_dict = client._convert_to_request_dict(
         request_args, operation, "http://localhost.localstack.cloud", request_context

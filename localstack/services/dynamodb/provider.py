@@ -1,7 +1,7 @@
 import copy
 import json
 import logging
-import os.path
+import os
 import random
 import re
 import time
@@ -112,6 +112,7 @@ from localstack.services.dynamodbstreams import dynamodbstreams_api
 from localstack.services.dynamodbstreams.dynamodbstreams_api import (
     get_and_increment_sequence_number_counter,
 )
+from localstack.services.dynamodbstreams.models import dynamodbstreams_stores
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import AssetDirectory, StateVisitor
@@ -358,6 +359,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(dynamodb_stores)
+        visitor.visit(dynamodbstreams_stores)
         visitor.visit(AssetDirectory(os.path.join(config.dirs.data, self.service)))
 
     def on_before_state_reset(self):
