@@ -387,6 +387,7 @@ class CloudformationProvider(CloudformationApi):
             {"ResourceType": key, "LogicalResourceIds": values}
             for key, values in id_summaries.items()
         ]
+        result["Metadata"] = stack.template.get("Metadata")
         result["Version"] = stack.template.get("AWSTemplateFormatVersion", "2010-09-09")
         # these do not appear in the output
         result.pop("Capabilities", None)
