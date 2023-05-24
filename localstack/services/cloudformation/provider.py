@@ -20,6 +20,8 @@ from localstack.aws.api.cloudformation import (
     CreateStackSetInput,
     CreateStackSetOutput,
     DeleteChangeSetOutput,
+    DeleteStackInstancesInput,
+    DeleteStackInstancesOutput,
     DeleteStackSetOutput,
     DescribeChangeSetOutput,
     DescribeStackEventsOutput,
@@ -92,7 +94,7 @@ from localstack.utils.collections import (
     select_from_typed_dict,
 )
 from localstack.utils.json import clone
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import long_uid, short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -110,6 +112,13 @@ def clone_stack_params(stack_params):
     except Exception as e:
         LOG.info("Unable to clone stack parameters: %s", e)
         return stack_params
+
+
+def find_stack_instance(stack_set: StackSet, account: str, region: str):
+    for instance in stack_set.stack_instances:
+        if instance.metadata["Account"] == account and instance.metadata["Region"] == region:
+            return instance
+    return None
 
 
 def stack_not_found_error(stack_name: str):
@@ -378,6 +387,7 @@ class CloudformationProvider(CloudformationApi):
             {"ResourceType": key, "LogicalResourceIds": values}
             for key, values in id_summaries.items()
         ]
+        result["Metadata"] = stack.template.get("Metadata")
         result["Version"] = stack.template.get("AWSTemplateFormatVersion", "2010-09-09")
         # these do not appear in the output
         result.pop("Capabilities", None)
@@ -729,7 +739,7 @@ class CloudformationProvider(CloudformationApi):
     ) -> CreateStackSetOutput:
         state = get_cloudformation_store()
         stack_set = StackSet(request)
-        stack_set_id = short_uid()
+        stack_set_id = f"{stack_set.stack_set_name}:{long_uid()}"
         stack_set.metadata["StackSetId"] = stack_set_id
         state.stack_sets[stack_set_id] = stack_set
 
@@ -821,6 +831,8 @@ class CloudformationProvider(CloudformationApi):
         if not stack_set:
             return not_found_error(f'Stack set named "{stack_set_name}" does not exist')
 
+        # TODO: add a check for remaining stack instances
+
         for instance in stack_set[0].stack_instances:
             deployer = template_deployer.TemplateDeployer(instance.stack)
             deployer.delete_stack()
@@ -856,6 +868,11 @@ class CloudformationProvider(CloudformationApi):
                     sset_meta, ["TemplateURL"]
                 )
                 stack_name = f"sset-{set_name}-{account}"
+
+                # skip creation of existing stacks
+                if find_stack(stack_name):
+                    continue
+
                 result = cf_client.create_stack(StackName=stack_name, **kwargs)
                 stacks_to_await.append((stack_name, region))
                 # store stack instance
@@ -902,6 +919,43 @@ class CloudformationProvider(CloudformationApi):
         stack_set = stack_set[0]
         result = [inst.metadata for inst in stack_set.stack_instances]
         return ListStackInstancesOutput(Summaries=result)
+
+    @handler("DeleteStackInstances", expand=False)
+    def delete_stack_instances(
+        self,
+        context: RequestContext,
+        request: DeleteStackInstancesInput,
+    ) -> DeleteStackInstancesOutput:
+        op_id = request.get("OperationId") or short_uid()
+
+        accounts = request["Accounts"]
+        regions = request["Regions"]
+
+        state = get_cloudformation_store()
+        stack_sets = state.stack_sets.values()
+
+        set_name = request.get("StackSetName")
+        stack_set = next((sset for sset in stack_sets if sset.stack_set_name == set_name), None)
+
+        if not stack_set:
+            return not_found_error(f'Stack set named "{set_name}" does not exist')
+
+        for account in accounts:
+            for region in regions:
+                instance = find_stack_instance(stack_set, account, region)
+                if instance:
+                    stack_set.stack_instances.remove(instance)
+
+        # record operation
+        operation = {
+            "OperationId": op_id,
+            "StackSetId": stack_set.metadata["StackSetId"],
+            "Action": "DELETE",
+            "Status": "SUCCEEDED",
+        }
+        stack_set.operations[op_id] = operation
+
+        return DeleteStackInstancesOutput(OperationId=op_id)
 
     @handler("RegisterType", expand=False)
     def register_type(
