@@ -590,7 +590,7 @@ class TestSNSProvider:
         )
         subscription_arn = subscription["SubscriptionArn"]
         parsed_arn = parse_arn(subscription_arn)
-        store = SnsProvider.get_store(account_id=parsed_arn["account"], region=parsed_arn["region"])
+        store = SnsProvider.get_store(parsed_arn["account"], parsed_arn["region"])
 
         sub_attr = aws_client.sns.get_subscription_attributes(SubscriptionArn=subscription_arn)
         assert sub_attr["Attributes"]["PendingConfirmation"] == "true"
