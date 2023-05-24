@@ -70,6 +70,20 @@ LOG = logging.getLogger(__name__)
 
 
 class SnsProvider(SnsApi, ServiceLifecycleHook):
+    """
+    Provider class for AWS Simple Notification Service.
+
+    AWS supports following operations in a cross-account setup:
+    - GetTopicAttributes
+    - SetTopicAttributes
+    - AddPermission
+    - RemovePermission
+    - Publish
+    - Subscribe
+    - ListSubscriptionByTopic
+    - DeleteTopic
+    """
+
     def __init__(self) -> None:
         super().__init__()
         self._publisher = PublishDispatcher()
