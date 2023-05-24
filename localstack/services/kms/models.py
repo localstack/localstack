@@ -110,6 +110,9 @@ RESERVED_ALIASES = [
     "alias/aws/xray",
 ]
 
+# list of key names that should be skipped when serializing the encryption context
+IGNORED_CONTEXT_KEYS = ["aws-crypto-public-key"]
+
 
 def _serialize_ciphertext_blob(ciphertext: Ciphertext) -> bytes:
     header = struct.pack(
@@ -133,7 +136,7 @@ def _serialize_encryption_context(encryption_context: Optional[EncryptionContext
         aad = io.BytesIO()
         for key, value in sorted(encryption_context.items(), key=lambda x: x[0]):
             # remove the reserved key-value pair from additional authentication data
-            if key != "`aws-crypto-public-key`":
+            if key not in IGNORED_CONTEXT_KEYS:
                 aad.write(key.encode("utf-8"))
                 aad.write(value.encode("utf-8"))
         return aad.getvalue()
