@@ -2,7 +2,7 @@
 Basic opt-in performance tests for Lambda. Usage:
 1) Set TEST_PERFORMANCE=1
 2) Set TEST_PERFORMANCE_RESULTS_DIR=$HOME/Downloads if you want to export performance results as CSV
-3) Adjust repeat=1000 to configure the number of repetitions
+3) Adjust repeat=100 to configure the number of repetitions
 """
 
 import csv
@@ -36,10 +36,10 @@ def test_invoke_warm_start(create_lambda_function, aws_client):
     def invoke():
         aws_client.awslambda.invoke(FunctionName=function_name)
 
-    # Cold start
+    # Ignore initial cold start
     invoke()
 
-    # Warm starts
+    # Test warm starts
     repeat = 100
     timings = timeit.repeat(invoke, number=1, repeat=repeat)
     print("")
@@ -60,12 +60,12 @@ def test_invoke_cold_start(create_lambda_function, aws_client, monkeypatch):
     def invoke():
         aws_client.awslambda.invoke(FunctionName=function_name)
 
-    # Initial cold start could be even slower due to init downloading
+    # Ignore the initial cold start, which could be even slower due to init downloading
     invoke()
 
-    # Cold starts caused by keep alive 0
+    # Test cold starts caused by the option LAMBDA_KEEPALIVE_MS=0
     repeat = 100
-    # Optionally sleep in between repetitions
+    # Optionally sleep in between repetitions to avoid delays caused by the previous container shutting down
     sleep_s = 4
     timings = timeit.repeat(
         invoke, number=1, repeat=repeat, setup=f"import time; time.sleep({sleep_s})"
@@ -78,10 +78,13 @@ def test_invoke_cold_start(create_lambda_function, aws_client, monkeypatch):
 
 def format_summary(timings: [float]) -> str:
     """Format summary statistics in seconds."""
+    p99 = (
+        statistics.quantiles(timings, n=100, method="inclusive")[98] if len(timings) > 1 else "N/A"
+    )
     stats = [
         f"{min(timings)} (min)",
         f"{statistics.median(timings)} (median)",
-        f"""{statistics.quantiles(timings, n=100, method="inclusive")[98]} (p99)""",
+        f"""{p99} (p99)""",
         f"{max(timings)} (max)",
     ]
     return ", ".join(stats)
