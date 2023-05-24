@@ -935,142 +935,6 @@
       }
     }
   },
-  "tests/integration/apigateway/test_apigateway_api.py::test_import_tf_rest_api": {
-    "recorded-date": "02-03-2023, 21:45:22",
-    "recorded-content": {
-      "import_tf_rest_api": {
-        "apiKeySource": "HEADER",
-        "createdDate": "datetime",
-        "disableExecuteApiEndpoint": false,
-        "endpointConfiguration": {
-          "types": [
-            "EDGE"
-          ]
-        },
-        "id": "<id:1>",
-        "name": "<name:1>",
-        "version": "1",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "resources": {
-        "items": [
-          {
-            "id": "<id:2>",
-            "path": "/",
-            "resourceMethods": {
-              "GET": {},
-              "OPTIONS": {}
-            }
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "method-response-get": {
-        "responseModels": {
-          "application/json": "Empty"
-        },
-        "responseParameters": {
-          "method.response.header.Access-Control-Allow-Origin": false
-        },
-        "statusCode": "200",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "integration-get": {
-        "cacheKeyParameters": [],
-        "cacheNamespace": "<id:2>",
-        "contentHandling": "CONVERT_TO_TEXT",
-        "httpMethod": "POST",
-        "integrationResponses": {
-          "200": {
-            "responseParameters": {
-              "method.response.header.Access-Control-Allow-Origin": "'*'"
-            },
-            "statusCode": "200"
-          }
-        },
-        "passthroughBehavior": "WHEN_NO_MATCH",
-        "timeoutInMillis": 29000,
-        "type": "AWS_PROXY",
-        "uri": "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:000000000000:function:s3OnObjectCreatedLambda-60c92b6/invocations",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "integration-response-get": {
-        "responseParameters": {
-          "method.response.header.Access-Control-Allow-Origin": "'*'"
-        },
-        "statusCode": "200",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "method-response-options": {
-        "responseModels": {
-          "application/json": "Empty"
-        },
-        "responseParameters": {
-          "method.response.header.Access-Control-Allow-Headers": false,
-          "method.response.header.Access-Control-Allow-Methods": false,
-          "method.response.header.Access-Control-Allow-Origin": false
-        },
-        "statusCode": "200",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "integration-options": {
-        "cacheKeyParameters": [],
-        "cacheNamespace": "<id:2>",
-        "integrationResponses": {
-          "200": {
-            "responseParameters": {
-              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
-              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
-              "method.response.header.Access-Control-Allow-Origin": "'*'"
-            },
-            "statusCode": "200"
-          }
-        },
-        "passthroughBehavior": "WHEN_NO_MATCH",
-        "requestTemplates": {
-          "application/json": {
-            "statusCode": 200
-          }
-        },
-        "timeoutInMillis": 29000,
-        "type": "MOCK",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "integration-response-options": {
-        "responseParameters": {
-          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
-          "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
-          "method.response.header.Access-Control-Allow-Origin": "'*'"
-        },
-        "statusCode": "200",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_authorizer_crud_no_api": {
     "recorded-date": "28-02-2023, 20:06:16",
     "recorded-content": {
@@ -2609,6 +2473,378 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::test_import_and_validate_rest_api[/Users/benjaminsimon/Projects/localstack/localstack/tests/integration/files/openapi.spec.tf.json]": {
+    "recorded-date": "24-05-2023, 01:39:44",
+    "recorded-content": {
+      "import_tf_rest_api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "version": "1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "resources": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-root-get": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-root-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:2>",
+        "contentHandling": "CONVERT_TO_TEXT",
+        "httpMethod": "POST",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "AWS_PROXY",
+        "uri": "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:000000000000:function:s3OnObjectCreatedLambda-60c92b6/invocations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-root-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-root-options": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-root-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:2>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-root-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+          "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::test_import_and_validate_rest_api[/Users/benjaminsimon/Projects/localstack/localstack/tests/integration/files/swagger-mock-cors.json]": {
+    "recorded-date": "24-05-2023, 01:39:57",
+    "recorded-content": {
+      "import_tf_rest_api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "version": "1.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "resources": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "parentId": "<id:4>",
+            "path": "/product/{product_id}",
+            "pathPart": "{product_id}",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          },
+          {
+            "id": "<id:3>",
+            "path": "/"
+          },
+          {
+            "id": "<id:4>",
+            "parentId": "<id:3>",
+            "path": "/product",
+            "pathPart": "product",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exc-method-response-product-get": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Response status code specified"
+        },
+        "message": "Invalid Response status code specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "integration-product-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:4>",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "AWS_PROXY",
+        "uri": "arn:aws:apigateway:<region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<region>:000000000000:function:aws-serverless-shopping-cart-produ-GetProductsFunction-c1359550:live/invocations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exc-integration-response-product-get": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Response status code specified"
+        },
+        "message": "Invalid Response status code specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "method-response-product-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-product-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:4>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type'",
+              "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET'",
+              "method.response.header.Access-Control-Allow-Origin": "'http://localhost:8080'"
+            },
+            "responseTemplates": {
+              "application/json": {}
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-product-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type'",
+          "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET'",
+          "method.response.header.Access-Control-Allow-Origin": "'http://localhost:8080'"
+        },
+        "responseTemplates": {
+          "application/json": {}
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exc-method-response-product/{product_id}-get": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Response status code specified"
+        },
+        "message": "Invalid Response status code specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "integration-product/{product_id}-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:2>",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "AWS_PROXY",
+        "uri": "arn:aws:apigateway:<region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<region>:000000000000:function:aws-serverless-shopping-cart-produc-GetProductFunction-28378339:live/invocations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exc-integration-response-product/{product_id}-get": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Response status code specified"
+        },
+        "message": "Invalid Response status code specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "method-response-product/{product_id}-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-product/{product_id}-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:2>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type'",
+              "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET'",
+              "method.response.header.Access-Control-Allow-Origin": "'http://localhost:8080'"
+            },
+            "responseTemplates": {
+              "application/json": {}
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-product/{product_id}-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type'",
+          "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET'",
+          "method.response.header.Access-Control-Allow-Origin": "'http://localhost:8080'"
+        },
+        "responseTemplates": {
+          "application/json": {}
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

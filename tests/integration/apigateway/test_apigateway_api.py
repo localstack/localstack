@@ -19,6 +19,7 @@ LOG = logging.getLogger(__name__)
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OPENAPI_SPEC_PULUMI_JSON = os.path.join(PARENT_DIR, "files", "openapi.spec.pulumi.json")
 OPENAPI_SPEC_TF_JSON = os.path.join(PARENT_DIR, "files", "openapi.spec.tf.json")
+SWAGGER_MOCK_CORS_JSON = os.path.join(PARENT_DIR, "files", "swagger-mock-cors.json")
 
 
 @pytest.fixture(autouse=True)
@@ -117,10 +118,13 @@ def test_import_rest_api(import_apigw, snapshot):
         "$.integration-response-options.responseTemplates",
     ]
 )
-def test_import_tf_rest_api(import_apigw, snapshot, aws_client):
+@pytest.mark.parametrize("import_file", [OPENAPI_SPEC_TF_JSON, SWAGGER_MOCK_CORS_JSON])
+def test_import_and_validate_rest_api(import_apigw, snapshot, aws_client, import_file):
+    # OPENAPI_SPEC_TF_JSON was used from a Terraform example with a JSON file directly used by Terraform
+    # SWAGGER_MOCK_CORS_JSON is a synthesized Swagger file created by AWS SAM in an AWS sample
     snapshot.add_transformer(snapshot.transform.apigateway_api())
 
-    spec_file = load_file(OPENAPI_SPEC_TF_JSON)
+    spec_file = load_file(import_file)
     response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
 
     snapshot.match("import_tf_rest_api", response)
@@ -129,30 +133,44 @@ def test_import_tf_rest_api(import_apigw, snapshot, aws_client):
     response = aws_client.apigateway.get_resources(restApiId=rest_api_id)
     snapshot.match("resources", response)
 
-    for http_method in response["items"][0]["resourceMethods"]:
-        snapshot_http_key = http_method.lower()
-        response = aws_client.apigateway.get_method_response(
-            restApiId=rest_api_id,
-            resourceId=root_id,
-            httpMethod=http_method,
-            statusCode="200",
-        )
-        snapshot.match(f"method-response-{snapshot_http_key}", response)
+    for resource in sorted(response["items"], key=lambda x: x["path"]):
+        for http_method in resource.get("resourceMethods", []):
+            snapshot_http_key = f"{resource['path'][1:] if resource['path'] != '/' else 'root'}-{http_method.lower()}"
+            resource_id = resource["id"]
+            try:
+                response = aws_client.apigateway.get_method_response(
+                    restApiId=rest_api_id,
+                    resourceId=resource_id,
+                    httpMethod=http_method,
+                    statusCode="200",
+                )
+                snapshot.match(f"method-response-{snapshot_http_key}", response)
+            except ClientError as e:
+                snapshot.match(f"exc-method-response-{snapshot_http_key}", e.response)
 
-        response = aws_client.apigateway.get_integration(
-            restApiId=rest_api_id,
-            resourceId=root_id,
-            httpMethod=http_method,
-        )
-        snapshot.match(f"integration-{snapshot_http_key}", response)
+            try:
+                response = aws_client.apigateway.get_integration(
+                    restApiId=rest_api_id,
+                    resourceId=resource_id,
+                    httpMethod=http_method,
+                )
+                snapshot.match(f"integration-{snapshot_http_key}", response)
+            except ClientError as e:
+                snapshot.match(f"exc-integration-{snapshot_http_key}", e.response)
 
-        response = aws_client.apigateway.get_integration_response(
-            restApiId=rest_api_id,
-            resourceId=root_id,
-            httpMethod=http_method,
-            statusCode="200",
-        )
-        snapshot.match(f"integration-response-{snapshot_http_key}", response)
+            try:
+                response = aws_client.apigateway.get_integration_response(
+                    restApiId=rest_api_id,
+                    resourceId=resource_id,
+                    httpMethod=http_method,
+                    statusCode="200",
+                )
+                snapshot.match(f"integration-response-{snapshot_http_key}", response)
+            except ClientError as e:
+                snapshot.match(f"exc-integration-response-{snapshot_http_key}", e.response)
+
+    if is_aws_cloud():
+        time.sleep(10)  # waiting before cleaning up to avoid TooManyRequests
 
 
 class TestApiGatewayApi:

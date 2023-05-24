@@ -547,6 +547,7 @@ def import_api_from_openapi_spec(
     rest_api.tags = {}
     # authorizers map to avoid duplication
     authorizers = {}
+    print(json.dumps(body, indent=2))
 
     store = get_apigateway_store(account_id=account_id, region=region)
     rest_api_container = store.rest_apis[rest_api.id]
