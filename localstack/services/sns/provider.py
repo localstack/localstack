@@ -573,7 +573,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         # An endpoint may only be subscribed to a topic once. Subsequent
         # subscribe calls do nothing (subscribe is idempotent).
-        for existing_topic_subscription in store.topic_subscriptions[topic_arn]:
+        for existing_topic_subscription in store.topic_subscriptions.get(topic_arn, []):
             sub = store.subscriptions.get(existing_topic_subscription, {})
             if sub.get("Endpoint") == endpoint:
                 return SubscribeResponse(SubscriptionArn=sub["SubscriptionArn"])
@@ -596,6 +596,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 )
 
         store.subscriptions[subscription_arn] = subscription
+        store.topic_subscriptions[topic_arn] = store.topic_subscriptions.get(topic_arn) or []
         store.topic_subscriptions[topic_arn].append(subscription_arn)
 
         # store the token and subscription arn
