@@ -32,6 +32,7 @@ from localstack.aws.api.apigateway import (
     ExportResponse,
     GetDocumentationPartsRequest,
     Integration,
+    IntegrationResponse,
     IntegrationType,
     ListOfPatchOperation,
     ListOfString,
@@ -51,6 +52,7 @@ from localstack.aws.api.apigateway import (
     Resource,
     RestApi,
     RestApis,
+    StatusCode,
     String,
     Tags,
     TestInvokeMethodRequest,
@@ -62,6 +64,7 @@ from localstack.aws.forwarder import NotImplementedAvoidFallbackError, create_aw
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
+    ERROR_MODEL,
     OpenApiExporter,
     apply_json_patch_safe,
     get_apigateway_store,
@@ -148,7 +151,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         store.rest_apis[result["id"]] = rest_api_container
         # add the 2 default models
         rest_api_container.models[EMPTY_MODEL] = DEFAULT_EMPTY_MODEL
-        rest_api_container.models["Error"] = DEFAULT_ERROR_MODEL
+        rest_api_container.models[ERROR_MODEL] = DEFAULT_ERROR_MODEL
 
         return response
 
@@ -248,7 +251,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response)
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
-        store.rest_apis[request["restApiId"]].rest_api = response
+        rest_api_container = store.rest_apis[request["restApiId"]]
+        rest_api_container.rest_api = response
+        # add the 2 default models
+        rest_api_container.models[EMPTY_MODEL] = DEFAULT_EMPTY_MODEL
+        rest_api_container.models[ERROR_MODEL] = DEFAULT_ERROR_MODEL
         # TODO: verify this
         return to_rest_api_response_json(response)
 
@@ -590,6 +597,30 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         call_moto(context)
 
     # method responses
+
+    def get_method_response(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        status_code: StatusCode,
+    ) -> MethodResponse:
+        # this could probably be easier in a patch?
+        moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+        moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
+        # TODO: snapshot test different possibilities
+        if not moto_rest_api or not (moto_resource := moto_rest_api.resources.get(resource_id)):
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        if not (moto_method := moto_resource.resource_methods.get(http_method)):
+            raise NotFoundException("Invalid Method identifier specified")
+
+        if not (moto_method_response := moto_method.get_response(status_code)):
+            raise NotFoundException("Invalid Response status code specified")
+
+        method_response = moto_method_response.to_json()
+        return method_response
 
     @handler("UpdateMethodResponse", expand=False)
     def update_method_response(
@@ -1266,6 +1297,18 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         )
         return self.put_rest_api(put_api_context, put_api_request)
 
+    # integrations
+
+    def get_integration(
+        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+    ) -> Integration:
+        response: Integration = call_moto(context)
+        if integration_responses := response.get("integrationResponses"):
+            for integration_response in integration_responses.values():
+                remove_empty_attributes_from_integration_response(integration_response)
+
+        return response
+
     def put_integration(
         self, context: RequestContext, request: PutIntegrationRequest
     ) -> Integration:
@@ -1285,6 +1328,20 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             call_moto(context)
         except Exception as e:
             raise NotFoundException("Invalid Resource identifier specified") from e
+
+    # integration responses
+
+    def get_integration_response(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        status_code: StatusCode,
+    ) -> IntegrationResponse:
+        response: IntegrationResponse = call_moto(context)
+        remove_empty_attributes_from_integration_response(response)
+        return response
 
     def get_export(
         self,
@@ -1516,6 +1573,13 @@ def remove_empty_attributes_from_model(model: Model) -> Model:
     return model
 
 
+def remove_empty_attributes_from_integration_response(integration_response: IntegrationResponse):
+    if not integration_response.get("responseTemplates"):
+        integration_response.pop("responseTemplates", None)
+
+    return integration_response
+
+
 def is_greedy_path(path_part: str) -> bool:
     return path_part.startswith("{") and path_part.endswith("+}")
 
@@ -1655,7 +1719,7 @@ DEFAULT_EMPTY_MODEL = Model(
 
 DEFAULT_ERROR_MODEL = Model(
     id=short_uid()[:6],
-    name="Error",
+    name=ERROR_MODEL,
     contentType="application/json",
     description="This is a default error schema model",
     schema=json.dumps(

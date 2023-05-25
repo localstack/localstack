@@ -2477,8 +2477,8 @@
       }
     }
   },
-  "tests/integration/apigateway/test_apigateway_api.py::test_import_and_validate_rest_api[/Users/benjaminsimon/Projects/localstack/localstack/tests/integration/files/openapi.spec.tf.json]": {
-    "recorded-date": "24-05-2023, 01:39:44",
+  "tests/integration/apigateway/test_apigateway_api.py::test_import_and_validate_rest_api[openapi.spec.tf.json]": {
+    "recorded-date": "25-05-2023, 22:51:53",
     "recorded-content": {
       "import_tf_rest_api": {
         "apiKeySource": "HEADER",
@@ -2613,8 +2613,8 @@
       }
     }
   },
-  "tests/integration/apigateway/test_apigateway_api.py::test_import_and_validate_rest_api[/Users/benjaminsimon/Projects/localstack/localstack/tests/integration/files/swagger-mock-cors.json]": {
-    "recorded-date": "24-05-2023, 01:39:57",
+  "tests/integration/apigateway/test_apigateway_api.py::test_import_and_validate_rest_api[swagger-mock-cors.json]": {
+    "recorded-date": "25-05-2023, 22:52:39",
     "recorded-content": {
       "import_tf_rest_api": {
         "apiKeySource": "HEADER",
@@ -2637,23 +2637,23 @@
         "items": [
           {
             "id": "<id:2>",
-            "parentId": "<id:4>",
-            "path": "/product/{product_id}",
-            "pathPart": "{product_id}",
+            "path": "/"
+          },
+          {
+            "id": "<id:3>",
+            "parentId": "<id:2>",
+            "path": "/product",
+            "pathPart": "product",
             "resourceMethods": {
               "GET": {},
               "OPTIONS": {}
             }
           },
           {
-            "id": "<id:3>",
-            "path": "/"
-          },
-          {
             "id": "<id:4>",
             "parentId": "<id:3>",
-            "path": "/product",
-            "pathPart": "product",
+            "path": "/product/{product_id}",
+            "pathPart": "{product_id}",
             "resourceMethods": {
               "GET": {},
               "OPTIONS": {}
@@ -2678,7 +2678,7 @@
       },
       "integration-product-get": {
         "cacheKeyParameters": [],
-        "cacheNamespace": "<id:4>",
+        "cacheNamespace": "<id:3>",
         "httpMethod": "POST",
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
@@ -2714,7 +2714,7 @@
       },
       "integration-product-options": {
         "cacheKeyParameters": [],
-        "cacheNamespace": "<id:4>",
+        "cacheNamespace": "<id:3>",
         "integrationResponses": {
           "200": {
             "responseParameters": {
@@ -2769,7 +2769,7 @@
       },
       "integration-product/{product_id}-get": {
         "cacheKeyParameters": [],
-        "cacheNamespace": "<id:2>",
+        "cacheNamespace": "<id:4>",
         "httpMethod": "POST",
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
@@ -2805,7 +2805,7 @@
       },
       "integration-product/{product_id}-options": {
         "cacheKeyParameters": [],
-        "cacheNamespace": "<id:2>",
+        "cacheNamespace": "<id:4>",
         "integrationResponses": {
           "200": {
             "responseParameters": {

@@ -17,7 +17,7 @@ from requests.models import Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api.apigateway import Authorizer
+from localstack.aws.api.apigateway import Authorizer, Model
 from localstack.constants import (
     APPLICATION_JSON,
     HEADER_LOCALSTACK_EDGE_URL,
@@ -32,7 +32,7 @@ from localstack.utils.aws import resources as resource_utils
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
-from localstack.utils.strings import long_uid
+from localstack.utils.strings import long_uid, short_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
 LOG = logging.getLogger(__name__)
@@ -69,6 +69,7 @@ APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
 TAG_KEY_CUSTOM_ID = "_custom_id_"
 
 EMPTY_MODEL = "Empty"
+ERROR_MODEL = "Error"
 
 # TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
 
@@ -659,41 +660,64 @@ def import_api_from_openapi_spec(
             method_resource = create_method_resource(resource, field, field_schema)
             method_resource.request_parameters = method_integration.get("requestParameters")
             responses = field_schema.get("responses", {})
-            for status_code in responses:
+            for status_code, response in responses.items():
                 response_model = None
-                if model_schema := responses.get(status_code, {}).get("schema", {}):
+                if model_schema := response.get("schema"):
                     response_model = {APPLICATION_JSON: model_schema}
+                elif (
+                    model_schema_obj := response.get("content", {})
+                    .get(APPLICATION_JSON, {})
+                    .get("schema")
+                ):
+                    response_model = {
+                        APPLICATION_JSON: schema_map.get(model_schema_obj.get("title"))
+                    }
 
-                response_parameters = (
-                    method_integration.get("responses", {})
-                    .get("default", {})
-                    .get("responseParameters")
-                )
+                method_response_parameters = {}
+                if response_param_headers := response.get("headers"):
+                    for header, header_info in response_param_headers.items():
+                        method_response_parameters[f"method.response.header.{header}"] = False
+
                 method_resource.create_response(
                     status_code,
                     response_model,
-                    response_parameters,
+                    method_response_parameters or None,
                 )
 
+            integration_response_parameters = (
+                method_integration.get("responses", {}).get("default", {}).get("responseParameters")
+            )
+            integration_type = (
+                i_type.upper() if (i_type := method_integration.get("type")) else None
+            )
+            # TODO: validate more cases like this
+            # if the integration is AWS_PROXY with lambda, the only accepted integration method is POST
+            integration_method = field if integration_type != "AWS_PROXY" else "POST"
             integration = Integration(
-                http_method=field,
+                http_method=integration_method,
                 uri=method_integration.get("uri"),
-                integration_type=method_integration.get("type"),
-                passthrough_behavior=method_integration.get("passthroughBehavior"),
-                request_templates=method_integration.get("requestTemplates") or {},
-                request_parameters=method_integration.get("requestParameters") or {},
+                integration_type=integration_type,
+                passthrough_behavior=method_integration.get(
+                    "passthroughBehavior", "WHEN_NO_MATCH"
+                ).upper(),
+                request_templates=method_integration.get("requestTemplates"),
+                request_parameters=method_integration.get("requestParameters"),
+                cache_namespace=resource.id,
+                timeout_in_millis=method_integration.get("timeoutInMillis") or "29000",
+                content_handling=method_integration.get("contentHandling"),
             )
-            integration.create_integration_response(
-                status_code=method_integration.get("responses", {})
-                .get("default", {})
-                .get("statusCode", 200),
-                selection_pattern=None,
-                response_templates=method_integration.get("responses", {})
-                .get("default", {})
-                .get("responseTemplates", None),
-                response_parameters=None,
-                content_handling=None,
-            )
+            if method_integration_responses := method_integration.get("responses"):
+                integration.create_integration_response(
+                    status_code=method_integration_responses.get("default", {}).get(
+                        "statusCode", 200
+                    ),
+                    selection_pattern=None,
+                    response_templates=method_integration_responses.get("default", {}).get(
+                        "responseTemplates"
+                    ),
+                    response_parameters=integration_response_parameters,
+                    content_handling=None,
+                )
             resource.resource_methods[field].method_integration = integration
 
         rest_api.resources[child_id] = resource
@@ -712,12 +736,24 @@ def import_api_from_openapi_spec(
             else child.add_method(method, None, None)
         )
 
-    if definitions := resolved_schema.get("definitions", {}):
-        for name, model in definitions.items():
-            # TODO: validate if description is required
-            rest_api.add_model(
-                name=name, description="", schema=model, content_type=APPLICATION_JSON
+    models = resolved_schema.get("definitions") or resolved_schema.get("components", {}).get(
+        "schemas", {}
+    )
+    schema_map = {}
+    for name, model in models.items():
+        # keep a map of the schema title to retrieve the schema name for responseModels resolved $ref
+        schema_map[model.get("title")] = name
+        # skip adding the default schema
+        if name not in (EMPTY_MODEL, ERROR_MODEL):
+            model_id = short_uid()[:6]  # length 6 to make TF tests pass
+            model = Model(
+                id=model_id,
+                name=name,
+                contentType=APPLICATION_JSON,
+                description=None,
+                schema=model,
             )
+            store.rest_apis[rest_api.id].models[name] = model
 
     # determine base path
     basepath_mode = query_params.get("basepath") or "prepend"

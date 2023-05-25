@@ -90,35 +90,16 @@ def test_import_rest_api(import_apigw, snapshot):
 @pytest.mark.aws_validated
 @pytest.mark.skip_snapshot_verify(
     paths=[
-        "$.resources.items..resourceMethods",
-        "$.method-response-get.responseModels",
-        "$.method-response-get.responseParameters",
-        "$.integration-get.cacheNamespace",
-        "$.integration-get.contentHandling",
-        "$.integration-get.httpMethod",
-        "$.integration-get.integrationResponses",
-        "$.integration-get.passthroughBehavior",
-        "$.integration-get.requestParameters",
-        "$.integration-get.requestTemplates",
-        "$.integration-get.timeoutInMillis",
-        "$.integration-get.type",
-        "$.integration-get.uri",
-        "$.integration-response-get.responseParameters",
-        "$.integration-response-get.responseTemplates",
-        "$.method-response-options.responseModels",
-        "$.method-response-options.responseParameters",
-        "$.integration-options.cacheNamespace",
-        "$.integration-options.passthroughBehavior",
-        "$.integration-options.timeoutInMillis",
-        "$.integration-options.type",
-        "$.integration-options.httpMethod",
-        "$.integration-options.integrationResponses",
-        "$.integration-options.requestParameters",
-        "$.integration-response-options.responseParameters",
-        "$.integration-response-options.responseTemplates",
+        "$.resources.items..resourceMethods.GET",  # TODO: this is really weird, after importing, AWS returns them empty?
+        "$.resources.items..resourceMethods.OPTIONS",
+        "$..uri",  # TODO: investigate snapshot pattern matching with account id?
     ]
 )
-@pytest.mark.parametrize("import_file", [OPENAPI_SPEC_TF_JSON, SWAGGER_MOCK_CORS_JSON])
+@pytest.mark.parametrize(
+    "import_file",
+    [OPENAPI_SPEC_TF_JSON, SWAGGER_MOCK_CORS_JSON],
+    ids=lambda x: x.rsplit("/", maxsplit=1)[-1],
+)
 def test_import_and_validate_rest_api(import_apigw, snapshot, aws_client, import_file):
     # OPENAPI_SPEC_TF_JSON was used from a Terraform example with a JSON file directly used by Terraform
     # SWAGGER_MOCK_CORS_JSON is a synthesized Swagger file created by AWS SAM in an AWS sample
@@ -131,6 +112,7 @@ def test_import_and_validate_rest_api(import_apigw, snapshot, aws_client, import
     rest_api_id = response["id"]
 
     response = aws_client.apigateway.get_resources(restApiId=rest_api_id)
+    response["items"] = sorted(response["items"], key=itemgetter("path"))
     snapshot.match("resources", response)
 
     for resource in sorted(response["items"], key=lambda x: x["path"]):
@@ -170,7 +152,9 @@ def test_import_and_validate_rest_api(import_apigw, snapshot, aws_client, import
                 snapshot.match(f"exc-integration-response-{snapshot_http_key}", e.response)
 
     if is_aws_cloud():
-        time.sleep(10)  # waiting before cleaning up to avoid TooManyRequests
+        time.sleep(
+            15
+        )  # waiting before cleaning up to avoid TooManyRequests, as we create multiple REST APIs
 
 
 class TestApiGatewayApi:
