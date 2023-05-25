@@ -25,7 +25,7 @@ from boto3.s3.transfer import KB, TransferConfig
 from botocore import UNSIGNED
 from botocore.auth import SigV4Auth
 from botocore.client import Config
-from botocore.exceptions import ClientError, ParamValidationError
+from botocore.exceptions import ClientError
 
 from localstack import config, constants
 from localstack.aws.api.s3 import StorageClass
@@ -4425,46 +4425,12 @@ class TestS3:
             ]
         )
 
-        def _test_config_with_error(
-            analytics_configuration: dict, config_id: str, snapshot_id: str
-        ):
-            with pytest.raises(ParamValidationError) as e:
-                aws_client.s3.put_bucket_analytics_configuration(
-                    Bucket=bucket,
-                    Id=config_id,
-                    AnalyticsConfiguration=analytics_configuration,
-                )
-            snapshot.match(f"err_{snapshot_id}", e.value)
-
-        def _test_config_without_error(
-            analytics_configuration: dict, config_id: str, snapshot_id: str
-        ):
-            aws_client.s3.put_bucket_analytics_configuration(
-                Bucket=bucket,
-                Id=config_id,
-                AnalyticsConfiguration=analytics_configuration,
-            )
-            get_response = aws_client.s3.get_bucket_analytics_configuration(
-                Bucket=bucket,
-                Id=config_id,
-            )
-            snapshot.match(f"get_{snapshot_id}", get_response)
-
-        def _assert_list_length(expected_length: int):
-            list_response = aws_client.s3.list_bucket_analytics_configurations(
-                Bucket=bucket,
-            )
-            if expected_length == 0:
-                assert "AnalyticsConfigurationList" not in list_response
-            else:
-                assert len(list_response["AnalyticsConfigurationList"]) == expected_length
-
         bucket = s3_create_bucket()
         analytics_bucket = s3_create_bucket()
         analytics_bucket_arn = f"arn:aws:s3:::{analytics_bucket}"
 
         storage_analysis = {
-            "Id": "config_with_storage_analysis",
+            "Id": "config_with_storage_analysis_1",
             "Filter": {
                 "Prefix": "test_ls",
             },
@@ -4481,87 +4447,78 @@ class TestS3:
                 }
             },
         }
+        # id in storage analysis is different from the one in the request
+        with pytest.raises(ClientError) as err_put:
+            aws_client.s3.put_bucket_analytics_configuration(
+                Bucket=bucket,
+                Id="different-id",
+                AnalyticsConfiguration=storage_analysis,
+            )
+        snapshot.match("put_config_with_storage_analysis_err", err_put.value)
 
-        config_without_storage_analysis = storage_analysis.copy()
-        config_without_storage_analysis["Id"] = "config_without_storage_analysis"
-        del config_without_storage_analysis["StorageClassAnalysis"]
+        # non-existing storage analysis get
+        with pytest.raises(ClientError) as err_get:
+            aws_client.s3.get_bucket_analytics_configuration(
+                Bucket=bucket,
+                Id="non-existing",
+            )
+        snapshot.match("get_config_with_storage_analysis_err", err_get.value)
 
-        _test_config_with_error(
-            analytics_configuration=config_without_storage_analysis,
-            config_id="config_without_storage_analysis",
-            snapshot_id="config_without_storage_analysis",
-        )
-        _assert_list_length(expected_length=0)
-
-        config_without_filter_and_storage_analysis = storage_analysis.copy()
-        config_without_filter_and_storage_analysis[
-            "Id"
-        ] = "config_without_filter_and_storage_analysis"
-        del config_without_filter_and_storage_analysis["Filter"]
-        del config_without_filter_and_storage_analysis["StorageClassAnalysis"]
-
-        _test_config_with_error(
-            analytics_configuration=config_without_filter_and_storage_analysis,
-            config_id="config_without_filter_and_storage_analysis",
-            snapshot_id="config_without_filter_and_storage_analysis",
-        )
-
-        config_without_id_and_storage_analysis = storage_analysis.copy()
-        del config_without_id_and_storage_analysis["Id"]
-        del config_without_id_and_storage_analysis["StorageClassAnalysis"]
-        _test_config_with_error(
-            analytics_configuration=config_without_id_and_storage_analysis,
-            config_id="config_without_id_and_storage_analysis",
-            snapshot_id="config_without_id_and_storage_analysis",
-        )
-
-        config_without_id = storage_analysis.copy()
-        del config_without_id["Id"]
-        _test_config_with_error(
-            analytics_configuration=config_without_id,
-            config_id="config_without_id",
-            snapshot_id="config_without_id",
-        )
-
-        config_without_filter = storage_analysis.copy()
-        config_without_filter["Id"] = "config_without_filter"
-        del config_without_filter["Filter"]
-        _test_config_without_error(
-            analytics_configuration=config_without_filter,
-            config_id="config_without_filter",
-            snapshot_id="config_without_filter",
-        )
-        _assert_list_length(expected_length=1)
-
-        _test_config_without_error(
-            analytics_configuration=storage_analysis,
-            config_id="config_with_storage_analysis",
-            snapshot_id="config_with_storage_analysis",
-        )
-        _assert_list_length(expected_length=2)
-
-        config_with_filter_update = storage_analysis.copy()
-        config_with_filter_update["Filter"]["Prefix"] = "test_ls_2"
-        _test_config_without_error(
-            analytics_configuration=config_with_filter_update,
-            config_id="config_with_storage_analysis",  # keeping the id same as above
-            snapshot_id="config_with_filter_update",
-        )
-        _assert_list_length(expected_length=2)
-
-        with pytest.raises(ClientError) as e:
+        # non-existing storage analysis delete
+        with pytest.raises(ClientError) as err_delete:
             aws_client.s3.delete_bucket_analytics_configuration(
                 Bucket=bucket,
-                Id="incorrect_id",
+                Id=storage_analysis["Id"],
             )
-        snapshot.match("err_delete_incorrect_id", e.value)
-        _assert_list_length(expected_length=2)
+        snapshot.match("delete_config_with_storage_analysis_err", err_delete.value)
 
+        # put storage analysis
+        aws_client.s3.put_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+            AnalyticsConfiguration=storage_analysis,
+        )
+        response = aws_client.s3.get_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+        )
+        snapshot.match("get_config_with_storage_analysis_1", response)
+
+        # update storage analysis
+        storage_analysis["Filter"]["Prefix"] = "test_ls_2"
+        aws_client.s3.put_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+            AnalyticsConfiguration=storage_analysis,
+        )
+        response = aws_client.s3.get_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+        )
+        snapshot.match("get_config_with_storage_analysis_2", response)
+
+        # add a new storage analysis
+        storage_analysis["Id"] = "config_with_storage_analysis_2"
+        storage_analysis["Filter"]["Prefix"] = "test_ls_3"
+        aws_client.s3.put_bucket_analytics_configuration(
+            Bucket=bucket, Id=storage_analysis["Id"], AnalyticsConfiguration=storage_analysis
+        )
+        response = aws_client.s3.get_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+        )
+        snapshot.match("get_config_with_storage_analysis_3", response)
+
+        response = aws_client.s3.list_bucket_analytics_configurations(Bucket=bucket)
+        snapshot.match("list_config_with_storage_analysis_1", response)
+
+        # delete storage analysis
         aws_client.s3.delete_bucket_analytics_configuration(
             Bucket=bucket,
-            Id="config_without_filter",
+            Id=storage_analysis["Id"],
         )
-        _assert_list_length(expected_length=1)
+        response = aws_client.s3.list_bucket_analytics_configurations(Bucket=bucket)
+        snapshot.match("list_config_with_storage_analysis_2", response)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])

@@ -6880,39 +6880,17 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_analytics_configurations": {
-    "recorded-date": "23-05-2023, 11:57:28",
+    "recorded-date": "25-05-2023, 13:08:26",
     "recorded-content": {
-      "err_config_without_storage_analysis": "Parameter validation failed:\nMissing required parameter in AnalyticsConfiguration: \"StorageClassAnalysis\"",
-      "err_config_without_filter_and_storage_analysis": "Parameter validation failed:\nMissing required parameter in AnalyticsConfiguration: \"StorageClassAnalysis\"",
-      "err_config_without_id_and_storage_analysis": "Parameter validation failed:\nMissing required parameter in AnalyticsConfiguration: \"Id\"\nMissing required parameter in AnalyticsConfiguration: \"StorageClassAnalysis\"",
-      "err_config_without_id": "Parameter validation failed:\nMissing required parameter in AnalyticsConfiguration: \"Id\"",
-      "get_config_without_filter": {
-        "AnalyticsConfiguration": {
-          "Id": "config_without_filter",
-          "StorageClassAnalysis": {
-            "DataExport": {
-              "Destination": {
-                "S3BucketDestination": {
-                  "Bucket": "<bucket>",
-                  "Format": "CSV",
-                  "Prefix": "test"
-                }
-              },
-              "OutputSchemaVersion": "V_1"
-            }
-          }
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_config_with_storage_analysis": {
+      "put_config_with_storage_analysis_err": "An error occurred (MalformedXML) when calling the PutBucketAnalyticsConfiguration operation: The XML you provided was not well-formed or did not validate against our published schema",
+      "get_config_with_storage_analysis_err": "An error occurred (NoSuchConfiguration) when calling the GetBucketAnalyticsConfiguration operation: The specified configuration does not exist.",
+      "delete_config_with_storage_analysis_err": "An error occurred (NoSuchConfiguration) when calling the DeleteBucketAnalyticsConfiguration operation: The specified configuration does not exist.",
+      "get_config_with_storage_analysis_1": {
         "AnalyticsConfiguration": {
           "Filter": {
             "Prefix": "test_ls"
           },
-          "Id": "config_with_storage_analysis",
+          "Id": "config_with_storage_analysis_1",
           "StorageClassAnalysis": {
             "DataExport": {
               "Destination": {
@@ -6931,12 +6909,12 @@
           "HTTPStatusCode": 200
         }
       },
-      "get_config_with_filter_update": {
+      "get_config_with_storage_analysis_2": {
         "AnalyticsConfiguration": {
           "Filter": {
             "Prefix": "test_ls_2"
           },
-          "Id": "config_with_storage_analysis",
+          "Id": "config_with_storage_analysis_1",
           "StorageClassAnalysis": {
             "DataExport": {
               "Destination": {
@@ -6955,7 +6933,102 @@
           "HTTPStatusCode": 200
         }
       },
-      "err_delete_incorrect_id": "An error occurred (NoSuchConfiguration) when calling the DeleteBucketAnalyticsConfiguration operation: The specified configuration does not exist."
+      "get_config_with_storage_analysis_3": {
+        "AnalyticsConfiguration": {
+          "Filter": {
+            "Prefix": "test_ls_3"
+          },
+          "Id": "config_with_storage_analysis_2",
+          "StorageClassAnalysis": {
+            "DataExport": {
+              "Destination": {
+                "S3BucketDestination": {
+                  "Bucket": "<bucket>",
+                  "Format": "CSV",
+                  "Prefix": "test"
+                }
+              },
+              "OutputSchemaVersion": "V_1"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_config_with_storage_analysis_1": {
+        "AnalyticsConfigurationList": [
+          {
+            "Filter": {
+              "Prefix": "test_ls_2"
+            },
+            "Id": "config_with_storage_analysis_1",
+            "StorageClassAnalysis": {
+              "DataExport": {
+                "Destination": {
+                  "S3BucketDestination": {
+                    "Bucket": "<bucket>",
+                    "Format": "CSV",
+                    "Prefix": "test"
+                  }
+                },
+                "OutputSchemaVersion": "V_1"
+              }
+            }
+          },
+          {
+            "Filter": {
+              "Prefix": "test_ls_3"
+            },
+            "Id": "config_with_storage_analysis_2",
+            "StorageClassAnalysis": {
+              "DataExport": {
+                "Destination": {
+                  "S3BucketDestination": {
+                    "Bucket": "<bucket>",
+                    "Format": "CSV",
+                    "Prefix": "test"
+                  }
+                },
+                "OutputSchemaVersion": "V_1"
+              }
+            }
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_config_with_storage_analysis_2": {
+        "AnalyticsConfigurationList": [
+          {
+            "Filter": {
+              "Prefix": "test_ls_2"
+            },
+            "Id": "config_with_storage_analysis_1",
+            "StorageClassAnalysis": {
+              "DataExport": {
+                "Destination": {
+                  "S3BucketDestination": {
+                    "Bucket": "<bucket>",
+                    "Format": "CSV",
+                    "Prefix": "test"
+                  }
+                },
+                "OutputSchemaVersion": "V_1"
+              }
+            }
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
     }
   }
 }

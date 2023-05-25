@@ -1172,16 +1172,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         get_bucket_from_moto(moto_backend, bucket)
 
-        validate_analytics_configuration(analytics_configuration)
         store = self.get_store()
-        if bucket not in store.bucket_analytics_configuration:
-            store.bucket_analytics_configuration[bucket] = [analytics_configuration]
-            return
-        for analytics_config in store.bucket_analytics_configuration[bucket]:
-            if analytics_config["Id"] == id:
-                analytics_config.update(analytics_configuration)
-                return
-        store.bucket_analytics_configuration[bucket].append(analytics_configuration)
+
+        validate_bucket_analytics_configuration(
+            id=id, analytics_configuration=analytics_configuration
+        )
+
+        if bucket not in store.bucket_analytics_configuration.keys():
+            store.bucket_analytics_configuration[bucket] = {}
+        store.bucket_analytics_configuration[bucket][id] = analytics_configuration
 
     def get_bucket_analytics_configuration(
         self,
@@ -1194,15 +1193,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         get_bucket_from_moto(moto_backend, bucket)
 
         store = self.get_store()
-        analytics_configurations: AnalyticsConfigurationList = (
-            store.bucket_analytics_configuration.get(bucket, [])
-        )
-        for analytics_configuration in analytics_configurations:
-            if analytics_configuration["Id"] == id:
-                return GetBucketAnalyticsConfigurationOutput(
-                    AnalyticsConfiguration=analytics_configuration
-                )
-        raise NoSuchConfiguration("The specified configuration does not exist.")
+
+        analytics_configuration: AnalyticsConfiguration = store.bucket_analytics_configuration.get(
+            bucket, {}
+        ).get(id)
+        if not analytics_configuration:
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+        return GetBucketAnalyticsConfigurationOutput(AnalyticsConfiguration=analytics_configuration)
 
     def list_bucket_analytics_configurations(
         self,
@@ -1215,8 +1212,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         get_bucket_from_moto(moto_backend, bucket)
 
         store = self.get_store()
-        analytics_configurations: AnalyticsConfigurationList = (
-            store.bucket_analytics_configuration.get(bucket, [])
+        analytics_configurations: Dict[
+            AnalyticsId, AnalyticsConfiguration
+        ] = store.bucket_analytics_configuration.get(bucket, {})
+        analytics_configurations = dict(sorted(analytics_configurations.items()))
+        analytics_configurations: AnalyticsConfigurationList = list(
+            analytics_configurations.values()
         )
         return ListBucketAnalyticsConfigurationsOutput(
             IsTruncated=False, AnalyticsConfigurationList=analytics_configurations
@@ -1233,36 +1234,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         get_bucket_from_moto(moto_backend, bucket)
 
         store = self.get_store()
-        analytics_configurations: AnalyticsConfigurationList = (
-            store.bucket_analytics_configuration.get(bucket, [])
+        analytics_configurations = store.bucket_analytics_configuration.get(bucket, {})
+        if id not in analytics_configurations:
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+        analytics_configurations.pop(id, None)
+
+
+def validate_bucket_analytics_configuration(
+    id: AnalyticsId, analytics_configuration: AnalyticsConfiguration
+) -> None:
+    if id != analytics_configuration["Id"]:
+        raise MalformedXML(
+            "The XML you provided was not well-formed or did not validate against our published schema"
         )
-        for analytics_configuration in analytics_configurations:
-            if analytics_configuration["Id"] == id:
-                analytics_configurations.remove(analytics_configuration)
-                return
-        raise NoSuchConfiguration("The specified configuration does not exist.")
-
-
-def validate_analytics_configuration(analytics_configuration: AnalyticsConfiguration):
-    # TODO: add more concrete validation
-    # mapping of valid keys and whether they are required
-    required_keys = ["Id", "StorageClassAnalysis"]
-    optional_keys = ["Filter"]
-
-    errors = []
-    for key in analytics_configuration.keys():
-        # check if key is valid
-        if key not in required_keys + optional_keys:
-            errors.append(
-                f"Unknown parameter in AnalyticsConfiguration: \"{key}\", must be one of: {', '.join(required_keys + optional_keys)}"
-            )
-    for key in ["Id", "StorageClassAnalysis"]:
-        # check if required key is present
-        if key not in analytics_configuration.keys():
-            errors.append(f'Missing required parameter in AnalyticsConfiguration:: "{key}"')
-    if len(errors) > 0:
-        error_message = "\n".join(errors)
-        raise _create_invalid_argument_exc(error_message)
 
 
 def validate_bucket_name(bucket: BucketName) -> None:
