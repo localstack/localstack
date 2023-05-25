@@ -24,7 +24,7 @@ on:
         type: string
   pull_request:
     paths:
-      - ".github/workflows/test-pro.yml"
+      - ".github/workflows/tests-pro-integration.yml"
       - "localstack/**"
       - "tests/**"
       - "setup.py"
