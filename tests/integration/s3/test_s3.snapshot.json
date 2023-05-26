@@ -6880,11 +6880,11 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_analytics_configurations": {
-    "recorded-date": "25-05-2023, 13:08:26",
+    "recorded-date": "25-05-2023, 22:29:04",
     "recorded-content": {
-      "put_config_with_storage_analysis_err": "An error occurred (MalformedXML) when calling the PutBucketAnalyticsConfiguration operation: The XML you provided was not well-formed or did not validate against our published schema",
-      "get_config_with_storage_analysis_err": "An error occurred (NoSuchConfiguration) when calling the GetBucketAnalyticsConfiguration operation: The specified configuration does not exist.",
-      "delete_config_with_storage_analysis_err": "An error occurred (NoSuchConfiguration) when calling the DeleteBucketAnalyticsConfiguration operation: The specified configuration does not exist.",
+      "put_config_with_storage_analysis_err": "<ExceptionInfo ClientError('An error occurred (MalformedXML) when calling the PutBucketAnalyticsConfiguration operation: The XML you provided was not well-formed or did not validate against our published schema') tblen=3>",
+      "get_config_with_storage_analysis_err": "<ExceptionInfo ClientError('An error occurred (NoSuchConfiguration) when calling the GetBucketAnalyticsConfiguration operation: The specified configuration does not exist.') tblen=3>",
+      "delete_config_with_storage_analysis_err": "<ExceptionInfo ClientError('An error occurred (NoSuchConfiguration) when calling the DeleteBucketAnalyticsConfiguration operation: The specified configuration does not exist.') tblen=3>",
       "get_config_with_storage_analysis_1": {
         "AnalyticsConfiguration": {
           "Filter": {

@@ -1178,9 +1178,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             id=id, analytics_configuration=analytics_configuration
         )
 
-        if bucket not in store.bucket_analytics_configuration.keys():
-            store.bucket_analytics_configuration[bucket] = {}
-        store.bucket_analytics_configuration[bucket][id] = analytics_configuration
+        bucket_analytics_configuration = store.bucket_analytics_configuration.setdefault(bucket, {})
+        bucket_analytics_configuration[id] = analytics_configuration
 
     def get_bucket_analytics_configuration(
         self,
@@ -1215,9 +1214,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         analytics_configurations: Dict[
             AnalyticsId, AnalyticsConfiguration
         ] = store.bucket_analytics_configuration.get(bucket, {})
-        analytics_configurations = dict(sorted(analytics_configurations.items()))
-        analytics_configurations: AnalyticsConfigurationList = list(
-            analytics_configurations.values()
+        analytics_configurations: AnalyticsConfigurationList = sorted(
+            analytics_configurations.values(), key=lambda x: x["Id"]
         )
         return ListBucketAnalyticsConfigurationsOutput(
             IsTruncated=False, AnalyticsConfigurationList=analytics_configurations
@@ -1235,15 +1233,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         store = self.get_store()
         analytics_configurations = store.bucket_analytics_configuration.get(bucket, {})
-        if id not in analytics_configurations:
+        if not analytics_configurations.pop(id, None):
             raise NoSuchConfiguration("The specified configuration does not exist.")
-        analytics_configurations.pop(id, None)
 
 
 def validate_bucket_analytics_configuration(
     id: AnalyticsId, analytics_configuration: AnalyticsConfiguration
 ) -> None:
-    if id != analytics_configuration["Id"]:
+    if id != analytics_configuration.get("Id"):
         raise MalformedXML(
             "The XML you provided was not well-formed or did not validate against our published schema"
         )
