@@ -1,3 +1,5 @@
+# Based on awslabs LambdaSample.yml
+# https://github.com/awslabs/aws-cloudformation-templates/blob/master/community/services/Lambda/LambdaSample.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Template to exercise AWS::Lambda::Function
 Parameters:
@@ -5,9 +7,40 @@ Parameters:
     Type: String
     Description: Name of the attribute to fetch from the resource
 Resources:
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: test-lambda-role
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+        Version: 2012-10-17
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSLambdaExecute
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      Path: /
   MyResource:
     Type: AWS::Lambda::Function
-    Properties: {}
+    Properties:
+      FunctionName: test-lambda-function
+      Description: Sample description of LambdaFunction
+      Runtime: nodejs18.x
+      Code:
+        ZipFile:
+          "exports.handler = function(event, context){\n
+            console.log('SUCCESS');"
+      Handler: index.handler
+      MemorySize: 128
+      Timeout: 10
+      Role: !GetAtt LambdaRole.Arn
+      Environment:
+        Variables:
+          ENV: "dev"
 Outputs:
   MyRef:
     Value:
