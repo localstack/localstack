@@ -240,7 +240,6 @@ class TestApiGatewayCommon:
                 ],
             )
             snapshot.match(f"remove-validator-{http_method}", response)
-            print(response)
 
         apigw_redeploy_api(rest_api_id=api_id, stage_name=stage_name)
 

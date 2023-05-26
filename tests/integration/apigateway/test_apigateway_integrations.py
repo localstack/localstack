@@ -53,156 +53,110 @@ def test_http_integration(create_rest_apigw, aws_client, echo_http_server):
     assert response.status_code == 200
 
 
-def test_put_integration_responses(aws_client, echo_http_server):
-    response = aws_client.apigateway.create_rest_api(name="my_api", description="this is my api")
-    api_id = response["id"]
-
-    resources = aws_client.apigateway.get_resources(restApiId=api_id)
-    root_id = [resource for resource in resources["items"] if resource["path"] == "/"][0]["id"]
-
-    aws_client.apigateway.put_method(
-        restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="none"
+@pytest.mark.aws_validated
+def test_put_integration_responses(create_rest_apigw, aws_client, echo_http_server_post, snapshot):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("cacheNamespace"),
+            snapshot.transform.key_value("uri"),
+            snapshot.transform.key_value("id"),
+        ]
     )
+    api_id, _, root_id = create_rest_apigw(name="my_api", description="this is my api")
 
-    aws_client.apigateway.put_method_response(
+    response = aws_client.apigateway.put_method(
+        restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
+    )
+    snapshot.match("put-method-get", response)
+
+    response = aws_client.apigateway.put_method_response(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
     )
+    snapshot.match("put-method-response-get", response)
 
-    aws_client.apigateway.put_integration(
+    response = aws_client.apigateway.put_integration(
         restApiId=api_id,
         resourceId=root_id,
         httpMethod="GET",
         type="HTTP",
-        uri=echo_http_server,
+        uri=echo_http_server_post,
         integrationHttpMethod="POST",
     )
+    snapshot.match("put-integration-get", response)
 
     response = aws_client.apigateway.put_integration_response(
         restApiId=api_id,
         resourceId=root_id,
         httpMethod="GET",
         statusCode="200",
-        selectionPattern="foobar",
+        selectionPattern="2\\d{2}",
         responseTemplates={},
     )
-
-    # this is hard to match against, so remove it
-    response["ResponseMetadata"].pop("HTTPHeaders", None)
-    response["ResponseMetadata"].pop("RetryAttempts", None)
-    response["ResponseMetadata"].pop("RequestId", None)
-    assert response == (
-        {
-            "statusCode": "200",
-            "selectionPattern": "foobar",
-            "ResponseMetadata": {"HTTPStatusCode": 201},
-            "responseTemplates": {},  # Note: TF compatibility
-        }
-    )
+    snapshot.match("put-integration-response-get", response)
 
     response = aws_client.apigateway.get_integration_response(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
     )
-    # this is hard to match against, so remove it
-    response["ResponseMetadata"].pop("HTTPHeaders", None)
-    response["ResponseMetadata"].pop("RetryAttempts", None)
-    response["ResponseMetadata"].pop("RequestId", None)
-    assert response == (
-        {
-            "statusCode": "200",
-            "selectionPattern": "foobar",
-            "ResponseMetadata": {"HTTPStatusCode": 200},
-            "responseTemplates": {},  # Note: TF compatibility
-        }
-    )
+    snapshot.match("get-integration-response-get", response)
 
     response = aws_client.apigateway.get_method(
         restApiId=api_id, resourceId=root_id, httpMethod="GET"
     )
-    # this is hard to match against, so remove it
-    response["ResponseMetadata"].pop("HTTPHeaders", None)
-    response["ResponseMetadata"].pop("RetryAttempts", None)
-    response["ResponseMetadata"].pop("RequestId", None)
-    assert response["methodIntegration"]["integrationResponses"] == (
-        {
-            "200": {
-                "responseTemplates": {},  # Note: TF compatibility
-                "selectionPattern": "foobar",
-                "statusCode": "200",
-            }
-        }
-    )
+    snapshot.match("get-method-get", response)
 
-    url = path_based_url(api_id=api_id, stage_name="local", path="/")
-    response = requests.get(url, data=json.dumps({"egg": "ham"}))
+    stage_name = "local"
+    response = aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+    snapshot.match("deploy", response)
+
+    url = api_invoke_url(api_id, stage=stage_name, path="/")
+    response = requests.get(url)
     assert response.ok
 
-    aws_client.apigateway.delete_integration_response(
+    response = aws_client.apigateway.delete_integration_response(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
     )
+    snapshot.match("delete-integration-response-get", response)
 
     response = aws_client.apigateway.get_method(
         restApiId=api_id, resourceId=root_id, httpMethod="GET"
     )
-    assert response["methodIntegration"]["integrationResponses"] == {}
+    snapshot.match("get-method-get-after-int-resp-delete", response)
 
     # adding a new method and performing put integration with contentHandling as CONVERT_TO_BINARY
-    aws_client.apigateway.put_method(
+    response = aws_client.apigateway.put_method(
         restApiId=api_id, resourceId=root_id, httpMethod="PUT", authorizationType="none"
     )
+    snapshot.match("put-method-put", response)
 
-    aws_client.apigateway.put_method_response(
+    response = aws_client.apigateway.put_method_response(
         restApiId=api_id, resourceId=root_id, httpMethod="PUT", statusCode="200"
     )
+    snapshot.match("put-method-response-put", response)
 
-    aws_client.apigateway.put_integration(
+    response = aws_client.apigateway.put_integration(
         restApiId=api_id,
         resourceId=root_id,
         httpMethod="PUT",
         type="HTTP",
-        uri=echo_http_server,
+        uri=echo_http_server_post,
         integrationHttpMethod="POST",
     )
+    snapshot.match("put-integration-put", response)
 
     response = aws_client.apigateway.put_integration_response(
         restApiId=api_id,
         resourceId=root_id,
         httpMethod="PUT",
         statusCode="200",
-        selectionPattern="foobar",
-        responseTemplates={},
+        selectionPattern="2\\d{2}",
         contentHandling="CONVERT_TO_BINARY",
     )
-
-    # this is hard to match against, so remove it
-    response["ResponseMetadata"].pop("HTTPHeaders", None)
-    response["ResponseMetadata"].pop("RetryAttempts", None)
-    response["ResponseMetadata"].pop("RequestId", None)
-    assert response == (
-        {
-            "statusCode": "200",
-            "selectionPattern": "foobar",
-            "ResponseMetadata": {"HTTPStatusCode": 201},
-            "responseTemplates": {},  # Note: TF compatibility
-            "contentHandling": "CONVERT_TO_BINARY",
-        }
-    )
+    snapshot.match("put-integration-response-put", response)
 
     response = aws_client.apigateway.get_integration_response(
         restApiId=api_id, resourceId=root_id, httpMethod="PUT", statusCode="200"
     )
-    # this is hard to match against, so remove it
-    response["ResponseMetadata"].pop("HTTPHeaders", None)
-    response["ResponseMetadata"].pop("RetryAttempts", None)
-    response["ResponseMetadata"].pop("RequestId", None)
-    assert response == (
-        {
-            "statusCode": "200",
-            "selectionPattern": "foobar",
-            "ResponseMetadata": {"HTTPStatusCode": 200},
-            "responseTemplates": {},  # Note: TF compatibility
-            "contentHandling": "CONVERT_TO_BINARY",
-        }
-    )
+    snapshot.match("get-integration-response-put", response)
 
 
 def test_put_integration_response_with_response_template(aws_client, echo_http_server_post):

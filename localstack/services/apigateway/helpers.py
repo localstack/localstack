@@ -548,7 +548,6 @@ def import_api_from_openapi_spec(
     rest_api.tags = {}
     # authorizers map to avoid duplication
     authorizers = {}
-    print(json.dumps(body, indent=2))
 
     store = get_apigateway_store(account_id=account_id, region=region)
     rest_api_container = store.rest_apis[rest_api.id]
@@ -704,17 +703,22 @@ def import_api_from_openapi_spec(
                 content_handling=method_integration.get("contentHandling"),
             )
             if method_integration_responses := method_integration.get("responses"):
-                integration.create_integration_response(
+                response_templates = method_integration_responses.get("default", {}).get(
+                    "responseTemplates"
+                )
+                integration_response = integration.create_integration_response(
                     status_code=method_integration_responses.get("default", {}).get(
                         "statusCode", 200
                     ),
                     selection_pattern=None,
-                    response_templates=method_integration_responses.get("default", {}).get(
-                        "responseTemplates"
-                    ),
+                    response_templates=response_templates,
                     response_parameters=integration_response_parameters,
                     content_handling=None,
                 )
+                # moto set the responseTemplates to an empty dict when it should be None if not defined
+                if response_templates is None:
+                    integration_response.response_templates = None
+
             resource.resource_methods[field].method_integration = integration
 
         rest_api.resources[child_id] = resource

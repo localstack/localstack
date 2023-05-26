@@ -2478,7 +2478,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::test_import_and_validate_rest_api[openapi.spec.tf.json]": {
-    "recorded-date": "25-05-2023, 22:51:53",
+    "recorded-date": "26-05-2023, 19:40:40",
     "recorded-content": {
       "import_tf_rest_api": {
         "apiKeySource": "HEADER",
@@ -2497,10 +2497,27 @@
           "HTTPStatusCode": 201
         }
       },
+      "get-models": {
+        "items": [
+          {
+            "contentType": "application/json",
+            "id": "<id:2>",
+            "name": "<name:2>",
+            "schema": {
+              "title": "<name:2> Schema",
+              "type": "object"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "resources": {
         "items": [
           {
-            "id": "<id:2>",
+            "id": "<id:3>",
             "path": "/",
             "resourceMethods": {
               "GET": {},
@@ -2515,7 +2532,7 @@
       },
       "method-response-root-get": {
         "responseModels": {
-          "application/json": "Empty"
+          "application/json": "<name:2>"
         },
         "responseParameters": {
           "method.response.header.Access-Control-Allow-Origin": false
@@ -2528,7 +2545,7 @@
       },
       "integration-root-get": {
         "cacheKeyParameters": [],
-        "cacheNamespace": "<id:2>",
+        "cacheNamespace": "<id:3>",
         "contentHandling": "CONVERT_TO_TEXT",
         "httpMethod": "POST",
         "integrationResponses": {
@@ -2560,7 +2577,7 @@
       },
       "method-response-root-options": {
         "responseModels": {
-          "application/json": "Empty"
+          "application/json": "<name:2>"
         },
         "responseParameters": {
           "method.response.header.Access-Control-Allow-Headers": false,
@@ -2575,7 +2592,7 @@
       },
       "integration-root-options": {
         "cacheKeyParameters": [],
-        "cacheNamespace": "<id:2>",
+        "cacheNamespace": "<id:3>",
         "integrationResponses": {
           "200": {
             "responseParameters": {
@@ -2614,7 +2631,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::test_import_and_validate_rest_api[swagger-mock-cors.json]": {
-    "recorded-date": "25-05-2023, 22:52:39",
+    "recorded-date": "26-05-2023, 19:41:04",
     "recorded-content": {
       "import_tf_rest_api": {
         "apiKeySource": "HEADER",
@@ -2631,6 +2648,13 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
+        }
+      },
+      "get-models": {
+        "items": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "resources": {

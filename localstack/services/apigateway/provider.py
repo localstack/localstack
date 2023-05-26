@@ -1,3 +1,4 @@
+import copy
 import io
 import json
 import logging
@@ -24,6 +25,7 @@ from localstack.aws.api.apigateway import (
     ClientCertificate,
     ClientCertificates,
     ConflictException,
+    ConnectionType,
     CreateAuthorizerRequest,
     CreateRestApiRequest,
     DocumentationPart,
@@ -46,6 +48,7 @@ from localstack.aws.api.apigateway import (
     NullableBoolean,
     NullableInteger,
     PutIntegrationRequest,
+    PutIntegrationResponseRequest,
     PutRestApiRequest,
     RequestValidator,
     RequestValidators,
@@ -75,7 +78,7 @@ from localstack.services.apigateway.models import RestApiContainer
 from localstack.services.apigateway.patches import apply_patches
 from localstack.services.apigateway.router_asf import ApigatewayRouter, to_invocation_context
 from localstack.services.edge import ROUTER
-from localstack.services.moto import call_moto
+from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.collections import (
     DelSafeDict,
@@ -420,6 +423,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> Method:
         response: Method = call_moto(context)
         remove_empty_attributes_from_method(response)
+        remove_empty_attributes_from_integration(response.get("methodIntegration", {}))
         return response
 
     def put_method(
@@ -440,7 +444,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         # TODO: add missing validation? check order of validation as well
         moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
         moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
-        if not moto_rest_api or not moto_rest_api.resources.get(resource_id):
+        if not moto_rest_api or not (moto_resource := moto_rest_api.resources.get(resource_id)):
             raise NotFoundException("Invalid Resource identifier specified")
 
         if http_method not in ("GET", "PUT", "POST", "DELETE", "PATCH", "OPTIONS", "HEAD", "ANY"):
@@ -482,11 +486,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         response: Method = call_moto(context)
         remove_empty_attributes_from_method(response)
+        moto_http_method = moto_resource.resource_methods[http_method]
+        moto_http_method.authorization_type = moto_http_method.authorization_type.upper()
 
         # this is straight from the moto patch, did not test it yet but has the same functionality
         # FIXME: check if still necessary after testing Authorizers
         if need_authorizer_id and "authorizerId" not in response:
             response["authorizerId"] = authorizer_id
+
+        response["authorizationType"] = response["authorizationType"].upper()
 
         return response
 
@@ -1320,7 +1328,13 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     "Integrations of type 'AWS_PROXY' currently only supports "
                     "Lambda function and Firehose stream invocations."
                 )
-        return call_moto(context)
+        moto_request = copy.copy(request)
+        moto_request.setdefault("passthroughBehavior", "WHEN_NO_MATCH")
+        moto_request.setdefault("timeoutInMillis", 29000)
+        moto_request.setdefault("connectionType", ConnectionType.INTERNET)
+        response = call_moto_with_request(context, moto_request)
+        remove_empty_attributes_from_integration(integration=response)
+        return response
 
     def delete_integration(
         self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
@@ -1342,6 +1356,25 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> IntegrationResponse:
         response: IntegrationResponse = call_moto(context)
         remove_empty_attributes_from_integration_response(response)
+        return response
+
+    @handler("PutIntegrationResponse", expand=False)
+    def put_integration_response(
+        self,
+        context: RequestContext,
+        request: PutIntegrationResponseRequest,
+    ) -> IntegrationResponse:
+        response = call_moto(context)
+        # Moto has a specific case where it will set a None to an empty dict, but AWS does not behave the same
+        if request.get("responseTemplates") is None:
+            moto_rest_api = get_moto_rest_api(context, request.get("restApiId"))
+            moto_resource = moto_rest_api.resources.get(request["resourceId"])
+            method_integration = moto_resource.resource_methods[
+                request["httpMethod"]
+            ].method_integration
+            integration_response = method_integration.integration_responses[request["statusCode"]]
+            integration_response.response_templates = None
+            response.pop("responseTemplates", None)
         return response
 
     def get_export(
@@ -1567,6 +1600,16 @@ def remove_empty_attributes_from_method(method: Method) -> Method:
     return method
 
 
+def remove_empty_attributes_from_integration(integration: Integration):
+    if not integration.get("integrationResponses"):
+        integration.pop("integrationResponses", None)
+
+    if not integration.get("requestParameters"):
+        integration.pop("requestParameters", None)
+
+    return integration
+
+
 def remove_empty_attributes_from_model(model: Model) -> Model:
     if not model.get("description"):
         model.pop("description", None)
@@ -1575,7 +1618,7 @@ def remove_empty_attributes_from_model(model: Model) -> Model:
 
 
 def remove_empty_attributes_from_integration_response(integration_response: IntegrationResponse):
-    if not integration_response.get("responseTemplates"):
+    if integration_response.get("responseTemplates") is None:
         integration_response.pop("responseTemplates", None)
 
     return integration_response
