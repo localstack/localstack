@@ -70,6 +70,9 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
         )
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        if isinstance(ex, TimeoutError):
+            return self._get_timed_out_failure_event()
+
         norm_service_name: str = self._normalise_service_name(self.resource.api_name)
         error: str = self._normalise_exception_name(norm_service_name, ex)
         if isinstance(ex, ClientError):

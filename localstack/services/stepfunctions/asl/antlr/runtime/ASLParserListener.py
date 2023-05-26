@@ -251,6 +251,24 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#timeout_seconds_decl.
+    def enterTimeout_seconds_decl(self, ctx:ASLParser.Timeout_seconds_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#timeout_seconds_decl.
+    def exitTimeout_seconds_decl(self, ctx:ASLParser.Timeout_seconds_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#timeout_seconds_path_decl.
+    def enterTimeout_seconds_path_decl(self, ctx:ASLParser.Timeout_seconds_path_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#timeout_seconds_path_decl.
+    def exitTimeout_seconds_path_decl(self, ctx:ASLParser.Timeout_seconds_path_declContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#payload_tmpl_decl.
     def enterPayload_tmpl_decl(self, ctx:ASLParser.Payload_tmpl_declContext):
         pass

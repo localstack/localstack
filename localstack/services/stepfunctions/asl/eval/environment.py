@@ -54,9 +54,10 @@ class Environment:
             StateMachine=env.context_object_manager.context_object["StateMachine"],
         )
         frame = cls(context_object_init=context_object_init)
-        frame.heap = env.heap
         frame.event_history = env.event_history
-        frame.context_object = env.context_object_manager.context_object
+        frame.callback_pool_manager = env.callback_pool_manager
+        frame.heap = env.heap
+        frame._program_state = copy.deepcopy(env._program_state)
         return frame
 
     @property

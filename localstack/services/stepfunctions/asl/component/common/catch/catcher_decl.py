@@ -65,10 +65,12 @@ class CatcherDecl(EvalComponent):
                 f"Internal Error: invalid event details declaration in FailureEvent: '{failure_event}'."
             )
         spec_event_details: dict = list(failure_event.event_details.values())[0]
+        error = spec_event_details["error"]
+        cause = spec_event_details.get("cause") or ""
         # Stepfunctions renames these fields to capital in this scenario.
         return {
-            "Error": spec_event_details["error"],
-            "Cause": spec_event_details["cause"],
+            "Error": error,
+            "Cause": cause,
         }
 
     def _eval_body(self, env: Environment) -> None:
