@@ -6880,11 +6880,38 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_analytics_configurations": {
-    "recorded-date": "25-05-2023, 22:29:04",
+    "recorded-date": "26-05-2023, 12:15:26",
     "recorded-content": {
-      "put_config_with_storage_analysis_err": "<ExceptionInfo ClientError('An error occurred (MalformedXML) when calling the PutBucketAnalyticsConfiguration operation: The XML you provided was not well-formed or did not validate against our published schema') tblen=3>",
-      "get_config_with_storage_analysis_err": "<ExceptionInfo ClientError('An error occurred (NoSuchConfiguration) when calling the GetBucketAnalyticsConfiguration operation: The specified configuration does not exist.') tblen=3>",
-      "delete_config_with_storage_analysis_err": "<ExceptionInfo ClientError('An error occurred (NoSuchConfiguration) when calling the DeleteBucketAnalyticsConfiguration operation: The specified configuration does not exist.') tblen=3>",
+      "put_config_with_storage_analysis_err": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get_config_with_storage_analysis_err": {
+        "Error": {
+          "Code": "NoSuchConfiguration",
+          "Message": "The specified configuration does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_config_with_storage_analysis_err": {
+        "Error": {
+          "Code": "NoSuchConfiguration",
+          "Message": "The specified configuration does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
       "get_config_with_storage_analysis_1": {
         "AnalyticsConfiguration": {
           "Filter": {

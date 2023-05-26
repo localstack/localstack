@@ -4454,7 +4454,7 @@ class TestS3:
                 Id="different-id",
                 AnalyticsConfiguration=storage_analysis,
             )
-        snapshot.match("put_config_with_storage_analysis_err", err_put)
+        snapshot.match("put_config_with_storage_analysis_err", err_put.value.response)
 
         # non-existing storage analysis get
         with pytest.raises(ClientError) as err_get:
@@ -4462,7 +4462,7 @@ class TestS3:
                 Bucket=bucket,
                 Id="non-existing",
             )
-        snapshot.match("get_config_with_storage_analysis_err", err_get)
+        snapshot.match("get_config_with_storage_analysis_err", err_get.value.response)
 
         # non-existing storage analysis delete
         with pytest.raises(ClientError) as err_delete:
@@ -4470,7 +4470,7 @@ class TestS3:
                 Bucket=bucket,
                 Id=storage_analysis["Id"],
             )
-        snapshot.match("delete_config_with_storage_analysis_err", err_delete)
+        snapshot.match("delete_config_with_storage_analysis_err", err_delete.value.response)
 
         # put storage analysis
         aws_client.s3.put_bucket_analytics_configuration(
