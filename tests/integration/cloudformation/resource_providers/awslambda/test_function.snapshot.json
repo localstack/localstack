@@ -1,0 +1,44 @@
+{
+  "tests/integration/cloudformation/resource_providers/awslambda/test_function.py::TestAttributeAccess::test_getattr[Description]": {
+    "recorded-date": "26-05-2023, 15:48:05",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/resource_providers/awslambda/test_function.py::TestAttributeAccess::test_getattr[FunctionName]": {
+    "recorded-date": "26-05-2023, 15:48:14",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/resource_providers/awslambda/test_function.py::TestAttributeAccess::test_getattr[Runtime]": {
+    "recorded-date": "26-05-2023, 15:48:53",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/resource_providers/awslambda/test_function.py::TestAttributeAccess::test_getattr[KmsKeyArn]": {
+    "recorded-date": "26-05-2023, 15:49:32",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/resource_providers/awslambda/test_function.py::TestAttributeAccess::test_getattr[Arn]": {
+    "recorded-date": "26-05-2023, 17:14:01",
+    "recorded-content": {
+      "stack_outputs": {
+        "MyOutput": "arn:aws:lambda:<region>:111111111111:function:test-lambda-function",
+        "MyRef": "test-lambda-function"
+      },
+      "physical_resource_id": "test-lambda-function"
+    }
+  },
+  "tests/integration/cloudformation/resource_providers/awslambda/test_function.py::TestAttributeAccess::test_getattr[Role]": {
+    "recorded-date": "26-05-2023, 15:45:47",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/resource_providers/awslambda/test_function.py::TestAttributeAccess::test_getattr[PackageType]": {
+    "recorded-date": "26-05-2023, 15:50:12",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/resource_providers/awslambda/test_function.py::TestAttributeAccess::test_getattr[CodeSigningConfigArn]": {
+    "recorded-date": "26-05-2023, 15:50:55",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/resource_providers/awslambda/test_function.py::TestAttributeAccess::test_getattr[Handler]": {
+    "recorded-date": "26-05-2023, 15:51:34",
+    "recorded-content": {}
+  }
+}

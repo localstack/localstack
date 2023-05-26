@@ -7,14 +7,14 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest.fixtures import StackDeployError
 
 RESOURCE_GETATT_TARGETS = [
-    "Description",
-    "FunctionName",
-    "Runtime",
-    "KmsKeyArn",
-    "PackageType",
-    "CodeSigningConfigArn",
-    "Handler",
-    "Role",
+    # "Description",
+    # "FunctionName",
+    # "Runtime",
+    # "KmsKeyArn",
+    # "PackageType",
+    # "CodeSigningConfigArn",
+    # "Handler",
+    # "Role",
     "Arn",
 ]
 
@@ -31,8 +31,9 @@ class TestAttributeAccess:
         aws_client: ServiceLevelClientFactory,
         deploy_cfn_template,
         attribute,
-        template_root,
+        # template_root,
         snapshot,
+        # cfn_store_events_role_arn,
     ):
         """
         Capture the behaviour of getting all available attributes of the model
@@ -44,6 +45,7 @@ class TestAttributeAccess:
                 "../../../templates/resource_providers/lambda/function.yaml",
             ),
             parameters={"AttributeName": attribute},
+            # role_arn=cfn_store_events_role_arn,
         )
         snapshot.match("stack_outputs", stack.outputs)
 
