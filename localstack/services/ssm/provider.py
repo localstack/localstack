@@ -20,6 +20,7 @@ from localstack.aws.api.ssm import (
     PSParameterVersion,
     PutParameterRequest,
     PutParameterResult,
+    RegisterTargetWithMaintenanceWindowResult,
     SsmApi,
 )
 from localstack.services.moto import call_moto, call_moto_with_request
@@ -131,6 +132,20 @@ class SsmProvider(SsmApi, ABC):
     ) -> LabelParameterVersionResult:
         SsmProvider._notify_event_subscribers(name, "LabelParameterVersion")
         return LabelParameterVersionResult(**call_moto(context))
+
+    def register_target_with_maintenance_window(
+        self,
+        context: RequestContext,
+        window_id: str,
+        resource_type: str,
+        targets: list,
+        owner_information: str = None,
+        name: str = None,
+        description: str = None,
+        client_token: str = None,
+    ) -> RegisterTargetWithMaintenanceWindowResult:
+        # moto_response: RegisterTargetWithMaintenanceWindowResult = call_moto(context)
+        return RegisterTargetWithMaintenanceWindowResult()
 
     # utility methods below
 

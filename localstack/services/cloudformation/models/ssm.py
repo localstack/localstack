@@ -104,3 +104,90 @@ class SSMParameter(GenericBaseModel):
             },
             "delete": {"function": "delete_parameter", "parameters": ["Name"]},
         }
+
+
+class SSMMaintenanceWindow(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::SSM::MaintenanceWindow"
+
+    def fetch_state(self, stack_name, resources):
+        if not self.physical_resource_id:
+            return None
+        maintenance_windows = aws_stack.connect_to_service("ssm").describe_maintenance_windows()[
+            "WindowIdentities"
+        ]
+        for maintenance_window in maintenance_windows:
+            if maintenance_window["WindowId"] == self.physical_resource_id:
+                return maintenance_window
+
+    @staticmethod
+    def get_deploy_templates():
+        def _delete_window(resource_id, resources, resource_type, func, stack_name):
+            ssm_client = aws_stack.connect_to_service("ssm")
+            ssm_client.delete_maintenance_window(
+                WindowId=resources[resource_id]["PhysicalResourceId"]
+            )
+
+        def _store_window_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["WindowId"]
+
+        return {
+            "create": {
+                "function": "create_maintenance_window",
+                "parameters": select_parameters(
+                    "AllowUnassociatedTargets",
+                    "Cutoff",
+                    "Duration",
+                    "Name",
+                    "Schedule",
+                    "ScheduleOffset",
+                    "ScheduleTimezone",
+                    "StartDate",
+                    "EndDate",
+                    "Description",
+                    "Tags",
+                ),
+                "result_handler": _store_window_id,
+            },
+            "delete": {"function": _delete_window},
+        }
+
+
+class SSMMaintenanceWindowTarget(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::SSM::MaintenanceWindowTarget"
+
+    def fetch_state(self, stack_name, resources):
+        return aws_stack.connect_to_service("ssm").describe_maintenance_window_target(
+            WindowTargetId=self.props.get("WindowTargetId")
+        )["WindowTargetId"]
+
+    @staticmethod
+    def get_deploy_templates():
+        def _delete_window_target(resource_id, resources, resource_type, func, stack_name):
+            ssm_client = aws_stack.connect_to_service("ssm")
+            ssm_client.deregister_target_from_maintenance_window(
+                WindowId=resources[resource_id]["Properties"]["WindowId"],
+                WindowTargetId=resources[resource_id]["PhysicalResourceId"],
+            )
+
+        def _store_window_target_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["WindowTargetId"]
+
+        return {
+            "create": {
+                "function": "register_target_with_maintenance_window",
+                "parameters": select_parameters(
+                    "Description",
+                    "Name",
+                    "OwnerInformation",
+                    "ResourceType",
+                    "Targets",
+                    "WindowId",
+                ),
+                "result_handler": _store_window_target_id,
+            },
+            "delete": {"function": _delete_window_target},
+        }
