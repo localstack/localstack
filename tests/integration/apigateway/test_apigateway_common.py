@@ -20,10 +20,6 @@ class TestApiGatewayCommon:
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$.invalid-request-body.Type",
-            "$..methodIntegration.integrationResponses",
-            "$..methodIntegration.passthroughBehavior",
-            "$..methodIntegration.requestParameters",
-            "$..methodIntegration.timeoutInMillis",
         ]
     )
     def test_api_gateway_request_validator(

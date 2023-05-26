@@ -586,6 +586,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         response = moto_method.to_json()
         remove_empty_attributes_from_method(response)
+        remove_empty_attributes_from_integration(response.get("methodIntegration", {}))
         return response
 
     def delete_method(
@@ -1331,9 +1332,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         moto_request = copy.copy(request)
         moto_request.setdefault("passthroughBehavior", "WHEN_NO_MATCH")
         moto_request.setdefault("timeoutInMillis", 29000)
-        moto_request.setdefault("connectionType", ConnectionType.INTERNET)
+        if request.get("type") in (IntegrationType.HTTP, IntegrationType.HTTP_PROXY):
+            moto_request.setdefault("connectionType", ConnectionType.INTERNET)
         response = call_moto_with_request(context, moto_request)
         remove_empty_attributes_from_integration(integration=response)
+
         return response
 
     def delete_integration(
