@@ -297,7 +297,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::test_import_rest_api": {
-    "recorded-date": "10-01-2023, 20:08:25",
+    "recorded-date": "26-05-2023, 04:29:27",
     "recorded-content": {
       "import_rest_api": {
         "apiKeySource": "HEADER",
@@ -1431,7 +1431,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_model_lifecycle": {
-    "recorded-date": "06-03-2023, 16:18:23",
+    "recorded-date": "26-05-2023, 04:30:31",
     "recorded-content": {
       "create-model": {
         "contentType": "application/json",
@@ -2840,6 +2840,256 @@
         },
         "responseTemplates": {
           "application/json": {}
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::test_import_swagger_api": {
+    "recorded-date": "26-05-2023, 04:26:50",
+    "recorded-content": {
+      "import-swagger": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "Your first API with Amazon API Gateway. This is a sample API that integrates via HTTP with our demo Pet Store endpoints",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<rest-id:1>",
+        "name": "PetStore",
+        "version": "1.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-authorizers": {
+        "items": [
+          {
+            "authType": "oauth2",
+            "authorizerCredentials": "<authorizer-credentials:1>",
+            "authorizerResultTtlInSeconds": 60,
+            "authorizerUri": "<authorizer-uri:1>",
+            "id": "<authorizer-id:1>",
+            "identitySource": "method.request.header.Authorization",
+            "identityValidationExpression": "^x-[a-z]+",
+            "name": "test-authorizer",
+            "type": "TOKEN"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-models": {
+        "items": [
+          {
+            "contentType": "application/json",
+            "id": "<model-id:1>",
+            "name": "Empty",
+            "schema": {
+              "type": "object"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<model-id:2>",
+            "name": "NewPet",
+            "schema": {
+              "properties": {
+                "price": {
+                  "type": "number"
+                },
+                "type": {
+                  "ref": "https://apigateway.amazonaws.com/restapis/<rest-id:1>/models/PetType"
+                }
+              },
+              "type": "object"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<model-id:3>",
+            "name": "NewPetResponse",
+            "schema": {
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "pet": {
+                  "ref": "https://apigateway.amazonaws.com/restapis/<rest-id:1>/models/Pet"
+                }
+              },
+              "type": "object"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<model-id:4>",
+            "name": "Pet",
+            "schema": {
+              "properties": {
+                "petid": {
+                  "type": "integer"
+                },
+                "price": {
+                  "type": "number"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<model-id:5>",
+            "name": "PetType",
+            "schema": {
+              "enum": [
+                "dog",
+                "cat",
+                "fish",
+                "bird",
+                "gecko"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<model-id:6>",
+            "name": "Pets",
+            "schema": {
+              "items": {
+                "ref": "https://apigateway.amazonaws.com/restapis/<rest-id:1>/models/Pet"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resources": {
+        "items": [
+          {
+            "id": "<resource-id:1>",
+            "path": "/",
+            "resourceMethods": {
+              "GET": {}
+            }
+          },
+          {
+            "id": "<resource-id:2>",
+            "parentId": "<resource-id:1>",
+            "path": "/pets",
+            "pathPart": "pets",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {},
+              "POST": {}
+            }
+          },
+          {
+            "id": "<resource-id:3>",
+            "parentId": "<resource-id:2>",
+            "path": "/pets/{petId}",
+            "pathPart": "{petId}",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-root-get": {
+        "responseParameters": {
+          "method.response.header.Content-Type": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets-get": {
+        "responseModels": {
+          "application/json": "Pets"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets-options": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets-post": {
+        "responseModels": {
+          "application/json": "NewPetResponse"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets/{petId}-get": {
+        "responseModels": {
+          "application/json": "Pet"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets/{petId}-options": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
         },
         "statusCode": "200",
         "ResponseMetadata": {

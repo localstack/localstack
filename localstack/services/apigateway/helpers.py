@@ -662,16 +662,13 @@ def import_api_from_openapi_spec(
             responses = field_schema.get("responses", {})
             for status_code, response in responses.items():
                 response_model = None
-                if model_schema := response.get("schema"):
-                    response_model = {APPLICATION_JSON: model_schema}
-                elif (
-                    model_schema_obj := response.get("content", {})
-                    .get(APPLICATION_JSON, {})
-                    .get("schema")
+                if model_schema := response.get(
+                    "schema", response.get("content", {}).get(APPLICATION_JSON, {}).get("schema")
                 ):
-                    response_model = {
-                        APPLICATION_JSON: schema_map.get(model_schema_obj.get("title"))
-                    }
+                    # this means the model schema was resolved directly from the schema, instead of its name
+                    if isinstance(model_schema, dict):
+                        model_schema = schema_map.get(json.dumps(model_schema))
+                    response_model = {APPLICATION_JSON: model_schema}
 
                 method_response_parameters = {}
                 if response_param_headers := response.get("headers"):
@@ -741,19 +738,18 @@ def import_api_from_openapi_spec(
     )
     schema_map = {}
     for name, model in models.items():
-        # keep a map of the schema title to retrieve the schema name for responseModels resolved $ref
-        schema_map[model.get("title")] = name
-        # skip adding the default schema
-        if name not in (EMPTY_MODEL, ERROR_MODEL):
-            model_id = short_uid()[:6]  # length 6 to make TF tests pass
-            model = Model(
-                id=model_id,
-                name=name,
-                contentType=APPLICATION_JSON,
-                description=None,
-                schema=model,
-            )
-            store.rest_apis[rest_api.id].models[name] = model
+        schema = json.dumps(model)
+        # keep a map of the schema to retrieve the schema name for responseModels resolved $ref
+        schema_map[schema] = name
+        model_id = short_uid()[:6]  # length 6 to make TF tests pass
+        model = Model(
+            id=model_id,
+            name=name,
+            contentType=APPLICATION_JSON,
+            description=None,
+            schema=schema,
+        )
+        store.rest_apis[rest_api.id].models[name] = model
 
     # determine base path
     basepath_mode = query_params.get("basepath") or "prepend"

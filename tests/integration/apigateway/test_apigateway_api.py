@@ -7,9 +7,11 @@ from operator import itemgetter
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots.transformer import SortingTransformer
+from localstack.utils.aws import arns
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
@@ -20,10 +22,15 @@ PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OPENAPI_SPEC_PULUMI_JSON = os.path.join(PARENT_DIR, "files", "openapi.spec.pulumi.json")
 OPENAPI_SPEC_TF_JSON = os.path.join(PARENT_DIR, "files", "openapi.spec.tf.json")
 SWAGGER_MOCK_CORS_JSON = os.path.join(PARENT_DIR, "files", "swagger-mock-cors.json")
+PETSTORE_SWAGGER_JSON = os.path.join(PARENT_DIR, "files", "petstore-authorizer.swagger.json")
+
+TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "awslambda/functions/lambda_echo.py")
 
 
 @pytest.fixture(autouse=True)
-def apigw_snapshot_transformer(snapshot):
+def apigw_snapshot_transformer(request, snapshot):
+    if "no_apigw_snap_transformers" in request.keywords:
+        return
     snapshot.add_transformer(snapshot.transform.apigateway_api())
 
 
@@ -33,6 +40,33 @@ def apigw_cleanup_before_run(aws_client):
     rest_apis = aws_client.apigateway.get_rest_apis()
     for rest_api in rest_apis["items"]:
         delete_rest_api_retry(aws_client.apigateway, rest_api["id"])
+
+
+@pytest.fixture
+def apigateway_lambda_integration_role(create_role, create_policy, aws_client):
+    role_name = f"apigw-lambda-integration-{short_uid()}"
+    assume_role_doc = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": "sts:AssumeRole",
+                "Principal": {"Service": "apigateway.amazonaws.com"},
+                "Effect": "Allow",
+            }
+        ],
+    }
+    policy_doc = {
+        "Version": "2012-10-17",
+        "Statement": [{"Effect": "Allow", "Action": "lambda:InvokeFunction", "Resource": "*"}],
+    }
+    role_arn = create_role(
+        RoleName=role_name, AssumeRolePolicyDocument=json.dumps(assume_role_doc)
+    )["Role"]["Arn"]
+    policy_arn = create_policy(
+        PolicyName=f"test-policy-{short_uid()}", PolicyDocument=json.dumps(policy_doc)
+    )["Policy"]["Arn"]
+    aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+    return role_arn
 
 
 def delete_rest_api_retry(client, rest_api_id: str):
@@ -79,12 +113,113 @@ def apigw_create_rest_api(aws_client):
 
 @pytest.mark.aws_validated
 def test_import_rest_api(import_apigw, snapshot):
-    snapshot.add_transformer(snapshot.transform.apigateway_api())
-
     spec_file = load_file(OPENAPI_SPEC_PULUMI_JSON)
     response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
 
     snapshot.match("import_rest_api", response)
+
+
+@pytest.mark.aws_validated
+@pytest.mark.no_apigw_snap_transformers  # not using the API Gateway default transformers
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$.resources.items..resourceMethods.GET",  # TODO: this is really weird, after importing, AWS returns them empty?
+        "$.resources.items..resourceMethods.OPTIONS",
+        "$.resources.items..resourceMethods.POST",
+        "$.get-models.items..schema.items.ref",  # this seems to be a problem on AWS side to resolve model $ref?
+        "$.get-models.items..schema.items.properties",  # same as above
+        "$.get-models.items..schema.items.type",  # same as above
+        "$.get-models.items..schema.properties.pet.ref",  # same as above
+        "$.get-models.items..schema.properties.pet.properties",  # same as above
+        "$.get-models.items..schema.properties.pet.type",  # same as above
+        "$.get-models.items..schema.properties.type.ref",  # same as above
+        "$.get-models.items..schema.properties.type.enum",  # same as above
+        "$.get-models.items..schema.properties.type.type",  # same as above
+    ]
+)
+def test_import_swagger_api(
+    import_apigw, snapshot, aws_client, create_lambda_function, apigateway_lambda_integration_role
+):
+    # manually add all transformers, as the default will mess up Model names and such
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.jsonpath("$.import-swagger.id", value_replacement="rest-id"),
+            snapshot.transform.jsonpath(
+                "$.get-authorizers.items..id", value_replacement="authorizer-id"
+            ),
+            snapshot.transform.key_value("authorizerCredentials"),
+            snapshot.transform.key_value("authorizerUri"),
+            snapshot.transform.jsonpath("$.resources.items..id", value_replacement="resource-id"),
+            snapshot.transform.jsonpath("$.get-models.items..id", value_replacement="model-id"),
+        ]
+    )
+
+    function_name = f"test-authorizer-import-{short_uid()}"
+    create_response = create_lambda_function(
+        handler_file=TEST_LAMBDA_PYTHON_ECHO,
+        func_name=function_name,
+        runtime=Runtime.python3_9,
+        MemorySize=256,
+        Timeout=5,
+    )
+    lambda_invocation_arn = arns.apigateway_invocations_arn(
+        create_response["CreateFunctionResponse"]["FunctionArn"]
+    )
+
+    spec_file = load_file(PETSTORE_SWAGGER_JSON)
+    spec_file = spec_file.replace(
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:account-id:function:function-name/invocations",
+        lambda_invocation_arn,
+    ).replace("arn:aws:iam::account-id:role", apigateway_lambda_integration_role)
+
+    response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
+
+    snapshot.match("import-swagger", response)
+
+    rest_api_id = response["id"]
+
+    # assert that are no multiple authorizers
+    authorizers = aws_client.apigateway.get_authorizers(restApiId=rest_api_id)
+    snapshot.match("get-authorizers", authorizers)
+
+    models = aws_client.apigateway.get_models(restApiId=rest_api_id)
+    models["items"] = sorted(models["items"], key=itemgetter("name"))
+    # FIXME: AWS is returning field with $ref which makes JSON path selecting difficult
+    # we're renaming those, but this is very dirty
+    for model in models["items"]:
+        schema = model.get("schema", {})
+        assert isinstance(schema, str)
+        schema = json.loads(schema)
+        if "$ref" in schema.get("items", {}):
+            schema["items"]["ref"] = schema["items"].pop("$ref")
+        elif properties := schema.get("properties", {}):
+            for prop in ("pet", "type"):
+                if "$ref" in properties.get(prop, {}):
+                    properties[prop]["ref"] = properties[prop].pop("$ref")
+        model["schema"] = schema
+
+    snapshot.match("get-models", models)
+
+    response = aws_client.apigateway.get_resources(restApiId=rest_api_id)
+    response["items"] = sorted(response["items"], key=itemgetter("path"))
+    snapshot.match("resources", response)
+
+    for resource in response["items"]:
+        for http_method in resource.get("resourceMethods", []):
+            snapshot_http_key = f"{resource['path'][1:] if resource['path'] != '/' else 'root'}-{http_method.lower()}"
+            resource_id = resource["id"]
+            try:
+                response = aws_client.apigateway.get_method_response(
+                    restApiId=rest_api_id,
+                    resourceId=resource_id,
+                    httpMethod=http_method,
+                    statusCode="200",
+                )
+                snapshot.match(f"method-response-{snapshot_http_key}", response)
+            except ClientError as e:
+                snapshot.match(f"exc-method-response-{snapshot_http_key}", e.response)
+
+        # TODO: add more validation to the import, validate more resources (Integrations?)
 
 
 @pytest.mark.aws_validated
@@ -111,11 +246,15 @@ def test_import_and_validate_rest_api(import_apigw, snapshot, aws_client, import
     snapshot.match("import_tf_rest_api", response)
     rest_api_id = response["id"]
 
+    models = aws_client.apigateway.get_models(restApiId=rest_api_id)
+    models["items"] = sorted(models["items"], key=itemgetter("name"))
+    snapshot.match("get-models", models)
+
     response = aws_client.apigateway.get_resources(restApiId=rest_api_id)
     response["items"] = sorted(response["items"], key=itemgetter("path"))
     snapshot.match("resources", response)
 
-    for resource in sorted(response["items"], key=lambda x: x["path"]):
+    for resource in response["items"]:
         for http_method in resource.get("resourceMethods", []):
             snapshot_http_key = f"{resource['path'][1:] if resource['path'] != '/' else 'root'}-{http_method.lower()}"
             resource_id = resource["id"]

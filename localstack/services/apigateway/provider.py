@@ -253,9 +253,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
         rest_api_container = store.rest_apis[request["restApiId"]]
         rest_api_container.rest_api = response
-        # add the 2 default models
-        rest_api_container.models[EMPTY_MODEL] = DEFAULT_EMPTY_MODEL
-        rest_api_container.models[ERROR_MODEL] = DEFAULT_ERROR_MODEL
         # TODO: verify this
         return to_rest_api_response_json(response)
 
@@ -1282,10 +1279,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             create_api_request,
         )
         response = self.create_rest_api(create_api_context, create_api_request)
+        api_id = response.get("id")
+        # remove the 2 default models automatically created, but not when importing
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        store.rest_apis[api_id].models = {}
 
         # put rest api
         put_api_request = PutRestApiRequest(
-            restApiId=response.get("id"),
+            restApiId=api_id,
             failOnWarnings=str_to_bool(fail_on_warnings) or False,
             parameters=parameters or {},
             body=io.BytesIO(body_data),

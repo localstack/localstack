@@ -13,7 +13,6 @@ import pytest
 import xmltodict
 from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
-from moto.apigateway import apigateway_backends
 from requests.structures import CaseInsensitiveDict
 
 from localstack import config
@@ -28,7 +27,6 @@ from localstack.services.apigateway.helpers import (
     get_resource_for_path,
     get_rest_api_paths,
     host_based_url,
-    import_api_from_openapi_spec,
     path_based_url,
 )
 from localstack.services.awslambda.lambda_api import add_event_source, use_docker
@@ -75,7 +73,6 @@ from tests.integration.awslambda.test_lambda import (
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
 )
-from tests.unit.test_apigateway import load_test_resource
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_SWAGGER_FILE_JSON = os.path.join(THIS_FOLDER, "../files", "swagger.json")
@@ -2057,60 +2054,6 @@ class TestAPIGateway:
             assert response.json() == {"version": ""}
         else:
             assert response.json() == {"version": "1.0"}
-
-
-def test_import_swagger_api(aws_client):
-    # TODO: refactor test to not access moto resources directly
-    api_spec = load_test_resource("openapi.swagger.json")
-    api_spec_dict = json.loads(api_spec)
-
-    backend = apigateway_backends[get_aws_account_id()][aws_stack.get_region()]
-    rest_api = aws_client.apigateway.create_rest_api(name="api_name", description="description-1")
-
-    api_model = backend.get_rest_api(rest_api["id"])
-
-    imported_api = import_api_from_openapi_spec(api_model, api_spec_dict, {})
-
-    # test_cfn_handle_serverless_api_resource fails if we support title
-    # assert imported_api.name == api_spec_dict.get("info").get("title")
-    assert imported_api.description == api_spec_dict.get("info").get("description")
-
-    # assert that are no multiple authorizers
-    authorizers = aws_client.apigateway.get_authorizers(restApiId=imported_api.id)
-    assert len(authorizers.get("items")) == 1
-
-    paths = {v.path_part for k, v in imported_api.resources.items()}
-    assert paths == {"/", "pets", "{petId}"}
-
-    resource_methods = {v.path_part: v.resource_methods for k, v in imported_api.resources.items()}
-    methods = {kk[0] for k, v in resource_methods.items() for kk in v.items()}
-    assert methods == {"POST", "OPTIONS", "GET"}
-
-    response_resource = resource_methods.get("/").get("GET").method_responses.get("200")
-    assert response_resource.to_json() == {
-        "statusCode": "200",
-        "responseModels": None,
-        "responseParameters": {"method.response.header.Content-Type": "'text/html'"},
-    }
-
-    method_response_resource = resource_methods.get("pets").get("GET").method_responses.get("200")
-    assert method_response_resource.to_json() == {
-        "responseModels": {
-            "application/json": {
-                "items": {
-                    "properties": {
-                        "id": {"type": "integer"},
-                        "price": {"type": "number"},
-                        "type": {"type": "string"},
-                    },
-                    "type": "object",
-                },
-                "type": "array",
-            }
-        },
-        "responseParameters": {"method.response.header.Access-Control-Allow-Origin": "'*'"},
-        "statusCode": "200",
-    }
 
 
 @pytest.mark.skipif(not use_docker(), reason="Rust lambdas cannot be executed in local executor")
