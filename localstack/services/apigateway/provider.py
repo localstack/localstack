@@ -423,7 +423,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> Method:
         response: Method = call_moto(context)
         remove_empty_attributes_from_method(response)
-        remove_empty_attributes_from_integration(response.get("methodIntegration", {}))
+        remove_empty_attributes_from_integration(response.get("methodIntegration"))
         return response
 
     def put_method(
@@ -586,7 +586,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         response = moto_method.to_json()
         remove_empty_attributes_from_method(response)
-        remove_empty_attributes_from_integration(response.get("methodIntegration", {}))
+        remove_empty_attributes_from_integration(response.get("methodIntegration"))
         return response
 
     def delete_method(
@@ -1604,6 +1604,9 @@ def remove_empty_attributes_from_method(method: Method) -> Method:
 
 
 def remove_empty_attributes_from_integration(integration: Integration):
+    if not integration:
+        return integration
+
     if not integration.get("integrationResponses"):
         integration.pop("integrationResponses", None)
 
