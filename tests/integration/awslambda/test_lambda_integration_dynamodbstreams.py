@@ -90,10 +90,12 @@ def get_lambda_logs_event(aws_client):
     paths=[
         # dynamodb issues, not related to lambda
         "$..TableDescription.BillingModeSummary.LastUpdateToPayPerRequestDateTime",
+        "$..TableDescription.DeletionProtectionEnabled",
         "$..TableDescription.ProvisionedThroughput.LastDecreaseDateTime",
         "$..TableDescription.ProvisionedThroughput.LastIncreaseDateTime",
         "$..TableDescription.StreamSpecification",
         "$..TableDescription.TableStatus",
+        "$..Records..dynamodb.NewImage.binary_key.B",
         "$..Records..dynamodb.SizeBytes",
         "$..Records..eventVersion",
     ],
@@ -117,7 +119,7 @@ class TestDynamoDBEventSourceMapping:
         policy_name = f"test-lambda-policy-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
         partition_key = "my_partition_key"
-        db_item = {partition_key: {"S": "hello world"}}
+        db_item = {partition_key: {"S": "hello world"}, "binary_key": {"B": b"foobar"}}
         role_arn = create_iam_role_with_policy(
             RoleName=role,
             PolicyName=policy_name,

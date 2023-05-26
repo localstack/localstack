@@ -252,6 +252,7 @@ ScheduledInstanceId = str
 SecurityGroupId = str
 SecurityGroupName = str
 SecurityGroupRuleId = str
+SensitiveUrl = str
 SensitiveUserData = str
 SnapshotId = str
 SpotFleetRequestId = str
@@ -1786,6 +1787,12 @@ class InstanceType(str):
     inf2_24xlarge = "inf2.24xlarge"
     inf2_48xlarge = "inf2.48xlarge"
     trn1n_32xlarge = "trn1n.32xlarge"
+    i4g_large = "i4g.large"
+    i4g_xlarge = "i4g.xlarge"
+    i4g_2xlarge = "i4g.2xlarge"
+    i4g_4xlarge = "i4g.4xlarge"
+    i4g_8xlarge = "i4g.8xlarge"
+    i4g_16xlarge = "i4g.16xlarge"
 
 
 class InstanceTypeHypervisor(str):
@@ -6393,7 +6400,7 @@ class RequestLaunchTemplateData(TypedDict, total=False):
     RamDiskId: Optional[RamdiskId]
     DisableApiTermination: Optional[Boolean]
     InstanceInitiatedShutdownBehavior: Optional[ShutdownBehavior]
-    UserData: Optional[String]
+    UserData: Optional[SensitiveUserData]
     TagSpecifications: Optional[LaunchTemplateTagSpecificationRequestList]
     ElasticGpuSpecifications: Optional[ElasticGpuSpecificationList]
     ElasticInferenceAccelerators: Optional[LaunchTemplateElasticInferenceAcceleratorList]
@@ -10403,7 +10410,7 @@ class SnapshotDetail(TypedDict, total=False):
     SnapshotId: Optional[String]
     Status: Optional[String]
     StatusMessage: Optional[String]
-    Url: Optional[String]
+    Url: Optional[SensitiveUrl]
     UserBucket: Optional[UserBucketDetails]
 
 
@@ -10459,7 +10466,7 @@ class SnapshotTaskDetail(TypedDict, total=False):
     SnapshotId: Optional[String]
     Status: Optional[String]
     StatusMessage: Optional[String]
-    Url: Optional[String]
+    Url: Optional[SensitiveUrl]
     UserBucket: Optional[UserBucketDetails]
 
 
@@ -14949,7 +14956,7 @@ class ImageDiskContainer(TypedDict, total=False):
     DeviceName: Optional[String]
     Format: Optional[String]
     SnapshotId: Optional[SnapshotId]
-    Url: Optional[String]
+    Url: Optional[SensitiveUrl]
     UserBucket: Optional[UserBucket]
 
 
@@ -15069,7 +15076,7 @@ class ImportKeyPairResult(TypedDict, total=False):
 class SnapshotDiskContainer(TypedDict, total=False):
     Description: Optional[String]
     Format: Optional[String]
-    Url: Optional[String]
+    Url: Optional[SensitiveUrl]
     UserBucket: Optional[UserBucket]
 
 

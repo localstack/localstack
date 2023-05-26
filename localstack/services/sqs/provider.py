@@ -757,13 +757,28 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         )
 
     def delete_queue(self, context: RequestContext, queue_url: String) -> None:
-        with _STORE_LOCK:
-            account_id, region_name, queue_name = resolve_queue_location(
-                context, queue_name=None, queue_url=queue_url
+        account_id, region, name = parse_queue_url(queue_url)
+        if region is None:
+            region = context.region
+
+        if account_id != context.account_id:
+            LOG.warning(
+                "Attempting a cross-account DeleteQueue operation (account from context: %s, account from queue url: %s, which is not allowed in AWS",
+                account_id,
+                context.account_id,
             )
-            store = self.get_store(account_id, region_name)
-            del store.queues[queue_name]
-            store.deleted[queue_name] = time.time()
+
+        with _STORE_LOCK:
+            store = self.get_store(account_id, region)
+            queue = self._resolve_queue(context, queue_url=queue_url)
+            LOG.debug(
+                "deleting queue name=%s, region=%s, account=%s",
+                queue.name,
+                queue.region,
+                queue.account_id,
+            )
+            del store.queues[queue.name]
+            store.deleted[queue.name] = time.time()
 
     def get_queue_attributes(
         self, context: RequestContext, queue_url: String, attribute_names: AttributeNameList = None

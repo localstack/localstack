@@ -1,10 +1,11 @@
 import logging
+import uuid
 
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.services.cloudformation.stores import get_cloudformation_store
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 
 LOG = logging.getLogger(__name__)
 
@@ -117,5 +118,81 @@ class CloudFormationMacro(GenericBaseModel):
             },
             "delete": {
                 "function": _delete_macro,
+            },
+        }
+
+
+def generate_waitcondition_url(stack_name: str) -> str:
+    client = connect_to().s3
+    region = client.meta.region_name
+
+    bucket = f"cloudformation-waitcondition-{region}"
+    key = arns.cloudformation_stack_arn(stack_name=stack_name)
+
+    return connect_to().s3.generate_presigned_url(
+        "put_object", Params={"Bucket": bucket, "Key": key}
+    )
+
+
+class CloudFormationWaitConditionHandle(GenericBaseModel):
+    @classmethod
+    def cloudformation_type(cls):
+        return "AWS::CloudFormation::WaitConditionHandle"
+
+    def fetch_state(self, stack_name, resources):
+        if self.physical_resource_id is not None:
+            return {"deployed": True}
+
+    @staticmethod
+    def get_deploy_templates():
+        def _create(resource_id, resources, resource_type, func, stack_name) -> dict:
+            # no resources to create as such, but the physical resource id needs the stack name
+            return {"stack_name": stack_name}
+
+        def _set_physical_resource_id(result, resource_id, resources, resource_type):
+            waitcondition_url = generate_waitcondition_url(
+                stack_name=result["stack_name"],
+            )
+            resources[resource_id]["PhysicalResourceId"] = waitcondition_url
+
+        return {
+            "create": {
+                "function": _create,
+                "result_handler": _set_physical_resource_id,
+            },
+            "delete": {
+                "function": lambda *args, **kwargs: {},
+            },
+        }
+
+
+class CloudFormationWaitCondition(GenericBaseModel):
+    @classmethod
+    def cloudformation_type(cls):
+        return "AWS::CloudFormation::WaitCondition"
+
+    def fetch_state(self, stack_name, resources):
+        if self.physical_resource_id is not None:
+            return {"deployed": True}
+
+    @staticmethod
+    def get_deploy_templates():
+        def _create(resource_id, resources, resource_type, func, stack_name) -> dict:
+            # no resources to create, but the physical resource id requires the stack name
+            return {"stack_name": stack_name}
+
+        def _set_physical_resource_id(result, resource_id, resources, resource_type):
+            stack_arn = arns.cloudformation_stack_arn(result["stack_name"])
+            resources[resource_id][
+                "PhysicalResourceId"
+            ] = f"{stack_arn}/{uuid.uuid4()}/{resource_id}"
+
+        return {
+            "create": {
+                "function": _create,
+                "result_handler": _set_physical_resource_id,
+            },
+            "delete": {
+                "function": lambda *args, **kwargs: {},
             },
         }

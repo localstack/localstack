@@ -13,6 +13,7 @@ from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+    SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_ACCOUNT_ID,
@@ -22,6 +23,7 @@ from localstack.constants import (
 from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.services.sqs.models import sqs_stores
 from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
+from localstack.services.sqs.utils import parse_queue_url
 from localstack.testing.snapshots.transformer import GenericTransformer
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
@@ -1589,12 +1591,13 @@ class TestSqsProvider:
 
     @pytest.mark.aws_validated
     def test_fifo_queue_send_message_with_delay_on_queue_works(self, sqs_create_queue, aws_client):
+        delay_seconds = 2
         queue_url = sqs_create_queue(
             QueueName=f"queue-{short_uid()}.fifo",
             Attributes={
                 "FifoQueue": "true",
                 "ContentBasedDeduplication": "true",
-                "DelaySeconds": "2",
+                "DelaySeconds": str(delay_seconds),
             },
         )
 
@@ -1605,9 +1608,9 @@ class TestSqsProvider:
         response = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
         assert response.get("Messages", []) == []
 
-        response = aws_client.sqs.receive_message(
-            QueueUrl=queue_url, WaitTimeSeconds=3, MaxNumberOfMessages=3
-        )
+        time.sleep(delay_seconds + 1)
+
+        response = aws_client.sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=3)
         messages = response["Messages"]
         assert len(messages) == 3
 
@@ -3539,6 +3542,64 @@ class TestSqsQueryApi:
         assert "<DeleteQueueResponse " in response.text
 
         assert poll_condition(lambda: not sqs_queue_exists(queue_url), timeout=5)
+
+    @pytest.mark.only_localstack
+    def test_delete_queue_multi_account(
+        self, aws_client_factory, aws_http_client_factory, cleanups
+    ):
+        # set up regular boto clients for creating the queues
+        client1 = aws_client_factory.get_client(
+            service_name="sqs",
+            region_name=TEST_AWS_REGION_NAME,
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        )
+        client2 = aws_client_factory.get_client(
+            service_name="sqs",
+            region_name=TEST_AWS_REGION_NAME,
+            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+        )
+
+        # set up the queues in the two accounts
+        prefix = f"test-{short_uid()}-"
+        queue1_name = f"{prefix}-queue-{short_uid()}"
+        queue2_name = f"{prefix}-queue-{short_uid()}"
+        response = client1.create_queue(QueueName=queue1_name)
+        queue1_url = response["QueueUrl"]
+        assert parse_queue_url(queue1_url)[0] == TEST_AWS_ACCOUNT_ID
+
+        response = client2.create_queue(QueueName=queue2_name)
+        queue2_url = response["QueueUrl"]
+        assert parse_queue_url(queue2_url)[0] == SECONDARY_TEST_AWS_ACCOUNT_ID
+
+        # now prepare the query api clients
+        client1_http = aws_http_client_factory(
+            service="sqs",
+            region=TEST_AWS_REGION_NAME,
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        )
+
+        client2_http = aws_http_client_factory(
+            service="sqs",
+            region=TEST_AWS_REGION_NAME,
+            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+        )
+
+        # try and delete the queue from one account using the query API and make sure a) it works, and b) it's not deleting the queue from the other account
+        assert len(client1.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])) == 1
+        assert len(client2.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])) == 1
+        response = client1_http.post(queue1_url, params={"Action": "DeleteQueue"})
+        assert response.ok
+        assert len(client1.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])) == 0
+        assert queue2_url in client2.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])
+
+        # now delete the second one
+        client2_http.post(queue2_url, params={"Action": "DeleteQueue"})
+        assert response.ok
+        assert len(client2.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])) == 0
 
     @pytest.mark.aws_validated
     def test_get_send_and_receive_messages(self, sqs_create_queue, sqs_http_client):

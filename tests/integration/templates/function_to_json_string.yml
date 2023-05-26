@@ -4,13 +4,6 @@ Parameters:
   Value2:
     Type: String
 
-Mappings:
-  RegionMap:
-    us-east-1:
-      key: value1
-    us-west-1:
-      key: value2
-
 Transform: "AWS::LanguageExtensions"
 
 Resources:
@@ -29,5 +22,3 @@ Outputs:
       Fn::GetAtt:
         - JsonTest
         - Value
-  Result2:
-    Value: !FindInMap [RegionMap, us-east-1, key]

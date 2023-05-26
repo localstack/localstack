@@ -1,10 +1,11 @@
 import platform
 from typing import List
 
-from localstack.constants import KMS_URL_PATTERN
 from localstack.packages import Package, PackageInstaller
 from localstack.packages.core import PermissionDownloadInstaller
 from localstack.utils.platform import get_arch
+
+KMS_URL_PATTERN = "https://s3-eu-west-2.amazonaws.com/local-kms/3/local-kms_<arch>.bin"
 
 
 class KMSLocalPackage(Package):

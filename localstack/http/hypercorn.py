@@ -11,6 +11,7 @@ from localstack.aws.handlers.proxy import ProxyHandler
 from localstack.aws.serving.asgi import AsgiGateway
 from localstack.logging.setup import setup_hypercorn_logger
 from localstack.utils.collections import ensure_list
+from localstack.utils.functions import call_safe
 from localstack.utils.serving import Server
 from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
 
@@ -62,7 +63,8 @@ class HypercornServer(Server):
         self._closed.wait(timeout=10)
         asyncio.run_coroutine_threadsafe(self.loop.shutdown_asyncgens(), self.loop)
         self.loop.shutdown_default_executor()
-        self.loop.close()
+        self.loop.stop()
+        call_safe(self.loop.close)
 
     async def _set_closed(self):
         self._close.set()

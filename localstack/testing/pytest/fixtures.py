@@ -117,11 +117,19 @@ def aws_http_client_factory(boto3_session):
             [botocore.credentials.Credentials, str, str], botocore.auth.BaseSigner
         ] = botocore.auth.SigV4QueryAuth,
         endpoint_url: str = None,
+        aws_access_key_id: str = None,
+        aws_secret_access_key: str = None,
     ):
         region = region or boto3_session.region_name
         region = region or config.DEFAULT_REGION
 
-        credentials = boto3_session.get_credentials()
+        if aws_access_key_id or aws_secret_access_key:
+            credentials = botocore.credentials.Credentials(
+                access_key=aws_access_key_id, secret_key=aws_secret_access_key
+            )
+        else:
+            credentials = boto3_session.get_credentials()
+
         creds = credentials.get_frozen_credentials()
 
         if not endpoint_url:
