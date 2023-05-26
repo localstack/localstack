@@ -4416,6 +4416,110 @@ class TestS3:
         response = aws_client.s3.get_object(Bucket=bucket_1, Key=key_name)
         snapshot.match("get-obj-default-kms-s3-key-from-bucket", response)
 
+    def test_s3_analytics_configurations(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value(
+                    "Bucket", reference_replacement=False, value_replacement="<bucket>"
+                ),
+            ]
+        )
+
+        bucket = s3_create_bucket()
+        analytics_bucket = s3_create_bucket()
+        analytics_bucket_arn = f"arn:aws:s3:::{analytics_bucket}"
+
+        storage_analysis = {
+            "Id": "config_with_storage_analysis_1",
+            "Filter": {
+                "Prefix": "test_ls",
+            },
+            "StorageClassAnalysis": {
+                "DataExport": {
+                    "OutputSchemaVersion": "V_1",
+                    "Destination": {
+                        "S3BucketDestination": {
+                            "Format": "CSV",
+                            "Bucket": analytics_bucket_arn,
+                            "Prefix": "test",
+                        }
+                    },
+                }
+            },
+        }
+        # id in storage analysis is different from the one in the request
+        with pytest.raises(ClientError) as err_put:
+            aws_client.s3.put_bucket_analytics_configuration(
+                Bucket=bucket,
+                Id="different-id",
+                AnalyticsConfiguration=storage_analysis,
+            )
+        snapshot.match("put_config_with_storage_analysis_err", err_put.value.response)
+
+        # non-existing storage analysis get
+        with pytest.raises(ClientError) as err_get:
+            aws_client.s3.get_bucket_analytics_configuration(
+                Bucket=bucket,
+                Id="non-existing",
+            )
+        snapshot.match("get_config_with_storage_analysis_err", err_get.value.response)
+
+        # non-existing storage analysis delete
+        with pytest.raises(ClientError) as err_delete:
+            aws_client.s3.delete_bucket_analytics_configuration(
+                Bucket=bucket,
+                Id=storage_analysis["Id"],
+            )
+        snapshot.match("delete_config_with_storage_analysis_err", err_delete.value.response)
+
+        # put storage analysis
+        aws_client.s3.put_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+            AnalyticsConfiguration=storage_analysis,
+        )
+        response = aws_client.s3.get_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+        )
+        snapshot.match("get_config_with_storage_analysis_1", response)
+
+        # update storage analysis
+        storage_analysis["Filter"]["Prefix"] = "test_ls_2"
+        aws_client.s3.put_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+            AnalyticsConfiguration=storage_analysis,
+        )
+        response = aws_client.s3.get_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+        )
+        snapshot.match("get_config_with_storage_analysis_2", response)
+
+        # add a new storage analysis
+        storage_analysis["Id"] = "config_with_storage_analysis_2"
+        storage_analysis["Filter"]["Prefix"] = "test_ls_3"
+        aws_client.s3.put_bucket_analytics_configuration(
+            Bucket=bucket, Id=storage_analysis["Id"], AnalyticsConfiguration=storage_analysis
+        )
+        response = aws_client.s3.get_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+        )
+        snapshot.match("get_config_with_storage_analysis_3", response)
+
+        response = aws_client.s3.list_bucket_analytics_configurations(Bucket=bucket)
+        snapshot.match("list_config_with_storage_analysis_1", response)
+
+        # delete storage analysis
+        aws_client.s3.delete_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+        )
+        response = aws_client.s3.list_bucket_analytics_configurations(Bucket=bucket)
+        snapshot.match("list_config_with_storage_analysis_2", response)
+
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_legal_hold_lock_versioned(self, aws_client, s3_create_bucket, snapshot):

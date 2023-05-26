@@ -6,6 +6,8 @@ from moto.s3.models import S3Backend as MotoS3Backend
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.s3 import (
+    AnalyticsConfiguration,
+    AnalyticsId,
     BucketLifecycleConfiguration,
     BucketName,
     CORSConfiguration,
@@ -47,6 +49,10 @@ class S3Store(BaseStore):
     bucket_website_configuration: Dict[BucketName, WebsiteConfiguration] = CrossRegionAttribute(
         default=dict
     )
+
+    bucket_analytics_configuration: Dict[
+        BucketName, Dict[AnalyticsId, AnalyticsConfiguration]
+    ] = CrossRegionAttribute(default=dict)
 
 
 class BucketCorsIndex:

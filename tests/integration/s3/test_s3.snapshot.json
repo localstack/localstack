@@ -6878,5 +6878,184 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_analytics_configurations": {
+    "recorded-date": "26-05-2023, 12:15:26",
+    "recorded-content": {
+      "put_config_with_storage_analysis_err": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get_config_with_storage_analysis_err": {
+        "Error": {
+          "Code": "NoSuchConfiguration",
+          "Message": "The specified configuration does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_config_with_storage_analysis_err": {
+        "Error": {
+          "Code": "NoSuchConfiguration",
+          "Message": "The specified configuration does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get_config_with_storage_analysis_1": {
+        "AnalyticsConfiguration": {
+          "Filter": {
+            "Prefix": "test_ls"
+          },
+          "Id": "config_with_storage_analysis_1",
+          "StorageClassAnalysis": {
+            "DataExport": {
+              "Destination": {
+                "S3BucketDestination": {
+                  "Bucket": "<bucket>",
+                  "Format": "CSV",
+                  "Prefix": "test"
+                }
+              },
+              "OutputSchemaVersion": "V_1"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_config_with_storage_analysis_2": {
+        "AnalyticsConfiguration": {
+          "Filter": {
+            "Prefix": "test_ls_2"
+          },
+          "Id": "config_with_storage_analysis_1",
+          "StorageClassAnalysis": {
+            "DataExport": {
+              "Destination": {
+                "S3BucketDestination": {
+                  "Bucket": "<bucket>",
+                  "Format": "CSV",
+                  "Prefix": "test"
+                }
+              },
+              "OutputSchemaVersion": "V_1"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_config_with_storage_analysis_3": {
+        "AnalyticsConfiguration": {
+          "Filter": {
+            "Prefix": "test_ls_3"
+          },
+          "Id": "config_with_storage_analysis_2",
+          "StorageClassAnalysis": {
+            "DataExport": {
+              "Destination": {
+                "S3BucketDestination": {
+                  "Bucket": "<bucket>",
+                  "Format": "CSV",
+                  "Prefix": "test"
+                }
+              },
+              "OutputSchemaVersion": "V_1"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_config_with_storage_analysis_1": {
+        "AnalyticsConfigurationList": [
+          {
+            "Filter": {
+              "Prefix": "test_ls_2"
+            },
+            "Id": "config_with_storage_analysis_1",
+            "StorageClassAnalysis": {
+              "DataExport": {
+                "Destination": {
+                  "S3BucketDestination": {
+                    "Bucket": "<bucket>",
+                    "Format": "CSV",
+                    "Prefix": "test"
+                  }
+                },
+                "OutputSchemaVersion": "V_1"
+              }
+            }
+          },
+          {
+            "Filter": {
+              "Prefix": "test_ls_3"
+            },
+            "Id": "config_with_storage_analysis_2",
+            "StorageClassAnalysis": {
+              "DataExport": {
+                "Destination": {
+                  "S3BucketDestination": {
+                    "Bucket": "<bucket>",
+                    "Format": "CSV",
+                    "Prefix": "test"
+                  }
+                },
+                "OutputSchemaVersion": "V_1"
+              }
+            }
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_config_with_storage_analysis_2": {
+        "AnalyticsConfigurationList": [
+          {
+            "Filter": {
+              "Prefix": "test_ls_2"
+            },
+            "Id": "config_with_storage_analysis_1",
+            "StorageClassAnalysis": {
+              "DataExport": {
+                "Destination": {
+                  "S3BucketDestination": {
+                    "Bucket": "<bucket>",
+                    "Format": "CSV",
+                    "Prefix": "test"
+                  }
+                },
+                "OutputSchemaVersion": "V_1"
+              }
+            }
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
