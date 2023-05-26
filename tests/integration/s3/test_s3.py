@@ -4603,6 +4603,100 @@ class TestS3:
             VersionId=version_id_2,
         )
 
+    @pytest.mark.aws_validated
+    def test_s3_intelligent_tier_config(self, aws_client, s3_create_bucket, snapshot):
+        bucket = s3_create_bucket()
+        intelligent_tier_configuration = {
+            "Id": "test1",
+            "Filter": {
+                "Prefix": "test1",
+            },
+            "Status": "Enabled",
+            "Tierings": [
+                {"Days": 90, "AccessTier": "ARCHIVE_ACCESS"},
+            ],
+        }
+
+        # different id in tiering config and in put request
+        with pytest.raises(ClientError) as put_err_1:
+            aws_client.s3.put_bucket_intelligent_tiering_configuration(
+                Bucket=bucket,
+                Id="incorrect_id",
+                IntelligentTieringConfiguration=intelligent_tier_configuration,
+            )
+        snapshot.match(
+            "put_bucket_intelligent_tiering_configuration_err_1`", put_err_1.value.response
+        )
+
+        # put tiering config
+        aws_client.s3.put_bucket_intelligent_tiering_configuration(
+            Bucket=bucket,
+            Id=intelligent_tier_configuration["Id"],
+            IntelligentTieringConfiguration=intelligent_tier_configuration,
+        )
+
+        # get tiering config and snapshot match
+        response = aws_client.s3.get_bucket_intelligent_tiering_configuration(
+            Bucket=bucket,
+            Id=intelligent_tier_configuration["Id"],
+        )
+        snapshot.match("get_bucket_intelligent_tiering_configuration_1", response)
+
+        # put tiering config with different id
+        intelligent_tier_configuration["Id"] = "test2"
+        intelligent_tier_configuration["Filter"]["Prefix"] = "test2"
+
+        aws_client.s3.put_bucket_intelligent_tiering_configuration(
+            Bucket=bucket,
+            Id=intelligent_tier_configuration["Id"],
+            IntelligentTieringConfiguration=intelligent_tier_configuration,
+        )
+
+        response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=bucket)
+        snapshot.match("list_bucket_intelligent_tiering_configurations_1", response)
+
+        # update the config by adding config with same id
+        intelligent_tier_configuration["Id"] = "test1"
+        intelligent_tier_configuration["Filter"]["Prefix"] = "testupdate"
+
+        aws_client.s3.put_bucket_intelligent_tiering_configuration(
+            Bucket=bucket,
+            Id=intelligent_tier_configuration["Id"],
+            IntelligentTieringConfiguration=intelligent_tier_configuration,
+        )
+
+        response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=bucket)
+        snapshot.match("list_bucket_intelligent_tiering_configurations_2", response)
+
+        # delete the config with non-existing bucket
+        with pytest.raises(ClientError) as delete_err_1:
+            aws_client.s3.delete_bucket_intelligent_tiering_configuration(
+                Bucket="non-existing-bucket",
+                Id=intelligent_tier_configuration["Id"],
+            )
+        snapshot.match(
+            "delete_bucket_intelligent_tiering_configuration_err_1", delete_err_1.value.response
+        )
+
+        # delete the config with non-existing id
+        with pytest.raises(ClientError) as delete_err_2:
+            aws_client.s3.delete_bucket_intelligent_tiering_configuration(
+                Bucket=bucket,
+                Id="non-existing-id",
+            )
+        snapshot.match(
+            "delete_bucket_intelligent_tiering_configuration_err_2", delete_err_2.value.response
+        )
+
+        # delete the config
+        aws_client.s3.delete_bucket_intelligent_tiering_configuration(
+            Bucket=bucket,
+            Id=intelligent_tier_configuration["Id"],
+        )
+
+        response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=bucket)
+        snapshot.match("list_bucket_intelligent_tiering_configurations_3", response)
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack

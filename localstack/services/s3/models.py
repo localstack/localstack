@@ -54,6 +54,10 @@ class S3Store(BaseStore):
         BucketName, Dict[AnalyticsId, AnalyticsConfiguration]
     ] = CrossRegionAttribute(default=dict)
 
+    bucket_intelligent_tiering_configuration: Dict[
+        BucketName, Dict[BucketName, AnalyticsConfiguration]
+    ] = CrossRegionAttribute(default=dict)
+
 
 class BucketCorsIndex:
     def __init__(self):
