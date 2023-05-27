@@ -13,6 +13,9 @@ from localstack.aws.api.s3 import (
     MFA,
     AccessControlPolicy,
     AccountId,
+    AnalyticsConfiguration,
+    AnalyticsConfigurationList,
+    AnalyticsId,
     Body,
     BucketName,
     BypassGovernanceRetention,
@@ -35,6 +38,7 @@ from localstack.aws.api.s3 import (
     DeleteObjectTaggingRequest,
     ETag,
     GetBucketAclOutput,
+    GetBucketAnalyticsConfigurationOutput,
     GetBucketCorsOutput,
     GetBucketLifecycleConfigurationOutput,
     GetBucketLifecycleOutput,
@@ -56,6 +60,7 @@ from localstack.aws.api.s3 import (
     InvalidBucketName,
     InvalidPartOrder,
     InvalidStorageClass,
+    ListBucketAnalyticsConfigurationsOutput,
     ListMultipartUploadsOutput,
     ListMultipartUploadsRequest,
     ListObjectsOutput,
@@ -92,6 +97,7 @@ from localstack.aws.api.s3 import (
     S3Api,
     SkipValidation,
     StorageClass,
+    Token,
 )
 from localstack.aws.api.s3 import Type as GranteeType
 from localstack.aws.api.s3 import WebsiteConfiguration
@@ -165,6 +171,11 @@ class InvalidRequest(CommonServiceException):
 class UnexpectedContent(CommonServiceException):
     def __init__(self, message=None):
         super().__init__("UnexpectedContent", status_code=400, message=message)
+
+
+class NoSuchConfiguration(CommonServiceException):
+    def __init__(self, message=None):
+        super().__init__("NoSuchConfiguration", status_code=404, message=message)
 
 
 def get_full_default_bucket_location(bucket_name):
@@ -1149,6 +1160,90 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         return response
+
+    def put_bucket_analytics_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: AnalyticsId,
+        analytics_configuration: AnalyticsConfiguration,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        store = self.get_store()
+
+        validate_bucket_analytics_configuration(
+            id=id, analytics_configuration=analytics_configuration
+        )
+
+        bucket_analytics_configuration = store.bucket_analytics_configuration.setdefault(bucket, {})
+        bucket_analytics_configuration[id] = analytics_configuration
+
+    def get_bucket_analytics_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: AnalyticsId,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketAnalyticsConfigurationOutput:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        store = self.get_store()
+
+        analytics_configuration: AnalyticsConfiguration = store.bucket_analytics_configuration.get(
+            bucket, {}
+        ).get(id)
+        if not analytics_configuration:
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+        return GetBucketAnalyticsConfigurationOutput(AnalyticsConfiguration=analytics_configuration)
+
+    def list_bucket_analytics_configurations(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        continuation_token: Token = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> ListBucketAnalyticsConfigurationsOutput:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        store = self.get_store()
+        analytics_configurations: Dict[
+            AnalyticsId, AnalyticsConfiguration
+        ] = store.bucket_analytics_configuration.get(bucket, {})
+        analytics_configurations: AnalyticsConfigurationList = sorted(
+            analytics_configurations.values(), key=lambda x: x["Id"]
+        )
+        return ListBucketAnalyticsConfigurationsOutput(
+            IsTruncated=False, AnalyticsConfigurationList=analytics_configurations
+        )
+
+    def delete_bucket_analytics_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: AnalyticsId,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        store = self.get_store()
+        analytics_configurations = store.bucket_analytics_configuration.get(bucket, {})
+        if not analytics_configurations.pop(id, None):
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+
+
+def validate_bucket_analytics_configuration(
+    id: AnalyticsId, analytics_configuration: AnalyticsConfiguration
+) -> None:
+    if id != analytics_configuration.get("Id"):
+        raise MalformedXML(
+            "The XML you provided was not well-formed or did not validate against our published schema"
+        )
 
 
 def validate_bucket_name(bucket: BucketName) -> None:

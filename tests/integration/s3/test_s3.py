@@ -3910,6 +3910,7 @@ class TestS3:
         """
         Test that the response structure is correct for the S3 API
         """
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="test", Body="test")
         headers = {"x-amz-content-sha256": "UNSIGNED-PAYLOAD"}
 
         s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
@@ -3940,6 +3941,11 @@ class TestS3:
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
+        # validate that the Contents tag is last, after BucketName. Again for the Java SDK to properly set the
+        # BucketName value to the objects.
+        list_objects_tags = list(resp_dict["ListBucketResult"].keys())
+        assert list_objects_tags.index("Name") < list_objects_tags.index("Contents")
+        assert list_objects_tags[-1] == "Contents"
 
         # Lists all objects V2 in a bucket
         list_objects_v2_url = f"{bucket_url}?list-type=2"
@@ -3947,6 +3953,10 @@ class TestS3:
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
+        # same as ListObjects
+        list_objects_v2_tags = list(resp_dict["ListBucketResult"].keys())
+        assert list_objects_v2_tags.index("Name") < list_objects_v2_tags.index("Contents")
+        assert list_objects_v2_tags[-1] == "Contents"
 
         # Lists all multipart uploads in a bucket
         list_multipart_uploads_url = f"{bucket_url}?uploads"
@@ -4405,6 +4415,110 @@ class TestS3:
 
         response = aws_client.s3.get_object(Bucket=bucket_1, Key=key_name)
         snapshot.match("get-obj-default-kms-s3-key-from-bucket", response)
+
+    def test_s3_analytics_configurations(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value(
+                    "Bucket", reference_replacement=False, value_replacement="<bucket>"
+                ),
+            ]
+        )
+
+        bucket = s3_create_bucket()
+        analytics_bucket = s3_create_bucket()
+        analytics_bucket_arn = f"arn:aws:s3:::{analytics_bucket}"
+
+        storage_analysis = {
+            "Id": "config_with_storage_analysis_1",
+            "Filter": {
+                "Prefix": "test_ls",
+            },
+            "StorageClassAnalysis": {
+                "DataExport": {
+                    "OutputSchemaVersion": "V_1",
+                    "Destination": {
+                        "S3BucketDestination": {
+                            "Format": "CSV",
+                            "Bucket": analytics_bucket_arn,
+                            "Prefix": "test",
+                        }
+                    },
+                }
+            },
+        }
+        # id in storage analysis is different from the one in the request
+        with pytest.raises(ClientError) as err_put:
+            aws_client.s3.put_bucket_analytics_configuration(
+                Bucket=bucket,
+                Id="different-id",
+                AnalyticsConfiguration=storage_analysis,
+            )
+        snapshot.match("put_config_with_storage_analysis_err", err_put.value.response)
+
+        # non-existing storage analysis get
+        with pytest.raises(ClientError) as err_get:
+            aws_client.s3.get_bucket_analytics_configuration(
+                Bucket=bucket,
+                Id="non-existing",
+            )
+        snapshot.match("get_config_with_storage_analysis_err", err_get.value.response)
+
+        # non-existing storage analysis delete
+        with pytest.raises(ClientError) as err_delete:
+            aws_client.s3.delete_bucket_analytics_configuration(
+                Bucket=bucket,
+                Id=storage_analysis["Id"],
+            )
+        snapshot.match("delete_config_with_storage_analysis_err", err_delete.value.response)
+
+        # put storage analysis
+        aws_client.s3.put_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+            AnalyticsConfiguration=storage_analysis,
+        )
+        response = aws_client.s3.get_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+        )
+        snapshot.match("get_config_with_storage_analysis_1", response)
+
+        # update storage analysis
+        storage_analysis["Filter"]["Prefix"] = "test_ls_2"
+        aws_client.s3.put_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+            AnalyticsConfiguration=storage_analysis,
+        )
+        response = aws_client.s3.get_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+        )
+        snapshot.match("get_config_with_storage_analysis_2", response)
+
+        # add a new storage analysis
+        storage_analysis["Id"] = "config_with_storage_analysis_2"
+        storage_analysis["Filter"]["Prefix"] = "test_ls_3"
+        aws_client.s3.put_bucket_analytics_configuration(
+            Bucket=bucket, Id=storage_analysis["Id"], AnalyticsConfiguration=storage_analysis
+        )
+        response = aws_client.s3.get_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+        )
+        snapshot.match("get_config_with_storage_analysis_3", response)
+
+        response = aws_client.s3.list_bucket_analytics_configurations(Bucket=bucket)
+        snapshot.match("list_config_with_storage_analysis_1", response)
+
+        # delete storage analysis
+        aws_client.s3.delete_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+        )
+        response = aws_client.s3.list_bucket_analytics_configurations(Bucket=bucket)
+        snapshot.match("list_config_with_storage_analysis_2", response)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])

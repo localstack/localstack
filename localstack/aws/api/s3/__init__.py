@@ -2373,7 +2373,6 @@ class ListObjectsOutput(TypedDict, total=False):
     IsTruncated: Optional[IsTruncated]
     Marker: Optional[Marker]
     NextMarker: Optional[NextMarker]
-    Contents: Optional[ObjectList]
     Name: Optional[BucketName]
     Prefix: Optional[Prefix]
     Delimiter: Optional[Delimiter]
@@ -2381,6 +2380,7 @@ class ListObjectsOutput(TypedDict, total=False):
     CommonPrefixes: Optional[CommonPrefixList]
     EncodingType: Optional[EncodingType]
     BucketRegion: Optional[BucketRegion]
+    Contents: Optional[ObjectList]
 
 
 class ListObjectsRequest(ServiceRequest):
@@ -2396,7 +2396,6 @@ class ListObjectsRequest(ServiceRequest):
 
 class ListObjectsV2Output(TypedDict, total=False):
     IsTruncated: Optional[IsTruncated]
-    Contents: Optional[ObjectList]
     Name: Optional[BucketName]
     Prefix: Optional[Prefix]
     Delimiter: Optional[Delimiter]
@@ -2408,6 +2407,7 @@ class ListObjectsV2Output(TypedDict, total=False):
     NextContinuationToken: Optional[NextToken]
     StartAfter: Optional[StartAfter]
     BucketRegion: Optional[BucketRegion]
+    Contents: Optional[ObjectList]
 
 
 class ListObjectsV2Request(ServiceRequest):

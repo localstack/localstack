@@ -1405,6 +1405,9 @@ class TemplateDeployer:
         existing_stack.outputs.update(new_stack.outputs)
         existing_stack.conditions.update(new_stack.conditions)
 
+        # TODO: ideally the entire template has to be replaced, but tricky at this point
+        existing_stack.template["Metadata"] = new_stack.template.get("Metadata")
+
         # start deployment loop
         return self.apply_changes_in_loop(
             changes, existing_stack, action=action, new_stack=new_stack
