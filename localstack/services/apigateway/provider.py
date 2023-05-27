@@ -1594,10 +1594,10 @@ def remove_empty_attributes_from_method(method: Method) -> Method:
     if not method.get("methodResponses"):
         method.pop("methodResponses", None)
 
-    if not method.get("requestModels"):
+    if method.get("requestModels") is None:
         method.pop("requestModels", None)
 
-    if not method.get("requestParameters"):
+    if method.get("requestParameters") is None:
         method.pop("requestParameters", None)
 
     return method
@@ -1610,7 +1610,7 @@ def remove_empty_attributes_from_integration(integration: Integration):
     if not integration.get("integrationResponses"):
         integration.pop("integrationResponses", None)
 
-    if not integration.get("requestParameters"):
+    if integration.get("requestParameters") is None:
         integration.pop("requestParameters", None)
 
     return integration

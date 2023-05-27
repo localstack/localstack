@@ -54,12 +54,10 @@ def apply_patches():
 
         if self.method == "PUT":
             timeout_milliseconds = self._get_param("timeoutInMillis")
-            request_parameters = self._get_param("requestParameters") or {}
             cache_key_parameters = self._get_param("cacheKeyParameters") or []
             content_handling = self._get_param("contentHandling")
             integration.cache_namespace = resource_id
             integration.timeout_in_millis = timeout_milliseconds
-            integration.request_parameters = request_parameters
             integration.cache_key_parameters = cache_key_parameters
             integration.content_handling = content_handling
             return 201, {}, json.dumps(integration.to_json())

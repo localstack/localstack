@@ -1,6 +1,6 @@
 {
   "tests/integration/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_integration": {
-    "recorded-date": "02-12-2022, 10:04:00",
+    "recorded-date": "27-05-2023, 19:00:45",
     "recorded-content": {
       "rest_api": {
         "apiKeySource": "HEADER",
@@ -29,7 +29,7 @@
         "httpMethod": "GET",
         "methodIntegration": {
           "cacheKeyParameters": [],
-          "cacheNamespace": "vp3310",
+          "cacheNamespace": "<cache-namespace:1>",
           "connectionType": "INTERNET",
           "httpMethod": "GET",
           "integrationResponses": {
