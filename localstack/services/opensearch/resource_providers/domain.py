@@ -5,11 +5,11 @@ from dataclasses import dataclass
 from typing import Optional
 
 from localstack.services.cloudformation.resource_provider import (
+    PRIVATE_REGISTRY,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
     ResourceRequest,
-    register_resource_provider,
 )
 
 LOG = logging.getLogger(__name__)
@@ -181,7 +181,6 @@ class OpenSearchDomainAllProperties(OpenSearchDomainProperties):
     physical_resource_id: Optional[str] = None
 
 
-@register_resource_provider
 class OpenSearchDomainProvider(ResourceProvider[OpenSearchDomainAllProperties]):
     TYPE = "AWS::OpenSearchService::Domain"
 
@@ -248,3 +247,6 @@ class OpenSearchDomainProvider(ResourceProvider[OpenSearchDomainAllProperties]):
             return ProgressEvent(
                 status=OperationStatus.SUCCESS, resource_model=request.desired_state
             )
+
+
+PRIVATE_REGISTRY[OpenSearchDomainProvider.TYPE] = OpenSearchDomainProvider
