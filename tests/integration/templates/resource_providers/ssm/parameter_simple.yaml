@@ -1,0 +1,10 @@
+Resources:
+  Parameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: abc123
+
+Outputs:
+  ParameterName:
+    Value: !GetAtt Parameter.Name

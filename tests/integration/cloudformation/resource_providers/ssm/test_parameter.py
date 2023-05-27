@@ -19,6 +19,21 @@ RESOURCE_GETATT_TARGETS = [
 ]
 
 
+class TestBasic:
+    def test_deploy(self, aws_client: ServiceLevelClientFactory, deploy_cfn_template, snapshot):
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../../../templates/resource_providers/ssm/parameter_simple.yaml",
+            ),
+            max_wait=5,
+        )
+
+        parameter_name = stack.outputs["ParameterName"]
+
+        assert aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]["Value"] == "abc123"
+
+
 class TestAttributeAccess:
     @pytest.mark.parametrize("attribute", RESOURCE_GETATT_TARGETS)
     @pytest.mark.xfail(

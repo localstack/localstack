@@ -3,6 +3,7 @@ import json
 import logging
 import re
 import traceback
+import uuid
 from typing import Any, Callable, Optional, Type, TypedDict
 
 import botocore
@@ -27,12 +28,19 @@ from localstack.services.cloudformation.engine.entities import (
     StackChangeSet,
     resolve_ssm_parameter_value,
 )
+from localstack.services.cloudformation.resource_provider import (
+    ResourceProviderExecutor,
+    ResourceProviderPayload,
+)
 from localstack.services.cloudformation.service_models import (
     KEY_RESOURCE_STATE,
     DependencyNotYetSatisfied,
     GenericBaseModel,
 )
 from localstack.services.cloudformation.stores import exports_map
+
+# TODO: remove this import and create the registry properly
+from localstack.services.ssm.resource_providers.parameter import SSMParameterProvider  # noqa: F401
 from localstack.utils.aws import aws_stack
 from localstack.utils.functions import prevent_stack_overflow
 from localstack.utils.json import clone_safe, json_safe
@@ -41,6 +49,7 @@ from localstack.utils.strings import first_char_to_lower, to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
+
 
 ACTION_CREATE = "create"
 ACTION_DELETE = "delete"
@@ -173,7 +182,6 @@ def get_client(resource: dict):
 def retrieve_resource_details(
     resource_id, resource_status, resources: dict[str, Type[GenericBaseModel]], stack_name
 ):
-
     resource = resources.get(resource_id)
     resource_id = resource_status.get("PhysicalResourceId") or resource_id
     if not resource:
@@ -1195,7 +1203,7 @@ class TemplateDeployer:
             stack.set_resource_status(resource_id, f"{action}_IN_PROGRESS")
 
     # Stack is needed here
-    def update_resource_details(self, resource_id, result, stack=None, action="CREATE"):
+    def update_resource_details(self, resource_id, stack=None, action="CREATE"):
         stack = stack or self.stack
         # update physical resource id
         resource = stack.resources[resource_id]
@@ -1560,33 +1568,52 @@ class TemplateDeployer:
         return True
 
     # Stack is needed here
-    def apply_change(self, change, stack):
+    def apply_change(self, change, stack: Stack) -> None:
         change_details = change["ResourceChange"]
         action = change_details["Action"]
         resource_id = change_details["LogicalResourceId"]
         resource = stack.resources[resource_id]
-        is_deployed = change_details.pop("_deployed", None)
         if not evaluate_resource_condition(stack.stack_name, stack.resources, resource):
             return
 
-        # execute resource action
-        result = None
-        if action == "Add" or is_deployed is False:
-            result = execute_resource_action(
-                resource_id, self.stack_name, self.resources, ACTION_CREATE
-            )
-        elif action == "Remove":
-            result = execute_resource_action(
-                resource_id, self.stack_name, self.resources, ACTION_DELETE
-            )
-        elif action == "Modify":
-            result = update_resource(resource_id, stack.resources, stack.stack_name)
+        # new deployment method
+        action_map = {}
+        executor = ResourceProviderExecutor(stack_name=stack.stack_name, stack_id=stack.stack_id)
+        creds = {
+            "accessKeyId": "test",
+            "secretAccessKey": "test",
+            "sessionToken": "",
+        }
+        resource_provider_payload: ResourceProviderPayload = {
+            "awsAccountId": "000000000000",
+            "callbackContext": {},
+            "stackId": stack.stack_name,
+            "resourceType": resource["Type"],
+            "resourceTypeVersion": "000000",
+            # TODO: not actually a UUID
+            "bearerToken": str(uuid.uuid4()),
+            "region": "us-east-1",
+            "action": action_map.get(action, action),
+            "requestData": {
+                "logicalResourceId": resource_id,
+                "resourceProperties": resource["Properties"],
+                "previousResourceProperties": None,
+                "callerCredentials": creds,
+                "providerCredentials": creds,
+                "systemTags": {},
+                "previousSystemTags": {},
+                "stackTags": {},
+                "previousStackTags": {},
+            },
+        }
+
+        event = executor.deploy_loop(resource_provider_payload)
+        stack.resources[resource_id]["Properties"] = event.resource_model
+        # TODO: raise exception on failure
 
         # update resource status and physical resource id
         stack_action = get_action_name_for_resource_change(action)
-        self.update_resource_details(resource_id, result, stack=stack, action=stack_action)
-
-        return result
+        self.update_resource_details(resource_id, stack=stack, action=stack_action)
 
 
 # FIXME: resolve_refs_recursively should not be needed, the resources themselves should have those values available already
