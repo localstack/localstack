@@ -520,6 +520,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         applicable_patch_operations = []
         modifying_auth_type = False
         modified_authorizer_id = False
+        had_req_params = (
+            isinstance(moto_method.request_parameters, dict)
+            and len(moto_method.request_parameters) > 0
+        )
+        had_req_models = (
+            isinstance(moto_method.request_models, dict) and len(moto_method.request_models) > 0
+        )
+
         for patch_operation in patch_operations:
             op = patch_operation.get("op")
             path = patch_operation.get("path")
@@ -583,6 +591,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         # TODO: test with multiple patch operations which would not be compatible between each other
         _patch_api_gateway_entity(moto_method, applicable_patch_operations)
+
+        # if we removed all values of those fields, set them to None so that they're not returned anymore
+        if had_req_params and len(moto_method.request_parameters) == 0:
+            moto_method.request_parameters = None
+        if had_req_models and len(moto_method.request_models) == 0:
+            moto_method.request_models = None
 
         response = moto_method.to_json()
         remove_empty_attributes_from_method(response)
@@ -1641,7 +1655,7 @@ def is_variable_path(path_part: str) -> bool:
 def validate_model_in_use(moto_rest_api: MotoRestAPI, model_name: str) -> None:
     for resource in moto_rest_api.resources.values():
         for method in resource.resource_methods.values():
-            if model_name in set(method.request_models.values()):
+            if method.request_models and model_name in set(method.request_models.values()):
                 path = f"{resource.get_path()}/{method.http_method}"
                 raise ConflictException(
                     f"Cannot delete model '{model_name}', is referenced in method request: {path}"
