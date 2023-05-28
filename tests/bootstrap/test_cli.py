@@ -149,7 +149,9 @@ class TestCliContainerLifecycle:
         output = container_client.exec_in_container(config.MAIN_CONTAINER_NAME, ["ps", "-fu", user])
         assert "localstack-supervisor" in to_str(output[0])
 
-    def test_start_cli_within_container(self, runner, container_client):
+    @pytest.mark.parametrize("custom_volume_dir", [True, False])
+    def test_start_cli_within_container(self, runner, container_client, custom_volume_dir):
+        env_vars = {"LOCALSTACK_VOLUME_DIR": "/tmp/ls-volume"} if custom_volume_dir else {}
         output = container_client.run_container(
             # CAVEAT: Updates to the Docker image are not immediately reflected when using the latest image from
             # DockerHub in the CI. Re-build the Docker image locally through `make docker-build` for local testing.
@@ -161,7 +163,7 @@ class TestCliContainerLifecycle:
                 ("/var/run/docker.sock", "/var/run/docker.sock"),
                 (MODULE_MAIN_PATH, "/opt/code/localstack/localstack"),
             ],
-            env_vars={"LOCALSTACK_VOLUME_DIR": "/tmp/ls-volume"},
+            env_vars=env_vars,
         )
         stdout = to_str(output[0])
         assert "starting LocalStack" in stdout

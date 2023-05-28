@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Mapping, Tuple, TypeVar
+from typing import Any, Dict, List, Mapping, Optional, Tuple, TypeVar, Union
 
 from localstack import constants
 from localstack.constants import (
@@ -197,18 +197,28 @@ class Directories:
         return str(self.__dict__)
 
 
-def eval_log_type(env_var_name):
-    """get the log type from environment variable"""
+def eval_log_type(env_var_name: str) -> Union[str, bool]:
+    """Get the log type from environment variable"""
     ls_log = os.environ.get(env_var_name, "").lower().strip()
     return ls_log if ls_log in LOG_LEVELS else False
 
 
-def is_env_true(env_var_name):
+def parse_boolean_env(env_var_name: str) -> Optional[bool]:
+    """Parse the value of the given env variable and return True/False, or None if it is not a boolean value."""
+    value = os.environ.get(env_var_name, "").lower().strip()
+    if value in TRUE_STRINGS:
+        return True
+    if value in FALSE_STRINGS:
+        return False
+    return None
+
+
+def is_env_true(env_var_name: str) -> bool:
     """Whether the given environment variable has a truthy value."""
     return os.environ.get(env_var_name, "").lower().strip() in TRUE_STRINGS
 
 
-def is_env_not_false(env_var_name):
+def is_env_not_false(env_var_name: str) -> bool:
     """Whether the given environment variable is empty or has a truthy value."""
     return os.environ.get(env_var_name, "").lower().strip() not in FALSE_STRINGS
 
@@ -233,7 +243,7 @@ def is_persistence_enabled() -> bool:
     return PERSISTENCE and dirs.data
 
 
-def is_linux():
+def is_linux() -> bool:
     return platform.system() == "Linux"
 
 
@@ -253,8 +263,8 @@ def in_docker():
     Returns True if running in a docker container, else False
     Ref. https://docs.docker.com/config/containers/runmetrics/#control-groups
     """
-    if OVERRIDE_IN_DOCKER:
-        return True
+    if OVERRIDE_IN_DOCKER is not None:
+        return OVERRIDE_IN_DOCKER
 
     # check some marker files that we create in our Dockerfiles
     for path in [
@@ -336,8 +346,8 @@ def in_docker():
     return False
 
 
-# whether the in_docker check should always return true
-OVERRIDE_IN_DOCKER = is_env_true("OVERRIDE_IN_DOCKER")
+# whether the in_docker check should always return True or False
+OVERRIDE_IN_DOCKER = parse_boolean_env("OVERRIDE_IN_DOCKER")
 
 is_in_docker = in_docker()
 is_in_linux = is_linux()
