@@ -26,6 +26,7 @@ from localstack.aws.api.stepfunctions import (
     PageToken,
     ReverseOrder,
     SendTaskFailureOutput,
+    SendTaskHeartbeatOutput,
     SendTaskSuccessOutput,
     SensitiveCause,
     SensitiveData,
@@ -158,12 +159,27 @@ class StepFunctionsProvider(StepfunctionsApi):
             loggingConfiguration=sm.logging_config,
         )
 
+    def send_task_heartbeat(
+        self, context: RequestContext, task_token: TaskToken
+    ) -> SendTaskHeartbeatOutput:
+        store = self.get_store(context)
+        for exec in list(store.executions.values()):
+            try:
+                if exec.exec_worker.env.callback_pool_manager.heartbeat(callback_id=task_token):
+                    return SendTaskHeartbeatOutput()
+            except CallbackNotifyConsumerError as consumer_error:
+                if isinstance(consumer_error, CallbackConsumerTimeout):
+                    raise TaskTimedOut()
+                else:
+                    raise TaskDoesNotExist()
+        raise InvalidToken()
+
     def send_task_success(
         self, context: RequestContext, task_token: TaskToken, output: SensitiveData
     ) -> SendTaskSuccessOutput:
         outcome = CallbackOutcomeSuccess(callback_id=task_token, output=output)
         store = self.get_store(context)
-        for exec in store.executions.values():
+        for exec in list(store.executions.values()):
             try:
                 if exec.exec_worker.env.callback_pool_manager.notify(
                     callback_id=task_token, outcome=outcome

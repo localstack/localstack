@@ -84,10 +84,11 @@ class CallbackEndpoint:
         if self._heartbeat_endpoint:
             self._heartbeat_endpoint.notify()
 
-    def notify_heartbeat(self):
+    def notify_heartbeat(self) -> bool:
         if not self._heartbeat_endpoint:
-            raise RuntimeError()  # InvalidToken
+            return False
         self._heartbeat_endpoint.notify()
+        return True
 
     def wait(self, timeout: Optional[float] = None) -> Optional[CallbackOutcome]:
         self._notify_event.wait(timeout=timeout)
@@ -137,3 +138,14 @@ class CallbackPoolManager:
 
         callback_endpoint.notify(outcome=outcome)
         return True
+
+    def heartbeat(self, callback_id: CallbackId) -> bool:
+        callback_endpoint = self._pool.pop(callback_id, None)
+        if callback_endpoint is None or callback_endpoint:
+            return False
+
+        consumer_error: Optional[CallbackConsumerError] = callback_endpoint.consumer_error
+        if consumer_error is not None:
+            raise CallbackNotifyConsumerError(callback_consumer_error=consumer_error)
+
+        return callback_endpoint.notify_heartbeat()
