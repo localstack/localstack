@@ -21,6 +21,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
+from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackOutcomeFailureError
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 
@@ -59,6 +60,9 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
         return error, cause
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        if isinstance(ex, CallbackOutcomeFailureError):
+            return self._get_callback_outcome_failure_event(ex=ex)
+
         if isinstance(ex, lambda_eval_utils.LambdaFunctionErrorException):
             error = "Exception"
             error_name = CustomErrorName(error)

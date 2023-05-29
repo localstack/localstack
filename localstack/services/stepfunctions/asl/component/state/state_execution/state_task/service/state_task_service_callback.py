@@ -4,10 +4,17 @@ from abc import abstractmethod
 from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
     HistoryEventType,
+    TaskFailedEventDetails,
     TaskScheduledEventDetails,
     TaskStartedEventDetails,
     TaskSubmittedEventDetails,
     TaskSucceededEventDetails,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
+    CustomErrorName,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
+    FailureEvent,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     ResourceCondition,
@@ -15,7 +22,11 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
     StateTaskService,
 )
-from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackOutcomeSuccess
+from localstack.services.stepfunctions.asl.eval.callback.callback import (
+    CallbackOutcomeFailure,
+    CallbackOutcomeFailureError,
+    CallbackOutcomeSuccess,
+)
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
@@ -40,11 +51,29 @@ class StateTaskServiceCallback(StateTaskService):
         if isinstance(outcome, CallbackOutcomeSuccess):
             outcome_output = json.loads(outcome.output)
             env.stack.append(outcome_output)
+        elif isinstance(outcome, CallbackOutcomeFailure):
+            raise CallbackOutcomeFailureError(callback_outcome_failure=outcome)
         else:
-            raise NotImplementedError(f"Unsupported Callbackoutcome type '{type(outcome)}'.")
+            raise NotImplementedError(f"Unsupported CallbackOutcome type '{type(outcome)}'.")
 
     def _is_condition(self):
         return self.resource.condition is not None
+
+    def _get_callback_outcome_failure_event(self, ex: CallbackOutcomeFailureError) -> FailureEvent:
+        callback_outcome_failure: CallbackOutcomeFailure = ex.callback_outcome_failure
+        error: str = callback_outcome_failure.error
+        return FailureEvent(
+            error_name=CustomErrorName(error_name=callback_outcome_failure.error),
+            event_type=HistoryEventType.TaskFailed,
+            event_details=EventDetails(
+                taskFailedEventDetails=TaskFailedEventDetails(
+                    resourceType=self._get_sfn_resource_type(),
+                    resource=self._get_sfn_resource(),
+                    error=error,
+                    cause=callback_outcome_failure.cause,
+                )
+            ),
+        )
 
     def _eval_execution(self, env: Environment) -> None:
         parameters = self._eval_parameters(env=env)

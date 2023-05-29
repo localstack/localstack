@@ -46,6 +46,7 @@ from localstack.aws.api.stepfunctions import (
 from localstack.services.stepfunctions.asl.eval.callback.callback import (
     CallbackConsumerTimeout,
     CallbackNotifyConsumerError,
+    CallbackOutcomeFailure,
     CallbackOutcomeSuccess,
 )
 from localstack.services.stepfunctions.backend.execution import Execution
@@ -183,7 +184,7 @@ class StepFunctionsProvider(StepfunctionsApi):
         error: SensitiveError = None,
         cause: SensitiveCause = None,
     ) -> SendTaskFailureOutput:
-        outcome = CallbackOutcomeSuccess(callback_id=task_token)
+        outcome = CallbackOutcomeFailure(callback_id=task_token, error=error, cause=cause)
         store = self.get_store(context)
         for exec in store.executions.values():
             try:
