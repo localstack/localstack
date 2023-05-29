@@ -1,8 +1,12 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Test stack
 
+Parameters:
+  AliasName:
+    Type: String
+
 Resources:
-  KMSKeyDefinition:
+  KMSKey:
     Type: AWS::KMS::Key
     Properties:
       Description: Sample KMS
@@ -19,11 +23,13 @@ Resources:
 
   KMSKeyAlias:
     Type: AWS::KMS::Alias
-    DependsOn: KMSKeyDefinition
+    DependsOn: KMSKey
     Properties:
-      AliasName: alias/sample-5302
-      TargetKeyId: !Ref KMSKeyDefinition
+      AliasName: !Ref AliasName
+      TargetKeyId: !Ref KMSKey
 
 Outputs:
   KeyAlias:
     Value: !Ref KMSKeyAlias
+  KeyArn:
+    Value: !GetAtt KMSKey.Arn

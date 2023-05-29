@@ -870,7 +870,7 @@ class CloudformationProvider(CloudformationApi):
                 stack_name = f"sset-{set_name}-{account}"
 
                 # skip creation of existing stacks
-                if find_stack(stack_name):
+                if find_stack(stack_name, region=region):
                     continue
 
                 result = cf_client.create_stack(StackName=stack_name, **kwargs)
