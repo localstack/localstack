@@ -13,7 +13,7 @@ class KMSKey(GenericBaseModel):
 
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == "Arn":
-            return self.props.get("KeyMetadata", {}).get("Arn")
+            return arns.kms_key_arn(self.physical_resource_id)
         return super(KMSKey, self).get_cfn_attribute(attribute_name)
 
     def fetch_state(self, stack_name, resources):

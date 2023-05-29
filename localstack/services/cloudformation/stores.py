@@ -59,8 +59,8 @@ def get_cloudformation_store(
     return cloudformation_stores[account_id][region]
 
 
-def find_stack(stack_name: str) -> Stack | None:
-    state = get_cloudformation_store()
+def find_stack(stack_name: str, region: Optional[str] = None) -> Stack | None:
+    state = get_cloudformation_store(region=region)
     return (
         [s for s in state.stacks.values() if stack_name in [s.stack_name, s.stack_id]] or [None]
     )[0]
