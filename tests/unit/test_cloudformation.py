@@ -9,6 +9,7 @@ from localstack.services.cloudformation.deployment_utils import (
 from localstack.services.cloudformation.engine import template_deployer
 from localstack.services.cloudformation.engine.dependencies import Dependency
 from localstack.services.cloudformation.engine.entities import Stack
+from localstack.services.cloudformation.engine.template_deployer import extract_dependencies
 from localstack.services.cloudformation.models.stepfunctions import _apply_substitutions
 
 
@@ -85,6 +86,42 @@ def _resolve_refs_in_template(template, stack_params: Dict = None):
     stack_params = [{"ParameterKey": k, "ParameterValue": v} for k, v in stack_params.items()]
     stack.metadata["Parameters"].extend(stack_params)
     return template_deployer.resolve_refs_recursively(stack.stack_name, stack.resources, template)
+
+
+def test_extract_dependencies():
+    queue = {
+        "Type": "AWS::SQS::Queue",
+        "Properties": {
+            "QueueName": "my-queue",
+        },
+    }
+    parameter = {
+        "Type": "AWS::SSM::Parameter",
+        "Properties": {
+            "Type": "String",
+            "Value": {
+                "Fn::GetAtt": [
+                    "Queue",
+                    "QueueName",
+                ],
+            },
+        },
+    }
+    resources = {
+        "Queue": queue,
+        "Parameter": parameter,
+    }
+
+    dependencies = extract_dependencies(resources)
+
+    assert set(dependencies) == {
+        Dependency(
+            target="Queue",
+            requesting_resource="Parameter",
+            target_path="Properties.QueueName",
+            requesting_path="Properties.Value",
+        ),
+    }
 
 
 def test_resolve_dependency():

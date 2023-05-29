@@ -22,6 +22,7 @@ from localstack.services.cloudformation.deployment_utils import (
     log_not_available_message,
     remove_none_values,
 )
+from localstack.services.cloudformation.engine.dependencies import Dependency, Resource
 from localstack.services.cloudformation.engine.entities import (
     Stack,
     StackChangeSet,
@@ -997,6 +998,29 @@ def add_default_resource_props(
         resource_class.add_defaults(resource, stack_name)
 
 
+# TODO: nested properties
+def extract_dependencies(resources: dict[str, Resource]) -> list[Dependency]:
+    dependencies = []
+    for requesting_resource in resources:
+        properties = resources[requesting_resource]["Properties"]
+        for k, v in properties.items():
+            if isinstance(v, dict) and "Fn::GetAtt" in v.keys():
+                path = v["Fn::GetAtt"]
+                target = path[0]
+                attr = path[1]
+
+                dependencies.append(
+                    Dependency(
+                        target=target,
+                        requesting_resource=requesting_resource,
+                        target_path=f"Properties.{attr}",
+                        requesting_path=f"Properties.{k}",
+                    )
+                )
+
+    return dependencies
+
+
 # -----------------------
 # MAIN TEMPLATE DEPLOYER
 # -----------------------
@@ -1006,6 +1030,7 @@ def add_default_resource_props(
 class TemplateDeployer:
     def __init__(self, stack):
         self.stack = stack
+        self.dependencies = extract_dependencies(stack.resources)
 
     @property
     def resources(self):
@@ -1122,6 +1147,25 @@ class TemplateDeployer:
     # ----------------------------
     # DEPENDENCY RESOLUTION UTILS
     # ----------------------------
+
+    def update_and_resolve_dependencies(
+        self, resources: dict[Resource], deployed_resource_logical_id: str
+    ):
+        """
+        Go through the list of dependencies that include the most recently
+        deployed resource as their targets, and resolve values for any other
+        resources that depend on this resource.
+        """
+        new_dependency_list = []
+
+        for (i, dependency) in enumerate(self.dependencies):
+            if dependency.target != deployed_resource_logical_id:
+                new_dependency_list.append(dependency)
+                continue
+
+            dependency.resolve(resources)
+
+        self.dependencies = new_dependency_list
 
     def is_deployable_resource(self, resource):
         resource_type = get_resource_type(resource)
@@ -1595,6 +1639,9 @@ class TemplateDeployer:
         # update resource status and physical resource id
         stack_action = get_action_name_for_resource_change(action)
         self.update_resource_details(resource_id, result, stack=stack, action=stack_action)
+        self.update_and_resolve_dependencies(
+            resources=stack.resources, deployed_resource_logical_id=resource_id
+        )
 
         return result
 
