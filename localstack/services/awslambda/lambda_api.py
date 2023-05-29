@@ -2424,9 +2424,6 @@ def serve(port):
         # print warnings for potentially incorrect config options
         validate_lambda_config()
 
-        # initialize/import plugins - TODO find better place to import plugins! (to be integrated into proper plugin model)
-        import localstack.contrib.thundra  # noqa
-
         _serve_flask_app(app=app, port=port)
     except Exception:
         LOG.exception("Error while starting up lambda service")
