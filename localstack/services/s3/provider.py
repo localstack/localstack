@@ -1183,8 +1183,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             id=id, analytics_configuration=analytics_configuration
         )
 
-        bucket_analytics_configuration = store.bucket_analytics_configuration.setdefault(bucket, {})
-        bucket_analytics_configuration[id] = analytics_configuration
+        bucket_analytics_configurations = store.bucket_analytics_configuration.setdefault(
+            bucket, {}
+        )
+        bucket_analytics_configurations[id] = analytics_configuration
 
     def get_bucket_analytics_configuration(
         self,
@@ -1254,10 +1256,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         validate_bucket_intelligent_tiering_configuration(id, intelligent_tiering_configuration)
 
         store = self.get_store()
-        bucket_intelligent_tiering_configuration = (
+        bucket_intelligent_tiering_configurations = (
             store.bucket_intelligent_tiering_configuration.setdefault(bucket, {})
         )
-        bucket_intelligent_tiering_configuration[id] = intelligent_tiering_configuration
+        bucket_intelligent_tiering_configurations[id] = intelligent_tiering_configuration
 
     def get_bucket_intelligent_tiering_configuration(
         self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
@@ -1282,10 +1284,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         get_bucket_from_moto(moto_backend, bucket)
 
         store = self.get_store()
-        bucket_intelligent_tiering_configuration = (
+        bucket_intelligent_tiering_configurations = (
             store.bucket_intelligent_tiering_configuration.get(bucket, {})
         )
-        if not bucket_intelligent_tiering_configuration.pop(id, None):
+        if not bucket_intelligent_tiering_configurations.pop(id, None):
             raise NoSuchConfiguration("The specified configuration does not exist.")
 
     def list_bucket_intelligent_tiering_configurations(
@@ -1295,16 +1297,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         get_bucket_from_moto(moto_backend, bucket)
 
         store = self.get_store()
-        bucket_intelligent_tiering_configuration: Dict[
+        bucket_intelligent_tiering_configurations: Dict[
             IntelligentTieringId, IntelligentTieringConfiguration
         ] = store.bucket_intelligent_tiering_configuration.get(bucket, {})
 
-        bucket_intelligent_tiering_configuration: IntelligentTieringConfigurationList = sorted(
-            bucket_intelligent_tiering_configuration.values(), key=lambda x: x["Id"]
+        bucket_intelligent_tiering_configurations: IntelligentTieringConfigurationList = sorted(
+            bucket_intelligent_tiering_configurations.values(), key=lambda x: x["Id"]
         )
         return ListBucketIntelligentTieringConfigurationsOutput(
             IsTruncated=False,
-            IntelligentTieringConfigurationList=bucket_intelligent_tiering_configuration,
+            IntelligentTieringConfigurationList=bucket_intelligent_tiering_configurations,
         )
 
 

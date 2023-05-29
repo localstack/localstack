@@ -11,6 +11,8 @@ from localstack.aws.api.s3 import (
     BucketLifecycleConfiguration,
     BucketName,
     CORSConfiguration,
+    IntelligentTieringConfiguration,
+    IntelligentTieringId,
     NotificationConfiguration,
     ReplicationConfiguration,
     WebsiteConfiguration,
@@ -55,7 +57,7 @@ class S3Store(BaseStore):
     ] = CrossRegionAttribute(default=dict)
 
     bucket_intelligent_tiering_configuration: Dict[
-        BucketName, Dict[BucketName, AnalyticsConfiguration]
+        BucketName, Dict[IntelligentTieringId, IntelligentTieringConfiguration]
     ] = CrossRegionAttribute(default=dict)
 
 
