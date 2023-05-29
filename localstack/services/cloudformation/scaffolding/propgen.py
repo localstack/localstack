@@ -122,7 +122,7 @@ def render_types(
                         value_type = TYPE_MAP[prop_type[1]]
                         item = Item.new(
                             name=property,
-                            type=f"dict[str, {value_type}]]",
+                            type=f"dict[str, {value_type}]",
                             required=property in required_properties,
                         )
                     case _:
