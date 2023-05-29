@@ -15,7 +15,10 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
     StateTaskService,
 )
-from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackOutcomeSuccess
+from localstack.services.stepfunctions.asl.eval.callback.callback import (
+    CallbackOutcomeSuccess,
+    HeartbeatEndpoint,
+)
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
@@ -35,13 +38,40 @@ class StateTaskServiceCallback(StateTaskService):
     def _wait_for_task_token(self, env: Environment) -> None:  # noqa
         callback_id = env.context_object_manager.context_object["Task"]["Token"]
         callback_endpoint = env.callback_pool_manager.get(callback_id)
-        outcome = callback_endpoint.wait()  # TODO: implement timeout.
 
+        # With Timeouts-only definition:
+        if not self.heartbeat:
+            self.timeout.eval(env=env)
+            timeout_seconds = env.stack.pop()
+            # Although the timeout is handled already be the superclass (ExecutionState),
+            # the timeout value is specified here too, to allo this child process to terminate earlier even if
+            # discarded by the main process.
+            # Note: although this is the same timeout value, this can only decay strictly after the first timeout
+            #       started as it is invoked strictly later.
+            outcome = callback_endpoint.wait(timeout=timeout_seconds)
+        else:
+            self.heartbeat.eval(env=env)
+            heartbeat_seconds = env.stack.pop()
+            heartbeat_endpoint: HeartbeatEndpoint = callback_endpoint.setup_heartbeat_endpoint(
+                heartbeat_seconds=heartbeat_seconds
+            )
+
+            outcome = None
+            while (
+                env.is_running() and outcome is None
+            ):  # Until subprocess hasn't timed out or result wasn't received.
+                received = heartbeat_endpoint.clear_and_wait()
+                if env.is_running() and not received:  # Heartbeat timed out.
+                    raise TimeoutError()
+                outcome = callback_endpoint.get_outcome()
+
+        if outcome is None:
+            raise TimeoutError()
         if isinstance(outcome, CallbackOutcomeSuccess):
             outcome_output = json.loads(outcome.output)
             env.stack.append(outcome_output)
         else:
-            raise NotImplementedError(f"Unsupported Callbackoutcome type '{type(outcome)}'.")
+            raise NotImplementedError(f"Unsupported CallbackOutcome type '{type(outcome)}'.")
 
     def _is_condition(self):
         return self.resource.condition is not None

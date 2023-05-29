@@ -85,6 +85,9 @@ TIMESTAMP: '"Timestamp"';
 TIMEOUTSECONDS: '"TimeoutSeconds"';
 TIMEOUTSECONDSPATH: '"TimeoutSecondsPath"';
 
+HEARTBEATSECONDS: '"HeartbeatSeconds"';
+HEARTBEATSECONDSPATH: '"HeartbeatSecondsPath"';
+
 PROCESSORCONFIG: '"ProcessorConfig"';
 MODE: '"Mode"';
 INLINE: '"INLINE"';

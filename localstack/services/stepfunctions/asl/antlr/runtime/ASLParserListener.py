@@ -269,6 +269,24 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#heartbeat_seconds_decl.
+    def enterHeartbeat_seconds_decl(self, ctx:ASLParser.Heartbeat_seconds_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#heartbeat_seconds_decl.
+    def exitHeartbeat_seconds_decl(self, ctx:ASLParser.Heartbeat_seconds_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#heartbeat_seconds_path_decl.
+    def enterHeartbeat_seconds_path_decl(self, ctx:ASLParser.Heartbeat_seconds_path_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#heartbeat_seconds_path_decl.
+    def exitHeartbeat_seconds_path_decl(self, ctx:ASLParser.Heartbeat_seconds_path_declContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#payload_tmpl_decl.
     def enterPayload_tmpl_decl(self, ctx:ASLParser.Payload_tmpl_declContext):
         pass
