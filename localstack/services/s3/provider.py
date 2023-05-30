@@ -1,7 +1,7 @@
 import datetime
 import logging
 import os
-from typing import IO, Dict, Iterator, List, Optional, Tuple
+from typing import IO, Dict, List, Optional
 from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
 import moto.s3.responses as moto_s3_responses
@@ -78,6 +78,7 @@ from localstack.aws.api.s3 import (
     NoSuchCORSConfiguration,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
+    NoSuchUpload,
     NoSuchWebsiteConfiguration,
     NotificationConfiguration,
     ObjectIdentifier,
@@ -105,7 +106,7 @@ from localstack.aws.api.s3 import (
     Token,
 )
 from localstack.aws.api.s3 import Type as GranteeType
-from localstack.aws.api.s3 import WebsiteConfiguration
+from localstack.aws.api.s3 import UploadPartOutput, UploadPartRequest, WebsiteConfiguration
 from localstack.aws.handlers import (
     modify_service_response,
     preprocess_request,
@@ -582,13 +583,34 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 UploadId=request["UploadId"],
             )
 
+        bucket_name = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket_name)
+        if not (upload_id := request.get("UploadId")) in moto_bucket.multiparts:
+            raise NoSuchUpload(
+                "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+                UploadId=upload_id,
+            )
+
         response: CompleteMultipartUploadOutput = call_moto(context)
 
         # moto return the Location in AWS `http://{bucket}.s3.amazonaws.com/{key}`
-        response[
-            "Location"
-        ] = f'{get_full_default_bucket_location(request["Bucket"])}{response["Key"]}'
+        response["Location"] = f'{get_full_default_bucket_location(bucket_name)}{response["Key"]}'
         self._notify(context)
+        return response
+
+    @handler("UploadPart", expand=False)
+    def upload_part(self, context: RequestContext, request: UploadPartRequest) -> UploadPartOutput:
+        bucket_name = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket_name)
+        if not (upload_id := request.get("UploadId")) in moto_bucket.multiparts:
+            raise NoSuchUpload(
+                "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+                UploadId=upload_id,
+            )
+
+        response: UploadPartOutput = call_moto(context)
         return response
 
     @handler("ListMultipartUploads", expand=False)
@@ -1533,7 +1555,7 @@ def apply_moto_patches():
     # importing here in case we need InvalidObjectState from `localstack.aws.api.s3`
     import moto.s3.models as moto_s3_models
     from moto.iam.access_control import PermissionResult
-    from moto.s3.exceptions import InvalidObjectState, NoSuchUpload
+    from moto.s3.exceptions import InvalidObjectState
 
     if not os.environ.get("MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"):
         os.environ["MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"] = str(S3_MAX_FILE_SIZE_BYTES)
@@ -1663,22 +1685,6 @@ def apply_moto_patches():
             return PermissionResult.PERMITTED
 
         return fn(self, *args, **kwargs)
-
-    @patch(moto_s3_models.S3Backend.complete_multipart_upload, pass_target=False)
-    def backend_complete_multipart_upload(
-        self, bucket_name: str, multipart_id: str, body: Iterator[Tuple[int, str]]
-    ) -> Tuple[moto_s3_models.FakeMultipart, bytes, str]:
-        """
-        Apply a patch to check the existence of the multipart id
-        """
-        bucket = self.get_bucket(bucket_name)
-        multipart = bucket.multiparts.get(multipart_id)
-        if not multipart:
-            raise NoSuchUpload(upload_id=multipart_id)
-        value, etag = multipart.complete(body)
-        if value is not None:
-            del bucket.multiparts[multipart_id]
-        return multipart, value, etag
 
 
 def register_custom_handlers():

@@ -890,6 +890,33 @@ class TestS3:
         snapshot.match("list-all-uploads-completed", list_multipart_uploads)
 
     @pytest.mark.aws_validated
+    def test_multipart_no_such_upload(self, s3_bucket, snapshot, aws_client):
+        fake_upload_id = "fakeid"
+        fake_key = "fake-key"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=fake_key,
+                Body=BytesIO(b"data"),
+                PartNumber=1,
+                UploadId=fake_upload_id,
+            )
+        snapshot.match("upload-exc", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket, Key=fake_key, UploadId=fake_upload_id
+            )
+        snapshot.match("complete-exc", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.abort_multipart_upload(
+                Bucket=s3_bucket, Key=fake_key, UploadId=fake_upload_id
+            )
+        snapshot.match("abort-exc", e.value.response)
+
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
     )

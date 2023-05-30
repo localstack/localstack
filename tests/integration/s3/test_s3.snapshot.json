@@ -7204,5 +7204,43 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_multipart_no_such_upload": {
+    "recorded-date": "30-05-2023, 19:51:43",
+    "recorded-content": {
+      "upload-exc": {
+        "Error": {
+          "Code": "NoSuchUpload",
+          "Message": "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+          "UploadId": "fakeid"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "complete-exc": {
+        "Error": {
+          "Code": "NoSuchUpload",
+          "Message": "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+          "UploadId": "fakeid"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "abort-exc": {
+        "Error": {
+          "Code": "NoSuchUpload",
+          "Message": "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+          "UploadId": "fakeid"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
