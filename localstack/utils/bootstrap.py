@@ -423,7 +423,7 @@ class LocalstackContainer:
         if isinstance(DOCKER_CLIENT, CmdDockerClient):
             DOCKER_CLIENT.default_run_outfile = self.logfile
 
-        def _run_container(_volume_mounts: List[SimpleVolumeBind]):
+        try:
             return DOCKER_CLIENT.run_container(
                 image_name=self.image_name,
                 stdin=self.stdin,
@@ -434,7 +434,7 @@ class LocalstackContainer:
                 tty=self.tty,
                 detach=self.detach,
                 command=self.command or None,
-                mount_volumes=_volume_mounts,
+                mount_volumes=self._get_mount_volumes(),
                 ports=self.ports,
                 env_vars=self.env_vars,
                 user=self.user,
@@ -445,23 +445,6 @@ class LocalstackContainer:
                 workdir=self.workdir,
                 privileged=self.privileged,
             )
-
-        try:
-            volume_mounts = self._get_mount_volumes()
-            try:
-                return _run_container(volume_mounts)
-            except ContainerException as e:
-                err_str = str(e) + str(e.__cause__)
-                if "Mounts denied" in err_str:
-                    # This can happen if Docker doesn't have access to the LocalStack volume directory.
-                    # We remove the volume dir mount from the list, and then attempt to run the container again.
-                    LOG.warning(
-                        "Error mounting volumes in Docker - attempting again without LocalStack volume mount"
-                    )
-                    volume_mounts = [vol for vol in volume_mounts if vol[1] != DEFAULT_VOLUME_DIR]
-                    DOCKER_CLIENT.remove_container(self.name, force=True)
-                    return _run_container(volume_mounts)
-                raise
         except ContainerException as e:
             if LOG.isEnabledFor(logging.DEBUG):
                 LOG.exception("Error while starting LocalStack container")
