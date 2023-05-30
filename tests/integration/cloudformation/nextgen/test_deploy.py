@@ -2,6 +2,7 @@ from typing import TypeVar
 
 import pytest
 
+from localstack.services.awslambda.resource_providers.function import LambdaFunctionAllProperties
 from localstack.services.opensearch.resource_providers.domain import OpenSearchDomainAllProperties
 from localstack.services.ssm.resource_providers.parameter import SSMParameterAllProperties
 from localstack.utils.strings import short_uid
@@ -12,6 +13,7 @@ Properties = TypeVar("Properties")
 @pytest.mark.parametrize(
     "type_name,props",
     [
+        # TODO: Installation of opensearch failed.
         (
             "AWS::OpenSearchService::Domain",
             OpenSearchDomainAllProperties(DomainName=f"domain-{short_uid()}"),
@@ -20,11 +22,26 @@ Properties = TypeVar("Properties")
             "AWS::SSM::Parameter",
             SSMParameterAllProperties(Type="String", Value=f"value-{short_uid()}"),
         ),
+        (
+            "AWS::Lambda::Function",
+            LambdaFunctionAllProperties(
+                FunctionName=f"cfn-lambda-function-{short_uid()}",
+                # TODO: How to set up a ZIP file dependency in these parameters here?
+                Code={
+                    "ZipFile": "exports.handler = function(event, context){\nconsole.log('SUCCESS');"
+                },
+                # Code={"ZipFile": create_zip_file_with_lambda},
+                # TODO: How to setup a dependency resource here?
+                Role="arn:aws:iam::000000000000:role/lambda-role",
+                # Role=LambdaRole.Arn,
+            ),
+        )
         # TODO: Add your resource definitions here!
     ],
-    ids=["opensearch-domain", "ssm-parameter"],
+    # ids=["lambda-function"],
+    ids=["opensearch-domain", "ssm-parameter", "lambda-function"],
 )
-@pytest.mark.skip(reason="Example")
+# @pytest.mark.skip(reason="Example")
 def test_roundtrip(type_name, props, perform_cfn_operation):
     # deploy
     event = perform_cfn_operation(

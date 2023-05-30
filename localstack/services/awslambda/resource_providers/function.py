@@ -117,29 +117,44 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionAllProperties]):
         """
         Create a new resource.
         """
-        raise NotImplementedError
         model = request.desired_state
 
-        # TODO: validations
+        # Validation
+        assert model.FunctionName is not None
+        # TODO: more input parameter validations
 
         if model.physical_resource_id is None:
             # this is the first time this callback is invoked
             # TODO: defaults
+            # TODO: What are these defaults?
+
+            # Idempotency
             # TODO: idempotency
+            # try:
+            # request.aws_client_factory.awslambda.get_function(...)
+            # except request.aws_client_factory.awslambda.exceptions.ResourceNotFoundException:
+            #     pass
+            # else:
+            # the resource already exists, raise exception
+            # raise RuntimeError(f"lambda function {model.FunctionName} already exists")
+
             # TODO: actually create the resource
+            # res = request.aws_client_factory.awslambda.create_function(...)
+
             # TODO: set model.physical_resource_id
+            model.physical_resource_id = "my-lambda-function"  # model.FunctionName
             return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
 
         # TODO: check the status of the resource
+        # aws lambda get-function --function-name my-function --query 'Configuration.[State, LastUpdateStatus]'
         # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
         # - else
         #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
-
-        raise NotImplementedError
 
     def delete(
         self,
         request: ResourceRequest[LambdaFunctionAllProperties],
     ) -> ProgressEvent[LambdaFunctionAllProperties]:
-        raise NotImplementedError
+        # TODO: impl
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=request.desired_state)
