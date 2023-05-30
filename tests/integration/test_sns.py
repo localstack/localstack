@@ -18,6 +18,12 @@ from werkzeug import Response
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import (
+    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.services.sns.constants import PLATFORM_ENDPOINT_MSGS_ENDPOINT
 from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
@@ -464,7 +470,7 @@ class TestSNSProvider:
         self, sns_create_topic, sns_subscription, sns_create_platform_application, aws_client
     ):
 
-        sns_backend = SnsProvider.get_store()
+        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         topic_arn = sns_create_topic()["TopicArn"]
 
         app_arn = sns_create_platform_application(Name="app1", Platform="p1", Attributes={})[
@@ -584,7 +590,7 @@ class TestSNSProvider:
         )
         subscription_arn = subscription["SubscriptionArn"]
         parsed_arn = parse_arn(subscription_arn)
-        store = SnsProvider.get_store(account_id=parsed_arn["account"], region=parsed_arn["region"])
+        store = SnsProvider.get_store(parsed_arn["account"], parsed_arn["region"])
 
         sub_attr = aws_client.sns.get_subscription_attributes(SubscriptionArn=subscription_arn)
         assert sub_attr["Attributes"]["PendingConfirmation"] == "true"
@@ -1145,7 +1151,7 @@ class TestSNSProvider:
 
         aws_client.sns.publish(Message=message, TopicArn=topic_arn)
 
-        sns_backend = SnsProvider.get_store()
+        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         def check_messages():
             sms_messages = sns_backend.sms_messages
@@ -2728,7 +2734,7 @@ class TestSNSProvider:
     def test_publish_to_platform_endpoint_can_retrospect(
         self, sns_create_topic, sns_subscription, sns_create_platform_application, aws_client
     ):
-        sns_backend = SnsProvider.get_store()
+        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         # clean up the saved messages
         sns_backend_endpoint_arns = list(sns_backend.platform_endpoint_messages.keys())
         for saved_endpoint_arn in sns_backend_endpoint_arns:
@@ -2885,7 +2891,7 @@ class TestSNSProvider:
             MessageStructure="json",
         )
 
-        sns_backend = SnsProvider.get_store()
+        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         platform_endpoint_msgs = sns_backend.platform_endpoint_messages
 
         # assert that message has been received
@@ -3588,6 +3594,56 @@ class TestSNSProvider:
             )
 
         snapshot.match("token-not-exists", e.value.response)
+
+    def test_cross_account_access(self, aws_client, aws_client_factory):
+        # Cross-account access is supported for below operations.
+        # This list is taken from ActionName param of the AddPermissions operation
+        #
+        # - GetTopicAttributes
+        # - SetTopicAttributes
+        # - AddPermission
+        # - RemovePermission
+        # - Publish
+        # - Subscribe
+        # - ListSubscriptionsByTopic
+        # - DeleteTopic
+
+        topic_name = f"topic-{short_uid()}"
+        topic_arn = aws_client.sns.create_topic(Name=topic_name)["TopicArn"]
+
+        # Client for secondary account
+        client = aws_client_factory.get_client(
+            "sns",
+            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+        )
+
+        assert client.set_topic_attributes(
+            TopicArn=topic_arn, AttributeName="DisplayName", AttributeValue="xenon"
+        )
+
+        response = client.get_topic_attributes(TopicArn=topic_arn)
+        assert response["Attributes"]["DisplayName"] == "xenon"
+
+        assert client.add_permission(
+            TopicArn=topic_arn,
+            Label="foo",
+            AWSAccountId=["666666666666"],
+            ActionName=["AddPermission"],
+        )
+        assert client.remove_permission(TopicArn=topic_arn, Label="foo")
+
+        assert client.publish(TopicArn=topic_arn, Message="hello world")
+
+        subscription_arn = client.subscribe(
+            TopicArn=topic_arn, Protocol="email", Endpoint="devil@hell.com"
+        )["SubscriptionArn"]
+
+        response = client.list_subscriptions_by_topic(TopicArn=topic_arn)
+        subscriptions = [s["SubscriptionArn"] for s in response["Subscriptions"]]
+        assert subscription_arn in subscriptions
+
+        assert client.delete_topic(TopicArn=topic_arn)
 
 
 class TestSNSPublishDelivery:

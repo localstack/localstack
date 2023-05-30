@@ -5,56 +5,32 @@ from typing import Dict, List
 from botocore.utils import InvalidArnException
 from moto.core.utils import camelcase_to_pascal, underscores_to_camelcase
 from moto.sns import sns_backends
-from moto.sns.models import MAXIMUM_MESSAGE_LENGTH, SNSBackend
+from moto.sns.exceptions import SNSNotFoundError
+from moto.sns.models import MAXIMUM_MESSAGE_LENGTH, SNSBackend, Topic
 from moto.sns.utils import is_e164
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sns import (
-    ActionsList,
     AmazonResourceName,
     BatchEntryIdsNotDistinctException,
-    CheckIfPhoneNumberIsOptedOutResponse,
     ConfirmSubscriptionResponse,
     CreateEndpointResponse,
     CreatePlatformApplicationResponse,
-    CreateSMSSandboxPhoneNumberResult,
     CreateTopicResponse,
-    DelegatesList,
-    DeleteSMSSandboxPhoneNumberResult,
-    GetEndpointAttributesResponse,
-    GetPlatformApplicationAttributesResponse,
-    GetSMSAttributesResponse,
-    GetSMSSandboxAccountStatusResult,
     GetSubscriptionAttributesResponse,
     GetTopicAttributesResponse,
     InvalidParameterException,
     InvalidParameterValueException,
-    LanguageCodeString,
-    ListEndpointsByPlatformApplicationResponse,
-    ListOriginationNumbersResult,
-    ListPhoneNumbersOptedOutResponse,
-    ListPlatformApplicationsResponse,
-    ListSMSSandboxPhoneNumbersResult,
-    ListString,
-    ListSubscriptionsByTopicResponse,
     ListSubscriptionsResponse,
     ListTagsForResourceResponse,
-    ListTopicsResponse,
     MapStringToString,
-    MaxItems,
-    MaxItemsListOriginationNumbers,
     MessageAttributeMap,
     NotFoundException,
-    OptInPhoneNumberResponse,
-    OTPCode,
-    PhoneNumber,
-    PhoneNumberString,
     PublishBatchRequestEntryList,
     PublishBatchResponse,
     PublishBatchResultEntry,
     PublishResponse,
-    SetSMSAttributesResponse,
     SnsApi,
     String,
     SubscribeResponse,
@@ -65,7 +41,6 @@ from localstack.aws.api.sns import (
     TooManyEntriesInBatchRequestException,
     TopicAttributesMap,
     UntagResourceResponse,
-    VerifySMSSandboxPhoneNumberResult,
     attributeName,
     attributeValue,
     authenticateOnUnsubscribe,
@@ -87,9 +62,7 @@ from localstack.services.sns.publisher import (
     SnsBatchPublishContext,
     SnsPublishContext,
 )
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import parse_arn
-from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import short_uid
 
 # set up logger
@@ -97,6 +70,20 @@ LOG = logging.getLogger(__name__)
 
 
 class SnsProvider(SnsApi, ServiceLifecycleHook):
+    """
+    Provider class for AWS Simple Notification Service.
+
+    AWS supports following operations in a cross-account setup:
+    - GetTopicAttributes
+    - SetTopicAttributes
+    - AddPermission
+    - RemovePermission
+    - Publish
+    - Subscribe
+    - ListSubscriptionByTopic
+    - DeleteTopic
+    """
+
     def __init__(self) -> None:
         super().__init__()
         self._publisher = PublishDispatcher()
@@ -109,173 +96,32 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         register_sns_api_resource(ROUTER)
 
     @staticmethod
-    def get_store(account_id: str = None, region: str = None) -> SnsStore:
-        return sns_stores[account_id or get_aws_account_id()][region or aws_stack.get_region()]
+    def get_store(account_id: str, region_name: str) -> SnsStore:
+        return sns_stores[account_id][region_name]
 
     @staticmethod
-    def _get_moto_backend(context: RequestContext) -> SNSBackend:
-        return sns_backends[context.account_id][context.region]
+    def get_moto_backend(account_id: str, region_name: str) -> SNSBackend:
+        return sns_backends[account_id][region_name]
 
-    def add_permission(
-        self,
-        context: RequestContext,
-        topic_arn: topicARN,
-        label: String,
-        aws_account_id: DelegatesList,
-        action_name: ActionsList,
-    ) -> None:
-        call_moto(context)
-
-    def check_if_phone_number_is_opted_out(
-        self, context: RequestContext, phone_number: PhoneNumber
-    ) -> CheckIfPhoneNumberIsOptedOutResponse:
-        moto_response: CheckIfPhoneNumberIsOptedOutResponse = call_moto(context)
-        return moto_response
-
-    def create_sms_sandbox_phone_number(
-        self,
-        context: RequestContext,
-        phone_number: PhoneNumberString,
-        language_code: LanguageCodeString = None,
-    ) -> CreateSMSSandboxPhoneNumberResult:
-        call_moto(context)
-        return CreateSMSSandboxPhoneNumberResult()
-
-    def delete_sms_sandbox_phone_number(
-        self, context: RequestContext, phone_number: PhoneNumberString
-    ) -> DeleteSMSSandboxPhoneNumberResult:
-        call_moto(context)
-        return DeleteSMSSandboxPhoneNumberResult()
-
-    def get_endpoint_attributes(
-        self, context: RequestContext, endpoint_arn: String
-    ) -> GetEndpointAttributesResponse:
-        moto_response: GetEndpointAttributesResponse = call_moto(context)
-        return moto_response
-
-    def get_platform_application_attributes(
-        self, context: RequestContext, platform_application_arn: String
-    ) -> GetPlatformApplicationAttributesResponse:
-        moto_response = call_moto(context)
-        return select_from_typed_dict(GetPlatformApplicationAttributesResponse, moto_response)
-
-    def get_sms_attributes(
-        self, context: RequestContext, attributes: ListString = None
-    ) -> GetSMSAttributesResponse:
-        moto_response: GetSMSAttributesResponse = call_moto(context)
-        return moto_response
-
-    def get_sms_sandbox_account_status(
-        self, context: RequestContext
-    ) -> GetSMSSandboxAccountStatusResult:
-        moto_response: GetSMSSandboxAccountStatusResult = call_moto(context)
-        return moto_response
-
-    def list_endpoints_by_platform_application(
-        self, context: RequestContext, platform_application_arn: String, next_token: String = None
-    ) -> ListEndpointsByPlatformApplicationResponse:
-        moto_response: ListEndpointsByPlatformApplicationResponse = call_moto(context)
-        return moto_response
-
-    def list_origination_numbers(
-        self,
-        context: RequestContext,
-        next_token: nextToken = None,
-        max_results: MaxItemsListOriginationNumbers = None,
-    ) -> ListOriginationNumbersResult:
-        moto_response: ListOriginationNumbersResult = call_moto(context)
-        return moto_response
-
-    def list_phone_numbers_opted_out(
-        self, context: RequestContext, next_token: String = None
-    ) -> ListPhoneNumbersOptedOutResponse:
-        moto_response: ListPhoneNumbersOptedOutResponse = call_moto(context)
-        return moto_response
-
-    def list_platform_applications(
-        self, context: RequestContext, next_token: String = None
-    ) -> ListPlatformApplicationsResponse:
-        moto_response: ListPlatformApplicationsResponse = call_moto(context)
-        return moto_response
-
-    def list_sms_sandbox_phone_numbers(
-        self, context: RequestContext, next_token: nextToken = None, max_results: MaxItems = None
-    ) -> ListSMSSandboxPhoneNumbersResult:
-        moto_response: ListSMSSandboxPhoneNumbersResult = call_moto(context)
-        return moto_response
-
-    def list_subscriptions_by_topic(
-        self, context: RequestContext, topic_arn: topicARN, next_token: nextToken = None
-    ) -> ListSubscriptionsByTopicResponse:
-        moto_response: ListSubscriptionsByTopicResponse = call_moto(context)
-        return moto_response
-
-    def list_topics(
-        self, context: RequestContext, next_token: nextToken = None
-    ) -> ListTopicsResponse:
-        moto_response: ListTopicsResponse = call_moto(context)
-        return moto_response
-
-    def opt_in_phone_number(
-        self, context: RequestContext, phone_number: PhoneNumber
-    ) -> OptInPhoneNumberResponse:
-        call_moto(context)
-        return OptInPhoneNumberResponse()
-
-    def remove_permission(
-        self, context: RequestContext, topic_arn: topicARN, label: String
-    ) -> None:
-        call_moto(context)
-
-    def set_endpoint_attributes(
-        self, context: RequestContext, endpoint_arn: String, attributes: MapStringToString
-    ) -> None:
-        call_moto(context)
-
-    def set_platform_application_attributes(
-        self,
-        context: RequestContext,
-        platform_application_arn: String,
-        attributes: MapStringToString,
-    ) -> None:
-        call_moto(context)
-
-    def set_sms_attributes(
-        self, context: RequestContext, attributes: MapStringToString
-    ) -> SetSMSAttributesResponse:
-        call_moto(context)
-        return SetSMSAttributesResponse()
-
-    def set_topic_attributes(
-        self,
-        context: RequestContext,
-        topic_arn: topicARN,
-        attribute_name: attributeName,
-        attribute_value: attributeValue = None,
-    ) -> None:
-        call_moto(context)
-
-    def verify_sms_sandbox_phone_number(
-        self, context: RequestContext, phone_number: PhoneNumberString, one_time_password: OTPCode
-    ) -> VerifySMSSandboxPhoneNumberResult:
-        call_moto(context)
-        return VerifySMSSandboxPhoneNumberResult()
+    @staticmethod
+    def _get_topic(arn: str) -> Topic:
+        arn_data = parse_arn(arn)
+        backend = SnsProvider.get_moto_backend(arn_data["account"], arn_data["region"])
+        return backend.get_topic(arn)
 
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
-        store = self.get_store(account_id=context.account_id, region=context.region)
-        if topic_arn not in store.topic_subscriptions:
-            raise NotFoundException(
-                "Topic does not exist",
-            )
-
-        moto_response: GetTopicAttributesResponse = call_moto(context)
+        try:
+            moto_response: GetTopicAttributesResponse = call_moto(context)
+        except CommonServiceException as exc:
+            if exc.code == "NotFound":
+                raise NotFoundException("Topic does not exist")
+            raise
         # TODO: fix some attributes by moto, see snapshot
         # TODO: very hacky way to get the attributes we need instead of a moto patch
         # would need more work to have the proper format out of moto, maybe extract the model to our store
-        moto_backend = self._get_moto_backend(context)
-        moto_topic_model = moto_backend.topics.get(topic_arn)
+        moto_topic_model = self._get_topic(topic_arn)
         for attr in vars(moto_topic_model):
             if "success_feedback" in attr:
                 key = camelcase_to_pascal(underscores_to_camelcase(attr))
@@ -293,7 +139,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 "The batch request contains more entries than permissible."
             )
 
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
         if topic_arn not in store.topic_subscriptions:
             raise NotFoundException(
                 "Topic does not exist",
@@ -310,8 +156,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
                 )
-            moto_sns_backend = self._get_moto_backend(context)
-            if moto_sns_backend.get_topic(arn=topic_arn).content_based_deduplication == "false":
+            topic = self._get_topic(topic_arn)
+            if topic.content_based_deduplication == "false":
                 if not all(
                     ["MessageDeduplicationId" in entry for entry in publish_batch_request_entries]
                 ):
@@ -372,7 +218,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         attribute_name: attributeName,
         attribute_value: attributeValue = None,
     ) -> None:
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
         sub = store.subscriptions.get(subscription_arn)
         if not sub:
             raise NotFoundException("Subscription does not exist")
@@ -391,7 +237,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise
 
         if attribute_name == "FilterPolicy":
-            store = self.get_store(account_id=context.account_id, region=context.region)
+            store = self.get_store(account_id=context.account_id, region_name=context.region)
             store.subscription_filter_policy[subscription_arn] = json.loads(attribute_value)
 
         sub[attribute_name] = attribute_value
@@ -412,7 +258,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         except InvalidArnException:
             raise InvalidParameterException("Invalid parameter: Topic")
 
-        store = self.get_store(account_id=parsed_arn["account"], region=parsed_arn["region"])
+        store = self.get_store(account_id=parsed_arn["account"], region_name=parsed_arn["region"])
 
         # it seems SNS is able to know what the region of the topic should be, even though a wrong topic is accepted
         if parsed_arn["region"] != get_region_from_subscription_token(token):
@@ -441,7 +287,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     ) -> UntagResourceResponse:
         call_moto(context)
         # TODO: probably get the account_id and region from the `resource_arn`
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
         existing_tags = store.sns_tags.setdefault(resource_arn, [])
         store.sns_tags[resource_arn] = [t for t in existing_tags if t["Key"] not in tag_keys]
         return UntagResourceResponse()
@@ -450,7 +296,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         self, context: RequestContext, resource_arn: AmazonResourceName
     ) -> ListTagsForResourceResponse:
         # TODO: probably get the account_id and region from the `resource_arn`
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
         tags = store.sns_tags.setdefault(resource_arn, [])
         return ListTagsForResourceResponse(Tags=tags)
 
@@ -488,7 +334,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         except CommonServiceException as e:
             # TODO: this was unclear in the old provider, check against aws and moto
             if "DuplicateEndpoint" in e.code:
-                moto_sns_backend = self._get_moto_backend(context)
+                moto_sns_backend = self.get_moto_backend(context.account_id, context.region)
                 for e in moto_sns_backend.platform_endpoints.values():
                     if e.token == token:
                         if custom_user_data and custom_user_data != e.custom_user_data:
@@ -502,7 +348,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
     def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
         call_moto(context)
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
 
         # pop the subscription at the end, to avoid race condition by iterating over the topic subscriptions
         subscription = store.subscriptions.get(subscription_arn)
@@ -536,7 +382,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def get_subscription_attributes(
         self, context: RequestContext, subscription_arn: subscriptionARN
     ) -> GetSubscriptionAttributesResponse:
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
         sub = store.subscriptions.get(subscription_arn)
         if not sub:
             raise NotFoundException(f"Subscription with arn {subscription_arn} not found")
@@ -592,11 +438,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics",
                 )
-            moto_sns_backend = self._get_moto_backend(context)
-            if (
-                moto_sns_backend.get_topic(arn=topic_or_target_arn).content_based_deduplication
-                == "false"
-            ):
+            topic = self._get_topic(topic_or_target_arn)
+            if topic.content_based_deduplication == "false":
                 if not message_deduplication_id:
                     raise InvalidParameterException(
                         "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
@@ -632,20 +475,20 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if message_attributes:
             validate_message_attributes(message_attributes)
 
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
 
         if not phone_number:
+            moto_sns_backend = self.get_moto_backend(context.account_id, context.region)
             if is_endpoint_publish:
-                moto_sns_backend = self._get_moto_backend(context)
                 if target_arn not in moto_sns_backend.platform_endpoints:
                     raise InvalidParameterException(
                         "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
                     )
             else:
-                if topic_or_target_arn not in store.topic_subscriptions:
-                    raise NotFoundException(
-                        "Topic does not exist",
-                    )
+                try:
+                    moto_sns_backend.get_topic(topic_or_target_arn)
+                except SNSNotFoundError:
+                    raise NotFoundException("Topic does not exist")
 
         message_ctx = SnsMessage(
             type="Notification",
@@ -726,11 +569,11 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         moto_response = call_moto(context)
         subscription_arn = moto_response.get("SubscriptionArn")
 
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
 
         # An endpoint may only be subscribed to a topic once. Subsequent
         # subscribe calls do nothing (subscribe is idempotent).
-        for existing_topic_subscription in store.topic_subscriptions[topic_arn]:
+        for existing_topic_subscription in store.topic_subscriptions.get(topic_arn, []):
             sub = store.subscriptions.get(existing_topic_subscription, {})
             if sub.get("Endpoint") == endpoint:
                 return SubscribeResponse(SubscriptionArn=sub["SubscriptionArn"])
@@ -753,7 +596,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 )
 
         store.subscriptions[subscription_arn] = subscription
-        store.topic_subscriptions[topic_arn].append(subscription_arn)
+
+        topic_subscription = store.topic_subscriptions.setdefault(topic_arn, [])
+        topic_subscription.append(subscription_arn)
 
         # store the token and subscription arn
         # TODO: the token is a 288 hex char string
@@ -795,7 +640,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise InvalidParameterException("Invalid parameter: Duplicated keys are not allowed.")
 
         call_moto(context)
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
         existing_tags = store.sns_tags.get(resource_arn, [])
 
         def existing_tag_index(_item):
@@ -816,7 +661,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
     def delete_topic(self, context: RequestContext, topic_arn: topicARN) -> None:
         call_moto(context)
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
         topic_subscriptions = store.topic_subscriptions.pop(topic_arn, [])
         for topic_sub in topic_subscriptions:
             store.subscriptions.pop(topic_sub, None)
@@ -832,7 +677,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         data_protection_policy: attributeValue = None,
     ) -> CreateTopicResponse:
         moto_response = call_moto(context)
-        store = self.get_store(account_id=context.account_id, region=context.region)
+        store = self.get_store(account_id=context.account_id, region_name=context.region)
         topic_arn = moto_response["TopicArn"]
         tag_resource_success = extract_tags(topic_arn, tags, True, store)
         if not tag_resource_success:
