@@ -617,6 +617,21 @@ class TestSqsProvider:
         assert sqs_create_queue(QueueName=queue_name, Attributes=attributes) == queue_url
 
     @pytest.mark.aws_validated
+    def test_create_fifo_queue_with_different_attributes_raises_error(
+        self, sqs_create_queue, aws_client
+    ):
+        queue_name = f"queue-{short_uid()}.fifo"
+        sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
+        )
+        with pytest.raises(aws_client.sqs.exceptions.QueueNameExists):
+            sqs_create_queue(
+                QueueName=queue_name,
+                Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "false"},
+            )
+
+    @pytest.mark.aws_validated
     def test_send_message_with_delay_0_works_for_fifo(self, sqs_create_queue, aws_client):
         # see issue https://github.com/localstack/localstack/issues/6612
         queue_name = f"queue-{short_uid()}.fifo"
@@ -1712,6 +1727,32 @@ class TestSqsProvider:
             aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
 
         snapshot.match("error", e.value.response)
+
+    def test_fifo_set_content_based_deduplication_strategy(
+        self, sqs_create_queue, aws_client, snapshot
+    ):
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "SqsManagedSseEnabled": "true",
+                "ContentBasedDeduplication": "true",
+            },
+        )
+
+        snapshot.match(
+            "before-update",
+            aws_client.sqs.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"]),
+        )
+
+        aws_client.sqs.set_queue_attributes(
+            QueueUrl=queue_url, Attributes={"ContentBasedDeduplication": "false"}
+        )
+
+        snapshot.match(
+            "after-update",
+            aws_client.sqs.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"]),
+        )
 
     @pytest.mark.aws_validated
     def test_list_queue_tags(self, sqs_create_queue, aws_client):
