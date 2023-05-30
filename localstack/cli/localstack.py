@@ -162,6 +162,12 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
                 "If you would like to use --host, please reinstall localstack using `pip install localstack[runtime]`"
             )
     else:
+        # make sure to initialize the bootstrap environment and directories for the host (even if we're executing
+        # in Docker), to allow starting the container from within other containers (e.g., Github Codespaces).
+        config.OVERRIDE_IN_DOCKER = False
+        config.is_in_docker = False
+        config.dirs = config.init_directories()
+
         if detached:
             bootstrap.start_infra_in_docker_detached(console)
         else:
