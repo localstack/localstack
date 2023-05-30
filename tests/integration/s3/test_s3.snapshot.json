@@ -7057,5 +7057,152 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_intelligent_tier_config": {
+    "recorded-date": "26-05-2023, 19:17:48",
+    "recorded-content": {
+      "put_bucket_intelligent_tiering_configuration_err_1`": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get_bucket_intelligent_tiering_configuration_1": {
+        "IntelligentTieringConfiguration": {
+          "Filter": {
+            "Prefix": "test1"
+          },
+          "Id": "test1",
+          "Status": "Enabled",
+          "Tierings": [
+            {
+              "AccessTier": "ARCHIVE_ACCESS",
+              "Days": 90
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_bucket_intelligent_tiering_configurations_1": {
+        "IntelligentTieringConfigurationList": [
+          {
+            "Filter": {
+              "Prefix": "test1"
+            },
+            "Id": "test1",
+            "Status": "Enabled",
+            "Tierings": [
+              {
+                "AccessTier": "ARCHIVE_ACCESS",
+                "Days": 90
+              }
+            ]
+          },
+          {
+            "Filter": {
+              "Prefix": "test2"
+            },
+            "Id": "test2",
+            "Status": "Enabled",
+            "Tierings": [
+              {
+                "AccessTier": "ARCHIVE_ACCESS",
+                "Days": 90
+              }
+            ]
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_bucket_intelligent_tiering_configurations_2": {
+        "IntelligentTieringConfigurationList": [
+          {
+            "Filter": {
+              "Prefix": "testupdate"
+            },
+            "Id": "test1",
+            "Status": "Enabled",
+            "Tierings": [
+              {
+                "AccessTier": "ARCHIVE_ACCESS",
+                "Days": 90
+              }
+            ]
+          },
+          {
+            "Filter": {
+              "Prefix": "test2"
+            },
+            "Id": "test2",
+            "Status": "Enabled",
+            "Tierings": [
+              {
+                "AccessTier": "ARCHIVE_ACCESS",
+                "Days": 90
+              }
+            ]
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_bucket_intelligent_tiering_configuration_err_1": {
+        "Error": {
+          "BucketName": "non-existing-bucket",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_bucket_intelligent_tiering_configuration_err_2": {
+        "Error": {
+          "Code": "NoSuchConfiguration",
+          "Message": "The specified configuration does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "list_bucket_intelligent_tiering_configurations_3": {
+        "IntelligentTieringConfigurationList": [
+          {
+            "Filter": {
+              "Prefix": "test2"
+            },
+            "Id": "test2",
+            "Status": "Enabled",
+            "Tierings": [
+              {
+                "AccessTier": "ARCHIVE_ACCESS",
+                "Days": 90
+              }
+            ]
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
