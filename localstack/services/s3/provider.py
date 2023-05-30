@@ -1,7 +1,7 @@
 import datetime
 import logging
 import os
-from typing import IO, Dict, List, Optional
+from typing import IO, Dict, Iterator, List, Optional, Tuple
 from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
 import moto.s3.responses as moto_s3_responses
@@ -1533,7 +1533,7 @@ def apply_moto_patches():
     # importing here in case we need InvalidObjectState from `localstack.aws.api.s3`
     import moto.s3.models as moto_s3_models
     from moto.iam.access_control import PermissionResult
-    from moto.s3.exceptions import InvalidObjectState
+    from moto.s3.exceptions import InvalidObjectState, NoSuchUpload
 
     if not os.environ.get("MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"):
         os.environ["MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"] = str(S3_MAX_FILE_SIZE_BYTES)
@@ -1663,6 +1663,22 @@ def apply_moto_patches():
             return PermissionResult.PERMITTED
 
         return fn(self, *args, **kwargs)
+
+    @patch(moto_s3_models.S3Backend.complete_multipart_upload, pass_target=False)
+    def backend_complete_multipart_upload(
+        self, bucket_name: str, multipart_id: str, body: Iterator[Tuple[int, str]]
+    ) -> Tuple[moto_s3_models.FakeMultipart, bytes, str]:
+        """
+        Apply a patch to check the existence of the multipart id
+        """
+        bucket = self.get_bucket(bucket_name)
+        multipart = bucket.multiparts.get(multipart_id)
+        if not multipart:
+            raise NoSuchUpload(upload_id=multipart_id)
+        value, etag = multipart.complete(body)
+        if value is not None:
+            del bucket.multiparts[multipart_id]
+        return multipart, value, etag
 
 
 def register_custom_handlers():
