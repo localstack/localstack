@@ -596,8 +596,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 )
 
         store.subscriptions[subscription_arn] = subscription
-        store.topic_subscriptions[topic_arn] = store.topic_subscriptions.get(topic_arn) or []
-        store.topic_subscriptions[topic_arn].append(subscription_arn)
+
+        topic_subscription = store.topic_subscriptions.setdefault(topic_arn, [])
+        topic_subscription.append(subscription_arn)
 
         # store the token and subscription arn
         # TODO: the token is a 288 hex char string
