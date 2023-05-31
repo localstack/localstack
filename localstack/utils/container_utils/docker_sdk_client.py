@@ -675,6 +675,7 @@ class SdkDockerClient(ContainerClient):
             try:
                 container = create_container()
             except ImageNotFound:
+                LOG.debug("Image not found. Pulling image %s", image_name)
                 self.pull_image(image_name, platform)
                 container = create_container()
             return container.id

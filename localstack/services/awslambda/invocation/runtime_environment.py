@@ -170,7 +170,13 @@ class RuntimeEnvironment:
             self.status = RuntimeStatus.STARTING
             try:
                 self.runtime_executor.start(self.get_environment_variables())
-            except Exception:
+            except Exception as e:
+                LOG.warning(
+                    "Failed to start runtime environment for ID=%s with: %s",
+                    self.id,
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
                 self.errored()
                 raise
             self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
