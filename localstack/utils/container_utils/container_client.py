@@ -220,25 +220,12 @@ class PortMappings:
             from_range, protocol = k
             to_range = v
             # use /<protocol> suffix if the protocol is not"tcp"
-            protocol_suffix = "/%s" % protocol if protocol != "tcp" else ""
+            protocol_suffix = f"/{protocol}" if protocol != "tcp" else ""
             if from_range[0] == from_range[1] and to_range[0] == to_range[1]:
-                return "-p %s%s:%s%s" % (bind_address, from_range[0], to_range[0], protocol_suffix)
+                return f"-p {bind_address}{from_range[0]}:{to_range[0]}{protocol_suffix}"
             if from_range[0] != from_range[1] and to_range[0] == to_range[1]:
-                return "-p %s%s-%s:%s%s" % (
-                    bind_address,
-                    from_range[0],
-                    from_range[1],
-                    to_range[0],
-                    protocol_suffix,
-                )
-            return "-p %s%s-%s:%s-%s%s" % (
-                bind_address,
-                from_range[0],
-                from_range[1],
-                to_range[0],
-                to_range[1],
-                protocol_suffix,
-            )
+                return f"-p {bind_address}{from_range[0]}-{from_range[1]}:{to_range[0]}{protocol_suffix}"
+            return f"-p {bind_address}{from_range[0]}-{from_range[1]}:{to_range[0]}-{to_range[1]}{protocol_suffix}"
 
         return " ".join([entry(k, v) for k, v in self.mappings.items()])
 
@@ -248,7 +235,7 @@ class PortMappings:
         def entry(k, v):
             from_range, protocol = k
             to_range = v
-            protocol_suffix = "/%s" % protocol if protocol != "tcp" else ""
+            protocol_suffix = f"/{protocol}" if protocol != "tcp" else ""
             if from_range[0] == from_range[1] and to_range[0] == to_range[1]:
                 return ["-p", f"{bind_address}{from_range[0]}:{to_range[0]}{protocol_suffix}"]
             return [
@@ -264,7 +251,7 @@ class PortMappings:
         def entry(k, v):
             from_range, protocol = k
             to_range = v
-            protocol_suffix = "/%s" % protocol if protocol != "tcp" else ""
+            protocol_suffix = f"/{protocol}"
             if from_range[0] != from_range[1] and to_range[0] == to_range[1]:
                 container_port = to_range[0]
                 host_ports = list(range(from_range[0], from_range[1] + 1))
@@ -1125,14 +1112,14 @@ class Util:
                     )
                     _, host_port, container_port = port_split
                 else:
-                    raise ValueError("Invalid port string provided: %s", port_mapping)
+                    raise ValueError(f"Invalid port string provided: {port_mapping}")
                 host_port_split = host_port.split("-")
                 if len(host_port_split) == 2:
                     host_port = [int(host_port_split[0]), int(host_port_split[1])]
                 elif len(host_port_split) == 1:
                     host_port = int(host_port)
                 else:
-                    raise ValueError("Invalid port string provided: %s", port_mapping)
+                    raise ValueError(f"Invalid port string provided: {port_mapping}")
                 if "/" in container_port:
                     container_port, protocol = container_port.split("/")
                 ports = ports if ports is not None else PortMappings()

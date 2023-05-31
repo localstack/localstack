@@ -81,7 +81,7 @@ class TestMisc(unittest.TestCase):
         map = PortMappings()
         map.add(port=[123, 1337], protocol="tcp")
         map.add(port=[124, 1338], protocol="tcp")
-        self.assertEqual("-p 123:1338", map.to_str())
+        self.assertEqual("-p 123-1338:123-1338", map.to_str())
 
     def test_port_mappings_multi_protocol(self):
         map = PortMappings()
@@ -107,12 +107,12 @@ class TestMisc(unittest.TestCase):
         map.add(port=[124, 126], protocol="udp")
         self.assertEqual(
             {
-                "122": 122,
-                "123": 123,
+                "122/tcp": 122,
+                "123/tcp": 123,
                 "123/udp": 123,
-                "124": 124,
+                "124/tcp": 124,
                 "124/udp": 124,
-                "125": 125,
+                "125/tcp": 125,
                 "125/udp": 125,
                 "126/udp": 126,
             },
