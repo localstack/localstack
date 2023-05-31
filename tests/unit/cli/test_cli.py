@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 import threading
 from queue import Queue
 
@@ -10,7 +11,7 @@ from click.testing import CliRunner
 import localstack.constants
 import localstack.utils.analytics.cli
 from localstack import config, constants
-from localstack.cli.localstack import create_with_plugins
+from localstack.cli.localstack import create_with_plugins, is_frozen_bundle
 from localstack.cli.localstack import localstack as cli
 from localstack.utils import testutil
 from localstack.utils.common import is_command_available
@@ -254,3 +255,19 @@ def test_timeout_publishing_command_invocation(runner, monkeypatch, caplog):
         assert (
             len(request_data) == 0
         ), "analytics event publisher process should time out if request is taking too long"
+
+
+def test_is_frozen(monkeypatch):
+    # mimic a frozen pyinstaller binary according to https://pyinstaller.org/en/stable/runtime-information.html
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "_MEIPASS", "/absolute/path/to/bundle/folder", raising=False)
+    assert is_frozen_bundle()
+
+
+def test_not_is_frozen(monkeypatch):
+    # mimic running from source
+    monkeypatch.delattr(sys, "frozen", raising=False)
+    assert not is_frozen_bundle()
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.delattr(sys, "_MEIPASS", raising=False)
+    assert not is_frozen_bundle()

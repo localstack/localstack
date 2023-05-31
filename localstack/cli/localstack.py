@@ -370,6 +370,16 @@ def cmd_update_all(ctx):
 @localstack_update.command(name="localstack-cli", help="Update LocalStack CLI tools")
 @publish_invocation
 def cmd_update_localstack_cli():
+    # if is_frozen_bundle():
+    if True:
+        # "update" can only be performed if running from source / in a non-frozen interpreter
+        console.print(
+            ":heavy_multiplication_x: The LocalStack CLI can only update itself if installed via PIP. "
+            "Please follow the instructions on https://docs.localstack.cloud/ to update your CLI.",
+            style="bold red",
+        )
+        sys.exit(1)
+
     import subprocess
     from subprocess import CalledProcessError
 
@@ -580,3 +590,12 @@ def print_error(format, error):
 
 def print_banner():
     print(BANNER)
+
+
+def is_frozen_bundle() -> bool:
+    """
+    :return: true if we are currently running in a frozen bundle / a pyinstaller binary.
+    """
+    # check if we are in a PyInstaller binary
+    # https://pyinstaller.org/en/stable/runtime-information.html
+    return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
