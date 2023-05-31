@@ -131,6 +131,7 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
     if not no_banner:
         print_banner()
         print_version()
+        print_profile()
         console.line()
 
     from localstack.utils import bootstrap
@@ -563,7 +564,14 @@ def print_service_table(services: Dict[str, str]):
 
 
 def print_version():
-    console.print(" :laptop_computer: [bold]LocalStack CLI[/bold] [blue]%s[/blue]" % __version__)
+    console.print(f" :laptop_computer: [bold]LocalStack CLI[/bold] [blue]{__version__}[/blue]")
+
+
+def print_profile():
+    if config.LOADED_PROFILE:
+        console.print(
+            f" :bust_in_silhouette: [bold]Profile:[/bold] [blue]{config.LOADED_PROFILE}[/blue]"
+        )
 
 
 def print_error(format, error):

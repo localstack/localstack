@@ -223,20 +223,22 @@ def is_env_not_false(env_var_name: str) -> bool:
     return os.environ.get(env_var_name, "").lower().strip() not in FALSE_STRINGS
 
 
-def load_environment(profile: str = None):
+def load_environment(profile: str = None) -> Optional[str]:
     """Loads the environment variables from ~/.localstack/{profile}.env
     :param profile: the profile to load (defaults to "default")
+    :returns str: the name of the actually loaded profile (might be the fallback)
     """
     if not profile:
         profile = "default"
 
     path = os.path.join(CONFIG_DIR, f"{profile}.env")
     if not os.path.exists(path):
-        return
+        return None
 
     import dotenv
 
     dotenv.load_dotenv(path, override=False)
+    return profile
 
 
 def is_persistence_enabled() -> bool:
@@ -360,10 +362,11 @@ CONFIG_DIR = os.environ.get("CONFIG_DIR", os.path.expanduser("~/.localstack"))
 
 # keep this on top to populate environment
 try:
-    load_environment(CONFIG_PROFILE)
+    # CLI specific: the actually loaded configuration profile
+    LOADED_PROFILE = load_environment(CONFIG_PROFILE)
 except ImportError:
     # dotenv may not be available in lambdas or other environments where config is loaded
-    pass
+    LOADED_PROFILE = None
 
 # default AWS region
 DEFAULT_REGION = (
