@@ -31,6 +31,7 @@ from localstack.services.cloudformation.scaffolding.propgen import generate_ir_f
 # Some services require their names to be re-written as we know them by different names
 SERVICE_NAME_MAP = {
     "OpenSearchService": "OpenSearch",
+    "Lambda": "AWSLambda",
 }
 
 
