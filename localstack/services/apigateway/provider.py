@@ -1326,7 +1326,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def get_integration(
         self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
     ) -> Integration:
-        response: Integration = call_moto(context)
+        try:
+            response: Integration = call_moto(context)
+        except CommonServiceException as e:
+            # the Exception raised by moto does not have the right message not status code
+            if e.code == "NotFoundException":
+                raise NotFoundException("Invalid Integration identifier specified")
+            raise
+
         if integration_responses := response.get("integrationResponses"):
             for integration_response in integration_responses.values():
                 remove_empty_attributes_from_integration_response(integration_response)
@@ -1373,6 +1380,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> IntegrationResponse:
         response: IntegrationResponse = call_moto(context)
         remove_empty_attributes_from_integration_response(response)
+        # moto does not return selectionPattern is set to an empty string
+        # TODO: fix upstream
+        if "selectionPattern" not in response:
+            moto_rest_api = get_moto_rest_api(context, rest_api_id)
+            moto_resource = moto_rest_api.resources.get(resource_id)
+            method_integration = moto_resource.resource_methods[http_method].method_integration
+            integration_response = method_integration.integration_responses[status_code]
+            if integration_response.selection_pattern is not None:
+                response["selectionPattern"] = integration_response.selection_pattern
         return response
 
     @handler("PutIntegrationResponse", expand=False)
@@ -1392,6 +1408,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             integration_response = method_integration.integration_responses[request["statusCode"]]
             integration_response.response_templates = None
             response.pop("responseTemplates", None)
+
+        # Moto also does not return the selection pattern if it is set to an empty string
+        # TODO: fix upstream
+        if (selection_pattern := request.get("selectionPattern")) is not None:
+            response["selectionPattern"] = selection_pattern
+
         return response
 
     def get_export(

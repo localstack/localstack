@@ -895,10 +895,121 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_lambda.py::test_lambda_aws_integration": {
-    "recorded-date": "31-03-2023, 10:49:36",
+    "recorded-date": "31-05-2023, 23:11:42",
     "recorded-content": {
+      "put-method": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "POST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-integration": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "credentials": "<credentials:1>",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "AWS",
+        "uri": "<uri:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-integration-response": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-method-response": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
       "lambda-aws-integration": {
         "message": "hello world"
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_lambda.py::test_lambda_aws_integration_with_request_template": {
+    "recorded-date": "31-05-2023, 23:09:38",
+    "recorded-content": {
+      "put-method": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "requestParameters": {
+          "method.request.querystring.param1": false
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-method-response": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-integration": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "credentials": "<credentials:1>",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "param1": "$input.params('param1')"
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "AWS",
+        "uri": "<uri:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-integration-response": {
+        "selectionPattern": "",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "lambda-aws-integration-1": {
+        "param1": "foobar"
+      },
+      "lambda-aws-integration-2": {
+        "param1": "foobar"
+      },
+      "delete-integration": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-integration-after-delete": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Integration identifier specified"
+        },
+        "message": "Invalid Integration identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
       }
     }
   }
