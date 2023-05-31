@@ -83,6 +83,7 @@ if TYPE_CHECKING:
     from mypy_boto3_sns import SNSClient
     from mypy_boto3_sqs import SQSClient
     from mypy_boto3_ssm import SSMClient
+    from mypy_boto3_sso_admin import SSOAdminClient
     from mypy_boto3_stepfunctions import SFNClient
     from mypy_boto3_sts import STSClient
     from mypy_boto3_timestream_query import TimestreamQueryClient
@@ -204,6 +205,7 @@ class TypedServiceClientFactory(abc.ABC):
     sns: Union["SNSClient", "MetadataRequestInjector[SNSClient]"]
     sqs: Union["SQSClient", "MetadataRequestInjector[SQSClient]"]
     ssm: Union["SSMClient", "MetadataRequestInjector[SSMClient]"]
+    sso_admin: Union["SSOAdminClient", "MetadataRequestInjector[SSOAdminClient]"]
     stepfunctions: Union["SFNClient", "MetadataRequestInjector[SFNClient]"]
     sts: Union["STSClient", "MetadataRequestInjector[STSClient]"]
     timestream_query: Union[
