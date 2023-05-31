@@ -4724,7 +4724,8 @@ class TestS3MultiAccounts:
 
         with pytest.raises(ClientError) as exc:
             secondary_client.create_bucket(
-                Bucket="foo", CreateBucketConfiguration={"LocationConstraint": "ap-south-1"}
+                Bucket="foo",
+                CreateBucketConfiguration={"LocationConstraint": SECONDARY_TEST_AWS_REGION_NAME},
             )
         exc.match("BucketAlreadyExists")
 
