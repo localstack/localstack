@@ -607,7 +607,7 @@ class NoSuchKey(ServiceException):
 class NoSuchUpload(ServiceException):
     code: str = "NoSuchUpload"
     sender_fault: bool = False
-    status_code: int = 400
+    status_code: int = 404
     UploadId: Optional[MultipartUploadId]
 
 
