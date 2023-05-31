@@ -395,7 +395,7 @@ class CmdDockerClient(ContainerClient):
         cmd = self._docker_cmd()
         cmd += ["inspect", "--format", "{{json .}}", object_name_or_id]
         try:
-            cmd_result = run(cmd)
+            cmd_result = run(cmd, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError as e:
             # note: case-insensitive comparison, to support Docker and Podman output formats
             if "no such object" in to_str(e.stdout).lower():

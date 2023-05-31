@@ -16,6 +16,7 @@ from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
     ContainerException,
+    NoSuchNetwork,
     PortMappings,
     SimpleVolumeBind,
     VolumeBind,
@@ -554,11 +555,27 @@ def configure_container(container: LocalstackContainer):
     # mount docker socket
     container.volumes.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
 
+    # if using managed networking, set up the docker network
+    if config.USE_MANAGED_DOCKER_NETWORK:
+        setup_managed_docker_network(container)
+
     container.privileged = True
 
 
 def configure_volume_mounts(container: LocalstackContainer):
     container.volumes.add(VolumeBind(config.VOLUME_DIR, DEFAULT_VOLUME_DIR))
+
+
+def setup_managed_docker_network(container: LocalstackContainer):
+    ensure_docker_network(config.MANAGED_DOCKER_NETWORK_NAME)
+    container.network = config.MANAGED_DOCKER_NETWORK_NAME
+
+
+def ensure_docker_network(network_name: str):
+    try:
+        DOCKER_CLIENT.inspect_network(network_name)
+    except NoSuchNetwork:
+        DOCKER_CLIENT.create_network(network_name)
 
 
 @log_duration()
