@@ -1,0 +1,42 @@
+{
+  "tests/integration/cloudformation/resource_providers/apigateway/test_restapi.py::TestAttributeAccess::test_getattr[RestApiId]": {
+    "recorded-date": "31-05-2023, 18:54:59",
+    "recorded-content": {
+      "stack_outputs": {
+        "MyOutput": "sulso9cyca",
+        "MyRef": "sulso9cyca"
+      },
+      "physical_resource_id": "sulso9cyca"
+    }
+  },
+  "tests/integration/cloudformation/resource_providers/apigateway/test_restapi.py::TestAttributeAccess::test_getattr[RootResourceId]": {
+    "recorded-date": "31-05-2023, 18:55:16",
+    "recorded-content": {
+      "stack_outputs": {
+        "MyOutput": "r0b1g7etql",
+        "MyRef": "m8xgcapa27"
+      },
+      "physical_resource_id": "m8xgcapa27"
+    }
+  },
+  "tests/integration/cloudformation/resource_providers/apigateway/test_restapi.py::TestAttributeAccess::test_getattr[ApiKeySourceType]": {
+    "recorded-date": "31-05-2023, 18:55:29",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/resource_providers/apigateway/test_restapi.py::TestAttributeAccess::test_getattr[CloneFrom]": {
+    "recorded-date": "31-05-2023, 18:55:43",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/resource_providers/apigateway/test_restapi.py::TestAttributeAccess::test_getattr[Description]": {
+    "recorded-date": "31-05-2023, 18:56:00",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/resource_providers/apigateway/test_restapi.py::TestAttributeAccess::test_getattr[Name]": {
+    "recorded-date": "31-05-2023, 18:56:17",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/resource_providers/apigateway/test_restapi.py::TestAttributeAccess::test_getattr[Mode]": {
+    "recorded-date": "31-05-2023, 18:56:35",
+    "recorded-content": {}
+  }
+}

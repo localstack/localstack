@@ -2,6 +2,7 @@ from typing import TypeVar
 
 import pytest
 
+from localstack.services.apigateway.resource_providers.restapi import ApiGatewayRestApiAllProperties
 from localstack.services.opensearch.resource_providers.domain import OpenSearchDomainAllProperties
 from localstack.services.ssm.resource_providers.parameter import SSMParameterAllProperties
 from localstack.utils.strings import short_uid
@@ -20,9 +21,12 @@ Properties = TypeVar("Properties")
             "AWS::SSM::Parameter",
             SSMParameterAllProperties(Type="String", Value=f"value-{short_uid()}"),
         ),
-        # TODO: Add your resource definitions here!
+        (
+            "AWS::ApiGateway::RestApi",
+            ApiGatewayRestApiAllProperties(Name="my-cfn-rest-api"),
+        ),
     ],
-    ids=["opensearch-domain", "ssm-parameter"],
+    ids=["opensearch-domain", "ssm-parameter", "apigateway-restapi"],
 )
 @pytest.mark.skip(reason="Example")
 def test_roundtrip(type_name, props, perform_cfn_operation):
