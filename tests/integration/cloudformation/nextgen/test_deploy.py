@@ -2,6 +2,7 @@ from typing import TypeVar
 
 import pytest
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda.resource_providers.function import LambdaFunctionAllProperties
 from localstack.services.opensearch.resource_providers.domain import OpenSearchDomainAllProperties
 from localstack.services.ssm.resource_providers.parameter import SSMParameterAllProperties
@@ -27,6 +28,7 @@ Properties = TypeVar("Properties")
             LambdaFunctionAllProperties(
                 FunctionName=f"cfn-lambda-function-{short_uid()}",
                 # TODO: How to set up a ZIP file dependency in these parameters here?
+                # TODO: typing, would be nice if this works like in ASF
                 Code={
                     "ZipFile": "exports.handler = function(event, context){\nconsole.log('SUCCESS');"
                 },
@@ -34,6 +36,7 @@ Properties = TypeVar("Properties")
                 # TODO: How to setup a dependency resource here?
                 Role="arn:aws:iam::000000000000:role/lambda-role",
                 # Role=LambdaRole.Arn,
+                Runtime=Runtime.nodejs18_x,
             ),
         )
         # TODO: Add your resource definitions here!
