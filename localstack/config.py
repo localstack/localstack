@@ -819,6 +819,13 @@ BUCKET_MARKER_LOCAL = (
     os.environ.get("BUCKET_MARKER_LOCAL", "").strip() or DEFAULT_BUCKET_MARKER_LOCAL
 )
 
+# Create managed docker network
+USE_MANAGED_DOCKER_NETWORK = is_env_true("USE_MANAGED_DOCKER_NETWORK")
+MANAGED_DOCKER_NETWORK_NAME = os.environ.get(
+    "MANAGED_DOCKER_NETWORK_NAME",
+    "lsnet",
+)
+
 # PUBLIC: bridge (Docker default)
 # Docker network driver for the Lambda and ECS containers. https://docs.docker.com/network/
 LAMBDA_DOCKER_NETWORK = os.environ.get("LAMBDA_DOCKER_NETWORK", "").strip()
@@ -1120,6 +1127,7 @@ CONFIG_ENV_VARS = [
     "LS_LOG",
     "MAIN_CONTAINER_NAME",
     "MAIN_DOCKER_NETWORK",
+    "MANAGED_DOCKER_NETWORK_NAME",
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "OUTBOUND_HTTP_PROXY",
     "OUTBOUND_HTTPS_PROXY",
@@ -1147,6 +1155,7 @@ CONFIG_ENV_VARS = [
     "TEST_IAM_USER_ID",
     "TEST_IAM_USER_NAME",
     "TF_COMPAT_MODE",
+    "USE_MANAGED_DOCKER_NETWORK",
     "USE_SINGLE_REGION",
     "USE_SSL",
     "WAIT_FOR_DEBUGGER",
@@ -1312,3 +1321,8 @@ def init_directories() -> Directories:
 # initialize directories
 dirs: Directories
 dirs = init_directories()
+
+# merge docker networks if required
+if USE_MANAGED_DOCKER_NETWORK:
+    LAMBDA_DOCKER_NETWORK = MANAGED_DOCKER_NETWORK_NAME
+    MAIN_DOCKER_NETWORK = MANAGED_DOCKER_NETWORK_NAME
