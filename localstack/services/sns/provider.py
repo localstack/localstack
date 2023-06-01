@@ -256,7 +256,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # `authenticate_on_unsubscribe` to force a signing client to do this request.
         # so, the region and account_id might not be in the request. Use the ones from the topic_arn
         try:
-            parsed_arn = parse_topic_arn(topic_arn)
+            parsed_arn = parse_arn(topic_arn)
         except InvalidArnException:
             raise InvalidParameterException("Invalid parameter: Topic")
 
