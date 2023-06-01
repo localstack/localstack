@@ -575,6 +575,13 @@
     },
     {
       "op": "add",
+      "path": "/shapes/NoSuchUpload/error",
+      "value": {
+        "httpStatusCode": 404
+      }
+    },
+    {
+      "op": "add",
       "path": "/shapes/ReplicationConfigurationNotFoundError",
       "value": {
         "type": "structure",

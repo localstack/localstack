@@ -165,7 +165,10 @@ def get_client(resource: dict):
     try:
         return aws_stack.connect_to_service(service)
     except Exception as e:
-        LOG.warning('Unable to get client for "%s" API, skipping deployment: %s', service, e)
+        log_method = getattr(LOG, "warning")
+        if config.CFN_VERBOSE_ERRORS:
+            log_method = getattr(LOG, "exception")
+        log_method('Unable to get client for "%s" API, skipping deployment: %s', service, e)
         return None
 
 
@@ -203,6 +206,8 @@ def retrieve_resource_details(
         log_not_available_message(resource_type=resource_type, message=message)
 
     except DependencyNotYetSatisfied:
+        if config.CFN_VERBOSE_ERRORS:
+            LOG.exception(f"dependency not yet satisfied for {resource_id}")
         return
 
     except Exception as e:
@@ -232,7 +237,10 @@ def check_not_found_exception(e, resource_type, resource, resource_status=None):
             resource,
             resource_status,
         )
-        return False
+        if config.CFN_VERBOSE_ERRORS:
+            raise e
+        else:
+            return False
 
     return True
 
@@ -268,7 +276,8 @@ def extract_resource_attribute(
             try:
                 return resource_state.get_cfn_attribute(attribute)
             except Exception:
-                pass
+                if config.CFN_VERBOSE_ERRORS:
+                    LOG.exception("could not fetch cfn attribute {attribute} from resource")
         raise Exception(
             f'Unable to extract attribute "{attribute}" from "{resource_type}" model class {type(resource_state)}'
         )
@@ -325,8 +334,11 @@ def get_attr_from_model_instance(
     try:
         inst = model_class(resource_name=resource_id, resource_json=resource)
         return inst.get_cfn_attribute(attribute)
-    except Exception as e:
-        LOG.debug("Failed to retrieve model attribute: %s", attribute, exc_info=e)
+    except Exception:
+        log_method = getattr(LOG, "debug")
+        if config.CFN_VERBOSE_ERRORS:
+            log_method = getattr(LOG, "exception")
+        log_method("Failed to retrieve model attribute: %s", attribute)
 
 
 def get_ref_from_model(resources: dict, logical_resource_id: str) -> Optional[str]:
@@ -871,7 +883,10 @@ def invoke_function(
     except Exception as e:
         if action_name == "delete" and check_not_found_exception(e, resource_type, resource):
             return
-        LOG.warning("Error calling %s with params: %s for resource: %s", function, params, resource)
+        log_method = getattr(LOG, "warning")
+        if config.CFN_VERBOSE_ERRORS:
+            log_method = getattr(LOG, "exception")
+        log_method("Error calling %s with params: %s for resource: %s", function, params, resource)
         raise e
 
     return result
@@ -1028,8 +1043,11 @@ class TemplateDeployer:
                 initialize=True,
                 action="CREATE",
             )
-        except Exception as e:
-            LOG.info("Unable to create stack %s: %s", self.stack.stack_name, e)
+        except Exception:
+            log_method = getattr(LOG, "info")
+            if config.CFN_VERBOSE_ERRORS:
+                log_method = getattr(LOG, "exception")
+            log_method("Unable to create stack %s: %s", self.stack.stack_name)
             self.stack.set_stack_status("CREATE_FAILED")
             raise
 
@@ -1083,6 +1101,8 @@ class TemplateDeployer:
             try:
                 return self.stack.resource_status(r_id).get("ResourceStatus") == "DELETE_COMPLETE"
             except Exception:
+                if config.CFN_VERBOSE_ERRORS:
+                    LOG.exception(f"failed to lookup if resource {r_id} is deleted")
                 return True  # just an assumption
 
         # a bit of a workaround until we have a proper dependency graph
@@ -1109,7 +1129,10 @@ class TemplateDeployer:
                             e,
                         )
                     else:
-                        LOG.warning(
+                        log_method = getattr(LOG, "warning")
+                        if config.CFN_VERBOSE_ERRORS:
+                            log_method = getattr(LOG, "exception")
+                        log_method(
                             "Failed delete of resource with id %s in iteration cycle %d. Retrying in next cycle.",
                             resource_id,
                             iteration_cycle,
@@ -1419,7 +1442,10 @@ class TemplateDeployer:
                 self.do_apply_changes_in_loop(changes, stack)
                 status = f"{action}_COMPLETE"
             except Exception as e:
-                LOG.debug(
+                log_method = getattr(LOG, "debug")
+                if config.CFN_VERBOSE_ERRORS:
+                    log_method = getattr(LOG, "exception")
+                log_method(
                     'Error applying changes for CloudFormation stack "%s": %s %s',
                     stack.stack_name,
                     e,
@@ -1501,7 +1527,10 @@ class TemplateDeployer:
                     del changes[j]
                     updated = True
                 except DependencyNotYetSatisfied as e:
-                    LOG.debug(
+                    log_method = getattr(LOG, "debug")
+                    if config.CFN_VERBOSE_ERRORS:
+                        log_method = getattr(LOG, "exception")
+                    log_method(
                         'Dependencies for "%s" not yet satisfied, retrying in next loop: %s',
                         resource_id,
                         e,
@@ -1608,7 +1637,10 @@ def resolve_outputs(stack) -> list[dict]:
             resolve_refs_recursively(stack.stack_name, stack.resources, details)
             value = details["Value"]
         except Exception as e:
-            LOG.debug("Unable to resolve references in stack outputs: %s - %s", details, e)
+            log_method = getattr(LOG, "debug")
+            if config.CFN_VERBOSE_ERRORS:
+                log_method = getattr(LOG, "exception")
+            log_method("Unable to resolve references in stack outputs: %s - %s", details, e)
         exports = details.get("Export") or {}
         export = exports.get("Name")
         export = resolve_refs_recursively(stack.stack_name, stack.resources, export)

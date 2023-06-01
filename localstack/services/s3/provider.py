@@ -78,6 +78,7 @@ from localstack.aws.api.s3 import (
     NoSuchCORSConfiguration,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
+    NoSuchUpload,
     NoSuchWebsiteConfiguration,
     NotificationConfiguration,
     ObjectIdentifier,
@@ -105,7 +106,7 @@ from localstack.aws.api.s3 import (
     Token,
 )
 from localstack.aws.api.s3 import Type as GranteeType
-from localstack.aws.api.s3 import WebsiteConfiguration
+from localstack.aws.api.s3 import UploadPartOutput, UploadPartRequest, WebsiteConfiguration
 from localstack.aws.handlers import (
     modify_service_response,
     preprocess_request,
@@ -582,13 +583,34 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 UploadId=request["UploadId"],
             )
 
+        bucket_name = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket_name)
+        if not (upload_id := request.get("UploadId")) in moto_bucket.multiparts:
+            raise NoSuchUpload(
+                "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+                UploadId=upload_id,
+            )
+
         response: CompleteMultipartUploadOutput = call_moto(context)
 
         # moto return the Location in AWS `http://{bucket}.s3.amazonaws.com/{key}`
-        response[
-            "Location"
-        ] = f'{get_full_default_bucket_location(request["Bucket"])}{response["Key"]}'
+        response["Location"] = f'{get_full_default_bucket_location(bucket_name)}{response["Key"]}'
         self._notify(context)
+        return response
+
+    @handler("UploadPart", expand=False)
+    def upload_part(self, context: RequestContext, request: UploadPartRequest) -> UploadPartOutput:
+        bucket_name = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket_name)
+        if not (upload_id := request.get("UploadId")) in moto_bucket.multiparts:
+            raise NoSuchUpload(
+                "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+                UploadId=upload_id,
+            )
+
+        response: UploadPartOutput = call_moto(context)
         return response
 
     @handler("ListMultipartUploads", expand=False)

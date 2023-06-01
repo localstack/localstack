@@ -1283,19 +1283,20 @@ def check_lambda_logs(aws_client):
 def create_policy(aws_client):
     policy_arns = []
 
-    def _create_policy(*args, **kwargs):
+    def _create_policy(*args, iam_client=None, **kwargs):
+        iam_client = iam_client or aws_client.iam
         if "PolicyName" not in kwargs:
             kwargs["PolicyName"] = f"policy-{short_uid()}"
-        response = aws_client.iam.create_policy(*args, **kwargs)
+        response = iam_client.create_policy(*args, **kwargs)
         policy_arn = response["Policy"]["Arn"]
-        policy_arns.append(policy_arn)
+        policy_arns.append((policy_arn, iam_client))
         return response
 
     yield _create_policy
 
-    for policy_arn in policy_arns:
+    for policy_arn, iam_client in policy_arns:
         try:
-            aws_client.iam.delete_policy(PolicyArn=policy_arn)
+            iam_client.delete_policy(PolicyArn=policy_arn)
         except Exception:
             LOG.debug("Could not delete policy '%s' during test cleanup", policy_arn)
 
@@ -1379,23 +1380,24 @@ def wait_and_assume_role(aws_client):
 def create_role(aws_client):
     role_names = []
 
-    def _create_role(**kwargs):
+    def _create_role(iam_client=None, **kwargs):
         if not kwargs.get("RoleName"):
             kwargs["RoleName"] = f"role-{short_uid()}"
-        result = aws_client.iam.create_role(**kwargs)
-        role_names.append(result["Role"]["RoleName"])
+        iam_client = iam_client or aws_client.iam
+        result = iam_client.create_role(**kwargs)
+        role_names.append((result["Role"]["RoleName"], iam_client))
         return result
 
     yield _create_role
 
-    for role_name in role_names:
+    for role_name, iam_client in role_names:
         # detach policies
-        attached_policies = aws_client.iam.list_attached_role_policies(RoleName=role_name)[
+        attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)[
             "AttachedPolicies"
         ]
         for attached_policy in attached_policies:
             try:
-                aws_client.iam.detach_role_policy(
+                iam_client.detach_role_policy(
                     RoleName=role_name, PolicyArn=attached_policy["PolicyArn"]
                 )
             except Exception:
@@ -1404,10 +1406,10 @@ def create_role(aws_client):
                     attached_policy["PolicyArn"],
                     role_name,
                 )
-        role_policies = aws_client.iam.list_role_policies(RoleName=role_name)["PolicyNames"]
+        role_policies = iam_client.list_role_policies(RoleName=role_name)["PolicyNames"]
         for role_policy in role_policies:
             try:
-                aws_client.iam.delete_role_policy(RoleName=role_name, PolicyName=role_policy)
+                iam_client.delete_role_policy(RoleName=role_name, PolicyName=role_policy)
             except Exception:
                 LOG.debug(
                     "Could not delete role policy '%s' from '%s' during cleanup",
@@ -1415,7 +1417,7 @@ def create_role(aws_client):
                     role_name,
                 )
         try:
-            aws_client.iam.delete_role(RoleName=role_name)
+            iam_client.delete_role(RoleName=role_name)
         except Exception:
             LOG.debug("Could not delete role '%s' during cleanup", role_name)
 
@@ -1959,10 +1961,12 @@ def create_policy_doc(effect: str, actions: List, resource=None) -> Dict:
 
 @pytest.fixture
 def create_policy_generated_document(create_policy):
-    def _create_policy_with_doc(effect, actions, policy_name=None, resource=None):
+    def _create_policy_with_doc(effect, actions, policy_name=None, resource=None, iam_client=None):
         policy_name = policy_name or f"p-{short_uid()}"
         policy = create_policy_doc(effect, actions, resource=resource)
-        response = create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(policy))
+        response = create_policy(
+            PolicyName=policy_name, PolicyDocument=json.dumps(policy), iam_client=iam_client
+        )
         policy_arn = response["Policy"]["Arn"]
         return policy_arn
 
@@ -1971,23 +1975,29 @@ def create_policy_generated_document(create_policy):
 
 @pytest.fixture
 def create_role_with_policy(create_role, create_policy_generated_document, aws_client):
-    def _create_role_with_policy(effect, actions, assume_policy_doc, resource=None, attach=True):
+    def _create_role_with_policy(
+        effect, actions, assume_policy_doc, resource=None, attach=True, iam_client=None
+    ):
+        iam_client = iam_client or aws_client.iam
+
         role_name = f"role-{short_uid()}"
-        result = create_role(RoleName=role_name, AssumeRolePolicyDocument=assume_policy_doc)
+        result = create_role(
+            RoleName=role_name, AssumeRolePolicyDocument=assume_policy_doc, iam_client=iam_client
+        )
         role_arn = result["Role"]["Arn"]
         policy_name = f"p-{short_uid()}"
 
         if attach:
             # create role and attach role policy
             policy_arn = create_policy_generated_document(
-                effect, actions, policy_name=policy_name, resource=resource
+                effect, actions, policy_name=policy_name, resource=resource, iam_client=iam_client
             )
-            aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+            iam_client.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
         else:
             # put role policy
             policy_document = create_policy_doc(effect, actions, resource=resource)
             policy_document = json.dumps(policy_document)
-            aws_client.iam.put_role_policy(
+            iam_client.put_role_policy(
                 RoleName=role_name, PolicyName=policy_name, PolicyDocument=policy_document
             )
 
