@@ -158,8 +158,9 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
             if config.DEBUG:
                 console.print_exception()
             raise click.ClickException(
-                "It appears you have a light install of localstack which only supports running in docker\n"
-                "If you would like to use --host, please reinstall localstack using `pip install localstack[runtime]`"
+                "It appears you have a light install of localstack which only supports running in docker.\n"
+                "If you would like to use --host, please install localstack with Python using "
+                "`pip install localstack[runtime]` instead."
             )
     else:
         # make sure to initialize the bootstrap environment and directories for the host (even if we're executing
@@ -464,10 +465,7 @@ def update_images(image_list: List[str]):
 
 
 # legacy support
-@localstack.group(
-    name="infra",
-    help="Manipulate LocalStack infrastructure (legacy)",
-)
+@localstack.group(name="infra", help="Manipulate LocalStack infrastructure", deprecated=True)
 def infra():
     pass
 
