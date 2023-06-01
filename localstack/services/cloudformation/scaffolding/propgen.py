@@ -24,7 +24,7 @@ class Item:
         if required:
             return cls(name=name, type=type, required=required)
         else:
-            return cls(name=name, type=f"Optional[{type}] = None", required=required)
+            return cls(name=name, type=f"Optional[{type}]", required=required)
 
 
 @dataclass
@@ -39,8 +39,7 @@ class Struct:
             raw_text = "pass"
         formatted_items = textwrap.indent(raw_text, "    ")
         return f"""
-@dataclass
-class {self.name}:
+class {self.name}(TypedDict):
 {formatted_items}
 """
 
