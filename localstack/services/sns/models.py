@@ -9,12 +9,7 @@ from localstack.aws.api.sns import (
     subscriptionARN,
     topicARN,
 )
-from localstack.services.stores import (
-    AccountRegionBundle,
-    BaseStore,
-    CrossAccountAttribute,
-    LocalAttribute,
-)
+from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import long_uid
 
@@ -116,10 +111,10 @@ class SnsSubscription(TypedDict):
 
 class SnsStore(BaseStore):
     # maps topic ARN to subscriptions ARN
-    topic_subscriptions: Dict[str, List[str]] = CrossAccountAttribute(default=dict)
+    topic_subscriptions: Dict[str, List[str]] = LocalAttribute(default=dict)
 
     # maps subscription ARN to SnsSubscription
-    subscriptions: Dict[str, SnsSubscription] = CrossAccountAttribute(default=dict)
+    subscriptions: Dict[str, SnsSubscription] = LocalAttribute(default=dict)
 
     # maps confirmation token to subscription ARN
     subscription_tokens: Dict[str, str] = LocalAttribute(default=dict)
@@ -134,7 +129,7 @@ class SnsStore(BaseStore):
     sms_messages: List[Dict] = LocalAttribute(default=list)
 
     # filter policy are stored as JSON string in subscriptions, store the decoded result Dict
-    subscription_filter_policy: Dict[subscriptionARN, Dict] = CrossAccountAttribute(default=dict)
+    subscription_filter_policy: Dict[subscriptionARN, Dict] = LocalAttribute(default=dict)
 
     def get_topic_subscriptions(self, topic_arn: str) -> List[SnsSubscription]:
         topic_subscriptions = self.topic_subscriptions.get(topic_arn, [])

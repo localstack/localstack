@@ -1187,6 +1187,19 @@ class TestSNSProvider:
         snapshot.match("wrong-endpoint", e.value.response)
 
     @pytest.mark.aws_validated
+    def test_publish_wrong_arn_format(self, snapshot, aws_client):
+        message = "Good news everyone!"
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.publish(Message=message, TopicArn="randomstring")
+
+        snapshot.match("invalid-topic-arn", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.publish(Message=message, TopicArn="randomstring:1")
+
+        snapshot.match("invalid-topic-arn-1", e.value.response)
+
+    @pytest.mark.aws_validated
     def test_publish_sqs_from_sns(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):

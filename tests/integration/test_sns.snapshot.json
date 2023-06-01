@@ -3978,5 +3978,32 @@
         "Type": "UnsubscribeConfirmation"
       }
     }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_wrong_arn_format": {
+    "recorded-date": "01-06-2023, 20:18:02",
+    "recorded-content": {
+      "invalid-topic-arn": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not 1",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-topic-arn-1": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not 2",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
