@@ -370,8 +370,7 @@ def cmd_update_all(ctx):
 @localstack_update.command(name="localstack-cli", help="Update LocalStack CLI tools")
 @publish_invocation
 def cmd_update_localstack_cli():
-    # if is_frozen_bundle():
-    if True:
+    if is_frozen_bundle():
         # "update" can only be performed if running from source / in a non-frozen interpreter
         console.print(
             ":heavy_multiplication_x: The LocalStack CLI can only update itself if installed via PIP. "
