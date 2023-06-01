@@ -979,20 +979,20 @@ def deploy_cfn_template(
         stack_id = response["StackId"]
         state.append({"stack_id": stack_id, "change_set_id": change_set_id})
 
-        assert wait_until(is_change_set_created_and_available(change_set_id), _max_wait=60)
+        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+            ChangeSetName=change_set_id
+        )
         aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
-        wait_result = wait_until(is_change_set_finished(change_set_id), _max_wait=max_wait or 60)
+        if is_update:
+            aws_client.cloudformation.get_waiter(
+                "stack_update_complete",
+            ).wait(StackName=stack_id)
+        else:
+            aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_id)
 
         describe_stack_res = aws_client.cloudformation.describe_stacks(StackName=stack_id)[
             "Stacks"
         ][0]
-
-        if not wait_result:
-            events = aws_client.cloudformation.describe_stack_events(StackName=stack_id)[
-                "StackEvents"
-            ]
-            raise StackDeployError(describe_stack_res, events)
-
         outputs = describe_stack_res.get("Outputs", [])
 
         mapped_outputs = {o["OutputKey"]: o.get("OutputValue") for o in outputs}
