@@ -499,11 +499,11 @@ def cmd_infra_start(ctx, *args, **kwargs):
            source '$HOME/.localstack/completion.bash.inc'
            " >> $HOME/.bash_profile
            source $HOME/.bash_profile
-
+        \b
            # zsh
            ## Set the LocalStack completion code for zsh to autoload on startup:
            localstack completion zsh > "${fpath[1]}/_localstack"
-
+        \b
            # fish
            ## Set the LocalStack completion code for fish to autoload on startup:
            localstack completion fish > ~/.config/fish/completions/localstack.fish
