@@ -7,7 +7,15 @@ Parameters:
 Resources:
   MyResource:
     Type: AWS::DynamoDB::Table
-    Properties: {}
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      TableName: example-table
 Outputs:
   MyRef:
     Value:
