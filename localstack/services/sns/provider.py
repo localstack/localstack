@@ -5,7 +5,6 @@ from typing import Dict, List
 from botocore.utils import InvalidArnException
 from moto.core.utils import camelcase_to_pascal, underscores_to_camelcase
 from moto.sns import sns_backends
-from moto.sns.exceptions import SNSNotFoundError
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH, SNSBackend, Topic
 from moto.sns.utils import is_e164
 
@@ -16,13 +15,11 @@ from localstack.aws.api.sns import (
     BatchEntryIdsNotDistinctException,
     ConfirmSubscriptionResponse,
     CreateEndpointResponse,
-    CreatePlatformApplicationResponse,
     CreateTopicResponse,
     GetSubscriptionAttributesResponse,
     GetTopicAttributesResponse,
     InvalidParameterException,
     InvalidParameterValueException,
-    ListSubscriptionsResponse,
     ListTagsForResourceResponse,
     MapStringToString,
     MessageAttributeMap,
@@ -46,7 +43,6 @@ from localstack.aws.api.sns import (
     authenticateOnUnsubscribe,
     boolean,
     messageStructure,
-    nextToken,
     subscriptionARN,
     topicARN,
     topicName,
@@ -112,12 +108,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
-        try:
-            moto_response: GetTopicAttributesResponse = call_moto(context)
-        except CommonServiceException as exc:
-            if exc.code == "NotFound":
-                raise NotFoundException("Topic does not exist")
-            raise
+        moto_response: GetTopicAttributesResponse = call_moto(context)
         # TODO: fix some attributes by moto, see snapshot
         # TODO: very hacky way to get the attributes we need instead of a moto patch
         # would need more work to have the proper format out of moto, maybe extract the model to our store
@@ -300,25 +291,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         tags = store.sns_tags.setdefault(resource_arn, [])
         return ListTagsForResourceResponse(Tags=tags)
 
-    def delete_platform_application(
-        self, context: RequestContext, platform_application_arn: String
-    ) -> None:
-        call_moto(context)
-
-    def delete_endpoint(self, context: RequestContext, endpoint_arn: String) -> None:
-        call_moto(context)
-
-    def create_platform_application(
-        self, context: RequestContext, name: String, platform: String, attributes: MapStringToString
-    ) -> CreatePlatformApplicationResponse:
-        # TODO: validate platform
-        # see https://docs.aws.amazon.com/cli/latest/reference/sns/create-platform-application.html
-        # list of possible values: ADM, Baidu, APNS, APNS_SANDBOX, GCM, MPNS, WNS
-        # each platform has a specific way to handle credentials
-        # this can also be used for dispatching message to the right platform
-        moto_response: CreatePlatformApplicationResponse = call_moto(context)
-        return moto_response
-
     def create_platform_endpoint(
         self,
         context: RequestContext,
@@ -394,12 +366,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         attributes = {k: v for k, v in sub.items() if k not in removed_attrs}
         return GetSubscriptionAttributesResponse(Attributes=attributes)
-
-    def list_subscriptions(
-        self, context: RequestContext, next_token: nextToken = None
-    ) -> ListSubscriptionsResponse:
-        moto_response: ListSubscriptionsResponse = call_moto(context)
-        return moto_response
 
     def publish(
         self,
@@ -485,10 +451,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                         "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
                     )
             else:
-                try:
-                    moto_sns_backend.get_topic(topic_or_target_arn)
-                except SNSNotFoundError:
-                    raise NotFoundException("Topic does not exist")
+                # This is just to check if topic exists (will raise TopicNotFound otherwise)
+                moto_sns_backend.get_topic(topic_or_target_arn)
 
         message_ctx = SnsMessage(
             type="Notification",
