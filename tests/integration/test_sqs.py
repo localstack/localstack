@@ -13,6 +13,7 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
+    DEFAULT_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_SECRET_ACCESS_KEY,
@@ -95,8 +96,7 @@ class TestSqsProvider:
     def test_cross_account_access(
         self, monkeypatch, sqs_create_queue, aws_client_factory, strategy
     ):
-        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")
-
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
         queue_url = sqs_create_queue()
 
         # Ensure SQS operations work across accounts
@@ -127,6 +127,32 @@ class TestSqsProvider:
         # - SetQueueAttributes
         # - TagQueue
         # - UntagQueue
+
+    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    def test_cross_account_get_queue_url(
+        self, monkeypatch, sqs_create_queue, aws_client_factory, strategy
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+        queue_name = f"test-queue-cross-account-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        account_id, region_name, queue_name_from_url = parse_queue_url(queue_url)
+        assert account_id == DEFAULT_AWS_ACCOUNT_ID
+        assert region_name == TEST_REGION
+        assert queue_name_from_url == queue_name
+
+        # Get another client in the same region
+        client = aws_client_factory.get_client(
+            "sqs",
+            TEST_REGION,
+            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+        )
+
+        # test that you can get the queue url from another account, if you set the owner
+        queue_url_2 = client.get_queue_url(QueueName=queue_name, QueueOwnerAWSAccountId=account_id)[
+            "QueueUrl"
+        ]
+        assert queue_url == queue_url_2
 
     @pytest.mark.aws_validated
     def test_list_queues(self, sqs_create_queue, aws_client):

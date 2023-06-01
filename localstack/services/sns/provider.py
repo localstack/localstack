@@ -5,7 +5,6 @@ from typing import Dict, List
 from botocore.utils import InvalidArnException
 from moto.core.utils import camelcase_to_pascal, underscores_to_camelcase
 from moto.sns import sns_backends
-from moto.sns.exceptions import SNSNotFoundError
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH, SNSBackend, Topic
 from moto.sns.utils import is_e164
 
@@ -485,10 +484,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                         "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
                     )
             else:
-                try:
-                    moto_sns_backend.get_topic(topic_or_target_arn)
-                except SNSNotFoundError:
-                    raise NotFoundException("Topic does not exist")
+                if topic_or_target_arn not in store.topic_subscriptions:
+                    raise NotFoundException(
+                        "Topic does not exist",
+                    )
 
         message_ctx = SnsMessage(
             type="Notification",
