@@ -299,6 +299,8 @@ jobs:
       - store_artifacts:
           path: scripts/implementation_coverage_full.csv
           destination: community/implementation_coverage_full.csv
+      - store_artifacts:
+          path: .coverage
 
   push:
     executor: ubuntu-machine-amd64
