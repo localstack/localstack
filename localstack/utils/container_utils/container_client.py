@@ -162,7 +162,7 @@ class PortMappings:
         self,
         port: Union[int, PortRange],
         mapped: Union[int, PortRange] = None,
-        protocol: str = "tcp",
+        protocol: PortProtocol = "tcp",
     ):
         mapped = mapped or port
         if isinstance_union(port, PortRange):
@@ -274,7 +274,7 @@ class PortMappings:
         items = [item for k, v in self.mappings.items() for item in entry(k, v)]
         return dict(items)
 
-    def contains(self, port: int, protocol: str = "tcp") -> bool:
+    def contains(self, port: int, protocol: PortProtocol = "tcp") -> bool:
         for from_range_w_protocol, to_range in self.mappings.items():
             from_protocol = from_range_w_protocol[1]
             if from_protocol == protocol:
