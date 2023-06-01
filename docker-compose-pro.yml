@@ -15,6 +15,7 @@ services:
       - PERSISTENCE=${PERSISTENCE-}
       - LOCALSTACK_API_KEY=${LOCALSTACK_API_KEY-}  # required for Pro
       - DOCKER_HOST=unix:///var/run/docker.sock
+      # - USE_MANAGED_DOCKER_NETWORK=1  # allow LocalStack to manage networking
     volumes:
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
