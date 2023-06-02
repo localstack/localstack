@@ -41,10 +41,6 @@ from localstack.services.cloudformation.service_models import (
     GenericBaseModel,
 )
 from localstack.services.cloudformation.stores import exports_map
-from localstack.services.opensearch.resource_providers.domain import OpenSearchDomainProvider
-
-# TEMPORARY: develop plugin system
-from localstack.services.ssm.resource_providers.parameter import SSMParameterProvider
 from localstack.utils.aws import aws_stack
 from localstack.utils.functions import prevent_stack_overflow
 from localstack.utils.json import clone_safe, json_safe
@@ -53,11 +49,6 @@ from localstack.utils.strings import first_char_to_lower, to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
-
-
-# TEMPORARY: develop plugin system
-_ = SSMParameterProvider
-_ = OpenSearchDomainProvider
 
 ACTION_CREATE = "create"
 ACTION_DELETE = "delete"

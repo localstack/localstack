@@ -9,11 +9,12 @@ from enum import Enum, auto
 from logging import Logger
 from typing import Generic, Optional, Type, TypedDict, TypeVar
 
+from plugin import Plugin, PluginManager
+
 from localstack.aws.connect import ServiceLevelClientFactory, connect_to
 
 Properties = TypeVar("Properties")
 
-PRIVATE_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 
 
@@ -117,6 +118,14 @@ class ResourceRequest(Generic[Properties]):
     tags: dict[str, str] = field(default_factory=dict)
 
 
+class CloudFormationResourceProviderPlugin(Plugin):
+    """
+    Base class for resource provider plugins.
+    """
+
+    namespace = "localstack.cloudformation.resource_providers"
+
+
 class ResourceProvider(Generic[Properties]):
     """
     This provides a base class onto which service-specific resource providers are built.
@@ -166,24 +175,31 @@ class ResourceProviderExecutor:
 
     def execute_action(self, raw_payload: ResourceProviderPayload) -> ProgressEvent[Properties]:
         # lookup provider in private registry
-        # TODO: delegate to a concrete subclass
-        if provider_cls := PRIVATE_REGISTRY.get(raw_payload["resourceType"]):
+        resource_provider = self.load_resource_provider(raw_payload["resourceType"])
+        if resource_provider:
             change_type = raw_payload["action"]
             request = convert_payload(
                 stack_name=self.stack_name, stack_id=self.stack_id, payload=raw_payload
             )
 
-            provider = provider_cls()
             match change_type:
                 case "Add":
-                    return provider.create(request)
+                    return resource_provider.create(request)
                 case "Dynamic" | "Modify":
-                    return provider.update(request)
+                    return resource_provider.update(request)
                 case "Remove":
-                    return provider.delete(request)
+                    return resource_provider.delete(request)
                 case _:
                     raise NotImplementedError(change_type)
 
         else:
             # custom provider
             raise NoResourceProvider
+
+    @staticmethod
+    def load_resource_provider(resource_type: str) -> Optional[ResourceProvider]:
+        plugin = plugin_manager.load(resource_type)
+        return plugin.factory()
+
+
+plugin_manager = PluginManager(CloudFormationResourceProviderPlugin.namespace)

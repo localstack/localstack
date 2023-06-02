@@ -1,11 +1,13 @@
-from typing import Optional, TypedDict
+from __future__ import annotations
+
+from typing import Optional, Type, TypedDict
 
 from localstack.services.cloudformation.resource_provider import (
+    CloudFormationResourceProviderPlugin,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
     ResourceRequest,
-    register_resource_provider,
 )
 from localstack.utils.strings import short_uid
 
@@ -27,7 +29,6 @@ class SSMParameterAllProperties(SSMParameterProperties):
     physical_resource_id: Optional[str]
 
 
-@register_resource_provider
 class SSMParameterProvider(ResourceProvider[SSMParameterAllProperties]):
     TYPE = "AWS::SSM::Parameter"
 
@@ -83,3 +84,13 @@ class SSMParameterProvider(ResourceProvider[SSMParameterAllProperties]):
         name = request.desired_state["Name"]
         request.aws_client_factory.ssm.delete_parameter(Name=name)
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=request.desired_state)
+
+
+class SSMParameterProviderPlugin(CloudFormationResourceProviderPlugin):
+    name = "AWS::SSM::Parameter"
+
+    def __init__(self):
+        self.factory: Optional[Type[ResourceProvider]] = None
+
+    def load(self):
+        self.factory = SSMParameterProvider
