@@ -27,8 +27,10 @@ class KinesisEventSourceListener(StreamEventSourceListener):
         event_sources = self._invoke_adapter.get_event_sources(source_arn=r".*:kinesis:.*")
         return [source for source in event_sources if source["State"] == "Enabled"]
 
-    def _get_stream_client(self, region_name):
-        return aws_stack.connect_to_service("kinesis", region_name=region_name)
+    def _get_stream_client(self, function_arn: str, region_name: str):
+        return self._invoke_adapter.get_client_factory(
+            function_arn=function_arn, region_name=region_name
+        ).kinesis.request_metadata(source_arn=function_arn)
 
     def _get_stream_description(self, stream_client, stream_arn):
         stream_name = stream_arn.split("/")[-1]
@@ -64,9 +66,7 @@ class KinesisEventSourceListener(StreamEventSourceListener):
                     "eventSource": "aws:kinesis",
                     "eventVersion": "1.0",
                     "eventName": "aws:kinesis:record",
-                    "invokeIdentityArn": "arn:aws:iam::{0}:role/lambda-role".format(
-                        get_aws_account_id()
-                    ),
+                    "invokeIdentityArn": f"arn:aws:iam::{get_aws_account_id()}:role/lambda-role",
                     "awsRegion": aws_stack.get_region(),
                     "kinesis": record_payload,
                 }

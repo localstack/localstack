@@ -59,7 +59,7 @@ class StreamEventSourceListener(EventSourceListener):
         """
         raise NotImplementedError
 
-    def _get_stream_client(self, region_name: str):
+    def _get_stream_client(self, function_arn: str, region_name: str):
         """
         to be implemented by subclasses
         :returns: An AWS service client instance for communicating with the appropriate API
@@ -332,7 +332,7 @@ class StreamEventSourceListener(EventSourceListener):
                     mapping_uuid = source["UUID"]
                     stream_arn = source["EventSourceArn"]
                     region_name = extract_region_from_arn(stream_arn)
-                    stream_client = self._get_stream_client(region_name)
+                    stream_client = self._get_stream_client(source["FunctionArn"], region_name)
                     batch_size = source.get("BatchSize", 10)
                     failure_destination = (
                         source.get("DestinationConfig", {})
