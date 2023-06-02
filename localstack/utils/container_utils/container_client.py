@@ -134,6 +134,8 @@ class Ulimit:
 
 # defines the type for port mappings (source->target port range)
 PortRange = Union[List, HashableList]
+# defines the protocol for a port range ("tcp" or "udp")
+PortProtocol = str
 
 
 def isinstance_union(obj, class_or_tuple):
@@ -150,7 +152,7 @@ class PortMappings:
     # bind host to be used for defining port mappings
     bind_host: str
     # maps `from` port range to `to` port range for port mappings
-    mappings: Dict[PortRange, List]
+    mappings: Dict[Tuple[PortRange, PortProtocol], List]
 
     def __init__(self, bind_host: str = None):
         self.bind_host = bind_host if bind_host else ""
@@ -160,22 +162,24 @@ class PortMappings:
         self,
         port: Union[int, PortRange],
         mapped: Union[int, PortRange] = None,
-        protocol: str = "tcp",
+        protocol: PortProtocol = "tcp",
     ):
         mapped = mapped or port
         if isinstance_union(port, PortRange):
             for i in range(port[1] - port[0] + 1):
                 if isinstance_union(mapped, PortRange):
-                    self.add(port[0] + i, mapped[0] + i)
+                    self.add(port[0] + i, mapped[0] + i, protocol)
                 else:
-                    self.add(port[0] + i, mapped)
+                    self.add(port[0] + i, mapped, protocol)
             return
         if port is None or int(port) <= 0:
             raise Exception(f"Unable to add mapping for invalid port: {port}")
-        if self.contains(port):
+        if self.contains(port, protocol):
             return
         bisected_host_port = None
-        for from_range, to_range in dict(self.mappings).items():
+        for (from_range, from_protocol), to_range in self.mappings.items():
+            if not from_protocol == protocol:
+                continue
             if not self.in_expanded_range(port, from_range):
                 continue
             if not self.in_expanded_range(mapped, to_range):
@@ -184,41 +188,44 @@ class PortMappings:
             to_range_len = to_range[1] - to_range[0]
             is_uniform = from_range_len == to_range_len
             if is_uniform:
-                self.expand_range(port, from_range, remap=True)
-                self.expand_range(mapped, to_range)
+                self.expand_range(port, from_range, protocol=protocol, remap=True)
+                self.expand_range(mapped, to_range, protocol=protocol)
             else:
                 if not self.in_range(mapped, to_range):
                     continue
                 # extending a 1 to 1 mapping to be many to 1
                 elif from_range_len == 1:
-                    self.expand_range(port, from_range, remap=True)
+                    self.expand_range(port, from_range, protocol=protocol, remap=True)
                 # splitting a uniform mapping
                 else:
                     bisected_port_index = mapped - to_range[0]
                     bisected_host_port = from_range[0] + bisected_port_index
-                    self.bisect_range(mapped, to_range)
-                    self.bisect_range(bisected_host_port, from_range, remap=True)
+                    self.bisect_range(mapped, to_range, protocol=protocol)
+                    self.bisect_range(bisected_host_port, from_range, protocol=protocol, remap=True)
                     break
             return
-        protocol = str(protocol or "tcp").lower()
         if bisected_host_port is None:
-            port_range = [port, port, protocol]
+            port_range = [port, port]
         elif bisected_host_port < port:
-            port_range = [bisected_host_port, port, protocol]
+            port_range = [bisected_host_port, port]
         else:
-            port_range = [port, bisected_host_port, protocol]
-        self.mappings[HashableList(port_range)] = [mapped, mapped]
+            port_range = [port, bisected_host_port]
+        protocol = str(protocol or "tcp").lower()
+        self.mappings[(HashableList(port_range), protocol)] = [mapped, mapped]
 
     def to_str(self) -> str:
         bind_address = f"{self.bind_host}:" if self.bind_host else ""
 
         def entry(k, v):
-            protocol = "/%s" % k[2] if k[2] != "tcp" else ""
-            if k[0] == k[1] and v[0] == v[1]:
-                return "-p %s%s:%s%s" % (bind_address, k[0], v[0], protocol)
-            if k[0] != k[1] and v[0] == v[1]:
-                return "-p %s%s-%s:%s%s" % (bind_address, k[0], k[1], v[0], protocol)
-            return "-p %s%s-%s:%s-%s%s" % (bind_address, k[0], k[1], v[0], v[1], protocol)
+            from_range, protocol = k
+            to_range = v
+            # use /<protocol> suffix if the protocol is not"tcp"
+            protocol_suffix = f"/{protocol}" if protocol != "tcp" else ""
+            if from_range[0] == from_range[1] and to_range[0] == to_range[1]:
+                return f"-p {bind_address}{from_range[0]}:{to_range[0]}{protocol_suffix}"
+            if from_range[0] != from_range[1] and to_range[0] == to_range[1]:
+                return f"-p {bind_address}{from_range[0]}-{from_range[1]}:{to_range[0]}{protocol_suffix}"
+            return f"-p {bind_address}{from_range[0]}-{from_range[1]}:{to_range[0]}-{to_range[1]}{protocol_suffix}"
 
         return " ".join([entry(k, v) for k, v in self.mappings.items()])
 
@@ -226,10 +233,15 @@ class PortMappings:
         bind_address = f"{self.bind_host}:" if self.bind_host else ""
 
         def entry(k, v):
-            protocol = "/%s" % k[2] if k[2] != "tcp" else ""
-            if k[0] == k[1] and v[0] == v[1]:
-                return ["-p", f"{bind_address}{k[0]}:{v[0]}{protocol}"]
-            return ["-p", f"{bind_address}{k[0]}-{k[1]}:{v[0]}-{v[1]}{protocol}"]
+            from_range, protocol = k
+            to_range = v
+            protocol_suffix = f"/{protocol}" if protocol != "tcp" else ""
+            if from_range[0] == from_range[1] and to_range[0] == to_range[1]:
+                return ["-p", f"{bind_address}{from_range[0]}:{to_range[0]}{protocol_suffix}"]
+            return [
+                "-p",
+                f"{bind_address}{from_range[0]}-{from_range[1]}:{to_range[0]}-{to_range[1]}{protocol_suffix}",
+            ]
 
         return [item for k, v in self.mappings.items() for item in entry(k, v)]
 
@@ -237,31 +249,38 @@ class PortMappings:
         bind_address = self.bind_host or ""
 
         def entry(k, v):
-            protocol = "/%s" % k[2]
-            if k[0] != k[1] and v[0] == v[1]:
-                container_port = v[0]
-                host_ports = list(range(k[0], k[1] + 1))
+            from_range, protocol = k
+            to_range = v
+            protocol_suffix = f"/{protocol}"
+            if from_range[0] != from_range[1] and to_range[0] == to_range[1]:
+                container_port = to_range[0]
+                host_ports = list(range(from_range[0], from_range[1] + 1))
                 return [
                     (
-                        f"{container_port}{protocol}",
+                        f"{container_port}{protocol_suffix}",
                         (bind_address, host_ports) if bind_address else host_ports,
                     )
                 ]
             return [
                 (
-                    f"{container_port}{protocol}",
+                    f"{container_port}{protocol_suffix}",
                     (bind_address, host_port) if bind_address else host_port,
                 )
-                for container_port, host_port in zip(range(v[0], v[1] + 1), range(k[0], k[1] + 1))
+                for container_port, host_port in zip(
+                    range(to_range[0], to_range[1] + 1), range(from_range[0], from_range[1] + 1)
+                )
             ]
 
         items = [item for k, v in self.mappings.items() for item in entry(k, v)]
         return dict(items)
 
-    def contains(self, port: int) -> bool:
-        for from_range, to_range in self.mappings.items():
-            if self.in_range(port, from_range):
-                return True
+    def contains(self, port: int, protocol: PortProtocol = "tcp") -> bool:
+        for from_range_w_protocol, to_range in self.mappings.items():
+            from_protocol = from_range_w_protocol[1]
+            if from_protocol == protocol:
+                from_range = from_range_w_protocol[0]
+                if self.in_range(port, from_range):
+                    return True
 
     def in_range(self, port: int, range: PortRange) -> bool:
         return port >= range[0] and port <= range[1]
@@ -269,7 +288,9 @@ class PortMappings:
     def in_expanded_range(self, port: int, range: PortRange):
         return port >= range[0] - 1 and port <= range[1] + 1
 
-    def expand_range(self, port: int, range: PortRange, remap: bool = False):
+    def expand_range(
+        self, port: int, range: PortRange, protocol: PortProtocol = "tcp", remap: bool = False
+    ):
         """
         Expand the given port range by the given port. If remap==True, put the updated range into self.mappings
         """
@@ -283,9 +304,11 @@ class PortMappings:
         else:
             raise Exception(f"Unable to add port {port} to existing range {range}")
         if remap:
-            self._remap_range(range, new_range)
+            self._remap_range(range, new_range, protocol=protocol)
 
-    def bisect_range(self, port: int, range: PortRange, remap: bool = False):
+    def bisect_range(
+        self, port: int, range: PortRange, protocol: PortProtocol = "tcp", remap: bool = False
+    ):
         """
         Bisect a port range, at the provided port. This is needed in some cases when adding a
         non-uniform host to port mapping adjacent to an existing port range.
@@ -299,10 +322,12 @@ class PortMappings:
         else:
             new_range[1] = port - 1
         if remap:
-            self._remap_range(range, new_range)
+            self._remap_range(range, new_range, protocol)
 
-    def _remap_range(self, old_key: PortRange, new_key: PortRange):
-        self.mappings[HashableList(new_key)] = self.mappings.pop(old_key)
+    def _remap_range(self, old_key: PortRange, new_key: PortRange, protocol: PortProtocol):
+        self.mappings[(HashableList(new_key), protocol)] = self.mappings.pop(
+            (HashableList(old_key), protocol)
+        )
 
     def __repr__(self):
         return f"<PortMappings: {self.to_dict()}>"
@@ -1087,14 +1112,14 @@ class Util:
                     )
                     _, host_port, container_port = port_split
                 else:
-                    raise ValueError("Invalid port string provided: %s", port_mapping)
+                    raise ValueError(f"Invalid port string provided: {port_mapping}")
                 host_port_split = host_port.split("-")
                 if len(host_port_split) == 2:
                     host_port = [int(host_port_split[0]), int(host_port_split[1])]
                 elif len(host_port_split) == 1:
                     host_port = int(host_port)
                 else:
-                    raise ValueError("Invalid port string provided: %s", port_mapping)
+                    raise ValueError(f"Invalid port string provided: {port_mapping}")
                 if "/" in container_port:
                     container_port, protocol = container_port.split("/")
                 ports = ports if ports is not None else PortMappings()
