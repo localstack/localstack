@@ -1,5 +1,6 @@
 import json
 import os.path
+from operator import itemgetter
 
 import pytest
 import requests
@@ -219,6 +220,46 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
     )
     snapshot.match("method", method)
     # TODO: snapshot the authorizer too? it's not attached to the REST API
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$.resources.items..resourceMethods.GET"  # TODO: this is really weird, after importing, AWS returns them empty?
+    ]
+)
+def test_cfn_deploy_apigateway_from_s3_swagger(
+    deploy_cfn_template, snapshot, aws_client, s3_bucket
+):
+    # put the swagger file in S3
+    swagger_template = load_file(os.path.join(os.path.dirname(__file__), "../../files/pets.json"))
+    key_name = "swagger-template-pets.json"
+    response = aws_client.s3.put_object(Bucket=s3_bucket, Key=key_name, Body=swagger_template)
+    object_etag = response["ETag"]
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/apigateway_integration_from_s3.yml"
+        ),
+        parameters={
+            "S3BodyBucket": s3_bucket,
+            "S3BodyKey": key_name,
+            "S3BodyETag": object_etag,
+        },
+        max_wait=120,
+    )
+
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.apigateway_api())
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "stack-name"))
+
+    rest_api_id = stack.outputs["RestApiId"]
+    rest_api = aws_client.apigateway.get_rest_api(restApiId=rest_api_id)
+    snapshot.match("rest-api", rest_api)
+
+    resources = aws_client.apigateway.get_resources(restApiId=rest_api_id)
+    resources["items"] = sorted(resources["items"], key=itemgetter("path"))
+    snapshot.match("resources", resources)
 
 
 def test_cfn_apigateway_rest_api(deploy_cfn_template, aws_client):
