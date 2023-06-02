@@ -159,8 +159,9 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
             if config.DEBUG:
                 console.print_exception()
             raise click.ClickException(
-                "It appears you have a light install of localstack which only supports running in docker\n"
-                "If you would like to use --host, please reinstall localstack using `pip install localstack[runtime]`"
+                "It appears you have a light install of localstack which only supports running in docker.\n"
+                "If you would like to use --host, please install localstack with Python using "
+                "`pip install localstack[runtime]` instead."
             )
     else:
         # make sure to initialize the bootstrap environment and directories for the host (even if we're executing
@@ -371,6 +372,15 @@ def cmd_update_all(ctx):
 @localstack_update.command(name="localstack-cli", help="Update LocalStack CLI tools")
 @publish_invocation
 def cmd_update_localstack_cli():
+    if is_frozen_bundle():
+        # "update" can only be performed if running from source / in a non-frozen interpreter
+        console.print(
+            ":heavy_multiplication_x: The LocalStack CLI can only update itself if installed via PIP. "
+            "Please follow the instructions on https://docs.localstack.cloud/ to update your CLI.",
+            style="bold red",
+        )
+        sys.exit(1)
+
     import subprocess
     from subprocess import CalledProcessError
 
@@ -456,10 +466,7 @@ def update_images(image_list: List[str]):
 
 
 # legacy support
-@localstack.group(
-    name="infra",
-    help="Manipulate LocalStack infrastructure (legacy)",
-)
+@localstack.group(name="infra", help="Manipulate LocalStack infrastructure", deprecated=True)
 def infra():
     pass
 
@@ -588,3 +595,12 @@ def print_error(format, error):
 
 def print_banner():
     print(BANNER)
+
+
+def is_frozen_bundle() -> bool:
+    """
+    :return: true if we are currently running in a frozen bundle / a pyinstaller binary.
+    """
+    # check if we are in a PyInstaller binary
+    # https://pyinstaller.org/en/stable/runtime-information.html
+    return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
