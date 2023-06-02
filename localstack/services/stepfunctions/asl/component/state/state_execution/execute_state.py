@@ -111,13 +111,13 @@ class ExecutionState(CommonStateField, abc.ABC):
         timeout = state_props.get(Timeout)
         heartbeat = state_props.get(Heartbeat)
         if isinstance(timeout, TimeoutSeconds) and isinstance(heartbeat, HeartbeatSeconds):
-            if timeout.timeout_seconds >= heartbeat.heartbeat_seconds:
+            if timeout.timeout_seconds <= heartbeat.heartbeat_seconds:
                 raise RuntimeError(
                     f"'HeartbeatSeconds' interval MUST be smaller than the 'TimeoutSeconds' value, "
                     f"got '{timeout.timeout_seconds}' and '{heartbeat.heartbeat_seconds}' respectively."
                 )
         if heartbeat is not None and timeout is None:
-            timeout = TimeoutSeconds(timeout_seconds=60)
+            timeout = TimeoutSeconds(timeout_seconds=60, is_default=True)
 
         if timeout is not None:
             self.timeout = timeout

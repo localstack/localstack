@@ -1,0 +1,75 @@
+{
+  "Comment": "SQS_HEARTBEAT_SUCCESS_ON_TASK_TOKEN",
+  "StartAt": "WaitAndRestart",
+  "States": {
+    "WaitAndRestart": {
+      "Type": "Wait",
+      "Seconds": 1,
+      "Next": "Receive"
+    },
+    "Receive": {
+      "Type": "Task",
+      "Parameters": {
+        "QueueUrl.$": "$.QueueUrl"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:sqs:receiveMessage",
+      "ResultPath": "$.SQSOutput",
+      "Next": "CheckMessages",
+    },
+    "CheckMessages": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.SQSOutput.Messages",
+          "IsPresent": true,
+          "Next": "SendSuccesses"
+        }
+      ],
+      "Default": "WaitAndRestart"
+    },
+    "SendSuccesses": {
+      "Type": "Map",
+      "InputPath": "$.SQSOutput.Messages",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "ParseBody",
+        "States": {
+          "ParseBody": {
+            "Type": "Pass",
+            "Parameters": {
+              "body.$": "States.StringToJson($.Body)"
+            },
+            "Next": "WaitBeforeHeartbeat"
+          },
+          "WaitBeforeHeartbeat": {
+            "Type": "Wait",
+            "Seconds": 5,
+            "Next": "SendHeartbeat"
+          },
+          "SendHeartbeat": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskHeartbeat",
+            "Parameters": {
+              "TaskToken.$": "$.body.TaskToken"
+            },
+            "ResultPath": null,
+            "Next": "SendSuccess"
+          },
+          "SendSuccess": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskSuccess",
+            "Parameters": {
+              "Output.$": "States.JsonToString($.body.Message)",
+              "TaskToken.$": "$.body.TaskToken"
+            },
+            "End": true
+          }
+        },
+      },
+      "ResultPath": null,
+      "Next": "WaitAndRestart"
+    }
+  },
+}

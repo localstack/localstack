@@ -61,7 +61,7 @@ class StateTaskServiceCallback(StateTaskService):
                 env.is_running() and outcome is None
             ):  # Until subprocess hasn't timed out or result wasn't received.
                 received = heartbeat_endpoint.clear_and_wait()
-                if env.is_running() and not received:  # Heartbeat timed out.
+                if not received and env.is_running():  # Heartbeat timed out.
                     raise TimeoutError()
                 outcome = callback_endpoint.get_outcome()
 
@@ -90,6 +90,10 @@ class StateTaskServiceCallback(StateTaskService):
             self.timeout.eval(env=env)
             timeout_seconds = env.stack.pop()
             scheduled_event_details["timeoutInSeconds"] = timeout_seconds
+        if self.heartbeat is not None:
+            self.heartbeat.eval(env=env)
+            heartbeat_seconds = env.stack.pop()
+            scheduled_event_details["heartbeatInSeconds"] = heartbeat_seconds
         env.event_history.add_event(
             hist_type_event=HistoryEventType.TaskScheduled,
             event_detail=EventDetails(taskScheduledEventDetails=scheduled_event_details),

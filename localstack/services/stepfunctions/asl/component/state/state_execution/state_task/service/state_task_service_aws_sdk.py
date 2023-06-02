@@ -24,7 +24,10 @@ from localstack.utils.common import camel_to_snake_case
 class StateTaskServiceAwsSdk(StateTaskServiceCallback):
     _API_NAMES: dict[str, str] = {"sfn": "stepfunctions"}
     _SFN_TO_BOTO_PARAM_NORMALISERS = {
-        "stepfunctions": {"send_task_success": {"Output": "output", "TaskToken": "taskToken"}}
+        "stepfunctions": {
+            "send_task_success": {"Output": "output", "TaskToken": "taskToken"},
+            "send_task_heartbeat": {"TaskToken": "taskToken"},
+        }
     }
 
     _normalised_api_name: str

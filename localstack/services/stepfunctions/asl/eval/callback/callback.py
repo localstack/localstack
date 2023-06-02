@@ -128,7 +128,7 @@ class CallbackPoolManager:
         return self.add(long_uid())
 
     def notify(self, callback_id: CallbackId, outcome: CallbackOutcome) -> bool:
-        callback_endpoint = self._pool.pop(callback_id, None)
+        callback_endpoint = self._pool.get(callback_id, None)
         if callback_endpoint is None:
             return False
 
@@ -140,8 +140,8 @@ class CallbackPoolManager:
         return True
 
     def heartbeat(self, callback_id: CallbackId) -> bool:
-        callback_endpoint = self._pool.pop(callback_id, None)
-        if callback_endpoint is None or callback_endpoint:
+        callback_endpoint = self._pool.get(callback_id, None)
+        if callback_endpoint is None:
             return False
 
         consumer_error: Optional[CallbackConsumerError] = callback_endpoint.consumer_error

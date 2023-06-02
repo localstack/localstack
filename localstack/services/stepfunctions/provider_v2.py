@@ -68,6 +68,17 @@ class StepFunctionsProvider(StepfunctionsApi):
             raise InvalidName()  # TODO
         return execution
 
+    def _get_executions(
+        self, context: RequestContext, execution_status: Optional[ExecutionStatus] = None
+    ):
+        store = self.get_store(context)
+        execution: list[Execution] = list(store.executions.values())
+        if execution_status:
+            execution = list(
+                filter(lambda e: e.exec_status == execution_status, store.executions.values())
+            )
+        return execution
+
     def _is_idempotent_create_state_machine(
         self, context: RequestContext, request: CreateStateMachineInput
     ) -> Optional[StateMachine]:
@@ -162,10 +173,12 @@ class StepFunctionsProvider(StepfunctionsApi):
     def send_task_heartbeat(
         self, context: RequestContext, task_token: TaskToken
     ) -> SendTaskHeartbeatOutput:
-        store = self.get_store(context)
-        for exec in list(store.executions.values()):
+        running_executions: list[Execution] = self._get_executions(context, ExecutionStatus.RUNNING)
+        for execution in running_executions:
             try:
-                if exec.exec_worker.env.callback_pool_manager.heartbeat(callback_id=task_token):
+                if execution.exec_worker.env.callback_pool_manager.heartbeat(
+                    callback_id=task_token
+                ):
                     return SendTaskHeartbeatOutput()
             except CallbackNotifyConsumerError as consumer_error:
                 if isinstance(consumer_error, CallbackConsumerTimeout):
@@ -178,10 +191,10 @@ class StepFunctionsProvider(StepfunctionsApi):
         self, context: RequestContext, task_token: TaskToken, output: SensitiveData
     ) -> SendTaskSuccessOutput:
         outcome = CallbackOutcomeSuccess(callback_id=task_token, output=output)
-        store = self.get_store(context)
-        for exec in list(store.executions.values()):
+        running_executions: list[Execution] = self._get_executions(context, ExecutionStatus.RUNNING)
+        for execution in running_executions:
             try:
-                if exec.exec_worker.env.callback_pool_manager.notify(
+                if execution.exec_worker.env.callback_pool_manager.notify(
                     callback_id=task_token, outcome=outcome
                 ):
                     return SendTaskSuccessOutput()
@@ -200,10 +213,10 @@ class StepFunctionsProvider(StepfunctionsApi):
         cause: SensitiveCause = None,
     ) -> SendTaskFailureOutput:
         outcome = CallbackOutcomeSuccess(callback_id=task_token)
-        store = self.get_store(context)
-        for exec in store.executions.values():
+        executions = self._get_executions(context)
+        for execution in executions:
             try:
-                if exec.exec_worker.env.callback_pool_manager.notify(
+                if execution.exec_worker.env.callback_pool_manager.notify(
                     callback_id=task_token, outcome=outcome
                 ):
                     return SendTaskFailureOutput()
