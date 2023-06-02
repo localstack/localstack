@@ -3434,29 +3434,6 @@ def sqs_http_client(aws_http_client_factory):
 
 
 class TestSqsQueryApi:
-    @pytest.mark.xfail(
-        reason="this behaviour is deprecated (see https://github.com/localstack/localstack/pull/5928)",
-    )
-    def test_call_fifo_queue_url(self, sqs_create_queue):
-        # TODO: remove once query API has been documented
-        queue_name = f"queue-{short_uid()}.fifo"
-        queue_url = sqs_create_queue(QueueName=queue_name, Attributes={"FifoQueue": "true"})
-
-        assert queue_url.endswith(".fifo")
-        response = requests.get(queue_url)
-        assert response.ok
-        assert queue_url in response.text
-
-    @pytest.mark.xfail(
-        reason="this behaviour is deprecated (see https://github.com/localstack/localstack/pull/5928)",
-    )
-    def test_request_via_url(self, sqs_create_queue):
-        # TODO: remove once query API has been documented
-        queue_url = sqs_create_queue()
-        response = requests.get(url=queue_url, params={"Action": "ListQueues"})
-        assert response.ok
-        assert queue_url in response.text
-
     @pytest.mark.aws_validated
     def test_get_queue_attributes_all(self, sqs_create_queue, sqs_http_client):
         queue_url = sqs_create_queue()
