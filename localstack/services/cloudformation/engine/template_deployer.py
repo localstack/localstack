@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import traceback
-from typing import Any, Callable, Optional, Type, TypedDict
+from typing import Any, Callable, Literal, Optional, Type, TypedDict
 
 import botocore
 
@@ -1053,6 +1053,24 @@ def add_default_resource_props(
 # -----------------------
 
 
+Action = str
+
+
+class ResourceChange(TypedDict):
+    Action: Action
+    LogicalResourceId: str
+    PhysicalResourceId: Optional[str]
+    ResourceType: str
+    Scope: list
+    Details: list
+    Replacement: Optional[Literal["False"]]
+
+
+class ChangeConfig(TypedDict):
+    Type: str
+    ResourceChange: ResourceChange
+
+
 # TODO: replace
 class TemplateDeployer:
     def __init__(self, stack):
@@ -1294,20 +1312,27 @@ class TemplateDeployer:
 
         return physical_id
 
-    def get_change_config(self, action, resource, change_set_id=None):
-        result = {
-            "Type": "Resource",
-            "ResourceChange": {
-                "Action": action,
-                "LogicalResourceId": resource.get("LogicalResourceId"),
-                "PhysicalResourceId": resource.get("PhysicalResourceId"),
-                "ResourceType": resource["Type"],
-                # TODO ChangeSetId is only set for *nested* change sets
-                # "ChangeSetId": change_set_id,
-                "Scope": [],  # TODO
-                "Details": [],  # TODO
-            },
-        }
+    def get_change_config(
+        self, action: str, resource: dict, change_set_id: Optional[str] = None
+    ) -> ChangeConfig:
+        result = ChangeConfig(
+            **{
+                "Type": "Resource",
+                "ResourceChange": ResourceChange(
+                    **{
+                        "Action": action,
+                        # TODO(srw): how can the resource not contain a logical resource id?
+                        "LogicalResourceId": resource.get("LogicalResourceId"),
+                        "PhysicalResourceId": resource.get("PhysicalResourceId"),
+                        "ResourceType": resource["Type"],
+                        # TODO ChangeSetId is only set for *nested* change sets
+                        # "ChangeSetId": change_set_id,
+                        "Scope": [],  # TODO
+                        "Details": [],  # TODO
+                    }
+                ),
+            }
+        )
         if action == "Modify":
             result["ResourceChange"]["Replacement"] = "False"
         return result
@@ -1617,7 +1642,7 @@ class TemplateDeployer:
         return True
 
     # Stack is needed here
-    def apply_change(self, change, stack):
+    def apply_change(self, change: ChangeConfig, stack: Stack):
         change_details = change["ResourceChange"]
         action = change_details["Action"]
         resource_id = change_details["LogicalResourceId"]
