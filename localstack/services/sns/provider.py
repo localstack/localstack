@@ -5,7 +5,6 @@ from typing import Dict, List
 from botocore.utils import InvalidArnException
 from moto.core.utils import camelcase_to_pascal, underscores_to_camelcase
 from moto.sns import sns_backends
-from moto.sns.exceptions import SNSNotFoundError
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH, SNSBackend, Topic
 from moto.sns.utils import is_e164
 
@@ -62,7 +61,7 @@ from localstack.services.sns.publisher import (
     SnsBatchPublishContext,
     SnsPublishContext,
 )
-from localstack.utils.aws.arns import parse_arn
+from localstack.utils.aws.arns import ArnData, parse_arn
 from localstack.utils.strings import short_uid
 
 # set up logger
@@ -104,10 +103,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return sns_backends[account_id][region_name]
 
     @staticmethod
-    def _get_topic(arn: str) -> Topic:
-        arn_data = parse_arn(arn)
-        backend = SnsProvider.get_moto_backend(arn_data["account"], arn_data["region"])
-        return backend.get_topic(arn)
+    def _get_topic(arn: str, context: RequestContext) -> Topic:
+        arn_data = parse_and_validate_topic_arn(arn)
+        try:
+            return sns_backends[arn_data["account"]][context.region].topics[arn]
+        except KeyError:
+            raise NotFoundException("Topic does not exist")
 
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
@@ -121,7 +122,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # TODO: fix some attributes by moto, see snapshot
         # TODO: very hacky way to get the attributes we need instead of a moto patch
         # would need more work to have the proper format out of moto, maybe extract the model to our store
-        moto_topic_model = self._get_topic(topic_arn)
+        moto_topic_model = self._get_topic(topic_arn, context)
         for attr in vars(moto_topic_model):
             if "success_feedback" in attr:
                 key = camelcase_to_pascal(underscores_to_camelcase(attr))
@@ -139,7 +140,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 "The batch request contains more entries than permissible."
             )
 
-        store = self.get_store(account_id=context.account_id, region_name=context.region)
+        parsed_arn = parse_and_validate_topic_arn(topic_arn)
+        store = self.get_store(account_id=parsed_arn["account"], region_name=context.region)
         if topic_arn not in store.topic_subscriptions:
             raise NotFoundException(
                 "Topic does not exist",
@@ -156,7 +158,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
                 )
-            topic = self._get_topic(topic_arn)
+            topic = self._get_topic(topic_arn, context)
             if topic.content_based_deduplication == "false":
                 if not all(
                     ["MessageDeduplicationId" in entry for entry in publish_batch_request_entries]
@@ -438,7 +440,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics",
                 )
-            topic = self._get_topic(topic_or_target_arn)
+            topic = self._get_topic(topic_or_target_arn, context)
             if topic.content_based_deduplication == "false":
                 if not message_deduplication_id:
                     raise InvalidParameterException(
@@ -475,20 +477,24 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if message_attributes:
             validate_message_attributes(message_attributes)
 
-        store = self.get_store(account_id=context.account_id, region_name=context.region)
-
         if not phone_number:
-            moto_sns_backend = self.get_moto_backend(context.account_id, context.region)
+            # use the account to get the store from the TopicArn (you can only publish in the same region as the topic)
+            parsed_arn = parse_and_validate_topic_arn(topic_or_target_arn)
+            store = self.get_store(account_id=parsed_arn["account"], region_name=context.region)
+            moto_sns_backend = self.get_moto_backend(parsed_arn["account"], context.region)
             if is_endpoint_publish:
                 if target_arn not in moto_sns_backend.platform_endpoints:
                     raise InvalidParameterException(
                         "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
                     )
             else:
-                try:
-                    moto_sns_backend.get_topic(topic_or_target_arn)
-                except SNSNotFoundError:
-                    raise NotFoundException("Topic does not exist")
+                if topic_or_target_arn not in store.topic_subscriptions:
+                    raise NotFoundException(
+                        "Topic does not exist",
+                    )
+        else:
+            # use the store from the request context
+            store = self.get_store(account_id=context.account_id, region_name=context.region)
 
         message_ctx = SnsMessage(
             type="Notification",
@@ -568,8 +574,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         moto_response = call_moto(context)
         subscription_arn = moto_response.get("SubscriptionArn")
+        parsed_topic_arn = parse_and_validate_topic_arn(topic_arn)
 
-        store = self.get_store(account_id=context.account_id, region_name=context.region)
+        store = self.get_store(account_id=parsed_topic_arn["account"], region_name=context.region)
 
         # An endpoint may only be subscribed to a topic once. Subsequent
         # subscribe calls do nothing (subscribe is idempotent).
@@ -626,6 +633,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             # the subscription with the token
             # TODO: revisit for multi-account
             # TODO: test with AWS for email & email-json confirmation message
+            # we need to add the following check:
+            # if parsed_topic_arn["account"] == endpoint account (depending on the type, SQS, lambda, parse the arn)
             subscription["PendingConfirmation"] = "false"
             subscription["ConfirmationWasAuthenticated"] = "true"
         return SubscribeResponse(SubscriptionArn=subscription_arn)
@@ -661,7 +670,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
     def delete_topic(self, context: RequestContext, topic_arn: topicARN) -> None:
         call_moto(context)
-        store = self.get_store(account_id=context.account_id, region_name=context.region)
+        parsed_arn = parse_and_validate_topic_arn(topic_arn)
+        store = self.get_store(account_id=parsed_arn["account"], region_name=context.region)
         topic_subscriptions = store.topic_subscriptions.pop(topic_arn, [])
         for topic_sub in topic_subscriptions:
             store.subscriptions.pop(topic_sub, None)
@@ -829,6 +839,16 @@ def extract_tags(
             if is_create_topic_request and existing_tags is not None and tag not in existing_tags:
                 return False
     return True
+
+
+def parse_and_validate_topic_arn(topic_arn: str) -> ArnData:
+    try:
+        return parse_arn(topic_arn)
+    except InvalidArnException:
+        count = len(topic_arn.split(":"))
+        raise InvalidParameterException(
+            f"Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not {count}"
+        )
 
 
 def encode_subscription_token_with_region(region: str) -> str:
