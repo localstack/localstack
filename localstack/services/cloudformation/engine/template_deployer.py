@@ -4,6 +4,7 @@ import json
 import logging
 import re
 import traceback
+import uuid
 from typing import Any, Callable, Literal, Optional, Type, TypedDict
 
 import botocore
@@ -24,12 +25,26 @@ from localstack.services.cloudformation.deployment_utils import (
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet
+from localstack.services.cloudformation.engine.entities import (
+    Stack,
+    StackChangeSet,
+)
+from localstack.services.cloudformation.resource_provider import (
+    Credentials,
+    NoResourceProvider,
+    ResourceProviderExecutor,
+    ResourceProviderPayload,
+)
 from localstack.services.cloudformation.service_models import (
     KEY_RESOURCE_STATE,
     DependencyNotYetSatisfied,
     GenericBaseModel,
 )
 from localstack.services.cloudformation.stores import exports_map
+from localstack.services.opensearch.resource_providers.domain import OpenSearchDomainProvider
+
+# TEMPORARY: develop plugin system
+from localstack.services.ssm.resource_providers.parameter import SSMParameterProvider
 from localstack.utils.aws import aws_stack
 from localstack.utils.functions import prevent_stack_overflow
 from localstack.utils.json import clone_safe, json_safe
@@ -38,6 +53,11 @@ from localstack.utils.strings import first_char_to_lower, to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
+
+
+# TEMPORARY: develop plugin system
+_ = SSMParameterProvider
+_ = OpenSearchDomainProvider
 
 ACTION_CREATE = "create"
 ACTION_DELETE = "delete"
@@ -1646,18 +1666,56 @@ class TemplateDeployer:
         change_details = change["ResourceChange"]
         action = change_details["Action"]
         resource_id = change_details["LogicalResourceId"]
-        resource = stack.resources[resource_id]
+        resources = stack.resources
+        resource = resources[resource_id]
         is_deployed = change_details.pop("_deployed", None)
-        if not evaluate_resource_condition(stack.stack_name, stack.resources, resource):
+
+        # TODO: this should not be needed as resources are filtered out if the
+        # condition evaluates to False.
+        if not evaluate_resource_condition(stack.stack_name, resources, resource):
             return
 
-        # execute resource action
-        if action == "Add" or is_deployed is False:
-            execute_resource_action(resource_id, self.stack_name, self.resources, ACTION_CREATE)
-        elif action == "Remove":
-            execute_resource_action(resource_id, self.stack_name, self.resources, ACTION_DELETE)
-        elif action == "Modify":
-            update_resource(resource_id, stack.resources, stack.stack_name)
+        executor = ResourceProviderExecutor(stack_name=stack.stack_name, stack_id=stack.stack_id)
+        creds: Credentials = {
+            "accessKeyId": "test",
+            "secretAccessKey": "test",
+            "sessionToken": "",
+        }
+        resource_provider_payload: ResourceProviderPayload = {
+            "awsAccountId": "000000000000",
+            "callbackContext": {},
+            "stackId": stack.stack_name,
+            "resourceType": resource["Type"],
+            "resourceTypeVersion": "000000",
+            # TODO: not actually a UUID
+            "bearerToken": str(uuid.uuid4()),
+            # TODO: get the current region
+            "region": "us-east-1",
+            "action": action,
+            "requestData": {
+                "logicalResourceId": resource_id,
+                "resourceProperties": resource["Properties"],
+                "previousResourceProperties": None,
+                "callerCredentials": creds,
+                "providerCredentials": creds,
+                "systemTags": {},
+                "previousSystemTags": {},
+                "stackTags": {},
+                "previousStackTags": {},
+            },
+        }
+        try:
+            # TODO: verify event
+            executor.deploy_loop(resource_provider_payload)
+        except NoResourceProvider:
+            # fall back to legacy path
+            # execute resource action
+            if action == "Add" or is_deployed is False:
+                execute_resource_action(resource_id, self.stack_name, self.resources, ACTION_CREATE)
+            elif action == "Remove":
+                execute_resource_action(resource_id, self.stack_name, self.resources, ACTION_DELETE)
+            elif action == "Modify":
+                update_resource(resource_id, stack.resources, stack.stack_name)
 
         # update resource status and physical resource id
         stack_action = get_action_name_for_resource_change(action)

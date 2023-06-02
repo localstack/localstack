@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import copy
 import logging
+import time
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -128,3 +130,60 @@ class ResourceProvider(Generic[Properties]):
 
     def delete(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
         raise NotImplementedError
+
+
+class NoResourceProvider(Exception):
+    pass
+
+
+class ResourceProviderExecutor:
+    """
+    Point of abstraction between our integration with generic base models, and the new providers.
+    """
+
+    def __init__(self, stack_name: str, stack_id: str):
+        self.stack_name = stack_name
+        self.stack_id = stack_id
+
+    def deploy_loop(
+        self, raw_payload: ResourceProviderPayload, max_iterations: int = 30, sleep_time: float = 5
+    ) -> ProgressEvent[Properties]:
+        payload = copy.deepcopy(raw_payload)
+        for _ in range(max_iterations):
+            event = self.execute_action(payload)
+            if event.status == OperationStatus.SUCCESS:
+                # TODO: validate physical_resource_id is not None
+                return event
+
+            # update the shared state
+            context = {**payload["callbackContext"], **event.custom_context}
+            payload["callbackContext"] = context
+            payload["requestData"]["resourceProperties"] = event.resource_model
+
+            time.sleep(sleep_time)
+        else:
+            raise TimeoutError("Could not perform deploy loop action")
+
+    def execute_action(self, raw_payload: ResourceProviderPayload) -> ProgressEvent[Properties]:
+        # lookup provider in private registry
+        # TODO: delegate to a concrete subclass
+        if provider_cls := PRIVATE_REGISTRY.get(raw_payload["resourceType"]):
+            change_type = raw_payload["action"]
+            request = convert_payload(
+                stack_name=self.stack_name, stack_id=self.stack_id, payload=raw_payload
+            )
+
+            provider = provider_cls()
+            match change_type:
+                case "Add":
+                    return provider.create(request)
+                case "Dynamic" | "Modify":
+                    return provider.update(request)
+                case "Remove":
+                    return provider.delete(request)
+                case _:
+                    raise NotImplementedError(change_type)
+
+        else:
+            # custom provider
+            raise NoResourceProvider
