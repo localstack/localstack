@@ -17,7 +17,7 @@ from requests.models import Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api.apigateway import Authorizer, Model
+from localstack.aws.api.apigateway import Authorizer, ConnectionType, IntegrationType, Model
 from localstack.constants import (
     APPLICATION_JSON,
     HEADER_LOCALSTACK_EDGE_URL,
@@ -578,7 +578,7 @@ def import_api_from_openapi_spec(
                     authorizer = Authorizer(
                         id=create_resource_id(),
                         name=security_scheme_name,
-                        type=aws_apigateway_authorizer.get("type", "").upper(),
+                        type=authorizer_type,
                         authorizerResultTtlInSeconds=aws_apigateway_authorizer.get(
                             "authorizerResultTtlInSeconds", 300
                         ),
@@ -631,6 +631,8 @@ def import_api_from_openapi_spec(
     def add_path_methods(rel_path: str, parts: List[str], parent_id=""):
         child_id = create_resource_id()
         rel_path = rel_path or "/"
+
+        # Create a `Resource` for the passed `rel_path`
         resource = Resource(
             account_id=rest_api.account_id,
             resource_id=child_id,
@@ -642,6 +644,7 @@ def import_api_from_openapi_spec(
 
         paths_dict = resolved_schema["paths"]
         method_paths = paths_dict.get(rel_path, {})
+        # Iterate over each field of the `path` to try to find the methods defined
         for field, field_schema in method_paths.items():
             if field in [
                 "parameters",
@@ -651,44 +654,97 @@ def import_api_from_openapi_spec(
                 "$ref",
             ] or not isinstance(field_schema, dict):
                 LOG.warning("Ignoring unsupported field %s in path %s", field, rel_path)
+                # TODO: check if we should skip parameters, those are global parameters applied to every routes but
+                #  can be overriden at the operation level
                 continue
 
-            field = field.upper()
+            method_name = field.upper()
+            # Create the `Method` resource for each method path
+            method_resource = create_method_resource(resource, method_name, field_schema)
 
-            method_integration = field_schema.get("x-amazon-apigateway-integration", {})
-            method_resource = create_method_resource(resource, field, field_schema)
-            method_resource.request_parameters = method_integration.get("requestParameters")
-            responses = field_schema.get("responses", {})
-            for status_code, response in responses.items():
-                response_model = None
-                if model_schema := response.get(
-                    "schema", response.get("content", {}).get(APPLICATION_JSON, {}).get("schema")
-                ):
-                    # this means the model schema was resolved directly from the schema, instead of its name
+            # Get the `Method` requestParameters and requestModels
+            request_parameters_schema = field_schema.get("parameters", [])
+            if request_parameters_schema:
+                request_parameters = {}
+                request_models = {}
+                for req_param_data in request_parameters_schema:
+                    # TODO: does `required` attribute maps to a RequestValidator? check with AWS
+                    # Possible values for `in` from the specs are "query", "header", "path", "formData" or "body".
+                    # Only "path", "header" and "query" are supported in API Gateway for requestParameters
+                    # "body" is mapped to a requestModel
+                    param_location = req_param_data.get("in")
+                    param_name = req_param_data.get("name")
+                    param_required = req_param_data.get("required", False)
+                    if param_location in ("query", "header", "path"):
+                        if param_location == "query":
+                            param_location = "querystring"
+
+                        request_parameters[
+                            f"method.request.{param_location}.{param_name}"
+                        ] = param_required
+
+                    elif param_location == "body":
+                        request_models = {APPLICATION_JSON: param_name}
+
+                    else:
+                        LOG.warning(
+                            "Ignoring unsupported requestParameters/requestModels location value for %s: %s",
+                            param_name,
+                            param_location,
+                        )
+                        continue
+
+                method_resource.request_parameters = request_parameters or None
+                method_resource.request_models = request_models or None
+
+            # Create the `MethodResponse` for the previously created `Method`
+            method_responses = field_schema.get("responses", {})
+            for method_status_code, method_response in method_responses.items():
+                method_response_model = None
+                model_schema = None
+
+                # separating the two different versions, Swagger (2.0) and OpenAPI 3.0
+                if "schema" in method_response:  # this is Swagger
+                    model_schema = method_response.get("schema")
+                elif "content" in method_response:  # this is OpenAPI 3.0
+                    model_schema = (
+                        method_response["content"].get(APPLICATION_JSON, {}).get("schema")
+                    )
+
+                if model_schema:
                     if isinstance(model_schema, dict):
+                        # this means the model schema was resolved directly from the schema, instead of its name
                         model_schema = schema_map.get(json.dumps(model_schema))
-                    response_model = {APPLICATION_JSON: model_schema}
+
+                    method_response_model = {APPLICATION_JSON: model_schema}
 
                 method_response_parameters = {}
-                if response_param_headers := response.get("headers"):
+                if response_param_headers := method_response.get("headers"):
                     for header, header_info in response_param_headers.items():
+                        # TODO: make use of `header_info`
                         method_response_parameters[f"method.response.header.{header}"] = False
 
                 method_resource.create_response(
-                    status_code,
-                    response_model,
+                    method_status_code,
+                    method_response_model,
                     method_response_parameters or None,
                 )
 
-            integration_response_parameters = (
-                method_integration.get("responses", {}).get("default", {}).get("responseParameters")
-            )
+            # Create the `Integration` for the previously created `Method`
+            method_integration = field_schema.get("x-amazon-apigateway-integration", {})
+
             integration_type = (
                 i_type.upper() if (i_type := method_integration.get("type")) else None
             )
             # TODO: validate more cases like this
             # if the integration is AWS_PROXY with lambda, the only accepted integration method is POST
-            integration_method = field if integration_type != "AWS_PROXY" else "POST"
+            integration_method = method_name if integration_type != "AWS_PROXY" else "POST"
+            connection_type = (
+                ConnectionType.INTERNET
+                if integration_type in (IntegrationType.HTTP, IntegrationType.HTTP_PROXY)
+                else None
+            )
+
             integration = Integration(
                 http_method=integration_method,
                 uri=method_integration.get("uri"),
@@ -701,40 +757,56 @@ def import_api_from_openapi_spec(
                 cache_namespace=resource.id,
                 timeout_in_millis=method_integration.get("timeoutInMillis") or "29000",
                 content_handling=method_integration.get("contentHandling"),
+                connection_type=connection_type,
             )
+
+            # Create the `IntegrationResponse` for the previously created `Integration`
             if method_integration_responses := method_integration.get("responses"):
-                response_templates = method_integration_responses.get("default", {}).get(
+                default_method_integration_response = method_integration_responses.get(
+                    "default", {}
+                )
+                integration_response_templates = default_method_integration_response.get(
                     "responseTemplates"
                 )
+                integration_response_parameters = default_method_integration_response.get(
+                    "responseParameters"
+                )
+
                 integration_response = integration.create_integration_response(
-                    status_code=method_integration_responses.get("default", {}).get(
-                        "statusCode", 200
-                    ),
+                    status_code=default_method_integration_response.get("statusCode", 200),
                     selection_pattern=None,
-                    response_templates=response_templates,
+                    response_templates=integration_response_templates,
                     response_parameters=integration_response_parameters,
                     content_handling=None,
                 )
                 # moto set the responseTemplates to an empty dict when it should be None if not defined
-                if response_templates is None:
+                if integration_response_templates is None:
                     integration_response.response_templates = None
 
-            resource.resource_methods[field].method_integration = integration
+            resource.resource_methods[method_name].method_integration = integration
 
         rest_api.resources[child_id] = resource
         rest_api_container.resource_children.setdefault(parent_id, []).append(child_id)
         return resource
 
     def create_method_resource(child, method, method_schema):
-        return (
-            child.add_method(
-                method,
-                authorization_type=authorizer["type"],
-                api_key_required=None,
-                authorizer_id=authorizer["id"],
-            )
-            if (authorizer := create_authorizer(method_schema))
-            else child.add_method(method, None, None)
+        kwargs = {
+            "api_key_required": None,
+            "authorization_type": "NONE",
+        }
+
+        if authorizer := create_authorizer(method_schema):
+            # override the authorizer_type if it's a TOKEN or REQUEST to CUSTOM
+            if (authorizer_type := authorizer["type"]) in ("TOKEN", "REQUEST"):
+                authorizer_type = "CUSTOM"
+
+            kwargs["authorization_type"] = authorizer_type
+            kwargs["authorizer_id"] = authorizer["id"]
+
+        return child.add_method(
+            method,
+            operation_name=method_schema.get("operationId"),
+            **kwargs,
         )
 
     models = resolved_schema.get("definitions") or resolved_schema.get("components", {}).get(

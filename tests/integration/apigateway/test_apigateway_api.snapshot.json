@@ -2874,7 +2874,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::test_import_swagger_api": {
-    "recorded-date": "26-05-2023, 04:26:50",
+    "recorded-date": "02-06-2023, 15:18:56",
     "recorded-content": {
       "import-swagger": {
         "apiKeySource": "HEADER",
@@ -3042,11 +3042,139 @@
           "HTTPStatusCode": 200
         }
       },
+      "method-root-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:1>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Content-Type": "'text/html'"
+              },
+              "responseTemplates": {
+                "text/html": "<html>\n    <head>\n        <style>\n        body {\n            color: #333;\n            font-family: Sans-serif;\n            max-width: 800px;\n            margin: auto;\n        }\n        </style>\n    </head>\n    <body>\n        <h1>Welcome to your Pet Store API</h1>\n        <p>\n            You have successfully deployed your first API. You are seeing this HTML page because the <code>GET</code> method to the root resource of your API returns this content as a Mock integration.\n        </p>\n        <p>\n            The Pet Store API contains the <code>/pets</code> and <code>/pets/{petId}</code> resources. By making a <a href=\"/$context.stage/pets/\" target=\"_blank\"><code>GET</code> request</a> to <code>/pets</code> you can retrieve a list of Pets in your API. If you are looking for a specific pet, for example the pet with ID 1, you can make a <a href=\"/$context.stage/pets/1\" target=\"_blank\"><code>GET</code> request</a> to <code>/pets/1</code>.\n        </p>\n        <p>\n            You can use a REST client such as <a href=\"https://www.getpostman.com/\" target=\"_blank\">Postman</a> to test the <code>POST</code> methods in your API to create a new pet. Use the sample body below to send the <code>POST</code> request:\n        </p>\n        <pre>\n{\n    \"type\" : \"cat\",\n    \"price\" : 123.11\n}\n        </pre>\n    </body>\n</html>"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Content-Type": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "method-response-root-get": {
         "responseParameters": {
           "method.response.header.Content-Type": false
         },
         "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-root-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:1>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Content-Type": "'text/html'"
+            },
+            "responseTemplates": {
+              "text/html": "<html>\n    <head>\n        <style>\n        body {\n            color: #333;\n            font-family: Sans-serif;\n            max-width: 800px;\n            margin: auto;\n        }\n        </style>\n    </head>\n    <body>\n        <h1>Welcome to your Pet Store API</h1>\n        <p>\n            You have successfully deployed your first API. You are seeing this HTML page because the <code>GET</code> method to the root resource of your API returns this content as a Mock integration.\n        </p>\n        <p>\n            The Pet Store API contains the <code>/pets</code> and <code>/pets/{petId}</code> resources. By making a <a href=\"/$context.stage/pets/\" target=\"_blank\"><code>GET</code> request</a> to <code>/pets</code> you can retrieve a list of Pets in your API. If you are looking for a specific pet, for example the pet with ID 1, you can make a <a href=\"/$context.stage/pets/1\" target=\"_blank\"><code>GET</code> request</a> to <code>/pets/1</code>.\n        </p>\n        <p>\n            You can use a REST client such as <a href=\"https://www.getpostman.com/\" target=\"_blank\">Postman</a> to test the <code>POST</code> methods in your API to create a new pet. Use the sample body below to send the <code>POST</code> request:\n        </p>\n        <pre>\n{\n    \"type\" : \"cat\",\n    \"price\" : 123.11\n}\n        </pre>\n    </body>\n</html>"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-root-get": {
+        "responseParameters": {
+          "method.response.header.Content-Type": "'text/html'"
+        },
+        "responseTemplates": {
+          "text/html": "<html>\n    <head>\n        <style>\n        body {\n            color: #333;\n            font-family: Sans-serif;\n            max-width: 800px;\n            margin: auto;\n        }\n        </style>\n    </head>\n    <body>\n        <h1>Welcome to your Pet Store API</h1>\n        <p>\n            You have successfully deployed your first API. You are seeing this HTML page because the <code>GET</code> method to the root resource of your API returns this content as a Mock integration.\n        </p>\n        <p>\n            The Pet Store API contains the <code>/pets</code> and <code>/pets/{petId}</code> resources. By making a <a href=\"/$context.stage/pets/\" target=\"_blank\"><code>GET</code> request</a> to <code>/pets</code> you can retrieve a list of Pets in your API. If you are looking for a specific pet, for example the pet with ID 1, you can make a <a href=\"/$context.stage/pets/1\" target=\"_blank\"><code>GET</code> request</a> to <code>/pets/1</code>.\n        </p>\n        <p>\n            You can use a REST client such as <a href=\"https://www.getpostman.com/\" target=\"_blank\">Postman</a> to test the <code>POST</code> methods in your API to create a new pet. Use the sample body below to send the <code>POST</code> request:\n        </p>\n        <pre>\n{\n    \"type\" : \"cat\",\n    \"price\" : 123.11\n}\n        </pre>\n    </body>\n</html>"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:2>",
+          "connectionType": "INTERNET",
+          "httpMethod": "GET",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestParameters": {
+            "integration.request.querystring.page": "method.request.querystring.page",
+            "integration.request.querystring.type": "method.request.querystring.type"
+          },
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Pets"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "requestParameters": {
+          "method.request.querystring.page": false,
+          "method.request.querystring.type": false
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3060,6 +3188,86 @@
           "method.response.header.Access-Control-Allow-Origin": false
         },
         "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:2>",
+        "connectionType": "INTERNET",
+        "httpMethod": "GET",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.querystring.page": "method.request.querystring.page",
+          "integration.request.querystring.type": "method.request.querystring.type"
+        },
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:2>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'",
+                "method.response.header.Access-Control-Allow-Methods": "'POST,GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3080,6 +3288,86 @@
           "HTTPStatusCode": 200
         }
       },
+      "integration-pets-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:2>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'",
+              "method.response.header.Access-Control-Allow-Methods": "'POST,GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'",
+          "method.response.header.Access-Control-Allow-Methods": "'POST,GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets-post": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "POST",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:2>",
+          "connectionType": "INTERNET",
+          "httpMethod": "POST",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "NewPetResponse"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "operationName": "CreatePet",
+        "requestModels": {
+          "application/json": "NewPet"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "method-response-pets-post": {
         "responseModels": {
           "application/json": "NewPetResponse"
@@ -3088,6 +3376,83 @@
           "method.response.header.Access-Control-Allow-Origin": false
         },
         "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets-post": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:2>",
+        "connectionType": "INTERNET",
+        "httpMethod": "POST",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets-post": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets/{petId}-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:3>",
+          "connectionType": "INTERNET",
+          "httpMethod": "GET",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestParameters": {
+            "integration.request.path.petId": "method.request.path.petId"
+          },
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets/{petId}"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Pet"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "operationName": "GetPet",
+        "requestParameters": {
+          "method.request.path.petId": true
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3106,6 +3471,88 @@
           "HTTPStatusCode": 200
         }
       },
+      "integration-pets/{petId}-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:3>",
+        "connectionType": "INTERNET",
+        "httpMethod": "GET",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestParameters": {
+          "integration.request.path.petId": "method.request.path.petId"
+        },
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets/{petId}",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets/{petId}-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets/{petId}-options": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:3>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'",
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "requestParameters": {
+          "method.request.path.petId": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "method-response-pets/{petId}-options": {
         "responseModels": {
           "application/json": "Empty"
@@ -3114,6 +3561,44 @@
           "method.response.header.Access-Control-Allow-Headers": false,
           "method.response.header.Access-Control-Allow-Methods": false,
           "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets/{petId}-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:3>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'",
+              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets/{petId}-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'",
+          "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
         },
         "statusCode": "200",
         "ResponseMetadata": {

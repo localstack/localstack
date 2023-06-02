@@ -254,8 +254,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response)
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
-        rest_api_container = store.rest_apis[request["restApiId"]]
-        rest_api_container.rest_api = response
+        store.rest_apis[request["restApiId"]].rest_api = response
         # TODO: verify this
         return to_rest_api_response_json(response)
 
@@ -520,13 +519,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         applicable_patch_operations = []
         modifying_auth_type = False
         modified_authorizer_id = False
-        had_req_params = (
-            isinstance(moto_method.request_parameters, dict)
-            and len(moto_method.request_parameters) > 0
-        )
-        had_req_models = (
-            isinstance(moto_method.request_models, dict) and len(moto_method.request_models) > 0
-        )
+        had_req_params = bool(moto_method.request_parameters)
+        had_req_models = bool(moto_method.request_models)
 
         for patch_operation in patch_operations:
             op = patch_operation.get("op")
