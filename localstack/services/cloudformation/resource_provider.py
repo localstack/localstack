@@ -11,6 +11,7 @@ from typing import Generic, Optional, Type, TypedDict, TypeVar
 
 from plugin import Plugin, PluginManager
 
+from localstack import config
 from localstack.aws.connect import ServiceLevelClientFactory, connect_to
 
 Properties = TypeVar("Properties")
@@ -175,6 +176,10 @@ class ResourceProviderExecutor:
 
     def execute_action(self, raw_payload: ResourceProviderPayload) -> ProgressEvent[Properties]:
         # lookup provider in private registry
+        if not config.CFN_RESOURCE_PROVIDERS_V2:
+            # Fall back to legacy providers
+            raise NoResourceProvider
+
         resource_provider = self.load_resource_provider(raw_payload["resourceType"])
         if resource_provider:
             change_type = raw_payload["action"]

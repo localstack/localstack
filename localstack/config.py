@@ -476,7 +476,6 @@ if is_trace_logging_enabled():
         "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
     )
 
-
 # expose services on a specific host externally
 # DEPRECATED:  since v2.0.0 as we are moving to LOCALSTACK_HOST
 HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
@@ -613,7 +612,6 @@ def get_gateway_listen(gateway_listen: str) -> List[HostAndPort]:
     EDGE_PORT,
     EDGE_PORT_HTTP,
 ) = populate_legacy_edge_configuration(os.environ)
-
 
 # optional target URL to forward all edge requests to
 EDGE_FORWARD_URL = os.environ.get("EDGE_FORWARD_URL", "").strip()
@@ -1030,6 +1028,9 @@ PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 # Show exceptions for CloudFormation deploy errors
 CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
 
+# Use new CloudFormation resource providers
+CFN_RESOURCE_PROVIDERS_V2 = is_env_true("CFN_RESOURCE_PROVIDERS_V2")
+
 # HINT: Please add deprecated environment variables to deprecations.py
 
 # list of environment variable names used for configuration.
@@ -1039,6 +1040,7 @@ CONFIG_ENV_VARS = [
     "ALLOW_NONSTANDARD_REGIONS",
     "BUCKET_MARKER_LOCAL",
     "CFN_VERBOSE_ERRORS",
+    "CFN_RESOURCE_PROVIDERS_V2",
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEBUG_HANDLER_CHAIN",
