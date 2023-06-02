@@ -1281,7 +1281,7 @@ class TemplateDeployer:
             stack.set_resource_status(resource_id, f"{action}_IN_PROGRESS")
 
     # Stack is needed here
-    def update_resource_details(self, resource_id, result, stack=None, action="CREATE"):
+    def update_resource_details(self, resource_id, stack=None, action="CREATE"):
         stack = stack or self.stack
         # update physical resource id
         resource = stack.resources[resource_id]
@@ -1652,23 +1652,16 @@ class TemplateDeployer:
             return
 
         # execute resource action
-        result = None
         if action == "Add" or is_deployed is False:
-            result = execute_resource_action(
-                resource_id, self.stack_name, self.resources, ACTION_CREATE
-            )
+            execute_resource_action(resource_id, self.stack_name, self.resources, ACTION_CREATE)
         elif action == "Remove":
-            result = execute_resource_action(
-                resource_id, self.stack_name, self.resources, ACTION_DELETE
-            )
+            execute_resource_action(resource_id, self.stack_name, self.resources, ACTION_DELETE)
         elif action == "Modify":
-            result = update_resource(resource_id, stack.resources, stack.stack_name)
+            update_resource(resource_id, stack.resources, stack.stack_name)
 
         # update resource status and physical resource id
         stack_action = get_action_name_for_resource_change(action)
-        self.update_resource_details(resource_id, result, stack=stack, action=stack_action)
-
-        return result
+        self.update_resource_details(resource_id, stack=stack, action=stack_action)
 
 
 # FIXME: resolve_refs_recursively should not be needed, the resources themselves should have those values available already
