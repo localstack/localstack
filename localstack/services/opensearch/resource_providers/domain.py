@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, TypedDict
 
 from localstack.services.cloudformation.resource_provider import (
     OperationStatus,
@@ -15,170 +14,151 @@ from localstack.services.cloudformation.resource_provider import (
 LOG = logging.getLogger(__name__)
 
 
-@dataclass
-class ZoneAwarenessConfig:
-    AvailabilityZoneCount: Optional[int] = None
+class ZoneAwarenessConfig(TypedDict):
+    AvailabilityZoneCount: Optional[int]
 
 
-@dataclass
-class ClusterConfig:
-    DedicatedMasterCount: Optional[int] = None
-    DedicatedMasterEnabled: Optional[bool] = None
-    DedicatedMasterType: Optional[str] = None
-    InstanceCount: Optional[int] = None
-    InstanceType: Optional[str] = None
-    WarmCount: Optional[int] = None
-    WarmEnabled: Optional[bool] = None
-    WarmType: Optional[str] = None
-    ZoneAwarenessConfig: Optional[ZoneAwarenessConfig] = None
-    ZoneAwarenessEnabled: Optional[bool] = None
+class ClusterConfig(TypedDict):
+    DedicatedMasterCount: Optional[int]
+    DedicatedMasterEnabled: Optional[bool]
+    DedicatedMasterType: Optional[str]
+    InstanceCount: Optional[int]
+    InstanceType: Optional[str]
+    WarmCount: Optional[int]
+    WarmEnabled: Optional[bool]
+    WarmType: Optional[str]
+    ZoneAwarenessConfig: Optional[ZoneAwarenessConfig]
+    ZoneAwarenessEnabled: Optional[bool]
 
 
-@dataclass
-class SnapshotOptions:
-    AutomatedSnapshotStartHour: Optional[int] = None
+class SnapshotOptions(TypedDict):
+    AutomatedSnapshotStartHour: Optional[int]
 
 
-@dataclass
-class VPCOptions:
-    SecurityGroupIds: Optional[list] = None
-    SubnetIds: Optional[list] = None
+class VPCOptions(TypedDict):
+    SecurityGroupIds: Optional[list]
+    SubnetIds: Optional[list]
 
 
-@dataclass
-class NodeToNodeEncryptionOptions:
-    Enabled: Optional[bool] = None
+class NodeToNodeEncryptionOptions(TypedDict):
+    Enabled: Optional[bool]
 
 
-@dataclass
-class DomainEndpointOptions:
-    CustomEndpoint: Optional[str] = None
-    CustomEndpointCertificateArn: Optional[str] = None
-    CustomEndpointEnabled: Optional[bool] = None
-    EnforceHTTPS: Optional[bool] = None
-    TLSSecurityPolicy: Optional[str] = None
+class DomainEndpointOptions(TypedDict):
+    CustomEndpoint: Optional[str]
+    CustomEndpointCertificateArn: Optional[str]
+    CustomEndpointEnabled: Optional[bool]
+    EnforceHTTPS: Optional[bool]
+    TLSSecurityPolicy: Optional[str]
 
 
-@dataclass
-class CognitoOptions:
-    Enabled: Optional[bool] = None
-    IdentityPoolId: Optional[str] = None
-    RoleArn: Optional[str] = None
-    UserPoolId: Optional[str] = None
+class CognitoOptions(TypedDict):
+    Enabled: Optional[bool]
+    IdentityPoolId: Optional[str]
+    RoleArn: Optional[str]
+    UserPoolId: Optional[str]
 
 
-@dataclass
-class MasterUserOptions:
-    MasterUserARN: Optional[str] = None
-    MasterUserName: Optional[str] = None
-    MasterUserPassword: Optional[str] = None
+class MasterUserOptions(TypedDict):
+    MasterUserARN: Optional[str]
+    MasterUserName: Optional[str]
+    MasterUserPassword: Optional[str]
 
 
-@dataclass
-class Idp:
-    EntityId: Optional[str] = None
-    MetadataContent: Optional[str] = None
+class Idp(TypedDict):
+    EntityId: Optional[str]
+    MetadataContent: Optional[str]
 
 
-@dataclass
-class SAMLOptions:
-    Enabled: Optional[bool] = None
-    Idp: Optional[Idp] = None
-    MasterBackendRole: Optional[str] = None
-    MasterUserName: Optional[str] = None
-    RolesKey: Optional[str] = None
-    SessionTimeoutMinutes: Optional[int] = None
-    SubjectKey: Optional[str] = None
+class SAMLOptions(TypedDict):
+    Enabled: Optional[bool]
+    Idp: Optional[Idp]
+    MasterBackendRole: Optional[str]
+    MasterUserName: Optional[str]
+    RolesKey: Optional[str]
+    SessionTimeoutMinutes: Optional[int]
+    SubjectKey: Optional[str]
 
 
-@dataclass
-class AdvancedSecurityOptions:
-    AnonymousAuthDisableDate: Optional[str] = None
-    AnonymousAuthEnabled: Optional[bool] = None
-    Enabled: Optional[bool] = None
-    InternalUserDatabaseEnabled: Optional[bool] = None
-    MasterUserOptions: Optional[MasterUserOptions] = None
-    SAMLOptions: Optional[SAMLOptions] = None
+class AdvancedSecurityOptions(TypedDict):
+    AnonymousAuthDisableDate: Optional[str]
+    AnonymousAuthEnabled: Optional[bool]
+    Enabled: Optional[bool]
+    InternalUserDatabaseEnabled: Optional[bool]
+    MasterUserOptions: Optional[MasterUserOptions]
+    SAMLOptions: Optional[SAMLOptions]
 
 
-@dataclass
-class EBSOptions:
-    EBSEnabled: Optional[bool] = None
-    Iops: Optional[int] = None
-    Throughput: Optional[int] = None
-    VolumeSize: Optional[int] = None
-    VolumeType: Optional[str] = None
+class EBSOptions(TypedDict):
+    EBSEnabled: Optional[bool]
+    Iops: Optional[int]
+    Throughput: Optional[int]
+    VolumeSize: Optional[int]
+    VolumeType: Optional[str]
 
 
-@dataclass
-class EncryptionAtRestOptions:
-    Enabled: Optional[bool] = None
-    KmsKeyId: Optional[str] = None
+class EncryptionAtRestOptions(TypedDict):
+    Enabled: Optional[bool]
+    KmsKeyId: Optional[str]
 
 
-@dataclass
-class ServiceSoftwareOptions:
-    AutomatedUpdateDate: Optional[str] = None
-    Cancellable: Optional[bool] = None
-    CurrentVersion: Optional[str] = None
-    Description: Optional[str] = None
-    NewVersion: Optional[str] = None
-    OptionalDeployment: Optional[bool] = None
-    UpdateAvailable: Optional[bool] = None
-    UpdateStatus: Optional[str] = None
+class ServiceSoftwareOptions(TypedDict):
+    AutomatedUpdateDate: Optional[str]
+    Cancellable: Optional[bool]
+    CurrentVersion: Optional[str]
+    Description: Optional[str]
+    NewVersion: Optional[str]
+    OptionalDeployment: Optional[bool]
+    UpdateAvailable: Optional[bool]
+    UpdateStatus: Optional[str]
 
 
-@dataclass
-class WindowStartTime:
-    Hours: Optional[int] = None
-    Minutes: Optional[int] = None
+class WindowStartTime(TypedDict):
+    Hours: Optional[int]
+    Minutes: Optional[int]
 
 
-@dataclass
-class OffPeakWindow:
-    WindowStartTime: Optional[WindowStartTime] = None
+class OffPeakWindow(TypedDict):
+    WindowStartTime: Optional[WindowStartTime]
 
 
-@dataclass
-class OffPeakWindowOptions:
-    Enabled: Optional[bool] = None
-    OffPeakWindow: Optional[OffPeakWindow] = None
+class OffPeakWindowOptions(TypedDict):
+    Enabled: Optional[bool]
+    OffPeakWindow: Optional[OffPeakWindow]
 
 
-@dataclass
-class SoftwareUpdateOptions:
-    AutoSoftwareUpdateEnabled: Optional[bool] = None
+class SoftwareUpdateOptions(TypedDict):
+    AutoSoftwareUpdateEnabled: Optional[bool]
 
 
-@dataclass
-class OpenSearchDomainProperties:
-    AccessPolicies: Optional[dict] = None
-    AdvancedOptions: Optional[dict] = None
-    AdvancedSecurityOptions: Optional[AdvancedSecurityOptions] = None
-    Arn: Optional[str] = None
-    ClusterConfig: Optional[ClusterConfig] = None
-    CognitoOptions: Optional[CognitoOptions] = None
-    DomainArn: Optional[str] = None
-    DomainEndpoint: Optional[str] = None
-    DomainEndpointOptions: Optional[DomainEndpointOptions] = None
-    DomainEndpoints: Optional[dict] = None
-    DomainName: Optional[str] = None
-    EBSOptions: Optional[EBSOptions] = None
-    EncryptionAtRestOptions: Optional[EncryptionAtRestOptions] = None
-    EngineVersion: Optional[str] = None
-    Id: Optional[str] = None
-    LogPublishingOptions: Optional[dict] = None
-    NodeToNodeEncryptionOptions: Optional[NodeToNodeEncryptionOptions] = None
-    OffPeakWindowOptions: Optional[OffPeakWindowOptions] = None
-    ServiceSoftwareOptions: Optional[ServiceSoftwareOptions] = None
-    SnapshotOptions: Optional[SnapshotOptions] = None
-    SoftwareUpdateOptions: Optional[SoftwareUpdateOptions] = None
-    Tags: Optional[list] = None
-    VPCOptions: Optional[VPCOptions] = None
+class OpenSearchDomainProperties(TypedDict):
+    AccessPolicies: Optional[dict]
+    AdvancedOptions: Optional[dict]
+    AdvancedSecurityOptions: Optional[AdvancedSecurityOptions]
+    Arn: Optional[str]
+    ClusterConfig: Optional[ClusterConfig]
+    CognitoOptions: Optional[CognitoOptions]
+    DomainArn: Optional[str]
+    DomainEndpoint: Optional[str]
+    DomainEndpointOptions: Optional[DomainEndpointOptions]
+    DomainEndpoints: Optional[dict]
+    DomainName: Optional[str]
+    EBSOptions: Optional[EBSOptions]
+    EncryptionAtRestOptions: Optional[EncryptionAtRestOptions]
+    EngineVersion: Optional[str]
+    Id: Optional[str]
+    LogPublishingOptions: Optional[dict]
+    NodeToNodeEncryptionOptions: Optional[NodeToNodeEncryptionOptions]
+    OffPeakWindowOptions: Optional[OffPeakWindowOptions]
+    ServiceSoftwareOptions: Optional[ServiceSoftwareOptions]
+    SnapshotOptions: Optional[SnapshotOptions]
+    SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
+    Tags: Optional[list]
+    VPCOptions: Optional[VPCOptions]
 
 
 class OpenSearchDomainAllProperties(OpenSearchDomainProperties):
-    physical_resource_id: Optional[str] = None
+    physical_resource_id: Optional[str]
 
 
 @register_resource_provider
@@ -192,31 +172,35 @@ class OpenSearchDomainProvider(ResourceProvider[OpenSearchDomainAllProperties]):
         model = request.desired_state
 
         # Validations
-        assert model.DomainName
+        assert model["DomainName"]
 
-        if model.physical_resource_id is None:
+        if model["physical_resource_id"] is None:
             # resource is not ready
 
             # Defaults
 
             # Idempotency
             try:
-                request.aws_client_factory.opensearch.describe_domain(DomainName=model.DomainName)
+                request.aws_client_factory.opensearch.describe_domain(
+                    DomainName=model["DomainName"]
+                )
             except request.aws_client_factory.opensearch.exceptions.ResourceNotFoundException:
                 pass
             else:
                 # the resource already exists
                 # for now raise an exception
                 # TODO: return progress event
-                raise RuntimeError(f"opensearch domain {model.DomainName} already exists")
+                raise RuntimeError(f"opensearch domain {model['DomainName']} already exists")
 
             # Create resource
-            res = request.aws_client_factory.opensearch.create_domain(DomainName=model.DomainName)
-            model.physical_resource_id = res["DomainStatus"]["ARN"]
+            res = request.aws_client_factory.opensearch.create_domain(
+                DomainName=model["DomainName"]
+            )
+            model["physical_resource_id"] = res["DomainStatus"]["ARN"]
             return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
 
         # check on the status of the domain to see if it has been created yet or not
-        res = request.aws_client_factory.opensearch.describe_domain(DomainName=model.DomainName)
+        res = request.aws_client_factory.opensearch.describe_domain(DomainName=model["DomainName"])
         if res["DomainStatus"]["Processing"] is False:
             return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
         else:
@@ -226,7 +210,7 @@ class OpenSearchDomainProvider(ResourceProvider[OpenSearchDomainAllProperties]):
         self,
         request: ResourceRequest[OpenSearchDomainAllProperties],
     ) -> ProgressEvent[OpenSearchDomainAllProperties]:
-        name = request.desired_state.DomainName
+        name = request.desired_state["DomainName"]
         LOG.warning(f"deleting domain {request.custom_context=}")
         assert name is not None
         if not request.custom_context.get("started", False):
