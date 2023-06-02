@@ -3610,7 +3610,7 @@ class TestSNSProvider:
 
 
 @pytest.mark.only_localstack
-class TestS3MultiAccounts:
+class TestSNSMultiAccounts:
     @pytest.fixture
     def sns_primary_client(self, aws_client):
         return aws_client.sns

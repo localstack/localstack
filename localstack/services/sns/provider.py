@@ -103,10 +103,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return sns_backends[account_id][region_name]
 
     @staticmethod
-    def _get_topic(arn: str, region: str) -> Topic:
-        arn_data = parse_topic_arn(arn)
+    def _get_topic(arn: str, context: RequestContext) -> Topic:
+        arn_data = parse_and_validate_topic_arn(arn)
         try:
-            return sns_backends[arn_data["account"]][region].topics[arn]
+            return sns_backends[arn_data["account"]][context.region].topics[arn]
         except KeyError:
             raise NotFoundException("Topic does not exist")
 
@@ -122,7 +122,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # TODO: fix some attributes by moto, see snapshot
         # TODO: very hacky way to get the attributes we need instead of a moto patch
         # would need more work to have the proper format out of moto, maybe extract the model to our store
-        moto_topic_model = self._get_topic(topic_arn, context.region)
+        moto_topic_model = self._get_topic(topic_arn, context)
         for attr in vars(moto_topic_model):
             if "success_feedback" in attr:
                 key = camelcase_to_pascal(underscores_to_camelcase(attr))
@@ -140,7 +140,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 "The batch request contains more entries than permissible."
             )
 
-        parsed_arn = parse_topic_arn(topic_arn)
+        parsed_arn = parse_and_validate_topic_arn(topic_arn)
         store = self.get_store(account_id=parsed_arn["account"], region_name=context.region)
         if topic_arn not in store.topic_subscriptions:
             raise NotFoundException(
@@ -158,7 +158,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
                 )
-            topic = self._get_topic(topic_arn, context.region)
+            topic = self._get_topic(topic_arn, context)
             if topic.content_based_deduplication == "false":
                 if not all(
                     ["MessageDeduplicationId" in entry for entry in publish_batch_request_entries]
@@ -440,7 +440,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics",
                 )
-            topic = self._get_topic(topic_or_target_arn, context.region)
+            topic = self._get_topic(topic_or_target_arn, context)
             if topic.content_based_deduplication == "false":
                 if not message_deduplication_id:
                     raise InvalidParameterException(
@@ -479,7 +479,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         if not phone_number:
             # use the account to get the store from the TopicArn (you can only publish in the same region as the topic)
-            parsed_arn = parse_topic_arn(topic_or_target_arn)
+            parsed_arn = parse_and_validate_topic_arn(topic_or_target_arn)
             store = self.get_store(account_id=parsed_arn["account"], region_name=context.region)
             moto_sns_backend = self.get_moto_backend(parsed_arn["account"], context.region)
             if is_endpoint_publish:
@@ -574,7 +574,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         moto_response = call_moto(context)
         subscription_arn = moto_response.get("SubscriptionArn")
-        parsed_topic_arn = parse_topic_arn(topic_arn)
+        parsed_topic_arn = parse_and_validate_topic_arn(topic_arn)
 
         store = self.get_store(account_id=parsed_topic_arn["account"], region_name=context.region)
 
@@ -670,7 +670,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
     def delete_topic(self, context: RequestContext, topic_arn: topicARN) -> None:
         call_moto(context)
-        parsed_arn = parse_topic_arn(topic_arn)
+        parsed_arn = parse_and_validate_topic_arn(topic_arn)
         store = self.get_store(account_id=parsed_arn["account"], region_name=context.region)
         topic_subscriptions = store.topic_subscriptions.pop(topic_arn, [])
         for topic_sub in topic_subscriptions:
@@ -841,7 +841,7 @@ def extract_tags(
     return True
 
 
-def parse_topic_arn(topic_arn: str) -> ArnData:
+def parse_and_validate_topic_arn(topic_arn: str) -> ArnData:
     try:
         return parse_arn(topic_arn)
     except InvalidArnException:
