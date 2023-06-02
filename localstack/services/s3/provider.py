@@ -1,6 +1,11 @@
+import base64
+import copy
 import datetime
 import logging
 import os
+from io import BytesIO
+
+# import tracemalloc
 from typing import IO, Dict, List, Optional
 from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
@@ -113,7 +118,7 @@ from localstack.aws.handlers import (
     serve_custom_service_request_handlers,
 )
 from localstack.services.edge import ROUTER
-from localstack.services.moto import call_moto
+from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
@@ -124,14 +129,20 @@ from localstack.services.s3.presigned_url import (
     s3_presigned_url_response_handler,
     validate_post_policy,
 )
-from localstack.services.s3.utils import (
+from localstack.services.s3.stream_patch import (
+    ChecksumInvalid,
+    StreamedFakeKey,
+    apply_stream_patches,
+    get_generator_from_stream,
+)
+from localstack.services.s3.utils import (  # get_object_checksum_for_algorithm,
     _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
     extract_bucket_key_version_id_from_copy_source,
     get_bucket_from_moto,
     get_header_name,
     get_key_from_moto_bucket,
-    get_object_checksum_for_algorithm,
+    get_s3_checksum,
     is_bucket_name_valid,
     is_canned_acl_bucket_valid,
     is_key_expired,
@@ -147,6 +158,9 @@ from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 from localstack.utils.urls import localstack_host
 
+# from memory_profiler import profile
+
+
 LOG = logging.getLogger(__name__)
 
 os.environ[
@@ -155,7 +169,10 @@ os.environ[
 
 MOTO_CANONICAL_USER_ID = "75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a"
 # max file size for S3 objects kept in memory (500 KB by default)
+# TODO: make this configurable
 S3_MAX_FILE_SIZE_BYTES = 512 * 1024
+
+STREAMING_MODE = True
 
 
 class MalformedXML(CommonServiceException):
@@ -388,6 +405,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise NoSuchKey("The specified key does not exist.", Key=key)
 
         response: GetObjectOutput = call_moto(context)
+
         # check for the presence in the response, was fixed by moto but incompletely
         if bucket in self.get_store().bucket_versioning_status and "VersionId" not in response:
             response["VersionId"] = "null"
@@ -414,6 +432,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return response
 
     @handler("PutObject", expand=False)
+    # @profile
     def put_object(
         self,
         context: RequestContext,
@@ -422,7 +441,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO: it seems AWS uses AES256 encryption by default now, starting January 5th 2023
         # note: etag do not change after encryption
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-encryption.html
-        if checksum_algorithm := request.get("ChecksumAlgorithm"):
+
+        # TODO: move this into moto when we save the key
+        if not STREAMING_MODE and (checksum_algorithm := request.get("ChecksumAlgorithm")):
             verify_checksum(checksum_algorithm, context.request.data, request)
 
         moto_backend = get_moto_s3_backend(context)
@@ -432,7 +453,23 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             validate_kms_key_id(sse_kms_key_id, moto_bucket)
 
         try:
-            response: PutObjectOutput = call_moto(context)
+            if STREAMING_MODE:
+                request_without_body = copy.copy(request)
+                body = request_without_body.pop("Body", BytesIO(b""))
+                request_without_body["Body"] = BytesIO(b"")
+                checksums_keys = {
+                    key for key in request_without_body.keys() if key.startswith("Checksum")
+                }
+                for checksum_key in checksums_keys:
+                    request_without_body.pop(checksum_key)
+
+                response: PutObjectOutput = call_moto_with_request(
+                    context,
+                    request_without_body,
+                    override_headers=True,
+                )
+            else:
+                response: PutObjectOutput = call_moto(context)
         except CommonServiceException as e:
             # missing attributes in exception
             if e.code == "InvalidStorageClass":
@@ -446,6 +483,37 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # we set it to the correctly parsed value in Request, else we remove it from moto metadata
         # we are getting the last set key here so no need for versionId when getting the key
         key_object = get_key_from_moto_bucket(moto_bucket, key=request["Key"])
+        if STREAMING_MODE:
+            key_object: StreamedFakeKey
+            checksum_algorithm = request.get("ChecksumAlgorithm")
+            # checksum_header = f"Checksum{checksum_algorithm.upper()}" if checksum_algorithm else None
+            checksum_value = (
+                request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
+            )
+            key_object.checksum_value = checksum_value or None
+            key_object.checksum_algorithm = checksum_algorithm
+
+            headers = context.request.headers
+            content_sha_256 = context.request.headers.get("x-amz-content-sha256")
+            try:
+                if content_sha_256 in (
+                    "STREAMING-AWS4-HMAC-SHA256-PAYLOAD",
+                    "STREAMING-UNSIGNED-PAYLOAD-TRAILER",
+                ):
+                    # this is a chunked request, we need to properly decode it while setting the key value
+                    decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
+                    key_object.set_value_from_chunked_payload(body, decoded_content_length)
+
+                else:
+                    # set the stream to be the value of the key
+                    key_object.value = body
+            except ChecksumInvalid:
+                raise InvalidRequest(
+                    f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
+                )
+            # the etag is recalculated
+            response["ETag"] = key_object.etag
+
         if expires := request.get("Expires"):
             key_object.set_expiry(expires)
         elif "expires" in key_object.metadata:  # if it got added from query string parameter
@@ -470,7 +538,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         self._notify(context)
-
         return response
 
     @handler("CopyObject", expand=False)
@@ -651,8 +718,28 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
             )
+        elif request.get("PartNumber", 0) < 1:
+            # TODO: find the right exception for this?
+            raise NoSuchUpload()
 
-        response: UploadPartOutput = call_moto(context)
+        if STREAMING_MODE:
+            key = moto_backend.upload_part(
+                bucket_name, upload_id, request.get("PartNumber"), request.get("Body")
+            )
+            response = UploadPartOutput(ETag=key.etag)
+
+            if key.checksum_algorithm is not None:
+                response[f"Checksum{key.checksum_algorithm.upper()}"] = key.checksum_value
+
+            if key.encryption is not None:
+                response["ServerSideEncryption"] = key.encryption
+                if key.encryption == "aws:kms" and key.kms_key_id is not None:
+                    response["SSEKMSKeyId"] = key.encryption
+
+            if key.encryption == "aws:kms" and key.bucket_key_enabled is not None:
+                response["BucketKeyEnabled"] = key.bucket_key_enabled
+        else:
+            response: UploadPartOutput = call_moto(context)
         return response
 
     @handler("ListMultipartUploads", expand=False)
@@ -1625,8 +1712,11 @@ def apply_moto_patches():
         bucket_key_enabled = "x-amz-server-side-encryption-bucket-key-enabled"
         if val := resp_headers.get(bucket_key_enabled, ""):
             resp_headers[bucket_key_enabled] = str(val).lower()
-
-        return status_code, resp_headers, key_value
+        if STREAMING_MODE:
+            content = get_generator_from_stream(key_value)
+        else:
+            content = key_value
+        return status_code, resp_headers, content
 
     @patch(moto_s3_responses.S3Response._bucket_response_head)
     def _fix_bucket_response_head(fn, self, bucket_name, *args, **kwargs):
@@ -1725,6 +1815,9 @@ def apply_moto_patches():
             return PermissionResult.PERMITTED
 
         return fn(self, *args, **kwargs)
+
+    if STREAMING_MODE:
+        apply_stream_patches()
 
 
 def register_custom_handlers():
