@@ -256,7 +256,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
         store.rest_apis[request["restApiId"]].rest_api = response
         # TODO: verify this
-        return to_rest_api_response_json(response)
+        response = to_rest_api_response_json(response)
+        response.setdefault("tags", {})
+        return response
 
     def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
         try:
@@ -1313,7 +1315,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             "PutRestApi",
             put_api_request,
         )
-        return self.put_rest_api(put_api_context, put_api_request)
+        put_api_response = self.put_rest_api(put_api_context, put_api_request)
+        if not put_api_response.get("tags"):
+            put_api_response.pop("tags", None)
+        return put_api_response
 
     # integrations
 
