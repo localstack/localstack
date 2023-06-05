@@ -545,8 +545,8 @@ def import_api_from_openapi_spec(
     rest_api.description = resolved_schema.get("info", {}).get("description")
 
     # Remove default root, then add paths from API spec
+    # TODO: the default mode is now `merge`, not `overwrite` if using `PutRestApi`
     rest_api.resources = {}
-    rest_api.tags = {}
     # authorizers map to avoid duplication
     authorizers = {}
 

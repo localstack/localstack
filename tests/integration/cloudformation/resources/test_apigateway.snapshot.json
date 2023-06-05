@@ -109,5 +109,62 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
+    "recorded-date": "02-06-2023, 18:26:01",
+    "recorded-content": {
+      "rest-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "REGIONAL"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "tags": {
+          "aws:cloudformation:logical-id": "ApiGatewayRestApi",
+          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
+          "aws:cloudformation:stack-name": "stack-name"
+        },
+        "version": "1.0.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resources": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/"
+          },
+          {
+            "id": "<id:3>",
+            "parentId": "<id:2>",
+            "path": "/pets",
+            "pathPart": "pets",
+            "resourceMethods": {
+              "GET": {}
+            }
+          },
+          {
+            "id": "<id:4>",
+            "parentId": "<id:3>",
+            "path": "/pets/{petId}",
+            "pathPart": "{petId}",
+            "resourceMethods": {
+              "GET": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

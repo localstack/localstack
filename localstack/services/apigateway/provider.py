@@ -241,6 +241,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     @handler("PutRestApi", expand=False)
     def put_rest_api(self, context: RequestContext, request: PutRestApiRequest) -> RestApi:
+        # TODO: take into account the mode: overwrite or merge
+        # the default is now `merge`, but we are removing everything
         body_data = request["body"].read()
         rest_api = get_moto_rest_api(context, request["restApiId"])
 

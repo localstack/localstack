@@ -1,6 +1,7 @@
 import json
 from urllib.parse import urlparse
 
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     lambda_keys_to_lower,
@@ -115,6 +116,7 @@ class GatewayRestAPI(GenericBaseModel):
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
+        # FIXME: this is only when Body or BodyS3Location is set, otherwise the deployment should fail without a name
         role_name = resource.get("Properties", {}).get("Name")
         if not role_name:
             resource["Properties"]["Name"] = generate_default_name(
@@ -166,12 +168,45 @@ class GatewayRestAPI(GenericBaseModel):
             result = client.create_rest_api(**kwargs)
 
             body = props.get("Body")
-            if body:
+            s3_body_location = props.get("BodyS3Location")
+            if body or s3_body_location:
                 # the default behavior for imports via CFn is basepath=ignore (validated against AWS)
-                api_params = {"basepath": "ignore"}
-                body = json.dumps(body) if isinstance(body, dict) else body
+                import_parameters = props.get("Parameters", {})
+                import_parameters.setdefault("basepath", "ignore")
+
+                if body:
+                    body = json.dumps(body) if isinstance(body, dict) else body
+                else:
+                    get_obj_kwargs = {}
+                    if version_id := s3_body_location.get("Version"):
+                        get_obj_kwargs["VersionId"] = version_id
+
+                    # what is the approach when client call fail? Do we bubble it up?
+                    s3_client = connect_to().s3
+                    get_obj_req = s3_client.get_object(
+                        Bucket=s3_body_location.get("Bucket"),
+                        Key=s3_body_location.get("Key"),
+                        **get_obj_kwargs,
+                    )
+                    if etag := s3_body_location.get("ETag"):
+                        if etag != get_obj_req["ETag"]:
+                            # TODO: validate the exception message
+                            raise Exception(
+                                "The ETag provided for the S3BodyLocation does not match the S3 Object"
+                            )
+                    body = get_obj_req["Body"].read()
+
+                put_kwargs = {}
+                if import_mode := props.get("Mode"):
+                    put_kwargs["mode"] = import_mode
+                if fail_on_warnings_mode := props.get("FailOnWarnings"):
+                    put_kwargs["failOnWarnings"] = fail_on_warnings_mode
+
                 client.put_rest_api(
-                    restApiId=result["id"], body=to_bytes(body), parameters=api_params
+                    restApiId=result["id"],
+                    body=to_bytes(body),
+                    parameters=import_parameters,
+                    **put_kwargs,
                 )
 
             props["id"] = result["id"]
