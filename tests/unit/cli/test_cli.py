@@ -271,3 +271,19 @@ def test_not_is_frozen(monkeypatch):
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     monkeypatch.delattr(sys, "_MEIPASS", raising=False)
     assert not is_frozen_bundle()
+
+
+@pytest.mark.parametrize("shell", ["bash", "zsh", "fish"])
+def test_completion(monkeypatch, runner, shell: str):
+    test_binary_name = "testbinaryname"
+    monkeypatch.setattr(localstack.config, "DISABLE_EVENTS", True)
+    monkeypatch.setattr(sys, "argv", [test_binary_name])
+    result = runner.invoke(cli, ["completion", shell])
+    assert result.exit_code == 0
+    assert f"_{test_binary_name.upper()}_COMPLETE={shell}_complete" in result.output
+
+
+def test_completion_unknown_shell(monkeypatch, runner):
+    monkeypatch.setattr(localstack.config, "DISABLE_EVENTS", True)
+    result = runner.invoke(cli, ["completion", "unknown_shell"])
+    assert result.exit_code != 0

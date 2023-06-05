@@ -480,6 +480,70 @@ def cmd_infra_start(ctx, *args, **kwargs):
     ctx.invoke(cmd_start, *args, **kwargs)
 
 
+@localstack.command(
+    name="completion",
+    short_help="CLI shell completion",
+    help="""
+         Print shell completion code for the specified shell (bash, zsh, or fish).
+         The shell code must be evaluated to enable the interactive shell completion of LocalStack CLI commands.
+         This is usually done by sourcing it from the .bash_profile.
+
+         \b
+         Examples:
+           # Bash
+           ## Bash completion on Linux depends on the 'bash-completion' package.
+           ## Write the LocalStack CLI completion code for bash to a file and source it from .bash_profile
+           localstack completion bash > ~/.localstack/completion.bash.inc
+           printf "
+           # LocalStack CLI bash completion
+           source '$HOME/.localstack/completion.bash.inc'
+           " >> $HOME/.bash_profile
+           source $HOME/.bash_profile
+        \b
+           # zsh
+           ## Set the LocalStack completion code for zsh to autoload on startup:
+           localstack completion zsh > "${fpath[1]}/_localstack"
+        \b
+           # fish
+           ## Set the LocalStack completion code for fish to autoload on startup:
+           localstack completion fish > ~/.config/fish/completions/localstack.fish
+         """,
+)
+@click.pass_context
+@click.argument(
+    "shell", required=True, type=click.Choice(["bash", "zsh", "fish"], case_sensitive=False)
+)
+@publish_invocation
+def localstack_completion(ctx: click.Context, shell: str):
+    """
+    Click's autocompletion is not perfectly user-friendly.
+    This command prints the autocompletion script of Click for this program.
+    It can then be simply piped to a completion file.
+    Example:
+        localstack complete fish > ~/.config/fish/completions/localstack.fish
+    :param ctx: Click context
+    :param shell: Shell to show the autocompletion script for
+    """
+    # lookup the completion, raise an error if the given completion is not found
+    import click.shell_completion
+
+    comp_cls = click.shell_completion.get_completion_class(shell)
+    if comp_cls is None:
+        raise click.ClickException("Completion for given shell could not be found.")
+
+    # Click's program name is the base path of sys.argv[0]
+    path = sys.argv[0]
+    prog_name = os.path.basename(path)
+
+    # create the completion variable according to the docs
+    # https://click.palletsprojects.com/en/8.1.x/shell-completion/#enabling-completion
+    complete_var = f"_{prog_name}_COMPLETE".replace("-", "_").upper()
+
+    # instantiate the completion class and print the completion source
+    comp = comp_cls(ctx.command, {}, prog_name, complete_var)
+    click.echo(comp.source())
+
+
 class DockerStatus(TypedDict, total=False):
     running: bool
     runtime_version: str
