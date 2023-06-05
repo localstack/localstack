@@ -1,6 +1,7 @@
 import json
 from urllib.parse import urlparse
 
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     lambda_keys_to_lower,
@@ -181,7 +182,7 @@ class GatewayRestAPI(GenericBaseModel):
                         get_obj_kwargs["VersionId"] = version_id
 
                     # what is the approach when client call fail? Do we bubble it up?
-                    s3_client = aws_stack.connect_to_service("s3")
+                    s3_client = connect_to().s3
                     get_obj_req = s3_client.get_object(
                         Bucket=s3_body_location.get("Bucket"),
                         Key=s3_body_location.get("Key"),
@@ -189,7 +190,7 @@ class GatewayRestAPI(GenericBaseModel):
                     )
                     if etag := s3_body_location.get("ETag"):
                         if etag != get_obj_req["ETag"]:
-                            # TODO: validate the exception message (how?)
+                            # TODO: validate the exception message
                             raise Exception(
                                 "The ETag provided for the S3BodyLocation does not match the S3 Object"
                             )
