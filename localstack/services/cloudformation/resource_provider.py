@@ -13,6 +13,7 @@ from plugin import Plugin, PluginManager
 
 from localstack import config
 from localstack.aws.connect import ServiceLevelClientFactory, connect_to
+from localstack.services.cloudformation.service_models import GenericBaseModel
 
 Properties = TypeVar("Properties")
 
@@ -142,6 +143,22 @@ class ResourceProvider(Generic[Properties]):
         raise NotImplementedError
 
 
+class LegacyResourceProvider(ResourceProvider):
+    def __init__(self, resource_type: str, resource_provider_cls: Type[GenericBaseModel]):
+        super().__init__()
+
+        self.resource_type = resource_type
+        self.resource_provider_cls = resource_provider_cls
+
+    def create(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
+        resource_provider = self.resource_provider_cls(
+            # TODO: other top level keys
+            resource_json={"Type": self.resource_type, "Properties": request.desired_state},
+            region_name=request.region_name,
+        )
+        _ = resource_provider
+
+
 class NoResourceProvider(Exception):
     pass
 
@@ -151,9 +168,16 @@ class ResourceProviderExecutor:
     Point of abstraction between our integration with generic base models, and the new providers.
     """
 
-    def __init__(self, stack_name: str, stack_id: str):
+    def __init__(
+        self,
+        *,
+        stack_name: str,
+        stack_id: str,
+        generic_base_models: dict[str, Type[GenericBaseModel]],
+    ):
         self.stack_name = stack_name
         self.stack_id = stack_id
+        self.generic_base_models = generic_base_models
 
     def deploy_loop(
         self, raw_payload: ResourceProviderPayload, max_iterations: int = 30, sleep_time: float = 5
@@ -201,10 +225,17 @@ class ResourceProviderExecutor:
             # custom provider
             raise NoResourceProvider
 
-    @staticmethod
-    def load_resource_provider(resource_type: str) -> Optional[ResourceProvider]:
-        plugin = plugin_manager.load(resource_type)
-        return plugin.factory()
+    def load_resource_provider(self, resource_type: str) -> Optional[ResourceProvider]:
+        try:
+            plugin = plugin_manager.load(resource_type)
+            return plugin.factory()
+        except Exception as e:
+            # TODO: work out the specific exception type
+            if resource_type not in self.generic_base_models:
+                raise e
+
+            resource_provider_cls = self.generic_base_models[resource_type]
+            return LegacyResourceProvider(resource_provider_cls)
 
 
 plugin_manager = PluginManager(CloudFormationResourceProviderPlugin.namespace)

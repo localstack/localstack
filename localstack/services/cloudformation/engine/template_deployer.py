@@ -1666,7 +1666,11 @@ class TemplateDeployer:
         if not evaluate_resource_condition(stack.stack_name, resources, resource):
             return
 
-        executor = ResourceProviderExecutor(stack_name=stack.stack_name, stack_id=stack.stack_id)
+        executor = ResourceProviderExecutor(
+            stack_name=stack.stack_name,
+            stack_id=stack.stack_id,
+            generic_base_models=RESOURCE_MODELS,
+        )
         creds: Credentials = {
             "accessKeyId": "test",
             "secretAccessKey": "test",
