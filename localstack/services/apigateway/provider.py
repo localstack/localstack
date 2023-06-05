@@ -72,6 +72,8 @@ from localstack.services.apigateway.helpers import (
     apply_json_patch_safe,
     get_apigateway_store,
     import_api_from_openapi_spec,
+    is_greedy_path,
+    is_variable_path,
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.models import RestApiContainer
@@ -1663,14 +1665,6 @@ def remove_empty_attributes_from_integration_response(integration_response: Inte
         integration_response.pop("responseTemplates", None)
 
     return integration_response
-
-
-def is_greedy_path(path_part: str) -> bool:
-    return path_part.startswith("{") and path_part.endswith("+}")
-
-
-def is_variable_path(path_part: str) -> bool:
-    return path_part.startswith("{") and path_part.endswith("}")
 
 
 def validate_model_in_use(moto_rest_api: MotoRestAPI, model_name: str) -> None:

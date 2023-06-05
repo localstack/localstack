@@ -32,6 +32,7 @@ from localstack.utils.aws import resources as resource_utils
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
+from localstack.utils.json import canonical_json
 from localstack.utils.strings import long_uid, short_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
@@ -554,12 +555,11 @@ def import_api_from_openapi_spec(
 
     def is_api_key_required(path_payload: dict) -> bool:
         # TODO: consolidate and refactor with `create_authorizer`, duplicate logic for now
-        if "security" not in path_payload:
+        if not (security_schemes := path_payload.get("security")):
             return False
 
-        security_schemes = path_payload.get("security")
         for security_scheme in security_schemes:
-            for security_scheme_name, _ in security_scheme.items():
+            for security_scheme_name in security_scheme.keys():
                 # $.securityDefinitions is Swagger 2.0
                 # $.components.SecuritySchemes is OpenAPI 3.0
                 security_definitions = body.get("securityDefinitions") or body.get(
@@ -575,12 +575,11 @@ def import_api_from_openapi_spec(
         return False
 
     def create_authorizer(path_payload: dict) -> Optional[Authorizer]:
-        if "security" not in path_payload:
+        if not (security_schemes := path_payload.get("security")):
             return None
 
-        security_schemes = path_payload.get("security")
         for security_scheme in security_schemes:
-            for security_scheme_name, _ in security_scheme.items():
+            for security_scheme_name in security_scheme.keys():
                 # $.securityDefinitions is Swagger 2.0
                 # $.components.SecuritySchemes is OpenAPI 3.0
                 security_definitions = body.get("securityDefinitions") or body.get(
@@ -720,9 +719,9 @@ def import_api_from_openapi_spec(
                 method_resource.request_models = request_models or None
 
             # we check if there's a path parameter, AWS adds the requestParameter automatically
-            resource_name = parts[-1].strip("/")
-            if resource_name.startswith("{") and not resource_name.endswith("+}"):
-                path_parameter = resource_name[1:-1]  # remove the curly braces
+            resource_path_part = parts[-1].strip("/")
+            if is_variable_path(resource_path_part) and not is_greedy_path(resource_path_part):
+                path_parameter = resource_path_part[1:-1]  # remove the curly braces
                 request_parameters[f"method.request.path.{path_parameter}"] = True
 
             method_resource.request_parameters = request_parameters or None
@@ -735,16 +734,26 @@ def import_api_from_openapi_spec(
 
                 # separating the two different versions, Swagger (2.0) and OpenAPI 3.0
                 if "schema" in method_response:  # this is Swagger
-                    model_schema = method_response.get("schema")
+                    model_schema = method_response["schema"]
                 elif "content" in method_response:  # this is OpenAPI 3.0
-                    model_schema = (
-                        method_response["content"].get(APPLICATION_JSON, {}).get("schema")
-                    )
+                    for content_type, media_type in method_response["content"].items():
+                        # we're iterating over the Media Type object:
+                        # https://swagger.io/specification/v3/#media-type-object
+                        if content_type == APPLICATION_JSON:
+                            model_schema = media_type.get("schema")
+                            continue
+                        LOG.warning(
+                            "Found '%s' content-type for the MethodResponse model for path '%s' and method '', not adding the model as currently not supported",
+                            content_type,
+                            rel_path,
+                            method_name,
+                        )
 
                 if model_schema:
                     if isinstance(model_schema, dict):
                         # this means the model schema was resolved directly from the schema, instead of its name
-                        model_schema = schema_map.get(json.dumps(model_schema))
+                        # we dump the model to canonical JSON to be able to retrieve its name
+                        model_schema = schema_map.get(canonical_json(model_schema))
 
                     method_response_model = {APPLICATION_JSON: model_schema}
 
@@ -846,16 +855,16 @@ def import_api_from_openapi_spec(
     )
     schema_map = {}
     for name, model in models.items():
-        schema = json.dumps(model)
         # keep a map of the schema to retrieve the schema name for responseModels resolved $ref
-        schema_map[schema] = name
+        schema_map[canonical_json(model)] = name
+
         model_id = short_uid()[:6]  # length 6 to make TF tests pass
         model = Model(
             id=model_id,
             name=name,
             contentType=APPLICATION_JSON,
             description=None,
-            schema=schema,
+            schema=json.dumps(model),
         )
         store.rest_apis[rest_api.id].models[name] = model
 
@@ -1163,3 +1172,11 @@ class OpenApiExporter:
         self._add_paths(spec, resources)
 
         return getattr(spec, self.export_formats.get(export_format))()
+
+
+def is_greedy_path(path_part: str) -> bool:
+    return path_part.startswith("{") and path_part.endswith("+}")
+
+
+def is_variable_path(path_part: str) -> bool:
+    return path_part.startswith("{") and path_part.endswith("}")
