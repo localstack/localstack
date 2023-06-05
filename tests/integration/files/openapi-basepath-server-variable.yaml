@@ -1,13 +1,13 @@
 openapi: 3.0.1
 info:
-  title: test
-  version: '2020-07-23T23:02:57Z'
-basePath: /base
+  title: test-import-oas
+  version: '2.0'
+# If the API contains only one basePath variable, the Import API feature uses it as the base path, even if it's not referenced in the server.url.
 servers:
-- url: https://rei6t36l9d.execute-api.us-east-1.amazonaws.com/{basePath}
-  variables:
-    basePath:
-      default: "/test"
+  - url: "https://testdomain.com"
+    variables:
+      basePath:
+        default: "/base-var"
 paths:
   "/test":
     get:

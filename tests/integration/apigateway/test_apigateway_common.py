@@ -20,10 +20,6 @@ class TestApiGatewayCommon:
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$.invalid-request-body.Type",
-            "$..methodIntegration.integrationResponses",
-            "$..methodIntegration.passthroughBehavior",
-            "$..methodIntegration.requestParameters",
-            "$..methodIntegration.timeoutInMillis",
         ]
     )
     def test_api_gateway_request_validator(
@@ -240,7 +236,6 @@ class TestApiGatewayCommon:
                 ],
             )
             snapshot.match(f"remove-validator-{http_method}", response)
-            print(response)
 
         apigw_redeploy_api(rest_api_id=api_id, stage_name=stage_name)
 

@@ -362,6 +362,24 @@ class GatewayMethod(GenericBaseModel):
         https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-apitgateway-method-integration-integrationresponse.html
         """
 
+        def get_params(resource_props, stack_name, resources, resource_id):
+            result = keys_to_lower(resource_props)
+            param_names = [
+                "restApiId",
+                "resourceId",
+                "httpMethod",
+                "apiKeyRequired",
+                "authorizationType",
+                "authorizerId",
+                "requestParameters",
+                "requestModels",
+                "requestValidatorId",
+            ]
+            result = select_attributes(result, param_names)
+            result["requestModels"] = result.get("requestModels") or {}
+            result["requestParameters"] = result.get("requestParameters") or {}
+            return result
+
         def _subresources(resource_id, resources, resource_type, func, stack_name):
             apigateway = aws_stack.connect_to_service("apigateway")
             resource = cls(resources[resource_id])
@@ -373,8 +391,7 @@ class GatewayMethod(GenericBaseModel):
                 res_id = props["ResourceId"]
 
                 kwargs = keys_to_lower(integration)
-                if integration.get("Uri"):
-                    uri = integration.get("Uri")
+                if uri := integration.get("Uri"):
 
                     # Moto has a validate method on Uri for integration_type "HTTP" | "HTTP_PROXY" that does not accept
                     # Uri value without path, we need to add path ("/") if not exists
@@ -388,18 +405,23 @@ class GatewayMethod(GenericBaseModel):
                 integration_responses = kwargs.pop("integrationResponses", [])
                 method = props.get("HttpMethod")
 
+                kwargs["requestParameters"] = kwargs.get("requestParameters") or {}
+                kwargs["requestTemplates"] = kwargs.get("requestTemplates") or {}
+
                 apigateway.put_integration(
                     restApiId=api_id,
                     resourceId=res_id,
                     httpMethod=method,
                     **kwargs,
                 )
-
+                default_params = (
+                    "responseParameters",
+                    "responseTemplates",
+                )
                 for integration_response in integration_responses:
                     integration_response["statusCode"] = str(integration_response["statusCode"])
-                    integration_response["responseParameters"] = integration_response.get(
-                        "responseParameters", {}
-                    )
+                    for param in default_params:
+                        integration_response[param] = integration_response.get(param) or {}
                     apigateway.put_integration_response(
                         restApiId=api_id,
                         resourceId=res_id,
@@ -415,25 +437,16 @@ class GatewayMethod(GenericBaseModel):
                     restApiId=api_id,
                     resourceId=res_id,
                     httpMethod=props["HttpMethod"],
-                    statusCode=str(response["StatusCode"]),
-                    responseParameters=response.get("ResponseParameters", {}),
+                    statusCode=str(response["statusCode"]),
+                    responseParameters=response.get("responseParameters") or {},
+                    responseModels=response.get("responseModels") or {},
                 )
 
         return {
             "create": [
                 {
                     "function": "put_method",
-                    "parameters": {
-                        "restApiId": "RestApiId",
-                        "resourceId": "ResourceId",
-                        "httpMethod": "HttpMethod",
-                        "apiKeyRequired": "ApiKeyRequired",
-                        "authorizationType": "AuthorizationType",
-                        "authorizerId": "AuthorizerId",
-                        "requestParameters": "RequestParameters",
-                        "requestModels": "RequestModels",
-                        "requestValidatorId": "RequestValidatorId",
-                    },
+                    "parameters": get_params,
                 },
                 {
                     "function": _subresources  # dynamic mapping for additional sdk calls for this CFn resource

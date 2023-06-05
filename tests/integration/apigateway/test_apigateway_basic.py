@@ -13,7 +13,6 @@ import pytest
 import xmltodict
 from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
-from moto.apigateway import apigateway_backends
 from requests.structures import CaseInsensitiveDict
 
 from localstack import config
@@ -28,7 +27,6 @@ from localstack.services.apigateway.helpers import (
     get_resource_for_path,
     get_rest_api_paths,
     host_based_url,
-    import_api_from_openapi_spec,
     path_based_url,
 )
 from localstack.services.awslambda.lambda_api import add_event_source, use_docker
@@ -55,8 +53,6 @@ from tests.integration.apigateway.apigateway_fixtures import (
     create_rest_resource_method,
     delete_rest_api,
     get_rest_api,
-    get_rest_api_resources,
-    put_rest_api,
     update_rest_api_deployment,
     update_rest_api_stage,
 )
@@ -75,7 +71,6 @@ from tests.integration.awslambda.test_lambda import (
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
 )
-from tests.unit.test_apigateway import load_test_resource
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_SWAGGER_FILE_JSON = os.path.join(THIS_FOLDER, "../files", "swagger.json")
@@ -812,95 +807,6 @@ class TestAPIGateway:
                 restApiId=self.TEST_API_GATEWAY_ID, authorizerId=authorizer_id
             )
 
-    def test_apigateway_with_lambda_integration(self, create_rest_apigw, aws_client):
-        # create Lambda function
-        lambda_name = f"apigw-lambda-{short_uid()}"
-        self.create_lambda_function(lambda_name)
-        lambda_uri = arns.lambda_function_arn(lambda_name)
-        target_uri = arns.apigateway_invocations_arn(lambda_uri)
-
-        # create REST API
-        api_id, _, _ = create_rest_apigw(name="test-api")
-        root_res_id = aws_client.apigateway.get_resources(restApiId=api_id)["items"][0]["id"]
-        api_resource = aws_client.apigateway.create_resource(
-            restApiId=api_id, parentId=root_res_id, pathPart="test"
-        )
-
-        aws_client.apigateway.put_method(
-            restApiId=api_id,
-            resourceId=api_resource["id"],
-            httpMethod="GET",
-            authorizationType="NONE",
-        )
-
-        rs = aws_client.apigateway.put_integration(
-            restApiId=api_id,
-            resourceId=api_resource["id"],
-            httpMethod="GET",
-            integrationHttpMethod="POST",
-            type="AWS",
-            uri=target_uri,
-            timeoutInMillis=3000,
-            contentHandling="CONVERT_TO_BINARY",
-            requestTemplates={"application/json": '{"param1": "$input.params(\'param1\')"}'},
-        )
-        integration_keys = [
-            "httpMethod",
-            "type",
-            "cacheKeyParameters",
-            "uri",
-            "cacheNamespace",
-            "timeoutInMillis",
-            "requestParameters",
-        ]
-        assert 201 == rs["ResponseMetadata"]["HTTPStatusCode"]
-        for key in integration_keys:
-            assert key in rs
-        assert "responseTemplates" not in rs
-
-        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=self.TEST_STAGE_NAME)
-
-        rs = aws_client.apigateway.get_integration(
-            restApiId=api_id, resourceId=api_resource["id"], httpMethod="GET"
-        )
-        assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
-        assert "AWS" == rs["type"]
-        assert "POST" == rs["httpMethod"]
-        assert target_uri == rs["uri"]
-
-        # invoke the gateway endpoint
-        url = path_based_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path="/test")
-        response = requests.get(f"{url}?param1=foobar")
-        assert response.status_code < 400
-        content = response.json()
-        assert {"param1": "foobar"} == content.get("event")
-
-        # additional checks from https://github.com/localstack/localstack/issues/5041
-        # pass Signature param
-        response = requests.get(f"{url}?param1=foobar&Signature=1")
-        assert response.status_code == 200
-        content = response.json()
-        assert {"param1": "foobar"} == content.get("event")
-
-        # delete integration
-        rs = aws_client.apigateway.delete_integration(
-            restApiId=api_id,
-            resourceId=api_resource["id"],
-            httpMethod="GET",
-        )
-        assert 204 == rs["ResponseMetadata"]["HTTPStatusCode"]
-
-        with pytest.raises(ClientError) as ctx:
-            # This call should not be successful as the integration is deleted
-            aws_client.apigateway.get_integration(
-                restApiId=api_id, resourceId=api_resource["id"], httpMethod="GET"
-            )
-        assert ctx.value.response["Error"]["Code"] == "NotFoundException"
-
-        # clean up
-        lambda_client = aws_stack.create_external_boto_client("lambda")
-        lambda_client.delete_function(FunctionName=lambda_name)
-
     def test_malformed_response_apigw_invocation(self, create_lambda_function, aws_client):
         lambda_name = f"test_lambda_{short_uid()}"
         lambda_resource = "/api/v1/{proxy+}"
@@ -1285,62 +1191,6 @@ class TestAPIGateway:
             )
             # when the api key is passed as part of the header
             assert 200 == response.status_code
-
-    @pytest.mark.parametrize("base_path_type", ["ignore", "prepend", "split"])
-    def test_import_rest_api(self, base_path_type, create_rest_apigw, import_apigw, aws_client):
-        rest_api_name = f"restapi-{short_uid()}"
-
-        rest_api_id, _, _ = create_rest_apigw(name=rest_api_name)
-
-        spec_file = load_file(TEST_SWAGGER_FILE_JSON)
-        api_params = {"basepath": base_path_type}
-        rs = aws_client.apigateway.put_rest_api(
-            restApiId=rest_api_id, body=spec_file, mode="overwrite", parameters=api_params
-        )
-        assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
-
-        resources = aws_client.apigateway.get_resources(restApiId=rest_api_id)
-        for rv in resources.get("items"):
-            for method in rv.get("resourceMethods", {}).values():
-                assert method.get("authorizationType") == "REQUEST"
-                assert method.get("authorizerId") is not None
-
-        spec_file = load_file(TEST_SWAGGER_FILE_YAML)
-        rs = aws_client.apigateway.put_rest_api(
-            restApiId=rest_api_id, body=spec_file, mode="overwrite", parameters=api_params
-        )
-        assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
-
-        rs = aws_client.apigateway.get_resources(restApiId=rest_api_id)
-        expected_resources = 2 if base_path_type == "ignore" else 3
-        assert len(rs["items"]) == expected_resources
-
-        abs_path = "/test" if base_path_type == "ignore" else "/base/test"
-        resource = [res for res in rs["items"] if res["path"] == abs_path][0]
-        assert "GET" in resource["resourceMethods"]
-        assert "requestParameters" in resource["resourceMethods"]["GET"]
-        assert {"integration.request.header.X-Amz-Invocation-Type": "'Event'"} == resource[
-            "resourceMethods"
-        ]["GET"]["requestParameters"]
-
-        url = path_based_url(api_id=rest_api_id, stage_name="dev", path=abs_path)
-        response = requests.get(url)
-        assert 200 == response.status_code
-
-        # clean up
-
-        spec_file = load_file(TEST_IMPORT_REST_API_FILE)
-        response, _ = import_apigw(body=spec_file, parameters=api_params)
-        rest_api_id = response["id"]
-
-        rs = aws_client.apigateway.get_resources(restApiId=rest_api_id)
-        resources = rs["items"]
-        assert 3 == len(resources)
-
-        paths = [res["path"] for res in resources]
-        assert "/" in paths
-        assert "/pets" in paths
-        assert "/pets/{petId}" in paths
 
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("action", ["StartExecution", "DeleteStateMachine"])
@@ -1911,61 +1761,6 @@ class TestAPIGateway:
         apigw_client.create_deployment(restApiId=api_id, stageName=stage_name)
         return api_id
 
-    @pytest.mark.parametrize("base_path_type", ["ignore", "prepend", "split"])
-    def test_import_rest_apis(self, base_path_type, create_rest_apigw, import_apigw, aws_client):
-        rest_api_name = f"restapi-{short_uid()}"
-        rest_api_id, _, _ = create_rest_apigw(name=rest_api_name)
-
-        spec_file = load_file(TEST_SWAGGER_FILE_JSON)
-        api_params = {"basepath": base_path_type}
-        rest_api_id, _ = put_rest_api(
-            aws_client.apigateway,
-            restApiId=rest_api_id,
-            body=spec_file,
-            mode="overwrite",
-            parameters=api_params,
-        )
-
-        resources = get_rest_api_resources(aws_client.apigateway, restApiId=rest_api_id)
-        for rv in resources:
-            for method in rv.get("resourceMethods", {}).values():
-                assert method.get("authorizationType") == "REQUEST"
-                assert method.get("authorizerId") is not None
-
-        spec_file = load_file(TEST_SWAGGER_FILE_YAML)
-        rest_api_id, _ = put_rest_api(
-            aws_client.apigateway,
-            restApiId=rest_api_id,
-            body=spec_file,
-            mode="overwrite",
-            parameters=api_params,
-        )
-
-        rs = get_rest_api_resources(aws_client.apigateway, restApiId=rest_api_id)
-        expected_resources = 2 if base_path_type == "ignore" else 3
-        assert len(rs) == expected_resources
-
-        abs_path = "/test" if base_path_type == "ignore" else "/base/test"
-        resource = [res for res in rs if res["path"] == abs_path][0]
-        assert "GET" in resource["resourceMethods"]
-        assert "requestParameters" in resource["resourceMethods"]["GET"]
-        assert {"integration.request.header.X-Amz-Invocation-Type": "'Event'"} == resource[
-            "resourceMethods"
-        ]["GET"]["requestParameters"]
-
-        url = path_based_url(api_id=rest_api_id, stage_name="dev", path=abs_path)
-        response = requests.get(url)
-        assert 200 == response.status_code
-
-        spec_file = load_file(TEST_IMPORT_REST_API_FILE)
-        response, _ = import_apigw(body=spec_file, parameters=api_params)
-        rest_api_id = response["id"]
-        resources = get_rest_api_resources(aws_client.apigateway, restApiId=rest_api_id)
-        paths = [res["path"] for res in resources]
-        assert "/" in paths
-        assert "/pets" in paths
-        assert "/pets/{petId}" in paths
-
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("stage_name", ["local", "dev"])
     def test_apigw_stage_variables(
@@ -2057,60 +1852,6 @@ class TestAPIGateway:
             assert response.json() == {"version": ""}
         else:
             assert response.json() == {"version": "1.0"}
-
-
-def test_import_swagger_api(aws_client):
-    # TODO: refactor test to not access moto resources directly
-    api_spec = load_test_resource("openapi.swagger.json")
-    api_spec_dict = json.loads(api_spec)
-
-    backend = apigateway_backends[get_aws_account_id()][aws_stack.get_region()]
-    rest_api = aws_client.apigateway.create_rest_api(name="api_name", description="description-1")
-
-    api_model = backend.get_rest_api(rest_api["id"])
-
-    imported_api = import_api_from_openapi_spec(api_model, api_spec_dict, {})
-
-    # test_cfn_handle_serverless_api_resource fails if we support title
-    # assert imported_api.name == api_spec_dict.get("info").get("title")
-    assert imported_api.description == api_spec_dict.get("info").get("description")
-
-    # assert that are no multiple authorizers
-    authorizers = aws_client.apigateway.get_authorizers(restApiId=imported_api.id)
-    assert len(authorizers.get("items")) == 1
-
-    paths = {v.path_part for k, v in imported_api.resources.items()}
-    assert paths == {"/", "pets", "{petId}"}
-
-    resource_methods = {v.path_part: v.resource_methods for k, v in imported_api.resources.items()}
-    methods = {kk[0] for k, v in resource_methods.items() for kk in v.items()}
-    assert methods == {"POST", "OPTIONS", "GET"}
-
-    response_resource = resource_methods.get("/").get("GET").method_responses.get("200")
-    assert response_resource.to_json() == {
-        "statusCode": "200",
-        "responseModels": None,
-        "responseParameters": {"method.response.header.Content-Type": "'text/html'"},
-    }
-
-    method_response_resource = resource_methods.get("pets").get("GET").method_responses.get("200")
-    assert method_response_resource.to_json() == {
-        "responseModels": {
-            "application/json": {
-                "items": {
-                    "properties": {
-                        "id": {"type": "integer"},
-                        "price": {"type": "number"},
-                        "type": {"type": "string"},
-                    },
-                    "type": "object",
-                },
-                "type": "array",
-            }
-        },
-        "responseParameters": {"method.response.header.Access-Control-Allow-Origin": "'*'"},
-        "statusCode": "200",
-    }
 
 
 @pytest.mark.skipif(not use_docker(), reason="Rust lambdas cannot be executed in local executor")

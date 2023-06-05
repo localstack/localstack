@@ -3,7 +3,7 @@
   "info": {
     "description": "Your first API with Amazon API Gateway. This is a sample API that integrates via HTTP with our demo Pet Store endpoints",
     "title": "PetStore",
-    "version": ""
+    "version": "1.0"
   },
   "schemes": [
     "https"
@@ -367,7 +367,7 @@
     "Pet": {
       "type": "object",
       "properties": {
-        "id": {
+        "petid": {
           "type": "integer"
         },
         "type": {

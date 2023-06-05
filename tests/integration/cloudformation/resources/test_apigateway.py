@@ -9,7 +9,6 @@ from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
-from localstack.utils.testutil import create_zip_file
 from tests.integration.apigateway.apigateway_fixtures import api_invoke_url
 
 TEST_TEMPLATE_1 = """
@@ -195,41 +194,14 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, aws_client):
     assert not apis
 
 
-@pytest.mark.skip_snapshot_verify(
-    paths=[
-        "$..binaryMediaTypes",
-        "$..version",
-        "$..methodIntegration.cacheNamespace",
-        "$..methodIntegration.connectionType",
-        "$..methodIntegration.passthroughBehavior",
-        "$..methodIntegration.requestTemplates",
-        "$..methodIntegration.timeoutInMillis",
-        "$..methodResponses",
-        "$..requestModels",
-        "$..requestParameters",
-    ]
-)
-def test_cfn_deploy_apigateway_integration(
-    deploy_cfn_template, s3_create_bucket, snapshot, aws_client
-):
-    bucket_name = f"hofund-local-deployment-{short_uid()}"
-    key_name = "serverless/hofund/local/1599143878432/authorizer.zip"
-    package_path = os.path.join(
-        os.path.dirname(__file__), "../../awslambda/functions/lambda_echo.js"
-    )
-
-    s3_create_bucket(Bucket=bucket_name, ACL="public-read")
-    aws_client.s3.put_object(
-        Bucket=bucket_name,
-        Key=key_name,
-        Body=create_zip_file(package_path, get_content=True),
-    )
+@pytest.mark.aws_validated
+def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../templates/apigateway_integration.yml"
+            os.path.dirname(__file__), "../../templates/apigateway_integration_no_authorizer.yml"
         ),
-        parameters={"CodeBucket": bucket_name, "CodeKey": key_name},
         max_wait=120,
     )
 
@@ -246,6 +218,7 @@ def test_cfn_deploy_apigateway_integration(
         restApiId=rest_api_id, resourceId=resource_id, httpMethod="GET"
     )
     snapshot.match("method", method)
+    # TODO: snapshot the authorizer too? it's not attached to the REST API
 
 
 def test_cfn_apigateway_rest_api(deploy_cfn_template, aws_client):

@@ -1,5 +1,4 @@
 import json
-import os
 import unittest
 from typing import Any, Dict
 from unittest.mock import Mock
@@ -31,13 +30,6 @@ from localstack.services.apigateway.templates import (
 )
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import clone
-from localstack.utils.files import load_file
-
-
-def load_test_resource(file_name: str, file_path: str = None) -> str:
-    if file_path:
-        return load_file(os.path.join(os.path.dirname(__file__), file_path, file_name))
-    return load_file(os.path.join(os.path.dirname(__file__), "./templates", file_name))
 
 
 class ApiGatewayPathsTest(unittest.TestCase):
