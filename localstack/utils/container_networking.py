@@ -70,14 +70,14 @@ def get_endpoint_for_network(network: Optional[str] = None) -> str:
             )
         else:
             # default gateway for the network should be the host
-            # (only under Linux - otherwise we need to determine the IP by starting a container below)
+            # In a Linux host-mode environment, the default gateway for the network should be the IP of the host
             if config.is_in_linux:
                 main_container_ip = DOCKER_CLIENT.inspect_network(network)["IPAM"]["Config"][0][
                     "Gateway"
                 ]
             else:
-                # we are not in docker and not on linux, we need to determine the IP of the host by running a container
-                # (basically MacOS host mode, i.e. this is a feature to increase the developer experience)
+                # In a non-Linux host-mode environment, we need to determine the IP of the host by running a container
+                # (basically MacOS host mode, i.e. this is a feature to improve the developer experience)
                 image_name = constants.DOCKER_IMAGE_NAME
                 out, _ = DOCKER_CLIENT.run_container(
                     image_name,
