@@ -146,36 +146,45 @@ def authorize_invocation(invocation_context: ApiInvocationContext):
         run_authorizer(invocation_context, authorizer)
 
 
-def validate_api_key(api_key: str, stage: str):
+def validate_api_key(api_key: str, invocation_context: ApiInvocationContext):
 
     usage_plan_ids = []
-
-    client = aws_stack.connect_to_service("apigateway")
+    client = aws_stack.connect_to_service("apigateway", region_name=invocation_context.region_name)
     usage_plans = client.get_usage_plans()
     for item in usage_plans.get("items", []):
         api_stages = item.get("apiStages", [])
-        usage_plan_ids.extend(
-            item.get("id") for api_stage in api_stages if api_stage.get("stage") == stage
-        )
+        for api_stage in api_stages:
+            if (
+                api_stage.get("stage") == invocation_context.stage
+                and api_stage.get("apiId") == invocation_context.api_id
+            ):
+                usage_plan_ids.append(item.get("id"))
 
     for usage_plan_id in usage_plan_ids:
         usage_plan_keys = client.get_usage_plan_keys(usagePlanId=usage_plan_id)
         for key in usage_plan_keys.get("items", []):
             if key.get("value") == api_key:
-                return True
+                # check if the key is enabled
+                api_key = client.get_api_key(apiKey=key.get("id"))
+                return api_key.get("enabled") in ("true", True)
 
     return False
 
 
-def is_api_key_valid(is_api_key_required: bool, headers: Dict[str, str], stage: str):
-    if not is_api_key_required:
+def is_api_key_valid(invocation_context: ApiInvocationContext) -> bool:
+    # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-api-key-source.html
+    client = aws_stack.connect_to_service("apigateway")
+    rest_api = client.get_rest_api(restApiId=invocation_context.api_id)
+
+    # It means it's the authorizer job to return the API key, and as we're only mocking it, it can't
+    if rest_api.get("apiKeySource") != "HEADER":
         return True
 
-    api_key = headers.get("X-API-Key")
+    api_key = invocation_context.headers.get("X-API-Key")
     if not api_key:
         return False
 
-    return validate_api_key(api_key, stage)
+    return validate_api_key(api_key, invocation_context)
 
 
 def update_content_length(response: Response):
@@ -234,7 +243,8 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
         return make_error_response("Invalid request body", 400)
 
     api_key_required = resource.get("resourceMethods", {}).get(method, {}).get("apiKeyRequired")
-    if not is_api_key_valid(api_key_required, headers, invocation_context.stage):
+    if api_key_required and not is_api_key_valid(invocation_context):
+        # TODO: message is simply Forbidden, but maybe log more information?
         return make_error_response("Access denied - invalid API key", 403)
 
     resource_methods = resource.get("resourceMethods", {})

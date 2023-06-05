@@ -1799,9 +1799,27 @@ def create_rest_apigw(aws_client_factory):
     yield _create_apigateway_function
 
     for rest_api_id, region_name in rest_apis:
+        apigateway_client = aws_client_factory(region_name=region_name).apigateway
+        # First, retrieve the usage plans associated with the REST API
+        usage_plan_ids = []
+        usage_plans = apigateway_client.get_usage_plans()
+        for item in usage_plans.get("items", []):
+            api_stages = item.get("apiStages", [])
+            usage_plan_ids.extend(
+                item.get("id") for api_stage in api_stages if api_stage.get("apiId") == rest_api_id
+            )
+
+        # Then delete the API, as you can't delete the UsagePlan if a stage is associated with it
         with contextlib.suppress(Exception):
-            apigateway_client = aws_client_factory(region_name=region_name).apigateway
             apigateway_client.delete_rest_api(restApiId=rest_api_id)
+
+        # finally delete the usage plans and the API Keys linked to it
+        for usage_plan_id in usage_plan_ids:
+            usage_plan_keys = apigateway_client.get_usage_plan_keys(usagePlanId=usage_plan_id)
+            for key in usage_plan_keys.get("items", []):
+
+                apigateway_client.delete_api_key(apiKey=key["id"])
+            apigateway_client.delete_usage_plan(usagePlanId=usage_plan_id)
 
 
 @pytest.fixture

@@ -14,6 +14,7 @@ from localstack.aws.api import CommonServiceException, RequestContext, ServiceRe
 from localstack.aws.api.apigateway import (
     Account,
     ApigatewayApi,
+    ApiKey,
     ApiKeys,
     Authorizer,
     Authorizers,
@@ -1467,6 +1468,21 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return ApiKeys(
             items=paginated_list, warnings=moto_response.get("warnings"), position=next_token
         )
+
+    def update_api_key(
+        self,
+        context: RequestContext,
+        api_key: String,
+        patch_operations: ListOfPatchOperation = None,
+    ) -> ApiKey:
+        response: ApiKey = call_moto(context)
+        if "value" in response:
+            response.pop("value", None)
+
+        if "tags" not in response:
+            response["tags"] = {}
+
+        return response
 
     def create_model(
         self,
