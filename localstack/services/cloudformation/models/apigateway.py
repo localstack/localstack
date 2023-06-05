@@ -168,7 +168,7 @@ class GatewayRestAPI(GenericBaseModel):
             result = client.create_rest_api(**kwargs)
 
             body = props.get("Body")
-            s3_body_location = props.get("BodyS3Location", {})
+            s3_body_location = props.get("BodyS3Location")
             if body or s3_body_location:
                 # the default behavior for imports via CFn is basepath=ignore (validated against AWS)
                 import_parameters = props.get("Parameters", {})
