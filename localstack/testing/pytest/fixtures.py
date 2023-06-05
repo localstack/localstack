@@ -48,6 +48,10 @@ LOG = logging.getLogger(__name__)
 # URL of public HTTP echo server, used primarily for AWS parity/snapshot testing
 PUBLIC_HTTP_ECHO_SERVER_URL = "http://httpbin.org"
 
+WAITER_CHANGE_SET_CREATE_COMPLETE = "change_set_create_complete"
+WAITER_STACK_CREATE_COMPLETE = "stack_create_complete"
+WAITER_STACK_UPDATE_COMPLETE = "stack_update_complete"
+
 
 @pytest.fixture(scope="class")
 def aws_http_client_factory(aws_session):
@@ -944,8 +948,9 @@ def deploy_cfn_template(
         template_path: Optional[str | os.PathLike] = None,
         template_mapping: Optional[Dict[str, any]] = None,
         parameters: Optional[Dict[str, str]] = None,
-        max_wait: Optional[int] = None,
         role_arn: Optional[str] = None,
+        max_wait: Optional[int] = 60,
+        delay_between_polls: Optional[int] = 2,
     ) -> DeployResult:
         if is_update:
             assert stack_name
@@ -979,16 +984,27 @@ def deploy_cfn_template(
         stack_id = response["StackId"]
         state.append({"stack_id": stack_id, "change_set_id": change_set_id})
 
-        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        aws_client.cloudformation.get_waiter(WAITER_CHANGE_SET_CREATE_COMPLETE).wait(
             ChangeSetName=change_set_id
         )
         aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
-        if is_update:
-            aws_client.cloudformation.get_waiter(
-                "stack_update_complete",
-            ).wait(StackName=stack_id)
-        else:
-            aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_id)
+        stack_waiter = aws_client.cloudformation.get_waiter(
+            WAITER_STACK_UPDATE_COMPLETE if is_update else WAITER_STACK_CREATE_COMPLETE
+        )
+
+        try:
+            stack_waiter.wait(
+                StackName=stack_id,
+                WaiterConfig={
+                    "Delay": delay_between_polls,
+                    "MaxAttempts": max_wait / delay_between_polls,
+                },
+            )
+        except botocore.exceptions.WaiterError as e:
+            raise StackDeployError(
+                aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0],
+                aws_client.cloudformation.describe_stack_events(StackName=stack_id)["StackEvents"],
+            ) from e
 
         describe_stack_res = aws_client.cloudformation.describe_stacks(StackName=stack_id)[
             "Stacks"
