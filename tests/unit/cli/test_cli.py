@@ -154,8 +154,8 @@ def test_validate_config_syntax_error(runner, monkeypatch, tmp_path):
     "cli_input,expected_cmd,expected_params",
     [
         ("stop", "localstack stop", []),
-        ("config show", "localstack config show", ["format"]),
-        ("--debug config show --format plain", "localstack config show", ["format"]),
+        ("config show", "localstack config show", ["format_"]),
+        ("--debug config show --format plain", "localstack config show", ["format_"]),
     ],
 )
 def test_publish_analytics_event_on_command_invocation(

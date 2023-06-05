@@ -27,7 +27,10 @@ def parse_profile_argument(args) -> Optional[str]:
         if current_arg.startswith("--profile="):
             # if using the "<arg>=<value>" notation, we remove the "--profile=" prefix to get the value
             return current_arg[10:]
-        if current_arg == "--profile":
+        elif current_arg.startswith("-p="):
+            # if using the "<arg>=<value>" notation, we remove the "-p=" prefix to get the value
+            return current_arg[3:]
+        if current_arg in ["--profile", "-p"]:
             # otherwise use the next arg in the args list as value
             try:
                 return args[i + 1]
