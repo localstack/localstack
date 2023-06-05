@@ -815,13 +815,28 @@ def prepare_message_attributes(
             # binary payload in base64 encoded by AWS, UTF-8 for JSON
             # https://docs.aws.amazon.com/sns/latest/api/API_MessageAttributeValue.html
             val = base64.b64encode(attr["BinaryValue"]).decode()
+
+            attributes[attr_name] = {
+                "DataType": data_type,
+                "BinaryValue": val,
+            }
+
+        elif data_type.startswith("String"):
+            val = attr.get("StringValue")
+
+            attributes[attr_name] = {
+                "DataType": data_type,
+                "StringValue": val,
+            }
+
         else:
             val = attr.get("StringValue")
 
-        attributes[attr_name] = {
-            "Type": data_type,
-            "Value": val,
-        }
+            attributes[attr_name] = {
+                "Type": data_type,
+                "Value": val,
+            }
+
     return attributes
 
 
