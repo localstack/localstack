@@ -72,6 +72,34 @@ TAG_KEY_CUSTOM_ID = "_custom_id_"
 EMPTY_MODEL = "Empty"
 ERROR_MODEL = "Error"
 
+
+# TODO: we could actually parse the schema to get TypedDicts with the proper schema/types for each properties
+class OpenAPIExt:
+    """
+    Represents the specific OpenAPI extensions for API Gateway
+    https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-swagger-extensions.html
+    """
+
+    ANY_METHOD = "x-amazon-apigateway-any-method"
+    CORS = "x-amazon-apigateway-cors"
+    API_KEY_SOURCE = "x-amazon-apigateway-api-key-source"
+    AUTH = "x-amazon-apigateway-auth"
+    AUTHORIZER = "x-amazon-apigateway-authorizer"
+    AUTHTYPE = "x-amazon-apigateway-authtype"
+    BINARY_MEDIA_TYPES = "x-amazon-apigateway-binary-media-types"
+    DOCUMENTATION = "x-amazon-apigateway-documentation"
+    ENDPOINT_CONFIGURATION = "x-amazon-apigateway-endpoint-configuration"
+    GATEWAY_RESPONSES = "x-amazon-apigateway-gateway-responses"
+    IMPORTEXPORT_VERSION = "x-amazon-apigateway-importexport-version"
+    INTEGRATION = "x-amazon-apigateway-integration"
+    INTEGRATIONS = "x-amazon-apigateway-integrations"  # used in components
+    MINIMUM_COMPRESSION_SIZE = "x-amazon-apigateway-minimum-compression-size"
+    POLICY = "x-amazon-apigateway-policy"
+    REQUEST_VALIDATOR = "x-amazon-apigateway-request-validator"
+    REQUEST_VALIDATORS = "x-amazon-apigateway-request-validators"
+    TAG_VALUE = "x-amazon-apigateway-tag-value"
+
+
 # TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
 
 
@@ -568,7 +596,8 @@ def import_api_from_openapi_spec(
                 if security_scheme_name in security_definitions:
                     security_config = security_definitions.get(security_scheme_name)
                     if (
-                        security_config.get("type") == "apiKey"
+                        OpenAPIExt.AUTHORIZER not in security_config
+                        and security_config.get("type") == "apiKey"
                         and security_config.get("name", "").lower() == "x-api-key"
                     ):
                         return True
@@ -587,9 +616,7 @@ def import_api_from_openapi_spec(
                 ).get("securitySchemes", {})
                 if security_scheme_name in security_definitions:
                     security_config = security_definitions.get(security_scheme_name)
-                    aws_apigateway_authorizer = security_config.get(
-                        "x-amazon-apigateway-authorizer", {}
-                    )
+                    aws_apigateway_authorizer = security_config.get(OpenAPIExt.AUTHORIZER, {})
                     if not aws_apigateway_authorizer:
                         continue
 
@@ -608,7 +635,7 @@ def import_api_from_openapi_spec(
                     )
                     if provider_arns := aws_apigateway_authorizer.get("providerARNs"):
                         authorizer["providerARNs"] = provider_arns
-                    if auth_type := security_config.get("x-amazon-apigateway-authtype"):
+                    if auth_type := security_config.get(OpenAPIExt.AUTHTYPE):
                         authorizer["authType"] = auth_type
                     if authorizer_uri := aws_apigateway_authorizer.get("authorizerUri"):
                         authorizer["authorizerUri"] = authorizer_uri
@@ -682,6 +709,9 @@ def import_api_from_openapi_spec(
                 continue
 
             method_name = field.upper()
+            if method_name == OpenAPIExt.ANY_METHOD.upper():
+                method_name = "ANY"
+
             # Create the `Method` resource for each method path
             method_resource = create_method_resource(resource, method_name, field_schema)
 
@@ -770,7 +800,7 @@ def import_api_from_openapi_spec(
                 )
 
             # Create the `Integration` for the previously created `Method`
-            method_integration = field_schema.get("x-amazon-apigateway-integration", {})
+            method_integration = field_schema.get(OpenAPIExt.INTEGRATION, {})
 
             integration_type = (
                 i_type.upper() if (i_type := method_integration.get("type")) else None
@@ -833,14 +863,15 @@ def import_api_from_openapi_spec(
         api_key_required = is_api_key_required(method_schema)
         kwargs = {}
 
-        if authorizer := create_authorizer(method_schema):
+        if authorizer := create_authorizer(method_schema) or default_authorizer:
+            method_authorizer = authorizer or default_authorizer
             # override the authorizer_type if it's a TOKEN or REQUEST to CUSTOM
-            if (authorizer_type := authorizer["type"]) in ("TOKEN", "REQUEST"):
+            if (authorizer_type := method_authorizer["type"]) in ("TOKEN", "REQUEST"):
                 authorization_type = "CUSTOM"
             else:
                 authorization_type = authorizer_type
 
-            kwargs["authorizer_id"] = authorizer["id"]
+            kwargs["authorizer_id"] = method_authorizer["id"]
 
         return child.add_method(
             method,
@@ -867,6 +898,9 @@ def import_api_from_openapi_spec(
             schema=json.dumps(model),
         )
         store.rest_apis[rest_api.id].models[name] = model
+
+    # create default authorizer if present
+    default_authorizer = create_authorizer(resolved_schema)
 
     # determine base path
     # default basepath mode is "ignore"
@@ -901,20 +935,24 @@ def import_api_from_openapi_spec(
         get_or_create_path(base_path + path, base_path=base_path)
 
     # binary types
-    rest_api.binaryMediaTypes = resolved_schema.get("x-amazon-apigateway-binary-media-types", [])
+    rest_api.binaryMediaTypes = resolved_schema.get(OpenAPIExt.BINARY_MEDIA_TYPES, [])
 
-    policy = resolved_schema.get("x-amazon-apigateway-policy")
+    policy = resolved_schema.get(OpenAPIExt.POLICY)
     if policy:
         policy = json.dumps(policy) if isinstance(policy, dict) else str(policy)
         rest_api.policy = policy
-    minimum_compression_size = resolved_schema.get("x-amazon-apigateway-minimum-compression-size")
+    minimum_compression_size = resolved_schema.get(OpenAPIExt.MINIMUM_COMPRESSION_SIZE)
     if minimum_compression_size is not None:
         rest_api.minimum_compression_size = int(minimum_compression_size)
-    endpoint_config = resolved_schema.get("x-amazon-apigateway-endpoint-configuration")
+    endpoint_config = resolved_schema.get(OpenAPIExt.ENDPOINT_CONFIGURATION)
     if endpoint_config:
         if endpoint_config.get("vpcEndpointIds"):
             endpoint_config.setdefault("types", ["PRIVATE"])
         rest_api.endpoint_configuration = endpoint_config
+
+    api_key_source = resolved_schema.get(OpenAPIExt.API_KEY_SOURCE)
+    if api_key_source is not None:
+        rest_api.api_key_source = api_key_source.upper()
 
     return rest_api
 
