@@ -83,7 +83,7 @@ def get_endpoint_for_network(network: Optional[str] = None) -> str:
                     image_name,
                     remove=True,
                     entrypoint="",
-                    command=["bash", "-c", "ping -c 1 host.docker.internal"],
+                    command=["ping", "-c", "1", "host.docker.internal"],
                 )
                 out = out.decode(config.DEFAULT_ENCODING) if isinstance(out, bytes) else out
                 ip = re.match(r"PING[^\(]+\(([^\)]+)\).*", out, re.MULTILINE | re.DOTALL)
