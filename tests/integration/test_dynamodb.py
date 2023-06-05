@@ -14,6 +14,7 @@ from localstack.aws.api.dynamodb import (
 )
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
+from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack, queries, resources
@@ -1441,6 +1442,40 @@ class TestDynamoDB:
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert len(response["StreamDescription"]["Shards"]) == 0
+
+    @pytest.mark.aws_validated
+    def test_dynamodb_streams_arn_format(
+        self,
+        dynamodb_create_table,
+        wait_for_dynamodb_stream_ready,
+        aws_client,
+    ):
+        table_name = f"test-table-{short_uid()}"
+        partition_key = "my_partition_key"
+
+        dynamodb_create_table(table_name=table_name, partition_key=partition_key)
+
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        stream_arn = aws_client.dynamodb.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
+        )["TableDescription"]["LatestStreamArn"]
+        assert wait_for_dynamodb_stream_ready(stream_arn)
+
+        shard_id = aws_client.dynamodbstreams.describe_stream(StreamArn=stream_arn)[
+            "StreamDescription"
+        ]["Shards"][0]["ShardId"]
+
+        shard_iterator = aws_client.dynamodbstreams.get_shard_iterator(
+            StreamArn=stream_arn, ShardId=shard_id, ShardIteratorType="TRIM_HORIZON"
+        )["ShardIterator"]
+
+        assert shard_iterator.startswith(f"{stream_arn}|")
+
+        get_records_result = aws_client.dynamodbstreams.get_records(ShardIterator=shard_iterator)
+        shard_iterator = get_records_result["NextShardIterator"]
+        assert shard_iterator.startswith(f"{stream_arn}|")
+        assert not get_records_result["Records"]
 
     @pytest.mark.aws_validated
     def test_dynamodb_idempotent_writing(

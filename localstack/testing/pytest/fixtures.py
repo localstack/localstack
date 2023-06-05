@@ -687,7 +687,7 @@ def wait_for_dynamodb_stream_ready(aws_client):
             )
             return describe_stream_response["StreamDescription"]["StreamStatus"] == "ENABLED"
 
-        poll_condition(is_stream_ready)
+        return poll_condition(is_stream_ready)
 
     return _wait_for_stream_ready
 

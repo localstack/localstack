@@ -409,5 +409,9 @@
         }
       }
     }
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_streams_arn_format": {
+    "recorded-date": "05-06-2023, 13:54:14",
+    "recorded-content": {}
   }
 }
