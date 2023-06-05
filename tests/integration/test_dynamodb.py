@@ -1444,12 +1444,13 @@ class TestDynamoDB:
         assert len(response["StreamDescription"]["Shards"]) == 0
 
     @pytest.mark.aws_validated
-    def test_dynamodb_streams_arn_format(
+    def test_dynamodb_streams_shard_iterator_format(
         self,
         dynamodb_create_table,
         wait_for_dynamodb_stream_ready,
         aws_client,
     ):
+        """Test the dynamodb stream iterators starting with the stream arn followed by |<int>|"""
         table_name = f"test-table-{short_uid()}"
         partition_key = "my_partition_key"
 
@@ -1462,19 +1463,23 @@ class TestDynamoDB:
         )["TableDescription"]["LatestStreamArn"]
         assert wait_for_dynamodb_stream_ready(stream_arn)
 
-        shard_id = aws_client.dynamodbstreams.describe_stream(StreamArn=stream_arn)[
+        describe_stream_result = aws_client.dynamodbstreams.describe_stream(StreamArn=stream_arn)[
             "StreamDescription"
-        ]["Shards"][0]["ShardId"]
+        ]
+        shard_id = describe_stream_result["Shards"][0]["ShardId"]
 
         shard_iterator = aws_client.dynamodbstreams.get_shard_iterator(
             StreamArn=stream_arn, ShardId=shard_id, ShardIteratorType="TRIM_HORIZON"
         )["ShardIterator"]
 
-        assert shard_iterator.startswith(f"{stream_arn}|")
+        def _matches(iterator: str) -> bool:
+            return bool(re.match(rf"^{stream_arn}\|\d\|.+$", iterator))
+
+        assert _matches(shard_iterator)
 
         get_records_result = aws_client.dynamodbstreams.get_records(ShardIterator=shard_iterator)
         shard_iterator = get_records_result["NextShardIterator"]
-        assert shard_iterator.startswith(f"{stream_arn}|")
+        assert _matches(shard_iterator)
         assert not get_records_result["Records"]
 
     @pytest.mark.aws_validated

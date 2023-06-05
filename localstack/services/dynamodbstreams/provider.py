@@ -102,7 +102,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
             raise ExpiredIteratorException("Shard iterator has expired")
         result = {
             "Records": [],
-            "NextShardIterator": f"{prefix}{kinesis_records.get('ShardIterator')}",
+            "NextShardIterator": f"{prefix}|{kinesis_records.get('NextShardIterator')}",
         }
         for record in kinesis_records["Records"]:
             record_data = loads(record["Data"])
