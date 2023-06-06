@@ -8,6 +8,7 @@ import pytest
 import requests
 from botocore.exceptions import ClientError
 
+from localstack import config
 from localstack.aws.api.apigateway import Resources
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.util import is_aws_cloud
@@ -16,6 +17,7 @@ from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
+from localstack.utils.urls import localstack_host
 from tests.integration.apigateway.apigateway_fixtures import api_invoke_url
 
 LOG = logging.getLogger(__name__)
@@ -251,15 +253,6 @@ class TestApiGatewayImportRestApi:
             "$.resources.items..resourceMethods.GET",  # TODO: this is really weird, after importing, AWS returns them empty?
             "$.resources.items..resourceMethods.OPTIONS",
             "$.resources.items..resourceMethods.POST",
-            "$.get-models.items..schema.items.ref",  # this seems to be a problem on AWS side to resolve model $ref?
-            "$.get-models.items..schema.items.properties",  # same as above
-            "$.get-models.items..schema.items.type",  # same as above
-            "$.get-models.items..schema.properties.pet.ref",  # same as above
-            "$.get-models.items..schema.properties.pet.properties",  # same as above
-            "$.get-models.items..schema.properties.pet.type",  # same as above
-            "$.get-models.items..schema.properties.type.ref",  # same as above
-            "$.get-models.items..schema.properties.type.enum",  # same as above
-            "$.get-models.items..schema.properties.type.type",  # same as above
         ]
     )
     def test_import_swagger_api(
@@ -286,6 +279,15 @@ class TestApiGatewayImportRestApi:
                 snapshot.transform.jsonpath("$.get-models.items..id", value_replacement="model-id"),
             ]
         )
+        if is_aws_cloud():
+            model_base_url = "https://apigateway.amazonaws.com"
+        else:
+            host_definition = localstack_host(use_localhost_cloud=True)
+            model_base_url = (
+                f"{config.get_protocol()}://apigateway.{host_definition.host_and_port()}"
+            )
+
+        snapshot.add_transformer(snapshot.transform.regex(model_base_url, "<model-base-url>"))
 
         spec_file = load_file(PETSTORE_SWAGGER_JSON)
         spec_file = spec_file.replace(

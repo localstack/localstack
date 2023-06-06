@@ -25,7 +25,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_swagger_api": {
-    "recorded-date": "03-06-2023, 13:22:31",
+    "recorded-date": "06-06-2023, 03:53:07",
     "recorded-content": {
       "import-swagger": {
         "apiKeySource": "HEADER",
@@ -84,7 +84,7 @@
                   "type": "number"
                 },
                 "type": {
-                  "ref": "https://apigateway.amazonaws.com/restapis/<rest-id:1>/models/PetType"
+                  "ref": "<model-base-url>/restapis/<rest-id:1>/models/PetType"
                 }
               },
               "type": "object"
@@ -100,7 +100,7 @@
                   "type": "string"
                 },
                 "pet": {
-                  "ref": "https://apigateway.amazonaws.com/restapis/<rest-id:1>/models/Pet"
+                  "ref": "<model-base-url>/restapis/<rest-id:1>/models/Pet"
                 }
               },
               "type": "object"
@@ -146,7 +146,7 @@
             "name": "Pets",
             "schema": {
               "items": {
-                "ref": "https://apigateway.amazonaws.com/restapis/<rest-id:1>/models/Pet"
+                "ref": "<model-base-url>/restapis/<rest-id:1>/models/Pet"
               },
               "type": "array"
             }

@@ -1,4 +1,5 @@
 import contextlib
+import copy
 import json
 import logging
 import re
@@ -32,9 +33,9 @@ from localstack.utils.aws import resources as resource_utils
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
-from localstack.utils.json import canonical_json
 from localstack.utils.strings import long_uid, short_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -108,12 +109,14 @@ def get_apigateway_store(account_id: str = None, region: str = None) -> ApiGatew
 
 
 class Resolver:
-    def __init__(self, document: dict, allow_recursive=True):
+    def __init__(self, document: dict, rest_api_id: str, allow_recursive=True):
         self.document = document
         self.allow_recursive = allow_recursive
         # cache which maps known refs to part of the document
         self._cache = {}
         self._refpaths = ["#"]
+        host_definition = localstack_host(use_localhost_cloud=True)
+        self._base_url = f"{config.get_protocol()}://apigateway.{host_definition.host_and_port()}/restapis/{rest_api_id}/models/"
 
     def _is_ref(self, item) -> bool:
         return isinstance(item, dict) and "$ref" in item
@@ -138,6 +141,16 @@ class Resolver:
         if refpath in self._refpaths and not self.allow_recursive:
             raise Exception("recursion detected with allow_recursive=False")
 
+        print(f"{refpath=}")
+        print(f"{self.current_path=}")
+        # We don't resolve the Models, we will return a absolute reference to the model like AWS
+        # When validating the schema, we will need to resolve the $ref there
+        # Because if we resolved all $ref in schema, it can lead to circular references in complex schema
+        if self.current_path.startswith("#/definitions") or self.current_path.startswith(
+            "#/components/schemas"
+        ):
+            return {"$ref": f"{self._base_url}{refpath.rsplit('/', maxsplit=1)[-1]}"}
+
         if refpath in self._cache:
             return self._cache.get(refpath)
 
@@ -154,6 +167,7 @@ class Resolver:
             return cur
 
     def _namespaced_resolution(self, namespace: str, data: Union[dict, list]) -> Union[dict, list]:
+        # print(namespace)
         with self._pathctx(namespace):
             return self._resolve_references(data)
 
@@ -263,8 +277,8 @@ class RequestParametersResolver:
         return {key.lower(): val for key, val in params.items()}
 
 
-def resolve_references(data: dict, allow_recursive=True) -> dict:
-    resolver = Resolver(data, allow_recursive=allow_recursive)
+def resolve_references(data: dict, rest_api_id, allow_recursive=True) -> dict:
+    resolver = Resolver(data, allow_recursive=allow_recursive, rest_api_id=rest_api_id)
     return resolver.resolve_references()
 
 
@@ -560,7 +574,7 @@ def import_api_from_openapi_spec(
 ) -> Optional[RestAPI]:
     """Import an API from an OpenAPI spec document"""
 
-    resolved_schema = resolve_references(body)
+    resolved_schema = resolve_references(copy.deepcopy(body), rest_api_id=rest_api.id)
 
     # TODO:
     # 1. validate the "mode" property of the spec document, "merge" or "overwrite"
@@ -590,9 +604,9 @@ def import_api_from_openapi_spec(
             for security_scheme_name in security_scheme.keys():
                 # $.securityDefinitions is Swagger 2.0
                 # $.components.SecuritySchemes is OpenAPI 3.0
-                security_definitions = body.get("securityDefinitions") or body.get(
-                    "components", {}
-                ).get("securitySchemes", {})
+                security_definitions = resolved_schema.get(
+                    "securityDefinitions"
+                ) or resolved_schema.get("components", {}).get("securitySchemes", {})
                 if security_scheme_name in security_definitions:
                     security_config = security_definitions.get(security_scheme_name)
                     if (
@@ -611,9 +625,9 @@ def import_api_from_openapi_spec(
             for security_scheme_name in security_scheme.keys():
                 # $.securityDefinitions is Swagger 2.0
                 # $.components.SecuritySchemes is OpenAPI 3.0
-                security_definitions = body.get("securityDefinitions") or body.get(
-                    "components", {}
-                ).get("securitySchemes", {})
+                security_definitions = resolved_schema.get(
+                    "securityDefinitions"
+                ) or resolved_schema.get("components", {}).get("securitySchemes", {})
                 if security_scheme_name in security_definitions:
                     security_config = security_definitions.get(security_scheme_name)
                     aws_apigateway_authorizer = security_config.get(OpenAPIExt.AUTHORIZER, {})
@@ -677,6 +691,15 @@ def import_api_from_openapi_spec(
         # construct relative path (without base path), then add field resources for this path
         rel_path = abs_path.removeprefix(base_path)
         return add_path_methods(rel_path, parts, parent_id=parent_id)
+
+    def retrieve_schema_ref(resource_path, resource_method, response_status_code):
+        return (
+            body.get("paths", {})
+            .get(resource_path, {})
+            .get(resource_method, {})
+            .get("responses", {})
+            .get(response_status_code, {})
+        )
 
     def add_path_methods(rel_path: str, parts: List[str], parent_id=""):
         child_id = create_resource_id()
@@ -761,16 +784,28 @@ def import_api_from_openapi_spec(
             for method_status_code, method_response in method_responses.items():
                 method_response_model = None
                 model_schema = None
-
+                model_ref = None
+                # we're retrieving the $ref directly from the original file to get the Model name
+                method_response_schema_data = retrieve_schema_ref(
+                    resource_path=rel_path,
+                    resource_method=field,
+                    response_status_code=method_status_code,
+                )
                 # separating the two different versions, Swagger (2.0) and OpenAPI 3.0
                 if "schema" in method_response:  # this is Swagger
                     model_schema = method_response["schema"]
+                    model_ref = method_response_schema_data.get("schema")
                 elif "content" in method_response:  # this is OpenAPI 3.0
                     for content_type, media_type in method_response["content"].items():
                         # we're iterating over the Media Type object:
                         # https://swagger.io/specification/v3/#media-type-object
                         if content_type == APPLICATION_JSON:
                             model_schema = media_type.get("schema")
+                            model_ref = (
+                                method_response_schema_data.get("content", {})
+                                .get(APPLICATION_JSON, {})
+                                .get("schema")
+                            )
                             continue
                         LOG.warning(
                             "Found '%s' content-type for the MethodResponse model for path '%s' and method '', not adding the model as currently not supported",
@@ -780,10 +815,9 @@ def import_api_from_openapi_spec(
                         )
 
                 if model_schema:
-                    if isinstance(model_schema, dict):
+                    if isinstance(model_schema, dict) and model_ref:
                         # this means the model schema was resolved directly from the schema, instead of its name
-                        # we dump the model to canonical JSON to be able to retrieve its name
-                        model_schema = schema_map.get(canonical_json(model_schema))
+                        model_schema = model_ref.get("$ref", "").rsplit("/", maxsplit=1)[-1]
 
                     method_response_model = {APPLICATION_JSON: model_schema}
 
@@ -884,11 +918,7 @@ def import_api_from_openapi_spec(
     models = resolved_schema.get("definitions") or resolved_schema.get("components", {}).get(
         "schemas", {}
     )
-    schema_map = {}
     for name, model in models.items():
-        # keep a map of the schema to retrieve the schema name for responseModels resolved $ref
-        schema_map[canonical_json(model)] = name
-
         model_id = short_uid()[:6]  # length 6 to make TF tests pass
         model = Model(
             id=model_id,
