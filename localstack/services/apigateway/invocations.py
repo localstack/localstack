@@ -6,6 +6,7 @@ from botocore.exceptions import ClientError
 from jsonschema import ValidationError, validate
 from requests.models import Response
 
+from localstack.aws.connect import connect_to
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
@@ -149,7 +150,10 @@ def authorize_invocation(invocation_context: ApiInvocationContext):
 def validate_api_key(api_key: str, invocation_context: ApiInvocationContext):
 
     usage_plan_ids = []
-    client = aws_stack.connect_to_service("apigateway", region_name=invocation_context.region_name)
+    client = connect_to(
+        aws_access_key_id=invocation_context.account_id, region_name=invocation_context.region_name
+    ).apigateway
+
     usage_plans = client.get_usage_plans()
     for item in usage_plans.get("items", []):
         api_stages = item.get("apiStages", [])
@@ -176,8 +180,11 @@ def is_api_key_valid(invocation_context: ApiInvocationContext) -> bool:
     client = aws_stack.connect_to_service("apigateway")
     rest_api = client.get_rest_api(restApiId=invocation_context.api_id)
 
-    # It means it's the authorizer job to return the API key, and as we're only mocking it, it can't
     if rest_api.get("apiKeySource") != "HEADER":
+        # When the apiKeySource is set to AUTHORIZER, the authorizer is supposed to return the API key as a field
+        # `usageIdentifierKey`
+        # see https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-lambda-authorizer-output.html
+        # Authorizers are only mocked, so we can't validate the key. Return True in that case
         return True
 
     api_key = invocation_context.headers.get("X-API-Key")
@@ -244,7 +251,6 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
 
     api_key_required = resource.get("resourceMethods", {}).get(method, {}).get("apiKeyRequired")
     if api_key_required and not is_api_key_valid(invocation_context):
-        # TODO: message is simply Forbidden, but maybe log more information?
         return make_error_response("Access denied - invalid API key", 403)
 
     resource_methods = resource.get("resourceMethods", {})
