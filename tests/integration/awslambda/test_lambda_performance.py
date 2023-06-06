@@ -6,6 +6,7 @@ Basic opt-in performance tests for Lambda. Usage:
 """
 
 import csv
+import logging
 import os
 import pathlib
 import statistics
@@ -25,6 +26,9 @@ if not is_env_true("TEST_PERFORMANCE"):
     pytest.skip("Skip slow and resource-intensive tests", allow_module_level=True)
 
 
+LOG = logging.getLogger(__name__)
+
+
 def test_invoke_warm_start(create_lambda_function, aws_client):
     function_name = f"echo-func-{short_uid()}"
     create_lambda_function(
@@ -42,9 +46,8 @@ def test_invoke_warm_start(create_lambda_function, aws_client):
     # Test warm starts
     repeat = 100
     timings = timeit.repeat(invoke, number=1, repeat=repeat)
-    print("")
-    print(f" EXECUTION TIME (s) for {repeat} repetitions ".center(80, "="))
-    print(format_summary(timings))
+    LOG.info(f" EXECUTION TIME (s) for {repeat} repetitions ".center(80, "="))
+    LOG.info(format_summary(timings))
     export_csv(timings, "test_invoke_warm_start")
 
 
@@ -70,9 +73,8 @@ def test_invoke_cold_start(create_lambda_function, aws_client, monkeypatch):
     timings = timeit.repeat(
         invoke, number=1, repeat=repeat, setup=f"import time; time.sleep({sleep_s})"
     )
-    print("")
-    print(f" EXECUTION TIME (s) for {repeat} repetitions ".center(80, "="))
-    print(format_summary(timings))
+    LOG.info(f" EXECUTION TIME (s) for {repeat} repetitions ".center(80, "="))
+    LOG.info(format_summary(timings))
     export_csv(timings, "test_invoke_cold_start")
 
 
