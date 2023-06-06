@@ -18,7 +18,13 @@ from requests.models import Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api.apigateway import Authorizer, ConnectionType, IntegrationType, Model
+from localstack.aws.api.apigateway import (
+    Authorizer,
+    ConnectionType,
+    IntegrationType,
+    Model,
+    RequestValidator,
+)
 from localstack.constants import (
     APPLICATION_JSON,
     HEADER_LOCALSTACK_EDGE_URL,
@@ -143,13 +149,18 @@ class Resolver:
 
         print(f"{refpath=}")
         print(f"{self.current_path=}")
-        # We don't resolve the Models, we will return a absolute reference to the model like AWS
+        # We don't resolve the Model definition, we will return a absolute reference to the model like AWS
         # When validating the schema, we will need to resolve the $ref there
-        # Because if we resolved all $ref in schema, it can lead to circular references in complex schema
+        # Because if we resolved all $ref in schema, it can lead to circular references in complex schemas
         if self.current_path.startswith("#/definitions") or self.current_path.startswith(
             "#/components/schemas"
         ):
             return {"$ref": f"{self._base_url}{refpath.rsplit('/', maxsplit=1)[-1]}"}
+
+        # We should not resolve the Model either, because we need its name to set it to the Request/ResponseModels,
+        # it just makes our job more difficult to retrieve the Model name
+        if self.current_path.endswith("schema"):
+            return {"$ref": refpath}
 
         if refpath in self._cache:
             return self._cache.get(refpath)
@@ -692,15 +703,6 @@ def import_api_from_openapi_spec(
         rel_path = abs_path.removeprefix(base_path)
         return add_path_methods(rel_path, parts, parent_id=parent_id)
 
-    def retrieve_schema_ref(resource_path, resource_method, response_status_code):
-        return (
-            body.get("paths", {})
-            .get(resource_path, {})
-            .get(resource_method, {})
-            .get("responses", {})
-            .get(response_status_code, {})
-        )
-
     def add_path_methods(rel_path: str, parts: List[str], parent_id=""):
         child_id = create_resource_id()
         rel_path = rel_path or "/"
@@ -741,11 +743,12 @@ def import_api_from_openapi_spec(
             # Get the `Method` requestParameters and requestModels
             request_parameters_schema = field_schema.get("parameters", [])
             request_parameters = {}
+            request_models = {}
             if request_parameters_schema:
-                request_models = {}
                 for req_param_data in request_parameters_schema:
-                    # TODO: does `required` attribute maps to a RequestValidator? check with AWS
-                    # Possible values for `in` from the specs are "query", "header", "path", "formData" or "body".
+                    # For Swagger 2.0, possible values for `in` from the specs are "query", "header", "path",
+                    # "formData" or "body".
+                    # For OpenAPI 3.0, values are "query", "header", "path" or "cookie".
                     # Only "path", "header" and "query" are supported in API Gateway for requestParameters
                     # "body" is mapped to a requestModel
                     param_location = req_param_data.get("in")
@@ -769,7 +772,46 @@ def import_api_from_openapi_spec(
                             param_location,
                         )
                         continue
+
+            # this replaces 'body' in Parameters for OpenAPI 3.0, a requestBody Object
+            # https://swagger.io/specification/v3/#request-body-object
+            if request_models_schema := field_schema.get("requestBody"):
+                print(request_models_schema)
+                model_ref = None
+                for content_type, media_type in request_models_schema.get("content", {}).items():
+                    # we're iterating over the Media Type object:
+                    # https://swagger.io/specification/v3/#media-type-object
+                    if content_type == APPLICATION_JSON:
+                        model_ref = media_type.get("schema", {}).get("$ref")
+                        continue
+                    LOG.warning(
+                        "Found '%s' content-type for the MethodResponse model for path '%s' and method '', not adding the model as currently not supported",
+                        content_type,
+                        rel_path,
+                        method_name,
+                    )
+                if model_ref:
+                    model_schema = model_ref.rsplit("/", maxsplit=1)[-1]
+                    request_models = {APPLICATION_JSON: model_schema}
+
                 method_resource.request_models = request_models or None
+
+            # check if there's a request validator set in the method
+            request_validator_name = field_schema.get(
+                OpenAPIExt.REQUEST_VALIDATOR, default_req_validator_name
+            )
+            if request_validator_name:
+                if not (
+                    req_validator_id := request_validator_name_id_map.get(request_validator_name)
+                ):
+                    # Might raise an exception here if we properly validate the template
+                    LOG.warning(
+                        "A validator ('%s') was referenced for %s.(%s), but is not defined",
+                        request_validator_name,
+                        rel_path,
+                        method_name,
+                    )
+                method_resource.request_validator_id = req_validator_id
 
             # we check if there's a path parameter, AWS adds the requestParameter automatically
             resource_path_part = parts[-1].strip("/")
@@ -783,29 +825,16 @@ def import_api_from_openapi_spec(
             method_responses = field_schema.get("responses", {})
             for method_status_code, method_response in method_responses.items():
                 method_response_model = None
-                model_schema = None
                 model_ref = None
-                # we're retrieving the $ref directly from the original file to get the Model name
-                method_response_schema_data = retrieve_schema_ref(
-                    resource_path=rel_path,
-                    resource_method=field,
-                    response_status_code=method_status_code,
-                )
                 # separating the two different versions, Swagger (2.0) and OpenAPI 3.0
                 if "schema" in method_response:  # this is Swagger
-                    model_schema = method_response["schema"]
-                    model_ref = method_response_schema_data.get("schema")
+                    model_ref = method_response["schema"].get("$ref")
                 elif "content" in method_response:  # this is OpenAPI 3.0
                     for content_type, media_type in method_response["content"].items():
                         # we're iterating over the Media Type object:
                         # https://swagger.io/specification/v3/#media-type-object
                         if content_type == APPLICATION_JSON:
-                            model_schema = media_type.get("schema")
-                            model_ref = (
-                                method_response_schema_data.get("content", {})
-                                .get(APPLICATION_JSON, {})
-                                .get("schema")
-                            )
+                            model_ref = media_type.get("schema", {}).get("$ref")
                             continue
                         LOG.warning(
                             "Found '%s' content-type for the MethodResponse model for path '%s' and method '', not adding the model as currently not supported",
@@ -814,10 +843,8 @@ def import_api_from_openapi_spec(
                             method_name,
                         )
 
-                if model_schema:
-                    if isinstance(model_schema, dict) and model_ref:
-                        # this means the model schema was resolved directly from the schema, instead of its name
-                        model_schema = model_ref.get("$ref", "").rsplit("/", maxsplit=1)[-1]
+                if model_ref:
+                    model_schema = model_ref.rsplit("/", maxsplit=1)[-1]
 
                     method_response_model = {APPLICATION_JSON: model_schema}
 
@@ -918,16 +945,35 @@ def import_api_from_openapi_spec(
     models = resolved_schema.get("definitions") or resolved_schema.get("components", {}).get(
         "schemas", {}
     )
-    for name, model in models.items():
+    for name, model_data in models.items():
         model_id = short_uid()[:6]  # length 6 to make TF tests pass
         model = Model(
             id=model_id,
             name=name,
             contentType=APPLICATION_JSON,
-            description=None,
-            schema=json.dumps(model),
+            description=model_data.get("description"),
+            schema=json.dumps(model_data),
         )
         store.rest_apis[rest_api.id].models[name] = model
+
+    # create the RequestValidators defined at the top-level field `x-amazon-apigateway-request-validators`
+    request_validators = resolved_schema.get(OpenAPIExt.REQUEST_VALIDATORS, {})
+    request_validator_name_id_map = {}
+    for validator_name, validator_schema in request_validators.items():
+        validator_id = short_uid()[:6]
+
+        validator = RequestValidator(
+            id=validator_id,
+            name=validator_name,
+            validateRequestBody=validator_schema.get("validateRequestBody") or False,
+            validateRequestParameters=validator_schema.get("validateRequestParameters") or False,
+        )
+
+        store.rest_apis[rest_api.id].validators[validator_id] = validator
+        request_validator_name_id_map[validator_name] = validator_id
+
+    # get default requestValidator if present
+    default_req_validator_name = resolved_schema.get(OpenAPIExt.REQUEST_VALIDATOR)
 
     # create default authorizer if present
     default_authorizer = create_authorizer(resolved_schema)

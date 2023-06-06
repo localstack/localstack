@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.2",
   "info": {
-    "title": "Fulfillment OS Gateway",
-    "version": "2020-02-10"
+    "title": "Test Global Authorizer",
+    "version": "1.0"
   },
   "paths": {
     "/pets": {

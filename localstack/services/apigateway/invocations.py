@@ -92,6 +92,7 @@ class RequestValidator:
             schema_name = request_models.get(APPLICATION_JSON, EMPTY_MODEL)
 
         try:
+            # TODO: use the store, so we can cache the resolved model
             model = self.apigateway_client.get_model(
                 restApiId=self.context.api_id,
                 modelName=schema_name,
@@ -102,6 +103,10 @@ class RequestValidator:
 
         try:
             # if the body is empty, replace it with an empty JSON body
+            # TODO: we need to resolve the schema, we should cache it also?
+            # could use $defs, fetching every model and replacing it with
+            # https://json-schema.org/understanding-json-schema/structuring.html#defs
+            # definitely a good idea
             validate(
                 instance=json.loads(self.context.data or "{}"), schema=json.loads(model["schema"])
             )
