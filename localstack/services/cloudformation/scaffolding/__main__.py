@@ -252,7 +252,7 @@ class FileWriter:
             "services",
             self.resource_name.service.lower(),
             "resource_providers",
-            f"{self.resource_name.resource.lower()}.py",
+            f"aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.py",
         )
         destination.parent.mkdir(parents=True, exist_ok=True)
         self.write_text(contents, destination)

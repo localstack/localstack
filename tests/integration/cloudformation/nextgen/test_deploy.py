@@ -2,8 +2,10 @@ from typing import TypeVar
 
 import pytest
 
-from localstack.services.opensearch.resource_providers.domain import OpenSearchDomainAllProperties
-from localstack.services.ssm.resource_providers.parameter import SSMParameterAllProperties
+from localstack.services.opensearch.resource_providers.aws_opensearch_domain import (
+    OpenSearchDomainAllProperties,
+)
+from localstack.services.ssm.resource_providers.aws_ssm_parameter import SSMParameterAllProperties
 from localstack.utils.strings import short_uid
 
 Properties = TypeVar("Properties")
