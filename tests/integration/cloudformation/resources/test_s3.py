@@ -57,6 +57,29 @@ def test_bucket_versioning(deploy_cfn_template, aws_client):
 
 
 @pytest.mark.aws_validated
+def test_website_configuration(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.s3_api())
+
+    bucket_name_generated = f"ls-bucket-{short_uid()}"
+
+    result = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/s3_bucket_website_config.yaml"
+        ),
+        parameters={"BucketName": bucket_name_generated},
+    )
+
+    bucket_name = result.outputs["BucketNameOutput"]
+    assert bucket_name_generated == bucket_name
+    website_url = result.outputs["WebsiteURL"]
+    assert website_url.startswith(f"http://{bucket_name}.s3-website")
+    response = aws_client.s3.get_bucket_website(Bucket=bucket_name)
+
+    snapshot.match("get_bucket_website", response)
+
+
+@pytest.mark.aws_validated
 def test_cors_configuration(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.s3_api())
