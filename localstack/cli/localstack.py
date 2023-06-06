@@ -85,26 +85,25 @@ def localstack(debug, profile) -> None:
 @localstack.group(
     name="config",
     short_help="Manage your LocalStack config",
-    help="Inspect and validate your LocalStack configuration.",
 )
 def localstack_config() -> None:
+    """
+    Inspect and validate your LocalStack configuration.
+    """
     pass
 
 
-@localstack_config.command(
-    name="show",
-    short_help="Show your config",
-    help="""
-         Print the current LocalStack config values.
-
-         This command prints the LocalStack configuration values from your environment.
-         It analyzes the environment variables as well as the LocalStack CLI profile.
-         It does _not_ analyze a specific file (like a docker-compose-yml).
-         """,
-)
+@localstack_config.command(name="show", short_help="Show your config")
 @_click_format_option
 @publish_invocation
 def cmd_config_show(format_: str) -> None:
+    """
+    Print the current LocalStack config values.
+
+    This command prints the LocalStack configuration values from your environment.
+    It analyzes the environment variables as well as the LocalStack CLI profile.
+    It does _not_ analyze a specific file (like a docker-compose-yml).
+    """
     # TODO: parse values from potential docker-compose file?
     assert config
 
@@ -129,21 +128,7 @@ def cmd_config_show(format_: str) -> None:
         _print_config_pairs()  # fall back to plain
 
 
-@localstack_config.command(
-    name="validate",
-    short_help="Validate your config",
-    help="""
-         Validate your LocalStack configuration (docker compose).
-
-         This command inspects the given docker-compose file (by default docker-compose.yml in the current working
-         directory) and validates if the configuration is valid.
-
-         \b
-         It will show an error and return a non-zero exit code if:
-         - The docker-compose file is syntactically incorrect.
-         - If the file contains common issues when configuring LocalStack.
-         """,
-)
+@localstack_config.command(name="validate", short_help="Validate your config")
 @click.option(
     "-f",
     "--file",
@@ -153,6 +138,17 @@ def cmd_config_show(format_: str) -> None:
 )
 @publish_invocation
 def cmd_config_validate(file: str) -> None:
+    """
+    Validate your LocalStack configuration (docker compose).
+
+    This command inspects the given docker-compose file (by default docker-compose.yml in the current working
+    directory) and validates if the configuration is valid.
+
+    \b
+    It will show an error and return a non-zero exit code if:
+    - The docker-compose file is syntactically incorrect.
+    - If the file contains common issues when configuring LocalStack.
+    """
     from rich.panel import Panel
 
     from localstack.utils import bootstrap
@@ -201,25 +197,24 @@ def _print_config_table() -> None:
 @localstack.group(
     name="status",
     short_help="Query status info",
-    help="Query status information about the currently running LocalStack instance.",
     invoke_without_command=True,
 )
 @click.pass_context
 def localstack_status(ctx: click.Context) -> None:
+    """
+    Query status information about the currently running LocalStack instance.
+    """
     if ctx.invoked_subcommand is None:
         ctx.invoke(localstack_status.get_command(ctx, "docker"))
 
 
-@localstack_status.command(
-    name="docker",
-    short_help="Query LocalStack Docker status",
-    help="""
-         Query information about the currently running LocalStack Docker image, its container,
-         and the LocalStack runtime.
-         """,
-)
+@localstack_status.command(name="docker", short_help="Query LocalStack Docker status")
 @_click_format_option
 def cmd_status_docker(format_: str) -> None:
+    """
+    Query information about the currently running LocalStack Docker image, its container,
+    and the LocalStack runtime.
+    """
     with console.status("Querying Docker status"):
         _print_docker_status(format_)
 
@@ -288,13 +283,12 @@ def _print_docker_status_table(status: DockerStatus) -> None:
     console.print(grid)
 
 
-@localstack_status.command(
-    name="services",
-    short_help="Query LocalStack services status",
-    help="Query information about the services of the currently running LocalStack instance.",
-)
+@localstack_status.command(name="services", short_help="Query LocalStack services status")
 @_click_format_option
 def cmd_status_services(format_: str) -> None:
+    """
+    Query information about the services of the currently running LocalStack instance.
+    """
     import requests
 
     url = config.get_edge_url()
@@ -346,17 +340,7 @@ def _print_service_table(services: Dict[str, str]) -> None:
     console.print(table)
 
 
-@localstack.command(
-    name="start",
-    short_help="Start LocalStack",
-    help="""
-         Start the LocalStack runtime.
-
-         This command starts the LocalStack runtime with your current configuration.
-         By default, it will start a new Docker container from the latest LocalStack(-Pro) Docker image
-         with best-practice volume mounts and port mappings.
-         """,
-)
+@localstack.command(name="start", short_help="Start LocalStack")
 @click.option("--docker", is_flag=True, help="Start LocalStack in a docker container [default]")
 @click.option("--host", is_flag=True, help="Start LocalStack directly on the host")
 @click.option("--no-banner", is_flag=True, help="Disable LocalStack banner", default=False)
@@ -365,6 +349,13 @@ def _print_service_table(services: Dict[str, str]) -> None:
 )
 @publish_invocation
 def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool) -> None:
+    """
+    Start the LocalStack runtime.
+
+    This command starts the LocalStack runtime with your current configuration.
+    By default, it will start a new Docker container from the latest LocalStack(-Pro) Docker image
+    with best-practice volume mounts and port mappings.
+    """
     if docker and host:
         raise click.ClickException("Please specify either --docker or --host")
     if host and detached:
@@ -418,21 +409,18 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool) -> None
             bootstrap.start_infra_in_docker()
 
 
-@localstack.command(
-    name="stop",
-    short_help="Stop LocalStack",
-    help="""
-         Stops the current LocalStack runtime.
-
-         This command stops the currently running LocalStack docker container.
-         By default, this command looks for a container named `localstack_main` (which is the default
-         container name used by the `localstack start` command).
-         If your LocalStack container has a different name, set the config variable
-         `MAIN_CONTAINER_NAME`.
-         """,
-)
+@localstack.command(name="stop", short_help="Stop LocalStack")
 @publish_invocation
 def cmd_stop() -> None:
+    """
+    Stops the current LocalStack runtime.
+
+    This command stops the currently running LocalStack docker container.
+    By default, this command looks for a container named `localstack_main` (which is the default
+    container name used by the `localstack start` command).
+    If your LocalStack container has a different name, set the config variable
+    `MAIN_CONTAINER_NAME`.
+    """
     from localstack.utils.docker_utils import DOCKER_CLIENT
 
     from ..utils.container_utils.container_client import NoSuchContainer
@@ -450,15 +438,6 @@ def cmd_stop() -> None:
 @localstack.command(
     name="logs",
     short_help="Show LocalStack logs",
-    help="""
-         Show the logs of the current LocalStack runtime.
-
-         This command shows the logs of the currently running LocalStack docker container.
-         By default, this command looks for a container named `localstack_main` (which is the default
-         container name used by the `localstack start` command).
-         If your LocalStack container has a different name, set the config variable
-         `MAIN_CONTAINER_NAME`.
-         """,
 )
 @click.option(
     "-f",
@@ -477,6 +456,15 @@ def cmd_stop() -> None:
 )
 @publish_invocation
 def cmd_logs(follow: bool, tail: int) -> None:
+    """
+    Show the logs of the current LocalStack runtime.
+
+    This command shows the logs of the currently running LocalStack docker container.
+    By default, this command looks for a container named `localstack_main` (which is the default
+    container name used by the `localstack start` command).
+    If your LocalStack container has a different name, set the config variable
+    `MAIN_CONTAINER_NAME`.
+    """
     from localstack.utils.bootstrap import LocalstackContainer
     from localstack.utils.docker_utils import DOCKER_CLIENT
 
@@ -507,20 +495,7 @@ def cmd_logs(follow: bool, tail: int) -> None:
         print(logs)
 
 
-@localstack.command(
-    name="wait",
-    short_help="Wait for LocalStack",
-    help="""
-         Wait for the LocalStack runtime to be up and running.
-
-         This commands waits for a started LocalStack runtime to be up and running, ready to serve
-         requests.
-         By default, this command looks for a container named `localstack_main` (which is the default
-         container name used by the `localstack start` command).
-         If your LocalStack container has a different name, set the config variable
-         `MAIN_CONTAINER_NAME`.
-         """,
-)
+@localstack.command(name="wait", short_help="Wait for LocalStack")
 @click.option(
     "-t",
     "--timeout",
@@ -531,27 +506,34 @@ def cmd_logs(follow: bool, tail: int) -> None:
 )
 @publish_invocation
 def cmd_wait(timeout: Optional[float] = None) -> None:
+    """
+    Wait for the LocalStack runtime to be up and running.
+
+    This commands waits for a started LocalStack runtime to be up and running, ready to serve
+    requests.
+    By default, this command looks for a container named `localstack_main` (which is the default
+    container name used by the `localstack start` command).
+    If your LocalStack container has a different name, set the config variable
+    `MAIN_CONTAINER_NAME`.
+    """
     from localstack.utils.bootstrap import wait_container_is_ready
 
     if not wait_container_is_ready(timeout=timeout):
         raise click.ClickException("timeout")
 
 
-@localstack.command(
-    name="ssh",
-    short_help="Obtain a shell in LocalStack",
-    help="""
-         Obtain a shell in the current LocalStack runtime.
-
-         This command starts a new interactive shell in the currently running LocalStack container.
-         By default, this command looks for a container named `localstack_main` (which is the default
-         container name used by the `localstack start` command).
-         If your LocalStack container has a different name, set the config variable
-         `MAIN_CONTAINER_NAME`.
-         """,
-)
+@localstack.command(name="ssh", short_help="Obtain a shell in LocalStack")
 @publish_invocation
 def cmd_ssh() -> None:
+    """
+    Obtain a shell in the current LocalStack runtime.
+
+    This command starts a new interactive shell in the currently running LocalStack container.
+    By default, this command looks for a container named `localstack_main` (which is the default
+    container name used by the `localstack start` command).
+    If your LocalStack container has a different name, set the config variable
+    `MAIN_CONTAINER_NAME`.
+    """
     from localstack.utils.docker_utils import DOCKER_CLIENT
     from localstack.utils.run import run
 
@@ -566,46 +548,41 @@ def cmd_ssh() -> None:
         pass
 
 
-@localstack.group(
-    name="update", short_help="Update LocalStack", help="Update different LocalStack components."
-)
+@localstack.group(name="update", short_help="Update LocalStack")
 def localstack_update() -> None:
+    """
+    Update different LocalStack components.
+    """
     pass
 
 
-@localstack_update.command(
-    name="all",
-    short_help="Update all LocalStack components",
-    help="""
-         Update all LocalStack components.
-
-         This is the same as executing `localstack update localstack-cli` and
-         `localstack update docker-images`.
-         Updating the LocalStack CLI is currently only supported if the CLI
-         is installed and run via Python / PIP. If you used a different installation method,
-         please follow the instructions on https://docs.localstack.cloud/.
-         """,
-)
+@localstack_update.command(name="all", short_help="Update all LocalStack components")
 @click.pass_context
 @publish_invocation
 def cmd_update_all(ctx: click.Context) -> None:
+    """
+    Update all LocalStack components.
+
+    This is the same as executing `localstack update localstack-cli` and
+    `localstack update docker-images`.
+    Updating the LocalStack CLI is currently only supported if the CLI
+    is installed and run via Python / PIP. If you used a different installation method,
+    please follow the instructions on https://docs.localstack.cloud/.
+    """
     ctx.invoke(localstack_update.get_command(ctx, "localstack-cli"))
     ctx.invoke(localstack_update.get_command(ctx, "docker-images"))
 
 
-@localstack_update.command(
-    name="localstack-cli",
-    short_help="Update LocalStack CLI",
-    help="""
-         Update the LocalStack CLI.
-
-         This command updates the LocalStack CLI. This is currently only supported if the CLI
-         is installed and run via Python / PIP. If you used a different installation method,
-         please follow the instructions on https://docs.localstack.cloud/.
-         """,
-)
+@localstack_update.command(name="localstack-cli", short_help="Update LocalStack CLI")
 @publish_invocation
 def cmd_update_localstack_cli() -> None:
+    """
+    Update the LocalStack CLI.
+
+    This command updates the LocalStack CLI. This is currently only supported if the CLI
+    is installed and run via Python / PIP. If you used a different installation method,
+    please follow the instructions on https://docs.localstack.cloud/.
+    """
     if is_frozen_bundle():
         # "update" can only be performed if running from source / in a non-frozen interpreter
         console.print(
@@ -630,17 +607,16 @@ def cmd_update_localstack_cli() -> None:
 
 
 @localstack_update.command(
-    name="docker-images",
-    short_help="Update docker images LocalStack depends on",
-    help="""
-         Update all Docker images LocalStack depends on.
-
-         This command updates all Docker LocalStack docker images, as well as other Docker images
-         LocalStack depends on (and which have been used before / are present on the machine).
-         """,
+    name="docker-images", short_help="Update docker images LocalStack depends on"
 )
 @publish_invocation
 def cmd_update_docker_images() -> None:
+    """
+    Update all Docker images LocalStack depends on.
+
+    This command updates all Docker LocalStack docker images, as well as other Docker images
+    LocalStack depends on (and which have been used before / are present on the machine).
+    """
     from localstack.utils.docker_utils import DOCKER_CLIENT
 
     console.rule("Updating docker images")
@@ -706,35 +682,7 @@ def update_images(image_list: List[str]) -> None:
     )
 
 
-@localstack.command(
-    name="completion",
-    short_help="CLI shell completion",
-    help="""
-         Print shell completion code for the specified shell (bash, zsh, or fish).
-         The shell code must be evaluated to enable the interactive shell completion of LocalStack CLI commands.
-         This is usually done by sourcing it from the .bash_profile.
-
-         \b
-         Examples:
-           # Bash
-           ## Bash completion on Linux depends on the 'bash-completion' package.
-           ## Write the LocalStack CLI completion code for bash to a file and source it from .bash_profile
-           localstack completion bash > ~/.localstack/completion.bash.inc
-           printf "
-           # LocalStack CLI bash completion
-           source '$HOME/.localstack/completion.bash.inc'
-           " >> $HOME/.bash_profile
-           source $HOME/.bash_profile
-        \b
-           # zsh
-           ## Set the LocalStack completion code for zsh to autoload on startup:
-           localstack completion zsh > "${fpath[1]}/_localstack"
-        \b
-           # fish
-           ## Set the LocalStack completion code for fish to autoload on startup:
-           localstack completion fish > ~/.config/fish/completions/localstack.fish
-         """,
-)
+@localstack.command(name="completion", short_help="CLI shell completion")
 @click.pass_context
 @click.argument(
     "shell", required=True, type=click.Choice(["bash", "zsh", "fish"], case_sensitive=False)
@@ -742,14 +690,31 @@ def update_images(image_list: List[str]) -> None:
 @publish_invocation
 def localstack_completion(ctx: click.Context, shell: str) -> None:
     """
-    Click's autocompletion is not perfectly user-friendly.
-    This command prints the autocompletion script of Click for this program.
-    It can then be simply piped to a completion file.
-    Example:
-        localstack complete fish > ~/.config/fish/completions/localstack.fish
-    :param ctx: Click context
-    :param shell: Shell to show the autocompletion script for
+     Print shell completion code for the specified shell (bash, zsh, or fish).
+     The shell code must be evaluated to enable the interactive shell completion of LocalStack CLI commands.
+     This is usually done by sourcing it from the .bash_profile.
+
+     \b
+     Examples:
+       # Bash
+       ## Bash completion on Linux depends on the 'bash-completion' package.
+       ## Write the LocalStack CLI completion code for bash to a file and source it from .bash_profile
+       localstack completion bash > ~/.localstack/completion.bash.inc
+       printf "
+       # LocalStack CLI bash completion
+       source '$HOME/.localstack/completion.bash.inc'
+       " >> $HOME/.bash_profile
+       source $HOME/.bash_profile
+    \b
+       # zsh
+       ## Set the LocalStack completion code for zsh to autoload on startup:
+       localstack completion zsh > "${fpath[1]}/_localstack"
+    \b
+       # fish
+       ## Set the LocalStack completion code for fish to autoload on startup:
+       localstack completion fish > ~/.config/fish/completions/localstack.fish
     """
+
     # lookup the completion, raise an error if the given completion is not found
     import click.shell_completion
 
@@ -771,20 +736,22 @@ def localstack_completion(ctx: click.Context, shell: str) -> None:
 
 
 # legacy support
-@localstack.group(name="infra", help="Manage LocalStack infrastructure", deprecated=True)
+@localstack.group(name="infra", deprecated=True)
 def infra() -> None:
+    """
+    Manage LocalStack infrastructure
+    """
     pass
 
 
 # FIXME remove with next major version
-@infra.command(
-    name="start",
-    short_help=cmd_start.short_help,
-    help="This command is deprecated. Please use `localstack start` instead.",
-)
+@infra.command(name="start", short_help=cmd_start.short_help)
 @click.pass_context
 @publish_invocation
 def cmd_infra_start(ctx: click.Context, *args, **kwargs) -> None:
+    """
+    This command is deprecated. Please use `localstack start` instead.
+    """
     ctx.invoke(cmd_start, *args, **kwargs)
 
 
