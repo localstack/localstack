@@ -3797,6 +3797,15 @@ class TestS3:
             )
         snapshot.match("put-obj-disabled-key", e.value.response)
 
+        # schedule the deletion of the key
+        aws_client.kms.schedule_key_deletion(KeyId=kms_key["KeyId"], PendingWindowInDays=7)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+            )
+        snapshot.match("get-obj-pending-deletion-key", e.value.response)
+
     @pytest.mark.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"

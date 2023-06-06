@@ -5037,7 +5037,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_sse_validate_kms_key_state": {
-    "recorded-date": "02-03-2023, 20:16:36",
+    "recorded-date": "01-06-2023, 23:39:32",
     "recorded-content": {
       "create-kms-key": {
         "AWSAccountId": "111111111111",
@@ -5058,7 +5058,7 @@
         "Origin": "AWS_KMS"
       },
       "success-put-object-sse": {
-        "ETag": "\"e68bbef73b652d1dc50bf77e0d79db33\"",
+        "ETag": "\"8fcef97dd418deded0d80da0c9bb9e35\"",
         "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
@@ -5071,7 +5071,7 @@
         "Body": "test-sse",
         "ContentLength": 8,
         "ContentType": "binary/octet-stream",
-        "ETag": "\"e68bbef73b652d1dc50bf77e0d79db33\"",
+        "ETag": "\"8fcef97dd418deded0d80da0c9bb9e35\"",
         "LastModified": "datetime",
         "Metadata": {},
         "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
@@ -5095,6 +5095,16 @@
         "Error": {
           "Code": "KMS.DisabledException",
           "Message": "arn:aws:kms:<region>:111111111111:key/<uuid:1> is disabled."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-obj-pending-deletion-key": {
+        "Error": {
+          "Code": "KMS.KMSInvalidStateException",
+          "Message": "arn:aws:kms:<region>:111111111111:key/<uuid:1> is pending deletion."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
