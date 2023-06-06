@@ -226,5 +226,73 @@
         }
       }
     }
+  },
+  "tests/integration/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_api_key_required_for_methods": {
+    "recorded-date": "05-06-2023, 20:32:45",
+    "recorded-content": {
+      "create-usage-plan": {
+        "apiStages": [
+          {
+            "apiId": "<api-id:1>",
+            "stage": "dev"
+          }
+        ],
+        "description": "Test Usage Plan for API key",
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "quota": {
+          "limit": 10,
+          "offset": 0,
+          "period": "DAY"
+        },
+        "tags": {
+          "tag_key": "tag_value"
+        },
+        "throttle": {
+          "burstLimit": 1,
+          "rateLimit": 2.0
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-api-key": {
+        "createdDate": "datetime",
+        "enabled": true,
+        "id": "<id:2>",
+        "lastUpdatedDate": "datetime",
+        "name": "<name:2>",
+        "stageKeys": [],
+        "value": "<value:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-usage-plan-key": {
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "type": "API_KEY",
+        "value": "<value:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update-api-key-disabled": {
+        "createdDate": "datetime",
+        "enabled": false,
+        "id": "<id:2>",
+        "lastUpdatedDate": "datetime",
+        "name": "<name:2>",
+        "stageKeys": [],
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

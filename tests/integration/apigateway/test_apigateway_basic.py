@@ -1072,62 +1072,6 @@ class TestAPIGateway:
         result = table.get_item(Key={"id": "id1"})
         assert "foobar123" == result["Item"]["data"]
 
-    def test_api_key_required_for_methods(self, aws_client):
-        request_templates = {
-            "application/json": json.dumps(
-                {
-                    "TableName": "MusicCollection",
-                    "Item": {
-                        "id": {"S": "$input.path('id')"},
-                        "data": {"S": "$input.path('data')"},
-                    },
-                }
-            )
-        }
-
-        api_id = self.create_api_gateway_and_deploy(
-            request_templates=request_templates, is_api_key_required=True
-        )
-        url = path_based_url(api_id=api_id, stage_name="staging", path="/")
-
-        payload = {
-            "name": "TEST-PLAN-2",
-            "description": "Description",
-            "quota": {"limit": 10, "period": "DAY", "offset": 0},
-            "throttle": {"rateLimit": 2, "burstLimit": 1},
-            "apiStages": [{"apiId": api_id, "stage": "staging"}],
-            "tags": {"tag_key": "tag_value"},
-        }
-
-        client = aws_stack.create_external_boto_client("apigateway")
-        usage_plan_id = client.create_usage_plan(**payload)["id"]
-
-        key_name = "testApiKey"
-        key_type = "API_KEY"
-        api_key = client.create_api_key(name=key_name)
-
-        payload = {
-            "usagePlanId": usage_plan_id,
-            "keyId": api_key["id"],
-            "keyType": key_type,
-        }
-        client.create_usage_plan_key(**payload)
-
-        response = requests.put(
-            url,
-            json.dumps({"id": "id1", "data": "foobar123"}),
-        )
-        # when the api key is not passed as part of the header
-        assert 403 == response.status_code
-
-        response = requests.put(
-            url,
-            json.dumps({"id": "id1", "data": "foobar123"}),
-            headers={"X-API-Key": api_key["value"]},
-        )
-        # when the api key is passed as part of the header
-        assert 200 == response.status_code
-
     def test_multiple_api_keys_validate(self, aws_client):
         request_templates = {
             "application/json": json.dumps(
@@ -1165,7 +1109,8 @@ class TestAPIGateway:
         for usage_plan_id in usage_plan_ids:
             for i in range(2):
                 api_key = aws_client.apigateway.create_api_key(
-                    name="testMultipleApiKeys{}".format(i)
+                    name="testMultipleApiKeys{}".format(i),
+                    enabled=True,
                 )
                 payload = {
                     "usagePlanId": usage_plan_id,
