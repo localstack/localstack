@@ -51,6 +51,7 @@ from localstack.aws.api.cloudformation import (
     ListStacksOutput,
     LogicalResourceId,
     NextToken,
+    Parameter,
     PhysicalResourceId,
     RegisterTypeInput,
     RegisterTypeOutput,
@@ -71,6 +72,7 @@ from localstack.aws.api.cloudformation import (
     ValidateTemplateOutput,
 )
 from localstack.services.cloudformation import api_utils
+from localstack.services.cloudformation.engine import parameters as param_resolver
 from localstack.services.cloudformation.engine import template_deployer, template_preparer
 from localstack.services.cloudformation.engine.entities import (
     Stack,
@@ -187,13 +189,22 @@ class CloudformationProvider(CloudformationApi):
                 "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
             )
 
-        parameters = template_preparer.resolve_parameters(
-            template.get("Parameters", {}), request.get("Parameters", [])
+        new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
+            request.get("Parameters")
+        )
+        parameter_declarations = param_resolver.extract_stack_parameter_declarations(template)
+        resolved_parameters = param_resolver.resolve_parameters(
+            parameter_declarations=parameter_declarations,
+            new_parameters=new_parameters,
+            old_parameters={},
         )
 
         stack = Stack(request, template)
+
         try:
-            template = template_preparer.transform_template(template, parameters, stack=stack)
+            template = template_preparer.transform_template(
+                template, list(resolved_parameters.values()), stack.stack_name, stack.resources
+            )
         except FailedTransformationException as e:
             stack.add_stack_event(
                 stack.stack_name,
@@ -206,6 +217,7 @@ class CloudformationProvider(CloudformationApi):
             return CreateStackOutput(StackId=stack.stack_id)
 
         stack = Stack(request, template)
+        stack.set_resolved_parameters(resolved_parameters)
         stack.template_body = json.dumps(template)
         state.stacks[stack.stack_id] = stack
         LOG.debug(
@@ -259,12 +271,20 @@ class CloudformationProvider(CloudformationApi):
                 "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
             )
 
-        parameters = template_preparer.resolve_parameters(
-            template.get("Parameters", {}), request.get("Parameters", [])
+        new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
+            request.get("Parameters")
+        )
+        parameter_declarations = param_resolver.extract_stack_parameter_declarations(template)
+        resolved_parameters = param_resolver.resolve_parameters(
+            parameter_declarations=parameter_declarations,
+            new_parameters=new_parameters,
+            old_parameters=stack.resolved_parameters,
         )
 
         try:
-            template = template_preparer.transform_template(template, parameters, stack=stack)
+            template = template_preparer.transform_template(
+                template, list(resolved_parameters.values()), stack.stack_name, stack.resources
+            )
         except FailedTransformationException as e:
             stack.add_stack_event(
                 stack.stack_name,
@@ -276,7 +296,10 @@ class CloudformationProvider(CloudformationApi):
             return CreateStackOutput(StackId=stack.stack_id)
 
         deployer = template_deployer.TemplateDeployer(stack)
+        # TODO: there shouldn't be a "new" stack on update
         new_stack = Stack(request, template)
+        new_stack.set_resolved_parameters(resolved_parameters)
+        stack.set_resolved_parameters(resolved_parameters)
         try:
             deployer.update_stack(new_stack)
         except Exception as e:
@@ -343,8 +366,6 @@ class CloudformationProvider(CloudformationApi):
         change_set_name: ChangeSetNameOrId = None,
         template_stage: TemplateStage = None,
     ) -> GetTemplateOutput:
-
-        stack = None
         if change_set_name:
             stack = find_change_set(stack_name=stack_name, cs_name=change_set_name)
         else:
@@ -369,6 +390,7 @@ class CloudformationProvider(CloudformationApi):
             stack = find_stack(stack_name)
             if not stack:
                 return stack_not_found_error(stack_name)
+            template = stack.template
         else:
             api_utils.prepare_template_body(request)
             template = template_preparer.parse_template(request["TemplateBody"])
@@ -376,7 +398,12 @@ class CloudformationProvider(CloudformationApi):
             stack = Stack(request, template)
 
         result: GetTemplateSummaryOutput = stack.describe_details()
-        result["Parameters"] = result.get("Parameters") or []
+
+        # build parameter declarations
+        result["Parameters"] = list(
+            param_resolver.extract_stack_parameter_declarations(template).values()
+        )
+
         id_summaries = defaultdict(list)
         for resource_id, resource in stack.template_resources.items():
             res_type = resource["Type"]
@@ -446,12 +473,14 @@ class CloudformationProvider(CloudformationApi):
         template["ChangeSetName"] = change_set_name
         state = get_cloudformation_store()
 
+        old_parameters: dict[str, Parameter] = {}
         if change_set_type == "UPDATE":
             # add changeset to existing stack
             if stack is None:
                 raise ValidationError(
                     f"Stack '{stack_name}' does not exist."
                 )  # stack should exist already
+            old_parameters = stack.resolved_parameters
         elif change_set_type == "CREATE":
             # create new (empty) stack
             if stack is not None:
@@ -478,13 +507,34 @@ class CloudformationProvider(CloudformationApi):
             raise ValidationError(msg)
 
         # apply template transformations
-        parameters = template_preparer.resolve_parameters(
-            template.get("Parameters", {}), request.get("Parameters", [])
+        new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
+            request.get("Parameters")
         )
-        template = template_preparer.transform_template(template, parameters, stack=stack)
+        parameter_declarations = param_resolver.extract_stack_parameter_declarations(template)
+        resolved_parameters = param_resolver.resolve_parameters(
+            parameter_declarations=parameter_declarations,
+            new_parameters=new_parameters,
+            old_parameters=old_parameters,
+        )
+
+        parameters = list(resolved_parameters.values())
+
+        # TODO: remove this when fixing Stack.resources and transformation order
+        #   currently we need to create a stack with existing resources + parameters so that resolve refs recursively in here will work.
+        #   The correct way to do it would be at a later stage anyway just like a normal intrinsic function
+        req_params_copy = clone_stack_params(req_params)
+        temp_stack = Stack(req_params_copy, template)
+        temp_stack.set_resolved_parameters(resolved_parameters)
+
+        transformed_template = template_preparer.transform_template(
+            template, parameters, stack_name=temp_stack.stack_name, resources=temp_stack.resources
+        )
 
         # create change set for the stack and apply changes
-        change_set = StackChangeSet(stack, req_params, template)
+        change_set = StackChangeSet(stack, req_params, transformed_template)
+        # only set parameters for the changeset, then switch to stack on execute_change_set
+        change_set.set_resolved_parameters(resolved_parameters)
+
         deployer = template_deployer.TemplateDeployer(change_set)
         changes = deployer.construct_changes(
             stack,
@@ -493,9 +543,6 @@ class CloudformationProvider(CloudformationApi):
             append_to_changeset=True,
             filter_unchanged_resources=True,
         )
-        deployer.apply_parameter_changes(
-            change_set, change_set
-        )  # TODO: bandaid to populate metadata
         stack.change_sets.append(change_set)
         if not changes:
             change_set.metadata["Status"] = "FAILED"
@@ -546,6 +593,7 @@ class CloudformationProvider(CloudformationApi):
             "Transform",
         ]
         result = remove_attributes(deepcopy(change_set.metadata), attrs)
+        # result["Parameters"] = list(change_set.resolved_parameters.values())
         return result
 
     @handler("DeleteChangeSet")

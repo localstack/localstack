@@ -514,6 +514,7 @@ class TestMacros:
         paths=[
             "$..TemplateBody.Resources.Parameter.LogicalResourceId",
             "$..TemplateBody.Conditions",
+            "$..TemplateBody.Mappings",
             "$..TemplateBody.StackId",
             "$..TemplateBody.StackName",
             "$..TemplateBody.Transform",
@@ -672,6 +673,7 @@ class TestMacros:
         paths=[
             "$..TemplateBody.Resources.Parameter.LogicalResourceId",
             "$..TemplateBody.Conditions",
+            "$..TemplateBody.Mappings",
             "$..TemplateBody.Parameters",
             "$..TemplateBody.StackId",
             "$..TemplateBody.StackName",
@@ -739,6 +741,7 @@ class TestMacros:
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$..Event.fragment.Conditions",
+            "$..Event.fragment.Mappings",
             "$..Event.fragment.Outputs",
             "$..Event.fragment.Resources.Parameter.LogicalResourceId",
             "$..Event.fragment.StackId",

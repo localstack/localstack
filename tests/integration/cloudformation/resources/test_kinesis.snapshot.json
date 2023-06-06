@@ -62,5 +62,160 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/resources/test_kinesis.py::test_describe_template": {
+    "recorded-date": "22-05-2023, 09:25:32",
+    "recorded-content": {
+      "get_template_summary_by_url": {
+        "Capabilities": [
+          "CAPABILITY_NAMED_IAM"
+        ],
+        "CapabilitiesReason": "The following resource(s) require capabilities: [AWS::IAM::Role]",
+        "Parameters": [
+          {
+            "NoEcho": false,
+            "ParameterConstraints": {},
+            "ParameterKey": "KinesisRoleName",
+            "ParameterType": "String"
+          },
+          {
+            "NoEcho": false,
+            "ParameterConstraints": {},
+            "ParameterKey": "DeliveryStreamName",
+            "ParameterType": "String"
+          },
+          {
+            "NoEcho": false,
+            "ParameterConstraints": {},
+            "ParameterKey": "KinesisStreamName",
+            "ParameterType": "String"
+          }
+        ],
+        "ResourceIdentifierSummaries": [
+          {
+            "LogicalResourceIds": [
+              "MyBucket"
+            ],
+            "ResourceIdentifiers": [
+              "BucketName"
+            ],
+            "ResourceType": "AWS::S3::Bucket"
+          },
+          {
+            "LogicalResourceIds": [
+              "MyRole"
+            ],
+            "ResourceIdentifiers": [
+              "RoleName"
+            ],
+            "ResourceType": "AWS::IAM::Role"
+          },
+          {
+            "LogicalResourceIds": [
+              "KinesisStream"
+            ],
+            "ResourceIdentifiers": [
+              "Name"
+            ],
+            "ResourceType": "AWS::Kinesis::Stream"
+          },
+          {
+            "LogicalResourceIds": [
+              "DeliveryStream"
+            ],
+            "ResourceIdentifiers": [
+              "DeliveryStreamName"
+            ],
+            "ResourceType": "AWS::KinesisFirehose::DeliveryStream"
+          }
+        ],
+        "ResourceTypes": [
+          "AWS::Kinesis::Stream",
+          "AWS::IAM::Role",
+          "AWS::S3::Bucket",
+          "AWS::KinesisFirehose::DeliveryStream"
+        ],
+        "Version": "2010-09-09",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_template_summary_by_body": {
+        "Capabilities": [
+          "CAPABILITY_NAMED_IAM"
+        ],
+        "CapabilitiesReason": "The following resource(s) require capabilities: [AWS::IAM::Role]",
+        "Parameters": [
+          {
+            "NoEcho": false,
+            "ParameterConstraints": {},
+            "ParameterKey": "KinesisRoleName",
+            "ParameterType": "String"
+          },
+          {
+            "NoEcho": false,
+            "ParameterConstraints": {},
+            "ParameterKey": "DeliveryStreamName",
+            "ParameterType": "String"
+          },
+          {
+            "NoEcho": false,
+            "ParameterConstraints": {},
+            "ParameterKey": "KinesisStreamName",
+            "ParameterType": "String"
+          }
+        ],
+        "ResourceIdentifierSummaries": [
+          {
+            "LogicalResourceIds": [
+              "MyBucket"
+            ],
+            "ResourceIdentifiers": [
+              "BucketName"
+            ],
+            "ResourceType": "AWS::S3::Bucket"
+          },
+          {
+            "LogicalResourceIds": [
+              "MyRole"
+            ],
+            "ResourceIdentifiers": [
+              "RoleName"
+            ],
+            "ResourceType": "AWS::IAM::Role"
+          },
+          {
+            "LogicalResourceIds": [
+              "KinesisStream"
+            ],
+            "ResourceIdentifiers": [
+              "Name"
+            ],
+            "ResourceType": "AWS::Kinesis::Stream"
+          },
+          {
+            "LogicalResourceIds": [
+              "DeliveryStream"
+            ],
+            "ResourceIdentifiers": [
+              "DeliveryStreamName"
+            ],
+            "ResourceType": "AWS::KinesisFirehose::DeliveryStream"
+          }
+        ],
+        "ResourceTypes": [
+          "AWS::Kinesis::Stream",
+          "AWS::IAM::Role",
+          "AWS::S3::Bucket",
+          "AWS::KinesisFirehose::DeliveryStream"
+        ],
+        "Version": "2010-09-09",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

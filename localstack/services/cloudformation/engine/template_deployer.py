@@ -22,11 +22,7 @@ from localstack.services.cloudformation.deployment_utils import (
     log_not_available_message,
     remove_none_values,
 )
-from localstack.services.cloudformation.engine.entities import (
-    Stack,
-    StackChangeSet,
-    resolve_ssm_parameter_value,
-)
+from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet
 from localstack.services.cloudformation.service_models import (
     KEY_RESOURCE_STATE,
     DependencyNotYetSatisfied,
@@ -292,11 +288,6 @@ def extract_resource_attribute(
             "Value",
             resource.get("Value", resource_props.get("Properties", {}).get("Value")),
         )
-        param_value_type = resource_props.get("ParameterType") or ""
-        if param_value_type.startswith("AWS::SSM::Parameter::Value"):
-            param_value = resolve_ssm_parameter_value(
-                param_value_type, resource_props.get("ParameterValue")
-            )
         if is_ref_attr_or_arn:
             result = param_value
         elif isinstance(param_value, dict):
@@ -316,6 +307,7 @@ def extract_resource_attribute(
                 resource_id=resource_id,
             )
     if is_ref_attribute:
+        # TODO: remove
         for attr in ["Id", "PhysicalResourceId", "Ref"]:
             if result is None:
                 for obj in [resource_state, resource]:
@@ -1058,6 +1050,8 @@ class TemplateDeployer:
             else "CREATE"
         )
         change_set.stack.set_stack_status(f"{action}_IN_PROGRESS")
+        # update parameters
+        change_set.stack.set_resolved_parameters(change_set.resolved_parameters)
 
         # update attributes that the stack inherits from the changeset
         change_set.stack.metadata["Capabilities"] = change_set.metadata.get("Capabilities")
@@ -1302,56 +1296,6 @@ class TemplateDeployer:
             "Resources"
         ][resource_id]
 
-    def resolve_param(
-        self, logical_id: str, param_type: str, default_value: Optional[str] = None
-    ) -> Optional[str]:
-        if param_type == "AWS::SSM::Parameter::Value<String>":
-            return resolve_ssm_parameter_value(param_type, default_value)
-        return None
-
-    def apply_parameter_changes(self, old_stack, new_stack) -> None:
-        parameters = {
-            p["ParameterKey"]: p
-            for p in old_stack.metadata["Parameters"]  # go through current parameter values
-        }
-
-        for logical_id, value in new_stack.template["Parameters"].items():
-            default = value.get("Default")
-            provided_param_value = parameters.get(logical_id)
-            param = {
-                "ParameterKey": logical_id,
-                "ParameterValue": provided_param_value if default is None else default,
-            }
-            if default is not None:
-                resolved_value = self.resolve_param(logical_id, value.get("Type"), default)
-                if resolved_value is not None:
-                    param["ResolvedValue"] = resolved_value
-
-            parameters[logical_id] = param
-
-        def _update_params(params_list: list[dict]):
-            for param in params_list:
-                # make sure we preserve parameter values if UsePreviousValue=true
-                if not param.get("UsePreviousValue"):
-                    parameters.update({param["ParameterKey"]: param})
-
-        _update_params(new_stack.metadata["Parameters"])
-        for change_set in new_stack.change_sets:
-            _update_params(change_set.metadata["Parameters"])
-
-        # TODO: unclear/undocumented behavior in implicitly updating old_stack parameter here
-        # Note: Indeed it seems that parameters from Change Sets are applied to a stack
-        #   itself, and are preserved even after a change set has been deleted. However,
-        #   a proper implementation would distinguish between (1) Change Sets and (2) Change
-        #   Set Executions - the former are only a template for the changes to be applied,
-        #   whereas the latter actually perform changes (including parameter updates).
-        #   Also, (1) can be deleted, and (2) can only be rolled back (in case of errors).
-        #   Once we have the distinction between (1) and (2) in place, this logic (updating
-        #   the parameters of the stack itself) will become obsolete, then the parameter
-        #   values can be determined by replaying the values of the sequence of (immutable)
-        #   Change Set Executions.
-        old_stack.metadata["Parameters"] = [v for v in parameters.values() if v]
-
     def construct_changes(
         self,
         existing_stack,
@@ -1402,7 +1346,7 @@ class TemplateDeployer:
         self.init_resource_status(old_resources, action="UPDATE")
 
         # apply parameter changes to existing stack
-        self.apply_parameter_changes(existing_stack, new_stack)
+        # self.apply_parameter_changes(existing_stack, new_stack)
 
         # construct changes
         changes = self.construct_changes(

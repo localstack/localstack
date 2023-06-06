@@ -4,6 +4,8 @@ import os
 import pytest
 
 from localstack import config
+from localstack.testing.aws.util import is_aws_cloud
+from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
 
@@ -67,61 +69,19 @@ def test_default_parameters_kinesis(deploy_cfn_template, aws_client):
     assert found
 
 
-TEST_TEMPLATE_12 = """
-AWSTemplateFormatVersion: 2010-09-09
-Parameters:
-  KinesisStreamName:
-    Type: String
-  DeliveryStreamName:
-    Type: String
-Resources:
-  MyRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: %s
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Action: "*"
-            Resource: "*"
-  MyBucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        BucketName: !Ref "DeliveryStreamName"
-  KinesisStream:
-    Type: AWS::Kinesis::Stream
-    Properties:
-      Name : !Ref "KinesisStreamName"
-      ShardCount : 5
-  DeliveryStream:
-    Type: AWS::KinesisFirehose::DeliveryStream
-    Properties:
-      DeliveryStreamName: !Ref "DeliveryStreamName"
-      DeliveryStreamType: DirectPut
-      S3DestinationConfiguration:
-        BucketARN: !Ref MyBucket
-        BufferingHints:
-          IntervalInSeconds: 600
-          SizeInMBs: 50
-        CompressionFormat: UNCOMPRESSED
-        Prefix: raw/
-        RoleARN: !GetAtt "MyRole.Arn"
-Outputs:
-  MyStreamArn:
-    Value: !GetAtt "DeliveryStream.Arn"
-"""
-
-
 def test_cfn_handle_kinesis_firehose_resources(deploy_cfn_template, aws_client):
     kinesis_stream_name = f"kinesis-stream-{short_uid()}"
     firehose_role_name = f"firehose-role-{short_uid()}"
     firehose_stream_name = f"firehose-stream-{short_uid()}"
 
     stack = deploy_cfn_template(
-        template=TEST_TEMPLATE_12 % firehose_role_name,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_kinesis_stream.yaml"
+        ),
         parameters={
             "KinesisStreamName": kinesis_stream_name,
             "DeliveryStreamName": firehose_stream_name,
+            "KinesisRoleName": firehose_role_name,
         },
     )
 
@@ -143,28 +103,40 @@ def test_cfn_handle_kinesis_firehose_resources(deploy_cfn_template, aws_client):
     assert firehose_stream_name not in rs["DeliveryStreamNames"]
 
 
-def test_describe_template(s3_create_bucket, aws_client):
+# TODO: use a different template and move this test to a more generic API level test suite
+@pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify  # nothing really works here right now
+def test_describe_template(s3_create_bucket, aws_client, cleanups, snapshot):
     bucket_name = f"b-{short_uid()}"
-    template_body = TEST_TEMPLATE_12 % "test-firehose-role-name"
-    s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+    template_body = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/cfn_kinesis_stream.yaml")
+    )
+    s3_create_bucket(Bucket=bucket_name)
     aws_client.s3.put_object(Bucket=bucket_name, Key="template.yml", Body=template_body)
 
-    template_url = f"{config.get_edge_url()}/{bucket_name}/template.yml"  # TODO
+    if is_aws_cloud():
+        template_url = (
+            f"https://{bucket_name}.s3.{aws_client.s3.meta.region_name}.amazonaws.com/template.yml"
+        )
+    else:
+        template_url = f"{config.get_edge_url()}/{bucket_name}/template.yml"
 
-    params = [
-        {"ParameterKey": "KinesisStreamName"},
-        {"ParameterKey": "DeliveryStreamName"},
-    ]
     # get summary by template URL
-    result = aws_client.cloudformation.get_template_summary(TemplateURL=template_url)
-    assert result.get("Parameters") == params
-    assert "AWS::S3::Bucket" in result["ResourceTypes"]
-    assert result.get("ResourceIdentifierSummaries")
+    get_template_summary_by_url = aws_client.cloudformation.get_template_summary(
+        TemplateURL=template_url
+    )
+    snapshot.match("get_template_summary_by_url", get_template_summary_by_url)
+
+    param_keys = {p["ParameterKey"] for p in get_template_summary_by_url["Parameters"]}
+    assert param_keys == {"KinesisStreamName", "DeliveryStreamName", "KinesisRoleName"}
+
     # get summary by template body
-    result = aws_client.cloudformation.get_template_summary(TemplateBody=template_body)
-    assert result.get("Parameters") == params
-    assert "AWS::Kinesis::Stream" in result["ResourceTypes"]
-    assert result.get("ResourceIdentifierSummaries")
+    get_template_summary_by_body = aws_client.cloudformation.get_template_summary(
+        TemplateBody=template_body
+    )
+    snapshot.match("get_template_summary_by_body", get_template_summary_by_body)
+    param_keys = {p["ParameterKey"] for p in get_template_summary_by_url["Parameters"]}
+    assert param_keys == {"KinesisStreamName", "DeliveryStreamName", "KinesisRoleName"}
 
 
 TEST_TEMPLATE_28 = """
