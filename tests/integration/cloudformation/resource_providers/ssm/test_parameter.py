@@ -41,7 +41,7 @@ class TestAttributeAccess:
                 os.path.dirname(__file__),
                 "../../../templates/resource_providers/ssm/parameter.yaml",
             ),
-            parameter={"AttributeName": attribute},
+            parameters={"AttributeName": attribute},
         )
         snapshot.match("stack_outputs", stack.outputs)
 
