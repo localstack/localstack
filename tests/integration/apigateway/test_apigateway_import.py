@@ -11,6 +11,7 @@ from localstack import config
 from localstack.aws.api.apigateway import Resources
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.aws import arns
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -611,6 +612,7 @@ class TestApiGatewayImportRestApi:
                     "$.resources.items..id", value_replacement="resource-id"
                 ),
                 snapshot.transform.jsonpath("$.get-models.items..id", value_replacement="model-id"),
+                SortingTransformer("required"),
             ]
         )
         spec_file = load_file(OAS_30_CIRCULAR_REF)
@@ -654,6 +656,7 @@ class TestApiGatewayImportRestApi:
                 snapshot.transform.jsonpath(
                     "$.request-validators.items..id", value_replacement="request-validator-id"
                 ),
+                SortingTransformer("required"),
             ]
         )
         spec_file = load_file(OAS_30_CIRCULAR_REF_WITH_REQUEST_BODY)
@@ -706,7 +709,7 @@ class TestApiGatewayImportRestApi:
 
         request = requests.post(url, json=wrong_request)
         assert request.status_code == 400
-        assert request.json() == {"message": "Invalid request body"}
+        assert request.json().get("message") == "Invalid request body"
 
         wrong_request_schema = {
             "name": "Person1",
@@ -718,4 +721,4 @@ class TestApiGatewayImportRestApi:
         }
         request = requests.post(url, json=wrong_request_schema)
         assert request.status_code == 400
-        assert request.json() == {"message": "Invalid request body"}
+        assert request.json().get("message") == "Invalid request body"

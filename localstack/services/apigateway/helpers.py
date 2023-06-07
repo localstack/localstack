@@ -32,7 +32,11 @@ from localstack.constants import (
     PATH_USER_REQUEST,
 )
 from localstack.services.apigateway.context import ApiInvocationContext
-from localstack.services.apigateway.models import ApiGatewayStore, apigateway_stores
+from localstack.services.apigateway.models import (
+    ApiGatewayStore,
+    RestApiContainer,
+    apigateway_stores,
+)
 from localstack.utils import common
 from localstack.utils.aws import aws_stack, queries
 from localstack.utils.aws import resources as resource_utils
@@ -147,8 +151,6 @@ class Resolver:
         if refpath in self._refpaths and not self.allow_recursive:
             raise Exception("recursion detected with allow_recursive=False")
 
-        print(f"{refpath=}")
-        print(f"{self.current_path=}")
         # We don't resolve the Model definition, we will return a absolute reference to the model like AWS
         # When validating the schema, we will need to resolve the $ref there
         # Because if we resolved all $ref in schema, it can lead to circular references in complex schemas
@@ -159,10 +161,10 @@ class Resolver:
 
         # We should not resolve the Model either, because we need its name to set it to the Request/ResponseModels,
         # it just makes our job more difficult to retrieve the Model name
-        if self.current_path.endswith("schema"):
-            return {"$ref": refpath}
+        # We still need to verify that the ref exists
+        is_schema = self.current_path.endswith("schema")
 
-        if refpath in self._cache:
+        if refpath in self._cache and not is_schema:
             return self._cache.get(refpath)
 
         with self._pathctx(refpath):
@@ -175,10 +177,14 @@ class Resolver:
                 cur = cur.get(step)
 
             self._cache[self.current_path] = cur
+
+            if is_schema:
+                # If the $ref doesn't exist in our schema, return None, otherwise return the ref
+                return {"$ref": refpath} if cur else None
+
             return cur
 
     def _namespaced_resolution(self, namespace: str, data: Union[dict, list]) -> Union[dict, list]:
-        # print(namespace)
         with self._pathctx(namespace):
             return self._resolve_references(data)
 
@@ -197,6 +203,111 @@ class Resolver:
 
     def resolve_references(self) -> dict:
         return self._resolve_references(self.document)
+
+
+class ModelResolver:
+    """
+    This class allows a Model to use recursive and circular references to other Models.
+    To be able to JSON dump Models, AWS will not resolve Models but will use their absolute $ref instead.
+    When validating, we need to resolve those references, using JSON schema tricks to allow recursion.
+    See: https://json-schema.org/understanding-json-schema/structuring.html#recursion
+
+    To allow a simpler structure, we're not replacing directly the reference with the schema, but instead create
+    a map of all used schema in $defs, as advised on JSON schema:
+    See: https://json-schema.org/understanding-json-schema/structuring.html#defs
+
+    This allows us to not render every sub schema/models, but instead keep a clean map of used schemas.
+    """
+
+    def __init__(self, rest_api_container: RestApiContainer, model_name: str):
+        self.rest_api_container = rest_api_container
+        self.model_name = model_name
+
+    def resolve_model(self, model: dict) -> dict | None:
+        resolved_model = copy.deepcopy(model)
+        model_names = set()
+
+        def _look_for_ref(sub_model):
+            for key, value in sub_model.items():
+                if key == "$ref":
+                    ref_name = value.rsplit("/", maxsplit=1)[-1]
+                    if ref_name == self.model_name:
+                        # if we reference our main Model, use the # for recursive access
+                        sub_model[key] = "#"
+                        continue
+                    model_names.add(ref_name)
+                    # otherwise, this Model will be available in $defs
+                    sub_model[key] = f"#/$defs/{ref_name}"
+                elif isinstance(value, dict):
+                    _look_for_ref(value)
+
+        if isinstance(resolved_model, dict):
+            _look_for_ref(resolved_model)
+
+        if model_names:
+            # set a new key in the schema with $defs
+            resolved_model["$defs"] = {}
+            for ref_model_name in model_names:
+                def_resolved, was_resolved = self._get_resolved_submodel(model_name=ref_model_name)
+                if not def_resolved:
+                    return
+                # if the ref was already resolved, we copy the result to not alter the already resolved schema
+                if was_resolved:
+                    def_resolved = copy.deepcopy(def_resolved)
+
+                self._remove_self_ref(def_resolved)
+
+                if "$defs" in def_resolved:
+                    # remove own definition in case of recursive / circular Models
+                    def_resolved["$defs"].pop(self.model_name, None)
+                    # remove the $defs from the schema, we don't want nested $defs
+                    def_resolved_defs = def_resolved.pop("$defs")
+                    # merge the resolved sub model $defs to the main schema
+                    resolved_model["$defs"].update(def_resolved_defs)
+
+                resolved_model["$defs"][ref_model_name] = def_resolved
+
+        return resolved_model
+
+    def _remove_self_ref(self, resolved_schema: dict):
+        for key, value in resolved_schema.items():
+            if key == "$ref":
+                ref_name = value.rsplit("/", maxsplit=1)[-1]
+                if ref_name == self.model_name:
+                    resolved_schema[key] = "#"
+
+            elif isinstance(value, dict):
+                self._remove_self_ref(value)
+
+    def get_resolved_model(self) -> dict | None:
+        if not (resolved_model := self.rest_api_container.resolved_models.get(self.model_name)):
+            model = self.rest_api_container.models.get(self.model_name)
+            print(model)
+            if not model:
+                return None
+            schema = json.loads(model["schema"])
+            resolved_model = self.resolve_model(schema)
+            if not resolved_model:
+                return None
+            self.rest_api_container.resolved_models[self.model_name] = resolved_model
+
+        return resolved_model
+
+    def _get_resolved_submodel(self, model_name: str) -> tuple[dict | None, bool | None]:
+        was_resolved = True
+        if not (resolved_model := self.rest_api_container.resolved_models.get(model_name)):
+            was_resolved = False
+            model = self.rest_api_container.models.get(model_name)
+            if not model:
+                LOG.warning(
+                    "Error while validating the request body, could not the find the Model: '%s'",
+                    model_name,
+                )
+                return None, was_resolved
+            schema = json.loads(model["schema"])
+            resolved_model = self.resolve_model(schema)
+
+        return resolved_model, was_resolved
 
 
 class IntegrationParameters(TypedDict):
@@ -776,7 +887,6 @@ def import_api_from_openapi_spec(
             # this replaces 'body' in Parameters for OpenAPI 3.0, a requestBody Object
             # https://swagger.io/specification/v3/#request-body-object
             if request_models_schema := field_schema.get("requestBody"):
-                print(request_models_schema)
                 model_ref = None
                 for content_type, media_type in request_models_schema.get("content", {}).items():
                     # we're iterating over the Media Type object:
@@ -794,7 +904,7 @@ def import_api_from_openapi_spec(
                     model_schema = model_ref.rsplit("/", maxsplit=1)[-1]
                     request_models = {APPLICATION_JSON: model_schema}
 
-                method_resource.request_models = request_models or None
+            method_resource.request_models = request_models or None
 
             # check if there's a request validator set in the method
             request_validator_name = field_schema.get(

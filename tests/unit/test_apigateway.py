@@ -1,14 +1,13 @@
 import json
 import unittest
 from typing import Any, Dict
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import boto3
 import pytest
-from botocore.exceptions import ClientError
 
 from localstack import config
-from localstack.constants import APPLICATION_JSON
+from localstack.constants import APPLICATION_JSON, DEFAULT_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.apigateway.helpers import (
     RequestParametersResolver,
     Resolver,
@@ -23,6 +22,7 @@ from localstack.services.apigateway.integration import (
     apply_request_parameters,
 )
 from localstack.services.apigateway.invocations import ApiInvocationContext, RequestValidator
+from localstack.services.apigateway.models import ApiGatewayStore, RestApiContainer
 from localstack.services.apigateway.templates import (
     RequestTemplates,
     ResponseTemplates,
@@ -121,43 +121,84 @@ class ApiGatewayPathsTest(unittest.TestCase):
         self.assertEqual("https://httpbin.org/anything/foo/bar/baz?param=foobar", uri)
 
     def test_if_request_is_valid_with_no_resource_methods(self):
-        ctx = ApiInvocationContext("POST", "/", b"", {})
-        validator = RequestValidator(ctx, None)
+        ctx = ApiInvocationContext(
+            method="POST",
+            path="/",
+            data=b"",
+            headers={},
+        )
+        ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
+        ctx.region_name = TEST_AWS_REGION_NAME
+        validator = RequestValidator(ctx, self._mock_store())
         self.assertTrue(validator.is_request_valid())
 
     def test_if_request_is_valid_with_no_matching_method(self):
-        ctx = ApiInvocationContext("POST", "/", b"", {})
+        ctx = ApiInvocationContext(
+            method="POST",
+            path="/",
+            data=b"",
+            headers={},
+        )
         ctx.resource = {"resourceMethods": {"GET": {}}}
-        validator = RequestValidator(ctx, None)
+        ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
+        ctx.region_name = TEST_AWS_REGION_NAME
+        validator = RequestValidator(ctx, self._mock_store())
         self.assertTrue(validator.is_request_valid())
 
     def test_if_request_is_valid_with_no_validator(self):
-        ctx = ApiInvocationContext("POST", "/", b"", {})
+        ctx = ApiInvocationContext(
+            method="POST",
+            path="/",
+            data=b"",
+            headers={},
+        )
+        ctx.resource = {"resourceMethods": {"GET": {}}}
+        ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
+        ctx.region_name = TEST_AWS_REGION_NAME
         ctx.api_id = "deadbeef"
         ctx.resource = {"resourceMethods": {"POST": {"requestValidatorId": " "}}}
-        validator = RequestValidator(ctx, None)
+        validator = RequestValidator(ctx, self._mock_store())
         self.assertTrue(validator.is_request_valid())
 
     def test_if_request_has_body_validator(self):
-        apigateway_client = self._mock_client()
-        apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
-        apigateway_client.get_model.return_value = {"schema": '{"type": "object"}'}
-        ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
+        ctx = ApiInvocationContext(
+            method="POST",
+            path="/",
+            data=b"",
+            headers={},
+        )
+        ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
+        ctx.region_name = TEST_AWS_REGION_NAME
         ctx.api_id = "deadbeef"
+        model_name = "schemaName"
+        request_validator_id = "112233"
         ctx.resource = {
             "resourceMethods": {
                 "POST": {
-                    "requestValidatorId": "112233",
-                    "requestModels": {"application/json": "schemaName"},
+                    "requestValidatorId": model_name,
+                    "requestModels": {"application/json": request_validator_id},
                 }
             }
         }
-        validator = RequestValidator(ctx, apigateway_client)
+        store = self._mock_store()
+        container = RestApiContainer(rest_api={})
+        container.validators[request_validator_id] = {"validateRequestBody": True}
+        container.models[model_name] = {"schema": '{"type": "object"}'}
+        store.rest_apis["deadbeef"] = container
+        validator = RequestValidator(ctx, store)
         self.assertTrue(validator.is_request_valid())
 
     def test_request_validate_body_with_no_request_model(self):
-        apigateway_client = self._mock_client()
-        apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
+        ctx = ApiInvocationContext(
+            method="POST",
+            path="/",
+            data=b"",
+            headers={},
+        )
+        ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
+        ctx.region_name = TEST_AWS_REGION_NAME
+        ctx.api_id = "deadbeef"
+        request_validator_id = "112233"
         empty_schema = json.dumps(
             {
                 "$schema": "http://json-schema.org/draft-04/schema#",
@@ -165,46 +206,63 @@ class ApiGatewayPathsTest(unittest.TestCase):
                 "type": "object",
             }
         )
-        apigateway_client.get_model.return_value = {"schema": empty_schema}
-        ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
-        ctx.api_id = "deadbeef"
+
         ctx.resource = {
             "resourceMethods": {
                 "POST": {
-                    "requestValidatorId": "112233",
+                    "requestValidatorId": request_validator_id,
                     "requestModels": None,
                 }
             }
         }
-        validator = RequestValidator(ctx, apigateway_client)
+        store = self._mock_store()
+        container = RestApiContainer(rest_api={})
+        container.validators = MagicMock()
+        container.validators.get.return_value = {"validateRequestBody": True}
+        container.models = MagicMock()
+        container.models.get.return_value = {"schema": empty_schema}
+        store.rest_apis["deadbeef"] = container
+        validator = RequestValidator(ctx, store)
         self.assertTrue(validator.is_request_valid())
-        apigateway_client.get_request_validator.assert_called_with(
-            restApiId="deadbeef", requestValidatorId="112233"
-        )
-        apigateway_client.get_model.assert_called_with(restApiId="deadbeef", modelName="Empty")
+
+        container.validators.get.assert_called_with("112233")
+        container.models.get.assert_called_with("Empty")
 
     def test_request_validate_body_with_no_model_for_schema_name(self):
-        apigateway_client = self._mock_client()
-        apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
-        apigateway_client.get_model.side_effect = ClientError(
-            error_response={"Error": {"Code": "NotFoundException", "Message": ""}},
-            operation_name="GetModel",
+        ctx = ApiInvocationContext(
+            method="POST",
+            path="/",
+            data='{"id":"1"}',
+            headers={},
         )
-        ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
+        ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
+        ctx.region_name = TEST_AWS_REGION_NAME
         ctx.api_id = "deadbeef"
+        model_name = "schemaName"
+        request_validator_id = "112233"
         ctx.resource = {
             "resourceMethods": {
                 "POST": {
-                    "requestValidatorId": "112233",
-                    "requestModels": {"application/json": "schemaName"},
+                    "requestValidatorId": model_name,
+                    "requestModels": {"application/json": request_validator_id},
                 }
             }
         }
-        validator = RequestValidator(ctx, apigateway_client)
+        store = self._mock_store()
+        container = RestApiContainer(rest_api={})
+        container.validators = MagicMock()
+        container.validators.get.return_value = {"validateRequestBody": True}
+        container.models = MagicMock()
+        container.models.get.return_value = None
+        store.rest_apis["deadbeef"] = container
+        validator = RequestValidator(ctx, store)
         self.assertFalse(validator.is_request_valid())
 
     def _mock_client(self):
         return Mock(boto3.client("apigateway", region_name=config.AWS_REGION_US_EAST_1))
+
+    def _mock_store(self):
+        return ApiGatewayStore()
 
 
 def test_render_template_values():
@@ -393,28 +451,39 @@ def test_openapi_resolver_given_unresolvable_references():
         "schema": {"$ref": "#/definitions/NotFound"},
         "definitions": {"Found": {"type": "string"}},
     }
-    resolver = Resolver(document, allow_recursive=True)
+    resolver = Resolver(document, allow_recursive=True, rest_api_id="123")
     result = resolver.resolve_references()
     assert result == {"schema": None, "definitions": {"Found": {"type": "string"}}}
 
 
 def test_openapi_resolver_given_invalid_references():
     document = {"schema": {"$ref": ""}, "definitions": {"Found": {"type": "string"}}}
-    resolver = Resolver(document, allow_recursive=True)
+    resolver = Resolver(document, allow_recursive=True, rest_api_id="123")
     result = resolver.resolve_references()
     assert result == {"schema": None, "definitions": {"Found": {"type": "string"}}}
 
 
-def test_openapi_resolver_given_list_references():
+def test_openapi_resolver_given_schema_list_references():
+    # We shouldn't resolve when the $ref is targeting a schema (Model)
     document = {
         "schema": {"$ref": "#/definitions/Found"},
         "definitions": {"Found": {"value": ["v1", "v2"]}},
     }
-    resolver = Resolver(document, allow_recursive=True)
+    resolver = Resolver(document, allow_recursive=True, rest_api_id="123")
+    result = resolver.resolve_references()
+    assert result == document
+
+
+def test_openapi_resolver_given_list_references():
+    document = {
+        "responses": {"$ref": "#/definitions/ResponsePost"},
+        "definitions": {"ResponsePost": {"value": ["v1", "v2"]}},
+    }
+    resolver = Resolver(document, allow_recursive=True, rest_api_id="123")
     result = resolver.resolve_references()
     assert result == {
-        "schema": {"value": ["v1", "v2"]},
-        "definitions": {"Found": {"value": ["v1", "v2"]}},
+        "responses": {"value": ["v1", "v2"]},
+        "definitions": {"ResponsePost": {"value": ["v1", "v2"]}},
     }
 
 

@@ -32,6 +32,8 @@ class RestApiContainer:
     gateway_responses: Dict[str, GatewayResponse]
     # maps Model name -> Model
     models: Dict[str, Model]
+    # maps Model name -> resolved dict Model, so we don't need to load the JSON everytime
+    resolved_models: Dict[str, dict]
     # maps ResourceId of a Resource to its children ResourceIds
     resource_children: Dict[str, List[str]]
 
@@ -42,6 +44,7 @@ class RestApiContainer:
         self.documentation_parts = {}
         self.gateway_responses = {}
         self.models = {}
+        self.resolved_models = {}
         self.resource_children = {}
 
 

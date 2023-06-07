@@ -25,7 +25,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_swagger_api": {
-    "recorded-date": "06-06-2023, 03:53:07",
+    "recorded-date": "07-06-2023, 03:24:26",
     "recorded-content": {
       "import-swagger": {
         "apiKeySource": "HEADER",
@@ -79,15 +79,15 @@
             "id": "<model-id:2>",
             "name": "NewPet",
             "schema": {
+              "type": "object",
               "properties": {
-                "price": {
-                  "type": "number"
-                },
                 "type": {
                   "$ref": "<model-base-url>/restapis/<rest-id:1>/models/PetType"
+                },
+                "price": {
+                  "type": "number"
                 }
-              },
-              "type": "object"
+              }
             }
           },
           {
@@ -95,15 +95,15 @@
             "id": "<model-id:3>",
             "name": "NewPetResponse",
             "schema": {
+              "type": "object",
               "properties": {
-                "message": {
-                  "type": "string"
-                },
                 "pet": {
                   "$ref": "<model-base-url>/restapis/<rest-id:1>/models/Pet"
+                },
+                "message": {
+                  "type": "string"
                 }
-              },
-              "type": "object"
+              }
             }
           },
           {
@@ -111,18 +111,18 @@
             "id": "<model-id:4>",
             "name": "Pet",
             "schema": {
+              "type": "object",
               "properties": {
                 "petid": {
                   "type": "integer"
                 },
-                "price": {
-                  "type": "number"
-                },
                 "type": {
                   "type": "string"
+                },
+                "price": {
+                  "type": "number"
                 }
-              },
-              "type": "object"
+              }
             }
           },
           {
@@ -130,14 +130,14 @@
             "id": "<model-id:5>",
             "name": "PetType",
             "schema": {
+              "type": "string",
               "enum": [
                 "dog",
                 "cat",
                 "fish",
                 "bird",
                 "gecko"
-              ],
-              "type": "string"
+              ]
             }
           },
           {
@@ -145,10 +145,10 @@
             "id": "<model-id:6>",
             "name": "Pets",
             "schema": {
+              "type": "array",
               "items": {
                 "$ref": "<model-base-url>/restapis/<rest-id:1>/models/Pet"
-              },
-              "type": "array"
+              }
             }
           }
         ],
@@ -3939,7 +3939,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_global_api_key_authorizer": {
-    "recorded-date": "06-06-2023, 00:26:37",
+    "recorded-date": "07-06-2023, 03:16:37",
     "recorded-content": {
       "import-swagger": {
         "apiKeySource": "AUTHORIZER",
@@ -3952,7 +3952,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
-        "version": "2020-02-10",
+        "version": "1.0",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -4171,7 +4171,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_circular_models": {
-    "recorded-date": "06-06-2023, 18:31:09",
+    "recorded-date": "07-06-2023, 02:26:07",
     "recorded-content": {
       "import-api": {
         "apiKeySource": "HEADER",
@@ -4289,10 +4289,7 @@
           "integrationResponses": {
             "200": {
               "responseTemplates": {
-                "application/json": {
-                  "echo": "$input.body",
-                  "response": "mocked"
-                }
+                "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
               },
               "statusCode": "200"
             }
@@ -4339,10 +4336,7 @@
         "integrationResponses": {
           "200": {
             "responseTemplates": {
-              "application/json": {
-                "echo": "$input.body",
-                "response": "mocked"
-              }
+              "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
             },
             "statusCode": "200"
           }
@@ -4362,10 +4356,7 @@
       },
       "integration-response-person-post": {
         "responseTemplates": {
-          "application/json": {
-            "echo": "$input.body",
-            "response": "mocked"
-          }
+          "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
         },
         "statusCode": "200",
         "ResponseMetadata": {
@@ -4376,7 +4367,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_circular_models_and_request_validation": {
-    "recorded-date": "06-06-2023, 19:19:48",
+    "recorded-date": "07-06-2023, 02:25:28",
     "recorded-content": {
       "import-api": {
         "apiKeySource": "HEADER",
