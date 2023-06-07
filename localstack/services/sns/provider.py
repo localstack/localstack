@@ -387,7 +387,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         store = self.get_store(account_id=context.account_id, region_name=context.region)
         sub = store.subscriptions.get(subscription_arn)
         if not sub:
-            raise NotFoundException(f"Subscription with arn {subscription_arn} not found")
+            raise NotFoundException("Subscription does not exist")
         removed_attrs = ["sqs_queue_url"]
         if "FilterPolicyScope" in sub and "FilterPolicy" not in sub:
             removed_attrs.append("FilterPolicyScope")

@@ -4005,5 +4005,45 @@
         }
       }
     }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_create_subscriptions_with_attributes": {
+    "recorded-date": "07-06-2023, 18:27:05",
+    "recorded-content": {
+      "subscribe": {
+        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-attrs": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "true",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:1>",
+          "SubscriptionPrincipal": "<sub-principal>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-attrs-nonexistent-sub": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "Subscription does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

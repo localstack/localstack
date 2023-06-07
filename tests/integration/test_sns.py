@@ -197,6 +197,38 @@ class TestSNSProvider:
         snapshot.match("empty-unsubscribe", response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
+    def test_create_subscriptions_with_attributes(
+        self, sns_create_topic, sqs_create_queue, sqs_queue_arn, snapshot, aws_client
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_queue_arn(queue_url)
+
+        subscribe_resp = aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_arn,
+            Attributes={
+                "RawMessageDelivery": "true",
+                "FilterPolicyScope": "MessageBody",
+            },
+            ReturnSubscriptionArn=True,
+        )
+        snapshot.match("subscribe", subscribe_resp)
+
+        get_attrs_resp = aws_client.sns.get_subscription_attributes(
+            SubscriptionArn=subscribe_resp["SubscriptionArn"]
+        )
+        snapshot.match("get-attrs", get_attrs_resp)
+
+        with pytest.raises(ClientError) as e:
+            wrong_sub_arn = f"{subscribe_resp['SubscriptionArn'][:-8]}{short_uid()}"
+            aws_client.sns.get_subscription_attributes(SubscriptionArn=wrong_sub_arn)
+
+        snapshot.match("get-attrs-nonexistent-sub", e.value.response)
+
+    @pytest.mark.aws_validated
     def test_attribute_raw_subscribe(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
