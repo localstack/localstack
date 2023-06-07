@@ -236,13 +236,13 @@ class LambdaEventSourceMapping(GenericBaseModel):
         if attribute_name == "Id":
             return self.props.get("UUID")
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("UUID")
-
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["UUID"]
+
         return {
-            "create": {"function": "create_event_source_mapping"},
+            "create": {"function": "create_event_source_mapping", "result_handler": _handle_result},
             "delete": {"function": "delete_event_source_mapping", "parameters": ["UUID"]},
         }
 
