@@ -959,8 +959,8 @@ def deploy_cfn_template(
         template_mapping: Optional[Dict[str, any]] = None,
         parameters: Optional[Dict[str, str]] = None,
         max_wait: Optional[int] = None,
+        role_arn: Optional[str] = None,
     ) -> DeployResult:
-
         if is_update:
             assert stack_name
         stack_name = stack_name or f"stack-{short_uid()}"
@@ -970,7 +970,7 @@ def deploy_cfn_template(
             template = load_template_file(template_path)
         template_rendered = render_template(template, **(template_mapping or {}))
 
-        response = aws_client.cloudformation.create_change_set(
+        kwargs = dict(
             StackName=stack_name,
             ChangeSetName=change_set_name,
             TemplateBody=template_rendered,
@@ -984,6 +984,11 @@ def deploy_cfn_template(
                 for (k, v) in (parameters or {}).items()
             ],
         )
+        if role_arn is not None:
+            kwargs["RoleARN"] = role_arn
+
+        response = aws_client.cloudformation.create_change_set(**kwargs)
+
         change_set_id = response["Id"]
         stack_id = response["StackId"]
         state.append({"stack_id": stack_id, "change_set_id": change_set_id})
@@ -1646,7 +1651,7 @@ def ses_configuration_set_sns_event_destination(aws_client):
 
     yield factory
 
-    for (created_config_set_name, created_event_destination_name) in event_destinations:
+    for created_config_set_name, created_event_destination_name in event_destinations:
         aws_client.ses.delete_configuration_set_event_destination(
             ConfigurationSetName=created_config_set_name,
             EventDestinationName=created_event_destination_name,
