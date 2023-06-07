@@ -222,6 +222,14 @@ class ModelResolver:
     def __init__(self, rest_api_container: RestApiContainer, model_name: str):
         self.rest_api_container = rest_api_container
         self.model_name = model_name
+        self._deps = {}
+        self._current_resolving_name = None
+
+    @contextlib.contextmanager
+    def _resolving_ctx(self, current_resolving_name: str):
+        self._current_resolving_name = current_resolving_name
+        yield
+        self._current_resolving_name = None
 
     def resolve_model(self, model: dict) -> dict | None:
         resolved_model = copy.deepcopy(model)
@@ -235,9 +243,13 @@ class ModelResolver:
                         # if we reference our main Model, use the # for recursive access
                         sub_model[key] = "#"
                         continue
-                    model_names.add(ref_name)
                     # otherwise, this Model will be available in $defs
                     sub_model[key] = f"#/$defs/{ref_name}"
+
+                    if ref_name != self._current_resolving_name:
+                        # add the ref to the next ref to resolve and to $deps
+                        model_names.add(ref_name)
+
                 elif isinstance(value, dict):
                     _look_for_ref(value)
 
@@ -245,10 +257,12 @@ class ModelResolver:
             _look_for_ref(resolved_model)
 
         if model_names:
-            # set a new key in the schema with $defs
-            resolved_model["$defs"] = {}
             for ref_model_name in model_names:
+                if ref_model_name in self._deps:
+                    continue
+
                 def_resolved, was_resolved = self._get_resolved_submodel(model_name=ref_model_name)
+
                 if not def_resolved:
                     return
                 # if the ref was already resolved, we copy the result to not alter the already resolved schema
@@ -257,15 +271,17 @@ class ModelResolver:
 
                 self._remove_self_ref(def_resolved)
 
-                if "$defs" in def_resolved:
+                if "$deps" in def_resolved:
+                    # this will happen only if the schema was already resolved, otherwise the deps would be in _deps
                     # remove own definition in case of recursive / circular Models
                     def_resolved["$defs"].pop(self.model_name, None)
                     # remove the $defs from the schema, we don't want nested $defs
                     def_resolved_defs = def_resolved.pop("$defs")
                     # merge the resolved sub model $defs to the main schema
-                    resolved_model["$defs"].update(def_resolved_defs)
+                    self._deps.update(def_resolved_defs)
 
-                resolved_model["$defs"][ref_model_name] = def_resolved
+                # add the dependencies to the global $deps
+                self._deps[ref_model_name] = def_resolved
 
         return resolved_model
 
@@ -282,13 +298,15 @@ class ModelResolver:
     def get_resolved_model(self) -> dict | None:
         if not (resolved_model := self.rest_api_container.resolved_models.get(self.model_name)):
             model = self.rest_api_container.models.get(self.model_name)
-            print(model)
             if not model:
                 return None
             schema = json.loads(model["schema"])
             resolved_model = self.resolve_model(schema)
             if not resolved_model:
                 return None
+            # attach the resolved dependencies of the schema
+            if self._deps:
+                resolved_model["$defs"] = self._deps
             self.rest_api_container.resolved_models[self.model_name] = resolved_model
 
         return resolved_model
@@ -305,7 +323,9 @@ class ModelResolver:
                 )
                 return None, was_resolved
             schema = json.loads(model["schema"])
-            resolved_model = self.resolve_model(schema)
+
+            with self._resolving_ctx(model_name):
+                resolved_model = self.resolve_model(schema)
 
         return resolved_model, was_resolved
 

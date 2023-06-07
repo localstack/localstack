@@ -101,7 +101,6 @@ class RequestValidator:
 
         # try to get the resolved model first
         resolved_schema = model_resolver.get_resolved_model()
-        # print(resolved_model)
         if not resolved_schema:
             LOG.exception(
                 "An exception occurred while trying to validate the request: could not find the model"
