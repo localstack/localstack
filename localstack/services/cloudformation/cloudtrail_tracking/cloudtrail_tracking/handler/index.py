@@ -10,6 +10,10 @@ LOCALSTACK_HOST = os.getenv("LOCALSTACK_HOSTNAME")
 
 
 class Encoder(json.JSONEncoder):
+    """
+    Custom JSON encoder to handle datetimes
+    """
+
     def default(self, o: Any) -> Any:
         if isinstance(o, datetime):
             return o.isoformat()
