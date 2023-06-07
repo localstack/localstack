@@ -21,11 +21,17 @@ def test_cloudtrail_trace_example(
                 },
             },
             "Outputs": {
-                "TopicArn": {"Value": "!GetAtt MyTopic.TopicArn"},
+                "TopicArn": {
+                    "Value": {
+                        "Fn::GetAtt": ["MyTopic", "TopicArn"],
+                    }
+                }
             },
         }
     )
 
     stack = deploy_cfn_template(template=template, role_arn=cfn_store_events_role_arn)
 
+    # perform normal test assertions here
+    # no exception means the test succeeded
     aws_client.sns.get_topic_attributes(TopicArn=stack.outputs["TopicArn"])
