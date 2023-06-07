@@ -13,11 +13,6 @@ class CloudWatchAlarm(GenericBaseModel):
             return self.props.get("AlarmArn")
         return super(CloudWatchAlarm, self).get_cfn_attribute(attribute_name)
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        if attribute == "Arn":
-            return self.props.get("AlarmArn")
-        return self.props.get("AlarmName")
-
     def _response_name(self):
         return "MetricAlarms"
 
@@ -41,11 +36,15 @@ class CloudWatchAlarm(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
+        def _handle_result(result, resource_id, resources, resource_type):
+            resource = resources[resource_id]
+            resources[resource_id]["PhysicalResourceId"] = resource["Properties"]["AlarmName"]
+
         def get_delete_params(params, **kwargs):
             return {"AlarmNames": [params["AlarmName"]]}
 
         return {
-            "create": {"function": cls._create_function_name()},
+            "create": {"function": cls._create_function_name(), "result_handler": _handle_result},
             "delete": {"function": "delete_alarms", "parameters": get_delete_params},
         }
 
