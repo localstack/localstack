@@ -9,8 +9,8 @@ import pytest
 from localstack import config
 from localstack.constants import APPLICATION_JSON, DEFAULT_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.apigateway.helpers import (
+    OpenAPISpecificationResolver,
     RequestParametersResolver,
-    Resolver,
     apply_json_patch_safe,
     create_invocation_headers,
     extract_path_params,
@@ -451,14 +451,14 @@ def test_openapi_resolver_given_unresolvable_references():
         "schema": {"$ref": "#/definitions/NotFound"},
         "definitions": {"Found": {"type": "string"}},
     }
-    resolver = Resolver(document, allow_recursive=True, rest_api_id="123")
+    resolver = OpenAPISpecificationResolver(document, allow_recursive=True, rest_api_id="123")
     result = resolver.resolve_references()
     assert result == {"schema": None, "definitions": {"Found": {"type": "string"}}}
 
 
 def test_openapi_resolver_given_invalid_references():
     document = {"schema": {"$ref": ""}, "definitions": {"Found": {"type": "string"}}}
-    resolver = Resolver(document, allow_recursive=True, rest_api_id="123")
+    resolver = OpenAPISpecificationResolver(document, allow_recursive=True, rest_api_id="123")
     result = resolver.resolve_references()
     assert result == {"schema": None, "definitions": {"Found": {"type": "string"}}}
 
@@ -469,7 +469,7 @@ def test_openapi_resolver_given_schema_list_references():
         "schema": {"$ref": "#/definitions/Found"},
         "definitions": {"Found": {"value": ["v1", "v2"]}},
     }
-    resolver = Resolver(document, allow_recursive=True, rest_api_id="123")
+    resolver = OpenAPISpecificationResolver(document, allow_recursive=True, rest_api_id="123")
     result = resolver.resolve_references()
     assert result == document
 
@@ -479,7 +479,7 @@ def test_openapi_resolver_given_list_references():
         "responses": {"$ref": "#/definitions/ResponsePost"},
         "definitions": {"ResponsePost": {"value": ["v1", "v2"]}},
     }
-    resolver = Resolver(document, allow_recursive=True, rest_api_id="123")
+    resolver = OpenAPISpecificationResolver(document, allow_recursive=True, rest_api_id="123")
     result = resolver.resolve_references()
     assert result == {
         "responses": {"value": ["v1", "v2"]},

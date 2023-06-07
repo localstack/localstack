@@ -118,7 +118,7 @@ def get_apigateway_store(account_id: str = None, region: str = None) -> ApiGatew
     return apigateway_stores[account_id or get_aws_account_id()][region or aws_stack.get_region()]
 
 
-class Resolver:
+class OpenAPISpecificationResolver:
     def __init__(self, document: dict, rest_api_id: str, allow_recursive=True):
         self.document = document
         self.allow_recursive = allow_recursive
@@ -400,7 +400,9 @@ class RequestParametersResolver:
 
 
 def resolve_references(data: dict, rest_api_id, allow_recursive=True) -> dict:
-    resolver = Resolver(data, allow_recursive=allow_recursive, rest_api_id=rest_api_id)
+    resolver = OpenAPISpecificationResolver(
+        data, allow_recursive=allow_recursive, rest_api_id=rest_api_id
+    )
     return resolver.resolve_references()
 
 
