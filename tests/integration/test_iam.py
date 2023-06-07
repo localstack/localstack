@@ -123,6 +123,28 @@ class TestIAMExtensions:
         get_user_reply = aws_client.iam.get_user(UserName=user_name)
         assert "PermissionsBoundary" not in get_user_reply["User"]
 
+    @pytest.mark.aws_validated
+    def test_create_role_with_malformed_assume_role_policy_document(self, aws_client, snapshot):
+        role_name = f"role-{short_uid()}"
+        # The error in this document is the trailing comma after `"Effect": "Allow"`
+        assume_role_policy_document = """
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Principal": "*",
+              "Effect": "Allow",
+            }
+          ]
+        }
+        """
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_role(
+                RoleName=role_name, AssumeRolePolicyDocument=assume_role_policy_document
+            )
+        snapshot.match("invalid-json", e.value.response)
+
 
 class TestIAMIntegrations:
     def test_attach_iam_role_to_new_iam_user(self, aws_client):
