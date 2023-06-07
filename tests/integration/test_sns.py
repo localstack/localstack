@@ -273,14 +273,10 @@ class TestSNSProvider:
         )
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
-        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
-        subscription_arn = subscription["SubscriptionArn"]
-
-        aws_client.sns.set_subscription_attributes(
-            SubscriptionArn=subscription_arn,
-            AttributeName="RawMessageDelivery",
-            AttributeValue="true",
+        subscription = sns_create_sqs_subscription(
+            topic_arn=topic_arn, queue_url=queue_url, Attributes={"RawMessageDelivery": "true"}
         )
+        subscription_arn = subscription["SubscriptionArn"]
 
         response_attributes = aws_client.sns.get_subscription_attributes(
             SubscriptionArn=subscription_arn
