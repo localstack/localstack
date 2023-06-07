@@ -177,7 +177,9 @@ def validate_api_key(api_key: str, invocation_context: ApiInvocationContext):
 
 def is_api_key_valid(invocation_context: ApiInvocationContext) -> bool:
     # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-api-key-source.html
-    client = aws_stack.connect_to_service("apigateway")
+    client = connect_to(
+        aws_access_key_id=invocation_context.account_id, region_name=invocation_context.region_name
+    ).apigateway
     rest_api = client.get_rest_api(restApiId=invocation_context.api_id)
 
     if rest_api.get("apiKeySource") != "HEADER":

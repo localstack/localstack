@@ -3937,5 +3937,237 @@
         }
       }
     }
+  },
+  "tests/integration/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_global_api_key_authorizer": {
+    "recorded-date": "06-06-2023, 00:26:37",
+    "recorded-content": {
+      "import-swagger": {
+        "apiKeySource": "AUTHORIZER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "version": "2020-02-10",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-authorizers": {
+        "items": [
+          {
+            "authType": "custom",
+            "authorizerResultTtlInSeconds": 300,
+            "authorizerUri": "<authorizer-uri:1>",
+            "id": "<id:2>",
+            "identitySource": "method.request.header.Custom-Authorization",
+            "name": "<name:2>",
+            "type": "REQUEST"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resources": {
+        "items": [
+          {
+            "id": "<id:3>",
+            "path": "/"
+          },
+          {
+            "id": "<id:4>",
+            "parentId": "<id:3>",
+            "path": "/echo",
+            "pathPart": "echo"
+          },
+          {
+            "id": "<id:5>",
+            "parentId": "<id:4>",
+            "path": "/echo/{data}",
+            "pathPart": "{data}",
+            "resourceMethods": {
+              "ANY": {}
+            }
+          },
+          {
+            "id": "<id:6>",
+            "parentId": "<id:3>",
+            "path": "/pets",
+            "pathPart": "pets",
+            "resourceMethods": {
+              "GET": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-echo/{data}-any": {
+        "apiKeyRequired": false,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<id:2>",
+        "httpMethod": "ANY",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:5>",
+          "integrationResponses": {
+            "200": {
+              "responseTemplates": {
+                "application/json": {
+                  "echo": "$input.params('data')",
+                  "response": "mocked"
+                }
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_TEMPLATES",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "statusCode": "200"
+          }
+        },
+        "requestParameters": {
+          "method.request.path.data": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-echo/{data}-any": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-echo/{data}-any": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:5>",
+        "integrationResponses": {
+          "200": {
+            "responseTemplates": {
+              "application/json": {
+                "echo": "$input.params('data')",
+                "response": "mocked"
+              }
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_TEMPLATES",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-echo/{data}-any": {
+        "responseTemplates": {
+          "application/json": {
+            "echo": "$input.params('data')",
+            "response": "mocked"
+          }
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-pets-get": {
+        "apiKeyRequired": false,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<id:2>",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:6>",
+          "connectionType": "INTERNET",
+          "httpMethod": "GET",
+          "integrationResponses": {
+            "200": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "HTTP",
+          "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets"
+        },
+        "methodResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-pets-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-pets-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:6>",
+        "connectionType": "INTERNET",
+        "httpMethod": "GET",
+        "integrationResponses": {
+          "200": {
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-pets-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

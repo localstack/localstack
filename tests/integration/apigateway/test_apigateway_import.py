@@ -34,6 +34,9 @@ TEST_OAS30_BASE_PATH_SERVER_URL_FILE_YAML = os.path.join(
     PARENT_DIR, "files", "openapi-basepath-url.yaml"
 )
 TEST_IMPORT_REST_API_FILE = os.path.join(PARENT_DIR, "files", "pets.json")
+TEST_IMPORT_OPEN_API_GLOBAL_API_KEY_AUTHORIZER = os.path.join(
+    PARENT_DIR, "files", "openapi.spec.global-auth.json"
+)
 
 
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "awslambda/functions/lambda_echo.py")
@@ -560,3 +563,43 @@ class TestApiGatewayImportRestApi:
 
         url = api_invoke_url(rest_api_id, stage=stage_name, path=resource_path)
         retry(assert_request_ok, retries=10, sleep=2, request_url=url)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$.resources.items..resourceMethods.GET",  # AWS does not show them after import
+            "$.resources.items..resourceMethods.ANY",
+        ]
+    )
+    def test_import_with_global_api_key_authorizer(
+        self,
+        import_apigw,
+        aws_client,
+        snapshot,
+        apigateway_placeholder_authorizer_lambda_invocation_arn,
+        apigw_snapshot_imported_resources,
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("authorizerUri"))
+
+        spec_file = load_file(TEST_IMPORT_OPEN_API_GLOBAL_API_KEY_AUTHORIZER)
+        spec_file = spec_file.replace(
+            "${authorizer_lambda_invocation_arn}",
+            apigateway_placeholder_authorizer_lambda_invocation_arn,
+        )
+
+        response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
+
+        snapshot.match("import-swagger", response)
+
+        rest_api_id = response["id"]
+
+        authorizers = aws_client.apigateway.get_authorizers(restApiId=rest_api_id)
+        snapshot.match("get-authorizers", authorizers)
+
+        response = aws_client.apigateway.get_resources(restApiId=rest_api_id)
+        response["items"] = sorted(response["items"], key=itemgetter("path"))
+        snapshot.match("resources", response)
+
+        # this fixture will iterate over every resource and match its method, methodResponse, integration and
+        # integrationResponse
+        apigw_snapshot_imported_resources(rest_api_id=rest_api_id, resources=response)
