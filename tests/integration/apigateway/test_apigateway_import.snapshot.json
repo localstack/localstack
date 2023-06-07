@@ -25,7 +25,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_swagger_api": {
-    "recorded-date": "03-06-2023, 13:22:31",
+    "recorded-date": "07-06-2023, 03:24:26",
     "recorded-content": {
       "import-swagger": {
         "apiKeySource": "HEADER",
@@ -79,15 +79,15 @@
             "id": "<model-id:2>",
             "name": "NewPet",
             "schema": {
+              "type": "object",
               "properties": {
+                "type": {
+                  "$ref": "<model-base-url>/restapis/<rest-id:1>/models/PetType"
+                },
                 "price": {
                   "type": "number"
-                },
-                "type": {
-                  "ref": "https://apigateway.amazonaws.com/restapis/<rest-id:1>/models/PetType"
                 }
-              },
-              "type": "object"
+              }
             }
           },
           {
@@ -95,15 +95,15 @@
             "id": "<model-id:3>",
             "name": "NewPetResponse",
             "schema": {
+              "type": "object",
               "properties": {
+                "pet": {
+                  "$ref": "<model-base-url>/restapis/<rest-id:1>/models/Pet"
+                },
                 "message": {
                   "type": "string"
-                },
-                "pet": {
-                  "ref": "https://apigateway.amazonaws.com/restapis/<rest-id:1>/models/Pet"
                 }
-              },
-              "type": "object"
+              }
             }
           },
           {
@@ -111,18 +111,18 @@
             "id": "<model-id:4>",
             "name": "Pet",
             "schema": {
+              "type": "object",
               "properties": {
                 "petid": {
                   "type": "integer"
                 },
-                "price": {
-                  "type": "number"
-                },
                 "type": {
                   "type": "string"
+                },
+                "price": {
+                  "type": "number"
                 }
-              },
-              "type": "object"
+              }
             }
           },
           {
@@ -130,14 +130,14 @@
             "id": "<model-id:5>",
             "name": "PetType",
             "schema": {
+              "type": "string",
               "enum": [
                 "dog",
                 "cat",
                 "fish",
                 "bird",
                 "gecko"
-              ],
-              "type": "string"
+              ]
             }
           },
           {
@@ -145,10 +145,10 @@
             "id": "<model-id:6>",
             "name": "Pets",
             "schema": {
+              "type": "array",
               "items": {
-                "ref": "https://apigateway.amazonaws.com/restapis/<rest-id:1>/models/Pet"
-              },
-              "type": "array"
+                "$ref": "<model-base-url>/restapis/<rest-id:1>/models/Pet"
+              }
             }
           }
         ],
@@ -3939,7 +3939,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_global_api_key_authorizer": {
-    "recorded-date": "06-06-2023, 00:26:37",
+    "recorded-date": "07-06-2023, 03:16:37",
     "recorded-content": {
       "import-swagger": {
         "apiKeySource": "AUTHORIZER",
@@ -3952,7 +3952,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
-        "version": "2020-02-10",
+        "version": "1.0",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -4162,6 +4162,413 @@
         }
       },
       "integration-response-pets-get": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_circular_models": {
+    "recorded-date": "07-06-2023, 02:26:07",
+    "recorded-content": {
+      "import-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<rest-id:1>",
+        "name": "Circular model reference",
+        "version": "1.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-models": {
+        "items": [
+          {
+            "contentType": "application/json",
+            "id": "<model-id:1>",
+            "name": "Empty",
+            "schema": {
+              "title": "Empty Schema",
+              "type": "object"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "description": "Where a Person can live",
+            "id": "<model-id:2>",
+            "name": "House",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "randomProperty": {
+                  "type": "string",
+                  "description": "Random property",
+                  "format": "byte"
+                },
+                "contains": {
+                  "minItems": 1,
+                  "type": "array",
+                  "description": "The information of who is living in the house",
+                  "items": {
+                    "$ref": "<model-base-url>/restapis/<rest-id:1>/models/Person"
+                  }
+                }
+              },
+              "description": "Where a Person can live"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "description": "Random person schema.",
+            "id": "<model-id:3>",
+            "name": "Person",
+            "schema": {
+              "required": [
+                "b",
+                "name"
+              ],
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Random property"
+                },
+                "b": {
+                  "type": "number"
+                },
+                "house": {
+                  "$ref": "<model-base-url>/restapis/<rest-id:1>/models/House"
+                }
+              },
+              "description": "Random person schema."
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resources": {
+        "items": [
+          {
+            "id": "<resource-id:1>",
+            "path": "/"
+          },
+          {
+            "id": "<resource-id:2>",
+            "parentId": "<resource-id:1>",
+            "path": "/person",
+            "pathPart": "person",
+            "resourceMethods": {
+              "POST": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-person-post": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "POST",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:2>",
+          "integrationResponses": {
+            "200": {
+              "responseTemplates": {
+                "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_TEMPLATES",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "statusCode": "200"
+          }
+        },
+        "operationName": "CreatePerson",
+        "requestModels": {
+          "application/json": "Person"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-person-post": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-person-post": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:2>",
+        "integrationResponses": {
+          "200": {
+            "responseTemplates": {
+              "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_TEMPLATES",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-person-post": {
+        "responseTemplates": {
+          "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_circular_models_and_request_validation": {
+    "recorded-date": "07-06-2023, 02:25:28",
+    "recorded-content": {
+      "import-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<rest-id:1>",
+        "name": "Circular model reference",
+        "version": "1.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-models": {
+        "items": [
+          {
+            "contentType": "application/json",
+            "id": "<model-id:1>",
+            "name": "Empty",
+            "schema": {
+              "title": "Empty Schema",
+              "type": "object"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "description": "Where a Person can live",
+            "id": "<model-id:2>",
+            "name": "House",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "randomProperty": {
+                  "type": "string",
+                  "description": "Random property",
+                  "format": "byte"
+                },
+                "contains": {
+                  "minItems": 1,
+                  "type": "array",
+                  "description": "The information of who is living in the house",
+                  "items": {
+                    "$ref": "<model-base-url>/restapis/<rest-id:1>/models/Person"
+                  }
+                }
+              },
+              "description": "Where a Person can live"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "description": "Random person schema.",
+            "id": "<model-id:3>",
+            "name": "Person",
+            "schema": {
+              "required": [
+                "b",
+                "name"
+              ],
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Random property"
+                },
+                "b": {
+                  "type": "number"
+                },
+                "house": {
+                  "$ref": "<model-base-url>/restapis/<rest-id:1>/models/House"
+                }
+              },
+              "description": "Random person schema."
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "request-validators": {
+        "items": [
+          {
+            "id": "<request-validator-id:1>",
+            "name": "basic",
+            "validateRequestBody": true,
+            "validateRequestParameters": true
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resources": {
+        "items": [
+          {
+            "id": "<resource-id:1>",
+            "path": "/"
+          },
+          {
+            "id": "<resource-id:2>",
+            "parentId": "<resource-id:1>",
+            "path": "/person",
+            "pathPart": "person",
+            "resourceMethods": {
+              "POST": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-person-post": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "POST",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<resource-id:2>",
+          "integrationResponses": {
+            "200": {
+              "responseTemplates": {
+                "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_TEMPLATES",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "statusCode": "200"
+          }
+        },
+        "operationName": "CreatePerson",
+        "requestModels": {
+          "application/json": "Person"
+        },
+        "requestValidatorId": "<request-validator-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-person-post": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-person-post": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<resource-id:2>",
+        "integrationResponses": {
+          "200": {
+            "responseTemplates": {
+              "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_TEMPLATES",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-person-post": {
+        "responseTemplates": {
+          "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
+        },
         "statusCode": "200",
         "ResponseMetadata": {
           "HTTPHeaders": {},

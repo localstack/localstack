@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import time
@@ -8,14 +7,17 @@ import pytest
 import requests
 from botocore.exceptions import ClientError
 
+from localstack import config
 from localstack.aws.api.apigateway import Resources
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.aws import arns
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
+from localstack.utils.urls import localstack_host
 from tests.integration.apigateway.apigateway_fixtures import api_invoke_url
 
 LOG = logging.getLogger(__name__)
@@ -37,7 +39,10 @@ TEST_IMPORT_REST_API_FILE = os.path.join(PARENT_DIR, "files", "pets.json")
 TEST_IMPORT_OPEN_API_GLOBAL_API_KEY_AUTHORIZER = os.path.join(
     PARENT_DIR, "files", "openapi.spec.global-auth.json"
 )
-
+OAS_30_CIRCULAR_REF = os.path.join(PARENT_DIR, "files", "openapi.spec.circular-ref.json")
+OAS_30_CIRCULAR_REF_WITH_REQUEST_BODY = os.path.join(
+    PARENT_DIR, "files", "openapi.spec.circular-ref-with-request-body.json"
+)
 
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "awslambda/functions/lambda_echo.py")
 
@@ -113,8 +118,17 @@ def apigw_snapshot_imported_resources(snapshot, aws_client):
 
 @pytest.fixture(autouse=True)
 def apigw_snapshot_transformer(request, snapshot):
+    if is_aws_cloud():
+        model_base_url = "https://apigateway.amazonaws.com"
+    else:
+        host_definition = localstack_host(use_localhost_cloud=True)
+        model_base_url = f"{config.get_protocol()}://apigateway.{host_definition.host_and_port()}"
+
+    snapshot.add_transformer(snapshot.transform.regex(model_base_url, "<model-base-url>"))
+
     if "no_apigw_snap_transformers" in request.keywords:
         return
+
     snapshot.add_transformer(snapshot.transform.apigateway_api())
 
 
@@ -251,15 +265,6 @@ class TestApiGatewayImportRestApi:
             "$.resources.items..resourceMethods.GET",  # TODO: this is really weird, after importing, AWS returns them empty?
             "$.resources.items..resourceMethods.OPTIONS",
             "$.resources.items..resourceMethods.POST",
-            "$.get-models.items..schema.items.ref",  # this seems to be a problem on AWS side to resolve model $ref?
-            "$.get-models.items..schema.items.properties",  # same as above
-            "$.get-models.items..schema.items.type",  # same as above
-            "$.get-models.items..schema.properties.pet.ref",  # same as above
-            "$.get-models.items..schema.properties.pet.properties",  # same as above
-            "$.get-models.items..schema.properties.pet.type",  # same as above
-            "$.get-models.items..schema.properties.type.ref",  # same as above
-            "$.get-models.items..schema.properties.type.enum",  # same as above
-            "$.get-models.items..schema.properties.type.type",  # same as above
         ]
     )
     def test_import_swagger_api(
@@ -286,7 +291,6 @@ class TestApiGatewayImportRestApi:
                 snapshot.transform.jsonpath("$.get-models.items..id", value_replacement="model-id"),
             ]
         )
-
         spec_file = load_file(PETSTORE_SWAGGER_JSON)
         spec_file = spec_file.replace(
             "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:account-id:function:function-name/invocations",
@@ -307,19 +311,6 @@ class TestApiGatewayImportRestApi:
 
         models = aws_client.apigateway.get_models(restApiId=rest_api_id)
         models["items"] = sorted(models["items"], key=itemgetter("name"))
-        # FIXME: AWS is returning field with $ref which makes JSON path selecting difficult
-        # we're renaming those, but this is very dirty
-        for model in models["items"]:
-            schema = model.get("schema", {})
-            assert isinstance(schema, str)
-            schema = json.loads(schema)
-            if "$ref" in schema.get("items", {}):
-                schema["items"]["ref"] = schema["items"].pop("$ref")
-            elif properties := schema.get("properties", {}):
-                for prop in ("pet", "type"):
-                    if "$ref" in properties.get(prop, {}):
-                        properties[prop]["ref"] = properties[prop].pop("$ref")
-            model["schema"] = schema
 
         snapshot.match("get-models", models)
 
@@ -603,3 +594,131 @@ class TestApiGatewayImportRestApi:
         # this fixture will iterate over every resource and match its method, methodResponse, integration and
         # integrationResponse
         apigw_snapshot_imported_resources(rest_api_id=rest_api_id, resources=response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.no_apigw_snap_transformers  # not using the API Gateway default transformers
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$.resources.items..resourceMethods.POST",  # TODO: this is really weird, after importing, AWS returns them empty?
+        ]
+    )
+    def test_import_with_circular_models(
+        self, import_apigw, apigw_snapshot_imported_resources, aws_client, snapshot
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.jsonpath("$.import-api.id", value_replacement="rest-id"),
+                snapshot.transform.jsonpath(
+                    "$.resources.items..id", value_replacement="resource-id"
+                ),
+                snapshot.transform.jsonpath("$.get-models.items..id", value_replacement="model-id"),
+                SortingTransformer("required"),
+            ]
+        )
+        spec_file = load_file(OAS_30_CIRCULAR_REF)
+
+        response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
+
+        snapshot.match("import-api", response)
+        rest_api_id = response["id"]
+
+        models = aws_client.apigateway.get_models(restApiId=rest_api_id)
+        models["items"] = sorted(models["items"], key=itemgetter("name"))
+
+        snapshot.match("get-models", models)
+
+        response = aws_client.apigateway.get_resources(restApiId=rest_api_id)
+        response["items"] = sorted(response["items"], key=itemgetter("path"))
+        snapshot.match("resources", response)
+
+        # this fixture will iterate over every resource and match its method, methodResponse, integration and
+        # integrationResponse
+        apigw_snapshot_imported_resources(rest_api_id=rest_api_id, resources=response)
+
+    @pytest.mark.no_apigw_snap_transformers  # not using the API Gateway default transformers
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$.resources.items..resourceMethods.POST",
+            # TODO: this is really weird, after importing, AWS returns them empty?
+        ]
+    )
+    def test_import_with_circular_models_and_request_validation(
+        self, import_apigw, apigw_snapshot_imported_resources, aws_client, snapshot
+    ):
+        # manually add all transformers, as the default will mess up Model names and such
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.jsonpath("$.import-api.id", value_replacement="rest-id"),
+                snapshot.transform.jsonpath(
+                    "$.resources.items..id", value_replacement="resource-id"
+                ),
+                snapshot.transform.jsonpath("$.get-models.items..id", value_replacement="model-id"),
+                snapshot.transform.jsonpath(
+                    "$.request-validators.items..id", value_replacement="request-validator-id"
+                ),
+                SortingTransformer("required"),
+            ]
+        )
+        spec_file = load_file(OAS_30_CIRCULAR_REF_WITH_REQUEST_BODY)
+
+        response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
+
+        snapshot.match("import-api", response)
+        rest_api_id = response["id"]
+
+        models = aws_client.apigateway.get_models(restApiId=rest_api_id)
+        models["items"] = sorted(models["items"], key=itemgetter("name"))
+
+        snapshot.match("get-models", models)
+
+        response = aws_client.apigateway.get_request_validators(restApiId=rest_api_id)
+        snapshot.match("request-validators", response)
+
+        response = aws_client.apigateway.get_resources(restApiId=rest_api_id)
+        response["items"] = sorted(response["items"], key=itemgetter("path"))
+        snapshot.match("resources", response)
+
+        # this fixture will iterate over every resource and match its method, methodResponse, integration and
+        # integrationResponse
+        apigw_snapshot_imported_resources(rest_api_id=rest_api_id, resources=response)
+
+        stage_name = "dev"
+        aws_client.apigateway.create_deployment(restApiId=rest_api_id, stageName=stage_name)
+
+        url = api_invoke_url(api_id=rest_api_id, stage=stage_name, path="/person")
+
+        request_data = {
+            "name": "Person1",
+            "b": 2,
+            "house": {
+                "randomProperty": "this is random",
+                "contains": [{"name": "Person2", "b": 3}],
+            },
+        }
+        if is_aws_cloud():
+            time.sleep(5)
+
+        request = requests.post(url, json=request_data)
+        assert request.ok
+        # we cannot make the body passthrough, because MOCK integrations don't allow to pass the body from the
+        # request to the response: https://stackoverflow.com/a/47945574/6998584
+        # the MOCK integration requestTemplate returns {"statusCode": 200}, but AWS does not pass it to $input.json('$')
+        # TODO: get parity with the MOCK integration
+
+        wrong_request = {"random": "blabla"}
+
+        request = requests.post(url, json=wrong_request)
+        assert request.status_code == 400
+        assert request.json().get("message") == "Invalid request body"
+
+        wrong_request_schema = {
+            "name": "Person1",
+            "b": 2,
+            "house": {
+                "randomProperty": "this is random, but I follow House schema except for contains",
+                "contains": [{"randomObject": "I am not following Person schema"}],
+            },
+        }
+        request = requests.post(url, json=wrong_request_schema)
+        assert request.status_code == 400
+        assert request.json().get("message") == "Invalid request body"

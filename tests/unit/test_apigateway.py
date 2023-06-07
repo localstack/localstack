@@ -1,17 +1,18 @@
 import json
 import unittest
 from typing import Any, Dict
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import boto3
 import pytest
-from botocore.exceptions import ClientError
 
 from localstack import config
-from localstack.constants import APPLICATION_JSON
+from localstack.aws.api.apigateway import Model
+from localstack.constants import APPLICATION_JSON, DEFAULT_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.apigateway.helpers import (
+    ModelResolver,
+    OpenAPISpecificationResolver,
     RequestParametersResolver,
-    Resolver,
     apply_json_patch_safe,
     create_invocation_headers,
     extract_path_params,
@@ -23,6 +24,7 @@ from localstack.services.apigateway.integration import (
     apply_request_parameters,
 )
 from localstack.services.apigateway.invocations import ApiInvocationContext, RequestValidator
+from localstack.services.apigateway.models import ApiGatewayStore, RestApiContainer
 from localstack.services.apigateway.templates import (
     RequestTemplates,
     ResponseTemplates,
@@ -121,43 +123,84 @@ class ApiGatewayPathsTest(unittest.TestCase):
         self.assertEqual("https://httpbin.org/anything/foo/bar/baz?param=foobar", uri)
 
     def test_if_request_is_valid_with_no_resource_methods(self):
-        ctx = ApiInvocationContext("POST", "/", b"", {})
-        validator = RequestValidator(ctx, None)
+        ctx = ApiInvocationContext(
+            method="POST",
+            path="/",
+            data=b"",
+            headers={},
+        )
+        ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
+        ctx.region_name = TEST_AWS_REGION_NAME
+        validator = RequestValidator(ctx, Mock())
         self.assertTrue(validator.is_request_valid())
 
     def test_if_request_is_valid_with_no_matching_method(self):
-        ctx = ApiInvocationContext("POST", "/", b"", {})
+        ctx = ApiInvocationContext(
+            method="POST",
+            path="/",
+            data=b"",
+            headers={},
+        )
         ctx.resource = {"resourceMethods": {"GET": {}}}
-        validator = RequestValidator(ctx, None)
+        ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
+        ctx.region_name = TEST_AWS_REGION_NAME
+        validator = RequestValidator(ctx, Mock())
         self.assertTrue(validator.is_request_valid())
 
     def test_if_request_is_valid_with_no_validator(self):
-        ctx = ApiInvocationContext("POST", "/", b"", {})
+        ctx = ApiInvocationContext(
+            method="POST",
+            path="/",
+            data=b"",
+            headers={},
+        )
+        ctx.resource = {"resourceMethods": {"GET": {}}}
+        ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
+        ctx.region_name = TEST_AWS_REGION_NAME
         ctx.api_id = "deadbeef"
         ctx.resource = {"resourceMethods": {"POST": {"requestValidatorId": " "}}}
-        validator = RequestValidator(ctx, None)
+        validator = RequestValidator(ctx, Mock())
         self.assertTrue(validator.is_request_valid())
 
     def test_if_request_has_body_validator(self):
-        apigateway_client = self._mock_client()
-        apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
-        apigateway_client.get_model.return_value = {"schema": '{"type": "object"}'}
-        ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
+        ctx = ApiInvocationContext(
+            method="POST",
+            path="/",
+            data=b"",
+            headers={},
+        )
+        ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
+        ctx.region_name = TEST_AWS_REGION_NAME
         ctx.api_id = "deadbeef"
+        model_name = "schemaName"
+        request_validator_id = "112233"
         ctx.resource = {
             "resourceMethods": {
                 "POST": {
-                    "requestValidatorId": "112233",
-                    "requestModels": {"application/json": "schemaName"},
+                    "requestValidatorId": model_name,
+                    "requestModels": {"application/json": request_validator_id},
                 }
             }
         }
-        validator = RequestValidator(ctx, apigateway_client)
+        store = self._mock_store()
+        container = RestApiContainer(rest_api={})
+        container.validators[request_validator_id] = {"validateRequestBody": True}
+        container.models[model_name] = {"schema": '{"type": "object"}'}
+        store.rest_apis["deadbeef"] = container
+        validator = RequestValidator(ctx, store)
         self.assertTrue(validator.is_request_valid())
 
     def test_request_validate_body_with_no_request_model(self):
-        apigateway_client = self._mock_client()
-        apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
+        ctx = ApiInvocationContext(
+            method="POST",
+            path="/",
+            data=b"",
+            headers={},
+        )
+        ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
+        ctx.region_name = TEST_AWS_REGION_NAME
+        ctx.api_id = "deadbeef"
+        request_validator_id = "112233"
         empty_schema = json.dumps(
             {
                 "$schema": "http://json-schema.org/draft-04/schema#",
@@ -165,46 +208,176 @@ class ApiGatewayPathsTest(unittest.TestCase):
                 "type": "object",
             }
         )
-        apigateway_client.get_model.return_value = {"schema": empty_schema}
-        ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
-        ctx.api_id = "deadbeef"
+
         ctx.resource = {
             "resourceMethods": {
                 "POST": {
-                    "requestValidatorId": "112233",
+                    "requestValidatorId": request_validator_id,
                     "requestModels": None,
                 }
             }
         }
-        validator = RequestValidator(ctx, apigateway_client)
+        store = self._mock_store()
+        container = RestApiContainer(rest_api={})
+        container.validators = MagicMock()
+        container.validators.get.return_value = {"validateRequestBody": True}
+        container.models = MagicMock()
+        container.models.get.return_value = {"schema": empty_schema}
+        store.rest_apis["deadbeef"] = container
+        validator = RequestValidator(ctx, store)
         self.assertTrue(validator.is_request_valid())
-        apigateway_client.get_request_validator.assert_called_with(
-            restApiId="deadbeef", requestValidatorId="112233"
-        )
-        apigateway_client.get_model.assert_called_with(restApiId="deadbeef", modelName="Empty")
+
+        container.validators.get.assert_called_with("112233")
+        container.models.get.assert_called_with("Empty")
 
     def test_request_validate_body_with_no_model_for_schema_name(self):
-        apigateway_client = self._mock_client()
-        apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
-        apigateway_client.get_model.side_effect = ClientError(
-            error_response={"Error": {"Code": "NotFoundException", "Message": ""}},
-            operation_name="GetModel",
+        ctx = ApiInvocationContext(
+            method="POST",
+            path="/",
+            data='{"id":"1"}',
+            headers={},
         )
-        ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
+        ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
+        ctx.region_name = TEST_AWS_REGION_NAME
         ctx.api_id = "deadbeef"
+        model_name = "schemaName"
+        request_validator_id = "112233"
         ctx.resource = {
             "resourceMethods": {
                 "POST": {
-                    "requestValidatorId": "112233",
-                    "requestModels": {"application/json": "schemaName"},
+                    "requestValidatorId": model_name,
+                    "requestModels": {"application/json": request_validator_id},
                 }
             }
         }
-        validator = RequestValidator(ctx, apigateway_client)
+        store = self._mock_store()
+        container = RestApiContainer(rest_api={})
+        container.validators = MagicMock()
+        container.validators.get.return_value = {"validateRequestBody": True}
+        container.models = MagicMock()
+        container.models.get.return_value = None
+        store.rest_apis["deadbeef"] = container
+        validator = RequestValidator(ctx, store)
         self.assertFalse(validator.is_request_valid())
+
+    def test_request_validate_body_with_circular_and_recursive_model(self):
+        def _create_context_with_data(body_data: dict):
+            ctx = ApiInvocationContext(
+                method="POST",
+                path="/",
+                data=json.dumps(body_data),
+                headers={},
+            )
+            ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
+            ctx.region_name = TEST_AWS_REGION_NAME
+            ctx.api_id = "deadbeef"
+            ctx.resource = {
+                "resourceMethods": {
+                    "POST": {
+                        "requestValidatorId": request_validator_id,
+                        "requestModels": {APPLICATION_JSON: "Person"},
+                    }
+                }
+            }
+            return ctx
+
+        container = RestApiContainer(rest_api={})
+
+        request_validator_id = "112233"
+        container.validators[request_validator_id] = {"validateRequestBody": True}
+
+        # set up the model, Person, which references House
+        model_id_person = "model1"
+        model_name_person = "Person"
+        model_schema_person = {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                },
+                "house": {
+                    "$ref": "https://domain.com/restapis/deadbeef/models/House",
+                },
+            },
+            "required": ["name"],
+        }
+
+        model_person = Model(
+            id=model_id_person,
+            name=model_name_person,
+            contentType=APPLICATION_JSON,
+            schema=json.dumps(model_schema_person),
+        )
+        container.models[model_name_person] = model_person
+
+        # set up the model House, which references the Person model, we have a circular ref, and House itself
+        model_id_house = "model2"
+        model_name_house = "House"
+        model_schema_house = {
+            "type": "object",
+            "required": ["houseType"],
+            "properties": {
+                "houseType": {
+                    "type": "string",
+                },
+                "contains": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "https://domain.com/restapis/deadbeef/models/Person",
+                    },
+                },
+                "houses": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "https://domain.com/restapis/deadbeef/models/House",
+                    },
+                },
+            },
+        }
+
+        model_house = Model(
+            id=model_id_house,
+            name=model_name_house,
+            contentType=APPLICATION_JSON,
+            schema=json.dumps(model_schema_house),
+        )
+        container.models[model_name_house] = model_house
+
+        store = self._mock_store()
+        store.rest_apis["deadbeef"] = container
+
+        invocation_context = _create_context_with_data(
+            {
+                "name": "test",
+                "house": {  # the House object is missing "houseType"
+                    "contains": [{"name": "test"}],  # the Person object has the required "name"
+                    "houses": [{"coucou": "test"}],  # the House object is missing "houseType"
+                },
+            }
+        )
+
+        validator = RequestValidator(invocation_context, store)
+        self.assertFalse(validator.is_request_valid())
+
+        invocation_context = _create_context_with_data(
+            {
+                "name": "test",
+                "house": {
+                    "houseType": "random",  # the House object has the required ""houseType"
+                    "contains": [{"name": "test"}],  # the Person object has the required "name"
+                    "houses": [{"houseType": "test"}],  # the House object is missing "houseType"
+                },
+            }
+        )
+
+        validator = RequestValidator(invocation_context, store)
+        self.assertTrue(validator.is_request_valid())
 
     def _mock_client(self):
         return Mock(boto3.client("apigateway", region_name=config.AWS_REGION_US_EAST_1))
+
+    def _mock_store(self):
+        return ApiGatewayStore()
 
 
 def test_render_template_values():
@@ -393,28 +566,39 @@ def test_openapi_resolver_given_unresolvable_references():
         "schema": {"$ref": "#/definitions/NotFound"},
         "definitions": {"Found": {"type": "string"}},
     }
-    resolver = Resolver(document, allow_recursive=True)
+    resolver = OpenAPISpecificationResolver(document, allow_recursive=True, rest_api_id="123")
     result = resolver.resolve_references()
     assert result == {"schema": None, "definitions": {"Found": {"type": "string"}}}
 
 
 def test_openapi_resolver_given_invalid_references():
     document = {"schema": {"$ref": ""}, "definitions": {"Found": {"type": "string"}}}
-    resolver = Resolver(document, allow_recursive=True)
+    resolver = OpenAPISpecificationResolver(document, allow_recursive=True, rest_api_id="123")
     result = resolver.resolve_references()
     assert result == {"schema": None, "definitions": {"Found": {"type": "string"}}}
 
 
-def test_openapi_resolver_given_list_references():
+def test_openapi_resolver_given_schema_list_references():
+    # We shouldn't resolve when the $ref is targeting a schema (Model)
     document = {
         "schema": {"$ref": "#/definitions/Found"},
         "definitions": {"Found": {"value": ["v1", "v2"]}},
     }
-    resolver = Resolver(document, allow_recursive=True)
+    resolver = OpenAPISpecificationResolver(document, allow_recursive=True, rest_api_id="123")
+    result = resolver.resolve_references()
+    assert result == document
+
+
+def test_openapi_resolver_given_list_references():
+    document = {
+        "responses": {"$ref": "#/definitions/ResponsePost"},
+        "definitions": {"ResponsePost": {"value": ["v1", "v2"]}},
+    }
+    resolver = OpenAPISpecificationResolver(document, allow_recursive=True, rest_api_id="123")
     result = resolver.resolve_references()
     assert result == {
-        "schema": {"value": ["v1", "v2"]},
-        "definitions": {"Found": {"value": ["v1", "v2"]}},
+        "responses": {"value": ["v1", "v2"]},
+        "definitions": {"ResponsePost": {"value": ["v1", "v2"]}},
     }
 
 
@@ -555,3 +739,311 @@ class TestRequestParameterResolver:
             "querystring": {"baz": "test", "token": "Bearer 1234", "env": "dev"},
             "headers": {"Content-Type": "application/json", "body-header": "spam_eggs"},
         }
+
+
+class TestModelResolver:
+    def test_resolve_regular_model(self):
+        container = RestApiContainer(rest_api={})
+        # set up the model
+        model_id = "model1"
+        model_name = "Pet"
+        model_schema = {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "type": {"type": "string"},
+                "price": {"type": "number"},
+            },
+        }
+
+        model = Model(
+            id=model_id,
+            name=model_name,
+            contentType=APPLICATION_JSON,
+            schema=json.dumps(model_schema),
+        )
+
+        container.models[model_name] = model
+
+        resolver = ModelResolver(rest_api_container=container, model_name=model_name)
+
+        resolved_model = resolver.get_resolved_model()
+        # there are no $ref to resolve, the schema should identical
+        assert resolved_model == model_schema
+
+    def test_resolve_non_existent_model(self):
+        container = RestApiContainer(rest_api={})
+
+        resolver = ModelResolver(rest_api_container=container, model_name="deadbeef")
+
+        resolved_model = resolver.get_resolved_model()
+        # the Model does not exist, verify it returns None
+        assert resolved_model is None
+
+    def test_resolve_regular_model_with_nested_ref(self):
+        container = RestApiContainer(rest_api={})
+
+        # set up the model PetType
+        model_id_pet_type = "model0"
+        model_name_pet_type = "PetType"
+        model_schema_pet_type = {"type": "string", "enum": ["dog", "cat", "fish", "bird", "gecko"]}
+
+        model = Model(
+            id=model_id_pet_type,
+            name=model_name_pet_type,
+            contentType=APPLICATION_JSON,
+            schema=json.dumps(model_schema_pet_type),
+        )
+        container.models[model_name_pet_type] = model
+
+        # set up the model Pet
+        model_id_pet = "model1"
+        model_name_pet = "Pet"
+        model_schema_pet = {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "type": {"$ref": "https://domain.com/restapis/deadbeef/models/PetType"},
+                "price": {"type": "number"},
+            },
+        }
+
+        model = Model(
+            id=model_id_pet,
+            name=model_name_pet,
+            contentType=APPLICATION_JSON,
+            schema=json.dumps(model_schema_pet),
+        )
+        container.models[model_name_pet] = model
+
+        # set up the model NewPetResponse
+        model_id_new_response_pet = "model2"
+        model_name_new_response_pet = "NewPetResponse"
+        model_schema_new_response_pet = {
+            "type": "object",
+            "properties": {
+                "pet": {"$ref": "https://domain.com/restapis/deadbeef/models/Pet"},
+                "message": {"type": "string"},
+            },
+        }
+
+        model_2 = Model(
+            id=model_id_new_response_pet,
+            name=model_name_new_response_pet,
+            contentType=APPLICATION_JSON,
+            schema=json.dumps(model_schema_new_response_pet),
+        )
+        container.models[model_name_new_response_pet] = model_2
+
+        resolver = ModelResolver(
+            rest_api_container=container, model_name=model_name_new_response_pet
+        )
+
+        resolved_model = resolver.get_resolved_model()
+        # assert that the Pet Model has been resolved and set in $defs for NewPetResponse Model
+        assert resolved_model["properties"]["pet"]["$ref"] == "#/$defs/Pet"
+        assert resolved_model["$defs"]["Pet"]["type"] == model_schema_pet["type"]
+        assert (
+            resolved_model["$defs"]["Pet"]["properties"]["id"]
+            == model_schema_pet["properties"]["id"]
+        )
+
+        # assert that the PetType Model has been resolved in $defs and also set in $defs for Pet Model
+        assert resolved_model["$defs"]["Pet"]["properties"]["type"]["$ref"] == "#/$defs/PetType"
+        assert resolved_model["$defs"]["PetType"] == model_schema_pet_type
+
+    def test_resolve_regular_model_with_missing_ref(self):
+        container = RestApiContainer(rest_api={})
+        # set up the model
+        model_id_new_response_pet = "model2"
+        model_name_new_response_pet = "NewPetResponse"
+        model_schema_new_response_pet = {
+            "type": "object",
+            "properties": {
+                "pet": {
+                    "$ref": "https://domain.com/restapis/deadbeef/models/Pet"  # this ref is not present
+                },
+                "message": {"type": "string"},
+            },
+        }
+
+        model_2 = Model(
+            id=model_id_new_response_pet,
+            name=model_name_new_response_pet,
+            contentType=APPLICATION_JSON,
+            schema=json.dumps(model_schema_new_response_pet),
+        )
+        container.models[model_name_new_response_pet] = model_2
+
+        resolver = ModelResolver(
+            rest_api_container=container, model_name=model_name_new_response_pet
+        )
+
+        resolved_model = resolver.get_resolved_model()
+        assert resolved_model is None
+
+    def test_resolve_model_circular_ref(self):
+        container = RestApiContainer(rest_api={})
+        # set up the model, Person, which references House
+        model_id_person = "model1"
+        model_name_person = "Person"
+        model_schema_person = {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                },
+                "house": {"$ref": "https://domain.com/restapis/deadbeef/models/House"},
+            },
+        }
+
+        model_person = Model(
+            id=model_id_person,
+            name=model_name_person,
+            contentType=APPLICATION_JSON,
+            schema=json.dumps(model_schema_person),
+        )
+        container.models[model_name_person] = model_person
+
+        # set up the model House, which references the Person model, we have a circular ref
+        model_id_house = "model2"
+        model_name_house = "House"
+        model_schema_house = {
+            "type": "object",
+            "properties": {
+                "contains": {
+                    "type": "array",
+                    "items": {"$ref": "https://domain.com/restapis/deadbeef/models/Person"},
+                }
+            },
+        }
+
+        model_house = Model(
+            id=model_id_house,
+            name=model_name_house,
+            contentType=APPLICATION_JSON,
+            schema=json.dumps(model_schema_house),
+        )
+        container.models[model_name_house] = model_house
+
+        # we resolve the Person model containing the House model (which contains the Person model)
+        resolver = ModelResolver(rest_api_container=container, model_name=model_name_person)
+
+        resolved_model = resolver.get_resolved_model()
+        # assert that the House Model has been resolved and set in $defs for Person Model
+        assert resolved_model["properties"]["house"]["$ref"] == "#/$defs/House"
+
+        # now assert that the Person $ref in House has been properly resolved to #, indicating a recursive $ref to its
+        # own model
+        assert resolved_model["$defs"]["House"]["properties"]["contains"]["items"]["$ref"] == "#"
+
+        # now we need to resolve the House schema to see if the cached Person is properly set in $defs with proper
+        # references
+        resolver = ModelResolver(rest_api_container=container, model_name=model_name_house)
+
+        resolved_model = resolver.get_resolved_model()
+        # assert that the Person Model has been resolved and set in $defs for House Model
+        assert resolved_model["properties"]["contains"]["items"]["$ref"] == "#/$defs/Person"
+
+        # now assert that the House $ref in Person has been properly resolved to #, indicating a recursive $ref to its
+        # own model
+        assert resolved_model["$defs"]["Person"]["properties"]["house"]["$ref"] == "#"
+
+    def test_resolve_model_recursive_ref(self):
+        container = RestApiContainer(rest_api={})
+        # set up the model, Person, which references Person (recursive ref)
+        model_id_person = "model1"
+        model_name_person = "Person"
+        model_schema_person = {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                },
+                "children": {
+                    "type": "array",
+                    "items": {"$ref": "https://domain.com/restapis/deadbeef/models/Person"},
+                },
+            },
+        }
+
+        model_person = Model(
+            id=model_id_person,
+            name=model_name_person,
+            contentType=APPLICATION_JSON,
+            schema=json.dumps(model_schema_person),
+        )
+        container.models[model_name_person] = model_person
+
+        # we resolve the Person model containing the House model (which contains the Person model)
+        resolver = ModelResolver(rest_api_container=container, model_name=model_name_person)
+
+        resolved_model = resolver.get_resolved_model()
+        # assert that the Person Model has been resolved, and the recursive $ref set to #
+        assert resolved_model["properties"]["children"]["items"]["$ref"] == "#"
+
+    def test_resolve_model_circular_ref_with_recursive_ref(self):
+        container = RestApiContainer(rest_api={})
+        # set up the model, Person, which references House
+        model_id_person = "model1"
+        model_name_person = "Person"
+        model_schema_person = {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                },
+                "house": {"$ref": "https://domain.com/restapis/deadbeef/models/House"},
+            },
+        }
+
+        model_person = Model(
+            id=model_id_person,
+            name=model_name_person,
+            contentType=APPLICATION_JSON,
+            schema=json.dumps(model_schema_person),
+        )
+        container.models[model_name_person] = model_person
+
+        # set up the model House, which references the Person model, we have a circular ref, and House itself
+        model_id_house = "model2"
+        model_name_house = "House"
+        model_schema_house = {
+            "type": "object",
+            "properties": {
+                "contains": {
+                    "type": "array",
+                    "items": {"$ref": "https://domain.com/restapis/deadbeef/models/Person"},
+                },
+                "houses": {
+                    "type": "array",
+                    "items": {"$ref": "https://domain.com/restapis/deadbeef/models/House"},
+                },
+            },
+        }
+
+        model_house = Model(
+            id=model_id_house,
+            name=model_name_house,
+            contentType=APPLICATION_JSON,
+            schema=json.dumps(model_schema_house),
+        )
+        container.models[model_name_house] = model_house
+
+        # we resolve the Person model containing the House model (which contains the Person model)
+        resolver = ModelResolver(rest_api_container=container, model_name=model_name_person)
+
+        resolved_model = resolver.get_resolved_model()
+        # assert that the House Model has been resolved and set in $defs for Person Model
+        assert resolved_model["properties"]["house"]["$ref"] == "#/$defs/House"
+
+        # now assert that the Person $ref in House has been properly resolved to #, indicating a recursive $ref to its
+        # own model
+        assert resolved_model["$defs"]["House"]["properties"]["contains"]["items"]["$ref"] == "#"
+
+        # now assert that the Person $ref in House has been properly resolved to #, indicating a recursive $ref to its
+        # own model
+        assert (
+            resolved_model["$defs"]["House"]["properties"]["houses"]["items"]["$ref"]
+            == "#/$defs/House"
+        )

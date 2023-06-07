@@ -1582,10 +1582,13 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
             key = path[1:]  # remove the leading slash
             value = operation.get("value")
-            if key == "schema" and not value:
-                raise BadRequestException(
-                    "Model schema must have at least 1 property or array items defined"
-                )
+            if key == "schema":
+                if not value:
+                    raise BadRequestException(
+                        "Model schema must have at least 1 property or array items defined"
+                    )
+                # delete the resolved model to invalidate it
+                store.rest_apis[rest_api_id].resolved_models.pop(model_name, None)
             model[key] = value
         remove_empty_attributes_from_model(model)
         return model
@@ -1605,6 +1608,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         validate_model_in_use(moto_rest_api, model_name)
 
         store.rest_apis[rest_api_id].models.pop(model_name, None)
+        store.rest_apis[rest_api_id].resolved_models.pop(model_name, None)
 
 
 # ---------------

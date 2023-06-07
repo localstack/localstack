@@ -2,9 +2,9 @@ import json
 import logging
 from typing import Dict
 
-from botocore.exceptions import ClientError
 from jsonschema import ValidationError, validate
 from requests.models import Response
+from werkzeug.exceptions import NotFound
 
 from localstack.aws.connect import connect_to
 from localstack.constants import APPLICATION_JSON
@@ -12,8 +12,10 @@ from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
+    ModelResolver,
     extract_path_params,
     extract_query_string_params,
+    get_apigateway_store,
     get_cors_response,
     make_error_response,
 )
@@ -29,6 +31,7 @@ from localstack.services.apigateway.integration import (
     SQSIntegration,
     StepFunctionIntegration,
 )
+from localstack.services.apigateway.models import ApiGatewayStore
 from localstack.utils.aws import aws_stack
 
 LOG = logging.getLogger(__name__)
@@ -39,11 +42,17 @@ class AuthorizationError(Exception):
 
 
 class RequestValidator:
-    __slots__ = ["context", "apigateway_client"]
+    __slots__ = ["context", "rest_api_container"]
 
-    def __init__(self, context: ApiInvocationContext, apigateway_client):
+    def __init__(self, context: ApiInvocationContext, store: ApiGatewayStore = None):
         self.context = context
-        self.apigateway_client = apigateway_client
+        store = store or get_apigateway_store(
+            account_id=context.account_id, region=context.region_name
+        )
+        if not (container := store.rest_apis.get(context.api_id)):
+            # TODO: find the right exception
+            raise NotFound()
+        self.rest_api_container = container
 
     def is_request_valid(self) -> bool:
         # make all the positive checks first
@@ -60,15 +69,9 @@ class RequestValidator:
             return True
 
         # check if there is a validator for this request
-        try:
-            validator = self.apigateway_client.get_request_validator(
-                restApiId=self.context.api_id, requestValidatorId=resource["requestValidatorId"]
-            )
-        except ClientError as e:
-            if "NotFoundException" in e:
-                return True
-
-            raise
+        validator = self.rest_api_container.validators.get(resource["requestValidatorId"])
+        if not validator:
+            return True
 
         # are we validating the body?
         if self.should_validate_body(validator):
@@ -87,30 +90,34 @@ class RequestValidator:
         # if there's no model to validate the body, use the Empty model
         # https://docs.aws.amazon.com/cdk/api/v1/docs/@aws-cdk_aws-apigateway.EmptyModel.html
         if not (request_models := resource.get("requestModels")):
-            schema_name = EMPTY_MODEL
+            model_name = EMPTY_MODEL
         else:
-            schema_name = request_models.get(APPLICATION_JSON, EMPTY_MODEL)
+            model_name = request_models.get(APPLICATION_JSON, EMPTY_MODEL)
 
-        try:
-            model = self.apigateway_client.get_model(
-                restApiId=self.context.api_id,
-                modelName=schema_name,
+        model_resolver = ModelResolver(
+            rest_api_container=self.rest_api_container,
+            model_name=model_name,
+        )
+
+        # try to get the resolved model first
+        resolved_schema = model_resolver.get_resolved_model()
+        if not resolved_schema:
+            LOG.exception(
+                "An exception occurred while trying to validate the request: could not find the model"
             )
-        except ClientError as e:
-            LOG.exception("An exception occurred while trying to validate the request: %s", e)
             return False
 
         try:
             # if the body is empty, replace it with an empty JSON body
             validate(
-                instance=json.loads(self.context.data or "{}"), schema=json.loads(model["schema"])
+                instance=json.loads(self.context.data or "{}"),
+                schema=resolved_schema,
             )
             return True
         except ValidationError as e:
             LOG.warning("failed to validate request body %s", e)
             return False
         except json.JSONDecodeError as e:
-            # TODO: for now, it could also be the loading of the schema failing but it will be validated at some point
             LOG.warning("failed to validate request body, request data is not valid JSON %s", e)
             return False
 
@@ -247,7 +254,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
         return make_error_response("Unable to find path %s" % invocation_context.path, 404)
 
     # validate request
-    validator = RequestValidator(invocation_context, aws_stack.connect_to_service("apigateway"))
+    validator = RequestValidator(invocation_context)
     if not validator.is_request_valid():
         return make_error_response("Invalid request body", 400)
 
