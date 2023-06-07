@@ -268,7 +268,6 @@ class StreamEventSourceListener(EventSourceListener):
                         num_invocation_failures = 0
                 time.sleep(self._POLL_INTERVAL_SEC)
         except Exception as e:
-            #
             LOG.error(
                 "Error while listening to shard / executing lambda with params %s: %s",
                 params,
