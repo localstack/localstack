@@ -147,7 +147,7 @@ class GatewayRestAPI(GenericBaseModel):
             kwargs = keys_to_lower(kwargs, skip_children_of=["policy"])
             kwargs["tags"] = {tag["key"]: tag["value"] for tag in kwargs.get("tags", [])}
 
-            cfn_client = connect_to().apigateway
+            cfn_client = connect_to().cloudformation
             stack_id = cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]["StackId"]
             kwargs["tags"].update(
                 {
@@ -469,7 +469,7 @@ class GatewayMethod(GenericBaseModel):
             apigw_resource_id = resource["Properties"]["ResourceId"]
             http_method = resource["Properties"]["HttpMethod"]
             resources[resource_id][
-                "PhysicalResource"
+                "PhysicalResourceId"
             ] = f"{rest_api_id}-{apigw_resource_id}-{http_method}"
 
         return {
