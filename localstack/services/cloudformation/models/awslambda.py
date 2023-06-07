@@ -483,9 +483,6 @@ class LambdaLayerVersion(GenericBaseModel):
     def cloudformation_type():
         return "AWS::Lambda::LayerVersion"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.state.get("LayerVersionArn")
-
     def fetch_state(self, stack_name, resources):
         layer_name = self.props.get("LayerName")
         # TODO extract region name if layer_name is an ARN
@@ -501,7 +498,10 @@ class LambdaLayerVersion(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        return {"create": {"function": "publish_layer_version"}}
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["LayerVersionArn"]
+
+        return {"create": {"function": "publish_layer_version", "result_handler": _handle_result}}
 
 
 # TODO: test
