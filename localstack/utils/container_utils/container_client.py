@@ -1094,11 +1094,11 @@ class Util:
             )
             platform = args.platform
 
-        if args.privileged is not None:
+        if args.privileged:
             LOG.warning(
                 f"Overwriting Docker container privileged flag {privileged} with new value {args.privileged}"
             )
-            privileged = True
+            privileged = args.privileged
 
         if args.publish_ports:
             for port_mapping in args.publish_ports:
