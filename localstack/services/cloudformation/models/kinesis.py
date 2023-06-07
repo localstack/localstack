@@ -37,11 +37,6 @@ class KinesisStream(GenericBaseModel):
     def cloudformation_type():
         return "AWS::Kinesis::Stream"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        if attribute == "Arn":
-            return self.props.get("Arn")
-        return self.physical_resource_id
-
     def fetch_state(self, stack_name, resources):
         stream_name = self.props["Name"]
         result = aws_stack.connect_to_service("kinesis").describe_stream(StreamName=stream_name)
