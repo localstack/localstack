@@ -241,45 +241,71 @@ class PropertyRenderer:
 
 
 class FileWriter:
-    def __init__(self, root: Path, resource_name: ResourceName, console: Console):
+    destination_files: dict[str, Path]
+
+    def __init__(
+        self,
+        root: Path,
+        resource_name: ResourceName,
+        console: Console,
+    ):
         self.root = root
         self.resource_name = resource_name
         self.console = console
 
+        self.destination_files = {
+            "provider": self.root.joinpath(
+                "localstack",
+                "services",
+                self.resource_name.service.lower(),
+                "resource_providers",
+                f"aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.py",
+            ),
+            "tests": self.root.joinpath(
+                "tests",
+                "integration",
+                "cloudformation",
+                "resource_providers",
+                self.resource_name.service.lower(),
+                f"test_{self.resource_name.resource.lower()}.py",
+            ),
+            "test_template": self.root.joinpath(
+                "tests",
+                "integration",
+                "templates",
+                "resource_providers",
+                self.resource_name.service.lower(),
+                f"{self.resource_name.resource.lower()}.yaml",
+            ),
+        }
+
+        self.confirm_if_existing_files()
+
+    def confirm_if_existing_files(self):
+        """
+        If a file we are about to write to exists, raise an error
+        """
+        for destination_file in self.destination_files.values():
+            if destination_file.is_file():
+                if click.confirm("Destination files already exist, overwrite?"):
+                    break
+                else:
+                    raise SystemExit(1)
+
     def write_provider(self, contents: str):
-        destination = self.root.joinpath(
-            "localstack",
-            "services",
-            self.resource_name.service.lower(),
-            "resource_providers",
-            f"aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.py",
-        )
+        destination = self.destination_files["provider"]
         destination.parent.mkdir(parents=True, exist_ok=True)
         self.write_text(contents, destination)
         self.console.print(f"written provider to {destination}")
 
     def write_tests(self, contents: str):
-        destination = self.root.joinpath(
-            "tests",
-            "integration",
-            "cloudformation",
-            "resource_providers",
-            self.resource_name.service.lower(),
-            f"test_{self.resource_name.resource.lower()}.py",
-        )
+        destination = self.destination_files["tests"]
         destination.parent.mkdir(parents=True, exist_ok=True)
         self.write_text(contents, destination)
         self.console.print(f"written tests to {destination}")
 
     def write_test_template(self, contents: str):
-        destination = self.root.joinpath(
-            "tests",
-            "integration",
-            "templates",
-            "resource_providers",
-            self.resource_name.service.lower(),
-            f"{self.resource_name.resource.lower()}.yaml",
-        )
+        destination = self.destination_files["test_template"]
         destination.parent.mkdir(parents=True, exist_ok=True)
         self.write_text(contents, destination)
         self.console.print(f"written test CFn template to {destination}")
