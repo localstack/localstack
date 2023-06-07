@@ -129,7 +129,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
         )
         ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
         ctx.region_name = TEST_AWS_REGION_NAME
-        validator = RequestValidator(ctx, self._mock_store())
+        validator = RequestValidator(ctx, Mock())
         self.assertTrue(validator.is_request_valid())
 
     def test_if_request_is_valid_with_no_matching_method(self):
@@ -142,7 +142,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
         ctx.resource = {"resourceMethods": {"GET": {}}}
         ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
         ctx.region_name = TEST_AWS_REGION_NAME
-        validator = RequestValidator(ctx, self._mock_store())
+        validator = RequestValidator(ctx, Mock())
         self.assertTrue(validator.is_request_valid())
 
     def test_if_request_is_valid_with_no_validator(self):
@@ -157,7 +157,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
         ctx.region_name = TEST_AWS_REGION_NAME
         ctx.api_id = "deadbeef"
         ctx.resource = {"resourceMethods": {"POST": {"requestValidatorId": " "}}}
-        validator = RequestValidator(ctx, self._mock_store())
+        validator = RequestValidator(ctx, Mock())
         self.assertTrue(validator.is_request_valid())
 
     def test_if_request_has_body_validator(self):
