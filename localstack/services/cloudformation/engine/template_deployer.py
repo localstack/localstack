@@ -616,14 +616,14 @@ def resolve_placeholders_in_string(result, stack_name: str, resources: dict):
     return result
 
 
-def evaluate_condition(stack_name, resources, condition):
+def evaluate_condition(stack_name: str, resources: dict, condition: str):
     condition = resolve_refs_recursively(stack_name, resources, condition)
     condition = resolve_ref(stack_name, resources, condition, attribute="Ref")
     condition = resolve_refs_recursively(stack_name, resources, condition)
     return condition
 
 
-def evaluate_resource_condition(stack_name, resources, resource):
+def evaluate_resource_condition(stack_name: str, resources: dict, resource: dict) -> bool:
     condition = resource.get("Condition")
     if condition:
         condition = evaluate_condition(stack_name, resources, condition)
@@ -1292,6 +1292,8 @@ class TemplateDeployer:
         res_change = change["ResourceChange"]
         action = res_change["Action"]
 
+
+        # TODO: this needs to happen much earlier
         # check resource condition, if present
         if not evaluate_resource_condition(stack.stack_name, stack.resources, resource):
             LOG.debug(

@@ -189,6 +189,7 @@ class CloudformationProvider(CloudformationApi):
                 "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
             )
 
+        # resolve stack parameters
         new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
             request.get("Parameters")
         )
@@ -199,6 +200,7 @@ class CloudformationProvider(CloudformationApi):
             old_parameters={},
         )
 
+        # handle conditions
         stack = Stack(request, template)
 
         try:
@@ -218,6 +220,10 @@ class CloudformationProvider(CloudformationApi):
 
         stack = Stack(request, template)
         stack.set_resolved_parameters(resolved_parameters)
+
+        # TODO: verify order of macro vs. condition evaluation
+
+
         stack.template_body = json.dumps(template)
         state.stacks[stack.stack_id] = stack
         LOG.debug(
@@ -526,6 +532,7 @@ class CloudformationProvider(CloudformationApi):
         temp_stack = Stack(req_params_copy, template)
         temp_stack.set_resolved_parameters(resolved_parameters)
 
+        # TODO: everything below should be async
         transformed_template = template_preparer.transform_template(
             template, parameters, stack_name=temp_stack.stack_name, resources=temp_stack.resources
         )
@@ -534,6 +541,11 @@ class CloudformationProvider(CloudformationApi):
         change_set = StackChangeSet(stack, req_params, transformed_template)
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.set_resolved_parameters(resolved_parameters)
+
+        # TODO: evaluate conditions
+        # technically
+
+        # change_set.set_resolved_conditions(resolved_conditions)
 
         deployer = template_deployer.TemplateDeployer(change_set)
         changes = deployer.construct_changes(
