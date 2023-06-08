@@ -268,7 +268,6 @@ class TestLambdaCallingLocalstack:
             "java11",
             "go1.x",  # TODO: does not yet support transparent endpoint injection
             "dotnet6",  # TODO: does not yet support transparent endpoint injection
-            "dotnetcore3.1",  # TODO: does not yet support transparent endpoint injection
         ],
     )
     def test_calling_localstack_from_lambda(self, multiruntime_lambda, tmp_path, aws_client):
