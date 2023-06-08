@@ -1,6 +1,6 @@
 {
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_function_lifecycle": {
-    "recorded-date": "27-04-2023, 20:34:59",
+    "recorded-date": "08-06-2023, 14:06:55",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -303,7 +303,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_redundant_updates": {
-    "recorded-date": "27-04-2023, 20:35:04",
+    "recorded-date": "08-06-2023, 14:07:00",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -574,7 +574,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[delete_function]": {
-    "recorded-date": "27-04-2023, 20:35:04",
+    "recorded-date": "08-06-2023, 14:07:01",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -603,7 +603,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function]": {
-    "recorded-date": "27-04-2023, 20:35:04",
+    "recorded-date": "08-06-2023, 14:07:01",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -632,7 +632,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function_configuration]": {
-    "recorded-date": "27-04-2023, 20:35:05",
+    "recorded-date": "08-06-2023, 14:07:01",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -661,7 +661,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function]": {
-    "recorded-date": "27-04-2023, 20:35:07",
+    "recorded-date": "08-06-2023, 14:07:03",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -678,7 +678,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_configuration]": {
-    "recorded-date": "27-04-2023, 20:35:09",
+    "recorded-date": "08-06-2023, 14:07:05",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -695,7 +695,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_event_invoke_config]": {
-    "recorded-date": "27-04-2023, 20:35:11",
+    "recorded-date": "08-06-2023, 14:07:07",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -712,7 +712,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_delete_on_nonexisting_version": {
-    "recorded-date": "27-04-2023, 20:35:13",
+    "recorded-date": "08-06-2023, 14:07:09",
     "recorded-content": {
       "delete_function_response_non_existent": {
         "Error": {
@@ -741,7 +741,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[delete_function]": {
-    "recorded-date": "27-04-2023, 20:35:13",
+    "recorded-date": "08-06-2023, 14:07:09",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -758,7 +758,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function]": {
-    "recorded-date": "27-04-2023, 20:35:14",
+    "recorded-date": "08-06-2023, 14:07:09",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -775,7 +775,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_configuration]": {
-    "recorded-date": "27-04-2023, 20:35:14",
+    "recorded-date": "08-06-2023, 14:07:10",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -792,7 +792,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_url_config]": {
-    "recorded-date": "27-04-2023, 20:35:14",
+    "recorded-date": "08-06-2023, 14:07:10",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -809,7 +809,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_code_signing_config]": {
-    "recorded-date": "27-04-2023, 20:35:14",
+    "recorded-date": "08-06-2023, 14:07:10",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -826,7 +826,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_event_invoke_config]": {
-    "recorded-date": "27-04-2023, 20:35:14",
+    "recorded-date": "08-06-2023, 14:07:10",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -843,7 +843,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_concurrency]": {
-    "recorded-date": "27-04-2023, 20:35:14",
+    "recorded-date": "08-06-2023, 14:07:10",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -860,7 +860,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function]": {
-    "recorded-date": "27-04-2023, 20:35:16",
+    "recorded-date": "08-06-2023, 14:07:12",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -877,7 +877,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_configuration]": {
-    "recorded-date": "27-04-2023, 20:35:18",
+    "recorded-date": "08-06-2023, 14:07:14",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -894,7 +894,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_url_config]": {
-    "recorded-date": "27-04-2023, 20:35:20",
+    "recorded-date": "08-06-2023, 14:07:16",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -911,7 +911,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_code_signing_config]": {
-    "recorded-date": "27-04-2023, 20:35:22",
+    "recorded-date": "08-06-2023, 14:07:18",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -928,7 +928,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_event_invoke_config]": {
-    "recorded-date": "27-04-2023, 20:35:24",
+    "recorded-date": "08-06-2023, 14:07:20",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -945,7 +945,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_concurrency]": {
-    "recorded-date": "27-04-2023, 20:35:26",
+    "recorded-date": "08-06-2023, 14:07:21",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -962,7 +962,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[delete_function]": {
-    "recorded-date": "27-04-2023, 20:35:28",
+    "recorded-date": "08-06-2023, 14:07:23",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -979,7 +979,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[invoke]": {
-    "recorded-date": "27-04-2023, 20:35:30",
+    "recorded-date": "08-06-2023, 14:07:25",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -996,7 +996,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_zipfile": {
-    "recorded-date": "27-04-2023, 20:35:32",
+    "recorded-date": "08-06-2023, 14:07:28",
     "recorded-content": {
       "create-response-zip-file": {
         "Architectures": [
@@ -1170,7 +1170,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_s3": {
-    "recorded-date": "27-04-2023, 20:35:37",
+    "recorded-date": "08-06-2023, 14:07:33",
     "recorded-content": {
       "create_response_s3": {
         "Architectures": [
@@ -7459,7 +7459,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_create_lambda_exceptions": {
-    "recorded-date": "27-04-2023, 20:35:38",
+    "recorded-date": "08-06-2023, 14:07:33",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7474,10 +7474,10 @@
       "invalid_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
+        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7486,10 +7486,10 @@
       "uppercase_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
+        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7531,7 +7531,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_update_lambda_exceptions": {
-    "recorded-date": "27-04-2023, 20:35:39",
+    "recorded-date": "08-06-2023, 14:07:37",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7546,10 +7546,10 @@
       "invalid_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
+        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7558,10 +7558,10 @@
       "uppercase_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
+        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7570,7 +7570,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_list_functions": {
-    "recorded-date": "27-04-2023, 20:35:52",
+    "recorded-date": "08-06-2023, 14:07:49",
     "recorded-content": {
       "create_response_1": {
         "CreateEventSourceMappingResponse": null,

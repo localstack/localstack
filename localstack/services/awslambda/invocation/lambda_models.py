@@ -41,27 +41,7 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
-
 # To add support for a new runtime, just add it here with the accompanying image postfix
-# IMAGE_MAPPING = {
-#     "python3.7": "python:3.7@sha256:be668898a538d5258e006e1920f86f31cab8000dfa68b3be78d5ef67ad15a417",
-#     "python3.8": "python:3.8@sha256:b3402a5f5e9535ba4787a1fd6b0ee39738dee18bdff861a0589571ba74122d35",
-#     "python3.9": "python:3.9@sha256:5b3585b121e6fb9707abb52c1f99cbab51939fee0769752ab6c641f20f479cf6",
-#     "nodejs12.x": "nodejs:12@sha256:1389b8cc6bbd321f22b0218233da11bd49382bbee7689dba41c7377c12df65a5",
-#     "nodejs14.x": "nodejs:14@sha256:aa3286c61b6c3f97219da3e9fa39d97f9586672c64c958cb5b980268afdfb554",
-#     "nodejs16.x": "nodejs:16@sha256:c7714124a782801cb7080fd6abddf9354a2ee89642571cb9222bb7541d3df558",
-#     "nodejs18.x": "nodejs:18@sha256:f3c7ebb522417c8212d765b504e8078f99be78d41f82f3a08b7261e183ce4ed6",
-#     "ruby2.7": "ruby:2.7@sha256:7959af1381eede0984dccd526b264cc071088c90b35e21bab41ac9a1bc680d08",
-#     "java8": "java:8@sha256:38d6ac020eedd32b80f5421ed81c979cb1290f4f5b5a3349659c6fd26965bfad",
-#     "java8.al2": "java:8.al2@sha256:78bf037be151c628f8b984e13dc39905d3a06af3385400dced40793c4315b8eb",
-#     "java11": "java:11@sha256:041883130bb9e9c3ef3abb7c3aabde7b3e00ea7612a4d56419357447be6f5418",
-#     "dotnetcore3.1": "dotnet:core3.1@sha256:2cbcc59fe28f7f523674c3a62f1cfd3f522c2ac30da9da2b50789f7f51e1a38b",
-#     "dotnet6": "dotnet:6@sha256:b83e2db700979654befb1516e9242bf55fef999aed58b6368169f6414ce4804a",
-#     "go1.x": "go:1@sha256:de9d915ed2b93b8bd96490927c65d88a98b3aa2a21248d97b398a1a1d1614a6c",
-#     "provided": "provided:alami@sha256:3c00defa5bebd696c572ba48274c711ac9720f7f783cc30d52ba2f9f9309aeca",
-#     "provided.al2": "provided:al2@sha256:da60c549923523e27e618501c1ae434dc8246a4a98688405186426cc363a4c11",
-# }
-
 IMAGE_MAPPING = {
     "python3.7": "python:3.7",
     "python3.8": "python:3.8",
@@ -72,6 +52,7 @@ IMAGE_MAPPING = {
     "nodejs16.x": "nodejs:16",
     "nodejs18.x": "nodejs:18",
     "ruby2.7": "ruby:2.7",
+    "ruby3.2": "ruby:3.2",
     "java8": "java:8",
     "java8.al2": "java:8.al2",
     "java11": "java:11",
