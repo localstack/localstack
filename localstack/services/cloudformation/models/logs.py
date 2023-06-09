@@ -57,9 +57,6 @@ class LogsLogStream(GenericBaseModel):
     def get_cfn_attribute(self, attribute_name):
         return super(LogsLogStream, self).get_cfn_attribute(attribute_name)
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("LogStreamName")
-
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get("LogGroupName")
         stream_name = self.props.get("LogStreamName")
@@ -79,10 +76,17 @@ class LogsLogStream(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, stack_name: str
+        ):
+            resource = resources[resource_id]
+            resource["PhysicalResourceId"] = resource["Properties"]["LogStreamName"]
+
         return {
             "create": {
                 "function": "create_log_stream",
                 "parameters": {"logGroupName": "LogGroupName", "logStreamName": "LogStreamName"},
+                "result_handler": _set_physical_resource_id,
             },
             "delete": {
                 "function": "delete_log_stream",
