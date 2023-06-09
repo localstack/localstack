@@ -16,9 +16,6 @@ class SecretsManagerSecret(GenericBaseModel):
     def cloudformation_type():
         return "AWS::SecretsManager::Secret"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("ARN")
-
     def get_cfn_attribute(self, attribute_name):
         return super(SecretsManagerSecret, self).get_cfn_attribute(attribute_name)
 
@@ -108,10 +105,16 @@ class SecretsManagerSecret(GenericBaseModel):
                 result["SecretString"] = secret_value
             return result
 
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, resource_type: str
+        ):
+            resources[resource_id]["PhysicalResourceId"] = result["ARN"]
+
         return {
             "create": {
                 "function": "create_secret",
                 "parameters": _create_params,
+                "result_handler": _set_physical_resource_id,
             },
             "delete": {"function": "delete_secret", "parameters": {"SecretId": "Name"}},
         }
