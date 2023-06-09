@@ -166,6 +166,12 @@ class S3Bucket(GenericBaseModel):
             }
             return result
 
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, resource_type: str
+        ):
+            resource = resources[resource_id]
+            resource["PhysicalResourceId"] = resource["Properties"]["BucketName"]
+
         def _pre_delete(resource_id, resources, resource_type, func, stack_name):
             s3 = aws_stack.connect_to_service("s3")
             resource = resources[resource_id]
@@ -254,7 +260,10 @@ class S3Bucket(GenericBaseModel):
 
         result = {
             "create": [
-                {"function": _create_bucket},
+                {
+                    "function": _create_bucket,
+                    "result_handler": _set_physical_resource_id,
+                },
                 {
                     "function": "put_bucket_notification_configuration",
                     "parameters": s3_bucket_notification_config,
@@ -312,12 +321,6 @@ class S3Bucket(GenericBaseModel):
             return f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}:{get_edge_port_http()}"
 
         return super(S3Bucket, self).get_cfn_attribute(attribute_name)
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        bucket_name = self.props.get("BucketName")
-        if attribute == "Arn":
-            return arns.s3_bucket_arn(bucket_name)
-        return bucket_name
 
     def _get_bucket_name(self):
         return self.props.get("BucketName") or self.logical_resource_id
