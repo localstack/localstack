@@ -31,7 +31,7 @@ class LogsLogGroup(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, stack_name: str
+            result: dict, resource_id: str, resources: dict, resource_type: str
         ):
             resource = resources[resource_id]
             resource["PhysicalResourceId"] = resource["Properties"]["LogGroupName"]
@@ -77,7 +77,7 @@ class LogsLogStream(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, stack_name: str
+            result: dict, resource_id: str, resources: dict, resource_type: str
         ):
             resource = resources[resource_id]
             resource["PhysicalResourceId"] = resource["Properties"]["LogStreamName"]
@@ -112,7 +112,7 @@ class LogsSubscriptionFilter(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, stack_name: str
+            result: dict, resource_id: str, resources: dict, resource_type: str
         ):
             resource = resources[resource_id]
             resource["PhysicalResourceId"] = resource["Properties"]["LogGroupName"]
