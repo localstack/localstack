@@ -197,7 +197,6 @@ class TestSNSProvider:
         snapshot.match("empty-unsubscribe", response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$.get-topic-attrs.Attributes.DeliveryPolicy",
