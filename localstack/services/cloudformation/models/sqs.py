@@ -31,7 +31,6 @@ class QueuePolicy(GenericBaseModel):
             resource = cls(resources[resource_id])
             props = resource.props
 
-            # TODO: generalize/support in get_physical_resource_id
             resources[resource_id]["PhysicalResourceId"] = "%s-%s-%s" % (
                 stack_name,
                 resource_id,
