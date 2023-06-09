@@ -174,7 +174,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name: EventBusNameOrArn = None,
     ) -> PutRuleResponse:
         store = self.get_store(context)
-        self.put_rule_job_scheduler(store, event_bus_name, name, state, schedule_expression)
+        self.put_rule_job_scheduler(
+            store, name, state, schedule_expression, event_bus_name_or_arn=event_bus_name
+        )
         return call_moto(context)
 
     def delete_rule(
