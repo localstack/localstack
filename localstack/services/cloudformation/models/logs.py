@@ -100,9 +100,6 @@ class LogsSubscriptionFilter(GenericBaseModel):
     def cloudformation_type():
         return "AWS::Logs::SubscriptionFilter"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("LogGroupName")
-
     def fetch_state(self, stack_name, resources):
         props = self.props
         group_name = props.get("LogGroupName")
@@ -114,6 +111,12 @@ class LogsSubscriptionFilter(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, stack_name: str
+        ):
+            resource = resources[resource_id]
+            resource["PhysicalResourceId"] = resource["Properties"]["LogGroupName"]
+
         return {
             "create": {
                 "function": "put_subscription_filter",
@@ -123,6 +126,7 @@ class LogsSubscriptionFilter(GenericBaseModel):
                     "filterPattern": "FilterPattern",
                     "destinationArn": "DestinationArn",
                 },
+                "result_handler": _set_physical_resource_id,
             },
             "delete": {
                 "function": "delete_subscription_filter",
