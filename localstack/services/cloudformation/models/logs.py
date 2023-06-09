@@ -14,11 +14,6 @@ class LogsLogGroup(GenericBaseModel):
             return props.get("arn")
         return super(LogsLogGroup, self).get_cfn_attribute(attribute_name)
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        if attribute == "Arn":
-            return self.get_cfn_attribute("Arn")
-        return self.props.get("LogGroupName")
-
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get("LogGroupName")
         logs = aws_stack.connect_to_service("logs")
@@ -35,10 +30,17 @@ class LogsLogGroup(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, stack_name: str
+        ):
+            resource = resources[resource_id]
+            resource["PhysicalResourceId"] = resource["Properties"]["LogGroupName"]
+
         return {
             "create": {
                 "function": "create_log_group",
                 "parameters": {"logGroupName": "LogGroupName"},
+                "result_handler": _set_physical_resource_id,
             },
             "delete": {
                 "function": "delete_log_group",
