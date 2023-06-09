@@ -15,9 +15,6 @@ class CloudFormationStack(GenericBaseModel):
     def cloudformation_type():
         return "AWS::CloudFormation::Stack"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("StackId")
-
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("cloudformation")
         child_stack_name = self.props["StackName"]
@@ -73,7 +70,8 @@ class CloudFormationStack(GenericBaseModel):
             }
             return result
 
-        def result_handler(result, *args, **kwargs):
+        def result_handler(result, resource_id: str, resources: dict, resource_type: str):
+            resources[resource_id]["PhysicalResourceId"] = result["StackId"]
             connect_to().cloudformation.get_waiter("stack_create_complete").wait(
                 StackName=result["StackId"]
             )
@@ -92,9 +90,6 @@ class CloudFormationMacro(GenericBaseModel):
     def cloudformation_type():
         return "AWS::CloudFormation::Macro"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("Name")
-
     def fetch_state(self, stack_name, resources):
         return get_cloudformation_store().macros.get(self.props.get("Name"))
 
@@ -112,9 +107,16 @@ class CloudFormationMacro(GenericBaseModel):
             name = properties["Name"]
             get_cloudformation_store().macros.pop(name)
 
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, resource_type: str
+        ):
+            resource = resources[resource_id]
+            resource["PhysicalResourceId"] = resource["Properties"]["Name"]
+
         return {
             "create": {
                 "function": _store_macro,
+                "result_handler": _set_physical_resource_id,
             },
             "delete": {
                 "function": _delete_macro,
