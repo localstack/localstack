@@ -88,9 +88,17 @@ class StreamedFakeKey(s3_models.FakeKey):
         return self._value_buffer
 
     @value.setter
-    def value(self, new_value: IO[bytes]):
+    def value(self, new_value: IO[bytes] | SpooledTemporaryFile):
         etag_empty = not self._etag or self._etag == "d41d8cd98f00b204e9800998ecf8427e"
-        print(etag_empty, self._etag)
+        # it could come from the already calculated and completed CompleteMultipartUpload
+        # in that case, set it directly as the buffer
+        if isinstance(new_value, SpooledTemporaryFile):
+            self._value_buffer.close()
+            self._value_buffer = new_value
+            self.contentsize = self._value_buffer.tell()
+            self._value_buffer.seek(0)
+            return
+
         # TODO: there can be trailing things in the body
         # depending on headers and checksum
         with self.lock:
@@ -104,15 +112,15 @@ class StreamedFakeKey(s3_models.FakeKey):
             if self.checksum_algorithm:
                 # TODO: get the proper checksum type to then feed with data
                 checksum = get_s3_checksum(self.checksum_algorithm)
-            etag = hashlib.md5(usedforsecurity=False)
+            if etag_empty:
+                etag = hashlib.md5(usedforsecurity=False)
 
             while data := new_value.read(CHUNK_SIZE):
                 self._value_buffer.write(data)
                 if self.checksum_algorithm:
-                    print(data)
                     checksum.update(data)
-
-                etag.update(data)
+                if etag_empty:
+                    etag.update(data)
 
             if self.checksum_algorithm:
                 calculated_checksum = base64.b64encode(checksum.digest()).decode()
@@ -122,15 +130,14 @@ class StreamedFakeKey(s3_models.FakeKey):
                 self.dispose()
                 raise ChecksumInvalid(self.checksum_algorithm)
 
-            self._etag = (
-                etag.hexdigest() if etag_empty else self._etag
-            )  # if it's already set, from CompleteMultipart for example
+            if etag_empty:
+                self._etag = etag.hexdigest()
+
             self.contentsize = self._value_buffer.tell()
             self._value_buffer.seek(0)
 
     def set_value_from_chunked_payload(self, new_value: IO[bytes], content_length: int):
         etag_empty = not self._etag or self._etag == "d41d8cd98f00b204e9800998ecf8427e"
-        print(etag_empty, self._etag)
         # TODO: there can be trailing things in the body
         # depending on headers and checksum
         with self.lock:
@@ -224,8 +231,10 @@ class StreamedFakeMultipart(s3_models.FakeMultipart):
                 part_etag = part.etag.replace('"', "")
                 etag = etag.replace('"', "")
             if part is None or part_etag != etag:
+                total.close()
                 raise s3_exceptions.InvalidPart()
             if last is not None and last.contentsize < S3_UPLOAD_PART_MIN_SIZE:
+                total.close()
                 raise s3_exceptions.EntityTooSmall()
 
             md5s.extend(decode_hex(part_etag)[0])
@@ -238,6 +247,7 @@ class StreamedFakeMultipart(s3_models.FakeMultipart):
             count += 1
 
         if count == 0:
+            total.close()
             raise s3_exceptions.MalformedXML
 
         # once we're done and did not encounter an exception, dispose all parts
