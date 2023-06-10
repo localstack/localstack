@@ -120,13 +120,19 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise NotFoundException("Topic does not exist")
             raise
         # TODO: fix some attributes by moto, see snapshot
+        # DeliveryPolicy
+        # EffectiveDeliveryPolicy
+        # Policy.Statement..Action -> SNS:Receive is added by moto but not returned in AWS
         # TODO: very hacky way to get the attributes we need instead of a moto patch
+        # see the attributes we need: https://docs.aws.amazon.com/sns/latest/dg/sns-topic-attributes.html
         # would need more work to have the proper format out of moto, maybe extract the model to our store
         moto_topic_model = self._get_topic(topic_arn, context)
         for attr in vars(moto_topic_model):
             if "success_feedback" in attr:
                 key = camelcase_to_pascal(underscores_to_camelcase(attr))
                 moto_response["Attributes"][key] = getattr(moto_topic_model, attr)
+            elif attr == "signature_version":
+                moto_response["Attributes"]["SignatureVersion"] = moto_topic_model.signature_version
         return moto_response
 
     def publish_batch(
@@ -387,7 +393,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         store = self.get_store(account_id=context.account_id, region_name=context.region)
         sub = store.subscriptions.get(subscription_arn)
         if not sub:
-            raise NotFoundException(f"Subscription with arn {subscription_arn} not found")
+            raise NotFoundException("Subscription does not exist")
         removed_attrs = ["sqs_queue_url"]
         if "FilterPolicyScope" in sub and "FilterPolicy" not in sub:
             removed_attrs.append("FilterPolicyScope")
@@ -696,7 +702,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             )
         if tags:
             self.tag_resource(context=context, resource_arn=topic_arn, tags=tags)
-        store.topic_subscriptions[topic_arn] = store.topic_subscriptions.get(topic_arn) or []
+        store.topic_subscriptions.setdefault(topic_arn, [])
         return CreateTopicResponse(TopicArn=topic_arn)
 
 
