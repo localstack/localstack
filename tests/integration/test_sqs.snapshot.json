@@ -1003,7 +1003,34 @@
         "Error": {
           "Code": "InvalidParameterValue",
           "Detail": null,
-          "Message": "Value crossaccountpermission2 for parameter Label is invalid. Reason: can't find label.",
+          "Message": "Value crossaccountpermission2 for parameter Label is invalid. Reason: can't find label."
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_delete_message_batch_with_too_large_batch": {
+    "recorded-date": "11-06-2023, 13:53:37",
+    "recorded-content": {
+      "error_response": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.TooManyEntriesInBatchRequest",
+          "Message": "Maximum number of entries per request are 10. You have sent 12.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_change_message_visibility_batch_with_too_large_batch": {
+    "recorded-date": "11-06-2023, 14:26:20",
+    "recorded-content": {
+      "error_response": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.TooManyEntriesInBatchRequest",
+          "Message": "Maximum number of entries per request are 10. You have sent 12.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
