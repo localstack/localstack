@@ -66,15 +66,21 @@ class CloudFormationStack(GenericBaseModel):
                 "StackName": nested_stack_name,
                 "TemplateURL": params.get("TemplateURL"),
                 "Parameters": stack_params,
-                # "Outputs":
             }
             return result
 
         def result_handler(result, resource_id: str, resources: dict, resource_type: str):
-            resources[resource_id]["PhysicalResourceId"] = result["StackId"]
+            resource = resources[resource_id]
+            resource["PhysicalResourceId"] = result["StackId"]
             connect_to().cloudformation.get_waiter("stack_create_complete").wait(
                 StackName=result["StackId"]
             )
+            # set outputs
+            stack_details = connect_to().cloudformation.describe_stacks(
+                StackName=result["StackId"]
+            )["Stacks"][0]
+            if "Outputs" in stack_details:
+                resource["Properties"]["Outputs"] = stack_details["Outputs"]
 
         return {
             "create": {
