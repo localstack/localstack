@@ -317,6 +317,12 @@ class OperationStatus(str):
     FAILED = "FAILED"
 
 
+class OrganizationStatus(str):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
+    DISABLED_PERMANENTLY = "DISABLED_PERMANENTLY"
+
+
 class PermissionModels(str):
     SERVICE_MANAGED = "SERVICE_MANAGED"
     SELF_MANAGED = "SELF_MANAGED"
@@ -421,6 +427,7 @@ class StackInstanceDetailedStatus(str):
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
     INOPERABLE = "INOPERABLE"
+    SKIPPED_SUSPENDED_ACCOUNT = "SKIPPED_SUSPENDED_ACCOUNT"
 
 
 class StackInstanceFilterName(str):
@@ -682,6 +689,16 @@ class AccountLimit(TypedDict, total=False):
 
 AccountLimitList = List[AccountLimit]
 AccountList = List[Account]
+
+
+class ActivateOrganizationsAccessInput(ServiceRequest):
+    pass
+
+
+class ActivateOrganizationsAccessOutput(TypedDict, total=False):
+    pass
+
+
 MajorVersion = int
 
 
@@ -1022,6 +1039,14 @@ class CreateStackSetOutput(TypedDict, total=False):
     StackSetId: Optional[StackSetId]
 
 
+class DeactivateOrganizationsAccessInput(ServiceRequest):
+    pass
+
+
+class DeactivateOrganizationsAccessOutput(TypedDict, total=False):
+    pass
+
+
 class DeactivateTypeInput(ServiceRequest):
     TypeName: Optional[TypeName]
     Type: Optional[ThirdPartyType]
@@ -1141,6 +1166,14 @@ class DescribeChangeSetOutput(TypedDict, total=False):
     IncludeNestedStacks: Optional[IncludeNestedStacks]
     ParentChangeSetId: Optional[ChangeSetId]
     RootChangeSetId: Optional[ChangeSetId]
+
+
+class DescribeOrganizationsAccessInput(ServiceRequest):
+    CallAs: Optional[CallAs]
+
+
+class DescribeOrganizationsAccessOutput(TypedDict, total=False):
+    Status: Optional[OrganizationStatus]
 
 
 class DescribePublisherInput(ServiceRequest):
@@ -2200,6 +2233,13 @@ class CloudformationApi:
     service = "cloudformation"
     version = "2010-05-15"
 
+    @handler("ActivateOrganizationsAccess")
+    def activate_organizations_access(
+        self,
+        context: RequestContext,
+    ) -> ActivateOrganizationsAccessOutput:
+        raise NotImplementedError
+
     @handler("ActivateType", expand=False)
     def activate_type(
         self, context: RequestContext, request: ActivateTypeInput
@@ -2317,6 +2357,13 @@ class CloudformationApi:
     ) -> CreateStackSetOutput:
         raise NotImplementedError
 
+    @handler("DeactivateOrganizationsAccess")
+    def deactivate_organizations_access(
+        self,
+        context: RequestContext,
+    ) -> DeactivateOrganizationsAccessOutput:
+        raise NotImplementedError
+
     @handler("DeactivateType", expand=False)
     def deactivate_type(
         self, context: RequestContext, request: DeactivateTypeInput
@@ -2395,6 +2442,12 @@ class CloudformationApi:
         next_token: NextToken = None,
         logical_resource_id: LogicalResourceId = None,
     ) -> DescribeChangeSetHooksOutput:
+        raise NotImplementedError
+
+    @handler("DescribeOrganizationsAccess")
+    def describe_organizations_access(
+        self, context: RequestContext, call_as: CallAs = None
+    ) -> DescribeOrganizationsAccessOutput:
         raise NotImplementedError
 
     @handler("DescribePublisher")
