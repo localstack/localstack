@@ -173,8 +173,13 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                         "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
                     )
 
-        # TODO: implement SNS MessageDeduplicationId and ContentDeduplication checks
         response: PublishBatchResponse = {"Successful": [], "Failed": []}
+
+        # TODO: write AWS validated tests with FilterPolicy and batching
+        # TODO: find a scenario where we can fail to send a message synchronously to be able to report it
+        # right now, it seems that AWS fails the whole publish if something is wrong in the format of 1 message
+
+        message_contexts = []
         for entry in publish_batch_request_entries:
             message_attributes = entry.get("MessageAttributes", {})
             if message_attributes:
@@ -186,21 +191,22 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             if entry.get("MessageStructure") == "json":
                 try:
                     message = json.loads(entry.get("Message"))
+                    # Keys in the JSON object that correspond to supported transport protocols must have
+                    # simple JSON string values.
+                    # Non-string values will cause the key to be ignored.
+                    message = {
+                        key: field for key, field in message.items() if isinstance(field, str)
+                    }
                     if "default" not in message:
                         raise InvalidParameterException(
                             "Invalid parameter: Message Structure - No default entry in JSON message body"
                         )
+                    entry["Message"] = message  # noqa
                 except json.JSONDecodeError:
                     raise InvalidParameterException(
                         "Invalid parameter: Message Structure - JSON message body failed to parse"
                     )
 
-        # TODO: write AWS validated tests with FilterPolicy and batching
-        # TODO: find a scenario where we can fail to send a message synchronously to be able to report it
-        # right now, it seems that AWS fails the whole publish if something is wrong in the format of 1 message
-
-        message_contexts = []
-        for entry in publish_batch_request_entries:
             msg_ctx = SnsMessage.from_batch_entry(entry, is_fifo=is_fifo)
             message_contexts.append(msg_ctx)
             success = PublishBatchResultEntry(
@@ -210,6 +216,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             if is_fifo:
                 success["SequenceNumber"] = msg_ctx.sequencer_number
             response["Successful"].append(success)
+
         publish_ctx = SnsBatchPublishContext(
             messages=message_contexts,
             store=store,
