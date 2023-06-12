@@ -159,20 +159,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 "Two or more batch entries in the request have the same Id."
             )
 
-        if is_fifo := (".fifo" in topic_arn):
-            if not all(["MessageGroupId" in entry for entry in publish_batch_request_entries]):
-                raise InvalidParameterException(
-                    "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
-                )
-            topic = self._get_topic(topic_arn, context)
-            if topic.content_based_deduplication == "false":
-                if not all(
-                    ["MessageDeduplicationId" in entry for entry in publish_batch_request_entries]
-                ):
-                    raise InvalidParameterException(
-                        "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
-                    )
-
         response: PublishBatchResponse = {"Successful": [], "Failed": []}
 
         # TODO: write AWS validated tests with FilterPolicy and batching
@@ -206,6 +192,23 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     raise InvalidParameterException(
                         "Invalid parameter: Message Structure - JSON message body failed to parse"
                     )
+
+            if is_fifo := (".fifo" in topic_arn):
+                if not all(["MessageGroupId" in entry for entry in publish_batch_request_entries]):
+                    raise InvalidParameterException(
+                        "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
+                    )
+                topic = self._get_topic(topic_arn, context)
+                if topic.content_based_deduplication == "false":
+                    if not all(
+                        [
+                            "MessageDeduplicationId" in entry
+                            for entry in publish_batch_request_entries
+                        ]
+                    ):
+                        raise InvalidParameterException(
+                            "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
+                        )
 
             msg_ctx = SnsMessage.from_batch_entry(entry, is_fifo=is_fifo)
             message_contexts.append(msg_ctx)

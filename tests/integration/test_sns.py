@@ -1787,12 +1787,12 @@ class TestSNSProvider:
                 PublishBatchRequestEntries=[
                     {
                         "Id": "1",
-                        "Message": "Test message without MessageDeduplicationId",
-                        "MessageGroupId": "msg1",
+                        "Message": json.dumps({"sqs": "test sqs"}),
+                        "MessageStructure": "json",
                     }
                 ],
             )
-        snapshot.match("no-dedup-id", e.value.response)
+        snapshot.match("no-default-key-json", e.value.response)
 
     @pytest.mark.aws_validated
     def test_subscribe_to_sqs_with_queue_url(

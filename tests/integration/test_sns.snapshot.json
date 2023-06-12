@@ -1274,7 +1274,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_exceptions": {
-    "recorded-date": "09-08-2022, 11:35:46",
+    "recorded-date": "12-06-2023, 18:22:01",
     "recorded-content": {
       "no-group-id": {
         "Error": {
@@ -1313,6 +1313,17 @@
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "no-default-key-json": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Message Structure - No default entry in JSON message body",
           "Type": "Sender"
         },
         "ResponseMetadata": {
