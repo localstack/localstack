@@ -133,6 +133,7 @@ class TestCloudwatch:
         )
 
         # filtering metric data with current time interval
+        now = datetime.utcnow().replace(microsecond=0)
         response = aws_client.cloudwatch.get_metric_data(
             MetricDataQueries=[
                 {
@@ -155,8 +156,8 @@ class TestCloudwatch:
                     },
                 },
             ],
-            StartTime=datetime.utcnow() - timedelta(hours=1),
-            EndTime=datetime.utcnow(),
+            StartTime=now - timedelta(hours=1),
+            EndTime=now + timedelta(minutes=2),
         )
 
         assert 2 == len(response["MetricDataResults"])
