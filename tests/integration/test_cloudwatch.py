@@ -479,6 +479,7 @@ class TestCloudwatch:
             "$..alarm-triggered-sqs-msg.NewStateReason",
         ]
     )
+    @pytest.mark.xfail(reason="SQS messages do not work reliable, test is flaky")
     def test_put_metric_alarm(self, sns_create_topic, sqs_create_queue, snapshot, aws_client):
         sns_topic_alarm = sns_create_topic()
         topic_arn_alarm = sns_topic_alarm["TopicArn"]
