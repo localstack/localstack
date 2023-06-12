@@ -4,6 +4,7 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from functools import lru_cache
 from http import HTTPStatus
 from typing import Any, Dict, List, Union
 from urllib.parse import urljoin
@@ -14,6 +15,7 @@ from requests import Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.connect import connect_to
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
@@ -39,6 +41,7 @@ from localstack.utils.aws.aws_responses import (
     request_response_stream,
     requests_response,
 )
+from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.templating import VtlTemplate
 from localstack.utils.collections import dict_multi_values, remove_attributes
 from localstack.utils.common import make_http_request, to_str
@@ -100,11 +103,29 @@ class BackendIntegration(ABC):
         return response
 
 
-def call_lambda(function_arn: str, event: bytes, asynchronous: bool) -> str:
-    lambda_client = aws_stack.connect_to_service(
-        "lambda", region_name=extract_region_from_arn(function_arn)
+@lru_cache(maxsize=64)
+def get_service_factory(region_name: str, role_arn: str):
+    if role_arn:
+        return connect_to.with_assumed_role(
+            role_arn=role_arn,
+            region_name=region_name,
+            service_principal=ServicePrincipal.apigateway,
+        )
+    else:
+        return connect_to(region_name=region_name)
+
+
+def call_lambda(
+    function_arn: str, event: bytes, asynchronous: bool, invocation_context: ApiInvocationContext
+) -> str:
+    region_name = extract_region_from_arn(function_arn)
+    clients = get_service_factory(
+        region_name=region_name, role_arn=invocation_context.integration.get("credentials")
     )
-    inv_result = lambda_client.invoke(
+    # TODO source arn
+    inv_result = clients.awslambda.request_metadata(
+        service_principal=ServicePrincipal.apigateway, source_arn=""
+    ).invoke(
         FunctionName=function_arn,
         Payload=event,
         InvocationType="Event" if asynchronous else "RequestResponse",
@@ -237,14 +258,19 @@ class LambdaProxyIntegration(BackendIntegration):
             )
             asynchronous = invocation_context.headers.get("X-Amz-Invocation-Type") == "'Event'"
             return call_lambda(
-                function_arn=func_arn, event=to_bytes(json.dumps(event)), asynchronous=asynchronous
+                function_arn=func_arn,
+                event=to_bytes(json.dumps(event)),
+                asynchronous=asynchronous,
+                invocation_context=invocation_context,
             )
 
         except Exception as e:
-            if LOG.isEnabledFor(logging.DEBUG):
-                LOG.exception("Unable to run Lambda function on API Gateway message: %s", e)
-            else:
-                LOG.warning("Unable to run Lambda function on API Gateway message: %s", e)
+            LOG.warning(
+                "Unable to run Lambda function on API Gateway message: %s",
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            raise e
 
     def invoke(self, invocation_context: ApiInvocationContext):
         uri = (
@@ -350,7 +376,10 @@ class LambdaIntegration(BackendIntegration):
         event = self.request_templates.render(invocation_context) or b""
         asynchronous = headers.get("X-Amz-Invocation-Type", "").strip("'") == "Event"
         result = call_lambda(
-            function_arn=func_arn, event=to_bytes(event), asynchronous=asynchronous
+            function_arn=func_arn,
+            event=to_bytes(event),
+            asynchronous=asynchronous,
+            invocation_context=invocation_context,
         )
 
         response = LambdaResponse()
