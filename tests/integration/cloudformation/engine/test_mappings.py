@@ -121,4 +121,30 @@ class TestCloudFormationMappings:
                     {"ParameterKey": "TopicNameSuffixSelector", "ParameterValue": "A"},
                 ],
             )
-        snapshot.match("mapping_nonexisting_key_exc", e.value.response)
+        snapshot.match("mapping_maximum_level_exc", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_mapping_minimum_nesting_depth(self, aws_client, cleanups, snapshot):
+        """
+        Tries to deploy a template containing a mapping with a nesting depth of 1.
+        The required depth is 2, so it should fail for a single level
+        """
+        topic_name = f"test-topic-{short_uid()}"
+        stack_name = f"test-stack-{short_uid()}"
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+        template_body = load_file(
+            os.path.join(THIS_DIR, "../../templates/mappings/simple-mapping-single-level.yaml")
+        )
+
+        with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
+            aws_client.cloudformation.create_change_set(
+                StackName=stack_name,
+                ChangeSetName="initial",
+                TemplateBody=template_body,
+                ChangeSetType="CREATE",
+                Parameters=[
+                    {"ParameterKey": "TopicName", "ParameterValue": topic_name},
+                    {"ParameterKey": "TopicNameSuffixSelector", "ParameterValue": "A"},
+                ],
+            )
+        snapshot.match("mapping_minimum_level_exc", e.value.response)
