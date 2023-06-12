@@ -322,8 +322,8 @@ def resolve_ref(stack_name: str, resources: dict, ref: str, attribute: str):
 # in case we load stack exports that have circular dependencies (see issue 3438)
 # TODO: Potentially think about a better approach in the future
 @prevent_stack_overflow(match_parameters=True)
-def resolve_refs_recursively(stack_name, resources, value):
-    result = _resolve_refs_recursively(stack_name, resources, value)
+def resolve_refs_recursively(stack_name: str, resources: dict, mappings: dict, value):
+    result = _resolve_refs_recursively(stack_name, resources, mappings, value)
 
     # localstack specific patches
     if isinstance(result, str):
@@ -397,7 +397,7 @@ def resolve_refs_recursively(stack_name, resources, value):
 
 
 @prevent_stack_overflow(match_parameters=True)
-def _resolve_refs_recursively(stack_name, resources, value: dict | list | str | bytes | None):
+def _resolve_refs_recursively(stack_name: str, resources: dict, mappings: dict, value: dict | list | str | bytes | None):
     if isinstance(value, dict):
         keys_list = list(value.keys())
         stripped_fn_lower = keys_list[0].lower().split("::")[-1] if len(keys_list) == 1 else None
@@ -458,16 +458,20 @@ def _resolve_refs_recursively(stack_name, resources, value: dict | list | str | 
             return result
 
         if stripped_fn_lower == "findinmap":
-            attribute = value[keys_list[0]][1]
-            attr = resolve_refs_recursively(stack_name, resources, attribute)
-            selected_map = value[keys_list[0]][0]
-            if isinstance(selected_map, dict) and "Ref" in selected_map:
-                selected_map = resolve_ref(stack_name, resources, selected_map["Ref"], "Ref")
-            result = resolve_ref(stack_name, resources, selected_map, attribute=attr)
-            if not result:
+            # "Fn::FindInMap"
+            mapping_id = value[keys_list[0]][0]
+
+            if isinstance(mapping_id, dict) and "Ref" in mapping_id:
+                mapping_id = resolve_ref(stack_name, resources, mapping_id["Ref"], "Ref")
+
+            selected_map = mappings.get(mapping_id)
+            if not selected_map:
                 raise Exception(
-                    f"Cannot resolve fn::FindInMap: {value[keys_list[0]]} {list(resources.keys())}"
+                    f"Cannot resolve fn::FindInMap: {value[keys_list[0]]} {list(resources.keys())}" # TODO: verify
                 )
+
+            first_level_attribute = value[keys_list[0]][1]
+            first_level_attribute = resolve_refs_recursively(stack_name, resources, first_level_attribute)
 
             key = value[keys_list[0]][2]
             if not isinstance(key, str):
@@ -497,6 +501,8 @@ def _resolve_refs_recursively(stack_name, resources, value: dict | list | str | 
             )
 
         if stripped_fn_lower == "condition":
+            # FIXME: this should only allow strings, no evaluation should be performed here
+            #   see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-condition.html
             result = evaluate_condition(stack_name, resources, value[keys_list[0]])
             return result
 
@@ -1302,7 +1308,7 @@ class TemplateDeployer:
             return
 
         # resolve refs in resource details
-        resolve_refs_recursively(stack.stack_name, stack.resources, resource)
+        resolve_refs_recursively(stack.stack_name, stack.resources, stack.mappings, resource)
 
         if action in ["Add", "Modify"]:
             if action == "Add" and not self.is_deployable_resource(resource):

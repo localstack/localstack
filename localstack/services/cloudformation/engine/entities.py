@@ -59,6 +59,18 @@ class StackTemplate(TypedDict):
 
 # TODO: remove metadata (flatten into individual fields)
 class Stack:
+
+    # # input
+    # metadata: StackMetadata
+    # template: StackTemplate
+    # template_body: str
+    #
+    # # after processing
+    # template_processed
+    #
+    # # execution related
+
+
     def __init__(
         self,
         metadata: Optional[StackMetadata] = None,
@@ -104,6 +116,7 @@ class Stack:
         self.events = []
         # list of stack change sets
         self.change_sets = []
+        # self.evaluated_conditions = {}
 
     def set_resolved_parameters(self, resolved_parameters: dict[str, Parameter]):
         self.resolved_parameters = resolved_parameters
@@ -255,13 +268,14 @@ class Stack:
                     "LogicalResourceId": name,
                     "Properties": {"Value": value},
                 }
-        for name, value in self.mappings.items():
-            if name not in result:
-                result[name] = {
-                    "Type": "Parameter",
-                    "LogicalResourceId": name,
-                    "Properties": {"Value": value},
-                }
+
+        # for name, value in self.mappings.items():
+        #     if name not in result:
+        #         result[name] = {
+        #             "Type": "Parameter",
+        #             "LogicalResourceId": name,
+        #             "Properties": {"Value": value},
+        #         }
 
         return result
 

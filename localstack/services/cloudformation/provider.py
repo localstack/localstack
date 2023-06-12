@@ -512,7 +512,7 @@ class CloudformationProvider(CloudformationApi):
             )
             raise ValidationError(msg)
 
-        # apply template transformations
+        # resolve parameters
         new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
             request.get("Parameters")
         )
@@ -533,6 +533,7 @@ class CloudformationProvider(CloudformationApi):
         temp_stack.set_resolved_parameters(resolved_parameters)
 
         # TODO: everything below should be async
+        # apply template transformations
         transformed_template = template_preparer.transform_template(
             template, parameters, stack_name=temp_stack.stack_name, resources=temp_stack.resources
         )
