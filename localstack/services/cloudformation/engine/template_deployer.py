@@ -18,7 +18,7 @@ from localstack.services.cloudformation.deployment_utils import (
     fix_boto_parameters_based_on_report,
     get_action_name_for_resource_change,
     is_none_or_empty_value,
-    log_not_available_message,
+    log_not_available_message, remove_none_values,
 )
 from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet
 from localstack.services.cloudformation.engine.types import DeployTemplates, FuncDetails
@@ -499,15 +499,16 @@ def _resolve_refs_recursively(
 
         if stripped_fn_lower == "if":
             condition, option1, option2 = value[keys_list[0]]
-            condition = evaluate_condition(stack_name, resources, condition)
-            return resolve_refs_recursively(
+            condition = evaluate_condition(stack_name, resources, mappings, condition)
+            result = resolve_refs_recursively(
                 stack_name, resources, mappings, option1 if condition else option2
             )
+            return result
 
         if stripped_fn_lower == "condition":
             # FIXME: this should only allow strings, no evaluation should be performed here
             #   see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-condition.html
-            result = evaluate_condition(stack_name, resources, value[keys_list[0]])
+            result = evaluate_condition(stack_name, resources, mappings, value[keys_list[0]])
             return result
 
         if stripped_fn_lower == "not":
@@ -631,7 +632,7 @@ def resolve_placeholders_in_string(result, stack_name: str, resources: dict, map
     return result
 
 
-def evaluate_condition(stack_name: str, resources: dict, mappings: dict, condition: str):
+def evaluate_condition(stack_name: str, resources: dict, mappings: dict, condition: str) -> bool:
     condition = resolve_refs_recursively(stack_name, resources, mappings, condition)
     condition = resolve_ref(stack_name, resources, mappings, condition, attribute="Ref")
     condition = resolve_refs_recursively(stack_name, resources, mappings, condition)
@@ -738,10 +739,6 @@ def determine_resource_physical_id(
 def add_default_resource_props(
     resource,
     stack_name,
-    resource_name=None,
-    resource_id=None,
-    update=False,
-    existing_resources=None,
 ):
     """Apply some fixes to resource props which otherwise cause deployments to fail"""
 
@@ -878,6 +875,12 @@ class TemplateDeployer:
                 break
             for resource_id, resource in resources.items():
                 try:
+                    # TODO(DS-next): re-enable?
+                    # # remove AWS::NoValue entries and populate defaults if necessary
+                    # resource_props = resource.get("Properties")
+                    # if resource_props:
+                    #     resource["Properties"] = remove_none_values(resource_props)
+                    # add_default_resource_props(resource, self.stack.stack_name)
                     # TODO: cache condition value in resource details on deployment and use cached value here
                     if evaluate_resource_condition(self.stack_name, self.resources, self.mappings, resource):
                         executor = self.create_resource_provider_executor()
@@ -1202,16 +1205,6 @@ class TemplateDeployer:
         changes_done = []
         max_iters = 30
         new_resources = stack.resources
-
-        # apply default props before running the loop
-        for resource_id, resource in new_resources.items():
-            # TODO(srw): this should be done earlier
-            add_default_resource_props(
-                resource,
-                stack.stack_name,
-                resource_id=resource_id,
-                existing_resources=new_resources,
-            )
 
         # start deployment loop
         for i in range(max_iters):
