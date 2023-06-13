@@ -1233,6 +1233,18 @@ class TemplateDeployer:
             if physical_id:
                 resource["PhysicalResourceId"] = physical_id
 
+        # Fetch state for compatibility purposes
+        # Since we now have the PhysicalResourceId available without a fetch_state, other attributes that still depend on fetch-state state might not work otherwise
+        if not resource:
+            return
+        resource_type = get_resource_type(resource)
+        resource_class = RESOURCE_MODELS.get(resource_type)
+        if resource_class:
+            resource_inst = resource_class(resource)
+            resource_inst.fetch_state_if_missing(
+                stack_name=stack.stack_name, resources=stack.resources
+            )
+
         # set resource status
         stack.set_resource_status(resource_id, f"{action}_COMPLETE", physical_res_id=physical_id)
 
