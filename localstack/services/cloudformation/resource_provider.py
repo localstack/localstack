@@ -1,17 +1,21 @@
 from __future__ import annotations
 
+import copy
 import logging
+import time
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from logging import Logger
 from typing import Generic, Optional, Type, TypedDict, TypeVar
 
+from plugin import Plugin, PluginManager
+
+from localstack import config
 from localstack.aws.connect import ServiceLevelClientFactory, connect_to
 
 Properties = TypeVar("Properties")
 
-PRIVATE_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 
 
@@ -115,6 +119,14 @@ class ResourceRequest(Generic[Properties]):
     tags: dict[str, str] = field(default_factory=dict)
 
 
+class CloudFormationResourceProviderPlugin(Plugin):
+    """
+    Base class for resource provider plugins.
+    """
+
+    namespace = "localstack.cloudformation.resource_providers"
+
+
 class ResourceProvider(Generic[Properties]):
     """
     This provides a base class onto which service-specific resource providers are built.
@@ -128,3 +140,78 @@ class ResourceProvider(Generic[Properties]):
 
     def delete(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
         raise NotImplementedError
+
+
+# TODO: auto-register the plugin
+def register_resource_provider(cls):
+    return cls
+
+
+class NoResourceProvider(Exception):
+    pass
+
+
+class ResourceProviderExecutor:
+    """
+    Point of abstraction between our integration with generic base models, and the new providers.
+    """
+
+    def __init__(self, stack_name: str, stack_id: str):
+        self.stack_name = stack_name
+        self.stack_id = stack_id
+
+    def deploy_loop(
+        self, raw_payload: ResourceProviderPayload, max_iterations: int = 30, sleep_time: float = 5
+    ) -> ProgressEvent[Properties]:
+        payload = copy.deepcopy(raw_payload)
+        for _ in range(max_iterations):
+            event = self.execute_action(payload)
+            if event.status == OperationStatus.SUCCESS:
+                # TODO: validate physical_resource_id is not None
+                return event
+
+            # update the shared state
+            context = {**payload["callbackContext"], **event.custom_context}
+            payload["callbackContext"] = context
+            payload["requestData"]["resourceProperties"] = event.resource_model
+
+            time.sleep(sleep_time)
+        else:
+            raise TimeoutError("Could not perform deploy loop action")
+
+    def execute_action(self, raw_payload: ResourceProviderPayload) -> ProgressEvent[Properties]:
+        # lookup provider in private registry
+        if not config.CFN_RESOURCE_PROVIDERS_V2:
+            # Fall back to legacy providers
+            raise NoResourceProvider
+
+        resource_provider = self.load_resource_provider(raw_payload["resourceType"])
+        if resource_provider:
+            change_type = raw_payload["action"]
+            request = convert_payload(
+                stack_name=self.stack_name, stack_id=self.stack_id, payload=raw_payload
+            )
+
+            match change_type:
+                case "Add":
+                    return resource_provider.create(request)
+                case "Dynamic" | "Modify":
+                    return resource_provider.update(request)
+                case "Remove":
+                    return resource_provider.delete(request)
+                case _:
+                    raise NotImplementedError(change_type)
+
+        else:
+            # custom provider
+            raise NoResourceProvider
+
+    def load_resource_provider(self, resource_type: str) -> Optional[ResourceProvider]:
+        try:
+            plugin = plugin_manager.load(resource_type)
+            return plugin.factory()
+        except Exception as e:
+            raise NoResourceProvider from e
+
+
+plugin_manager = PluginManager(CloudFormationResourceProviderPlugin.namespace)
