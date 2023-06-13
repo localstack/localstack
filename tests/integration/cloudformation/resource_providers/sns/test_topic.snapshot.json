@@ -1,0 +1,38 @@
+{
+  "tests/integration/cloudformation/resource_providers/sns/test_topic.py::TestAttributeAccess::test_getattr[DisplayName]": {
+    "recorded-date": "13-06-2023, 10:15:39",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/resource_providers/sns/test_topic.py::TestAttributeAccess::test_getattr[KmsMasterKeyId]": {
+    "recorded-date": "13-06-2023, 09:52:58",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/resource_providers/sns/test_topic.py::TestAttributeAccess::test_getattr[TopicName]": {
+    "recorded-date": "13-06-2023, 09:53:16",
+    "recorded-content": {
+      "stack_outputs": {
+        "MyOutput": "stack-ed3d8f87-MyResource-emXhDlMEf5yC",
+        "MyRef": "arn:aws:sns:<region>:111111111111:stack-ed3d8f87-MyResource-emXhDlMEf5yC"
+      },
+      "physical_resource_id": "arn:aws:sns:<region>:111111111111:stack-ed3d8f87-MyResource-emXhDlMEf5yC"
+    }
+  },
+  "tests/integration/cloudformation/resource_providers/sns/test_topic.py::TestAttributeAccess::test_getattr[TopicArn]": {
+    "recorded-date": "13-06-2023, 09:53:39",
+    "recorded-content": {
+      "stack_outputs": {
+        "MyOutput": "arn:aws:sns:<region>:111111111111:stack-7568727e-MyResource-a7MHvskamMjW",
+        "MyRef": "arn:aws:sns:<region>:111111111111:stack-7568727e-MyResource-a7MHvskamMjW"
+      },
+      "physical_resource_id": "arn:aws:sns:<region>:111111111111:stack-7568727e-MyResource-a7MHvskamMjW"
+    }
+  },
+  "tests/integration/cloudformation/resource_providers/sns/test_topic.py::TestAttributeAccess::test_getattr[SignatureVersion]": {
+    "recorded-date": "13-06-2023, 09:53:52",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/resource_providers/sns/test_topic.py::TestAttributeAccess::test_getattr[TracingConfig]": {
+    "recorded-date": "13-06-2023, 09:54:10",
+    "recorded-content": {}
+  }
+}

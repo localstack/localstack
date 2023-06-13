@@ -28,7 +28,6 @@ class TestAttributeAccess:
         aws_client: ServiceLevelClientFactory,
         deploy_cfn_template,
         attribute,
-        template_root,
         snapshot,
     ):
         """
