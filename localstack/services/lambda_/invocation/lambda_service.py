@@ -281,6 +281,16 @@ class LambdaService:
             return None
         # TODO payload verification  An error occurred (InvalidRequestContentException) when calling the Invoke operation: Could not parse request body into json: Could not parse payload into json: Unexpected character (''' (code 39)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')
         #  at [Source: (byte[])"'test'"; line: 1, column: 2]
+        #
+        # if invocation_type == "Event":
+        #     return event_manager.queue_invoke(invocation=Invocation(
+        #         payload=payload,
+        #         invoked_arn=invoked_arn,
+        #         client_context=client_context,
+        #         invocation_type=invocation_type,
+        #         invoke_time=datetime.now(),
+        #         request_id=request_id,
+        #     ))
 
         return version_manager.invoke(
             invocation=Invocation(

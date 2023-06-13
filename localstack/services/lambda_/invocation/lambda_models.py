@@ -507,6 +507,10 @@ class ServiceEndpoint(abc.ABC):
         """
         raise NotImplementedError()
 
+
+
+class OtherServiceEndpoint:
+
     def status_ready(self, executor_id: str) -> None:
         """
         Processes a status ready report by RAPID
