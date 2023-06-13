@@ -315,6 +315,7 @@ class FileWriter:
     def write_provider(self, contents: str):
         destination = self.destination_files["provider"]
         destination.parent.mkdir(parents=True, exist_ok=True)
+        self.ensure_python_init_files(destination.parent)
         self.write_text(contents, destination)
         self.console.print(f"written provider to {destination}")
 
@@ -334,6 +335,22 @@ class FileWriter:
     def write_text(contents: str, destination: Path):
         with destination.open("wt") as outfile:
             print(contents, file=outfile)
+
+    @staticmethod
+    def ensure_python_init_files(path: Path):
+        """
+        Make sure __init__.py files are created correctly
+        """
+        project_root = path.parent.parent.parent.parent
+        path_relative_to_root = path.relative_to(project_root)
+        dir = project_root
+        for part in path_relative_to_root.parts:
+            dir = dir / part
+            test_path = dir.joinpath("__init__.py")
+            if not test_path.is_file():
+                # touch file
+                with test_path.open("w"):
+                    pass
 
 
 @click.group()
