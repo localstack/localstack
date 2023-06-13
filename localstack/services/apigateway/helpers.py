@@ -917,7 +917,7 @@ def import_api_from_openapi_spec(
                         model_ref = media_type.get("schema", {}).get("$ref")
                         continue
                     LOG.warning(
-                        "Found '%s' content-type for the MethodResponse model for path '%s' and method '', not adding the model as currently not supported",
+                        "Found '%s' content-type for the MethodResponse model for path '%s' and method '%s', not adding the model as currently not supported",
                         content_type,
                         rel_path,
                         method_name,
