@@ -1489,7 +1489,6 @@ class TemplateDeployer:
                     }[action]
                     stack.add_stack_event(
                         resource_id=resource_id,
-                        # TODO
                         physical_res_id=new_resources[resource_id].get("PhysicalResourceId"),
                         status=f"{status_action}_FAILED",
                         status_reason=str(e),
