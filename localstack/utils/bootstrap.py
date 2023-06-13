@@ -256,7 +256,7 @@ def start_infra_locally():
     return infra.start_infra()
 
 
-def validate_localstack_config(name):
+def validate_localstack_config(name: str):
     # TODO: separate functionality from CLI output
     #  (use exceptions to communicate errors, and return list of warnings)
     from subprocess import CalledProcessError

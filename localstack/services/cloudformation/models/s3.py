@@ -3,6 +3,7 @@ import re
 
 from botocore.exceptions import ClientError
 
+from localstack.config import get_edge_port_http
 from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
 from localstack.services.cloudformation.cfn_utils import rename_params
 from localstack.services.cloudformation.deployment_utils import (
@@ -65,6 +66,27 @@ class S3Bucket(GenericBaseModel):
         def convert_acl_cf_to_s3(acl):
             """Convert a CloudFormation ACL string (e.g., 'PublicRead') to an S3 ACL string (e.g., 'public-read')"""
             return re.sub("(?<!^)(?=[A-Z])", "-", acl).lower()
+
+        def transform_website_configuration(website_configuration: dict) -> dict:
+            if not website_configuration:
+                return {}
+            output = {}
+            if index := website_configuration.get("IndexDocument"):
+                output["IndexDocument"] = {"Suffix": index}
+            if error := website_configuration.get("ErrorDocument"):
+                output["ErrorDocument"] = {"Key": error}
+            if redirect_all := website_configuration.get("RedirectAllRequestsTo"):
+                output["RedirectAllRequestsTo"] = redirect_all
+
+            for r in website_configuration.get("RoutingRules", []):
+                rule = {}
+                if condition := r.get("RoutingRuleCondition"):
+                    rule["Condition"] = condition
+                if redirect := r.get("RedirectRule"):
+                    rule["Redirect"] = redirect
+                output.setdefault("RoutingRules", []).append(rule)
+
+            return output
 
         def transform_cfn_cors(cors_config):
             # See https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketCors.html
@@ -192,6 +214,20 @@ class S3Bucket(GenericBaseModel):
                     CORSConfiguration=cors_configuration,
                 )
 
+        def _put_bucket_website_configuration(
+            resource_id, resources, resource_type, func, stack_name
+        ):
+            s3_client = aws_stack.connect_to_service("s3")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            bucket_name = props.get("BucketName")
+            website_config = transform_website_configuration(props.get("WebsiteConfiguration"))
+            if website_config:
+                s3_client.put_bucket_website(
+                    Bucket=bucket_name,
+                    WebsiteConfiguration=website_config,
+                )
+
         def _create_bucket(resource_id, resources, resource_type, func, stack_name):
             s3_client = aws_stack.connect_to_service("s3")
             resource = resources[resource_id]
@@ -222,6 +258,7 @@ class S3Bucket(GenericBaseModel):
                 {"function": _put_bucket_versioning},
                 {"function": _put_bucket_cors_configuration},
                 {"function": _add_bucket_tags},
+                {"function": _put_bucket_website_configuration},
             ],
             "delete": [
                 {"function": _pre_delete},
@@ -247,6 +284,12 @@ class S3Bucket(GenericBaseModel):
         )
         if notifs and not has_notifs:
             return None
+
+        website_config_props = props.get("WebsiteConfiguration")
+        website_config = s3_client.get_bucket_website_configuration(Bucket=bucket_name)
+        if website_config_props and not website_config:
+            return None
+
         return response
 
     def get_cfn_attribute(self, attribute_name):
@@ -258,7 +301,11 @@ class S3Bucket(GenericBaseModel):
 
         if attribute_name == "WebsiteURL":
             bucket_name = self.props.get("BucketName")
-            return f"https://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}"
+            # by default (parity) s3 website only supports http
+            #   https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html
+            #   "Amazon S3 website endpoints do not support HTTPS. If you want to use HTTPS,
+            #   you can use Amazon CloudFront [...]"
+            return f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}:{get_edge_port_http()}"
 
         return super(S3Bucket, self).get_cfn_attribute(attribute_name)
 

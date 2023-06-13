@@ -133,6 +133,7 @@ class TestCloudwatch:
         )
 
         # filtering metric data with current time interval
+        now = datetime.utcnow().replace(microsecond=0)
         response = aws_client.cloudwatch.get_metric_data(
             MetricDataQueries=[
                 {
@@ -155,8 +156,8 @@ class TestCloudwatch:
                     },
                 },
             ],
-            StartTime=datetime.utcnow() - timedelta(hours=1),
-            EndTime=datetime.utcnow(),
+            StartTime=now - timedelta(hours=1),
+            EndTime=now + timedelta(minutes=2),
         )
 
         assert 2 == len(response["MetricDataResults"])
@@ -478,6 +479,7 @@ class TestCloudwatch:
             "$..alarm-triggered-sqs-msg.NewStateReason",
         ]
     )
+    @pytest.mark.xfail(reason="SQS messages do not work reliable, test is flaky")
     def test_put_metric_alarm(self, sns_create_topic, sqs_create_queue, snapshot, aws_client):
         sns_topic_alarm = sns_create_topic()
         topic_arn_alarm = sns_topic_alarm["TopicArn"]

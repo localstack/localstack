@@ -269,7 +269,7 @@ class IAMRole(GenericBaseModel):
                 client.delete_role(RoleName=_states.get("RoleName"))
                 role = client.create_role(
                     RoleName=props.get("RoleName"),
-                    AssumeRolePolicyDocument=str(props_policy),
+                    AssumeRolePolicyDocument=json.dumps(props_policy),
                 )
                 IAMRole._post_create(resource_id, resources, None, None, None)
                 return role["Role"]

@@ -22,11 +22,7 @@ from localstack.services.cloudformation.deployment_utils import (
     log_not_available_message,
     remove_none_values,
 )
-from localstack.services.cloudformation.engine.entities import (
-    Stack,
-    StackChangeSet,
-    resolve_ssm_parameter_value,
-)
+from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet
 from localstack.services.cloudformation.service_models import (
     KEY_RESOURCE_STATE,
     DependencyNotYetSatisfied,
@@ -165,7 +161,10 @@ def get_client(resource: dict):
     try:
         return aws_stack.connect_to_service(service)
     except Exception as e:
-        LOG.warning('Unable to get client for "%s" API, skipping deployment: %s', service, e)
+        log_method = getattr(LOG, "warning")
+        if config.CFN_VERBOSE_ERRORS:
+            log_method = getattr(LOG, "exception")
+        log_method('Unable to get client for "%s" API, skipping deployment: %s', service, e)
         return None
 
 
@@ -203,6 +202,8 @@ def retrieve_resource_details(
         log_not_available_message(resource_type=resource_type, message=message)
 
     except DependencyNotYetSatisfied:
+        if config.CFN_VERBOSE_ERRORS:
+            LOG.exception(f"dependency not yet satisfied for {resource_id}")
         return
 
     except Exception as e:
@@ -232,7 +233,10 @@ def check_not_found_exception(e, resource_type, resource, resource_status=None):
             resource,
             resource_status,
         )
-        return False
+        if config.CFN_VERBOSE_ERRORS:
+            raise e
+        else:
+            return False
 
     return True
 
@@ -268,7 +272,8 @@ def extract_resource_attribute(
             try:
                 return resource_state.get_cfn_attribute(attribute)
             except Exception:
-                pass
+                if config.CFN_VERBOSE_ERRORS:
+                    LOG.exception("could not fetch cfn attribute {attribute} from resource")
         raise Exception(
             f'Unable to extract attribute "{attribute}" from "{resource_type}" model class {type(resource_state)}'
         )
@@ -283,11 +288,6 @@ def extract_resource_attribute(
             "Value",
             resource.get("Value", resource_props.get("Properties", {}).get("Value")),
         )
-        param_value_type = resource_props.get("ParameterType") or ""
-        if param_value_type.startswith("AWS::SSM::Parameter::Value"):
-            param_value = resolve_ssm_parameter_value(
-                param_value_type, resource_props.get("ParameterValue")
-            )
         if is_ref_attr_or_arn:
             result = param_value
         elif isinstance(param_value, dict):
@@ -307,6 +307,7 @@ def extract_resource_attribute(
                 resource_id=resource_id,
             )
     if is_ref_attribute:
+        # TODO: remove
         for attr in ["Id", "PhysicalResourceId", "Ref"]:
             if result is None:
                 for obj in [resource_state, resource]:
@@ -325,8 +326,11 @@ def get_attr_from_model_instance(
     try:
         inst = model_class(resource_name=resource_id, resource_json=resource)
         return inst.get_cfn_attribute(attribute)
-    except Exception as e:
-        LOG.debug("Failed to retrieve model attribute: %s", attribute, exc_info=e)
+    except Exception:
+        log_method = getattr(LOG, "debug")
+        if config.CFN_VERBOSE_ERRORS:
+            log_method = getattr(LOG, "exception")
+        log_method("Failed to retrieve model attribute: %s", attribute)
 
 
 def get_ref_from_model(resources: dict, logical_resource_id: str) -> Optional[str]:
@@ -871,7 +875,10 @@ def invoke_function(
     except Exception as e:
         if action_name == "delete" and check_not_found_exception(e, resource_type, resource):
             return
-        LOG.warning("Error calling %s with params: %s for resource: %s", function, params, resource)
+        log_method = getattr(LOG, "warning")
+        if config.CFN_VERBOSE_ERRORS:
+            log_method = getattr(LOG, "exception")
+        log_method("Error calling %s with params: %s for resource: %s", function, params, resource)
         raise e
 
     return result
@@ -1028,8 +1035,11 @@ class TemplateDeployer:
                 initialize=True,
                 action="CREATE",
             )
-        except Exception as e:
-            LOG.info("Unable to create stack %s: %s", self.stack.stack_name, e)
+        except Exception:
+            log_method = getattr(LOG, "info")
+            if config.CFN_VERBOSE_ERRORS:
+                log_method = getattr(LOG, "exception")
+            log_method("Unable to create stack %s: %s", self.stack.stack_name)
             self.stack.set_stack_status("CREATE_FAILED")
             raise
 
@@ -1040,6 +1050,8 @@ class TemplateDeployer:
             else "CREATE"
         )
         change_set.stack.set_stack_status(f"{action}_IN_PROGRESS")
+        # update parameters
+        change_set.stack.set_resolved_parameters(change_set.resolved_parameters)
 
         # update attributes that the stack inherits from the changeset
         change_set.stack.metadata["Capabilities"] = change_set.metadata.get("Capabilities")
@@ -1083,6 +1095,8 @@ class TemplateDeployer:
             try:
                 return self.stack.resource_status(r_id).get("ResourceStatus") == "DELETE_COMPLETE"
             except Exception:
+                if config.CFN_VERBOSE_ERRORS:
+                    LOG.exception(f"failed to lookup if resource {r_id} is deleted")
                 return True  # just an assumption
 
         # a bit of a workaround until we have a proper dependency graph
@@ -1109,7 +1123,10 @@ class TemplateDeployer:
                             e,
                         )
                     else:
-                        LOG.warning(
+                        log_method = getattr(LOG, "warning")
+                        if config.CFN_VERBOSE_ERRORS:
+                            log_method = getattr(LOG, "exception")
+                        log_method(
                             "Failed delete of resource with id %s in iteration cycle %d. Retrying in next cycle.",
                             resource_id,
                             iteration_cycle,
@@ -1216,6 +1233,18 @@ class TemplateDeployer:
             if physical_id:
                 resource["PhysicalResourceId"] = physical_id
 
+        # Fetch state for compatibility purposes
+        # Since we now have the PhysicalResourceId available without a fetch_state, other attributes that still depend on fetch-state state might not work otherwise
+        if not resource:
+            return
+        resource_type = get_resource_type(resource)
+        resource_class = RESOURCE_MODELS.get(resource_type)
+        if resource_class:
+            resource_inst = resource_class(resource)
+            resource_inst.fetch_state_if_missing(
+                stack_name=stack.stack_name, resources=stack.resources
+            )
+
         # set resource status
         stack.set_resource_status(resource_id, f"{action}_COMPLETE", physical_res_id=physical_id)
 
@@ -1279,56 +1308,6 @@ class TemplateDeployer:
             "Resources"
         ][resource_id]
 
-    def resolve_param(
-        self, logical_id: str, param_type: str, default_value: Optional[str] = None
-    ) -> Optional[str]:
-        if param_type == "AWS::SSM::Parameter::Value<String>":
-            return resolve_ssm_parameter_value(param_type, default_value)
-        return None
-
-    def apply_parameter_changes(self, old_stack, new_stack) -> None:
-        parameters = {
-            p["ParameterKey"]: p
-            for p in old_stack.metadata["Parameters"]  # go through current parameter values
-        }
-
-        for logical_id, value in new_stack.template["Parameters"].items():
-            default = value.get("Default")
-            provided_param_value = parameters.get(logical_id)
-            param = {
-                "ParameterKey": logical_id,
-                "ParameterValue": provided_param_value if default is None else default,
-            }
-            if default is not None:
-                resolved_value = self.resolve_param(logical_id, value.get("Type"), default)
-                if resolved_value is not None:
-                    param["ResolvedValue"] = resolved_value
-
-            parameters[logical_id] = param
-
-        def _update_params(params_list: list[dict]):
-            for param in params_list:
-                # make sure we preserve parameter values if UsePreviousValue=true
-                if not param.get("UsePreviousValue"):
-                    parameters.update({param["ParameterKey"]: param})
-
-        _update_params(new_stack.metadata["Parameters"])
-        for change_set in new_stack.change_sets:
-            _update_params(change_set.metadata["Parameters"])
-
-        # TODO: unclear/undocumented behavior in implicitly updating old_stack parameter here
-        # Note: Indeed it seems that parameters from Change Sets are applied to a stack
-        #   itself, and are preserved even after a change set has been deleted. However,
-        #   a proper implementation would distinguish between (1) Change Sets and (2) Change
-        #   Set Executions - the former are only a template for the changes to be applied,
-        #   whereas the latter actually perform changes (including parameter updates).
-        #   Also, (1) can be deleted, and (2) can only be rolled back (in case of errors).
-        #   Once we have the distinction between (1) and (2) in place, this logic (updating
-        #   the parameters of the stack itself) will become obsolete, then the parameter
-        #   values can be determined by replaying the values of the sequence of (immutable)
-        #   Change Set Executions.
-        old_stack.metadata["Parameters"] = [v for v in parameters.values() if v]
-
     def construct_changes(
         self,
         existing_stack,
@@ -1379,7 +1358,7 @@ class TemplateDeployer:
         self.init_resource_status(old_resources, action="UPDATE")
 
         # apply parameter changes to existing stack
-        self.apply_parameter_changes(existing_stack, new_stack)
+        # self.apply_parameter_changes(existing_stack, new_stack)
 
         # construct changes
         changes = self.construct_changes(
@@ -1419,7 +1398,10 @@ class TemplateDeployer:
                 self.do_apply_changes_in_loop(changes, stack)
                 status = f"{action}_COMPLETE"
             except Exception as e:
-                LOG.debug(
+                log_method = getattr(LOG, "debug")
+                if config.CFN_VERBOSE_ERRORS:
+                    log_method = getattr(LOG, "exception")
+                log_method(
                     'Error applying changes for CloudFormation stack "%s": %s %s',
                     stack.stack_name,
                     e,
@@ -1501,12 +1483,33 @@ class TemplateDeployer:
                     del changes[j]
                     updated = True
                 except DependencyNotYetSatisfied as e:
-                    LOG.debug(
+                    log_method = getattr(LOG, "debug")
+                    if config.CFN_VERBOSE_ERRORS:
+                        log_method = getattr(LOG, "exception")
+                    log_method(
                         'Dependencies for "%s" not yet satisfied, retrying in next loop: %s',
                         resource_id,
                         e,
                     )
                     j += 1
+                except Exception as e:
+                    status_action = {
+                        "Add": "CREATE",
+                        "Modify": "UPDATE",
+                        "Dynamic": "UPDATE",
+                        "Remove": "DELETE",
+                    }[action]
+                    stack.add_stack_event(
+                        resource_id=resource_id,
+                        physical_res_id=new_resources[resource_id].get("PhysicalResourceId"),
+                        status=f"{status_action}_FAILED",
+                        status_reason=str(e),
+                    )
+                    if config.CFN_VERBOSE_ERRORS:
+                        LOG.exception(
+                            f"Failed to deploy resource {resource_id}, stack deploy failed"
+                        )
+                    raise
             if not changes:
                 break
             if not updated:
@@ -1608,7 +1611,10 @@ def resolve_outputs(stack) -> list[dict]:
             resolve_refs_recursively(stack.stack_name, stack.resources, details)
             value = details["Value"]
         except Exception as e:
-            LOG.debug("Unable to resolve references in stack outputs: %s - %s", details, e)
+            log_method = getattr(LOG, "debug")
+            if config.CFN_VERBOSE_ERRORS:
+                log_method = getattr(LOG, "exception")
+            log_method("Unable to resolve references in stack outputs: %s - %s", details, e)
         exports = details.get("Export") or {}
         export = exports.get("Name")
         export = resolve_refs_recursively(stack.stack_name, stack.resources, export)
