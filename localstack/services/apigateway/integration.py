@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Union
 from urllib.parse import urljoin
 
 import requests
+from botocore.exceptions import ClientError
 from moto.apigatewayv2.exceptions import BadRequestException
 from requests import Response
 
@@ -50,6 +51,34 @@ from localstack.utils.json import json_safe
 from localstack.utils.strings import camel_to_snake_case, to_bytes
 
 LOG = logging.getLogger(__name__)
+
+
+class ApiGatewayIntegrationError(Exception):
+    """
+    Base class for all ApiGateway Integration errors.
+    Can be used as is or extended for common error types.
+    These exceptions should be handled in one place, and bubble up from all others.
+    """
+
+    message: str
+    status_code: int
+
+    def __init__(self, message: str, status_code: int):
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+
+    def to_response(self):
+        return requests_response({"message": self.message}, status_code=self.status_code)
+
+
+class IntegrationAccessError(ApiGatewayIntegrationError):
+    """
+    Error message when an integration cannot be accessed.
+    """
+
+    def __init__(self):
+        super().__init__("Internal server error", 500)
 
 
 class BackendIntegration(ABC):
@@ -263,14 +292,13 @@ class LambdaProxyIntegration(BackendIntegration):
                 asynchronous=asynchronous,
                 invocation_context=invocation_context,
             )
-
+        except ClientError as e:
+            raise IntegrationAccessError() from e
         except Exception as e:
             LOG.warning(
                 "Unable to run Lambda function on API Gateway message: %s",
                 e,
-                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
-            raise e
 
     def invoke(self, invocation_context: ApiInvocationContext):
         uri = (
@@ -375,12 +403,15 @@ class LambdaIntegration(BackendIntegration):
         func_arn = self._lambda_integration_uri(invocation_context)
         event = self.request_templates.render(invocation_context) or b""
         asynchronous = headers.get("X-Amz-Invocation-Type", "").strip("'") == "Event"
-        result = call_lambda(
-            function_arn=func_arn,
-            event=to_bytes(event),
-            asynchronous=asynchronous,
-            invocation_context=invocation_context,
-        )
+        try:
+            result = call_lambda(
+                function_arn=func_arn,
+                event=to_bytes(event),
+                asynchronous=asynchronous,
+                invocation_context=invocation_context,
+            )
+        except ClientError as e:
+            raise IntegrationAccessError() from e
 
         response = LambdaResponse()
 

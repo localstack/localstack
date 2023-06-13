@@ -20,6 +20,7 @@ from localstack.services.apigateway.helpers import (
     make_error_response,
 )
 from localstack.services.apigateway.integration import (
+    ApiGatewayIntegrationError,
     DynamoDBIntegration,
     HTTPIntegration,
     KinesisIntegration,
@@ -295,6 +296,14 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
         invocation_context.response = response
         response = apply_response_parameters(invocation_context)
         return response
+    except ApiGatewayIntegrationError as e:
+        LOG.warning(
+            "Error while invoking integration for ApiGateway ID %s: %s",
+            invocation_context.api_id,
+            e,
+            exc_info=LOG.isEnabledFor(logging.DEBUG),
+        )
+        return e.to_response()
     except Exception as e:
         msg = f"Error invoking integration for API Gateway ID '{invocation_context.api_id}': {e}"
         LOG.exception(msg)

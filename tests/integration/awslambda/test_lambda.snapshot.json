@@ -3273,5 +3273,26 @@
         "END RequestId: <uuid:1>"
       ]
     }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaAliases::test_alias_routingconfig_async": {
+    "recorded-date": "13-06-2023, 15:29:36",
+    "recorded-content": {
+      "create_alias_response": {
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "Description": "",
+        "FunctionVersion": "1",
+        "Name": "alias1",
+        "RevisionId": "<uuid:1>",
+        "RoutingConfig": {
+          "AdditionalVersionWeights": {
+            "2": 0.5
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
   }
 }
