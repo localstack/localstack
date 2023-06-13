@@ -1492,6 +1492,24 @@ class TemplateDeployer:
                         e,
                     )
                     j += 1
+                except Exception as e:
+                    status_action = {
+                        "Add": "CREATE",
+                        "Modify": "UPDATE",
+                        "Dynamic": "UPDATE",
+                        "Remove": "DELETE",
+                    }[action]
+                    stack.add_stack_event(
+                        resource_id=resource_id,
+                        physical_res_id=new_resources[resource_id].get("PhysicalResourceId"),
+                        status=f"{status_action}_FAILED",
+                        status_reason=str(e),
+                    )
+                    if config.CFN_VERBOSE_ERRORS:
+                        LOG.exception(
+                            f"Failed to deploy resource {resource_id}, stack deploy failed"
+                        )
+                    raise
             if not changes:
                 break
             if not updated:

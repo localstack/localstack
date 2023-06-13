@@ -10,6 +10,7 @@ import yaml
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.cloudformation_utils import load_template_file, load_template_raw
+from localstack.testing.pytest.fixtures import StackDeployError
 from localstack.utils.aws import arns
 from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
@@ -991,3 +992,47 @@ class TestMacros:
 
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.match("failed_description", failed_events_by_policy[0])
+
+
+class TestStackEvents:
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..EventId",
+            "$..PhysicalResourceId",
+            "$..ResourceProperties",
+            # TODO: we do not maintain parity here, just that the property exists
+            "$..ResourceStatusReason",
+        ]
+    )
+    def test_invalid_stack_deploy(self, deploy_cfn_template, aws_client, snapshot):
+        logical_resource_id = "MyParameter"
+        template = {
+            "Resources": {
+                logical_resource_id: {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        # invalid: missing required property _type_
+                        "Value": "abc123",
+                    },
+                },
+            },
+        }
+
+        with pytest.raises(StackDeployError) as exc_info:
+            deploy_cfn_template(template=json.dumps(template))
+
+        stack_events = exc_info.value.events
+        # filter out only the single create event that failed
+        failed_events = [
+            every
+            for every in stack_events
+            if every["ResourceStatus"] == "CREATE_FAILED"
+            and every["LogicalResourceId"] == logical_resource_id
+        ]
+        assert len(failed_events) == 1
+        failed_event = failed_events[0]
+
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.match("failed_event", failed_event)
+        assert "ResourceStatusReason" in failed_event
