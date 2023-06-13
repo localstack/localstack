@@ -610,7 +610,12 @@ def apply_stream_patches():
         if existing_key:
             existing_key.is_latest = False
 
-        bucket.keys[key_name] = new_key
+        existing_keys = bucket.keys.getlist(key_name, [])
+        if bucket.is_versioned:
+            keys = existing_keys + [new_key]
+        else:
+            keys = [new_key]
+        bucket.keys.setlist(key_name, keys)
 
         return new_key
 
