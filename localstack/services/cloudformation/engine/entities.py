@@ -70,7 +70,6 @@ class Stack:
     #
     # # execution related
 
-
     def __init__(
         self,
         metadata: Optional[StackMetadata] = None,
@@ -268,14 +267,6 @@ class Stack:
                     "LogicalResourceId": name,
                     "Properties": {"Value": value},
                 }
-
-        # for name, value in self.mappings.items():
-        #     if name not in result:
-        #         result[name] = {
-        #             "Type": "Parameter",
-        #             "LogicalResourceId": name,
-        #             "Properties": {"Value": value},
-        #         }
 
         return result
 
