@@ -130,10 +130,14 @@ class TemplateRenderer:
         self.environment = environment
 
     def render(
-        self, file_type: Literal["provider", "test", "template"], resource_name: ResourceName
+        self,
+        file_type: Literal["provider", "test", "attribute_template", "template"],
+        resource_name: ResourceName,
     ) -> str:
         # TODO: remove this ugly conditional
-        if file_type == "template":
+        if file_type == "attribute_template":
+            return self.render_attribute_template(resource_name)
+        elif file_type == "template":
             return self.render_template(resource_name)
 
         template_mapping = {
@@ -172,6 +176,20 @@ class TemplateRenderer:
         template = {
             "AWSTemplateFormatVersion": "2010-09-09",
             "Description": f"Template to exercise {resource_name.full_name}",
+            "Resources": {
+                "MyResource": {
+                    "Type": resource_name.full_name,
+                    "Properties": {},
+                },
+            },
+        }
+
+        return safe_dump(template, sort_keys=False)
+
+    def render_attribute_template(self, resource_name: ResourceName) -> str:
+        template = {
+            "AWSTemplateFormatVersion": "2010-09-09",
+            "Description": f"Template to exercise getting attributes of {resource_name.full_name}",
             "Parameters": {
                 "AttributeName": {
                     "Type": "String",
@@ -271,8 +289,7 @@ class FileWriter:
                 self.resource_name.service.lower(),
                 f"test_{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.py",
             ),
-            # TODO: extend
-            "test_template": self.root.joinpath(
+            "test_attribute_template": self.root.joinpath(
                 "tests",
                 "integration",
                 "templates",
@@ -308,7 +325,7 @@ class FileWriter:
         self.console.print(f"written tests to {destination}")
 
     def write_test_template(self, contents: str):
-        destination = self.destination_files["test_template"]
+        destination = self.destination_files["test_attribute_template"]
         destination.parent.mkdir(parents=True, exist_ok=True)
         self.write_text(contents, destination)
         self.console.print(f"written test CFn template to {destination}")
@@ -348,6 +365,7 @@ def generate(resource_type: str, write: bool):
     template_renderer = TemplateRenderer(schema, env)
     provider_file = template_renderer.render("provider", resource_name)
     tests_file = template_renderer.render("test", resource_name)
+    test_attributes_template = template_renderer.render("attribute_template", resource_name)
     test_template = template_renderer.render("template", resource_name)
 
     # for pretty printing
@@ -356,8 +374,10 @@ def generate(resource_type: str, write: bool):
     if not write:
         console.print("\n[underline]Provider template[/underline]\n")
         console.print(Syntax(provider_file, "python"))
-        console.print("\n[underline]Test template[/underline]\n")
+        console.print("\n[underline]Test file[/underline]\n")
         console.print(Syntax(tests_file, "python"))
+        console.print("\n[underline]Attribute Test Template[/underline]\n")
+        console.print(Syntax(test_attributes_template, "yaml"))
         console.print("\n[underline]Template[/underline]\n")
         console.print(Syntax(test_template, "yaml"))
         return
