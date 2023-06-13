@@ -6,7 +6,7 @@ import hashlib
 import itertools
 import logging
 from collections.abc import Iterator
-from io import BufferedReader, BytesIO, RawIOBase
+from io import BytesIO, RawIOBase
 from tempfile import SpooledTemporaryFile
 from typing import IO, Any, Optional, Tuple
 
@@ -56,8 +56,11 @@ CHUNK_SIZE = 1024 * 4
 
 
 class S3ProviderStream(S3Provider):
+    def on_after_init(self):
+        super().on_after_init()
+        apply_stream_patches()
+
     @handler("PutObject", expand=False)
-    # @profile
     def put_object(
         self,
         context: RequestContext,
@@ -259,12 +262,15 @@ class PartialStream(RawIOBase):
 
         data = self._base_stream.read(amount)
         if not data:
-            return
+            return b""
         read_amount = len(data)
         self._length -= read_amount
         self._pos += read_amount
 
         return data
+
+    def readable(self) -> bool:
+        return True
 
     def tell(self):
         return self._length
@@ -281,7 +287,6 @@ class StreamedFakeKey(s3_models.FakeKey):
 
     @property
     def value(self) -> IO[bytes]:
-        # TODO: verify this
         self._value_buffer.seek(0)
         return self._value_buffer
 
@@ -374,13 +379,25 @@ class StreamedFakeKey(s3_models.FakeKey):
                     if chunk_length != 0:
                         LOG.warning("The S3 object body didn't conform to the aws-chunk format")
                 except ValueError:
-                    trailing_headers.append(next_line)
+                    trailing_headers.append(next_line.strip())
 
                 # try for trailing headers after
                 while line := new_value.readline():
-                    trailing_headers.append(line)
+                    trailing_header = line.strip()
+                    if trailing_header:
+                        trailing_headers.append(trailing_header)
 
-            # TODO: parse trailing headers for checksum
+            # look for the checksum header in the trailing headers
+            # TODO: we could get the header key from x-amz-trailer as well
+            for trailing_header in trailing_headers:
+                try:
+                    header_key, header_value = trailing_header.decode("utf-8").split(
+                        ":", maxsplit=1
+                    )
+                    if header_key.lower() == f"x-amz-checksum-{self.checksum_algorithm}".lower():
+                        self.checksum_value = header_value
+                except (IndexError, ValueError, AttributeError):
+                    continue
 
             if self.checksum_algorithm:
                 calculated_checksum = base64.b64encode(checksum.digest()).decode()
@@ -646,8 +663,7 @@ def apply_stream_patches():
     def _fix_key_response(fn, self, *args, **kwargs):
         """Return an iterator from the stream value in `key_value`"""
         status_code, resp_headers, key_value = fn(self, *args, **kwargs)
-        # content = get_generator_from_stream(key_value)
-        content = BufferedReader(raw=key_value)
+        content = get_generator_from_stream(key_value)
         return status_code, resp_headers, content
 
     @patch(s3_responses.S3Response._handle_range_header, pass_target=False)
@@ -659,7 +675,6 @@ def apply_stream_patches():
             response_content.seek(0, 2)
             length = response_content.tell()
             response_content.seek(0)
-            print(f"{length=}")
         else:
             length = len(response_content)
 
@@ -689,27 +704,10 @@ def apply_stream_patches():
             content = response_content[begin : end + 1]
             response_headers["content-length"] = len(content)
         else:
-            content = PartialStream(response_content, begin, end)
-            content = BufferedReader(raw=content)
+            stream = PartialStream(response_content, begin, end)
+            content = get_generator_from_stream(stream)
             requested_length = end - begin + 1
             response_headers["content-length"] = requested_length
-            #
-            # len_range = requested_length
-            # def get_range() -> Iterable[bytes]:
-            #     nonlocal len_range
-            #     pos = begin
-            #     while len_range > 0:
-            #         response_content.seek(pos)
-            #         amount = min(len_range, CHUNK_SIZE)
-            #         data = response_content.read(amount)
-            #         if not data:
-            #             return
-            #         read_amount = len(data)
-            #         len_range -= read_amount
-            #         pos += pos + read_amount
-            #         yield data
-            #
-            # content = get_range()
 
         return 206, response_headers, content
 

@@ -424,6 +424,12 @@ LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 # whether legacy s3 is enabled
 LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "legacy"
 
+# FIXME: remove, this is for testing this PR
+if not os.environ.get("PROVIDER_OVERRIDE_S3", ""):
+    os.environ["PROVIDER_OVERRIDE_S3"] = "stream"
+
+STREAM_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "stream"
+
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
 
