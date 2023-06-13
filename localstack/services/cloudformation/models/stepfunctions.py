@@ -66,19 +66,6 @@ class SFNStateMachine(GenericBaseModel):
         result = sfn_client.describe_state_machine(stateMachineArn=sm_arn[0])
         return result
 
-    def update_resource(self, new_resource, stack_name, resources):
-        props = new_resource["Properties"]
-        client = aws_stack.connect_to_service("stepfunctions")
-        sm_arn = self.props.get("stateMachineArn")
-        if not sm_arn:
-            self.state = self.fetch_state(stack_name=stack_name, resources=resources)
-            sm_arn = self.state["stateMachineArn"]
-        kwargs = {
-            "stateMachineArn": sm_arn,
-            "definition": props["DefinitionString"],
-        }
-        return client.update_state_machine(**kwargs)
-
     @staticmethod
     def add_defaults(resource, stack_name: str):
         role_name = resource.get("Properties", {}).get("StateMachineName")

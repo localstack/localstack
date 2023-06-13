@@ -10,7 +10,6 @@ from localstack.services.cloudformation.deployment_utils import (
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack, queries
 from localstack.utils.common import keys_to_lower, select_attributes, to_bytes
-from localstack.utils.strings import first_char_to_lower
 
 
 class GatewayResponse(GenericBaseModel):
@@ -356,29 +355,6 @@ class GatewayMethod(GenericBaseModel):
 
         return match[0] if match else None
 
-    def update_resource(self, new_resource, stack_name, resources):
-        props = new_resource["Properties"]
-        client = aws_stack.connect_to_service("apigateway")
-        integration = props.get("Integration")
-        kwargs = {
-            "restApiId": props["RestApiId"],
-            "resourceId": props["ResourceId"],
-            "httpMethod": props["HttpMethod"],
-            "requestParameters": props.get("RequestParameters") or {},
-        }
-        if integration:
-            kwargs["type"] = integration["Type"]
-            if integration.get("IntegrationHttpMethod"):
-                kwargs["integrationHttpMethod"] = integration.get("IntegrationHttpMethod")
-            if integration.get("Uri"):
-                kwargs["uri"] = integration.get("Uri")
-            kwargs["requestParameters"] = integration.get("RequestParameters") or {}
-            kwargs["requestTemplates"] = integration.get("RequestTemplates") or {}
-            return client.put_integration(**kwargs)
-        kwargs["authorizationType"] = props.get("AuthorizationType")
-
-        return client.put_method(**kwargs)
-
     def get_physical_resource_id(self, attribute=None, **kwargs):
         props = self.props
         result = "%s-%s-%s" % (
@@ -580,68 +556,6 @@ class GatewayUsagePlan(GenericBaseModel):
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("id")
-
-    def update_resource(self, new_resource, stack_name, resources):
-        props = new_resource["Properties"]
-        parameters_to_select = [
-            "UsagePlanName",
-            "Description",
-            "ApiStages",
-            "Quota",
-            "Throttle",
-            "Tags",
-        ]
-        update_config_props = select_attributes(props, parameters_to_select)
-
-        if "Tags" in update_config_props:
-            tags_dict = {}
-            for tag in update_config_props:
-                tags_dict.update({tag["Key"]: tag["Value"]})
-            update_config_props["Tags"] = tags_dict
-
-        usage_plan_id = new_resource["PhysicalResourceId"]
-
-        patch_operations = []
-
-        for parameter in update_config_props:
-            value = update_config_props[parameter]
-            if parameter == "ApiStages":
-                patch_operations.append(
-                    {
-                        "op": "remove",
-                        "path": f"/{first_char_to_lower(parameter)}",
-                    }
-                )
-
-                for stage in value:
-                    patch_operations.append(
-                        {
-                            "op": "replace",
-                            "path": f"/{first_char_to_lower(parameter)}",
-                            "value": f'{stage["ApiId"]}:{stage["Stage"]}',
-                        }
-                    )
-
-                    if "Throttle" in stage:
-                        patch_operations.append(
-                            {
-                                "op": "replace",
-                                "path": f'/{first_char_to_lower(parameter)}/{stage["ApiId"]}:{stage["Stage"]}',
-                                "value": json.dumps(stage["Throttle"]),
-                            }
-                        )
-
-            elif isinstance(value, dict):
-                for item in value:
-                    last_value = value[item]
-                    path = f"/{first_char_to_lower(parameter)}/{first_char_to_lower(item)}"
-                    patch_operations.append({"op": "replace", "path": path, "value": last_value})
-            else:
-                patch_operations.append(
-                    {"op": "replace", "path": f"/{first_char_to_lower(parameter)}", "value": value}
-                )
-        client = aws_stack.connect_to_service("apigateway")
-        client.update_usage_plan(usagePlanId=usage_plan_id, patchOperations=patch_operations)
 
 
 class GatewayApiKey(GenericBaseModel):

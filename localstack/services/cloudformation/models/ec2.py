@@ -525,22 +525,6 @@ class EC2Instance(GenericBaseModel):
             return
         return self._get_state()
 
-    def update_resource(self, new_resource, stack_name, resources):
-        instance_id = self.get_physical_resource_id()
-        props = new_resource["Properties"]
-        groups = props.get("SecurityGroups", props.get("SecurityGroupIds"))
-
-        client = aws_stack.connect_to_service("ec2")
-        kwargs = {}
-        if groups:
-            kwargs["Groups"] = groups
-        client.modify_instance_attribute(
-            InstanceId=instance_id,
-            InstanceType={"Value": props["InstanceType"]},
-            **kwargs,
-        )
-        return self._get_state(client)
-
     def _get_state(self, client=None):
         instance_id = self.get_physical_resource_id()
         client = client or aws_stack.connect_to_service("ec2")

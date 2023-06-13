@@ -10,7 +10,7 @@ from localstack.services.cloudformation.deployment_utils import (
     select_parameters,
 )
 from localstack.services.cloudformation.packages import cloudformation_package
-from localstack.services.cloudformation.service_models import LOG, GenericBaseModel
+from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import (
     cp_r,
@@ -41,41 +41,6 @@ class LambdaFunction(GenericBaseModel):
         if attribute == "Arn":
             return arns.lambda_function_arn(func_name)
         return func_name
-
-    def update_resource(self, new_resource, stack_name, resources):
-        props = new_resource["Properties"]
-        client = aws_stack.connect_to_service("lambda")
-        config_keys = [
-            "Description",
-            "Environment",
-            "FunctionName",
-            "Handler",
-            "ImageConfig",
-            "Layers",
-            "MemorySize",
-            "Role",
-            "Runtime",
-            "Timeout",
-            "TracingConfig",
-            "VpcConfig",
-        ]
-        update_config_props = select_attributes(props, config_keys)
-        if "Timeout" in update_config_props:
-            update_config_props["Timeout"] = int(update_config_props["Timeout"])
-        if "Code" in props:
-            code = props["Code"] or {}
-            if not code.get("ZipFile"):
-                LOG.debug(
-                    'Updating code for Lambda "%s" from location: %s', props["FunctionName"], code
-                )
-            code = LambdaFunction.get_lambda_code_param(props, _include_arch=True)
-            client.update_function_code(FunctionName=props["FunctionName"], **code)
-        if "Environment" in update_config_props:
-            environment_variables = update_config_props["Environment"].get("Variables", {})
-            update_config_props["Environment"]["Variables"] = {
-                k: str(v) for k, v in environment_variables.items()
-            }
-        return client.update_function_configuration(**update_config_props)
 
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == "Arn":
@@ -270,17 +235,6 @@ class LambdaPermission(GenericBaseModel):
             return None
 
         return statements[0]
-
-    def update_resource(self, new_resource, stack_name, resources):
-        props = new_resource["Properties"]
-        parameters_to_select = ["FunctionName", "Action", "Principal", "SourceArn"]
-        update_config_props = select_attributes(props, parameters_to_select)
-
-        client = aws_stack.connect_to_service("lambda")
-        client.remove_permission(
-            FunctionName=update_config_props["FunctionName"], StatementId=self.physical_resource_id
-        )
-        return client.add_permission(StatementId=self.physical_resource_id, **update_config_props)
 
     @staticmethod
     def get_deploy_templates():

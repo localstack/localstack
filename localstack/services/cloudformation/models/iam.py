@@ -177,16 +177,6 @@ class IAMAccessKey(GenericBaseModel):
             ]
             return [key for key in keys if key["AccessKeyId"] == access_key_id][0]
 
-    def update_resource(self, new_resource, stack_name, resources):
-        access_key_id = self.get_physical_resource_id()
-        new_props = new_resource["Properties"]
-        user_name = new_props.get("UserName")
-        status = new_props.get("Status")
-
-        aws_stack.connect_to_service("iam").update_access_key(
-            UserName=user_name, AccessKeyId=access_key_id, Status=status
-        )
-
     @staticmethod
     def get_deploy_templates():
         def _delete(resource_id, resources, resource_type, func, stack_name):
@@ -248,35 +238,6 @@ class IAMRole(GenericBaseModel):
         role_name = self.props.get("RoleName")
         client = connect_to().iam
         return client.get_role(RoleName=role_name)["Role"]
-
-    def update_resource(self, new_resource, stack_name, resources):
-        props = new_resource["Properties"]
-        # _states contains the old state of the resource
-        _states = new_resource.get("_state_", None)
-        client = aws_stack.connect_to_service("iam")
-        if _states:
-            props_policy = props.get("AssumeRolePolicyDocument")
-            name_changed = props.get("RoleName") != _states.get("RoleName")
-            policy_changed = props_policy and props_policy != _states.get(
-                "AssumeRolePolicyDocument", ""
-            )
-            if name_changed or policy_changed:
-                resource_id = new_resource.get("LogicalResourceId")
-                dummy_resources = {
-                    resource_id: {"Properties": {"RoleName": _states.get("RoleName")}}
-                }
-                IAMRole._pre_delete(resource_id, dummy_resources, None, None, None)
-                client.delete_role(RoleName=_states.get("RoleName"))
-                role = client.create_role(
-                    RoleName=props.get("RoleName"),
-                    AssumeRolePolicyDocument=json.dumps(props_policy),
-                )
-                IAMRole._post_create(resource_id, resources, None, None, None)
-                return role["Role"]
-
-        return client.update_role(
-            RoleName=props.get("RoleName"), Description=props.get("Description") or ""
-        )
 
     @staticmethod
     def add_defaults(resource, stack_name):
@@ -436,26 +397,6 @@ class IAMPolicy(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::IAM::Policy"
-
-    def update_resource(self, new_resource, stack_name, resources):
-        client = aws_stack.connect_to_service("iam")
-        props = new_resource["Properties"]
-        _states = new_resource.get("_state_")
-        if _states:
-            policy_doc = json.dumps(remove_none_values(props["PolicyDocument"]))
-            policy_name = props["PolicyName"]
-            for role in props.get("Roles", []):
-                client.put_role_policy(
-                    RoleName=role, PolicyName=policy_name, PolicyDocument=policy_doc
-                )
-            for user in props.get("Users", []):
-                client.put_user_policy(
-                    UserName=user, PolicyName=policy_name, PolicyDocument=policy_doc
-                )
-            for group in props.get("Groups", []):
-                client.put_group_policy(
-                    GroupName=group, PolicyName=policy_name, PolicyDocument=policy_doc
-                )
 
     def fetch_state(self, stack_name, resources):
         return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=False)
@@ -630,14 +571,6 @@ class IAMGroup(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get("GroupName")
         return aws_stack.connect_to_service("iam").get_group(GroupName=group_name)["Group"]
-
-    def update_resource(self, new_resource, stack_name, resources):
-        props = new_resource["Properties"]
-        return aws_stack.connect_to_service("iam").update_group(
-            GroupName=props.get("GroupName"),
-            NewPath=props.get("NewPath") or "",
-            NewGroupName=props.get("NewGroupName") or "",
-        )
 
     @staticmethod
     def get_deploy_templates():
