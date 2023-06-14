@@ -73,12 +73,10 @@ ResourceDefinition = dict[str, ResourceProp]
 
 class FuncDetailsValue(TypedDict):
     # Callable here takes the arguments:
-    # - resource_id
-    # - resources
-    # - resource_type
-    # - func
+    # - logical_resource_id
+    # - resource
     # - stack_name
-    function: str | Callable[[str, list[dict], str, Any, str], Any]
+    function: str | Callable[[str, dict, str], Any]
     """Either an api method to call directly with `parameters` or a callable to directly invoke"""
     # Callable here takes the arguments:
     # - resource_props
