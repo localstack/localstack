@@ -126,6 +126,8 @@ class LambdaVersionManager:
         )
         self.shutdown_event.set()
         self.log_handler.stop()
+        # TODO: implement
+        # self.assignment_service.stop_version()
         get_runtime_executor().cleanup_version(self.function_version)  # TODO: make pluggable?
 
     # TODO: move
