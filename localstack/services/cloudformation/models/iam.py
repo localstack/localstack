@@ -42,9 +42,8 @@ class IAMManagedPolicy(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(resource_id, resources, resource_type, func, stack_name, *args, **kwargs):
+        def _create(logical_resource_id: str, resource: dict, stack_name: str):
             iam = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
 
             policy_doc = json.dumps(remove_none_values(props["PolicyDocument"]))
@@ -87,9 +86,8 @@ class IAMUser(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _post_create(resource_id, resources, resource_type, func, stack_name):
+        def _post_create(logical_resource_id: str, resource: dict, stack_name: str):
             client = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
             username = props["UserName"]
 
@@ -265,7 +263,7 @@ class IAMRole(GenericBaseModel):
                     RoleName=props.get("RoleName"),
                     AssumeRolePolicyDocument=json.dumps(props_policy),
                 )
-                IAMRole._post_create(resource_id, resources, None, None, None)
+                IAMRole._post_create(resource_id, resources[resource_id], stack_name)
                 return role["Role"]
 
         return client.update_role(
@@ -281,11 +279,10 @@ class IAMRole(GenericBaseModel):
             )
 
     @classmethod
-    def _post_create(cls, resource_id, resources, resource_type, func, stack_name):
+    def _post_create(cls, logical_resource_id: str, resource: dict, stack_name: str):
         """attaches managed policies from the template to the role"""
 
         iam = aws_stack.connect_to_service("iam")
-        resource = resources[resource_id]
         props = resource["Properties"]
         role_name = props["RoleName"]
 
@@ -474,9 +471,9 @@ class IAMPolicy(GenericBaseModel):
             suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=13))
             resource["PhysicalResourceId"] = f"stack-{resource.get('PolicyName', '')[:4]}-{suffix}"
 
-        def _create(resource_id, resources, resource_type, func, stack_name, *args, **kwargs):
+        def _create(logical_resource_id: str, resource: dict, stack_name: str):
             iam = aws_stack.connect_to_service("iam")
-            props = resources[resource_id]["Properties"]
+            props = resource["Properties"]
             policy_doc = json.dumps(remove_none_values(props["PolicyDocument"]))
             policy_name = props["PolicyName"]
             for role in props.get("Roles", []):
@@ -566,9 +563,8 @@ class InstanceProfile(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _add_roles(resource_id, resources, resource_type, func, stack_name):
+        def _add_roles(logical_resource_id: str, resource: dict, stack_name: str):
             client = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
             roles = props.get("Roles")
             if roles:
@@ -640,9 +636,8 @@ class IAMGroup(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _post_create(resource_id, resources, resource_type, func, stack_name):
+        def _post_create(logical_resource_id: str, resource: dict, stack_name: str):
             client = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
             group_name = props["GroupName"]
 
