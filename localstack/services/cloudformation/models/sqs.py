@@ -41,10 +41,10 @@ class QueuePolicy(GenericBaseModel):
             for queue in props["Queues"]:
                 sqs_client.set_queue_attributes(QueueUrl=queue, Attributes={"Policy": policy})
 
-        def _delete(resource_id, resources, *args, **kwargs):
+        def _delete(logical_resource_id: str, resource: dict, stack_name: str):
             sqs_client = aws_stack.connect_to_service("sqs")
-            resource = cls(resources[resource_id])
-            props = resource.props
+            resource_provider = cls(resource)
+            props = resource_provider.props
 
             for queue in props["Queues"]:
                 try:

@@ -172,9 +172,8 @@ class S3Bucket(GenericBaseModel):
             resource = resources[resource_id]
             resource["PhysicalResourceId"] = resource["Properties"]["BucketName"]
 
-        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+        def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
             s3 = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             try:

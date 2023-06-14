@@ -403,8 +403,8 @@ class EC2VPC(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _pre_delete(resource_id, resources, *args, **kwargs):
-            res = cls(resources[resource_id])
+        def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
+            res = cls(resource)
             vpc_id = res.state.get("VpcId")
             if vpc_id:
                 ec2_client = aws_stack.connect_to_service("ec2")

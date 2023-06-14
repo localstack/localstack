@@ -110,9 +110,8 @@ class IAMUser(GenericBaseModel):
                     PasswordResetRequired=login_profile.get("PasswordResetRequired"),
                 )
 
-        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+        def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
             client = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
             user_name = props["UserName"]
 
@@ -189,9 +188,8 @@ class IAMAccessKey(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _delete(resource_id, resources, resource_type, func, stack_name):
+        def _delete(logical_resource_id: str, resource: dict, stack_name: str):
             iam_client = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
             user_name = props["UserName"]
             access_key_id = resource["PhysicalResourceId"]
@@ -254,10 +252,8 @@ class IAMRole(GenericBaseModel):
             )
             if name_changed or policy_changed:
                 resource_id = new_resource.get("LogicalResourceId")
-                dummy_resources = {
-                    resource_id: {"Properties": {"RoleName": _states.get("RoleName")}}
-                }
-                IAMRole._pre_delete(resource_id, dummy_resources, None, None, None)
+                dummy_resource = {"Properties": {"RoleName": _states.get("RoleName")}}
+                IAMRole._pre_delete(resource_id, dummy_resource, stack_name)
                 client.delete_role(RoleName=_states.get("RoleName"))
                 role = client.create_role(
                     RoleName=props.get("RoleName"),
@@ -324,10 +320,9 @@ class IAMRole(GenericBaseModel):
             )
 
     @staticmethod
-    def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+    def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
         """detach managed policies from role before deleting"""
         iam_client = aws_stack.connect_to_service("iam")
-        resource = resources[resource_id]
         props = resource["Properties"]
         role_name = props["RoleName"]
 
@@ -575,9 +570,8 @@ class InstanceProfile(GenericBaseModel):
                     RoleName=roles[0],
                 )
 
-        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+        def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
             iam_client = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
             roles = props.get("Roles")
             assert len(roles) == 1
@@ -652,9 +646,8 @@ class IAMGroup(GenericBaseModel):
                     PolicyDocument=doc,
                 )
 
-        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+        def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
             client = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
             group_name = props["GroupName"]
 
