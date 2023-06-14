@@ -97,6 +97,7 @@ RUNTIMES = [
     Runtime.python3_7,
     Runtime.python3_8,
     Runtime.python3_9,
+    Runtime.python3_10,
     Runtime.ruby2_7,
     Runtime.java8,
     Runtime.java8_al2,
