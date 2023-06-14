@@ -8041,7 +8041,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_lifecycle": {
-    "recorded-date": "14-06-2023, 15:11:37",
+    "recorded-date": "14-06-2023, 20:11:30",
     "recorded-content": {
       "get_fn_result": {
         "Code": {
@@ -8071,6 +8071,9 @@
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.9",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
           "SnapStart": {
             "ApplyOn": "None",
             "OptimizationStatus": "Off"
@@ -8110,6 +8113,9 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
         "SnapStart": {
           "ApplyOn": "None",
           "OptimizationStatus": "Off"
@@ -8139,8 +8145,8 @@
         },
         "CreatedDate": "date",
         "Description": "<description>",
-        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>",
-        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:1",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:3>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:3>:1",
         "LicenseInfo": "<license-info>",
         "Version": 1,
         "ResponseMetadata": {
@@ -8162,8 +8168,8 @@
         },
         "CreatedDate": "date",
         "Description": "<description>",
-        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>",
-        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:2",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:3>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:3>:2",
         "LicenseInfo": "<license-info>",
         "Version": 2,
         "ResponseMetadata": {
@@ -8193,7 +8199,7 @@
         "LastUpdateStatusReasonCode": "Creating",
         "Layers": [
           {
-            "Arn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:1",
+            "Arn": "arn:aws:lambda:<region>:111111111111:layer:<resource:3>:1",
             "CodeSize": "<code-size>"
           }
         ],
@@ -8202,6 +8208,9 @@
         "RevisionId": "<uuid:2>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
         "SnapStart": {
           "ApplyOn": "None",
           "OptimizationStatus": "Off"
@@ -8237,7 +8246,7 @@
         "LastUpdateStatus": "Successful",
         "Layers": [
           {
-            "Arn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:1",
+            "Arn": "arn:aws:lambda:<region>:111111111111:layer:<resource:3>:1",
             "CodeSize": "<code-size>"
           }
         ],
@@ -8246,6 +8255,9 @@
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
         "SnapStart": {
           "ApplyOn": "None",
           "OptimizationStatus": "Off"
@@ -8275,8 +8287,8 @@
         },
         "CreatedDate": "date",
         "Description": "<description>",
-        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>",
-        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:1",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:3>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:3>:1",
         "LicenseInfo": "<license-info>",
         "Version": 1,
         "ResponseMetadata": {
@@ -8298,8 +8310,8 @@
         },
         "CreatedDate": "date",
         "Description": "<description>",
-        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>",
-        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:1",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:3>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:3>:1",
         "LicenseInfo": "<license-info>",
         "Version": 1,
         "ResponseMetadata": {
@@ -8318,7 +8330,7 @@
             ],
             "CreatedDate": "date",
             "Description": "<description>",
-            "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:2",
+            "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:3>:2",
             "LicenseInfo": "<license-info>",
             "Version": 2
           },
@@ -8331,7 +8343,7 @@
             ],
             "CreatedDate": "date",
             "Description": "<description>",
-            "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:1",
+            "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:3>:1",
             "LicenseInfo": "<license-info>",
             "Version": 1
           }
@@ -8367,7 +8379,7 @@
         "LastUpdateStatus": "Successful",
         "Layers": [
           {
-            "Arn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:1",
+            "Arn": "arn:aws:lambda:<region>:111111111111:layer:<resource:3>:1",
             "CodeSize": "<code-size>"
           }
         ],
@@ -8376,6 +8388,9 @@
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
         "SnapStart": {
           "ApplyOn": "None",
           "OptimizationStatus": "Off"
@@ -8418,8 +8433,8 @@
         },
         "CreatedDate": "date",
         "Description": "<description>",
-        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>",
-        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:3",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:3>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:3>:3",
         "LicenseInfo": "<license-info>",
         "Version": 3,
         "ResponseMetadata": {
@@ -8762,7 +8777,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_function_exceptions": {
-    "recorded-date": "14-06-2023, 15:10:36",
+    "recorded-date": "14-06-2023, 20:05:52",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8852,6 +8867,9 @@
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:2>",
           "Runtime": "python3.9",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
+          },
           "SnapStart": {
             "ApplyOn": "None",
             "OptimizationStatus": "Off"
@@ -10370,7 +10388,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_lambda_permission_fn_versioning": {
-    "recorded-date": "17-02-2023, 11:40:24",
+    "recorded-date": "14-06-2023, 20:15:52",
     "recorded-content": {
       "add_permission": {
         "Statement": {
