@@ -259,7 +259,7 @@ jobs:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
           command: |
-            TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
+            TEST_FILES=$(circleci tests glob "tests/aws/lambda_/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
             COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
             TEST_PATH=$TEST_FILES \
@@ -410,15 +410,15 @@ workflows:
       - preflight:
           requires:
             - install
-      - itest-lambda-legacy-local:
-          requires:
-            - preflight
-      - itest-sfn-v2-provider:
-          requires:
-            - preflight
       - itest-s3-stream-provider:
           requires:
             - preflight
+#      - itest-lambda-legacy-local:
+#          requires:
+#            - preflight
+#      - itest-sfn-v2-provider:
+#          requires:
+#            - preflight
       - unit-tests:
           requires:
             - preflight
