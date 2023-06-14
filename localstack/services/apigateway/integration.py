@@ -16,7 +16,12 @@ from requests import Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.connect import connect_to
+from localstack.aws.connect import (
+    INTERNAL_REQUEST_PARAMS_HEADER,
+    InternalRequestParameters,
+    connect_to,
+    dump_dto,
+)
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
@@ -48,7 +53,7 @@ from localstack.utils.collections import dict_multi_values, remove_attributes
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.http import add_query_params_to_url, canonicalize_headers, parse_request_data
 from localstack.utils.json import json_safe
-from localstack.utils.strings import camel_to_snake_case, to_bytes
+from localstack.utils.strings import camel_to_snake_case, short_uid, to_bytes
 
 LOG = logging.getLogger(__name__)
 
@@ -144,6 +149,35 @@ def get_service_factory(region_name: str, role_arn: str):
         return connect_to(region_name=region_name)
 
 
+@lru_cache(maxsize=64)
+def get_internal_mocked_headers(
+    service_name: str, region_name: str, source_arn: str, role_arn: str | None
+) -> dict[str, str]:
+    if role_arn:
+        access_key_id = (
+            connect_to()
+            .sts.request_metadata(service_principal=ServicePrincipal.apigateway)
+            .assume_role(RoleArn=role_arn, RoleSessionName=f"apigateway-session-{short_uid()}")[
+                "Credentials"
+            ]["AccessKeyId"]
+        )
+    else:
+        access_key_id = None
+    headers = aws_stack.mock_aws_request_headers(
+        service=service_name, region_name=region_name, access_key=access_key_id
+    )
+
+    dto = InternalRequestParameters(
+        service_principal=ServicePrincipal.apigateway, source_arn=source_arn
+    )
+    headers[INTERNAL_REQUEST_PARAMS_HEADER] = dump_dto(dto)
+    return headers
+
+
+def get_source_arn(invocation_context: ApiInvocationContext):
+    return f"arn:aws:execute-api:{invocation_context.region_name}:{invocation_context.account_id}:{invocation_context.api_id}/{invocation_context.stage}/{invocation_context.method}{invocation_context.path}"
+
+
 def call_lambda(
     function_arn: str, event: bytes, asynchronous: bool, invocation_context: ApiInvocationContext
 ) -> str:
@@ -151,9 +185,8 @@ def call_lambda(
     clients = get_service_factory(
         region_name=region_name, role_arn=invocation_context.integration.get("credentials")
     )
-    # TODO source arn
     inv_result = clients.awslambda.request_metadata(
-        service_principal=ServicePrincipal.apigateway, source_arn=""
+        service_principal=ServicePrincipal.apigateway, source_arn=get_source_arn(invocation_context)
     ).invoke(
         FunctionName=function_arn,
         Payload=event,
