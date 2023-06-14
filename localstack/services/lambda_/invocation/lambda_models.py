@@ -1,4 +1,3 @@
-import abc
 import dataclasses
 import logging
 import shutil
@@ -7,7 +6,7 @@ import threading
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import IO, Dict, Optional, TypedDict
+from typing import IO, Dict, Literal, Optional, TypedDict
 
 from botocore.exceptions import ClientError
 
@@ -86,7 +85,11 @@ class Invocation:
     client_context: Optional[str]
     invocation_type: InvocationType
     invoke_time: datetime
+    # = invocation_id
     request_id: str
+
+
+InitializationType = Literal["on-demand", "provisioned-concurrency"]
 
 
 class ArchiveCode(metaclass=ABCMeta):
@@ -457,16 +460,9 @@ class EventInvokeConfig:
 class InvocationResult:
     request_id: str
     payload: bytes | None
+    is_error: bool
+    logs: str | None
     executed_version: str | None = None
-    logs: str | None = None
-
-
-@dataclasses.dataclass
-class InvocationError:
-    request_id: str
-    payload: bytes | None
-    executed_version: str | None = None
-    logs: str | None = None
 
 
 @dataclasses.dataclass
@@ -482,35 +478,7 @@ class Credentials(TypedDict):
     Expiration: datetime
 
 
-class ServiceEndpoint(abc.ABC):
-    def invocation_result(self, invoke_id: str, invocation_result: InvocationResult) -> None:
-        """
-        Processes the result of an invocation
-        :param invoke_id: Invocation Id
-        :param invocation_result: Invocation Result
-        """
-        raise NotImplementedError()
-
-    def invocation_error(self, invoke_id: str, invocation_error: InvocationError) -> None:
-        """
-        Processes an error during an invocation
-        :param invoke_id: Invocation Id
-        :param invocation_error: Invocation Error
-        """
-        raise NotImplementedError()
-
-    def invocation_logs(self, invoke_id: str, invocation_logs: InvocationLogs) -> None:
-        """
-        Processes the logs of an invocation
-        :param invoke_id: Invocation Id
-        :param invocation_logs: Invocation logs
-        """
-        raise NotImplementedError()
-
-
-
 class OtherServiceEndpoint:
-
     def status_ready(self, executor_id: str) -> None:
         """
         Processes a status ready report by RAPID

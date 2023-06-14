@@ -1,15 +1,8 @@
 import concurrent.futures
-import dataclasses
-import json
 import logging
-import queue
 import threading
-import time
 from concurrent.futures import Future, ThreadPoolExecutor
-from datetime import datetime
-from math import ceil
-from queue import Queue
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING
 
 from localstack import config
 from localstack.aws.api.lambda_ import (
@@ -17,55 +10,32 @@ from localstack.aws.api.lambda_ import (
     ServiceException,
     State,
     StateReasonCode,
-    TooManyRequestsException,
 )
-from localstack.aws.connect import connect_to
+from localstack.services.lambda_.invocation.assignment import AssignmentService
+from localstack.services.lambda_.invocation.counting_service import CountingService
+from localstack.services.lambda_.invocation.docker_runtime_executor import InitializationType
+from localstack.services.lambda_.invocation.execution_environment import (
+    ExecutionEnvironment,
+    RuntimeStatus,
+)
 from localstack.services.lambda_.invocation.lambda_models import (
     Function,
     FunctionVersion,
     Invocation,
-    InvocationError,
-    InvocationLogs,
     InvocationResult,
     ProvisionedConcurrencyState,
-    ServiceEndpoint,
     VersionState,
 )
 from localstack.services.lambda_.invocation.logs import LogHandler, LogItem
-from localstack.services.lambda_.invocation.runtime_environment import (
-    InvalidStatusException,
-    RuntimeEnvironment,
-    RuntimeStatus,
-)
+from localstack.services.lambda_.invocation.metrics import record_cw_metric_invocation
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
-from localstack.services.lambda_.lambda_executors import InvocationException
-from localstack.utils.aws import dead_letter_queue
-from localstack.utils.aws.client_types import ServicePrincipal
-from localstack.utils.aws.message_forwarding import send_event_to_target
-from localstack.utils.cloudwatch.cloudwatch_util import publish_lambda_metric, store_cloudwatch_logs
-from localstack.utils.strings import to_str, truncate
-from localstack.utils.threads import FuncThread, start_thread
-from localstack.utils.time import timestamp_millis
+from localstack.utils.strings import truncate
+from localstack.utils.threads import start_thread
 
 if TYPE_CHECKING:
     from localstack.services.lambda_.invocation.lambda_service import LambdaService
 
 LOG = logging.getLogger(__name__)
-
-
-@dataclasses.dataclass(frozen=True)
-class QueuedInvocation:
-    result_future: Future[InvocationResult] | None
-    retries: int
-    invocation: Invocation
-
-
-@dataclasses.dataclass
-class RunningInvocation:
-    invocation: QueuedInvocation
-    start_time: datetime
-    executor: RuntimeEnvironment
-    logs: Optional[str] = None
 
 
 class ShutdownPill:
@@ -75,7 +45,7 @@ class ShutdownPill:
 QUEUE_SHUTDOWN = ShutdownPill()
 
 
-class LambdaVersionManager(ServiceEndpoint):
+class LambdaVersionManager:
     # arn this Lambda Version manager manages
     function_arn: str
     function_version: FunctionVersion
@@ -88,6 +58,8 @@ class LambdaVersionManager(ServiceEndpoint):
     log_handler: LogHandler
     # TODO not sure about this backlink, maybe a callback is better?
     lambda_service: "LambdaService"
+    counting_service: CountingService
+    assignment_service: AssignmentService
 
     def __init__(
         self,
@@ -95,11 +67,15 @@ class LambdaVersionManager(ServiceEndpoint):
         function_version: FunctionVersion,
         function: Function,
         lambda_service: "LambdaService",
+        counting_service: CountingService,
+        assignment_service: AssignmentService,
     ):
         self.function_arn = function_arn
         self.function_version = function_version
         self.function = function
         self.lambda_service = lambda_service
+        self.counting_service = counting_service
+        self.assignment_service = assignment_service
         self.log_handler = LogHandler(function_version.config.role, function_version.id.region)
 
         # invocation tracking
@@ -192,7 +168,7 @@ class LambdaVersionManager(ServiceEndpoint):
             futures = []
             if diff > 0:
                 for _ in range(diff):
-                    runtime_environment = RuntimeEnvironment(
+                    runtime_environment = ExecutionEnvironment(
                         function_version=self.function_version,
                         initialization_type="provisioned-concurrency",
                         service_endpoint=self,
@@ -226,7 +202,7 @@ class LambdaVersionManager(ServiceEndpoint):
 
     # Extract environment handling
 
-    def invoke(self, *, invocation: Invocation, current_retry: int = 0) -> InvocationResult:
+    def invoke(self, *, invocation: Invocation) -> InvocationResult:
         """
         0. check counter, get lease
         1. try to get an inactive (no active invoke) environment
@@ -239,18 +215,35 @@ class LambdaVersionManager(ServiceEndpoint):
         """
         assert invocation.invocation_type == "RequestResponse"  # TODO: remove later
 
-        with self.get_invocation_lease():  # TODO: do we need to pass more here?
-            with self.assignment_service.get_environment() as execution_env:
-                execution_env.invoke()
-                # tracker = InvocationTracker()
-                # future = tracker.register_invocation(invocation_id="blub")
-                # return future.result(timeout=0.001)
+        # lease should be specific for on-demand or provisioned, lease can return the type
+        # TODO: try/catch handle case when no lease available
+        with self.counting_service.get_invocation_lease() as provisioning_type:  # TODO: do we need to pass more here?
+            # potential race condition when changing provisioned concurrency
+            with self.get_environment(provisioning_type) as execution_env:
+                invocation_result = execution_env.invoke(invocation)
+                invocation_result.executed_version = self.function_version.id.qualifier
+                self.store_logs(invocation_result=invocation_result, execution_env=execution_env)
+        start_thread(
+            lambda *args, **kwargs: record_cw_metric_invocation(
+                function_name=self.function.function_name,
+                region_name=self.function_version.id.region,
+            )
+        )
+        LOG.debug("Got logs for invocation '%s'", invocation.request_id)
+        for log_line in invocation_result.logs.splitlines():
+            LOG.debug("> %s", truncate(log_line, config.LAMBDA_TRUNCATE_STDOUT))
+        return invocation_result
 
-    def store_logs(self, invocation_result: InvocationResult, executor: RuntimeEnvironment) -> None:
+    def get_environment(self, provisioning_type: InitializationType):
+        return self.assignment_service.get_environment(self.function_version, provisioning_type)
+
+    def store_logs(
+        self, invocation_result: InvocationResult, execution_env: ExecutionEnvironment
+    ) -> None:
         if invocation_result.logs:
             log_item = LogItem(
-                executor.get_log_group_name(),
-                executor.get_log_stream_name(),
+                execution_env.get_log_group_name(),
+                execution_env.get_log_stream_name(),
                 invocation_result.logs,
             )
             self.log_handler.add_logs(log_item)
@@ -260,37 +253,3 @@ class LambdaVersionManager(ServiceEndpoint):
                 invocation_result.request_id,
                 self.function_arn,
             )
-
-    def invocation_response(
-        self, invoke_id: str, invocation_result: Union[InvocationResult, InvocationError]
-    ) -> None:
-        running_invocation = self.running_invocations.pop(invoke_id, None)
-
-        if running_invocation is None:
-            raise Exception(f"Cannot map invocation result {invoke_id} to invocation")
-
-        if not invocation_result.logs:
-            invocation_result.logs = running_invocation.logs
-        invocation_result.executed_version = self.function_version.id.qualifier
-        self.store_logs(invocation_result=invocation_result, executor=executor)
-
-    # Service Endpoint implementation
-    # TODO: move
-    def invocation_result(self, invoke_id: str, invocation_result: InvocationResult) -> None:
-        LOG.debug("Got invocation result for invocation '%s'", invoke_id)
-        start_thread(self.record_cw_metric_invocation)
-        self.invocation_response(invoke_id=invoke_id, invocation_result=invocation_result)
-
-    def invocation_error(self, invoke_id: str, invocation_error: InvocationError) -> None:
-        LOG.debug("Got invocation error for invocation '%s'", invoke_id)
-        start_thread(self.record_cw_metric_error)
-        self.invocation_response(invoke_id=invoke_id, invocation_result=invocation_error)
-
-    def invocation_logs(self, invoke_id: str, invocation_logs: InvocationLogs) -> None:
-        LOG.debug("Got logs for invocation '%s'", invoke_id)
-        for log_line in invocation_logs.logs.splitlines():
-            LOG.debug("> %s", truncate(log_line, config.LAMBDA_TRUNCATE_STDOUT))
-        running_invocation = self.running_invocations.get(invoke_id, None)
-        if running_invocation is None:
-            raise Exception(f"Cannot map invocation result {invoke_id} to invocation")
-        running_invocation.logs = invocation_logs.logs

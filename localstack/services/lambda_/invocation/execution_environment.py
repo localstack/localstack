@@ -7,21 +7,23 @@ import time
 from datetime import date, datetime
 from enum import Enum, auto
 from threading import RLock, Timer
-from typing import TYPE_CHECKING, Dict, Literal, Optional
+from typing import Dict, Optional
 
 from localstack import config
 from localstack.aws.api.lambda_ import TracingMode
 from localstack.aws.connect import connect_to
-from localstack.services.lambda_.invocation.executor_endpoint import ServiceEndpoint
-from localstack.services.lambda_.invocation.lambda_models import Credentials, FunctionVersion
+from localstack.services.lambda_.invocation.lambda_models import (
+    Credentials,
+    FunctionVersion,
+    InitializationType,
+    Invocation,
+    InvocationResult,
+)
 from localstack.services.lambda_.invocation.runtime_executor import (
     RuntimeExecutor,
     get_runtime_executor,
 )
 from localstack.utils.strings import to_str
-
-if TYPE_CHECKING:
-    from localstack.services.lambda_.invocation.version_manager import QueuedInvocation
 
 STARTUP_TIMEOUT_SEC = config.LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT
 HEX_CHARS = [str(num) for num in range(10)] + ["a", "b", "c", "d", "e", "f"]
@@ -38,9 +40,6 @@ class RuntimeStatus(Enum):
     STOPPED = auto()
 
 
-InitializationType = Literal["on-demand", "provisioned-concurrency"]
-
-
 class InvalidStatusException(Exception):
     def __init__(self, message: str):
         super().__init__(message)
@@ -51,7 +50,7 @@ def generate_runtime_id() -> str:
 
 
 # TODO: add status callback
-class RuntimeEnvironment:
+class ExecutionEnvironment:
     runtime_executor: RuntimeExecutor
     status_lock: RLock
     status: RuntimeStatus
@@ -64,16 +63,13 @@ class RuntimeEnvironment:
         self,
         function_version: FunctionVersion,
         initialization_type: InitializationType,
-        service_endpoint: ServiceEndpoint,
     ):
         self.id = generate_runtime_id()
         self.status = RuntimeStatus.INACTIVE
         self.status_lock = RLock()
         self.function_version = function_version
         self.initialization_type = initialization_type
-        self.runtime_executor = get_runtime_executor()(
-            self.id, function_version, service_endpoint=service_endpoint
-        )
+        self.runtime_executor = get_runtime_executor()(self.id, function_version)
         self.last_returned = datetime.min
         self.startup_timer = None
         self.keepalive_timer = Timer(0, lambda *args, **kwargs: None)
@@ -168,6 +164,8 @@ class RuntimeEnvironment:
             if self.status != RuntimeStatus.INACTIVE:
                 raise InvalidStatusException("Runtime Handler can only be started when inactive")
             self.status = RuntimeStatus.STARTING
+            self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
+            self.startup_timer.start()
             try:
                 self.runtime_executor.start(self.get_environment_variables())
             except Exception as e:
@@ -179,8 +177,11 @@ class RuntimeEnvironment:
                 )
                 self.errored()
                 raise
-            self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
-            self.startup_timer.start()
+
+            self.status = RuntimeStatus.READY
+            if self.startup_timer:
+                self.startup_timer.cancel()
+                self.startup_timer = None
 
     def stop(self) -> None:
         """
@@ -194,18 +195,7 @@ class RuntimeEnvironment:
             self.keepalive_timer.cancel()
 
     # Status methods
-    def set_ready(self) -> None:
-        with self.status_lock:
-            if self.status != RuntimeStatus.STARTING:
-                raise InvalidStatusException(
-                    f"Runtime Handler can only be set active while starting. Current status: {self.status}"
-                )
-            self.status = RuntimeStatus.READY
-            if self.startup_timer:
-                self.startup_timer.cancel()
-                self.startup_timer = None
-
-    def invocation_done(self) -> None:
+    def release(self) -> None:
         self.last_returned = datetime.now()
         with self.status_lock:
             if self.status != RuntimeStatus.RUNNING:
@@ -218,6 +208,14 @@ class RuntimeEnvironment:
                 )
                 self.keepalive_timer.start()
 
+    def reserve(self) -> None:
+        with self.status_lock:
+            if self.status != RuntimeStatus.READY:
+                raise InvalidStatusException("Reservation can only happen if status is ready")
+            self.status = RuntimeStatus.RUNNING
+            self.keepalive_timer.cancel()
+
+    # TODO: notify assignment service if this timer triggers => need to remove out of list!
     def keepalive_passed(self) -> None:
         LOG.debug(
             "Executor %s for function %s hasn't received any invocations in a while. Stopping.",
@@ -247,20 +245,15 @@ class RuntimeEnvironment:
         except Exception:
             LOG.debug("Unable to shutdown runtime handler '%s'", self.id)
 
-    def invoke(self, invocation_event: "QueuedInvocation") -> None:
-        with self.status_lock:
-            if self.status != RuntimeStatus.READY:
-                raise InvalidStatusException("Invoke can only happen if status is ready")
-            self.status = RuntimeStatus.RUNNING
-            self.keepalive_timer.cancel()
-
+    def invoke(self, invocation: Invocation) -> InvocationResult:
+        assert self.status == RuntimeStatus.RUNNING
         invoke_payload = {
-            "invoke-id": invocation_event.invocation.request_id,  # TODO: rename to request-id
-            "invoked-function-arn": invocation_event.invocation.invoked_arn,
-            "payload": to_str(invocation_event.invocation.payload),
+            "invoke-id": invocation.request_id,  # TODO: rename to request-id
+            "invoked-function-arn": invocation.invoked_arn,
+            "payload": to_str(invocation.payload),
             "trace-id": self._generate_trace_header(),
         }
-        self.runtime_executor.invoke(payload=invoke_payload)
+        return self.runtime_executor.invoke(payload=invoke_payload)
 
     def get_credentials(self) -> Credentials:
         sts_client = connect_to().sts.request_metadata(service_principal="lambda")

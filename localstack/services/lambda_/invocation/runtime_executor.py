@@ -5,7 +5,7 @@ from typing import Type
 from plugin import PluginManager
 
 from localstack import config
-from localstack.services.lambda_.invocation.lambda_models import FunctionVersion, ServiceEndpoint
+from localstack.services.lambda_.invocation.lambda_models import FunctionVersion, InvocationResult
 from localstack.services.lambda_.invocation.plugins import RuntimeExecutorPlugin
 
 LOG = logging.getLogger(__name__)
@@ -16,14 +16,15 @@ class RuntimeExecutor(ABC):
     function_version: FunctionVersion
 
     def __init__(
-        self, id: str, function_version: FunctionVersion, service_endpoint: ServiceEndpoint
+        self,
+        id: str,
+        function_version: FunctionVersion,
     ) -> None:
         """
         Runtime executor class responsible for executing a runtime in specific environment
 
         :param id: ID string of the runtime executor
         :param function_version: Function version to be executed
-        :param service_endpoint: Service endpoint for execution related callbacks
         """
         self.id = id
         self.function_version = function_version
@@ -72,7 +73,7 @@ class RuntimeExecutor(ABC):
         pass
 
     @abstractmethod
-    def invoke(self, payload: dict[str, str]) -> None:
+    def invoke(self, payload: dict[str, str]) -> InvocationResult:
         """
         Send an invocation to the execution environment
 
