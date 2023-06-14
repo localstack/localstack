@@ -1,4 +1,5 @@
 import logging
+from concurrent.futures import CancelledError, Future
 from http import HTTPStatus
 from typing import Dict, Optional
 
@@ -8,12 +9,7 @@ from werkzeug.routing import Rule
 
 from localstack.http import Response, Router
 from localstack.services.edge import ROUTER
-from localstack.services.lambda_.invocation.lambda_models import (
-    InvocationError,
-    InvocationLogs,
-    InvocationResult,
-    ServiceEndpoint,
-)
+from localstack.services.lambda_.invocation.lambda_models import InvocationResult
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
@@ -27,59 +23,69 @@ class InvokeSendError(Exception):
         super().__init__(message)
 
 
+class StatusErrorException(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
+class ShutdownDuringStartup(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
 class ExecutorEndpoint:
-    service_endpoint: ServiceEndpoint
     container_address: str
     container_port: int
     rules: list[Rule]
     endpoint_id: str
     router: Router
+    startup_future: Future[bool]
+    invocation_future: Future[InvocationResult]
+    logs: str | None
 
     def __init__(
         self,
         endpoint_id: str,
-        service_endpoint: ServiceEndpoint,
         container_address: Optional[str] = None,
         container_port: Optional[int] = INVOCATION_PORT,
     ) -> None:
-        self.service_endpoint = service_endpoint
         self.container_address = container_address
         self.container_port = container_port
         self.rules = []
         self.endpoint_id = endpoint_id
         self.router = ROUTER
+        self.logs = None
 
     def _create_endpoint(self, router: Router) -> list[Rule]:
         def invocation_response(request: Request, req_id: str) -> Response:
-            result = InvocationResult(req_id, request.data)
-            self.service_endpoint.invocation_result(invoke_id=req_id, invocation_result=result)
+            result = InvocationResult(req_id, request.data, is_error=False, logs=self.logs)
+            self.invocation_future.set_result(result)
             return Response(status=HTTPStatus.ACCEPTED)
 
         def invocation_error(request: Request, req_id: str) -> Response:
-            result = InvocationError(req_id, request.data)
-            self.service_endpoint.invocation_error(invoke_id=req_id, invocation_error=result)
+            result = InvocationResult(req_id, request.data, is_error=True, logs=self.logs)
+            self.invocation_future.set_result(result)
             return Response(status=HTTPStatus.ACCEPTED)
 
         def invocation_logs(request: Request, invoke_id: str) -> Response:
             logs = request.json
             if isinstance(logs, Dict):
-                logs["request_id"] = invoke_id
-                invocation_logs = InvocationLogs(**logs)
-                self.service_endpoint.invocation_logs(
-                    invoke_id=invoke_id, invocation_logs=invocation_logs
-                )
+                # TODO: handle logs truncating somewhere (previously in version manager)?
+                self.logs = logs["logs"]
             else:
                 LOG.error("Invalid logs from RAPID! Logs: %s", logs)
                 # TODO handle error in some way?
             return Response(status=HTTPStatus.ACCEPTED)
 
         def status_ready(request: Request, executor_id: str) -> Response:
-            self.service_endpoint.status_ready(executor_id=executor_id)
+            self.startup_future.set_result(True)
             return Response(status=HTTPStatus.ACCEPTED)
 
         def status_error(request: Request, executor_id: str) -> Response:
             LOG.warning("Execution environment startup failed: %s", to_str(request.data))
-            self.service_endpoint.status_error(executor_id=executor_id)
+            self.startup_future.set_exception(
+                StatusErrorException(f"Environment startup failed: {to_str(request.data)}")
+            )
             return Response(status=HTTPStatus.ACCEPTED)
 
         return [
@@ -115,12 +121,26 @@ class ExecutorEndpoint:
 
     def start(self) -> None:
         self.rules = self._create_endpoint(self.router)
+        self.startup_future = Future()
+
+    def wait_for_startup(self):
+        try:
+            self.startup_future.result()
+        except CancelledError as e:
+            # Only happens if we shutdown the container during execution environment startup
+            # Daniel: potential problem if we have a shutdown while we start the container (e.g., timeout) but wait_for_startup is not yet called
+            raise ShutdownDuringStartup(
+                "Executor environment shutdown during container startup"
+            ) from e
 
     def shutdown(self) -> None:
         for rule in self.rules:
             self.router.remove_rule(rule)
+        self.startup_future.cancel()
 
-    def invoke(self, payload: Dict[str, str]) -> None:
+    def invoke(self, payload: Dict[str, str]) -> InvocationResult:
+        self.invocation_future = Future()
+        self.logs = None
         if not self.container_address:
             raise ValueError("Container address not set, but got an invoke.")
         invocation_url = f"http://{self.container_address}:{self.container_port}/invoke"
@@ -131,3 +151,4 @@ class ExecutorEndpoint:
             raise InvokeSendError(
                 f"Error while sending invocation {payload} to {invocation_url}. Error Code: {response.status_code}"
             )
+        return self.invocation_future.result()

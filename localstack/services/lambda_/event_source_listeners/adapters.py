@@ -3,7 +3,6 @@ import json
 import logging
 import threading
 from abc import ABC
-from concurrent.futures import Future
 from functools import lru_cache
 from typing import Callable, Optional
 
@@ -13,7 +12,7 @@ from localstack.aws.connect import ServiceLevelClientFactory, connect_to
 from localstack.aws.protocol.serializer import gen_amzn_requestid
 from localstack.services.lambda_ import api_utils
 from localstack.services.lambda_.api_utils import function_locators_from_arn, qualifier_is_version
-from localstack.services.lambda_.invocation.lambda_models import InvocationError, InvocationResult
+from localstack.services.lambda_.invocation.lambda_models import InvocationResult
 from localstack.services.lambda_.invocation.lambda_service import LambdaService
 from localstack.services.lambda_.invocation.models import lambda_stores
 from localstack.services.lambda_.lambda_executors import (
@@ -161,11 +160,10 @@ class EventSourceAsfAdapter(EventSourceAdapter):
 
         if callback:
 
-            def mapped_callback(ft_result: Future[InvocationResult]) -> None:
+            def mapped_callback(result: InvocationResult) -> None:
                 try:
-                    result = ft_result.result(timeout=10)
                     error = None
-                    if isinstance(result, InvocationError):
+                    if result.is_error:
                         error = "?"
                     callback(
                         result=LegacyInvocationResult(
@@ -204,7 +202,7 @@ class EventSourceAsfAdapter(EventSourceAdapter):
         fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(function_arn).groupdict()
 
         try:
-            ft = self.lambda_service.invoke(
+            result = self.lambda_service.invoke(
                 # basically function ARN
                 function_name=fn_parts["function_name"],
                 qualifier=fn_parts["qualifier"],
@@ -218,11 +216,10 @@ class EventSourceAsfAdapter(EventSourceAdapter):
 
             if callback:
 
-                def mapped_callback(ft_result: Future[InvocationResult]) -> None:
+                def mapped_callback(result: InvocationResult) -> None:
                     try:
-                        result = ft_result.result(timeout=10)
                         error = None
-                        if isinstance(result, InvocationError):
+                        if result.is_error:
                             error = "?"
                         callback(
                             result=LegacyInvocationResult(
@@ -243,11 +240,10 @@ class EventSourceAsfAdapter(EventSourceAdapter):
                             error=e,
                         )
 
-                ft.add_done_callback(mapped_callback)
+                mapped_callback(result)
 
             # they're always synchronous in the ASF provider
-            result = ft.result(timeout=900)
-            if isinstance(result, InvocationError):
+            if result.is_error:
                 return 500
             else:
                 return 200

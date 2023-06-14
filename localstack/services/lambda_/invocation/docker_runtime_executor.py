@@ -12,7 +12,6 @@ from localstack.services.lambda_ import hooks as lambda_hooks
 from localstack.services.lambda_.invocation.executor_endpoint import (
     INVOCATION_PORT,
     ExecutorEndpoint,
-    ServiceEndpoint,
 )
 from localstack.services.lambda_.invocation.lambda_models import IMAGE_MAPPING, FunctionVersion
 from localstack.services.lambda_.invocation.runtime_executor import (
@@ -215,14 +214,10 @@ class DockerRuntimeExecutor(RuntimeExecutor):
     executor_endpoint: Optional[ExecutorEndpoint]
     container_name: str
 
-    def __init__(
-        self, id: str, function_version: FunctionVersion, service_endpoint: ServiceEndpoint
-    ) -> None:
-        super(DockerRuntimeExecutor, self).__init__(
-            id=id, function_version=function_version, service_endpoint=service_endpoint
-        )
+    def __init__(self, id: str, function_version: FunctionVersion) -> None:
+        super(DockerRuntimeExecutor, self).__init__(id=id, function_version=function_version)
         self.ip = None
-        self.executor_endpoint = self._build_executor_endpoint(service_endpoint)
+        self.executor_endpoint = self._build_executor_endpoint()
         self.container_name = self._generate_container_name()
         LOG.debug("Assigning container name of %s to executor %s", self.container_name, self.id)
 
@@ -235,13 +230,13 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             else resolver.get_image_for_runtime(self.function_version.config.runtime)
         )
 
-    def _build_executor_endpoint(self, service_endpoint: ServiceEndpoint) -> ExecutorEndpoint:
+    def _build_executor_endpoint(self) -> ExecutorEndpoint:
         LOG.debug(
             "Creating service endpoint for function %s executor %s",
             self.function_version.qualified_arn,
             self.id,
         )
-        executor_endpoint = ExecutorEndpoint(self.id, service_endpoint=service_endpoint)
+        executor_endpoint = ExecutorEndpoint(self.id)
         LOG.debug(
             "Finished creating service endpoint for function %s executor %s",
             self.function_version.qualified_arn,
@@ -352,6 +347,8 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             self.ip = "127.0.0.1"
         self.executor_endpoint.container_address = self.ip
 
+        self.executor_endpoint.wait_for_startup()
+
     def stop(self) -> None:
         CONTAINER_CLIENT.stop_container(container_name=self.container_name, timeout=5)
         if config.LAMBDA_REMOVE_CONTAINERS:
@@ -382,7 +379,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             truncate(json.dumps(payload), config.LAMBDA_TRUNCATE_STDOUT),
             self.id,
         )
-        self.executor_endpoint.invoke(payload)
+        return self.executor_endpoint.invoke(payload)
 
     @classmethod
     def prepare_version(cls, function_version: FunctionVersion) -> None:

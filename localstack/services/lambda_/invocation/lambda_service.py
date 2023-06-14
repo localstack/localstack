@@ -30,6 +30,8 @@ from localstack.services.lambda_.api_utils import (
     qualified_lambda_arn,
     qualifier_is_alias,
 )
+from localstack.services.lambda_.invocation.assignment import AssignmentService
+from localstack.services.lambda_.invocation.counting_service import CountingService
 from localstack.services.lambda_.invocation.lambda_models import (
     BUCKET_ACCOUNT,
     ArchiveCode,
@@ -83,6 +85,7 @@ class LambdaService:
     lambda_version_manager_lock: RLock
     task_executor: Executor
 
+    assignment_service: AssignmentService
     # account => concurrency tracker
     _concurrency_trackers: dict[str, ConcurrencyTracker]
 
@@ -91,6 +94,7 @@ class LambdaService:
         self.lambda_starting_versions = {}
         self.lambda_version_manager_lock = RLock()
         self.task_executor = ThreadPoolExecutor()
+        self.assignment_service = AssignmentService()
         self._concurrency_trackers = defaultdict(ConcurrencyTracker)
 
     def stop(self) -> None:
@@ -157,6 +161,9 @@ class LambdaService:
                 function_version=function_version,
                 lambda_service=self,
                 function=fn,
+                # TODO: inject specific view
+                counting_service=CountingService(),
+                assignment_service=self.assignment_service,
             )
             self.lambda_starting_versions[qualified_arn] = version_manager
         return self.task_executor.submit(version_manager.start)
@@ -187,6 +194,9 @@ class LambdaService:
                 function_version=function_version,
                 lambda_service=self,
                 function=fn,
+                # TODO: inject specific view
+                counting_service=CountingService(),
+                assignment_service=self.assignment_service,
             )
             self.lambda_starting_versions[qualified_arn] = version_manager
         version_manager.start()
@@ -202,7 +212,7 @@ class LambdaService:
         client_context: Optional[str],
         request_id: str,
         payload: bytes | None,
-    ) -> Future[InvocationResult] | None:
+    ) -> InvocationResult | None:
         """
         Invokes a specific version of a lambda
 
