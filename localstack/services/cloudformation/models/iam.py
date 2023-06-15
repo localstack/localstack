@@ -29,9 +29,6 @@ class IAMManagedPolicy(GenericBaseModel):
     def cloudformation_type():
         return "AWS::IAM::ManagedPolicy"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return arns.policy_arn(self.props["ManagedPolicyName"])
-
     def fetch_state(self, stack_name, resources):
         return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=True)
 
@@ -61,18 +58,20 @@ class IAMManagedPolicy(GenericBaseModel):
                 iam.attach_user_policy(UserName=user, PolicyArn=policy_arn)
             for group in resource.get("Groups", []):
                 iam.attach_group_policy(GroupName=group, PolicyArn=policy_arn)
-            return {}
+            return policy
 
-        return {"create": {"function": _create}}
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, resource_type: str
+        ):
+            resources[resource_id]["PhysicalResourceId"] = result["Policy"]["Arn"]
+
+        return {"create": {"function": _create, "result_handler": _set_physical_resource_id}}
 
 
 class IAMUser(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::IAM::User"
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("UserName")
 
     def fetch_state(self, stack_name, resources):
         user_name = self.props.get("UserName")
@@ -138,11 +137,17 @@ class IAMUser(GenericBaseModel):
             for inline_policy_name in remaining_policies:
                 client.delete_user_policy(UserName=user_name, PolicyName=inline_policy_name)
 
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, resource_type: str
+        ):
+            resources[resource_id]["PhysicalResourceId"] = result["User"]["UserName"]
+
         return {
             "create": [
                 {
                     "function": "create_user",
                     "parameters": ["Path", "UserName", "PermissionsBoundary", "Tags"],
+                    "result_handler": _set_physical_resource_id,
                 },
                 {"function": _post_create},
             ],
@@ -160,9 +165,6 @@ class IAMAccessKey(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::IAM::AccessKey"
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.physical_resource_id
 
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == "SecretAccessKey":
@@ -235,14 +237,6 @@ class IAMRole(GenericBaseModel):
         if attribute_name == "Arn":
             return self.props.get("Arn")
         return super(IAMRole, self).get_cfn_attribute(attribute_name)
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        role_name = self.properties.get("RoleName")
-        if not role_name:
-            return role_name
-        if attribute == "Arn":
-            return arns.role_arn(role_name)
-        return role_name
 
     def fetch_state(self, stack_name, resources):
         role_name = self.props.get("RoleName")
@@ -375,6 +369,11 @@ class IAMRole(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, resource_type: str
+        ):
+            resources[resource_id]["PhysicalResourceId"] = result["Role"]["RoleName"]
+
         return {
             "create": [
                 {
@@ -394,6 +393,7 @@ class IAMRole(GenericBaseModel):
                         ),
                         {"RoleName": "RoleName"},
                     ),
+                    "result_handler": _set_physical_resource_id,
                 },
                 {"function": IAMRole._post_create},
             ],
@@ -421,13 +421,18 @@ class IAMServiceLinkedRole(GenericBaseModel):
             if statements and statements[0].get("Principal") == {"Service": service_name}:
                 return role
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("RoleName")
-
     @classmethod
     def get_deploy_templates(cls):
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, resource_type: str
+        ):
+            resources[resource_id]["PhysicalResourceId"] = result["Role"]["RoleName"]
+
         return {
-            "create": {"function": "create_service_linked_role"},
+            "create": {
+                "function": "create_service_linked_role",
+                "result_handler": _set_physical_resource_id,
+            },
             "delete": {"function": "delete_service_linked_role", "parameters": ["RoleName"]},
         }
 
@@ -551,9 +556,6 @@ class InstanceProfile(GenericBaseModel):
         resp = client.get_instance_profile(InstanceProfileName=instance_profile_name)
         return resp["InstanceProfile"]
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.physical_resource_id or self.props.get("InstanceProfileName")
-
     @staticmethod
     def add_defaults(resource, stack_name):
         role_name = resource.get("Properties", {}).get("InstanceProfileName")
@@ -624,9 +626,6 @@ class IAMGroup(GenericBaseModel):
     def cloudformation_type():
         return "AWS::IAM::Group"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("GroupName")
-
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get("GroupName")
         return aws_stack.connect_to_service("iam").get_group(GroupName=group_name)["Group"]
@@ -677,11 +676,17 @@ class IAMGroup(GenericBaseModel):
             for inline_policy_name in remaining_policies:
                 client.delete_group_policy(GroupName=group_name, PolicyName=inline_policy_name)
 
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, resource_type: str
+        ):
+            resources[resource_id]["PhysicalResourceId"] = result["Group"]["GroupName"]
+
         return {
             "create": [
                 {
                     "function": "create_group",
                     "parameters": ["GroupName", "Path"],
+                    "result_handler": _set_physical_resource_id,
                 },
                 {"function": _post_create},
             ],

@@ -1,6 +1,8 @@
 import json
 import re
 
+import pytest
+
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import wait_until
 
@@ -41,6 +43,36 @@ Resources:
       Tags:
         - Key: AppName
           Value: AppA
+"""
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-secretsmanager-resourcepolicy.html#aws-resource-secretsmanager-resourcepolicy--examples--Attaching_a_resource-based_policy_to_an_RDS_database_instance_secret_--yaml
+TEST_TEMPLATE_SECRET_POLICY = """
+Resources:
+  MySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+          Description: This is a secret that I want to attach a resource-based policy to
+  MySecretResourcePolicy:
+    Type: AWS::SecretsManager::ResourcePolicy
+    Properties:
+      BlockPublicPolicy: True
+      SecretId:
+        Ref: MySecret
+      ResourcePolicy:
+        Version: '2012-10-17'
+        Statement:
+        - Resource: "*"
+          Action: secretsmanager:ReplicateSecretToRegions
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
+Outputs:
+  SecretId:
+    Value: !GetAtt MySecret.Id
+
+  SecretPolicyArn:
+    Value: !Ref MySecretResourcePolicy
 """
 
 
@@ -85,3 +117,17 @@ def test_cfn_handle_secretsmanager_secret(deploy_cfn_template, aws_client):
 
     rs = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
     assert "DeletedDate" in rs
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(paths=["$..SecretId", "$..SecretPolicyArn"])
+def test_cfn_secret_policy(deploy_cfn_template, aws_client, snapshot):
+    stack = deploy_cfn_template(template=TEST_TEMPLATE_SECRET_POLICY)
+    secret_id = stack.outputs["SecretId"]
+
+    snapshot.match("outputs", stack.outputs)
+
+    # TODO: moto does not implement the `ResourcePolicy` key
+    # res = aws_client.secretsmanager.get_resource_policy(SecretId=secret_id)
+    # snapshot.match("resource-policy", res["ResourcePolicy"])
+    aws_client.secretsmanager.get_resource_policy(SecretId=secret_id)

@@ -12,6 +12,9 @@ Resources:
         - DomainName: "{{domain}}"
           HostedZoneId: zone123  # using dummy ID for now
       ValidationMethod: DNS
+Outputs:
+  Cert:
+    Value: !Ref cert1
 """
 
 

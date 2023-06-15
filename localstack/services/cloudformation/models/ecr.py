@@ -28,10 +28,6 @@ class ECRRepository(GenericBaseModel):
             return self.props.get("repositoryUri")
         return super(ECRRepository, self).get_cfn_attribute(attribute_name)
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        repo_name = self.props.get("RepositoryName")
-        return arns.get_ecr_repository_arn(repo_name)
-
     def fetch_state(self, stack_name, resources):
         repo_name = default_repos_per_stack.get(stack_name)
         if repo_name:
@@ -60,9 +56,19 @@ class ECRRepository(GenericBaseModel):
             if default_repos_per_stack.get(stack_name):
                 del default_repos_per_stack[stack_name]
 
+        def _set_physical_resource_id(result, resource_id, resources, resource_type):
+            resource = resources[resource_id]
+            repo_name = resource["Properties"]["RepositoryName"]
+            resource["PhysicalResourceId"] = arns.get_ecr_repository_arn(repo_name)
+
+            # add in some properties required for GetAtt and Ref
+            resource["Properties"]["repositoryArn"] = arns.get_ecr_repository_arn(repo_name)
+            resource["Properties"]["repositoryUri"] = "http://localhost:4566"
+
         return {
             "create": {
                 "function": _create_repo,
+                "result_handler": _set_physical_resource_id,
             },
             "delete": {
                 "function": _delete_repo,

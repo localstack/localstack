@@ -8,9 +8,6 @@ class KinesisStreamConsumer(GenericBaseModel):
     def cloudformation_type():
         return "AWS::Kinesis::StreamConsumer"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("ConsumerARN")
-
     def fetch_state(self, stack_name, resources):
         props = self.props
         stream_arn = props["StreamARN"]
@@ -20,8 +17,17 @@ class KinesisStreamConsumer(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resource = resources[resource_id]
+            resource["PhysicalResourceId"] = result["Consumer"]["ConsumerARN"]
+            resource["Properties"]["ConsumerARN"] = result["Consumer"]["ConsumerARN"]
+            resource["Properties"]["ConsumerCreationTimestamp"] = result["Consumer"][
+                "ConsumerCreationTimestamp"
+            ]
+            resource["Properties"]["ConsumerStatus"] = result["Consumer"]["ConsumerStatus"]
+
         return {
-            "create": {"function": "register_stream_consumer"},
+            "create": {"function": "register_stream_consumer", "result_handler": _handle_result},
             "delete": {"function": "deregister_stream_consumer"},
         }
 
@@ -30,11 +36,6 @@ class KinesisStream(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::Kinesis::Stream"
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        if attribute == "Arn":
-            return self.props.get("Arn")
-        return self.physical_resource_id
 
     def fetch_state(self, stack_name, resources):
         stream_name = self.props["Name"]

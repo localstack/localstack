@@ -1,4 +1,3 @@
-import json
 import re
 
 from botocore.exceptions import ClientError
@@ -22,16 +21,20 @@ class S3BucketPolicy(GenericBaseModel):
     def cloudformation_type():
         return "AWS::S3::BucketPolicy"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        policy = self.props.get("Policy")
-        return policy and md5(canonical_json(json.loads(policy)))
-
     def fetch_state(self, stack_name, resources):
         bucket_name = self.props.get("Bucket") or self.logical_resource_id
         return aws_stack.connect_to_service("s3").get_bucket_policy(Bucket=bucket_name)
 
     @staticmethod
     def get_deploy_templates():
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, resource_type: str
+        ):
+            resource = resources[resource_id]
+            resource["PhysicalResourceId"] = md5(
+                canonical_json(resource["Properties"]["PolicyDocument"])
+            )
+
         return {
             "create": {
                 "function": "put_bucket_policy",
@@ -39,6 +42,7 @@ class S3BucketPolicy(GenericBaseModel):
                     dump_json_params(None, "PolicyDocument"),
                     {"PolicyDocument": "Policy", "Bucket": "Bucket"},
                 ),
+                "result_handler": _set_physical_resource_id,
             },
             "delete": {"function": "delete_bucket_policy", "parameters": {"Bucket": "Bucket"}},
         }
@@ -162,6 +166,12 @@ class S3Bucket(GenericBaseModel):
             }
             return result
 
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, resource_type: str
+        ):
+            resource = resources[resource_id]
+            resource["PhysicalResourceId"] = resource["Properties"]["BucketName"]
+
         def _pre_delete(resource_id, resources, resource_type, func, stack_name):
             s3 = aws_stack.connect_to_service("s3")
             resource = resources[resource_id]
@@ -250,7 +260,10 @@ class S3Bucket(GenericBaseModel):
 
         result = {
             "create": [
-                {"function": _create_bucket},
+                {
+                    "function": _create_bucket,
+                    "result_handler": _set_physical_resource_id,
+                },
                 {
                     "function": "put_bucket_notification_configuration",
                     "parameters": s3_bucket_notification_config,
@@ -308,12 +321,6 @@ class S3Bucket(GenericBaseModel):
             return f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}:{get_edge_port_http()}"
 
         return super(S3Bucket, self).get_cfn_attribute(attribute_name)
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        bucket_name = self.props.get("BucketName")
-        if attribute == "Arn":
-            return arns.s3_bucket_arn(bucket_name)
-        return bucket_name
 
     def _get_bucket_name(self):
         return self.props.get("BucketName") or self.logical_resource_id

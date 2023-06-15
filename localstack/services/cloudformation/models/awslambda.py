@@ -2,6 +2,7 @@ import json
 import os
 import random
 import string
+import uuid
 
 from localstack.aws.connect import connect_to
 from localstack.services.awslambda.lambda_utils import get_handler_file_from_name
@@ -35,12 +36,6 @@ class LambdaFunction(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         func_name = self.props["FunctionName"]
         return connect_to().awslambda.get_function(FunctionName=func_name)
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        func_name = self.props.get("FunctionName")
-        if attribute == "Arn":
-            return arns.lambda_function_arn(func_name)
-        return func_name
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
@@ -136,8 +131,12 @@ class LambdaFunction(GenericBaseModel):
         def result_handler(result, resource_id, resources, resource_type):
             """waits for the lambda to be in a "terminal" state, i.e. not pending"""
             resources[resource_id]["Properties"]["Arn"] = result["FunctionArn"]
-            lambda_client = aws_stack.connect_to_service("lambda")
-            lambda_client.get_waiter("function_active_v2").wait(FunctionName=result["FunctionArn"])
+            resources[resource_id]["PhysicalResourceId"] = resources[resource_id]["Properties"][
+                "FunctionName"
+            ]
+            connect_to().awslambda.get_waiter("function_active_v2").wait(
+                FunctionName=result["FunctionArn"]
+            )
 
         return {
             "create": {
@@ -236,13 +235,13 @@ class LambdaEventSourceMapping(GenericBaseModel):
         if attribute_name == "Id":
             return self.props.get("UUID")
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("UUID")
-
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["UUID"]
+
         return {
-            "create": {"function": "create_event_source_mapping"},
+            "create": {"function": "create_event_source_mapping", "result_handler": _handle_result},
             "delete": {"function": "delete_event_source_mapping", "parameters": ["UUID"]},
         }
 
@@ -333,17 +332,19 @@ class LambdaEventInvokeConfig(GenericBaseModel):
         )
         return result
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        props = self.props
-        return "lambdaconfig-%s-%s" % (
-            props.get("FunctionName"),
-            props.get("Qualifier"),
-        )
-
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = str(
+                uuid.uuid4()
+            )  # TODO: not actually a UUIDv4
+            # example format: 6403f864-a20b-4373-ac8f-f8d888f6bc0f
+
         return {
-            "create": {"function": "put_function_event_invoke_config"},
+            "create": {
+                "function": "put_function_event_invoke_config",
+                "result_handler": _handle_result,
+            },
             "delete": {
                 "function": "delete_function_event_invoke_config",
                 "parameters": {
@@ -358,11 +359,6 @@ class LambdaUrl(GenericBaseModel):
     @classmethod
     def cloudformation_type(cls):
         return "AWS::Lambda::Url"
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get(
-            "TargetFunctionArn"
-        )  # TODO: if this isn't an ARN we need to resolve the full ARN here
 
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("lambda")
@@ -386,6 +382,11 @@ class LambdaUrl(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["FunctionArn"]
+            resources[resource_id]["Properties"]["FunctionArn"] = result["FunctionArn"]
+            resources[resource_id]["Properties"]["FunctionUrl"] = result["FunctionUrl"]
+
         return {
             "create": {
                 "function": "create_function_url_config",
@@ -395,6 +396,7 @@ class LambdaUrl(GenericBaseModel):
                     "FunctionName": "TargetFunctionArn",
                     "AuthType": "AuthType",
                 },
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_function_url_config",
@@ -446,32 +448,22 @@ class LambdaCodeSigningConfig(GenericBaseModel):
         ]
         return result
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.physical_resource_id
-
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "CodeSigningConfigId":
-            return self.props["CodeSigningConfigId"]
-
-        return self.physical_resource_id
-
     @classmethod
     def get_deploy_templates(cls):
         def _store_arn(result, resource_id, resources, resource_type):
             resources[resource_id]["PhysicalResourceId"] = result["CodeSigningConfig"][
                 "CodeSigningConfigArn"
             ]
-
-        def _arn(params, resources, resource_id, **kwargs):
-            resource = cls(resources[resource_id])
-            return resource.physical_resource_id or resource.get_physical_resource_id()
+            resources[resource_id]["Properties"]["CodeSigningConfigArn"] = result[
+                "CodeSigningConfig"
+            ]["CodeSigningConfigArn"]
 
         return {
             "create": {"function": "create_code_signing_config", "result_handler": _store_arn},
             "delete": {
                 "function": "delete_code_signing_config",
                 "parameters": {
-                    "CodeSigningConfigArn": _arn,
+                    "CodeSigningConfigArn": "CodeSigningConfigArn",
                 },
             },
         }
@@ -482,9 +474,6 @@ class LambdaLayerVersion(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::Lambda::LayerVersion"
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.state.get("LayerVersionArn")
 
     def fetch_state(self, stack_name, resources):
         layer_name = self.props.get("LayerName")
@@ -501,7 +490,10 @@ class LambdaLayerVersion(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        return {"create": {"function": "publish_layer_version"}}
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["LayerVersionArn"]
+
+        return {"create": {"function": "publish_layer_version", "result_handler": _handle_result}}
 
 
 # TODO: test
