@@ -26,6 +26,7 @@ from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
+    ApiGatewayIntegrationError,
     IntegrationParameters,
     RequestParametersResolver,
     extract_path_params,
@@ -56,25 +57,6 @@ from localstack.utils.json import json_safe
 from localstack.utils.strings import camel_to_snake_case, to_bytes
 
 LOG = logging.getLogger(__name__)
-
-
-class ApiGatewayIntegrationError(Exception):
-    """
-    Base class for all ApiGateway Integration errors.
-    Can be used as is or extended for common error types.
-    These exceptions should be handled in one place, and bubble up from all others.
-    """
-
-    message: str
-    status_code: int
-
-    def __init__(self, message: str, status_code: int):
-        super().__init__(message)
-        self.message = message
-        self.status_code = status_code
-
-    def to_response(self):
-        return requests_response({"message": self.message}, status_code=self.status_code)
 
 
 class IntegrationAccessError(ApiGatewayIntegrationError):

@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 from typing import Dict
 
 from jsonschema import ValidationError, validate
@@ -19,6 +18,7 @@ from localstack.services.apigateway.helpers import (
     get_apigateway_store,
     get_cors_response,
     make_error_response,
+    select_integration_response,
 )
 from localstack.services.apigateway.integration import (
     ApiGatewayIntegrationError,
@@ -233,38 +233,12 @@ def apply_response_parameters(invocation_context: ApiInvocationContext):
         "Found multiple integration response status codes: %s, choosing by selection pattern",
         entries,
     )
-    select_by_pattern = [
-        response
-        for response in int_responses.values()
-        if response.get("selectionPattern")
-        and re.match(response.get("selectionPattern"), return_code)
-    ]
-    if select_by_pattern:
-        selected_status_code = select_by_pattern[0]["statusCode"]
-        if len(select_by_pattern) > 1:
-            LOG.warning(
-                "Multiple integration responses matching '%s' statuscode. Choosing '%s' (first).",
-                return_code,
-                selected_status_code,
-            )
-        return_code = selected_status_code
-    else:
-        # choose default return code
-        default_responses = [
-            response for response in int_responses.values() if not response.get("selectionPattern")
-        ]
-        if not default_responses:
-            raise ApiGatewayIntegrationError("Internal server error", 500)
-
-        selected_status_code = default_responses[0]["statusCode"]
-        if len(default_responses) > 1:
-            LOG.warning(
-                "Multiple default integration responses. Choosing %s (first).", selected_status_code
-            )
-        return_code = selected_status_code
+    selected_integration_response = select_integration_response(return_code, invocation_context)
     # set status code of integration response
-    response.status_code = return_code
-    response_params = int_responses[return_code].get("responseParameters", {})
+    response.status_code = selected_integration_response["statusCode"]
+    response_params = int_responses[selected_integration_response["statusCode"]].get(
+        "responseParameters", {}
+    )
     for key, value in response_params.items():
         # TODO: add support for method.response.body, etc ...
         if str(key).lower().startswith("method.response.header."):
