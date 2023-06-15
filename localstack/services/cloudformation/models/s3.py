@@ -123,8 +123,11 @@ class S3Bucket(GenericBaseModel):
 
             return {"CORSRules": cors_rules}
 
-        def s3_bucket_notification_config(params, **kwargs):
-            notif_config = params.get("NotificationConfiguration")
+        def s3_bucket_notification_config(
+            logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
+            properties = resource["Properties"]
+            notif_config = properties.get("NotificationConfiguration")
             if not notif_config:
                 return None
 
@@ -157,7 +160,7 @@ class S3Bucket(GenericBaseModel):
 
             # construct final result
             result = {
-                "Bucket": params.get("BucketName"),
+                "Bucket": properties.get("BucketName"),
                 "NotificationConfiguration": {
                     "LambdaFunctionConfigurations": lambda_configs,
                     "QueueConfigurations": queue_configs,
