@@ -152,6 +152,10 @@ class KmsCryptoKey:
     by AWS and is not used by AWS.
     """
 
+    public_key: Optional[bytes]
+    private_key: Optional[bytes]
+    key_material: bytes
+
     def __init__(self, key_spec: str):
         self.private_key = None
         self.public_key = None
@@ -166,10 +170,10 @@ class KmsCryptoKey:
 
         if key_spec.startswith("RSA"):
             key_size = RSA_CRYPTO_KEY_LENGTHS.get(key_spec)
-            self.key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
+            key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
         elif key_spec.startswith("ECC"):
             curve = ECC_CURVES.get(key_spec)
-            self.key = ec.generate_private_key(curve)
+            key = ec.generate_private_key(curve)
         elif key_spec.startswith("HMAC"):
             if key_spec not in HMAC_RANGE_KEY_LENGTHS:
                 raise ValidationException(
@@ -186,12 +190,12 @@ class KmsCryptoKey:
             # but only used in China AWS regions.
             raise UnsupportedOperationException(f"KeySpec {key_spec} is not supported")
 
-        self.private_key = self.key.private_bytes(
+        self.private_key = key.private_bytes(
             crypto_serialization.Encoding.DER,
             crypto_serialization.PrivateFormat.PKCS8,
             crypto_serialization.NoEncryption(),
         )
-        self.public_key = self.key.public_key().public_bytes(
+        self.public_key = key.public_key().public_bytes(
             crypto_serialization.Encoding.DER,
             crypto_serialization.PublicFormat.SubjectPublicKeyInfo,
         )
