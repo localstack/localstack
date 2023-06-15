@@ -288,11 +288,14 @@ class GatewayResource(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def get_apigw_resource_params(params, **kwargs):
+        def get_apigw_resource_params(
+            logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
+            properties = resource["Properties"]
             result = {
-                "restApiId": params.get("RestApiId"),
-                "pathPart": params.get("PathPart"),
-                "parentId": params.get("ParentId"),
+                "restApiId": properties.get("RestApiId"),
+                "pathPart": properties.get("PathPart"),
+                "parentId": properties.get("ParentId"),
             }
             if not result.get("parentId"):
                 # get root resource id
@@ -382,8 +385,9 @@ class GatewayMethod(GenericBaseModel):
         https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-apitgateway-method-integration-integrationresponse.html
         """
 
-        def get_params(resource_props, stack_name, resources, resource_id):
-            result = keys_to_lower(resource_props)
+        def get_params(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
+            properties = resource["Properties"]
+            result = keys_to_lower(properties)
             param_names = [
                 "restApiId",
                 "resourceId",
@@ -500,9 +504,10 @@ class GatewayStage(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def get_params(resource_props, stack_name, resources, resource_id):
-            stage_name = resource_props.get("StageName", "default")
-            result = keys_to_lower(resource_props)
+        def get_params(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
+            properties = resource["Properties"]
+            stage_name = properties.get("StageName", "default")
+            result = keys_to_lower(properties)
             param_names = [
                 "restApiId",
                 "deploymentId",
