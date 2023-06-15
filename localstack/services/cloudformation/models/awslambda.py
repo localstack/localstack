@@ -118,8 +118,9 @@ class LambdaFunction(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def get_delete_params(params, **kwargs):
-            return {"FunctionName": params.get("FunctionName")}
+        def get_delete_params(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
+            properties = resource["Properties"]
+            return {"FunctionName": properties.get("FunctionName")}
 
         def get_environment_params(params, **kwargs):
             # botocore/data/lambda/2015-03-31/service-2.json:1161 (EnvironmentVariableValue)
@@ -172,7 +173,6 @@ class LambdaFunctionVersion(GenericBaseModel):
         return "AWS::Lambda::Version"
 
     def fetch_state(self, stack_name, resources):
-
         props = self.props
         if not self.physical_resource_id:
             return None
@@ -287,26 +287,28 @@ class LambdaPermission(GenericBaseModel):
             parsed_statement = json.loads(result["Statement"])
             resources[resource_id]["PhysicalResourceId"] = parsed_statement["Sid"]
 
-        def lambda_permission_params(params, resources, resource_id, **kwargs):
+        def lambda_permission_params(
+            logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
+            properties = resource["Properties"]
             result = select_parameters("FunctionName", "Action", "Principal", "SourceArn")(
-                params, **kwargs
+                properties
             )
             # generate SID
             # e.g. stack-78d0ac66-fnAllowInvokeLambdaPermissionsStacktopicF723B1A748672DB5-1D7VMEAZ2UQIN
             # e.g. stack-6283277e-fnAllowInvokeLambdaPermissionsStacktopicF48672DB5-19EAQW5GIWOS5 when the functional ID is shorter
             suffix = "".join(random.choices(string.digits + string.ascii_uppercase, k=13))
-            prefix = kwargs.get("stack_name")
+            prefix = stack_name
             if prefix:
-                result["StatementId"] = f"{prefix}-{resource_id}-{suffix}"
+                result["StatementId"] = f"{prefix}-{logical_resource_id}-{suffix}"
             else:
-                result["StatementId"] = f"{resource_id}-{suffix}"
+                result["StatementId"] = f"{logical_resource_id}-{suffix}"
             return result
 
-        def get_delete_params(params, **kwargs):
-            resources = kwargs["resources"]
-            resource_id = kwargs["resource_id"]
-            statement_id = resources[resource_id]["PhysicalResourceId"]
-            return {"FunctionName": params.get("FunctionName"), "StatementId": statement_id}
+        def get_delete_params(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
+            properties = resource["Properties"]
+            statement_id = resource["PhysicalResourceId"]
+            return {"FunctionName": properties.get("FunctionName"), "StatementId": statement_id}
 
         return {
             "create": {
@@ -522,9 +524,10 @@ class LambdaLayerVersionPermission(LambdaPermission):
 
     @classmethod
     def get_deploy_templates(cls):
-        def layer_permission_params(params, **kwargs):
-            layer_name, version_number = cls.layer_name_and_version(params)
-            result = select_attributes(params, ["Action", "Principal"])
+        def layer_permission_params(logical_resource_id: str, resource: dict, stack_name: str):
+            properties = resource["Properties"]
+            layer_name, version_number = cls.layer_name_and_version(properties)
+            result = select_attributes(properties, ["Action", "Principal"])
             result["StatementId"] = short_uid()
             result["LayerName"] = layer_name
             result["VersionNumber"] = version_number
