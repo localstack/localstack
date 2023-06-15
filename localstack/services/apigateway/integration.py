@@ -53,7 +53,7 @@ from localstack.utils.collections import dict_multi_values, remove_attributes
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.http import add_query_params_to_url, canonicalize_headers, parse_request_data
 from localstack.utils.json import json_safe
-from localstack.utils.strings import camel_to_snake_case, short_uid, to_bytes
+from localstack.utils.strings import camel_to_snake_case, to_bytes
 
 LOG = logging.getLogger(__name__)
 
@@ -157,7 +157,7 @@ def get_internal_mocked_headers(
         access_key_id = (
             connect_to()
             .sts.request_metadata(service_principal=ServicePrincipal.apigateway)
-            .assume_role(RoleArn=role_arn, RoleSessionName=f"apigateway-session-{short_uid()}")[
+            .assume_role(RoleArn=role_arn, RoleSessionName="BackplaneAssumeRoleSession")[
                 "Credentials"
             ]["AccessKeyId"]
         )
@@ -519,8 +519,11 @@ class KinesisIntegration(BackendIntegration):
             raise
 
         # forward records to target kinesis stream
-        headers = aws_stack.mock_aws_request_headers(
-            service="kinesis", region_name=invocation_context.region_name
+        headers = get_internal_mocked_headers(
+            service_name="kinesis",
+            region_name=invocation_context.region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+            source_arn=get_source_arn(invocation_context),
         )
         headers["X-Amz-Target"] = target
 
@@ -547,15 +550,26 @@ class DynamoDBIntegration(BackendIntegration):
         payload = json.loads(payload)
 
         # determine target method via reflection
-        dynamo_client = aws_stack.connect_to_service("dynamodb")
+        clients = get_service_factory(
+            region_name=invocation_context.region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+        )
+        dynamo_client = clients.dynamodb.request_metadata(
+            service_principal=ServicePrincipal.apigateway,
+            source_arn=get_source_arn(invocation_context),
+        )
         method_name = camel_to_snake_case(action)
         client_method = getattr(dynamo_client, method_name, None)
         if not client_method:
             raise Exception(f"Unsupported action {action} in API Gateway integration URI {uri}")
 
         # run request against DynamoDB backend
-        response = client_method(**payload)
+        try:
+            response = client_method(**payload)
+        except ClientError as e:
+            response = e.value.response
 
+        status_code = response.get("ResponseMetadata", {}).get("HTTPStatusCode", 200)
         # apply response templates
         response_content = json.dumps(remove_attributes(response, ["ResponseMetadata"]))
         response_obj = requests_response(content=response_content)
@@ -564,7 +578,7 @@ class DynamoDBIntegration(BackendIntegration):
         # construct final response
         # TODO: set response header based on response templates
         headers = {HEADER_CONTENT_TYPE: APPLICATION_JSON}
-        response = requests_response(response, headers=headers)
+        response = requests_response(response, headers=headers, status_code=status_code)
 
         return response
 

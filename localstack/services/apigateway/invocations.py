@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import Dict
 
 from jsonschema import ValidationError, validate
@@ -216,13 +217,53 @@ def apply_response_parameters(invocation_context: ApiInvocationContext):
     int_responses = integration.get("integrationResponses") or {}
     if not int_responses:
         return response
+
+    integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
+    integration_type = integration_type_orig.upper()
+    if integration_type == "AWS_PROXY":
+        LOG.warning("AWS_PROXY integration type should not apply response parameters")
+        return response
+
     entries = list(int_responses.keys())
     return_code = str(response.status_code)
-    if return_code not in entries:
-        if len(entries) > 1:
-            LOG.info("Found multiple integration response status codes: %s", entries)
-            return response
-        return_code = entries[0]
+    # Selecting the right integration response
+    # FIXME is this check valid? It should map to the default one or based on the selectionPattern
+    # Not sure if it gets mapped automatically to a method response if it matches the statusCode by chance
+    LOG.debug(
+        "Found multiple integration response status codes: %s, choosing by selection pattern",
+        entries,
+    )
+    select_by_pattern = [
+        response
+        for response in int_responses.values()
+        if response.get("selectionPattern")
+        and re.match(response.get("selectionPattern"), return_code)
+    ]
+    if select_by_pattern:
+        selected_status_code = select_by_pattern[0]["statusCode"]
+        if len(select_by_pattern) > 1:
+            LOG.warning(
+                "Multiple integration responses matching '%s' statuscode. Choosing '%s' (first).",
+                return_code,
+                selected_status_code,
+            )
+        return_code = selected_status_code
+    else:
+        # choose default return code
+        default_responses = [
+            response for response in int_responses.values() if not response.get("selectionPattern")
+        ]
+        if not default_responses:
+            raise ApiGatewayIntegrationError("Internal server error", 500)
+
+        selected_status_code = default_responses[0]["statusCode"]
+        if len(default_responses) > 1:
+            LOG.warning(
+                "Multiple default integration responses. Choosing %s (first).", selected_status_code
+            )
+        return_code = selected_status_code
+    # set status code of integration response
+    response.status_code = return_code
     response_params = int_responses[return_code].get("responseParameters", {})
     for key, value in response_params.items():
         # TODO: add support for method.response.body, etc ...
