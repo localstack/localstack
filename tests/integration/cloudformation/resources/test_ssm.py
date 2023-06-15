@@ -119,3 +119,17 @@ def test_update_ssm_parameter_tag(deploy_cfn_template, aws_client):
     #
     # ssm_tags = aws_client.ssm.list_tags_for_resource(ResourceType="Parameter", ResourceId=parameter_name)['TagList']
     # assert ssm_tags == []
+
+
+def test_deploy_patch_baseline(deploy_cfn_template, aws_client, snapshot):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/ssm_patch_baseline.yml"
+        ),
+    )
+
+    describe_resource = aws_client.cloudformation.describe_stack_resource(
+        StackName=stack.stack_name, LogicalResourceId="myPatchBaseline"
+    )["StackResourceDetail"]
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.match("PatchBaseline", describe_resource)

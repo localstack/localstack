@@ -191,3 +191,92 @@ class SSMMaintenanceWindowTarget(GenericBaseModel):
             },
             "delete": {"function": _delete_window_target},
         }
+
+
+class SSMMaintenanceTask(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::SSM::MaintenanceWindowTask"
+
+    def fetch_state(self, stack_name, resources):
+        return aws_stack.connect_to_service("ssm").describe_maintenance_window_task(
+            WindowTaskId=self.props.get("WindowTaskId")
+        )["WindowTaskId"]
+
+    @staticmethod
+    def get_deploy_templates():
+        def _delete_window_task(resource_id, resources, resource_type, func, stack_name):
+            ssm_client = aws_stack.connect_to_service("ssm")
+            ssm_client.deregister_task_from_maintenance_window(
+                WindowId=resources[resource_id]["Properties"]["WindowId"],
+                WindowTaskId=resources[resource_id]["PhysicalResourceId"],
+            )
+
+        def _store_window_task_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["WindowTaskId"]
+
+        return {
+            "create": {
+                "function": "register_task_with_maintenance_window",
+                "parameters": select_parameters(
+                    "Description",
+                    "Name",
+                    "OwnerInformation",
+                    "Priority",
+                    "ServiceRoleArn",
+                    "Targets",
+                    "TaskArn",
+                    "TaskInvocationParameters",
+                    "TaskParameters",
+                    "TaskType",
+                    "WindowId",
+                ),
+                "result_handler": _store_window_task_id,
+            },
+            "delete": {"function": _delete_window_task},
+        }
+
+
+class SSMPatchBaseline(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::SSM::PatchBaseline"
+
+    def fetch_state(self, stack_name, resources):
+        return aws_stack.connect_to_service("ssm").describe_patch_baselines(
+            BaselineId=self.props.get("BaselineId")
+        )["BaselineId"]
+
+    @staticmethod
+    def get_deploy_templates():
+        def _delete_patch_baseline(resource_id, resources, resource_type, func, stack_name):
+            ssm_client = aws_stack.connect_to_service("ssm")
+            ssm_client.delete_patch_baseline(
+                BaselineId=resources[resource_id]["PhysicalResourceId"]
+            )
+
+        def _store_patch_baseline_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["BaselineId"]
+
+        return {
+            "create": {
+                "function": "create_patch_baseline",
+                "parameters": select_parameters(
+                    "OperatingSystem",
+                    "Name",
+                    "GlobalFilters",
+                    "ApprovalRules",
+                    "ApprovedPatches",
+                    "ApprovedPatchesComplianceLevel",
+                    "ApprovedPatchesEnableNonSecurity",
+                    "RejectedPatches",
+                    "RejectedPatchesAction",
+                    "Description",
+                    "Sources",
+                    "ClientToken",
+                    "Tags",
+                ),
+                "result_handler": _store_patch_baseline_id,
+            },
+            "delete": {"function": _delete_patch_baseline},
+        }
