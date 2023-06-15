@@ -1141,7 +1141,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_sns_to_sqs": {
-    "recorded-date": "09-08-2022, 11:36:59",
+    "recorded-date": "12-06-2023, 18:15:59",
     "recorded-content": {
       "sub-attrs-raw-true": {
         "Attributes": {
@@ -1152,6 +1152,7 @@
           "Protocol": "sqs",
           "RawMessageDelivery": "true",
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
         },
         "ResponseMetadata": {
@@ -1161,10 +1162,6 @@
       },
       "publish-batch": {
         "Failed": [],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "Successful": [
           {
             "Id": "1",
@@ -1181,8 +1178,16 @@
           {
             "Id": "4",
             "MessageId": "<uuid:4>"
+          },
+          {
+            "Id": "5",
+            "MessageId": "<uuid:5>"
           }
-        ]
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       },
       "messages": {
         "Messages": [
@@ -1202,7 +1207,7 @@
                 "StringValue": "19.12"
               }
             },
-            "MessageId": "<uuid:5>",
+            "MessageId": "<uuid:6>",
             "ReceiptHandle": "<receipt-handle:1>"
           },
           {
@@ -1225,7 +1230,7 @@
                 "StringValue": "109.12"
               }
             },
-            "MessageId": "<uuid:6>",
+            "MessageId": "<uuid:7>",
             "ReceiptHandle": "<receipt-handle:2>"
           },
           {
@@ -1237,7 +1242,7 @@
             },
             "Body": "Test Message without attribute",
             "MD5OfBody": "<md5-hash>",
-            "MessageId": "<uuid:7>",
+            "MessageId": "<uuid:8>",
             "ReceiptHandle": "<receipt-handle:3>"
           },
           {
@@ -1249,15 +1254,27 @@
             },
             "Body": "Test Message without subject",
             "MD5OfBody": "<md5-hash>",
-            "MessageId": "<uuid:8>",
+            "MessageId": "<uuid:9>",
             "ReceiptHandle": "<receipt-handle:4>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": "test sqs",
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:10>",
+            "ReceiptHandle": "<receipt-handle:5>"
           }
         ]
       }
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_exceptions": {
-    "recorded-date": "09-08-2022, 11:35:46",
+    "recorded-date": "12-06-2023, 18:22:01",
     "recorded-content": {
       "no-group-id": {
         "Error": {
@@ -1296,6 +1313,17 @@
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "no-default-key-json": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Message Structure - No default entry in JSON message body",
           "Type": "Sender"
         },
         "ResponseMetadata": {
