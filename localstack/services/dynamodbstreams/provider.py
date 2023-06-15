@@ -23,6 +23,7 @@ from localstack.aws.api.dynamodbstreams import (
     StreamStatus,
     TableName,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.dynamodbstreams.dynamodbstreams_api import (
     get_dynamodbstreams_store,
     get_kinesis_stream_name,
@@ -92,7 +93,8 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
-        kinesis = aws_stack.connect_to_service("kinesis")
+        kinesis = connect_to().kinesis
+        prefix, _, payload["ShardIterator"] = payload["ShardIterator"].rpartition("|")
         try:
             kinesis_records = kinesis.get_records(**payload)
         except kinesis.exceptions.ExpiredIteratorException:
@@ -100,7 +102,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
             raise ExpiredIteratorException("Shard iterator has expired")
         result = {
             "Records": [],
-            "NextShardIterator": kinesis_records.get("NextShardIterator"),
+            "NextShardIterator": f"{prefix}|{kinesis_records.get('NextShardIterator')}",
         }
         for record in kinesis_records["Records"]:
             record_data = loads(record["Data"])
@@ -118,7 +120,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
     ) -> GetShardIteratorOutput:
         stream_name = stream_name_from_stream_arn(stream_arn)
         stream_shard_id = kinesis_shard_id(shard_id)
-        kinesis = aws_stack.connect_to_service("kinesis")
+        kinesis = connect_to().kinesis
 
         kwargs = {"StartingSequenceNumber": sequence_number} if sequence_number else {}
         result = kinesis.get_shard_iterator(
@@ -128,6 +130,8 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
             **kwargs,
         )
         del result["ResponseMetadata"]
+        # TODO not quite clear what the |1| exactly denotes, because at AWS it's sometimes other numbers
+        result["ShardIterator"] = f"{stream_arn}|1|{result['ShardIterator']}"
         return GetShardIteratorOutput(**result)
 
     def list_streams(

@@ -138,12 +138,6 @@ OPENSEARCH_PLUGIN_LIST = [
     "ingest-attachment",
 ]
 
-ELASTICMQ_JAR_URL = (
-    "https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-1.1.0.jar"
-)
-STEPFUNCTIONS_ZIP_URL = "https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip"
-KMS_URL_PATTERN = "https://s3-eu-west-2.amazonaws.com/local-kms/3/local-kms_<arch>.bin"
-
 # API endpoint for analytics events
 API_ENDPOINT = os.environ.get("API_ENDPOINT") or "https://api.localstack.cloud/v1"
 # new analytics API endpoint
@@ -171,6 +165,7 @@ TEST_AWS_SECRET_ACCESS_KEY = "test"
 # additional credentials used in the test suite (mainly for cross-account access)
 SECONDARY_TEST_AWS_ACCESS_KEY_ID = "000000000002"
 SECONDARY_TEST_AWS_SECRET_ACCESS_KEY = "test2"
+SECONDARY_TEST_AWS_REGION_NAME = "ap-southeast-1"
 
 # credentials being used for internal calls
 INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"

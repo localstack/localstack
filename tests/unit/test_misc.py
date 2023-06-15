@@ -72,6 +72,62 @@ class TestMisc(unittest.TestCase):
         map.add([234, 237], [345, 348])
         self.assertEqual("-p 123-124:123-124 -p 234-237:345-348", map.to_str())
 
+    def test_port_mappings_single_protocol(self):
+        map = PortMappings()
+        map.add(port=53, protocol="udp")
+        self.assertEqual("-p 53:53/udp", map.to_str())
+
+    def test_port_mappings_single_protocol_range(self):
+        map = PortMappings()
+        map.add(port=[123, 1337], protocol="tcp")
+        map.add(port=[124, 1338], protocol="tcp")
+        self.assertEqual("-p 123-1338:123-1338", map.to_str())
+
+    def test_port_mappings_multi_protocol(self):
+        map = PortMappings()
+        map.add(port=53, protocol="tcp")
+        map.add(port=53, protocol="udp")
+        self.assertEqual("-p 53:53 -p 53:53/udp", map.to_str())
+
+    def test_port_mappings_multi_protocol_range(self):
+        map = PortMappings()
+        map.add(port=[122, 1336], protocol="tcp")
+        map.add(port=[123, 1337], protocol="udp")
+
+        map.add(port=[123, 1337], protocol="tcp")
+        map.add(port=[124, 1338], protocol="udp")
+        self.assertEqual("-p 122-1337:122-1337 -p 123-1338:123-1338/udp", map.to_str())
+
+    def test_port_mappings_dict(self):
+        map = PortMappings()
+        map.add(port=[122, 124], protocol="tcp")
+        map.add(port=[123, 125], protocol="udp")
+
+        map.add(port=[123, 125], protocol="tcp")
+        map.add(port=[124, 126], protocol="udp")
+        self.assertEqual(
+            {
+                "122/tcp": 122,
+                "123/tcp": 123,
+                "123/udp": 123,
+                "124/tcp": 124,
+                "124/udp": 124,
+                "125/tcp": 125,
+                "125/udp": 125,
+                "126/udp": 126,
+            },
+            map.to_dict(),
+        )
+
+    def test_port_mappings_list(self):
+        map = PortMappings()
+        map.add(port=[122, 124], protocol="tcp")
+        map.add(port=[123, 125], protocol="udp")
+
+        map.add(port=[123, 125], protocol="tcp")
+        map.add(port=[124, 126], protocol="udp")
+        self.assertEqual(["-p", "122-125:122-125", "-p", "123-126:123-126/udp"], map.to_list())
+
     def test_update_config_variable(self):
         config_listener.update_config_variable("foo", "bar")
         self.assertEqual("bar", config.foo)

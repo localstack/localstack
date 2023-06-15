@@ -80,11 +80,6 @@ class DynamoDBTable(GenericBaseModel):
 
         return super(DynamoDBTable, self).get_cfn_attribute(attribute_name)
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        if attribute == "Arn":
-            return self.props.get("Table", {}).get("TableArn")
-        return self.props.get("TableName")
-
     def fetch_state(self, stack_name, resources):
         table_name = self.props.get("TableName") or self.logical_resource_id
         return aws_stack.connect_to_service("dynamodb").describe_table(TableName=table_name)
@@ -98,6 +93,10 @@ class DynamoDBTable(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
+        def _set_attributes(result: dict, resource_id: str, resources: dict, resource_type: str):
+            resources[resource_id]["PhysicalResourceId"] = result["TableDescription"]["TableName"]
+            resources[resource_id]["Properties"]["Table"] = result["TableDescription"]
+
         return {
             "create": [
                 {
@@ -118,6 +117,7 @@ class DynamoDBTable(GenericBaseModel):
                             )
                         ),
                     },
+                    "result_handler": _set_attributes,
                 },
                 {
                     "function": "enable_kinesis_streaming_destination",

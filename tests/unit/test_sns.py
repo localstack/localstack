@@ -196,7 +196,7 @@ class TestSns:
                 {
                     "filter": {
                         "Type": "String.Array",
-                        "Value": "['soccer', 'rugby', 'hockey']",
+                        "Value": '["soccer", "rugby", "hockey"]',
                     }
                 },
                 True,
@@ -226,7 +226,7 @@ class TestSns:
                 {
                     "filter": {
                         "Type": "String.Array",
-                        "Value": "['soccer', 'rugby', 'hockey']",
+                        "Value": '["soccer", "rugby", "hockey"]',
                     }
                 },
                 True,
@@ -249,7 +249,7 @@ class TestSns:
                 {
                     "filter": {
                         "Type": "String.Array",
-                        "Value": "['soccer', 'rugby', 'hockey']",
+                        "Value": '["soccer", "rugby", "hockey"]',
                     }
                 },
                 False,
@@ -278,7 +278,7 @@ class TestSns:
                 {
                     "filter": {
                         "Type": "String.Array",
-                        "Value": "['soccer', 'rugby', 'hockey']",
+                        "Value": '["soccer", "rugby", "hockey"]',
                     }
                 },
                 True,
@@ -370,7 +370,7 @@ class TestSns:
             (
                 "logical OR with match on an array",
                 {"filter": ["test1", "test2", {"prefix": "typ"}]},
-                {"filter": {"Type": "String.Array", "Value": "['test1', 'other']"}},
+                {"filter": {"Type": "String.Array", "Value": '["test1", "other"]'}},
                 True,
             ),
             (
@@ -385,7 +385,7 @@ class TestSns:
                 {
                     "filter": {
                         "Type": "String.Array",
-                        "Value": "['anything', 'something']",
+                        "Value": '["anything", "something"]',
                     }
                 },
                 False,
@@ -474,7 +474,7 @@ class TestSns:
                 {
                     "filter": {
                         "Type": "String.Array",
-                        "Value": "['anything', 'something']",
+                        "Value": '["anything", "something"]',
                     }
                 },
                 True,
@@ -501,6 +501,18 @@ class TestSns:
                 "does not exists with existing attribute",
                 {"field": [{"exists": False}]},
                 {"field": {"Type": "String", "Value": "anything"}},
+                False,
+            ),
+            (
+                "can match on String.Array containing boolean",
+                {"field": [True]},
+                {"field": {"Type": "String.Array", "Value": "[true]"}},
+                True,
+            ),
+            (
+                "can not match on values that are not valid JSON strings",
+                {"field": ["anything"]},
+                {"field": {"Type": "String.Array", "Value": "['anything']"}},
                 False,
             ),
         ]

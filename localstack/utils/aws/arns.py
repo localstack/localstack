@@ -4,7 +4,7 @@ from typing import Optional, TypedDict
 
 from botocore.utils import ArnParser, InvalidArnException
 
-from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.accounts import DEFAULT_AWS_ACCOUNT_ID, get_aws_account_id
 from localstack.utils.aws.aws_stack import connect_to_service, get_region, get_valid_regions
 
 # set up logger
@@ -28,12 +28,16 @@ def sqs_queue_url_for_arn(queue_arn):
         arn = parse_arn(queue_arn)
         region_name = arn["region"]
         queue_name = arn["resource"]
+        account_id = arn["account"]
     except InvalidArnException:
         region_name = None
         queue_name = queue_arn
+        account_id = DEFAULT_AWS_ACCOUNT_ID
 
     sqs_client = connect_to_service("sqs", region_name=region_name)
-    result = sqs_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
+    result = sqs_client.get_queue_url(QueueName=queue_name, QueueOwnerAWSAccountId=account_id)[
+        "QueueUrl"
+    ]
     SQS_ARN_TO_URL_CACHE[queue_arn] = result
     return result
 

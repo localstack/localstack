@@ -675,7 +675,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def get_queue_url(
         self, context: RequestContext, queue_name: String, queue_owner_aws_account_id: String = None
     ) -> GetQueueUrlResult:
-        store = self.get_store(context.account_id, context.region)
+        store = self.get_store(queue_owner_aws_account_id or context.account_id, context.region)
         if queue_name not in store.queues.keys():
             raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
 
@@ -756,10 +756,27 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         )
 
     def delete_queue(self, context: RequestContext, queue_url: String) -> None:
-        store = self.get_store(context.account_id, context.region)
+        account_id, region, name = parse_queue_url(queue_url)
+        if region is None:
+            region = context.region
+
+        if account_id != context.account_id:
+            LOG.warning(
+                "Attempting a cross-account DeleteQueue operation (account from context: %s, account from queue url: %s, which is not allowed in AWS",
+                account_id,
+                context.account_id,
+            )
+
+        store = self.get_store(account_id, region)
 
         with self._mutex:
             queue = self._resolve_queue(context, queue_url=queue_url)
+            LOG.debug(
+                "deleting queue name=%s, region=%s, account=%s",
+                queue.name,
+                queue.region,
+                queue.account_id,
+            )
             del store.queues[queue.name]
             store.deleted[queue.name] = time.time()
 

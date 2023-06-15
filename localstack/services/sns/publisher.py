@@ -1,5 +1,4 @@
 import abc
-import ast
 import base64
 import copy
 import datetime
@@ -962,7 +961,10 @@ class SubscriptionFilter:
         tpe = attribute.get("DataType") or attribute.get("Type") if attribute else None
         val = attribute.get("StringValue") or attribute.get("Value") if attribute else None
         if attribute is not None and tpe == "String.Array":
-            values = ast.literal_eval(val)
+            try:
+                values = json.loads(val)
+            except ValueError:
+                return False
             for value in values:
                 for condition in conditions:
                     if self._evaluate_condition(value, condition, field_exists):
