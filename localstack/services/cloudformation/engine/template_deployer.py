@@ -86,12 +86,22 @@ class FuncDetailsValue(TypedDict):
         [str, dict[str, dict], str, Any, str], Any
     ]
     """Either an api method to call directly with `parameters` or a callable to directly invoke"""
-    # Callable here takes the arguments:
+    # Fisrst callable here takes the arguments:
+    # - logical_resource_id
+    # - resource_props
+    # - stack_name
+    # Second calleble here takes the arguments
     # - resource_props
     # - stack_name
     # - resources
     # - resource_id
-    parameters: Optional[ResourceDefinition | Callable[[dict, str, list[dict], str], dict]]
+    parameters: Optional[
+        ResourceDefinition
+        # new format
+        | Callable[[str, dict, str], dict]
+        # legacy format
+        | Callable[[dict, str, list[dict], str], dict]
+    ]
     """arguments to the function, or a function that generates the arguments to the function"""
     # Callable here takes the arguments
     # - result
@@ -907,13 +917,16 @@ def resolve_resource_parameters(
 
     if callable(params):
         # resolve parameter map via custom function
-        # TODO(srw): 1 - callable for resolving params
-        params = params(
-            resource_props,
-            stack_name=stack_name,
-            resources=resources,
-            resource_id=resource_id,
-        )
+        sig = inspect.signature(params)
+        if "logical_resource_id" in sig.parameters:
+            params = params(resource_id, resources[resource_id], stack_name)
+        else:
+            params = params(
+                resource_props,
+                stack_name=stack_name,
+                resources=resources,
+                resource_id=resource_id,
+            )
     else:
         # it could be a list like ['param1', 'param2', {'apiCallParamName': 'cfResourcePropName'}]
         if isinstance(params, list):
