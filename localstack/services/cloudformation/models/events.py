@@ -105,7 +105,10 @@ class EventsRule(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def events_put_rule_params(params, **kwargs):
+        def events_put_rule_params(
+            logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
+            properties = resource["Properties"]
             attrs = [
                 "ScheduleExpression",
                 "EventPattern",
@@ -114,7 +117,7 @@ class EventsRule(GenericBaseModel):
                 "Name",
                 "EventBusName",
             ]
-            result = select_parameters(*attrs)(params)
+            result = select_parameters(*attrs)(properties)
 
             # TODO: remove this when refactoring events (prefix etc. was excluded here already to avoid most of the wrong behavior)
             def wrap_in_lists(o, **kwargs):
