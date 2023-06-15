@@ -2,7 +2,7 @@ import dataclasses
 import logging
 import threading
 from queue import Queue
-from typing import Union, Optional
+from typing import Optional, Union
 
 from localstack.aws.connect import connect_to
 from localstack.utils.aws.client_types import ServicePrincipal
@@ -11,10 +11,13 @@ from localstack.utils.threads import FuncThread
 
 LOG = logging.getLogger(__name__)
 
+
 class ShutdownPill:
     pass
 
+
 QUEUE_SHUTDOWN = ShutdownPill()
+
 
 @dataclasses.dataclass(frozen=True)
 class LogItem:
