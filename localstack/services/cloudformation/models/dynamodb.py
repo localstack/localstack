@@ -58,10 +58,13 @@ def get_ddb_global_sec_indexes(params: dict, **kwargs) -> list | None:
     return args
 
 
-def get_ddb_kinesis_stream_specification(params, **kwargs):
-    args = params.get("KinesisStreamSpecification")
+def get_ddb_kinesis_stream_specification(
+    logical_resource_id: str, resource: dict, stack_name: str
+) -> dict:
+    properties = resource["Properties"]
+    args = properties.get("KinesisStreamSpecification")
     if args:
-        args["TableName"] = params["TableName"]
+        args["TableName"] = properties["TableName"]
     return args
 
 
