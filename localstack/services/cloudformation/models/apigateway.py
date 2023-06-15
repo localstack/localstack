@@ -502,7 +502,6 @@ class GatewayStage(GenericBaseModel):
     def get_deploy_templates():
         def get_params(resource_props, stack_name, resources, resource_id):
             stage_name = resource_props.get("StageName", "default")
-            resources[resource_id]["Properties"]["StageName"] = stage_name
             result = keys_to_lower(resource_props)
             param_names = [
                 "restApiId",
@@ -523,6 +522,7 @@ class GatewayStage(GenericBaseModel):
 
         def _handle_result(result, resource_id, resources, resource_type):
             resources[resource_id]["PhysicalResourceId"] = result["stageName"]
+            resources[resource_id]["Properties"]["StageName"] = result["stageName"]
 
         return {
             "create": {
