@@ -1,6 +1,8 @@
 import re
 from typing import Tuple
 
+from localstack.services.kms.exceptions import ValidationException
+
 KMS_KEY_ARN_PATTERN = re.compile(
     r"^arn:aws:kms:(?P<region_name>[^:]+):(?P<account_id>\d{12}):key\/(?P<key_id>[^:]+)$"
 )
@@ -29,3 +31,11 @@ def is_valid_key_arn(key_arn: str) -> bool:
     Check if a given string is a valid KMS key ARN.
     """
     return KMS_KEY_ARN_PATTERN.match(key_arn) is not None
+
+
+def validate_alias_name(alias_name: str) -> None:
+    if not alias_name.startswith("alias/"):
+        raise ValidationException(
+            'Alias must start with the prefix "alias/". Please see '
+            "https://docs.aws.amazon.com/kms/latest/developerguide/kms-alias.html"
+        )
