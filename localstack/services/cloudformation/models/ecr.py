@@ -45,14 +45,13 @@ class ECRRepository(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _create_repo(resource_id, resources, resource_type, func, stack_name):
-            resource = resources[resource_id]
+        def _create_repo(logical_resource_id: str, resource: dict, stack_name: str):
             default_repos_per_stack[stack_name] = resource["Properties"]["RepositoryName"]
             LOG.warning(
                 "Creating a Mock ECR Repository for CloudFormation. This is only intended to be used for allowing a successful CDK bootstrap and does not provision any underlying ECR repository."
             )
 
-        def _delete_repo(resource_id, resources, resource_type, func, stack_name):
+        def _delete_repo(logical_resource_id: str, resource: dict, stack_name: str):
             if default_repos_per_stack.get(stack_name):
                 del default_repos_per_stack[stack_name]
 

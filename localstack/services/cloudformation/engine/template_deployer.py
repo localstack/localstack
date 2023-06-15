@@ -1,4 +1,5 @@
 import base64
+import inspect
 import json
 import logging
 import re
@@ -72,12 +73,10 @@ ResourceDefinition = dict[str, ResourceProp]
 
 class FuncDetailsValue(TypedDict):
     # Callable here takes the arguments:
-    # - resource_id
-    # - resources
-    # - resource_type
-    # - func
+    # - logical_resource_id
+    # - resource
     # - stack_name
-    function: str | Callable[[str, list[dict], str, Any, str], Any]
+    function: str | Callable[[str, dict, str], Any]
     """Either an api method to call directly with `parameters` or a callable to directly invoke"""
     # Callable here takes the arguments:
     # - resource_props
@@ -172,7 +171,6 @@ def get_client(resource: dict):
 def retrieve_resource_details(
     resource_id, resource_status, resources: dict[str, Type[GenericBaseModel]], stack_name
 ):
-
     resource = resources.get(resource_id)
     resource_id = resource_status.get("PhysicalResourceId") or resource_id
     if not resource:
@@ -812,7 +810,11 @@ def execute_resource_action(
         executed = False
         # TODO(srw) 3 - callable function
         if callable(func.get("function")):
-            result = func["function"](resource_id, resources, resource_type, func, stack_name)
+            sig = inspect.signature(func["function"])
+            if "logical_resource_id" in sig.parameters:
+                result = func["function"](resource_id, resources[resource_id], stack_name)
+            else:
+                result = func["function"](resource_id, resources, resource_type, func, stack_name)
             results.append(result)
             executed = True
 

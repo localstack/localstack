@@ -72,13 +72,13 @@ class SNSTopic(GenericBaseModel):
 
             return topics
 
-        def _add_topics(resource_id, resources, resource_type, func, stack_name):
+        def _add_topics(logical_resource_id: str, resource: str, stack_name: str):
             sns_client = aws_stack.connect_to_service("sns")
             topics = _list_all_topics(sns_client)
             topics_by_name = {t["TopicArn"].split(":")[-1]: t for t in topics}
 
-            resource = cls(resources[resource_id])
-            props = resource.props
+            provider = cls(resource)
+            props = provider.props
 
             subscriptions = props.get("Subscription", [])
             for subscription in subscriptions:
@@ -197,14 +197,12 @@ class SNSTopicPolicy(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(resource_id, resources, resource_type, func, stack_name):
+        def _create(logical_resource_id: str, resource: dict, stack_name: str):
             sns_client = aws_stack.connect_to_service("sns")
-            resource = cls(resources[resource_id])
-            props = resource.props
+            provider = cls(resource)
+            props = provider.props
 
-            resources[resource_id]["PhysicalResourceId"] = generate_default_name(
-                stack_name, resource_id
-            )
+            resource["PhysicalResourceId"] = generate_default_name(stack_name, logical_resource_id)
 
             policy = json.dumps(props["PolicyDocument"])
             for topic_arn in props["Topics"]:
@@ -212,10 +210,10 @@ class SNSTopicPolicy(GenericBaseModel):
                     TopicArn=topic_arn, AttributeName="Policy", AttributeValue=policy
                 )
 
-        def _delete(resource_id, resources, *args, **kwargs):
+        def _delete(logical_resource_id: str, resource: dict, stack_name: str):
             sns_client = aws_stack.connect_to_service("sns")
-            resource = cls(resources[resource_id])
-            props = resource.props
+            provider = cls(resource)
+            props = provider.props
 
             for topic_arn in props["Topics"]:
                 try:

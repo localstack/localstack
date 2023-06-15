@@ -172,9 +172,8 @@ class S3Bucket(GenericBaseModel):
             resource = resources[resource_id]
             resource["PhysicalResourceId"] = resource["Properties"]["BucketName"]
 
-        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+        def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
             s3 = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             try:
@@ -189,18 +188,16 @@ class S3Bucket(GenericBaseModel):
                 if "NoSuchBucket" not in str(e):
                     raise
 
-        def _add_bucket_tags(resource_id, resources, resource_type, func, stack_name):
+        def _add_bucket_tags(logical_resource_id: str, resource: dict, stack_name: str):
             s3 = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             tags = props.get("Tags", [])
             if len(tags) > 0:
                 s3.put_bucket_tagging(Bucket=bucket_name, Tagging={"TagSet": tags})
 
-        def _put_bucket_versioning(resource_id, resources, resource_type, func, stack_name):
+        def _put_bucket_versioning(logical_resource_id: str, resource: dict, stack_name: str):
             s3_client = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             versioning_config = props.get("VersioningConfiguration")
@@ -212,9 +209,10 @@ class S3Bucket(GenericBaseModel):
                     },
                 )
 
-        def _put_bucket_cors_configuration(resource_id, resources, resource_type, func, stack_name):
+        def _put_bucket_cors_configuration(
+            logical_resource_id: str, resource: dict, stack_name: str
+        ):
             s3_client = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             cors_configuration = transform_cfn_cors(props.get("CorsConfiguration"))
@@ -225,10 +223,9 @@ class S3Bucket(GenericBaseModel):
                 )
 
         def _put_bucket_website_configuration(
-            resource_id, resources, resource_type, func, stack_name
+            logical_resource_id: str, resource: dict, stack_name: str
         ):
             s3_client = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             website_config = transform_website_configuration(props.get("WebsiteConfiguration"))
@@ -238,9 +235,8 @@ class S3Bucket(GenericBaseModel):
                     WebsiteConfiguration=website_config,
                 )
 
-        def _create_bucket(resource_id, resources, resource_type, func, stack_name):
+        def _create_bucket(logical_resource_id: str, resource: dict, stack_name: str):
             s3_client = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             try:
