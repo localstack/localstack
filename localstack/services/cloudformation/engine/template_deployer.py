@@ -72,11 +72,19 @@ ResourceDefinition = dict[str, ResourceProp]
 
 
 class FuncDetailsValue(TypedDict):
-    # Callable here takes the arguments:
+    # First callable here takes the arguments:
     # - logical_resource_id
     # - resource
     # - stack_name
-    function: str | Callable[[str, dict, str], Any]
+    # Second callable here takes the arguments:
+    # - resource_id
+    # - resources
+    # - resource_type
+    # - func
+    # - stack_name
+    function: str | Callable[[str, dict, str], Any] | Callable[
+        [str, dict[str, dict], str, Any, str], Any
+    ]
     """Either an api method to call directly with `parameters` or a callable to directly invoke"""
     # Callable here takes the arguments:
     # - resource_props
@@ -808,7 +816,6 @@ def execute_resource_action(
     for func in func_details:
         result = None
         executed = False
-        # TODO(srw) 3 - callable function
         if callable(func.get("function")):
             sig = inspect.signature(func["function"])
             if "logical_resource_id" in sig.parameters:
