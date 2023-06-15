@@ -1,0 +1,20 @@
+# awslocal redshift create-cluster
+# --cluster-identifier mysamplecluster
+# --master-username masteruser
+# --master-user-password secret1
+# --node-type ds2.xlarge
+# --cluster-type single-node
+Resources:
+  Cluster:
+    Type: AWS::Redshift::Cluster
+    Properties:
+      ClusterIdentifier: mysamplecluster
+      ClusterType: single-node
+      DBName: db
+      MasterUserPassword: masterpassword
+      MasterUsername: masteruser
+      NodeType: dx2.xlarge
+
+Outputs:
+  ClusterRef:
+    Value: !Ref Cluster

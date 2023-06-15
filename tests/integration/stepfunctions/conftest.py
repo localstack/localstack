@@ -137,7 +137,8 @@ def sqs_send_task_success_state_machine(aws_client, create_state_machine, create
         state_machine_arn = creation_resp["stateMachineArn"]
 
         aws_client.stepfunctions.start_execution(
-            stateMachineArn=state_machine_arn, input=json.dumps({"QueueUrl": sqs_queue_url})
+            stateMachineArn=state_machine_arn,
+            input=json.dumps({"QueueUrl": sqs_queue_url, "Iterator": {"Count": 300}}),
         )
 
     return _create_state_machine

@@ -40,6 +40,7 @@ from localstack.aws.api.s3 import (
     GetBucketAclOutput,
     GetBucketAnalyticsConfigurationOutput,
     GetBucketCorsOutput,
+    GetBucketIntelligentTieringConfigurationOutput,
     GetBucketLifecycleConfigurationOutput,
     GetBucketLifecycleOutput,
     GetBucketLocationOutput,
@@ -57,10 +58,14 @@ from localstack.aws.api.s3 import (
     GetObjectTaggingRequest,
     HeadObjectOutput,
     HeadObjectRequest,
+    IntelligentTieringConfiguration,
+    IntelligentTieringConfigurationList,
+    IntelligentTieringId,
     InvalidBucketName,
     InvalidPartOrder,
     InvalidStorageClass,
     ListBucketAnalyticsConfigurationsOutput,
+    ListBucketIntelligentTieringConfigurationsOutput,
     ListMultipartUploadsOutput,
     ListMultipartUploadsRequest,
     ListObjectsOutput,
@@ -73,6 +78,7 @@ from localstack.aws.api.s3 import (
     NoSuchCORSConfiguration,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
+    NoSuchUpload,
     NoSuchWebsiteConfiguration,
     NotificationConfiguration,
     ObjectIdentifier,
@@ -100,7 +106,7 @@ from localstack.aws.api.s3 import (
     Token,
 )
 from localstack.aws.api.s3 import Type as GranteeType
-from localstack.aws.api.s3 import WebsiteConfiguration
+from localstack.aws.api.s3 import UploadPartOutput, UploadPartRequest, WebsiteConfiguration
 from localstack.aws.handlers import (
     modify_service_response,
     preprocess_request,
@@ -577,13 +583,34 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 UploadId=request["UploadId"],
             )
 
+        bucket_name = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket_name)
+        if not (upload_id := request.get("UploadId")) in moto_bucket.multiparts:
+            raise NoSuchUpload(
+                "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+                UploadId=upload_id,
+            )
+
         response: CompleteMultipartUploadOutput = call_moto(context)
 
         # moto return the Location in AWS `http://{bucket}.s3.amazonaws.com/{key}`
-        response[
-            "Location"
-        ] = f'{get_full_default_bucket_location(request["Bucket"])}{response["Key"]}'
+        response["Location"] = f'{get_full_default_bucket_location(bucket_name)}{response["Key"]}'
         self._notify(context)
+        return response
+
+    @handler("UploadPart", expand=False)
+    def upload_part(self, context: RequestContext, request: UploadPartRequest) -> UploadPartOutput:
+        bucket_name = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket_name)
+        if not (upload_id := request.get("UploadId")) in moto_bucket.multiparts:
+            raise NoSuchUpload(
+                "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+                UploadId=upload_id,
+            )
+
+        response: UploadPartOutput = call_moto(context)
         return response
 
     @handler("ListMultipartUploads", expand=False)
@@ -1178,8 +1205,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             id=id, analytics_configuration=analytics_configuration
         )
 
-        bucket_analytics_configuration = store.bucket_analytics_configuration.setdefault(bucket, {})
-        bucket_analytics_configuration[id] = analytics_configuration
+        bucket_analytics_configurations = store.bucket_analytics_configuration.setdefault(
+            bucket, {}
+        )
+        bucket_analytics_configurations[id] = analytics_configuration
 
     def get_bucket_analytics_configuration(
         self,
@@ -1236,11 +1265,86 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not analytics_configurations.pop(id, None):
             raise NoSuchConfiguration("The specified configuration does not exist.")
 
+    def put_bucket_intelligent_tiering_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: IntelligentTieringId,
+        intelligent_tiering_configuration: IntelligentTieringConfiguration,
+    ) -> None:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        validate_bucket_intelligent_tiering_configuration(id, intelligent_tiering_configuration)
+
+        store = self.get_store()
+        bucket_intelligent_tiering_configurations = (
+            store.bucket_intelligent_tiering_configuration.setdefault(bucket, {})
+        )
+        bucket_intelligent_tiering_configurations[id] = intelligent_tiering_configuration
+
+    def get_bucket_intelligent_tiering_configuration(
+        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
+    ) -> GetBucketIntelligentTieringConfigurationOutput:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        store = self.get_store()
+        intelligent_tiering_configuration: IntelligentTieringConfiguration = (
+            store.bucket_intelligent_tiering_configuration.get(bucket, {}).get(id)
+        )
+        if not intelligent_tiering_configuration:
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+        return GetBucketIntelligentTieringConfigurationOutput(
+            IntelligentTieringConfiguration=intelligent_tiering_configuration
+        )
+
+    def delete_bucket_intelligent_tiering_configuration(
+        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
+    ) -> None:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        store = self.get_store()
+        bucket_intelligent_tiering_configurations = (
+            store.bucket_intelligent_tiering_configuration.get(bucket, {})
+        )
+        if not bucket_intelligent_tiering_configurations.pop(id, None):
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+
+    def list_bucket_intelligent_tiering_configurations(
+        self, context: RequestContext, bucket: BucketName, continuation_token: Token = None
+    ) -> ListBucketIntelligentTieringConfigurationsOutput:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        store = self.get_store()
+        bucket_intelligent_tiering_configurations: Dict[
+            IntelligentTieringId, IntelligentTieringConfiguration
+        ] = store.bucket_intelligent_tiering_configuration.get(bucket, {})
+
+        bucket_intelligent_tiering_configurations: IntelligentTieringConfigurationList = sorted(
+            bucket_intelligent_tiering_configurations.values(), key=lambda x: x["Id"]
+        )
+        return ListBucketIntelligentTieringConfigurationsOutput(
+            IsTruncated=False,
+            IntelligentTieringConfigurationList=bucket_intelligent_tiering_configurations,
+        )
+
 
 def validate_bucket_analytics_configuration(
     id: AnalyticsId, analytics_configuration: AnalyticsConfiguration
 ) -> None:
     if id != analytics_configuration.get("Id"):
+        raise MalformedXML(
+            "The XML you provided was not well-formed or did not validate against our published schema"
+        )
+
+
+def validate_bucket_intelligent_tiering_configuration(
+    id: IntelligentTieringId, intelligent_tiering_configuration: IntelligentTieringConfiguration
+) -> None:
+    if id != intelligent_tiering_configuration.get("Id"):
         raise MalformedXML(
             "The XML you provided was not well-formed or did not validate against our published schema"
         )

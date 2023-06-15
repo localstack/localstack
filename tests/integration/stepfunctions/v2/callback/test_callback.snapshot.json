@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_tok": {
-    "recorded-date": "10-05-2023, 15:43:08",
+    "recorded-date": "15-06-2023, 19:12:28",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -69,7 +69,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "95adacacec73703a3538430d3decf18f",
+                "MD5OfMessageBody": "9f69eb01707c93856980e05528808cc4",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -80,7 +80,7 @@
                       "378"
                     ],
                     "Date": [
-                      "Wed, 10 May 2023 13:43:06 GMT"
+                      "Thu, 15 Jun 2023 17:12:27 GMT"
                     ],
                     "Content-Type": [
                       "text/xml"
@@ -89,7 +89,7 @@
                   "HttpHeaders": {
                     "Content-Length": "378",
                     "Content-Type": "text/xml",
-                    "Date": "Wed, 10 May 2023 13:43:06 GMT",
+                    "Date": "Thu, 15 Jun 2023 17:12:27 GMT",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
                   "HttpStatusCode": 200

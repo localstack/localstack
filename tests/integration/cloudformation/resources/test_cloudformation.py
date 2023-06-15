@@ -1,5 +1,6 @@
 import logging
 import os
+import textwrap
 import time
 import uuid
 from threading import Thread
@@ -7,6 +8,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 import requests
+
+from localstack.aws.api.lambda_ import Runtime
+from localstack.utils.strings import short_uid
 
 if TYPE_CHECKING:
     try:
@@ -87,3 +91,36 @@ def test_waitcondition(deploy_cfn_template, snapshot, aws_client):
     assert wait_handle_id is not None
     # snapshot.match("waithandle_ref", wait_handle_id)
     snapshot.match("waitcondition_ref", {"WaitConditionName": wait_condition_name})
+
+
+@pytest.mark.aws_validated
+def test_create_macro(deploy_cfn_template, create_lambda_function, snapshot, aws_client):
+    macro_name = f"macro-{short_uid()}"
+    snapshot.add_transformer(snapshot.transform.regex(macro_name, "<macro-name>"))
+
+    function_name = f"macro_lambda_{short_uid()}"
+
+    handler_code = textwrap.dedent(
+        """
+    def handler(event, context):
+        pass
+    """
+    )
+
+    create_lambda_function(
+        func_name=function_name,
+        handler_file=handler_code,
+        runtime=Runtime.python3_9,
+    )
+
+    template_path = os.path.join(os.path.dirname(__file__), "../../templates/macro_resource.yml")
+    assert os.path.isfile(template_path)
+    stack = deploy_cfn_template(
+        template_path=template_path,
+        parameters={
+            "FunctionName": function_name,
+            "MacroName": macro_name,
+        },
+    )
+
+    snapshot.match("stack-outputs", stack.outputs)

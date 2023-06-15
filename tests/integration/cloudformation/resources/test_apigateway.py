@@ -1,5 +1,6 @@
 import json
 import os.path
+from operator import itemgetter
 
 import pytest
 import requests
@@ -9,7 +10,6 @@ from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
-from localstack.utils.testutil import create_zip_file
 from tests.integration.apigateway.apigateway_fixtures import api_invoke_url
 
 TEST_TEMPLATE_1 = """
@@ -195,41 +195,14 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, aws_client):
     assert not apis
 
 
-@pytest.mark.skip_snapshot_verify(
-    paths=[
-        "$..binaryMediaTypes",
-        "$..version",
-        "$..methodIntegration.cacheNamespace",
-        "$..methodIntegration.connectionType",
-        "$..methodIntegration.passthroughBehavior",
-        "$..methodIntegration.requestTemplates",
-        "$..methodIntegration.timeoutInMillis",
-        "$..methodResponses",
-        "$..requestModels",
-        "$..requestParameters",
-    ]
-)
-def test_cfn_deploy_apigateway_integration(
-    deploy_cfn_template, s3_create_bucket, snapshot, aws_client
-):
-    bucket_name = f"hofund-local-deployment-{short_uid()}"
-    key_name = "serverless/hofund/local/1599143878432/authorizer.zip"
-    package_path = os.path.join(
-        os.path.dirname(__file__), "../../awslambda/functions/lambda_echo.js"
-    )
-
-    s3_create_bucket(Bucket=bucket_name, ACL="public-read")
-    aws_client.s3.put_object(
-        Bucket=bucket_name,
-        Key=key_name,
-        Body=create_zip_file(package_path, get_content=True),
-    )
+@pytest.mark.aws_validated
+def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../templates/apigateway_integration.yml"
+            os.path.dirname(__file__), "../../templates/apigateway_integration_no_authorizer.yml"
         ),
-        parameters={"CodeBucket": bucket_name, "CodeKey": key_name},
         max_wait=120,
     )
 
@@ -246,6 +219,47 @@ def test_cfn_deploy_apigateway_integration(
         restApiId=rest_api_id, resourceId=resource_id, httpMethod="GET"
     )
     snapshot.match("method", method)
+    # TODO: snapshot the authorizer too? it's not attached to the REST API
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$.resources.items..resourceMethods.GET"  # TODO: this is really weird, after importing, AWS returns them empty?
+    ]
+)
+def test_cfn_deploy_apigateway_from_s3_swagger(
+    deploy_cfn_template, snapshot, aws_client, s3_bucket
+):
+    # put the swagger file in S3
+    swagger_template = load_file(os.path.join(os.path.dirname(__file__), "../../files/pets.json"))
+    key_name = "swagger-template-pets.json"
+    response = aws_client.s3.put_object(Bucket=s3_bucket, Key=key_name, Body=swagger_template)
+    object_etag = response["ETag"]
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/apigateway_integration_from_s3.yml"
+        ),
+        parameters={
+            "S3BodyBucket": s3_bucket,
+            "S3BodyKey": key_name,
+            "S3BodyETag": object_etag,
+        },
+        max_wait=120,
+    )
+
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.apigateway_api())
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "stack-name"))
+
+    rest_api_id = stack.outputs["RestApiId"]
+    rest_api = aws_client.apigateway.get_rest_api(restApiId=rest_api_id)
+    snapshot.match("rest-api", rest_api)
+
+    resources = aws_client.apigateway.get_resources(restApiId=rest_api_id)
+    resources["items"] = sorted(resources["items"], key=itemgetter("path"))
+    snapshot.match("resources", resources)
 
 
 def test_cfn_apigateway_rest_api(deploy_cfn_template, aws_client):

@@ -235,6 +235,11 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket) -> None:
     try:
         key = kms_client.describe_key(KeyId=kms_key)
         if not key["KeyMetadata"]["Enabled"]:
+            if key["KeyMetadata"]["KeyState"] == "PendingDeletion":
+                raise CommonServiceException(
+                    code="KMS.KMSInvalidStateException",
+                    message=f'{key["KeyMetadata"]["Arn"]} is pending deletion.',
+                )
             raise CommonServiceException(
                 code="KMS.DisabledException", message=f'{key["KeyMetadata"]["Arn"]} is disabled.'
             )

@@ -461,22 +461,23 @@ def all_s3_object_keys(bucket: str) -> List[str]:
     return keys
 
 
-def map_all_s3_objects(to_json: bool = True, buckets: List[str] = None) -> Dict[str, Any]:
-    s3_client = aws_stack.connect_to_resource("s3")
+def map_all_s3_objects(
+    to_json: bool = True, buckets: str | List[str] = None, s3_resource=None
+) -> Dict[str, Any]:
+    # TODO: remove aws_stack
+    s3_resource = s3_resource or aws_stack.connect_to_resource("s3")
     result = {}
     buckets = ensure_list(buckets)
-    buckets = [s3_client.Bucket(b) for b in buckets] if buckets else s3_client.buckets.all()
+    buckets = [s3_resource.Bucket(b) for b in buckets] if buckets else s3_resource.buckets.all()
     for bucket in buckets:
         for key in bucket.objects.all():
-            value = download_s3_object(s3_client, key.bucket_name, key.key)
+            value = download_s3_object(s3_resource, key.bucket_name, key.key)
             try:
                 if to_json:
                     value = json.loads(value)
-                key = "%s%s%s" % (
-                    key.bucket_name,
-                    "" if key.key.startswith("/") else "/",
-                    key.key,
-                )
+                bucket_name = key.bucket_name
+                separator = "" if key.key.startswith("/") else "/"
+                key = f"{bucket_name}{separator}{key.key}"
                 result[key] = value
             except Exception:
                 # skip non-JSON or binary objects

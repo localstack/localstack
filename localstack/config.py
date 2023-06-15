@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Mapping, Tuple, TypeVar
+from typing import Any, Dict, List, Mapping, Optional, Tuple, TypeVar, Union
 
 from localstack import constants
 from localstack.constants import (
@@ -197,43 +197,55 @@ class Directories:
         return str(self.__dict__)
 
 
-def eval_log_type(env_var_name):
-    """get the log type from environment variable"""
+def eval_log_type(env_var_name: str) -> Union[str, bool]:
+    """Get the log type from environment variable"""
     ls_log = os.environ.get(env_var_name, "").lower().strip()
     return ls_log if ls_log in LOG_LEVELS else False
 
 
-def is_env_true(env_var_name):
+def parse_boolean_env(env_var_name: str) -> Optional[bool]:
+    """Parse the value of the given env variable and return True/False, or None if it is not a boolean value."""
+    value = os.environ.get(env_var_name, "").lower().strip()
+    if value in TRUE_STRINGS:
+        return True
+    if value in FALSE_STRINGS:
+        return False
+    return None
+
+
+def is_env_true(env_var_name: str) -> bool:
     """Whether the given environment variable has a truthy value."""
     return os.environ.get(env_var_name, "").lower().strip() in TRUE_STRINGS
 
 
-def is_env_not_false(env_var_name):
+def is_env_not_false(env_var_name: str) -> bool:
     """Whether the given environment variable is empty or has a truthy value."""
     return os.environ.get(env_var_name, "").lower().strip() not in FALSE_STRINGS
 
 
-def load_environment(profile: str = None):
+def load_environment(profile: str = None) -> Optional[str]:
     """Loads the environment variables from ~/.localstack/{profile}.env
     :param profile: the profile to load (defaults to "default")
+    :returns str: the name of the actually loaded profile (might be the fallback)
     """
     if not profile:
         profile = "default"
 
     path = os.path.join(CONFIG_DIR, f"{profile}.env")
     if not os.path.exists(path):
-        return
+        return None
 
     import dotenv
 
     dotenv.load_dotenv(path, override=False)
+    return profile
 
 
 def is_persistence_enabled() -> bool:
     return PERSISTENCE and dirs.data
 
 
-def is_linux():
+def is_linux() -> bool:
     return platform.system() == "Linux"
 
 
@@ -253,8 +265,8 @@ def in_docker():
     Returns True if running in a docker container, else False
     Ref. https://docs.docker.com/config/containers/runmetrics/#control-groups
     """
-    if OVERRIDE_IN_DOCKER:
-        return True
+    if OVERRIDE_IN_DOCKER is not None:
+        return OVERRIDE_IN_DOCKER
 
     # check some marker files that we create in our Dockerfiles
     for path in [
@@ -336,8 +348,8 @@ def in_docker():
     return False
 
 
-# whether the in_docker check should always return true
-OVERRIDE_IN_DOCKER = is_env_true("OVERRIDE_IN_DOCKER")
+# whether the in_docker check should always return True or False
+OVERRIDE_IN_DOCKER = parse_boolean_env("OVERRIDE_IN_DOCKER")
 
 is_in_docker = in_docker()
 is_in_linux = is_linux()
@@ -350,10 +362,11 @@ CONFIG_DIR = os.environ.get("CONFIG_DIR", os.path.expanduser("~/.localstack"))
 
 # keep this on top to populate environment
 try:
-    load_environment(CONFIG_PROFILE)
+    # CLI specific: the actually loaded configuration profile
+    LOADED_PROFILE = load_environment(CONFIG_PROFILE)
 except ImportError:
     # dotenv may not be available in lambdas or other environments where config is loaded
-    pass
+    LOADED_PROFILE = None
 
 # default AWS region
 DEFAULT_REGION = (
@@ -1014,6 +1027,9 @@ MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER
 # Whether to return and parse access key ids starting with an "A", like on AWS
 PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 
+# Show exceptions for CloudFormation deploy errors
+CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
+
 # HINT: Please add deprecated environment variables to deprecations.py
 
 # list of environment variable names used for configuration.
@@ -1022,7 +1038,7 @@ PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 CONFIG_ENV_VARS = [
     "ALLOW_NONSTANDARD_REGIONS",
     "BUCKET_MARKER_LOCAL",
-    "CFN_ENABLE_RESOLVE_REFS_IN_MODELS",
+    "CFN_VERBOSE_ERRORS",
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEBUG_HANDLER_CHAIN",
@@ -1106,6 +1122,7 @@ CONFIG_ENV_VARS = [
     "LOG_LICENSE_ISSUES",
     "LS_LOG",
     "MAIN_CONTAINER_NAME",
+    "MAIN_DOCKER_NETWORK",
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "OUTBOUND_HTTP_PROXY",
     "OUTBOUND_HTTPS_PROXY",
@@ -1133,10 +1150,6 @@ CONFIG_ENV_VARS = [
     "TEST_IAM_USER_ID",
     "TEST_IAM_USER_NAME",
     "TF_COMPAT_MODE",
-    "THUNDRA_APIKEY",
-    "THUNDRA_AGENT_JAVA_VERSION",
-    "THUNDRA_AGENT_NODE_VERSION",
-    "THUNDRA_AGENT_PYTHON_VERSION",
     "USE_SINGLE_REGION",
     "USE_SSL",
     "WAIT_FOR_DEBUGGER",

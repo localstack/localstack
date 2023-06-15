@@ -9331,7 +9331,7 @@ class DeregisterInstanceTagAttributeRequest(TypedDict, total=False):
 
 class DeregisterInstanceEventNotificationAttributesRequest(ServiceRequest):
     DryRun: Optional[Boolean]
-    InstanceTagAttribute: Optional[DeregisterInstanceTagAttributeRequest]
+    InstanceTagAttribute: DeregisterInstanceTagAttributeRequest
 
 
 class InstanceTagNotificationAttribute(TypedDict, total=False):
@@ -16421,7 +16421,7 @@ class RegisterInstanceTagAttributeRequest(TypedDict, total=False):
 
 class RegisterInstanceEventNotificationAttributesRequest(ServiceRequest):
     DryRun: Optional[Boolean]
-    InstanceTagAttribute: Optional[RegisterInstanceTagAttributeRequest]
+    InstanceTagAttribute: RegisterInstanceTagAttributeRequest
 
 
 class RegisterInstanceEventNotificationAttributesResult(TypedDict, total=False):
@@ -19523,8 +19523,8 @@ class Ec2Api:
     def deregister_instance_event_notification_attributes(
         self,
         context: RequestContext,
+        instance_tag_attribute: DeregisterInstanceTagAttributeRequest,
         dry_run: Boolean = None,
-        instance_tag_attribute: DeregisterInstanceTagAttributeRequest = None,
     ) -> DeregisterInstanceEventNotificationAttributesResult:
         raise NotImplementedError
 
@@ -23165,8 +23165,8 @@ class Ec2Api:
     def register_instance_event_notification_attributes(
         self,
         context: RequestContext,
+        instance_tag_attribute: RegisterInstanceTagAttributeRequest,
         dry_run: Boolean = None,
-        instance_tag_attribute: RegisterInstanceTagAttributeRequest = None,
     ) -> RegisterInstanceEventNotificationAttributesResult:
         raise NotImplementedError
 

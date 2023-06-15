@@ -675,7 +675,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def get_queue_url(
         self, context: RequestContext, queue_name: String, queue_owner_aws_account_id: String = None
     ) -> GetQueueUrlResult:
-        store = self.get_store(context.account_id, context.region)
+        store = self.get_store(queue_owner_aws_account_id or context.account_id, context.region)
         if queue_name not in store.queues.keys():
             raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
 

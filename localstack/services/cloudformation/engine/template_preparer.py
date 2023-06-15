@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-from typing import Dict, List
 
 import boto3
 from samtranslator.translator.transform import transform as transform_sam
@@ -9,7 +8,6 @@ from samtranslator.translator.transform import transform as transform_sam
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException
 from localstack.services.cloudformation.engine import yaml_parser
-from localstack.services.cloudformation.engine.entities import resolve_ssm_parameter_value
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
 from localstack.services.cloudformation.engine.transformers import (
     apply_transform_intrinsic_functions,
@@ -42,12 +40,12 @@ def template_to_json(template: str) -> str:
 
 
 # TODO: consider moving to transformers.py as well
-def transform_template(template: dict, parameters: list, stack=None) -> Dict:
+def transform_template(template: dict, parameters: list, stack_name: str, resources: dict) -> dict:
     result = dict(template)
 
     # apply 'Fn::Transform' intrinsic functions (note: needs to be applied before global
     #  transforms below, as some utils - incl samtransformer - expect them to be resolved already)
-    result = apply_transform_intrinsic_functions(result, stack=stack)
+    result = apply_transform_intrinsic_functions(result, stack_name, resources)
 
     # apply global transforms
     transformations = format_transforms(result.get("Transform", []))
@@ -82,6 +80,7 @@ def execute_macro(parsed_template: dict, macro: dict, stack_parameters: list) ->
     if not macro_definition:
         raise FailedTransformationException(macro["Name"], "2DO")
 
+    # TODO: needs to consider ResolvedValue for SSM parameters as well
     formatted_stack_parameters = {
         param["ParameterKey"]: param["ParameterValue"] for param in stack_parameters
     }
@@ -174,38 +173,6 @@ def format_transforms(transforms: list | dict | str) -> list[dict]:
                 formatted_transformations.append(transformation)
 
     return formatted_transformations
-
-
-# TODO add support for "previous values"
-def resolve_parameters(template_parameters: dict, request_parameters: List[dict]):
-    """
-    Macros can use the template parameters so this method resolves them so they can be pass to the lambda function.
-    This method was extracted from entities.py with the intent to not depend on the Stack Class.
-    """
-    result = {}
-    # add default template parameter values
-    for key, value in template_parameters.items():
-        param_value = value.get("Default")
-        result[key] = {
-            "ParameterKey": key,
-            "ParameterValue": param_value,
-        }
-        param_type = value.get("Type", "")
-        if not param_type:
-            if param_type == "AWS::SSM::Parameter::Value<String>":
-                result[key]["ResolvedValue"] = resolve_ssm_parameter_value(param_type, param_value)
-            elif param_type.startswith("AWS::"):
-                LOG.info(
-                    f"Parameter Type '{param_type}' is currently not supported. Coming soon, stay tuned!"
-                )
-            else:
-                # lets assume we support the normal CFn parameters
-                pass
-
-    # add stack parameters
-    result.update({p["ParameterKey"]: p for p in request_parameters})
-    result = list(result.values())
-    return result
 
 
 class FailedTransformationException(Exception):

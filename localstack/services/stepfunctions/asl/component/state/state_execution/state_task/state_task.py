@@ -95,5 +95,7 @@ class StateTask(ExecutionState, abc.ABC):
         return parameters
 
     def _eval_body(self, env: Environment) -> None:
+        if self.name == "Send":
+            print(self.name)
         super(StateTask, self)._eval_body(env=env)
         env.context_object_manager.context_object["Task"] = None
