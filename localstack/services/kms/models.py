@@ -13,9 +13,11 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.kms import (
@@ -198,6 +200,14 @@ class KmsCryptoKey:
         self.public_key = key.public_key().public_bytes(
             crypto_serialization.Encoding.DER,
             crypto_serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+
+    @property
+    def key(self) -> RSAPrivateKey:
+        return crypto_serialization.load_der_private_key(
+            self.private_key,
+            password=None,
+            backend=default_backend(),
         )
 
 
