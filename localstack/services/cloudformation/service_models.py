@@ -126,9 +126,9 @@ class GenericBaseModel:
         return self.resource_json.get("PhysicalResourceId")
 
     @property
-    def logical_resource_id(self) -> str | None:
+    def logical_resource_id(self) -> str:
         """Return the logical resource ID."""
-        return self.resource_json.get("LogicalResourceId")
+        return self.resource_json["LogicalResourceId"]
 
     # TODO: rename? make it clearer what props are in comparison with state, properties and resource_json
     @property
