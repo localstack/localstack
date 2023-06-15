@@ -33,17 +33,17 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
         return self._API_NAMES.get(api_name, api_name)
 
     def _boto_normalise_parameters(self, api_name: str, api_action: str, parameters: dict) -> None:
-        api_normalisers = self._SFN_TO_BOTO_PARAM_NORMALISERS.get(api_name, None)
+        api_normalisers = self._SFN_TO_BOTO_PARAM_NORMALISERS.get(api_name)
         if not api_normalisers:
             return
 
-        action_normalisers = api_normalisers.get(api_action, None)
+        action_normalisers = api_normalisers.get(api_action)
         if not action_normalisers:
             return None
 
         parameter_keys = list(parameters.keys())
         for parameter_key in parameter_keys:
-            norm_parameter_key = action_normalisers.get(parameter_key, None)
+            norm_parameter_key = action_normalisers.get(parameter_key)
             if norm_parameter_key:
                 tmp = parameters[parameter_key]
                 del parameters[parameter_key]
