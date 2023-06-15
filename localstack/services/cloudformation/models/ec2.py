@@ -499,13 +499,13 @@ class EC2Instance(GenericBaseModel):
         return "AWS::EC2::Instance"
 
     def fetch_state(self, stack_name, resources):
-        instance_id = self.get_physical_resource_id()
+        instance_id = self.physical_resource_id
         if not instance_id:
             return
         return self._get_state()
 
     def update_resource(self, new_resource, stack_name, resources):
-        instance_id = self.get_physical_resource_id()
+        instance_id = self.physical_resource_id
         props = new_resource["Properties"]
         groups = props.get("SecurityGroups", props.get("SecurityGroupIds"))
 
@@ -521,7 +521,7 @@ class EC2Instance(GenericBaseModel):
         return self._get_state(client)
 
     def _get_state(self, client=None):
-        instance_id = self.get_physical_resource_id()
+        instance_id = self.physical_resource_id
         client = client or aws_stack.connect_to_service("ec2")
         resp = client.describe_instances(InstanceIds=[instance_id])
         reservation = (resp.get("Reservations") or [{}])[0]

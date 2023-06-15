@@ -975,7 +975,7 @@ def determine_resource_physical_id(
     if resource_class:
         resource_inst = resource_class(resource)
         resource_inst.fetch_state_if_missing(stack_name=stack_name, resources=resources)
-        result = resource_inst.get_physical_resource_id()
+        result = resource_inst.physical_resource_id
         if result:
             return result
 
