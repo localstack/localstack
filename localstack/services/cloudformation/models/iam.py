@@ -169,7 +169,7 @@ class IAMAccessKey(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         user_name = self.props.get("UserName")
-        access_key_id = self.get_physical_resource_id()
+        access_key_id = self.physical_resource_id
         if access_key_id:
             keys = aws_stack.connect_to_service("iam").list_access_keys(UserName=user_name)[
                 "AccessKeyMetadata"
@@ -177,7 +177,7 @@ class IAMAccessKey(GenericBaseModel):
             return [key for key in keys if key["AccessKeyId"] == access_key_id][0]
 
     def update_resource(self, new_resource, stack_name, resources):
-        access_key_id = self.get_physical_resource_id()
+        access_key_id = self.physical_resource_id
         new_props = new_resource["Properties"]
         user_name = new_props.get("UserName")
         status = new_props.get("Status")
@@ -541,7 +541,7 @@ class InstanceProfile(GenericBaseModel):
         return "AWS::IAM::InstanceProfile"
 
     def fetch_state(self, stack_name, resources):
-        instance_profile_name = self.get_physical_resource_id()
+        instance_profile_name = self.physical_resource_id
         if not instance_profile_name:
             return None
         client = aws_stack.connect_to_service("iam")
