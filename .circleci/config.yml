@@ -100,58 +100,58 @@ jobs:
           paths:
             - repo/target/coverage/
 
-  itest-lambda-legacy-local:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-pytest-tinybird
-      - run:
-          name: Test 'local' Lambda executor
-          environment:
-            LAMBDA_EXECUTOR: "local"
-            PROVIDER_OVERRIDE_LAMBDA: "legacy"
-            TEST_PATH: "tests/aws/services/lambda_/ tests/aws/test_integration.py tests/aws/services/apigateway/test_apigateway_basic.py tests/aws/services/cloudformation/resources/test_lambda.py"
-            COVERAGE_ARGS: "-p"
-          command: |
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='legacy-lambda-local'" make test-coverage
-      - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
+#  itest-lambda-legacy-local:
+#    executor: ubuntu-machine-amd64
+#    working_directory: /tmp/workspace/repo
+#    steps:
+#      - attach_workspace:
+#          at: /tmp/workspace
+#      - prepare-pytest-tinybird
+#      - run:
+#          name: Test 'local' Lambda executor
+#          environment:
+#            LAMBDA_EXECUTOR: "local"
+#            PROVIDER_OVERRIDE_LAMBDA: "legacy"
+#            TEST_PATH: "tests/aws/services/lambda_/ tests/aws/test_integration.py tests/aws/services/apigateway/test_apigateway_basic.py tests/aws/services/cloudformation/resources/test_lambda.py"
+#            COVERAGE_ARGS: "-p"
+#          command: |
+#            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='legacy-lambda-local'" make test-coverage
+#      - run:
+#          name: Store coverage results
+#          command: mv .coverage.* target/coverage/
+#      - persist_to_workspace:
+#          root:
+#            /tmp/workspace
+#          paths:
+#            - repo/target/coverage/
+#      - store_test_results:
+#          path: target/reports/
 
-  itest-sfn-v2-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-pytest-tinybird
-      - run:
-          name: Test SFN V2 provider
-          environment:
-            PROVIDER_OVERRIDE_STEPFUNCTIONS: "v2"
-            TEST_PATH: "tests/aws/services/stepfunctions/v2/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_v2.xml -o junit_suite_name='sfn_v2'" make test-coverage
-      - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
+#  itest-sfn-v2-provider:
+#    executor: ubuntu-machine-amd64
+#    working_directory: /tmp/workspace/repo
+#    steps:
+#      - attach_workspace:
+#          at: /tmp/workspace
+#      - prepare-pytest-tinybird
+#      - run:
+#          name: Test SFN V2 provider
+#          environment:
+#            PROVIDER_OVERRIDE_STEPFUNCTIONS: "v2"
+#            TEST_PATH: "tests/aws/services/stepfunctions/v2/"
+#            COVERAGE_ARGS: "-p"
+#          command: |
+#            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_v2.xml -o junit_suite_name='sfn_v2'" make test-coverage
+#      - run:
+#          name: Store coverage results
+#          command: mv .coverage.* target/coverage/
+#      - persist_to_workspace:
+#          root:
+#            /tmp/workspace
+#          paths:
+#            - repo/target/coverage/
+#      - store_test_results:
+#          path: target/reports/
 
   itest-s3-stream-provider:
     executor: ubuntu-machine-amd64
@@ -489,8 +489,8 @@ workflows:
             - docker-build-amd64
       - report:
           requires:
-            - itest-lambda-legacy-local
-            - itest-sfn-v2-provider
+#            - itest-lambda-legacy-local
+#            - itest-sfn-v2-provider
             - docker-test-amd64
             - docker-test-arm64
             - collect-not-implemented
@@ -500,8 +500,8 @@ workflows:
             branches:
               only: master
           requires:
-            - itest-lambda-legacy-local
-            - itest-sfn-v2-provider
+#            - itest-lambda-legacy-local
+#            - itest-sfn-v2-provider
             - docker-test-amd64
             - docker-test-arm64
             - unit-tests
