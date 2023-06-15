@@ -126,6 +126,7 @@ def get_service_factory(region_name: str, role_arn: str):
             role_arn=role_arn,
             region_name=region_name,
             service_principal=ServicePrincipal.apigateway,
+            session_name="BackplaneAssumeRoleSession",
         )
     else:
         return connect_to(region_name=region_name)
@@ -521,6 +522,7 @@ class KinesisIntegration(BackendIntegration):
 
 class DynamoDBIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
+        # TODO we might want to do it plain http instead of using boto here, like kinesis
         integration = invocation_context.integration
         uri = integration.get("uri") or integration.get("integrationUri") or ""
 
@@ -549,7 +551,12 @@ class DynamoDBIntegration(BackendIntegration):
         try:
             response = client_method(**payload)
         except ClientError as e:
-            response = e.value.response
+            response = e.response
+            # The request body is packed into the "Error" field. To make the response match AWS, we will remove that
+            # field and merge with the response dict
+            error = response.pop("Error", {})
+            error.pop("Code", None)  # the Code is also something not relayed
+            response |= error
 
         status_code = response.get("ResponseMetadata", {}).get("HTTPStatusCode", 200)
         # apply response templates
@@ -679,7 +686,14 @@ class SQSIntegration(BackendIntegration):
             payload = request_templates.render(invocation_context)
             queue_url = f"{config.get_edge_url()}/{account_id}/{queue}"
             new_request = f"{payload}&QueueUrl={queue_url}"
-        headers = aws_stack.mock_aws_request_headers(service="sqs", region_name=region_name)
+
+        # forward records to target kinesis stream
+        headers = get_internal_mocked_headers(
+            service_name="sqs",
+            region_name=region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+            source_arn=get_source_arn(invocation_context),
+        )
 
         url = urljoin(config.service_url("sqs"), f"{get_aws_account_id()}/{queue}")
         result = common.make_http_request(url, method="POST", headers=headers, data=new_request)

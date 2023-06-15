@@ -338,6 +338,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
     integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
     integration_type = integration_type_orig.upper()
+    integration_method = integration.get("httpMethod")
     uri = integration.get("uri") or integration.get("integrationUri") or ""
 
     try:
@@ -368,7 +369,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
         if "s3:path/" in uri or "s3:action/" in uri:
             return S3Integration().invoke(invocation_context)
 
-        if method == "POST" and ":sqs:path" in uri:
+        if integration_method == "POST" and ":sqs:path" in uri:
             return SQSIntegration().invoke(invocation_context)
 
         if method == "POST" and ":sns:path" in uri:
