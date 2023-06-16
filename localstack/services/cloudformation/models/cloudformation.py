@@ -101,14 +101,12 @@ class CloudFormationMacro(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _store_macro(resource_id, resources, resource_type, func, stack_name):
-            resource = resources[resource_id]
+        def _store_macro(logical_resource_id: str, resource: dict, stack_name: str):
             properties = resource["Properties"]
             name = properties["Name"]
             get_cloudformation_store().macros[name] = properties
 
-        def _delete_macro(resource_id, resources, resource_type, func, stack_name):
-            resource = resources[resource_id]
+        def _delete_macro(logical_resource_id: str, resource: dict, stack_name: str):
             properties = resource["Properties"]
             name = properties["Name"]
             get_cloudformation_store().macros.pop(name)
@@ -153,7 +151,7 @@ class CloudFormationWaitConditionHandle(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _create(resource_id, resources, resource_type, func, stack_name) -> dict:
+        def _create(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
             # no resources to create as such, but the physical resource id needs the stack name
             return {"stack_name": stack_name}
 
@@ -185,7 +183,7 @@ class CloudFormationWaitCondition(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _create(resource_id, resources, resource_type, func, stack_name) -> dict:
+        def _create(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
             # no resources to create, but the physical resource id requires the stack name
             return {"stack_name": stack_name}
 

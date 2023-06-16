@@ -197,10 +197,10 @@ class EC2VPCGatewayAttachment(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _attach_gateway(resource_id, resources, *args, **kwargs):
+        def _attach_gateway(logical_resource_id: str, resource: dict, stack_name: str):
             client = aws_stack.connect_to_service("ec2")
-            resource = cls(resources[resource_id])
-            props = resource.props
+            resource_provider = cls(resource)
+            props = resource_provider.props
             igw_id = props.get("InternetGatewayId")
             vpngw_id = props.get("VpnGatewayId")
             vpc_id = props.get("VpcId")
@@ -281,7 +281,7 @@ class EC2Subnet(GenericBaseModel):
     def cloudformation_type():
         return "AWS::EC2::Subnet"
 
-    def fetch_state(self, stack_name, resources):
+    def fetch_state(self, stack_name, resources) -> dict:
         if not self.physical_resource_id:
             return None
         client = aws_stack.connect_to_service("ec2")
@@ -300,10 +300,10 @@ class EC2Subnet(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _post_create(resource_id, resources, resource_type, func, stack_name):
+        def _post_create(logical_resource_id: str, resource: dict, stack_name: str):
             client = aws_stack.connect_to_service("ec2")
-            resource = cls(resources[resource_id])
-            props = resource.props
+            resource_provider = cls(resource)
+            props = resource_provider.props
 
             bool_attrs = [
                 "AssignIpv6AddressOnCreation",
@@ -314,8 +314,7 @@ class EC2Subnet(GenericBaseModel):
             if not any(attr in props for attr in custom_attrs):
                 return
 
-            state = resource.fetch_state(stack_name, resources)
-            subnet_id = state.get("SubnetId")
+            subnet_id = props.get("SubnetId")
 
             # update boolean attributes
             for attr in bool_attrs:
@@ -404,8 +403,8 @@ class EC2VPC(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _pre_delete(resource_id, resources, *args, **kwargs):
-            res = cls(resources[resource_id])
+        def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
+            res = cls(resource)
             vpc_id = res.state.get("VpcId")
             if vpc_id:
                 ec2_client = aws_stack.connect_to_service("ec2")
@@ -500,13 +499,13 @@ class EC2Instance(GenericBaseModel):
         return "AWS::EC2::Instance"
 
     def fetch_state(self, stack_name, resources):
-        instance_id = self.get_physical_resource_id()
+        instance_id = self.physical_resource_id
         if not instance_id:
             return
         return self._get_state()
 
     def update_resource(self, new_resource, stack_name, resources):
-        instance_id = self.get_physical_resource_id()
+        instance_id = self.physical_resource_id
         props = new_resource["Properties"]
         groups = props.get("SecurityGroups", props.get("SecurityGroupIds"))
 
@@ -522,7 +521,7 @@ class EC2Instance(GenericBaseModel):
         return self._get_state(client)
 
     def _get_state(self, client=None):
-        instance_id = self.get_physical_resource_id()
+        instance_id = self.physical_resource_id
         client = client or aws_stack.connect_to_service("ec2")
         resp = client.describe_instances(InstanceIds=[instance_id])
         reservation = (resp.get("Reservations") or [{}])[0]

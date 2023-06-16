@@ -42,10 +42,10 @@ class KMSKey(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(resource_id, resources, resource_type, func, stack_name):
+        def _create(logical_resource_id: str, resource: dict, stack_name: str):
             kms_client = aws_stack.connect_to_service("kms")
-            resource = cls(resources[resource_id])
-            props = resource.props
+            resource_provider = cls(resource)
+            props = resource_provider.props
             params = {}
             if props.get("KeyPolicy"):
                 params["Policy"] = json.dumps(props["KeyPolicy"])

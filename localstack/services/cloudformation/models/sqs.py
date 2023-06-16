@@ -26,14 +26,14 @@ class QueuePolicy(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(resource_id, resources, resource_type, func, stack_name):
+        def _create(logical_resource_id: str, resource: dict, stack_name: str):
             sqs_client = aws_stack.connect_to_service("sqs")
-            resource = cls(resources[resource_id])
-            props = resource.props
+            resource_provider = cls(resource)
+            props = resource_provider.props
 
-            resources[resource_id]["PhysicalResourceId"] = "%s-%s-%s" % (
+            resource["PhysicalResourceId"] = "%s-%s-%s" % (
                 stack_name,
-                resource_id,
+                logical_resource_id,
                 short_uid(),
             )
 
@@ -41,10 +41,10 @@ class QueuePolicy(GenericBaseModel):
             for queue in props["Queues"]:
                 sqs_client.set_queue_attributes(QueueUrl=queue, Attributes={"Policy": policy})
 
-        def _delete(resource_id, resources, *args, **kwargs):
+        def _delete(logical_resource_id: str, resource: dict, stack_name: str):
             sqs_client = aws_stack.connect_to_service("sqs")
-            resource = cls(resources[resource_id])
-            props = resource.props
+            resource_provider = cls(resource)
+            props = resource_provider.props
 
             for queue in props["Queues"]:
                 try:

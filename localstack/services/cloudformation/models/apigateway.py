@@ -123,9 +123,8 @@ class GatewayRestAPI(GenericBaseModel):
             resource = cls(resources[resource_id])
             return resource.physical_resource_id
 
-        def _create(resource_id, resources, resource_type, func, stack_name):
+        def _create(logical_resource_id: str, resource: dict, stack_name: str):
             client = connect_to().apigateway
-            resource = resources[resource_id]
             props = resource["Properties"]
 
             kwargs = select_attributes(
@@ -151,7 +150,7 @@ class GatewayRestAPI(GenericBaseModel):
             stack_id = cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]["StackId"]
             kwargs["tags"].update(
                 {
-                    "aws:cloudformation:logical-id": resource_id,
+                    "aws:cloudformation:logical-id": logical_resource_id,
                     "aws:cloudformation:stack-name": stack_name,
                     "aws:cloudformation:stack-id": stack_id,
                 }
@@ -401,10 +400,10 @@ class GatewayMethod(GenericBaseModel):
             result["requestParameters"] = result.get("requestParameters") or {}
             return result
 
-        def _subresources(resource_id, resources, resource_type, func, stack_name):
+        def _subresources(logical_resource_id: str, resource: dict, stack_name: str):
             apigateway = connect_to().apigateway
-            resource = cls(resources[resource_id])
-            props = resource.props
+            provider = cls(resource)
+            props = provider.props
 
             integration = props.get("Integration")
             if integration:
@@ -413,7 +412,6 @@ class GatewayMethod(GenericBaseModel):
 
                 kwargs = keys_to_lower(integration)
                 if uri := integration.get("Uri"):
-
                     # Moto has a validate method on Uri for integration_type "HTTP" | "HTTP_PROXY" that does not accept
                     # Uri value without path, we need to add path ("/") if not exists
                     if integration.get("Type") in ["HTTP", "HTTP_PROXY"]:
@@ -773,9 +771,9 @@ class GatewayBasePathMapping(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create_base_path_mapping(resource_id, resources, *args, **kwargs):
-            resource = cls(resources[resource_id])
-            props = resource.props
+        def _create_base_path_mapping(logical_resource_id: str, resource: dict, stack_name: str):
+            provider = cls(resource)
+            props = provider.props
 
             kwargs = {
                 "domainName": props.get("DomainName"),
@@ -861,8 +859,7 @@ class GatewayAccount(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(resource_id, resources, *args, **kwargs):
-            resource = resources[resource_id]
+        def _create(logical_resource_id: str, resource: dict, stack_name: str):
             props = cls(resource).props
 
             role_arn = props["CloudWatchRoleArn"]
@@ -872,7 +869,7 @@ class GatewayAccount(GenericBaseModel):
             )
 
             resource["PhysicalResourceId"] = generate_default_name(
-                args[2], resource["LogicalResourceId"]
+                stack_name, resource["LogicalResourceId"]
             )
 
         def _delete(*_, **__):

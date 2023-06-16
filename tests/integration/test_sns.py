@@ -1325,6 +1325,7 @@ class TestSNSProvider:
         }
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
     def test_publish_batch_messages_from_sns_to_sqs(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -1368,11 +1369,15 @@ class TestSNSProvider:
                     "Id": "4",
                     "Message": "Test Message without subject",
                 },
+                {
+                    "Id": "5",
+                    "Message": json.dumps({"default": "test default", "sqs": "test sqs"}),
+                    "MessageStructure": "json",
+                },
             ],
         )
         snapshot.match("publish-batch", publish_batch_response)
 
-        message_ids_received = set()
         messages = []
 
         def get_messages():
@@ -1380,23 +1385,19 @@ class TestSNSProvider:
             sqs_response = aws_client.sqs.receive_message(
                 QueueUrl=queue_url,
                 WaitTimeSeconds=1,
-                VisibilityTimeout=10,
+                VisibilityTimeout=0,
                 MessageAttributeNames=["All"],
                 AttributeNames=["All"],
             )
             for message in sqs_response["Messages"]:
-                if message["MessageId"] in message_ids_received:
-                    aws_client.sqs.delete_message(
-                        QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"]
-                    )
-                    continue
-
-                message_ids_received.add(message["MessageId"])
                 messages.append(message)
+                aws_client.sqs.delete_message(
+                    QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"]
+                )
 
-            assert len(messages) == 4
+            assert len(messages) == 5
 
-        retry(get_messages, retries=3, sleep=1)
+        retry(get_messages, retries=10, sleep=0.1)
         # we need to sort the list (the order does not matter as we're not using FIFO)
         messages.sort(key=itemgetter("Body"))
         snapshot.match("messages", {"Messages": messages})
@@ -1779,6 +1780,19 @@ class TestSNSProvider:
                 ],
             )
         snapshot.match("no-dedup-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "1",
+                        "Message": json.dumps({"sqs": "test sqs"}),
+                        "MessageStructure": "json",
+                    }
+                ],
+            )
+        snapshot.match("no-default-key-json", e.value.response)
 
     @pytest.mark.aws_validated
     def test_subscribe_to_sqs_with_queue_url(
