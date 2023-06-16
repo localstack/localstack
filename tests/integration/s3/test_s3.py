@@ -33,9 +33,7 @@ from localstack.config import LEGACY_S3_PROVIDER
 from localstack.constants import (
     LOCALHOST_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
-    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_REGION_NAME,
-    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
@@ -4743,16 +4741,11 @@ class TestS3MultiAccounts:
         return aws_client.s3
 
     @pytest.fixture
-    def secondary_client(self, aws_client_factory):
+    def secondary_client(self, secondary_aws_client):
         """
         Create a boto client with secondary test credentials and region.
         """
-        return aws_client_factory.get_client(
-            "s3",
-            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-            region_name=SECONDARY_TEST_AWS_REGION_NAME,
-        )
+        return secondary_aws_client.s3
 
     def test_shared_bucket_namespace(self, primary_client, secondary_client):
         # Ensure that the bucket name space is shared by all accounts and regions
