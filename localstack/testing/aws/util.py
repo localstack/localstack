@@ -22,7 +22,13 @@ from localstack.aws.forwarder import create_http_request
 from localstack.aws.protocol.parser import create_parser
 from localstack.aws.proxy import get_account_id_from_request
 from localstack.aws.spec import load_service
-from localstack.constants import TEST_AWS_REGION_NAME
+from localstack.constants import (
+    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_REGION_NAME,
+    TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.sync import poll_condition
 
@@ -197,5 +203,14 @@ def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
         return ExternalClientFactory(session=session, config=config)
 
 
-def base_aws_client(client_factory: ClientFactory) -> ServiceLevelClientFactory:
-    return client_factory()
+def primary_testing_aws_client(client_factory: ClientFactory) -> ServiceLevelClientFactory:
+    return client_factory(
+        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY
+    )
+
+
+def secondary_testing_aws_client(client_factory: ClientFactory) -> ServiceLevelClientFactory:
+    return client_factory(
+        aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+    )
