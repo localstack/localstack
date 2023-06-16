@@ -65,6 +65,7 @@ def test_nested_stack_output_refs(deploy_cfn_template, s3_create_bucket, aws_cli
             "s3_bucket_url": f"/{bucket_name}/{key}",
             "nested_bucket_name": nested_bucket_name,
         },
+        max_wait=120,  # test is flaky, so we need to wait a bit longer
     )
 
     nested_stack_id = result.outputs["CustomNestedStackId"]
