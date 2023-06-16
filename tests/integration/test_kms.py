@@ -1279,3 +1279,31 @@ class TestKMSGenerateKeys:
         # LocalStack currently doesn't act on KeySpec or on NumberOfBytes params, but one of them has to be set.
         result = aws_client.kms.generate_data_key_without_plaintext(KeyId=key_id, KeySpec="AES_256")
         snapshot.match("generate-data-key-without-plaintext", result)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
+    def test_encryption_context_generate_data_key(self, kms_key, aws_client, snapshot):
+        encryption_context = {"context-key": "context-value"}
+        key_id = kms_key["KeyId"]
+        result = aws_client.kms.generate_data_key(
+            KeyId=key_id, KeySpec="AES_256", EncryptionContext=encryption_context
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(CiphertextBlob=result["CiphertextBlob"], KeyId=key_id)
+        snapshot.match("decrypt-without-encryption-context", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
+    def test_encryption_context_generate_data_key_without_plaintext(
+        self, kms_key, aws_client, snapshot
+    ):
+        encryption_context = {"context-key": "context-value"}
+        key_id = kms_key["KeyId"]
+        result = aws_client.kms.generate_data_key_without_plaintext(
+            KeyId=key_id, KeySpec="AES_256", EncryptionContext=encryption_context
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(CiphertextBlob=result["CiphertextBlob"], KeyId=key_id)
+        snapshot.match("decrypt-without-encryption-context", e.value.response)
