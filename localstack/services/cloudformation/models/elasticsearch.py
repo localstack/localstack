@@ -6,8 +6,7 @@ from localstack.utils.aws import arns, aws_stack
 from localstack.utils.collections import convert_to_typed_dict
 
 
-def es_add_tags_params(logical_resource_id: str, resource: dict, stack_name: str):
-    properties = resource["Properties"]
+def es_add_tags_params(properties: dict, logical_resource_id: str, resource: dict, stack_name: str):
     es_arn = arns.es_domain_arn(properties.get("DomainName"))
     tags = properties.get("Tags", [])
     return {"ARN": es_arn, "TagList": tags}
@@ -40,8 +39,9 @@ class ElasticsearchDomain(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _create_params(logical_resource_id: str, resource: dict, stack_name: str):
-            properties = resource["Properties"]
+        def _create_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ):
             result = convert_to_typed_dict(CreateElasticsearchDomainRequest, properties)
             result = remove_none_values(result)
             cluster_config = result.get("ElasticsearchClusterConfig")

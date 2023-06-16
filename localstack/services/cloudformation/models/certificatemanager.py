@@ -17,8 +17,9 @@ class CertificateManagerCertificate(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create_params(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
-            properties = resource["Properties"]
+        def _create_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             result = select_attributes(
                 properties,
                 [

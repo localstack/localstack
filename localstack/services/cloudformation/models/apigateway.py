@@ -119,9 +119,8 @@ class GatewayRestAPI(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _api_id(params, resources, resource_id, **kwargs):
-            resource = cls(resources[resource_id])
-            return resource.physical_resource_id
+        def _api_id(properties: dict, logical_resource_id: str, resource: dict, stack_name: str):
+            return resource["PhysicalResourceId"]
 
         def _create(logical_resource_id: str, resource: dict, stack_name: str):
             client = connect_to().apigateway
@@ -289,9 +288,8 @@ class GatewayResource(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def get_apigw_resource_params(
-            logical_resource_id: str, resource: dict, stack_name: str
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
         ) -> dict:
-            properties = resource["Properties"]
             result = {
                 "restApiId": properties.get("RestApiId"),
                 "pathPart": properties.get("PathPart"),
@@ -385,8 +383,9 @@ class GatewayMethod(GenericBaseModel):
         https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-apitgateway-method-integration-integrationresponse.html
         """
 
-        def get_params(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
-            properties = resource["Properties"]
+        def get_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             result = keys_to_lower(properties)
             param_names = [
                 "restApiId",
@@ -504,8 +503,9 @@ class GatewayStage(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def get_params(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
-            properties = resource["Properties"]
+        def get_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             stage_name = properties.get("StageName", "default")
             result = keys_to_lower(properties)
             param_names = [

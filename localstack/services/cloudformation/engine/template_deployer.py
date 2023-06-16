@@ -70,38 +70,33 @@ RESOURCE_MODELS: dict[str, Type[GenericBaseModel]] = {
 ResourceProp = str | Callable[[dict, str, dict, str], dict]
 ResourceDefinition = dict[str, ResourceProp]
 
+# - logical_resource_id
+# - resource
+# - stack_name
+FunctionFuncSignature = Callable[[str, dict, str], Any]
+# - resource_id
+# - resources
+# - resource_type
+# - func
+# - stack_name
+FunctionFuncSignatureLegacy = Callable[[str, dict[str, dict], str, Any, str], Any]
+
+# - resource_props
+# - logical_resource_id
+# - resource
+# - stack_name
+ParamsFuncSignature = Callable[[dict, str, dict, str], dict]
+# - resource_props
+# - stack_name
+# - resources
+# - resource_id
+ParamsFuncSignatureLegacy = Callable[[dict, str, dict[str, dict], str], dict]
+
 
 class FuncDetailsValue(TypedDict):
-    # First callable here takes the arguments:
-    # - logical_resource_id
-    # - resource
-    # - stack_name
-    # Second callable here takes the arguments:
-    # - resource_id
-    # - resources
-    # - resource_type
-    # - func
-    # - stack_name
-    function: str | Callable[[str, dict, str], Any] | Callable[
-        [str, dict[str, dict], str, Any, str], Any
-    ]
+    function: str | FunctionFuncSignature | FunctionFuncSignatureLegacy
     """Either an api method to call directly with `parameters` or a callable to directly invoke"""
-    # Fisrst callable here takes the arguments:
-    # - logical_resource_id
-    # - resource_props
-    # - stack_name
-    # Second calleble here takes the arguments
-    # - resource_props
-    # - stack_name
-    # - resources
-    # - resource_id
-    parameters: Optional[
-        ResourceDefinition
-        # new format
-        | Callable[[str, dict, str], dict]
-        # legacy format
-        | Callable[[dict, str, list[dict], str], dict]
-    ]
+    parameters: Optional[ResourceDefinition | ParamsFuncSignature | ParamsFuncSignatureLegacy]
     """arguments to the function, or a function that generates the arguments to the function"""
     # Callable here takes the arguments
     # - result
@@ -919,7 +914,7 @@ def resolve_resource_parameters(
         # resolve parameter map via custom function
         sig = inspect.signature(params)
         if "logical_resource_id" in sig.parameters:
-            params = params(resource_id, resources[resource_id], stack_name)
+            params = params(resource_props, resource_id, resource_definition, stack_name)
         else:
             params = params(
                 resource_props,
@@ -946,13 +941,21 @@ def resolve_resource_parameters(
                 prop_keys = [prop_keys]
             for prop_key in prop_keys:
                 if callable(prop_key):
-                    # TODO(srw): 2 - callable for a property value
-                    prop_value = prop_key(
-                        resource_props,
-                        stack_name=stack_name,
-                        resources=resources,
-                        resource_id=resource_id,
-                    )
+                    sig = inspect.signature(prop_key)
+                    if "logical_resource_id" in sig.parameters:
+                        prop_value = prop_key(
+                            resource_props,
+                            resource_id,
+                            resource_definition,
+                            stack_name,
+                        )
+                    else:
+                        prop_value = prop_key(
+                            resource_props,
+                            stack_name=stack_name,
+                            resources=resources,
+                            resource_id=resource_id,
+                        )
                 else:
                     prop_value = resource_props.get(
                         prop_key,

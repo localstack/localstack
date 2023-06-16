@@ -484,8 +484,9 @@ class IAMPolicy(GenericBaseModel):
                     GroupName=group, PolicyName=policy_name, PolicyDocument=policy_doc
                 )
 
-        def _delete_params(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
-            properties = resource["Properties"]
+        def _delete_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             return {"PolicyArn": arns.policy_arn(properties["PolicyName"])}
 
         return {

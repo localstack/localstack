@@ -55,8 +55,9 @@ class KinesisStream(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def get_delete_params(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
-            properties = resource["Properties"]
+        def get_delete_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             return {"StreamName": properties["Name"], "EnforceConsumerDeletion": True}
 
         def _store_arn(result, resource_id, resources, resource_type):

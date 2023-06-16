@@ -77,8 +77,9 @@ class SecretsManagerSecret(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create_params(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
-            properties = resource["Properties"]
+        def _create_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             attributes = ["Name", "Description", "KmsKeyId", "SecretString", "Tags"]
             result = select_attributes(properties, attributes)
             gen_secret = properties.get("GenerateSecretString")
@@ -159,8 +160,9 @@ class SecretsManagerResourcePolicy(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def create_params(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
-            properties = resource["Properties"]
+        def create_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             return {
                 "SecretId": properties["SecretId"].split(":")[-1],
                 "ResourcePolicy": json.dumps(properties["ResourcePolicy"]),

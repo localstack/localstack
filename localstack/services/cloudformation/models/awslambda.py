@@ -86,12 +86,14 @@ class LambdaFunction(GenericBaseModel):
             )
 
     @staticmethod
-    def get_lambda_code_param(params, _include_arch=False, **kwargs):
-        code = params.get("Code", {}).copy()
+    def get_lambda_code_param(properties, _include_arch=False, **kwargs):
+        code = properties.get("Code", {}).copy()
         zip_file = code.get("ZipFile")
         if zip_file and not is_base64(zip_file) and not is_zip_file(to_bytes(zip_file)):
             tmp_dir = new_tmp_dir()
-            handler_file = get_handler_file_from_name(params["Handler"], runtime=params["Runtime"])
+            handler_file = get_handler_file_from_name(
+                properties["Handler"], runtime=properties["Runtime"]
+            )
             tmp_file = os.path.join(tmp_dir, handler_file)
             save_file(tmp_file, zip_file)
 
@@ -112,21 +114,24 @@ class LambdaFunction(GenericBaseModel):
             zip_file = create_zip_file(tmp_dir, get_content=True)
             code["ZipFile"] = zip_file
             rm_rf(tmp_dir)
-        if _include_arch and "Architectures" in params:
-            code["Architectures"] = params.get("Architectures")
+        if _include_arch and "Architectures" in properties:
+            code["Architectures"] = properties.get("Architectures")
         return code
 
     @staticmethod
     def get_deploy_templates():
-        def get_delete_params(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
-            properties = resource["Properties"]
+        def get_delete_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             return {"FunctionName": properties.get("FunctionName")}
 
-        def get_environment_params(params, **kwargs):
+        def get_environment_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ):
             # botocore/data/lambda/2015-03-31/service-2.json:1161 (EnvironmentVariableValue)
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-lambda-function-environment.html
-            if "Environment" in params:
-                environment_variables = params["Environment"].get("Variables", {})
+            if "Environment" in properties:
+                environment_variables = properties["Environment"].get("Variables", {})
                 return {"Variables": {k: str(v) for k, v in environment_variables.items()}}
 
         def result_handler(result, resource_id, resources, resource_type):
@@ -288,9 +293,8 @@ class LambdaPermission(GenericBaseModel):
             resources[resource_id]["PhysicalResourceId"] = parsed_statement["Sid"]
 
         def lambda_permission_params(
-            logical_resource_id: str, resource: dict, stack_name: str
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
         ) -> dict:
-            properties = resource["Properties"]
             result = select_parameters("FunctionName", "Action", "Principal", "SourceArn")(
                 properties
             )
@@ -305,8 +309,9 @@ class LambdaPermission(GenericBaseModel):
                 result["StatementId"] = f"{logical_resource_id}-{suffix}"
             return result
 
-        def get_delete_params(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
-            properties = resource["Properties"]
+        def get_delete_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             statement_id = resource["PhysicalResourceId"]
             return {"FunctionName": properties.get("FunctionName"), "StatementId": statement_id}
 
@@ -524,8 +529,9 @@ class LambdaLayerVersionPermission(LambdaPermission):
 
     @classmethod
     def get_deploy_templates(cls):
-        def layer_permission_params(logical_resource_id: str, resource: dict, stack_name: str):
-            properties = resource["Properties"]
+        def layer_permission_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ):
             layer_name, version_number = cls.layer_name_and_version(properties)
             result = select_attributes(properties, ["Action", "Principal"])
             result["StatementId"] = short_uid()

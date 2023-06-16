@@ -124,9 +124,8 @@ class S3Bucket(GenericBaseModel):
             return {"CORSRules": cors_rules}
 
         def s3_bucket_notification_config(
-            logical_resource_id: str, resource: dict, stack_name: str
-        ) -> dict:
-            properties = resource["Properties"]
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict | None:
             notif_config = properties.get("NotificationConfiguration")
             if not notif_config:
                 return None

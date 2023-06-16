@@ -40,8 +40,9 @@ class CloudWatchAlarm(GenericBaseModel):
             resource = resources[resource_id]
             resources[resource_id]["PhysicalResourceId"] = resource["Properties"]["AlarmName"]
 
-        def get_delete_params(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
-            properties = resource["Properties"]
+        def get_delete_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             return {"AlarmNames": [properties["AlarmName"]]}
 
         return {

@@ -91,9 +91,9 @@ class SFNStateMachine(GenericBaseModel):
             resources[resource_id]["Properties"]["Arn"] = result["stateMachineArn"]
             resources[resource_id]["PhysicalResourceId"] = result["stateMachineArn"]
 
-        def _create_params(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
-            properties = resource["Properties"]
-
+        def _create_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             def _get_definition(properties):
                 # TODO: support "Definition" parameter
                 definition_str = properties.get("DefinitionString")
