@@ -7,7 +7,7 @@ from localstack.services.cloudformation.deployment_utils import (
     is_none_or_empty_value,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import canonicalize_bool_to_str
 
 
@@ -15,9 +15,6 @@ class SNSTopic(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::SNS::Topic"
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return arns.sns_topic_arn(self.props["TopicName"])
 
     def fetch_state(self, stack_name, resources):
         topic_name = self.props["TopicName"]
@@ -61,7 +58,7 @@ class SNSTopic(GenericBaseModel):
 
         def _topic_arn(params, resources, resource_id, **kwargs):
             resource = cls(resources[resource_id])
-            return resource.physical_resource_id or resource.get_physical_resource_id()
+            return resource.physical_resource_id
 
         def _list_all_topics(sns_client):
             rs = sns_client.list_topics()
@@ -75,13 +72,13 @@ class SNSTopic(GenericBaseModel):
 
             return topics
 
-        def _add_topics(resource_id, resources, resource_type, func, stack_name):
+        def _add_topics(logical_resource_id: str, resource: str, stack_name: str):
             sns_client = aws_stack.connect_to_service("sns")
             topics = _list_all_topics(sns_client)
             topics_by_name = {t["TopicArn"].split(":")[-1]: t for t in topics}
 
-            resource = cls(resources[resource_id])
-            props = resource.props
+            provider = cls(resource)
+            props = provider.props
 
             subscriptions = props.get("Subscription", [])
             for subscription in subscriptions:
@@ -118,9 +115,6 @@ class SNSSubscription(GenericBaseModel):
     def cloudformation_type():
         return "AWS::SNS::Subscription"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("SubscriptionArn")
-
     def fetch_state(self, stack_name, resources):
         props = self.props
         topic_arn = props.get("TopicArn")
@@ -154,6 +148,11 @@ class SNSSubscription(GenericBaseModel):
             result = {a: attr_val(params[a]) for a in attrs if a in params}
             return result
 
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, resource_type: str
+        ):
+            resources[resource_id]["PhysicalResourceId"] = result["SubscriptionArn"]
+
         return {
             "create": {
                 "function": "subscribe",
@@ -163,6 +162,7 @@ class SNSSubscription(GenericBaseModel):
                     "Endpoint": "Endpoint",
                     "Attributes": sns_subscription_params,
                 },
+                "result_handler": _set_physical_resource_id,
             },
             "delete": {
                 "function": "unsubscribe",
@@ -197,14 +197,12 @@ class SNSTopicPolicy(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(resource_id, resources, resource_type, func, stack_name):
+        def _create(logical_resource_id: str, resource: dict, stack_name: str):
             sns_client = aws_stack.connect_to_service("sns")
-            resource = cls(resources[resource_id])
-            props = resource.props
+            provider = cls(resource)
+            props = provider.props
 
-            resources[resource_id]["PhysicalResourceId"] = generate_default_name(
-                stack_name, resource_id
-            )
+            resource["PhysicalResourceId"] = generate_default_name(stack_name, logical_resource_id)
 
             policy = json.dumps(props["PolicyDocument"])
             for topic_arn in props["Topics"]:
@@ -212,10 +210,10 @@ class SNSTopicPolicy(GenericBaseModel):
                     TopicArn=topic_arn, AttributeName="Policy", AttributeValue=policy
                 )
 
-        def _delete(resource_id, resources, *args, **kwargs):
+        def _delete(logical_resource_id: str, resource: dict, stack_name: str):
             sns_client = aws_stack.connect_to_service("sns")
-            resource = cls(resources[resource_id])
-            props = resource.props
+            provider = cls(resource)
+            props = provider.props
 
             for topic_arn in props["Topics"]:
                 try:

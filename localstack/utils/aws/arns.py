@@ -5,8 +5,8 @@ from typing import Optional, TypedDict
 
 from botocore.utils import ArnParser, InvalidArnException
 
-from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
+from localstack.aws.accounts import DEFAULT_AWS_ACCOUNT_ID, get_aws_account_id
+from localstack.constants import INTERNAL_AWS_ACCESS_KEY_ID, INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws.aws_stack import connect_to_service, get_region, get_valid_regions
 
 # set up logger
@@ -25,19 +25,25 @@ def sqs_queue_url_for_arn(queue_arn: str) -> str:
     if "://" in queue_arn:
         return queue_arn
 
-    arn = parse_arn(queue_arn)
-    account_id = arn["account"]
-    region_name = arn["region"]
-    queue_name = arn["resource"]
+    try:
+        arn = parse_arn(queue_arn)
+        account_id = arn["account"]
+        region_name = arn["region"]
+        queue_name = arn["resource"]
+    except InvalidArnException:
+        account_id = DEFAULT_AWS_ACCOUNT_ID
+        region_name = None
+        queue_name = queue_arn
 
     sqs_client = connect_to_service(
         "sqs",
         region_name=region_name,
-        aws_access_key_id=account_id,
+        aws_access_key_id=INTERNAL_AWS_ACCESS_KEY_ID,
         aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
     )
-    result = sqs_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
-
+    result = sqs_client.get_queue_url(QueueName=queue_name, QueueOwnerAWSAccountId=account_id)[
+        "QueueUrl"
+    ]
     return result
 
 

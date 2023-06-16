@@ -30,6 +30,8 @@ omit = [
     "localstack/extensions/api/*",
     "localstack/services/stepfunctions/asl/antlr/runtime/*"
 ]
+dynamic_context = "test_function"
+
 [tool.coverage.report]
 exclude_lines = [
     "if __name__ == .__main__.:",

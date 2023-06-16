@@ -26,7 +26,6 @@ INTERNAL_QUEUE_ATTRIBUTES = [
     QueueAttributeName.ApproximateNumberOfMessages,
     QueueAttributeName.ApproximateNumberOfMessagesDelayed,
     QueueAttributeName.ApproximateNumberOfMessagesNotVisible,
-    QueueAttributeName.ContentBasedDeduplication,
     QueueAttributeName.CreatedTimestamp,
     QueueAttributeName.LastModifiedTimestamp,
     QueueAttributeName.QueueArn,

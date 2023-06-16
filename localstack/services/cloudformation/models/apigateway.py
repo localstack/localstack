@@ -1,13 +1,14 @@
 import json
 from urllib.parse import urlparse
 
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     lambda_keys_to_lower,
     params_list_to_dict,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack, queries
+from localstack.utils.aws import queries
 from localstack.utils.common import keys_to_lower, select_attributes, to_bytes
 from localstack.utils.strings import first_char_to_lower
 
@@ -22,7 +23,7 @@ class GatewayResponse(GenericBaseModel):
         api_id = props.get("RestApiId")
         if not api_id:
             return
-        client = aws_stack.connect_to_service("apigateway")
+        client = connect_to().apigateway
         result = client.get_gateway_response(restApiId=api_id, responseType=props["ResponseType"])
         return result if "responseType" in result else None
 
@@ -47,11 +48,8 @@ class GatewayRequestValidator(GenericBaseModel):
     def cloudformation_type():
         return "AWS::ApiGateway::RequestValidator"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("id")
-
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("apigateway")
+        client = connect_to().apigateway
         props = self.props
         api_id = props["RestApiId"]
         name = props["Name"]
@@ -69,6 +67,9 @@ class GatewayRequestValidator(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["id"]
+
         return {
             "create": {
                 "function": "create_request_validator",
@@ -78,6 +79,7 @@ class GatewayRequestValidator(GenericBaseModel):
                     "validateRequestBody": "ValidateRequestBody",
                     "validateRequestParameters": "ValidateRequestParameters",
                 },
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_request_validator",
@@ -94,27 +96,21 @@ class GatewayRestAPI(GenericBaseModel):
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == "RootResourceId":
             api_id = self.props.get("id")
-            resources = aws_stack.connect_to_service("apigateway").get_resources(restApiId=api_id)[
-                "items"
-            ]
+            resources = connect_to().apigateway.get_resources(restApiId=api_id)["items"]
             for res in resources:
                 if res["path"] == "/" and not res.get("parentId"):
                     return res["id"]
         return super(GatewayRestAPI, self).get_cfn_attribute(attribute_name)
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("id")
-
     def fetch_state(self, stack_name, resources):
         if not self.props.get("id"):
             return None
 
-        return aws_stack.connect_to_service("apigateway").get_rest_api(
-            restApiId=self.props.get("id")
-        )
+        return connect_to().apigateway.get_rest_api(restApiId=self.props.get("id"))
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
+        # FIXME: this is only when Body or BodyS3Location is set, otherwise the deployment should fail without a name
         role_name = resource.get("Properties", {}).get("Name")
         if not role_name:
             resource["Properties"]["Name"] = generate_default_name(
@@ -125,11 +121,10 @@ class GatewayRestAPI(GenericBaseModel):
     def get_deploy_templates(cls):
         def _api_id(params, resources, resource_id, **kwargs):
             resource = cls(resources[resource_id])
-            return resource.physical_resource_id or resource.get_physical_resource_id()
+            return resource.physical_resource_id
 
-        def _create(resource_id, resources, resource_type, func, stack_name):
-            client = aws_stack.connect_to_service("apigateway")
-            resource = resources[resource_id]
+        def _create(logical_resource_id: str, resource: dict, stack_name: str):
+            client = connect_to().apigateway
             props = resource["Properties"]
 
             kwargs = select_attributes(
@@ -151,11 +146,11 @@ class GatewayRestAPI(GenericBaseModel):
             kwargs = keys_to_lower(kwargs, skip_children_of=["policy"])
             kwargs["tags"] = {tag["key"]: tag["value"] for tag in kwargs.get("tags", [])}
 
-            cfn_client = aws_stack.connect_to_service("cloudformation")
+            cfn_client = connect_to().cloudformation
             stack_id = cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]["StackId"]
             kwargs["tags"].update(
                 {
-                    "aws:cloudformation:logical-id": resource_id,
+                    "aws:cloudformation:logical-id": logical_resource_id,
                     "aws:cloudformation:stack-name": stack_name,
                     "aws:cloudformation:stack-id": stack_id,
                 }
@@ -166,19 +161,55 @@ class GatewayRestAPI(GenericBaseModel):
             result = client.create_rest_api(**kwargs)
 
             body = props.get("Body")
-            if body:
+            s3_body_location = props.get("BodyS3Location")
+            if body or s3_body_location:
                 # the default behavior for imports via CFn is basepath=ignore (validated against AWS)
-                api_params = {"basepath": "ignore"}
-                body = json.dumps(body) if isinstance(body, dict) else body
+                import_parameters = props.get("Parameters", {})
+                import_parameters.setdefault("basepath", "ignore")
+
+                if body:
+                    body = json.dumps(body) if isinstance(body, dict) else body
+                else:
+                    get_obj_kwargs = {}
+                    if version_id := s3_body_location.get("Version"):
+                        get_obj_kwargs["VersionId"] = version_id
+
+                    # what is the approach when client call fail? Do we bubble it up?
+                    s3_client = connect_to().s3
+                    get_obj_req = s3_client.get_object(
+                        Bucket=s3_body_location.get("Bucket"),
+                        Key=s3_body_location.get("Key"),
+                        **get_obj_kwargs,
+                    )
+                    if etag := s3_body_location.get("ETag"):
+                        if etag != get_obj_req["ETag"]:
+                            # TODO: validate the exception message
+                            raise Exception(
+                                "The ETag provided for the S3BodyLocation does not match the S3 Object"
+                            )
+                    body = get_obj_req["Body"].read()
+
+                put_kwargs = {}
+                if import_mode := props.get("Mode"):
+                    put_kwargs["mode"] = import_mode
+                if fail_on_warnings_mode := props.get("FailOnWarnings"):
+                    put_kwargs["failOnWarnings"] = fail_on_warnings_mode
+
                 client.put_rest_api(
-                    restApiId=result["id"], body=to_bytes(body), parameters=api_params
+                    restApiId=result["id"],
+                    body=to_bytes(body),
+                    parameters=import_parameters,
+                    **put_kwargs,
                 )
 
             props["id"] = result["id"]
             return result
 
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["id"]
+
         return {
-            "create": {"function": _create},
+            "create": {"function": _create, "result_handler": _handle_result},
             "delete": {
                 "function": "delete_rest_api",
                 "parameters": {
@@ -199,17 +230,17 @@ class GatewayDeployment(GenericBaseModel):
         if not api_id:
             return None
 
-        client = aws_stack.connect_to_service("apigateway")
+        client = connect_to().apigateway
         result = client.get_deployments(restApiId=api_id)["items"]
         # TODO possibly filter results by stage name or other criteria
 
         return result[0] if result else None
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("id")
-
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["id"]
+
         return {
             "create": {
                 "function": "create_deployment",
@@ -219,6 +250,7 @@ class GatewayDeployment(GenericBaseModel):
                     "stageDescription": "StageDescription",
                     "description": "Description",
                 },
+                "result_handler": _handle_result,
             }
         }
 
@@ -228,9 +260,6 @@ class GatewayResource(GenericBaseModel):
     def cloudformation_type():
         return "AWS::ApiGateway::Resource"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("id")
-
     def fetch_state(self, stack_name, resources):
         props = self.props
         api_id = props.get("RestApiId") or self.logical_resource_id
@@ -239,9 +268,7 @@ class GatewayResource(GenericBaseModel):
         if not api_id or not parent_id:
             return None
 
-        api_resources = aws_stack.connect_to_service("apigateway").get_resources(restApiId=api_id)[
-            "items"
-        ]
+        api_resources = connect_to().apigateway.get_resources(restApiId=api_id)["items"]
         target_resource = list(
             filter(
                 lambda res: res.get("parentId") == parent_id
@@ -269,7 +296,7 @@ class GatewayResource(GenericBaseModel):
             }
             if not result.get("parentId"):
                 # get root resource id
-                apigw = aws_stack.connect_to_service("apigateway")
+                apigw = connect_to().apigateway
                 resources = apigw.get_resources(restApiId=result["restApiId"])["items"]
                 root_resource = ([r for r in resources if r["path"] == "/"] or [None])[0]
                 if not root_resource:
@@ -279,10 +306,14 @@ class GatewayResource(GenericBaseModel):
                 result["parentId"] = root_resource["id"]
             return result
 
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["id"]
+
         return {
             "create": {
                 "function": "create_resource",
                 "parameters": get_apigw_resource_params,
+                "result_handler": _handle_result,
             }
         }
 
@@ -300,9 +331,7 @@ class GatewayMethod(GenericBaseModel):
         if not api_id or not res_id:
             return None
 
-        res_obj = aws_stack.connect_to_service("apigateway").get_resource(
-            restApiId=api_id, resourceId=res_id
-        )
+        res_obj = connect_to().apigateway.get_resource(restApiId=api_id, resourceId=res_id)
         match = [
             v
             for (k, v) in res_obj.get("resourceMethods", {}).items()
@@ -323,7 +352,7 @@ class GatewayMethod(GenericBaseModel):
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
-        client = aws_stack.connect_to_service("apigateway")
+        client = connect_to().apigateway
         integration = props.get("Integration")
         kwargs = {
             "restApiId": props["RestApiId"],
@@ -344,15 +373,6 @@ class GatewayMethod(GenericBaseModel):
 
         return client.put_method(**kwargs)
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        props = self.props
-        result = "%s-%s-%s" % (
-            props.get("RestApiId"),
-            props.get("ResourceId"),
-            props.get("HttpMethod"),
-        )
-        return result
-
     @classmethod
     def get_deploy_templates(cls):
         """
@@ -362,10 +382,28 @@ class GatewayMethod(GenericBaseModel):
         https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-apitgateway-method-integration-integrationresponse.html
         """
 
-        def _subresources(resource_id, resources, resource_type, func, stack_name):
-            apigateway = aws_stack.connect_to_service("apigateway")
-            resource = cls(resources[resource_id])
-            props = resource.props
+        def get_params(resource_props, stack_name, resources, resource_id):
+            result = keys_to_lower(resource_props)
+            param_names = [
+                "restApiId",
+                "resourceId",
+                "httpMethod",
+                "apiKeyRequired",
+                "authorizationType",
+                "authorizerId",
+                "requestParameters",
+                "requestModels",
+                "requestValidatorId",
+            ]
+            result = select_attributes(result, param_names)
+            result["requestModels"] = result.get("requestModels") or {}
+            result["requestParameters"] = result.get("requestParameters") or {}
+            return result
+
+        def _subresources(logical_resource_id: str, resource: dict, stack_name: str):
+            apigateway = connect_to().apigateway
+            provider = cls(resource)
+            props = provider.props
 
             integration = props.get("Integration")
             if integration:
@@ -373,9 +411,7 @@ class GatewayMethod(GenericBaseModel):
                 res_id = props["ResourceId"]
 
                 kwargs = keys_to_lower(integration)
-                if integration.get("Uri"):
-                    uri = integration.get("Uri")
-
+                if uri := integration.get("Uri"):
                     # Moto has a validate method on Uri for integration_type "HTTP" | "HTTP_PROXY" that does not accept
                     # Uri value without path, we need to add path ("/") if not exists
                     if integration.get("Type") in ["HTTP", "HTTP_PROXY"]:
@@ -388,18 +424,23 @@ class GatewayMethod(GenericBaseModel):
                 integration_responses = kwargs.pop("integrationResponses", [])
                 method = props.get("HttpMethod")
 
+                kwargs["requestParameters"] = kwargs.get("requestParameters") or {}
+                kwargs["requestTemplates"] = kwargs.get("requestTemplates") or {}
+
                 apigateway.put_integration(
                     restApiId=api_id,
                     resourceId=res_id,
                     httpMethod=method,
                     **kwargs,
                 )
-
+                default_params = (
+                    "responseParameters",
+                    "responseTemplates",
+                )
                 for integration_response in integration_responses:
                     integration_response["statusCode"] = str(integration_response["statusCode"])
-                    integration_response["responseParameters"] = integration_response.get(
-                        "responseParameters", {}
-                    )
+                    for param in default_params:
+                        integration_response[param] = integration_response.get(param) or {}
                     apigateway.put_integration_response(
                         restApiId=api_id,
                         resourceId=res_id,
@@ -415,25 +456,26 @@ class GatewayMethod(GenericBaseModel):
                     restApiId=api_id,
                     resourceId=res_id,
                     httpMethod=props["HttpMethod"],
-                    statusCode=str(response["StatusCode"]),
-                    responseParameters=response.get("ResponseParameters", {}),
+                    statusCode=str(response["statusCode"]),
+                    responseParameters=response.get("responseParameters") or {},
+                    responseModels=response.get("responseModels") or {},
                 )
+
+        def _handle_result(result, resource_id, resources, resource_type):
+            resource = resources[resource_id]
+            rest_api_id = resource["Properties"]["RestApiId"]
+            apigw_resource_id = resource["Properties"]["ResourceId"]
+            http_method = resource["Properties"]["HttpMethod"]
+            resources[resource_id][
+                "PhysicalResourceId"
+            ] = f"{rest_api_id}-{apigw_resource_id}-{http_method}"
 
         return {
             "create": [
                 {
                     "function": "put_method",
-                    "parameters": {
-                        "restApiId": "RestApiId",
-                        "resourceId": "ResourceId",
-                        "httpMethod": "HttpMethod",
-                        "apiKeyRequired": "ApiKeyRequired",
-                        "authorizationType": "AuthorizationType",
-                        "authorizerId": "AuthorizerId",
-                        "requestParameters": "RequestParameters",
-                        "requestModels": "RequestModels",
-                        "requestValidatorId": "RequestValidatorId",
-                    },
+                    "parameters": get_params,
+                    "result_handler": _handle_result,
                 },
                 {
                     "function": _subresources  # dynamic mapping for additional sdk calls for this CFn resource
@@ -451,13 +493,10 @@ class GatewayStage(GenericBaseModel):
         api_id = self.props.get("RestApiId") or self.logical_resource_id
         if not api_id:
             return None
-        result = aws_stack.connect_to_service("apigateway").get_stage(
+        result = connect_to().apigateway.get_stage(
             restApiId=api_id, stageName=self.props["StageName"]
         )
         return result
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("StageName")
 
     @staticmethod
     def get_deploy_templates():
@@ -482,10 +521,14 @@ class GatewayStage(GenericBaseModel):
             result["stageName"] = stage_name
             return result
 
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["stageName"]
+
         return {
             "create": {
                 "function": "create_stage",
                 "parameters": get_params,
+                "result_handler": _handle_result,
             }
         }
 
@@ -497,7 +540,7 @@ class GatewayUsagePlan(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         plan_name = self.props.get("UsagePlanName")
-        result = aws_stack.connect_to_service("apigateway").get_usage_plans().get("items", [])
+        result = connect_to().apigateway.get_usage_plans().get("items", [])
         result = [r for r in result if r["name"] == plan_name]
         return (result or [None])[0]
 
@@ -511,6 +554,9 @@ class GatewayUsagePlan(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["id"]
+
         return {
             "create": {
                 "function": "create_usage_plan",
@@ -527,11 +573,9 @@ class GatewayUsagePlan(GenericBaseModel):
                     "burstLimit": int,
                     "rateLimit": float,
                 },
+                "result_handler": _handle_result,
             }
         }
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("id")
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
@@ -592,7 +636,7 @@ class GatewayUsagePlan(GenericBaseModel):
                 patch_operations.append(
                     {"op": "replace", "path": f"/{first_char_to_lower(parameter)}", "value": value}
                 )
-        client = aws_stack.connect_to_service("apigateway")
+        client = connect_to().apigateway
         client.update_usage_plan(usagePlanId=usage_plan_id, patchOperations=patch_operations)
 
 
@@ -605,7 +649,7 @@ class GatewayApiKey(GenericBaseModel):
         props = self.props
         key_name = props.get("Name")
         cust_id = props.get("CustomerId")
-        result = aws_stack.connect_to_service("apigateway").get_api_keys().get("items", [])
+        result = connect_to().apigateway.get_api_keys().get("items", [])
         result = [
             r
             for r in result
@@ -623,6 +667,9 @@ class GatewayApiKey(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["id"]
+
         return {
             "create": {
                 "function": "create_api_key",
@@ -636,11 +683,9 @@ class GatewayApiKey(GenericBaseModel):
                     "tags": params_list_to_dict("Tags"),
                 },
                 "types": {"enabled": bool},
+                "result_handler": _handle_result,
             }
         }
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("id")
 
 
 class GatewayUsagePlanKey(GenericBaseModel):
@@ -649,7 +694,7 @@ class GatewayUsagePlanKey(GenericBaseModel):
         return "AWS::ApiGateway::UsagePlanKey"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("apigateway")
+        client = connect_to().apigateway
         key_id = self.props.get("KeyId")
         key_type = self.props.get("KeyType")
         plan_id = self.props.get("UsagePlanId")
@@ -659,15 +704,16 @@ class GatewayUsagePlanKey(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["id"]
+
         return {
             "create": {
                 "function": "create_usage_plan_key",
                 "parameters": lambda_keys_to_lower(),
+                "result_handler": _handle_result,
             }
         }
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("id")
 
 
 # TODO: add tests for this resource type
@@ -677,12 +723,13 @@ class GatewayDomain(GenericBaseModel):
         return "AWS::ApiGateway::DomainName"
 
     def fetch_state(self, stack_name, resources):
-        return aws_stack.connect_to_service("apigateway").get_domain_name(
-            domainName=self.props["DomainName"]
-        )
+        return connect_to().apigateway.get_domain_name(domainName=self.props["DomainName"])
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["domainName"]
+
         return {
             "create": {
                 "function": "create_domain_name",
@@ -698,11 +745,9 @@ class GatewayDomain(GenericBaseModel):
                     "securityPolicy": lambda_keys_to_lower("SecurityPolicy"),
                     "tags": params_list_to_dict("Tags"),
                 },
+                "result_handler": _handle_result,
             }
         }
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("domainName")
 
 
 # TODO: add tests for this resource type
@@ -713,8 +758,8 @@ class GatewayBasePathMapping(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         resources = (
-            aws_stack.connect_to_service("apigateway")
-            .get_base_path_mappings(domainName=self.props.get("DomainName"))
+            connect_to()
+            .apigateway.get_base_path_mappings(domainName=self.props.get("DomainName"))
             .get("items", [])
         )
 
@@ -726,9 +771,9 @@ class GatewayBasePathMapping(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create_base_path_mapping(resource_id, resources, *args, **kwargs):
-            resource = cls(resources[resource_id])
-            props = resource.props
+        def _create_base_path_mapping(logical_resource_id: str, resource: dict, stack_name: str):
+            provider = cls(resource)
+            props = provider.props
 
             kwargs = {
                 "domainName": props.get("DomainName"),
@@ -737,12 +782,17 @@ class GatewayBasePathMapping(GenericBaseModel):
                 **({"stage": props.get("Stage")} if props.get("Stage") else {}),
             }
 
-            aws_stack.connect_to_service("apigateway").create_base_path_mapping(**kwargs)
+            return connect_to().apigateway.create_base_path_mapping(**kwargs)
 
-        return {"create": {"function": _create_base_path_mapping}}
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["restApiId"]
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("restApiId")
+        return {
+            "create": {
+                "function": _create_base_path_mapping,
+                "result_handler": _handle_result,
+            }
+        }
 
 
 class GatewayModel(GenericBaseModel):
@@ -750,11 +800,8 @@ class GatewayModel(GenericBaseModel):
     def cloudformation_type():
         return "AWS::ApiGateway::Model"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("Name")
-
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("apigateway")
+        client = connect_to().apigateway
         api_id = self.props["RestApiId"]
 
         items = client.get_models(restApiId=api_id)["items"]
@@ -807,26 +854,22 @@ class GatewayAccount(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         if not self.physical_resource_id:
             return None
-        client = aws_stack.connect_to_service("apigateway")
+        client = connect_to().apigateway
         return client.get_account()
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.physical_resource_id
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(resource_id, resources, *args, **kwargs):
-            resource = resources[resource_id]
+        def _create(logical_resource_id: str, resource: dict, stack_name: str):
             props = cls(resource).props
 
             role_arn = props["CloudWatchRoleArn"]
 
-            aws_stack.connect_to_service("apigateway").update_account(
+            connect_to().apigateway.update_account(
                 patchOperations=[{"op": "replace", "path": "/cloudwatchRoleArn", "value": role_arn}]
             )
 
             resource["PhysicalResourceId"] = generate_default_name(
-                args[2], resource["LogicalResourceId"]
+                stack_name, resource["LogicalResourceId"]
             )
 
         def _delete(*_, **__):

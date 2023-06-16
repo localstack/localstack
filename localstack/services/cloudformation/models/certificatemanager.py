@@ -15,9 +15,6 @@ class CertificateManagerCertificate(GenericBaseModel):
         result = [c for c in result if c["DomainName"] == domain_name]
         return (result or [None])[0]
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("CertificateArn")
-
     @classmethod
     def get_deploy_templates(cls):
         def _create_params(params, *args, **kwargs):
@@ -51,8 +48,18 @@ class CertificateManagerCertificate(GenericBaseModel):
 
             return result
 
+        def _handle_result(result, resource_id, resources, resource_type):
+            resource = resources[resource_id]
+            resource["Properties"]["CertificateArn"] = resource["PhysicalResourceId"] = result[
+                "CertificateArn"
+            ]
+
         return {
-            "create": {"function": "request_certificate", "parameters": _create_params},
+            "create": {
+                "function": "request_certificate",
+                "parameters": _create_params,
+                "result_handler": _handle_result,
+            },
             "delete": {
                 "function": "delete_certificate",
                 "parameters": ["CertificateArn"],

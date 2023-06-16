@@ -23,13 +23,6 @@ class OpenSearchDomain(GenericBaseModel):
     def cloudformation_type():
         return "AWS::OpenSearchService::Domain"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        domain_name = self._domain_name()
-        if attribute == "Arn":
-            # As mentioned above, OpenSearch still uses "es" ARNs
-            return arns.elasticsearch_domain_arn(domain_name)
-        return domain_name
-
     def fetch_state(self, stack_name, resources):
         domain_name = self._domain_name()
         return aws_stack.connect_to_service("opensearch").describe_domain(DomainName=domain_name)
@@ -53,11 +46,17 @@ class OpenSearchDomain(GenericBaseModel):
                 )
             return result
 
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, resource_type: str
+        ):
+            resources[resource_id]["PhysicalResourceId"] = result["DomainStatus"]["DomainName"]
+
         return {
             "create": [
                 {
                     "function": "create_domain",
                     "parameters": _create_params,
+                    "result_handler": _set_physical_resource_id,
                 },
                 {"function": "add_tags", "parameters": opensearch_add_tags_params},
             ],

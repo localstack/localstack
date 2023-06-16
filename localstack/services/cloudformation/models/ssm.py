@@ -15,9 +15,6 @@ class SSMParameter(GenericBaseModel):
     def cloudformation_type():
         return "AWS::SSM::Parameter"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("Name") or self.logical_resource_id
-
     def fetch_state(self, stack_name, resources):
         param_name = self.props.get("Name") or self.logical_resource_id
         return aws_stack.connect_to_service("ssm").get_parameter(Name=param_name)["Parameter"]
@@ -83,6 +80,10 @@ class SSMParameter(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resource = resources[resource_id]
+            resource["PhysicalResourceId"] = resource["Properties"]["Name"]
+
         return {
             "create": {
                 "function": "put_parameter",
@@ -99,6 +100,7 @@ class SSMParameter(GenericBaseModel):
                     ),
                 ),
                 "types": {"Value": str},
+                "result_handler": _handle_result,
             },
             "delete": {"function": "delete_parameter", "parameters": ["Name"]},
         }

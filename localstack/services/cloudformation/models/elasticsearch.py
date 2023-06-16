@@ -1,4 +1,5 @@
 from localstack.aws.api.es import CreateElasticsearchDomainRequest
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import remove_none_values
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import arns, aws_stack
@@ -15,12 +16,6 @@ class ElasticsearchDomain(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::Elasticsearch::Domain"
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        domain_name = self._domain_name()
-        if attribute == "Arn":
-            return arns.elasticsearch_domain_arn(domain_name)
-        return domain_name
 
     def get_cfn_attribute(self, attribute_name):
         if attribute_name in ["Arn", "DomainArn"]:
@@ -54,11 +49,23 @@ class ElasticsearchDomain(GenericBaseModel):
                 cluster_config.setdefault("WarmType", "ultrawarm1.medium.elasticsearch")
             return result
 
+        def _handle_result(result, resource_id, resources, resource_type):
+            resource = resources[resource_id]
+
+            domain_name = resource["Properties"].get("DomainName", resource_id)
+            resource["PhysicalResourceId"] = domain_name
+            # TODO: wait for resource
+            describe_result = connect_to().es.describe_elasticsearch_domain(DomainName=domain_name)[
+                "DomainStatus"
+            ]
+            resource["Properties"]["DomainStatus"] = {"Endpoint": describe_result["Endpoint"]}
+
         return {
             "create": [
                 {
                     "function": "create_elasticsearch_domain",
                     "parameters": _create_params,
+                    "result_handler": _handle_result,
                 },
                 {"function": "add_tags", "parameters": es_add_tags_params},
             ],

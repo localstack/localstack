@@ -1,5 +1,7 @@
 import json
 
+from botocore.exceptions import ClientError
+
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     select_parameters,
@@ -83,9 +85,6 @@ class EventsRule(GenericBaseModel):
             return self.props.get("Arn") or arns.events_rule_arn(self.props.get("Name"))
         return super(EventsRule, self).get_cfn_attribute(attribute_name)
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("Name")
-
     def fetch_state(self, stack_name, resources):
         rule_name = self.props.get("Name")
 
@@ -135,9 +134,8 @@ class EventsRule(GenericBaseModel):
                 result["EventPattern"] = json.dumps(wrapped)
             return result
 
-        def _delete_rule(resource_id, resources, *args, **kwargs):
+        def _delete_rule(logical_resource_id: str, resource: dict, stack_name: str):
             events = aws_stack.connect_to_service("events")
-            resource = resources[resource_id]
             props = resource["Properties"]
             rule_name = props["Name"]
             targets = events.list_targets_by_rule(Rule=rule_name)["Targets"]
@@ -146,9 +144,8 @@ class EventsRule(GenericBaseModel):
                 events.remove_targets(Rule=rule_name, Ids=target_ids, Force=True)
             events.delete_rule(Name=rule_name)
 
-        def _put_targets(resource_id, resources, *args, **kwargs):
+        def _put_targets(logical_resource_id: str, resource: dict, stack_name: str):
             events = aws_stack.connect_to_service("events")
-            resource = resources[resource_id]
             props = resource["Properties"]
             rule_name = props["Name"]
             event_bus_name = props.get("EventBusName")
@@ -158,9 +155,18 @@ class EventsRule(GenericBaseModel):
             elif len(targets) > 0:
                 events.put_targets(Rule=rule_name, Targets=targets)
 
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = resources[resource_id]["Properties"][
+                "Name"
+            ]
+
         return {
             "create": [
-                {"function": "put_rule", "parameters": events_put_rule_params},
+                {
+                    "function": "put_rule",
+                    "parameters": events_put_rule_params,
+                    "result_handler": _handle_result,
+                },
                 {"function": _put_targets},
             ],
             "delete": {"function": _delete_rule},
@@ -174,9 +180,8 @@ class EventBusPolicy(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(resource_id, resources, resource_type, func, stack_name):
+        def _create(logical_resource_id: str, resource: dict, stack_name: str):
             events = aws_stack.connect_to_service("events")
-            resource = resources[resource_id]
             props = resource["Properties"]
 
             resource["PhysicalResourceId"] = f"EventBusPolicy-{short_uid()}"
@@ -211,9 +216,8 @@ class EventBusPolicy(GenericBaseModel):
                     **optional_condition,
                 )
 
-        def _delete(resource_id, resources, resource_type, func, stack_name):
+        def _delete(logical_resource_id: str, resource: dict, stack_name: str):
             events = aws_stack.connect_to_service("events")
-            resource = resources[resource_id]
             props = resource["Properties"]
             statement_id = props["StatementId"]
             event_bus_name = props.get("EventBusName")
@@ -223,7 +227,10 @@ class EventBusPolicy(GenericBaseModel):
                     StatementId=statement_id, RemoveAllPermissions=False, **optional_event_bus_name
                 )
             except Exception as err:
-                if err.response["Error"]["Code"] == "ResourceNotFoundException":
+                if (
+                    isinstance(err, ClientError)
+                    and err.response["Error"]["Code"] == "ResourceNotFoundException"
+                ):
                     pass  # expected behavior ("parent" resource event bus already deleted)
                 else:
                     raise err

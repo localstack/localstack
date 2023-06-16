@@ -1,6 +1,6 @@
 import pytest
 
-from localstack.services.kms.models import validate_alias_name
+from localstack.services.kms.utils import validate_alias_name
 
 
 def test_alias_name_validator():

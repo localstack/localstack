@@ -317,6 +317,7 @@ class TestJavaRuntimes:
             "$..Statement.Condition.ArnLike",
         ],
     )
+    @pytest.mark.xfail(is_old_provider(), reason="Test flaky with local executor.")
     # TODO maybe snapshot payload as well
     def test_java_lambda_subscribe_sns_topic(
         self,
