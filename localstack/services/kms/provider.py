@@ -591,8 +591,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     # KeySpec for CreateKey) nor on NumberOfBytes. Instead, we generate a key with a key length that is "standard" in
     # LocalStack.
     #
-    # TODO We also do not use the encryption context. Should reuse the way we do it in encrypt / decrypt.
-    def _generate_data_key(self, key_id: str, context: RequestContext):
+    def _generate_data_key(
+        self, context: RequestContext, key_id: str, encryption_context: EncryptionContextType = None
+    ):
         account_id, region_name, key_id = self._parse_key_id(key_id, context)
         key = self._get_key(account_id, region_name, key_id)
         # TODO Should also have a validation for the key being a symmetric one.
@@ -601,21 +602,25 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return {
             "KeyId": key.metadata["Arn"],
             "Plaintext": crypto_key.key_material,
-            "CiphertextBlob": key.encrypt(crypto_key.key_material),
+            "CiphertextBlob": key.encrypt(crypto_key.key_material, encryption_context),
         }
 
     @handler("GenerateDataKey", expand=False)
     def generate_data_key(
         self, context: RequestContext, request: GenerateDataKeyRequest
     ) -> GenerateDataKeyResponse:
-        result = self._generate_data_key(request.get("KeyId"), context)
+        result = self._generate_data_key(
+            context, request.get("KeyId"), request.get("EncryptionContext")
+        )
         return GenerateDataKeyResponse(**result)
 
     @handler("GenerateDataKeyWithoutPlaintext", expand=False)
     def generate_data_key_without_plaintext(
         self, context: RequestContext, request: GenerateDataKeyWithoutPlaintextRequest
     ) -> GenerateDataKeyWithoutPlaintextResponse:
-        result = self._generate_data_key(request.get("KeyId"), context)
+        result = self._generate_data_key(
+            context, request.get("KeyId"), request.get("EncryptionContext")
+        )
         result.pop("Plaintext")
         return GenerateDataKeyWithoutPlaintextResponse(**result)
 
