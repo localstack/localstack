@@ -202,6 +202,7 @@ class TestSNSProvider:
             "$.get-topic-attrs.Attributes.DeliveryPolicy",
             "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
             "$.get-topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
+            "$.get-attrs-nonexistent-topic.Error.Type",  # This undocumented field is currently not returned by Moto
         ]
     )
     def test_create_topic_with_attributes(self, sns_create_topic, snapshot, aws_client):
@@ -900,6 +901,7 @@ class TestSNSProvider:
             "$.get-topic-attrs.Attributes.DeliveryPolicy",
             "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
             "$.get-topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
+            "$.topic-not-exists.Error.Type",  # This undocumented field is currently not returned by Moto
         ]
     )
     def test_create_topic_test_arn(self, sns_create_topic, snapshot, aws_client):
