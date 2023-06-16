@@ -5,6 +5,7 @@ from typing import Final
 import pytest
 
 from localstack.utils.strings import short_uid
+from tests.integration.stepfunctions.templates.callbacks.callback_templates import CallbackTemplates
 from tests.integration.stepfunctions.utils import await_execution_success
 
 LOG = logging.getLogger(__name__)
@@ -77,7 +78,7 @@ def create_iam_role_for_sfn(aws_client, cleanups, create_state_machine):
                         ],
                         "End": True,
                     },
-                    "WaitAndPull": {"Type": "Wait", "Seconds": 1, "Next": "PullAssumeRole"},
+                    "WaitAndPull": {"Type": "Wait", "Seconds": 5, "Next": "PullAssumeRole"},
                 },
             }
             creation_resp = create_state_machine(
@@ -120,3 +121,24 @@ def create_state_machine(aws_client):
             aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
         except Exception:
             LOG.debug(f"Unable to delete state machine '{state_machine_arn}' during cleanup.")
+
+
+@pytest.fixture
+def sqs_send_task_success_state_machine(aws_client, create_state_machine, create_iam_role_for_sfn):
+    def _create_state_machine(sqs_queue_url):
+        snf_role_arn = create_iam_role_for_sfn()
+        sm_name: str = f"sqs_send_task_success_state_machine_{short_uid()}"
+        template = CallbackTemplates.load_sfn_template(CallbackTemplates.SQS_SUCCESS_ON_TASK_TOKEN)
+        definition = json.dumps(template)
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition, roleArn=snf_role_arn
+        )
+        state_machine_arn = creation_resp["stateMachineArn"]
+
+        aws_client.stepfunctions.start_execution(
+            stateMachineArn=state_machine_arn,
+            input=json.dumps({"QueueUrl": sqs_queue_url, "Iterator": {"Count": 300}}),
+        )
+
+    return _create_state_machine
