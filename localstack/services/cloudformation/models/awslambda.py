@@ -86,7 +86,13 @@ class LambdaFunction(GenericBaseModel):
             )
 
     @staticmethod
-    def get_lambda_code_param(properties, _include_arch=False, **kwargs):
+    def get_lambda_code_param(
+        properties: dict,
+        logical_resource_id: str,
+        resource: dict,
+        stack_name: str,
+        _include_arch=False,
+    ):
         code = properties.get("Code", {}).copy()
         zip_file = code.get("ZipFile")
         if zip_file and not is_base64(zip_file) and not is_zip_file(to_bytes(zip_file)):

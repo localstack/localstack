@@ -20,7 +20,7 @@ LOG = logging.getLogger(__name__)
 
 
 def dump_json_params(param_func=None, *param_names):
-    def replace(params, **kwargs):
+    def replace(params, *args, **kwargs):
         result = param_func(params, **kwargs) if param_func else params
         for name in param_names:
             if isinstance(result.get(name), (dict, list)):
@@ -34,8 +34,8 @@ def dump_json_params(param_func=None, *param_names):
 
 
 def param_defaults(param_func, defaults):
-    def replace(params, **kwargs):
-        result = param_func(params, **kwargs)
+    def replace(properties: dict, logical_resource_id: str, *args, **kwargs):
+        result = param_func(properties, **kwargs)
         for key, value in defaults.items():
             if result.get(key) in ["", None]:
                 result[key] = value
@@ -80,8 +80,8 @@ def lambda_keys_to_lower(key=None, skip_children_of: List[str] = None):
 
 
 def merge_parameters(func1, func2):
-    return lambda params, **kwargs: common.merge_dicts(
-        func1(params, **kwargs), func2(params, **kwargs)
+    return lambda properties, logical_resource_id, *args, **kwargs: common.merge_dicts(
+        func1(properties, **kwargs), func2(properties, **kwargs)
     )
 
 
@@ -128,7 +128,7 @@ def lambda_select_params(*selected):
 
 
 def select_parameters(*param_names):
-    return lambda params, **kwargs: select_attributes(params, param_names)
+    return lambda params, *args, **kwargs: select_attributes(params, param_names)
 
 
 def is_none_or_empty_value(value):

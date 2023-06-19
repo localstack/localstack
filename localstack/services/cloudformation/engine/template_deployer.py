@@ -910,7 +910,9 @@ def resolve_resource_parameters(
     resource_id: str,
     func_details: FuncDetailsValue,
 ) -> dict | None:
-    params = func_details.get("parameters") or (lambda params, **kwargs: params)
+    params = func_details.get("parameters") or (
+        lambda properties, logical_resource_id, *args, **kwargs: properties
+    )
     resource_props = resource_definition["Properties"] = resource_definition.get("Properties", {})
     resource_props = dict(resource_props)
     resource_state = resource_definition.get(KEY_RESOURCE_STATE, {})
@@ -921,6 +923,7 @@ def resolve_resource_parameters(
         if "logical_resource_id" in sig.parameters:
             params = params(resource_props, resource_id, resource_definition, stack_name)
         else:
+            raise NotImplementedError(func_details)
             params = params(
                 resource_props,
                 stack_name=stack_name,
@@ -955,6 +958,7 @@ def resolve_resource_parameters(
                             stack_name,
                         )
                     else:
+                        raise NotImplementedError
                         prop_value = prop_key(
                             resource_props,
                             stack_name=stack_name,
