@@ -21,6 +21,7 @@ from localstack.aws.api.kms import (
     CreateGrantResponse,
     CreateKeyRequest,
     CreateKeyResponse,
+    DataKeyPairSpec,
     DateType,
     DecryptResponse,
     DeleteAliasRequest,
@@ -34,9 +35,7 @@ from localstack.aws.api.kms import (
     EncryptionContextType,
     EncryptResponse,
     ExpirationModelType,
-    GenerateDataKeyPairRequest,
     GenerateDataKeyPairResponse,
-    GenerateDataKeyPairWithoutPlaintextRequest,
     GenerateDataKeyPairWithoutPlaintextResponse,
     GenerateDataKeyRequest,
     GenerateDataKeyResponse,
@@ -686,7 +685,13 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         result["KeyId"] = key.metadata["Arn"]
         return GetPublicKeyResponse(**result)
 
-    def _generate_data_key_pair(self, key_id: str, key_pair_spec: str, context: RequestContext):
+    def _generate_data_key_pair(
+        self,
+        context: RequestContext,
+        key_id: str,
+        key_pair_spec: str,
+        encryption_context: EncryptionContextType = None,
+    ):
         account_id, region_name, key_id = self._parse_key_id(key_id, context)
         key = self._get_kms_key(account_id, region_name, key_id)
         self._validate_key_for_encryption_decryption(context, key)
@@ -694,18 +699,22 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return {
             "KeyId": key.metadata["Arn"],
             "KeyPairSpec": key_pair_spec,
-            "PrivateKeyCiphertextBlob": key.encrypt(crypto_key.private_key),
+            "PrivateKeyCiphertextBlob": key.encrypt(crypto_key.private_key, encryption_context),
             "PrivateKeyPlaintext": crypto_key.private_key,
             "PublicKey": crypto_key.public_key,
         }
 
-    @handler("GenerateDataKeyPair", expand=False)
+    @handler("GenerateDataKeyPair")
     def generate_data_key_pair(
-        self, context: RequestContext, request: GenerateDataKeyPairRequest
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        key_pair_spec: DataKeyPairSpec,
+        encryption_context: EncryptionContextType = None,
+        grant_tokens: GrantTokenList = None,
+        recipient: RecipientInfo = None,
     ) -> GenerateDataKeyPairResponse:
-        result = self._generate_data_key_pair(
-            request.get("KeyId"), request.get("KeyPairSpec"), context
-        )
+        result = self._generate_data_key_pair(context, key_id, key_pair_spec, encryption_context)
         return GenerateDataKeyPairResponse(**result)
 
     @handler("GenerateRandom", expand=False)
@@ -730,15 +739,16 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         return GenerateRandomResponse(Plaintext=byte_string)
 
-    @handler("GenerateDataKeyPairWithoutPlaintext", expand=False)
+    @handler("GenerateDataKeyPairWithoutPlaintext")
     def generate_data_key_pair_without_plaintext(
         self,
         context: RequestContext,
-        request: GenerateDataKeyPairWithoutPlaintextRequest,
+        key_id: KeyIdType,
+        key_pair_spec: DataKeyPairSpec,
+        encryption_context: EncryptionContextType = None,
+        grant_tokens: GrantTokenList = None,
     ) -> GenerateDataKeyPairWithoutPlaintextResponse:
-        result = self._generate_data_key_pair(
-            request.get("KeyId"), request.get("KeyPairSpec"), context
-        )
+        result = self._generate_data_key_pair(context, key_id, key_pair_spec, encryption_context)
         result.pop("PrivateKeyPlaintext")
         return GenerateDataKeyPairResponse(**result)
 
