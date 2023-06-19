@@ -18,8 +18,10 @@ from localstack.services.apigateway.helpers import (
     get_apigateway_store,
     get_cors_response,
     make_error_response,
+    select_integration_response,
 )
 from localstack.services.apigateway.integration import (
+    ApiGatewayIntegrationError,
     DynamoDBIntegration,
     HTTPIntegration,
     KinesisIntegration,
@@ -215,14 +217,19 @@ def apply_response_parameters(invocation_context: ApiInvocationContext):
     int_responses = integration.get("integrationResponses") or {}
     if not int_responses:
         return response
-    entries = list(int_responses.keys())
+
+    integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
+    integration_type = integration_type_orig.upper()
+    if integration_type == "AWS_PROXY":
+        LOG.warning("AWS_PROXY integration type should not apply response parameters")
+        return response
+
     return_code = str(response.status_code)
-    if return_code not in entries:
-        if len(entries) > 1:
-            LOG.info("Found multiple integration response status codes: %s", entries)
-            return response
-        return_code = entries[0]
-    response_params = int_responses[return_code].get("responseParameters", {})
+    # Selecting the right integration response
+    selected_integration_response = select_integration_response(return_code, invocation_context)
+    # set status code of integration response
+    response.status_code = selected_integration_response["statusCode"]
+    response_params = selected_integration_response.get("responseParameters") or {}
     for key, value in response_params.items():
         # TODO: add support for method.response.body, etc ...
         if str(key).lower().startswith("method.response.header."):
@@ -295,6 +302,14 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
         invocation_context.response = response
         response = apply_response_parameters(invocation_context)
         return response
+    except ApiGatewayIntegrationError as e:
+        LOG.warning(
+            "Error while invoking integration for ApiGateway ID %s: %s",
+            invocation_context.api_id,
+            e,
+            exc_info=LOG.isEnabledFor(logging.DEBUG),
+        )
+        return e.to_response()
     except Exception as e:
         msg = f"Error invoking integration for API Gateway ID '{invocation_context.api_id}': {e}"
         LOG.exception(msg)
@@ -314,6 +329,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
     integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
     integration_type = integration_type_orig.upper()
+    integration_method = integration.get("httpMethod")
     uri = integration.get("uri") or integration.get("integrationUri") or ""
 
     try:
@@ -344,7 +360,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
         if "s3:path/" in uri or "s3:action/" in uri:
             return S3Integration().invoke(invocation_context)
 
-        if method == "POST" and ":sqs:path" in uri:
+        if integration_method == "POST" and ":sqs:path" in uri:
             return SQSIntegration().invoke(invocation_context)
 
         if method == "POST" and ":sns:path" in uri:

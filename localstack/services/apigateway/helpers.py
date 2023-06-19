@@ -118,6 +118,25 @@ def get_apigateway_store(account_id: str = None, region: str = None) -> ApiGatew
     return apigateway_stores[account_id or get_aws_account_id()][region or aws_stack.get_region()]
 
 
+class ApiGatewayIntegrationError(Exception):
+    """
+    Base class for all ApiGateway Integration errors.
+    Can be used as is or extended for common error types.
+    These exceptions should be handled in one place, and bubble up from all others.
+    """
+
+    message: str
+    status_code: int
+
+    def __init__(self, message: str, status_code: int):
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+
+    def to_response(self):
+        return requests_response({"message": self.message}, status_code=self.status_code)
+
+
 class OpenAPISpecificationResolver:
     def __init__(self, document: dict, rest_api_id: str, allow_recursive=True):
         self.document = document
@@ -435,6 +454,40 @@ def make_error_response(message, code=400, error_type=None):
         error_type = "NotFoundException"
     error_type = error_type or "InvalidRequest"
     return requests_error_response_json(message, code=code, error_type=error_type)
+
+
+def select_integration_response(matched_part: str, invocation_context: ApiInvocationContext):
+    int_responses = invocation_context.integration.get("integrationResponses") or {}
+    select_by_pattern = [
+        response
+        for response in int_responses.values()
+        if response.get("selectionPattern")
+        and re.match(response.get("selectionPattern"), matched_part)
+    ]
+    if select_by_pattern:
+        selected_response = select_by_pattern[0]
+        if len(select_by_pattern) > 1:
+            LOG.warning(
+                "Multiple integration responses matching '%s' statuscode. Choosing '%s' (first).",
+                matched_part,
+                selected_response["statusCode"],
+            )
+        return selected_response
+    else:
+        # choose default return code
+        default_responses = [
+            response for response in int_responses.values() if not response.get("selectionPattern")
+        ]
+        if not default_responses:
+            raise ApiGatewayIntegrationError("Internal server error", 500)
+
+        selected_response = default_responses[0]
+        if len(default_responses) > 1:
+            LOG.warning(
+                "Multiple default integration responses. Choosing %s (first).",
+                selected_response["statusCode"],
+            )
+        return selected_response
 
 
 def make_accepted_response():
