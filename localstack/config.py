@@ -1034,6 +1034,9 @@ MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER
 # Whether to return and parse access key ids starting with an "A", like on AWS
 PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 
+# Whether to ignore AWS credentials that are configured in the environment
+IGNORE_PRODUCTION_AWS_CREDENTIALS = is_env_true("IGNORE_PRODUCTION_AWS_CREDENTIALS")
+
 # Show exceptions for CloudFormation deploy errors
 CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
 
@@ -1087,6 +1090,7 @@ CONFIG_ENV_VARS = [
     "HOSTNAME",
     "HOSTNAME_EXTERNAL",
     "HOSTNAME_FROM_LAMBDA",
+    "IGNORE_PRODUCTION_AWS_CREDENTIALS",
     "KINESIS_ERROR_PROBABILITY",
     "KINESIS_INITIALIZE_STREAMS",
     "KINESIS_MOCK_PERSIST_INTERVAL",
