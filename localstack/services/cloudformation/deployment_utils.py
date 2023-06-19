@@ -20,8 +20,8 @@ LOG = logging.getLogger(__name__)
 
 
 def dump_json_params(param_func=None, *param_names):
-    def replace(params, *args, **kwargs):
-        result = param_func(params, **kwargs) if param_func else params
+    def replace(params, logical_resource_id, *args, **kwargs):
+        result = param_func(params, logical_resource_id, *args, **kwargs) if param_func else params
         for name in param_names:
             if isinstance(result.get(name), (dict, list)):
                 # Fix for https://github.com/localstack/localstack/issues/2022
@@ -35,7 +35,7 @@ def dump_json_params(param_func=None, *param_names):
 
 def param_defaults(param_func, defaults):
     def replace(properties: dict, logical_resource_id: str, *args, **kwargs):
-        result = param_func(properties, **kwargs)
+        result = param_func(properties, logical_resource_id, *args, **kwargs)
         for key, value in defaults.items():
             if result.get(key) in ["", None]:
                 result[key] = value
@@ -62,7 +62,7 @@ def remove_none_values(params):
 
 
 def params_list_to_dict(param_name, key_attr_name="Key", value_attr_name="Value"):
-    def do_replace(params, **kwargs):
+    def do_replace(params, logical_resource_id, *args, **kwargs):
         result = {}
         for entry in params.get(param_name, []):
             key = entry[key_attr_name]
@@ -74,7 +74,7 @@ def params_list_to_dict(param_name, key_attr_name="Key", value_attr_name="Value"
 
 
 def lambda_keys_to_lower(key=None, skip_children_of: List[str] = None):
-    return lambda params, **kwargs: common.keys_to_lower(
+    return lambda params, logical_resource_id, *args, **kwargs: common.keys_to_lower(
         obj=(params.get(key) if key else params), skip_children_of=skip_children_of
     )
 
@@ -90,7 +90,7 @@ def str_or_none(o):
 
 
 def params_dict_to_list(param_name, key_attr_name="Key", value_attr_name="Value", wrapper=None):
-    def do_replace(params, **kwargs):
+    def do_replace(params, logical_resource_id, *args, **kwargs):
         result = []
         for key, value in params.get(param_name, {}).items():
             result.append({key_attr_name: key, value_attr_name: value})
@@ -102,7 +102,7 @@ def params_dict_to_list(param_name, key_attr_name="Key", value_attr_name="Value"
 
 
 def params_select_attributes(*attrs):
-    def do_select(params, **kwargs):
+    def do_select(params, logical_resource_id, *args, **kwargs):
         result = {}
         for attr in attrs:
             if params.get(attr) is not None:
@@ -113,7 +113,7 @@ def params_select_attributes(*attrs):
 
 
 def param_json_to_str(name):
-    def _convert(params, **kwargs):
+    def _convert(params, logical_resource_id, *args, **kwargs):
         result = params.get(name)
         if result:
             result = json.dumps(result)
@@ -128,7 +128,9 @@ def lambda_select_params(*selected):
 
 
 def select_parameters(*param_names):
-    return lambda params, *args, **kwargs: select_attributes(params, param_names)
+    return lambda properties, logical_resource_id, *args, **kwargs: select_attributes(
+        properties, param_names
+    )
 
 
 def is_none_or_empty_value(value):

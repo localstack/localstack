@@ -302,7 +302,7 @@ class LambdaPermission(GenericBaseModel):
             properties: dict, logical_resource_id: str, resource: dict, stack_name: str
         ) -> dict:
             result = select_parameters("FunctionName", "Action", "Principal", "SourceArn")(
-                properties
+                properties, logical_resource_id, resource, stack_name
             )
             # generate SID
             # e.g. stack-78d0ac66-fnAllowInvokeLambdaPermissionsStacktopicF723B1A748672DB5-1D7VMEAZ2UQIN

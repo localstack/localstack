@@ -116,7 +116,9 @@ class EventsRule(GenericBaseModel):
                 "Name",
                 "EventBusName",
             ]
-            result = select_parameters(*attrs)(properties)
+            result = select_parameters(*attrs)(
+                properties, logical_resource_id, resource, stack_name
+            )
 
             # TODO: remove this when refactoring events (prefix etc. was excluded here already to avoid most of the wrong behavior)
             def wrap_in_lists(o, **kwargs):
