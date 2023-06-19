@@ -173,11 +173,9 @@ class ResourceProviderExecutor:
         *,
         stack_name: str,
         stack_id: str,
-        generic_base_models: dict[str, Type[GenericBaseModel]],
     ):
         self.stack_name = stack_name
         self.stack_id = stack_id
-        self.generic_base_models = generic_base_models
 
     def deploy_loop(
         self, raw_payload: ResourceProviderPayload, max_iterations: int = 30, sleep_time: float = 5
@@ -230,12 +228,7 @@ class ResourceProviderExecutor:
             plugin = plugin_manager.load(resource_type)
             return plugin.factory()
         except Exception as e:
-            # TODO: work out the specific exception type
-            if resource_type not in self.generic_base_models:
-                raise e
-
-            resource_provider_cls = self.generic_base_models[resource_type]
-            return LegacyResourceProvider(resource_provider_cls)
+            raise NoResourceProvider from e
 
 
 plugin_manager = PluginManager(CloudFormationResourceProviderPlugin.namespace)

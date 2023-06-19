@@ -1669,7 +1669,6 @@ class TemplateDeployer:
         executor = ResourceProviderExecutor(
             stack_name=stack.stack_name,
             stack_id=stack.stack_id,
-            generic_base_models=RESOURCE_MODELS,
         )
         creds: Credentials = {
             "accessKeyId": "test",
