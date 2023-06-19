@@ -224,21 +224,12 @@ def apply_response_parameters(invocation_context: ApiInvocationContext):
         LOG.warning("AWS_PROXY integration type should not apply response parameters")
         return response
 
-    entries = list(int_responses.keys())
     return_code = str(response.status_code)
     # Selecting the right integration response
-    # FIXME is this check valid? It should map to the default one or based on the selectionPattern
-    # Not sure if it gets mapped automatically to a method response if it matches the statusCode by chance
-    LOG.debug(
-        "Found multiple integration response status codes: %s, choosing by selection pattern",
-        entries,
-    )
     selected_integration_response = select_integration_response(return_code, invocation_context)
     # set status code of integration response
     response.status_code = selected_integration_response["statusCode"]
-    response_params = int_responses[selected_integration_response["statusCode"]].get(
-        "responseParameters", {}
-    )
+    response_params = selected_integration_response.get("responseParameters") or {}
     for key, value in response_params.items():
         # TODO: add support for method.response.body, etc ...
         if str(key).lower().startswith("method.response.header."):

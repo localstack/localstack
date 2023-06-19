@@ -71,7 +71,6 @@ def status_code_http_server(httpserver: HTTPServer):
         }
         status_code = request.url.rpartition("/")[2]
         response_body = json.dumps(result)
-        print(result)
         return Response(response_body, status=int(status_code))
 
     httpserver.expect_request("").respond_with_handler(_echo)
