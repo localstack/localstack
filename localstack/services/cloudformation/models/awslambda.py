@@ -63,7 +63,13 @@ class LambdaFunction(GenericBaseModel):
                 LOG.debug(
                     'Updating code for Lambda "%s" from location: %s', props["FunctionName"], code
                 )
-            code = LambdaFunction.get_lambda_code_param(props, _include_arch=True)
+            code = LambdaFunction.get_lambda_code_param(
+                props,
+                new_resource["LogicalResourceId"],
+                new_resource,
+                stack_name,
+                _include_arch=True,
+            )
             client.update_function_code(FunctionName=props["FunctionName"], **code)
         if "Environment" in update_config_props:
             environment_variables = update_config_props["Environment"].get("Variables", {})
