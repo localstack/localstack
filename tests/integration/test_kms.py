@@ -1307,3 +1307,31 @@ class TestKMSGenerateKeys:
         with pytest.raises(ClientError) as e:
             aws_client.kms.decrypt(CiphertextBlob=result["CiphertextBlob"], KeyId=key_id)
         snapshot.match("decrypt-without-encryption-context", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..message"])
+    def test_encryption_context_generate_data_key_pair(self, kms_key, aws_client, snapshot):
+        encryption_context = {"context-key": "context-value"}
+        key_id = kms_key["KeyId"]
+        result = aws_client.kms.generate_data_key_pair(
+            KeyId=key_id, KeyPairSpec="RSA_2048", EncryptionContext=encryption_context
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(CiphertextBlob=result["PrivateKeyCiphertextBlob"], KeyId=key_id)
+        snapshot.match("decrypt-without-encryption-context", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..message"])
+    def test_encryption_context_generate_data_key_pair_without_plaintext(
+        self, kms_key, aws_client, snapshot
+    ):
+        encryption_context = {"context-key": "context-value"}
+        key_id = kms_key["KeyId"]
+        result = aws_client.kms.generate_data_key_pair_without_plaintext(
+            KeyId=key_id, KeyPairSpec="RSA_2048", EncryptionContext=encryption_context
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(CiphertextBlob=result["PrivateKeyCiphertextBlob"], KeyId=key_id)
+        snapshot.match("decrypt-without-encryption-context", e.value.response)
