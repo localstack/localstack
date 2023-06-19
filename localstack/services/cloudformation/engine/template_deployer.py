@@ -92,11 +92,16 @@ ParamsFuncSignature = Callable[[dict, str, dict, str], dict]
 # - resource_id
 ParamsFuncSignatureLegacy = Callable[[dict, str, dict[str, dict], str], dict]
 
+# either a dictionary of strings to
+# - strings, or
+# - instances of the parameter function (current or legacy)
+ParamsDefinition = dict[str, str | ParamsFuncSignature | ParamsFuncSignatureLegacy]
+
 
 class FuncDetailsValue(TypedDict):
     function: str | FunctionFuncSignature | FunctionFuncSignatureLegacy
     """Either an api method to call directly with `parameters` or a callable to directly invoke"""
-    parameters: Optional[ResourceDefinition | ParamsFuncSignature | ParamsFuncSignatureLegacy]
+    parameters: Optional[ParamsDefinition | ParamsFuncSignature | ParamsFuncSignatureLegacy]
     """arguments to the function, or a function that generates the arguments to the function"""
     # Callable here takes the arguments
     # - result
