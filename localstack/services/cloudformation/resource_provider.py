@@ -357,6 +357,15 @@ class LegacyResourceProvider(ResourceProvider):
         self.all_resources = resources
 
     def create(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
+        return self.create_or_delete(request)
+
+    def update(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
+        raise NotImplementedError
+
+    def delete(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
+        return self.create_or_delete(request)
+
+    def create_or_delete(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
         resource_provider = self.resource_provider_cls(
             # TODO: other top level keys
             resource_json={"Type": self.resource_type, "Properties": request.desired_state},
@@ -435,16 +444,7 @@ class LegacyResourceProvider(ResourceProvider):
                     result, request.logical_resource_id, self.all_resources, self.resource_type
                 )
 
-        resource_provider.fetch_and_update_state(
-            stack_name=request.stack_name, resources=self.all_resources
-        )
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=resource_provider.props)
-
-    def update(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
-        raise NotImplementedError
-
-    def delete(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
-        raise NotImplementedError
 
 
 class NoResourceProvider(Exception):
