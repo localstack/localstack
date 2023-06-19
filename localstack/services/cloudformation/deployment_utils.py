@@ -81,7 +81,8 @@ def lambda_keys_to_lower(key=None, skip_children_of: List[str] = None):
 
 def merge_parameters(func1, func2):
     return lambda properties, logical_resource_id, *args, **kwargs: common.merge_dicts(
-        func1(properties, **kwargs), func2(properties, **kwargs)
+        func1(properties, logical_resource_id, *args, **kwargs),
+        func2(properties, logical_resource_id, *args, **kwargs),
     )
 
 
