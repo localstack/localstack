@@ -29,11 +29,17 @@ from localstack.services.cloudformation.engine.entities import (
     Stack,
     StackChangeSet,
 )
+from localstack.services.cloudformation.engine.types import (
+    DeployTemplates,
+    FuncDetails,
+    FuncDetailsValue,
+    ResourceDefinition,
+)
 from localstack.services.cloudformation.resource_provider import (
     Credentials,
-    NoResourceProvider,
     ResourceProviderExecutor,
     ResourceProviderPayload,
+    check_not_found_exception,
 )
 from localstack.services.cloudformation.service_models import (
     KEY_RESOURCE_STATE,
@@ -68,74 +74,6 @@ STATIC_REFS = ["AWS::Region", "AWS::Partition", "AWS::StackName", "AWS::AccountI
 RESOURCE_MODELS: dict[str, Type[GenericBaseModel]] = {
     model.cloudformation_type(): model for model in get_all_subclasses(GenericBaseModel)
 }
-
-# ---------------------
-# TYPES
-# ---------------------
-
-# Callable here takes the arguments:
-# - resource_props
-# - stack_name
-# - resources
-# - resource_id
-ResourceProp = str | Callable[[dict, str, dict, str], dict]
-ResourceDefinition = dict[str, ResourceProp]
-
-# - logical_resource_id
-# - resource
-# - stack_name
-FunctionFuncSignature = Callable[[str, dict, str], Any]
-# - resource_id
-# - resources
-# - resource_type
-# - func
-# - stack_name
-FunctionFuncSignatureLegacy = Callable[[str, dict[str, dict], str, Any, str], Any]
-
-# - resource_props
-# - logical_resource_id
-# - resource
-# - stack_name
-ParamsFuncSignature = Callable[[dict, str, dict, str], dict]
-# - resource_props
-# - stack_name
-# - resources
-# - resource_id
-ParamsFuncSignatureLegacy = Callable[[dict, str, dict[str, dict], str], dict]
-
-# either a dictionary of strings to
-# - strings, or
-# - instances of the parameter function (current or legacy)
-ParamsDefinition = dict[str, str | ParamsFuncSignature | ParamsFuncSignatureLegacy]
-
-# - result
-# - logical_resource_id
-# - resource
-ResultHandlerSignature = Callable[[dict, str, dict], None]
-
-# - result
-# - resource_id
-# - resources
-# - resource_type
-ResultHandlerSignatureLegacy = Callable[[dict, str, dict, str], None]
-
-
-class FuncDetailsValue(TypedDict):
-    function: str | FunctionFuncSignature | FunctionFuncSignatureLegacy
-    """Either an api method to call directly with `parameters` or a callable to directly invoke"""
-    parameters: Optional[ParamsDefinition | ParamsFuncSignature | ParamsFuncSignatureLegacy]
-    """arguments to the function, or a function that generates the arguments to the function"""
-    result_handler: Optional[ResultHandlerSignature | ResultHandlerSignatureLegacy]
-    """Take the result of the operation and patch the state of the resources, yuck..."""
-    types: Optional[dict[str, Callable]]
-    """Possible type conversions"""
-
-
-# Type definition for func_details supplied to invoke_function
-FuncDetails = list[FuncDetailsValue] | FuncDetailsValue
-
-# Type definition returned by GenericBaseModel.get_deploy_templates
-DeployTemplates = dict[str, FuncDetails]
 
 
 class NoStackUpdates(Exception):
@@ -243,35 +181,6 @@ def retrieve_resource_details(
         check_not_found_exception(e, resource_type, resource, resource_status)
 
     return None
-
-
-def check_not_found_exception(e, resource_type, resource, resource_status=None):
-    # we expect this to be a "not found" exception
-    markers = [
-        "NoSuchBucket",
-        "ResourceNotFound",
-        "NoSuchEntity",
-        "NotFoundException",
-        "404",
-        "not found",
-        "not exist",
-    ]
-
-    markers_hit = [m for m in markers if m in str(e)]
-    if not markers_hit:
-        LOG.warning(
-            "Unexpected error processing resource type %s: Exception: %s - %s - status: %s",
-            resource_type,
-            str(e),
-            resource,
-            resource_status,
-        )
-        if config.CFN_VERBOSE_ERRORS:
-            raise e
-        else:
-            return False
-
-    return True
 
 
 # TODO(srw): this becomes a property lookup
@@ -1659,7 +1568,6 @@ class TemplateDeployer:
         resource_id = change_details["LogicalResourceId"]
         resources = stack.resources
         resource = resources[resource_id]
-        is_deployed = change_details.pop("_deployed", None)
 
         # TODO: this should not be needed as resources are filtered out if the
         # condition evaluates to False.
@@ -1669,6 +1577,9 @@ class TemplateDeployer:
         executor = ResourceProviderExecutor(
             stack_name=stack.stack_name,
             stack_id=stack.stack_id,
+            # FIXME: ugly
+            resources=resources,
+            legacy_base_models=RESOURCE_MODELS,
         )
         creds: Credentials = {
             "accessKeyId": "test",
@@ -1698,18 +1609,8 @@ class TemplateDeployer:
                 "previousStackTags": {},
             },
         }
-        try:
-            # TODO: verify event
-            executor.deploy_loop(resource_provider_payload)
-        except NoResourceProvider:
-            # fall back to legacy path
-            # execute resource action
-            if action == "Add" or is_deployed is False:
-                execute_resource_action(resource_id, self.stack_name, self.resources, ACTION_CREATE)
-            elif action == "Remove":
-                execute_resource_action(resource_id, self.stack_name, self.resources, ACTION_DELETE)
-            elif action == "Modify":
-                update_resource(resource_id, stack.resources, stack.stack_name)
+        # TODO: verify event
+        executor.deploy_loop(resource_provider_payload)
 
         # update resource status and physical resource id
         stack_action = get_action_name_for_resource_change(action)
