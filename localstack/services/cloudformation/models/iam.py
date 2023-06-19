@@ -59,10 +59,8 @@ class IAMManagedPolicy(GenericBaseModel):
                 iam.attach_group_policy(GroupName=group, PolicyArn=policy_arn)
             return policy
 
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resources[resource_id]["PhysicalResourceId"] = result["Policy"]["Arn"]
+        def _set_physical_resource_id(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["Policy"]["Arn"]
 
         return {"create": {"function": _create, "result_handler": _set_physical_resource_id}}
 
@@ -363,10 +361,8 @@ class IAMRole(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resources[resource_id]["PhysicalResourceId"] = result["Role"]["RoleName"]
+        def _set_physical_resource_id(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["Role"]["RoleName"]
 
         return {
             "create": [
