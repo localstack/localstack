@@ -160,9 +160,13 @@ class SSMMaintenanceWindowTarget(GenericBaseModel):
         return "AWS::SSM::MaintenanceWindowTarget"
 
     def fetch_state(self, stack_name, resources):
-        return aws_stack.connect_to_service("ssm").describe_maintenance_window_target(
+        targets = aws_stack.connect_to_service("ssm").describe_maintenance_window_targets(
             WindowTargetId=self.props.get("WindowTargetId")
-        )["WindowTargetId"]
+        )["Targets"]
+        targets = [
+            target for target in targets if target["WindowTargetId"] == self.physical_resource_id
+        ]
+        return targets[0] if targets else None
 
     @staticmethod
     def get_deploy_templates():

@@ -1,0 +1,43 @@
+Resources:
+  MaintenanceWindow:
+    Type: 'AWS::SSM::MaintenanceWindow'
+    Properties:
+      AllowUnassociatedTargets: true
+      Cutoff: 2
+      Duration: 4
+      Name: MyMaintenanceWindow
+      Schedule: cron(0 0 ? * SUN *)
+      ScheduleTimezone: UTC
+      Description: My maintenance window
+
+  MaintenanceWindowTask:
+    Type: 'AWS::SSM::MaintenanceWindowTask'
+    Properties:
+      MaxConcurrency: '1'
+      MaxErrors: '1'
+      Priority: '1'
+      ServiceRoleArn: arn:aws:iam::123456789012:role/SSMMaintenanceTaskRole
+      Targets:
+        - Key: WindowTargetIds
+          Values:
+            - !Ref MaintenanceWindow
+      TaskArn: 'AWS-RunShellScript'
+      TaskInvocationParameters:
+        MaintenanceWindowRunCommandParameters:
+          TimeoutSeconds: 600
+          Comment: My maintenance window task
+          Parameters:
+            commands:
+              - echo "Hello, World!"
+
+  MaintenanceWindowTarget:
+    Type: 'AWS::SSM::MaintenanceWindowTarget'
+    Properties:
+      Description: My maintenance window target
+      Name: MyMaintenanceWindowTarget
+      ResourceType: 'INSTANCE'
+      Targets:
+        - Key: WindowTargetIds
+          Values:
+            - !Ref MaintenanceWindow
+      WindowId: !Ref MaintenanceWindow

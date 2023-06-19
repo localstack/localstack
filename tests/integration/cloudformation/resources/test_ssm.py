@@ -133,3 +133,17 @@ def test_deploy_patch_baseline(deploy_cfn_template, aws_client, snapshot):
     )["StackResourceDetail"]
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.match("PatchBaseline", describe_resource)
+
+
+def test_maintenance_window(deploy_cfn_template, aws_client, snapshot):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/ssm_maintenance_window.yml"
+        ),
+    )
+
+    describe_resource = aws_client.cloudformation.describe_stack_resources(
+        StackName=stack.stack_name
+    )["StackResources"]
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.match("MaintenanceWindow", describe_resource)
