@@ -14,23 +14,14 @@ def rename_params(func, rename_map):
     return do_rename
 
 
-def lambda_add_tags(func):
-    return lambda params, **kwargs: add_tags(func(params, **kwargs))
-
-
 def lambda_convert_types(func, types):
-    return lambda params, **kwargs: convert_types(func(params, **kwargs), types)
+    return lambda params, logical_resource_id, *args, **kwargs: convert_types(
+        func(params, *args, **kwargs), types
+    )
 
 
 def lambda_to_json(attr):
-    return lambda params, **kwargs: json.dumps(params[attr])
-
-
-def add_tags(obj, tags=[]):
-    tags = tags or []
-    obj["tags"] = obj.get("tags") or []
-    obj["tags"].extend(tags)
-    return obj
+    return lambda params, logical_resource_id, *args, **kwargs: json.dumps(params[attr])
 
 
 def lambda_rename_attributes(attrs, func=None):
@@ -42,8 +33,10 @@ def lambda_rename_attributes(attrs, func=None):
                         o[attrs[k]] = o.pop(k)
         return o
 
-    func = func or (lambda x, **kwargs: x)
-    return lambda params, **kwargs: recurse_object(func(params, **kwargs), recurse)
+    func = func or (lambda x, logical_resource_id, *args, **kwargs: x)
+    return lambda params, logical_resource_id, *args, **kwargs: recurse_object(
+        func(params, logical_resource_id, *args, **kwargs), recurse
+    )
 
 
 def convert_types(obj, types):
