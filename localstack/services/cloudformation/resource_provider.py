@@ -230,7 +230,7 @@ def invoke_function(
 
             result = function(**converted_params)
     except Exception as e:
-        if action_name == "delete" and check_not_found_exception(e, resource_type, resource):
+        if action_name == "Remove" and check_not_found_exception(e, resource_type, resource):
             return
         log_method = getattr(LOG, "warning")
         if config.CFN_VERBOSE_ERRORS:
