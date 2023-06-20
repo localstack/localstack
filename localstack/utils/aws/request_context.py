@@ -84,10 +84,11 @@ def extract_region_from_headers(headers):
 
 
 def get_request_context():
-    candidates = [get_proxy_request_for_thread(), get_flask_request_for_thread()]
+    candidates = [get_proxy_request_for_thread, get_flask_request_for_thread]
     for req in candidates:
-        if req is not None:
-            return req
+        context = req()
+        if context is not None:
+            return context
 
 
 class RequestContextManager:
