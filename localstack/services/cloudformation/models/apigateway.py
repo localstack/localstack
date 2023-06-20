@@ -119,9 +119,8 @@ class GatewayRestAPI(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _api_id(params, resources, resource_id, **kwargs):
-            resource = cls(resources[resource_id])
-            return resource.physical_resource_id
+        def _api_id(properties: dict, logical_resource_id: str, resource: dict, stack_name: str):
+            return resource["PhysicalResourceId"]
 
         def _create(logical_resource_id: str, resource: dict, stack_name: str):
             client = connect_to().apigateway
@@ -288,11 +287,13 @@ class GatewayResource(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def get_apigw_resource_params(params, **kwargs):
+        def get_apigw_resource_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             result = {
-                "restApiId": params.get("RestApiId"),
-                "pathPart": params.get("PathPart"),
-                "parentId": params.get("ParentId"),
+                "restApiId": properties.get("RestApiId"),
+                "pathPart": properties.get("PathPart"),
+                "parentId": properties.get("ParentId"),
             }
             if not result.get("parentId"):
                 # get root resource id
@@ -382,8 +383,10 @@ class GatewayMethod(GenericBaseModel):
         https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-apitgateway-method-integration-integrationresponse.html
         """
 
-        def get_params(resource_props, stack_name, resources, resource_id):
-            result = keys_to_lower(resource_props)
+        def get_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
+            result = keys_to_lower(properties)
             param_names = [
                 "restApiId",
                 "resourceId",
@@ -500,10 +503,11 @@ class GatewayStage(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def get_params(resource_props, stack_name, resources, resource_id):
-            stage_name = resource_props.get("StageName", "default")
-            resources[resource_id]["Properties"]["StageName"] = stage_name
-            result = keys_to_lower(resource_props)
+        def get_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
+            stage_name = properties.get("StageName", "default")
+            result = keys_to_lower(properties)
             param_names = [
                 "restApiId",
                 "deploymentId",
@@ -523,6 +527,7 @@ class GatewayStage(GenericBaseModel):
 
         def _handle_result(result, resource_id, resources, resource_type):
             resources[resource_id]["PhysicalResourceId"] = result["stageName"]
+            resources[resource_id]["Properties"]["StageName"] = result["stageName"]
 
         return {
             "create": {

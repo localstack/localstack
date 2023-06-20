@@ -7,12 +7,14 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 
 
-def get_ddb_provisioned_throughput(params, **kwargs):
+def get_ddb_provisioned_throughput(
+    properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+) -> dict | None:
     # see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html#cfn-dynamodb-table-provisionedthroughput
-    args = params.get("ProvisionedThroughput")
+    args = properties.get("ProvisionedThroughput")
     if args == PLACEHOLDER_AWS_NO_VALUE:
         return None
-    is_ondemand = params.get("BillingMode") == "PAY_PER_REQUEST"
+    is_ondemand = properties.get("BillingMode") == "PAY_PER_REQUEST"
     # if the BillingMode is set to PAY_PER_REQUEST, you cannot specify ProvisionedThroughput
     # if the BillingMode is set to PROVISIONED (default), you have to specify ProvisionedThroughput
 
@@ -35,9 +37,11 @@ def get_ddb_provisioned_throughput(params, **kwargs):
     return args
 
 
-def get_ddb_global_sec_indexes(params: dict, **kwargs) -> list | None:
-    args: list = params.get("GlobalSecondaryIndexes")
-    is_ondemand = params.get("BillingMode") == "PAY_PER_REQUEST"
+def get_ddb_global_sec_indexes(
+    properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+) -> list | None:
+    args: list = properties.get("GlobalSecondaryIndexes")
+    is_ondemand = properties.get("BillingMode") == "PAY_PER_REQUEST"
     if not args:
         return
 
@@ -58,10 +62,12 @@ def get_ddb_global_sec_indexes(params: dict, **kwargs) -> list | None:
     return args
 
 
-def get_ddb_kinesis_stream_specification(params, **kwargs):
-    args = params.get("KinesisStreamSpecification")
+def get_ddb_kinesis_stream_specification(
+    properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+) -> dict:
+    args = properties.get("KinesisStreamSpecification")
     if args:
-        args["TableName"] = params["TableName"]
+        args["TableName"] = properties["TableName"]
     return args
 
 
@@ -109,9 +115,9 @@ class DynamoDBTable(GenericBaseModel):
                         "ProvisionedThroughput": get_ddb_provisioned_throughput,
                         "LocalSecondaryIndexes": "LocalSecondaryIndexes",
                         "GlobalSecondaryIndexes": get_ddb_global_sec_indexes,
-                        "StreamSpecification": lambda params, **kwargs: (
+                        "StreamSpecification": lambda properties, logical_resource_id, *args, **kwargs: (
                             common.merge_dicts(
-                                params.get("StreamSpecification"),
+                                properties.get("StreamSpecification"),
                                 {"StreamEnabled": True},
                                 default=None,
                             )

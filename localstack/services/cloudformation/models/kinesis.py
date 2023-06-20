@@ -55,8 +55,10 @@ class KinesisStream(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def get_delete_params(params, **kwargs):
-            return {"StreamName": params["Name"], "EnforceConsumerDeletion": True}
+        def get_delete_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
+            return {"StreamName": properties["Name"], "EnforceConsumerDeletion": True}
 
         def _store_arn(result, resource_id, resources, resource_type):
             client = aws_stack.connect_to_service("kinesis")
