@@ -11,6 +11,7 @@ from logging import Logger
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, Type, TypedDict, TypeVar
 
 import botocore
+from botocore.exceptions import UnknownServiceError
 from plugin import Plugin, PluginManager
 
 from localstack import config
@@ -435,7 +436,13 @@ class LegacyResourceProvider(ResourceProvider):
         # TODO: other top level keys
         resource = self.all_resources[request.logical_resource_id]
         service = get_service_name(resource)
-        client = connect_to.get_client(service)
+        try:
+            client = connect_to.get_client(service)
+        except UnknownServiceError:
+            # e.g. CDK has resources but is not a valid service
+            return ProgressEvent(
+                status=OperationStatus.SUCCESS, resource_model=resource["Properties"]
+            )
 
         for func in func_details:
             result = None
