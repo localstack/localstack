@@ -180,7 +180,10 @@ def RequestContextClient(client: T) -> T:
 
 
 def base_aws_session() -> boto3.Session:
-    return boto3.Session()
+    return boto3.Session(
+        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+    )
 
 
 def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
@@ -198,15 +201,14 @@ def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
         if not config:
             config = botocore.config.Config()
 
-        # Prevent this fixture from using the region configured in system config
+        # Prevent this fixture from using the credentials configured in system config
         config = config.merge(botocore.config.Config(region_name=TEST_AWS_REGION_NAME))
         return ExternalClientFactory(session=session, config=config)
 
 
 def primary_testing_aws_client(client_factory: ClientFactory) -> ServiceLevelClientFactory:
-    return client_factory(
-        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY
-    )
+    # Primary test credentials are already set in the boto3 session, so they're not set here again
+    return client_factory()
 
 
 def secondary_testing_aws_client(client_factory: ClientFactory) -> ServiceLevelClientFactory:
