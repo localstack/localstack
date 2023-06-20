@@ -976,9 +976,11 @@ class TemplateDeployer:
                 try:
                     # TODO: cache condition value in resource details on deployment and use cached value here
                     if evaluate_resource_condition(self.stack_name, self.resources, resource):
-                        execute_resource_action(
-                            resource_id, self.stack_name, self.resources, ACTION_DELETE
+                        executor = self.create_resource_provider_executor()
+                        resource_provider_payload = self.create_resource_provider_payload(
+                            "Remove", logical_resource_id=resource_id
                         )
+                        executor.deploy_loop(resource_provider_payload)  # noqa
                         self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
                 except Exception as e:
                     if iteration_cycle == max_cycle:
@@ -1457,22 +1459,42 @@ class TemplateDeployer:
         if not evaluate_resource_condition(stack.stack_name, resources, resource):
             return
 
-        executor = ResourceProviderExecutor(
-            stack_name=stack.stack_name,
-            stack_id=stack.stack_id,
+        executor = self.create_resource_provider_executor()
+        resource_provider_payload = self.create_resource_provider_payload(
+            action, logical_resource_id=resource_id
+        )
+
+        # TODO: verify event
+        executor.deploy_loop(resource_provider_payload)  # noqa
+
+        # TODO: update resource state with returned state from progress event
+
+        # update resource status and physical resource id
+        stack_action = get_action_name_for_resource_change(action)
+        self.update_resource_details(resource_id, stack=stack, action=stack_action)
+
+    def create_resource_provider_executor(self) -> ResourceProviderExecutor:
+        return ResourceProviderExecutor(
+            stack_name=self.stack.stack_name,
+            stack_id=self.stack.stack_id,
             # FIXME: ugly
-            resources=resources,
+            resources=self.resources,
             legacy_base_models=RESOURCE_MODELS,
         )
+
+    def create_resource_provider_payload(
+        self, action: str, logical_resource_id: str
+    ) -> ResourceProviderPayload:
         creds: Credentials = {
             "accessKeyId": "test",
             "secretAccessKey": "test",
             "sessionToken": "",
         }
+        resource = self.resources[logical_resource_id]
         resource_provider_payload: ResourceProviderPayload = {
             "awsAccountId": "000000000000",
             "callbackContext": {},
-            "stackId": stack.stack_name,
+            "stackId": self.stack.stack_name,
             "resourceType": resource["Type"],
             "resourceTypeVersion": "000000",
             # TODO: not actually a UUID
@@ -1481,7 +1503,7 @@ class TemplateDeployer:
             "region": "us-east-1",
             "action": action,
             "requestData": {
-                "logicalResourceId": resource_id,
+                "logicalResourceId": logical_resource_id,
                 "resourceProperties": resource["Properties"],
                 "previousResourceProperties": None,
                 "callerCredentials": creds,
@@ -1492,14 +1514,7 @@ class TemplateDeployer:
                 "previousStackTags": {},
             },
         }
-        # TODO: verify event
-        executor.deploy_loop(resource_provider_payload)  # noqa
-
-        # TODO: update resource state with returned state from progress event
-
-        # update resource status and physical resource id
-        stack_action = get_action_name_for_resource_change(action)
-        self.update_resource_details(resource_id, stack=stack, action=stack_action)
+        return resource_provider_payload
 
 
 # FIXME: resolve_refs_recursively should not be needed, the resources themselves should have those values available already
