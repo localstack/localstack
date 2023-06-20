@@ -270,20 +270,26 @@ def resolve_resource_parameters(
     resource_id: str,
     func_details: FuncDetailsValue,
 ) -> dict | None:
-    params = func_details.get("parameters") or (lambda params, **kwargs: params)
+    params = func_details.get("parameters") or (
+        lambda properties, logical_resource_id, *args, **kwargs: properties
+    )
     resource_props = resource_definition["Properties"] = resource_definition.get("Properties", {})
     resource_props = dict(resource_props)
     resource_state = resource_definition.get(KEY_RESOURCE_STATE, {})
 
     if callable(params):
         # resolve parameter map via custom function
-        # TODO(srw): 1 - callable for resolving params
-        params = params(
-            resource_props,
-            stack_name=stack_name,
-            resources=resources,
-            resource_id=resource_id,
-        )
+        sig = inspect.signature(params)
+        if "logical_resource_id" in sig.parameters:
+            params = params(resource_props, resource_id, resource_definition, stack_name)
+        else:
+            raise NotImplementedError(func_details)
+            params = params(
+                resource_props,
+                stack_name=stack_name,
+                resources=resources,
+                resource_id=resource_id,
+            )
     else:
         # it could be a list like ['param1', 'param2', {'apiCallParamName': 'cfResourcePropName'}]
         if isinstance(params, list):
@@ -303,13 +309,22 @@ def resolve_resource_parameters(
                 prop_keys = [prop_keys]
             for prop_key in prop_keys:
                 if callable(prop_key):
-                    # TODO(srw): 2 - callable for a property value
-                    prop_value = prop_key(
-                        resource_props,
-                        stack_name=stack_name,
-                        resources=resources,
-                        resource_id=resource_id,
-                    )
+                    sig = inspect.signature(prop_key)
+                    if "logical_resource_id" in sig.parameters:
+                        prop_value = prop_key(
+                            resource_props,
+                            resource_id,
+                            resource_definition,
+                            stack_name,
+                        )
+                    else:
+                        raise NotImplementedError
+                        prop_value = prop_key(
+                            resource_props,
+                            stack_name=stack_name,
+                            resources=resources,
+                            resource_id=resource_id,
+                        )
                 else:
                     prop_value = resource_props.get(
                         prop_key,

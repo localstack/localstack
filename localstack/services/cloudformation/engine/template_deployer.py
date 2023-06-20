@@ -15,34 +15,22 @@ from localstack.constants import FALSE_STRINGS
 from localstack.services.cloudformation import usage
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
-    convert_data_types,
     dump_resource_as_json,
-    fix_account_id_in_arns,
     fix_boto_parameters_based_on_report,
     get_action_name_for_resource_change,
     is_none_or_empty_value,
     log_not_available_message,
-    remove_none_values,
 )
 from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet
-from localstack.services.cloudformation.engine.entities import (
-    Stack,
-    StackChangeSet,
-)
-from localstack.services.cloudformation.engine.types import (
-    DeployTemplates,
-    FuncDetails,
-    FuncDetailsValue,
-    ResourceDefinition,
-)
+from localstack.services.cloudformation.engine.types import DeployTemplates, FuncDetails
 from localstack.services.cloudformation.resource_provider import (
     Credentials,
     ResourceProviderExecutor,
     ResourceProviderPayload,
     check_not_found_exception,
+    resolve_resource_parameters,
 )
 from localstack.services.cloudformation.service_models import (
-    KEY_RESOURCE_STATE,
     DependencyNotYetSatisfied,
     GenericBaseModel,
 )
@@ -831,93 +819,6 @@ def invoke_function(
         raise e
 
     return result
-
-
-def resolve_resource_parameters(
-    stack_name: str,
-    resource_definition: ResourceDefinition,
-    resources: dict[str, ResourceDefinition],
-    resource_id: str,
-    func_details: FuncDetailsValue,
-) -> dict | None:
-    params = func_details.get("parameters") or (
-        lambda properties, logical_resource_id, *args, **kwargs: properties
-    )
-    resource_props = resource_definition["Properties"] = resource_definition.get("Properties", {})
-    resource_props = dict(resource_props)
-    resource_state = resource_definition.get(KEY_RESOURCE_STATE, {})
-
-    if callable(params):
-        # resolve parameter map via custom function
-        sig = inspect.signature(params)
-        if "logical_resource_id" in sig.parameters:
-            params = params(resource_props, resource_id, resource_definition, stack_name)
-        else:
-            raise NotImplementedError(func_details)
-            params = params(
-                resource_props,
-                stack_name=stack_name,
-                resources=resources,
-                resource_id=resource_id,
-            )
-    else:
-        # it could be a list like ['param1', 'param2', {'apiCallParamName': 'cfResourcePropName'}]
-        if isinstance(params, list):
-            _params = {}
-            for param in params:
-                if isinstance(param, dict):
-                    _params.update(param)
-                else:
-                    _params[param] = param
-            params = _params
-
-        params = dict(params)
-        # TODO(srw): mutably mapping params :(
-        for param_key, prop_keys in dict(params).items():
-            params.pop(param_key, None)
-            if not isinstance(prop_keys, list):
-                prop_keys = [prop_keys]
-            for prop_key in prop_keys:
-                if callable(prop_key):
-                    sig = inspect.signature(prop_key)
-                    if "logical_resource_id" in sig.parameters:
-                        prop_value = prop_key(
-                            resource_props,
-                            resource_id,
-                            resource_definition,
-                            stack_name,
-                        )
-                    else:
-                        raise NotImplementedError
-                        prop_value = prop_key(
-                            resource_props,
-                            stack_name=stack_name,
-                            resources=resources,
-                            resource_id=resource_id,
-                        )
-                else:
-                    prop_value = resource_props.get(
-                        prop_key,
-                        resource_definition.get(prop_key, resource_state.get(prop_key)),
-                    )
-                if prop_value is not None:
-                    params[param_key] = prop_value
-                    break
-
-    # this is an indicator that we should skip this resource deployment, and return
-    if params is None:
-        return
-
-    # FIXME: move this to a single place after template processing is finished
-    # convert any moto account IDs (123456789012) in ARNs to our format (000000000000)
-    params = fix_account_id_in_arns(params)
-    # convert data types (e.g., boolean strings to bool)
-    # TODO: this might not be needed anymore
-    params = convert_data_types(func_details.get("types", {}), params)
-    # remove None values, as they usually raise boto3 errors
-    params = remove_none_values(params)
-
-    return params
 
 
 # TODO: this shouldn't be called for stack parameters
