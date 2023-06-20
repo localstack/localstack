@@ -418,7 +418,13 @@ class LegacyResourceProvider(ResourceProvider):
     def create_or_delete(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
         resource_provider = self.resource_provider_cls(
             # TODO: other top level keys
-            resource_json={"Type": self.resource_type, "Properties": request.desired_state},
+            resource_json={
+                "Type": self.resource_type,
+                "Properties": request.desired_state,
+                "PhysicalResourceId": self.all_resources[request.logical_resource_id].get(
+                    "PhysicalResourceId"
+                ),
+            },
             region_name=request.region_name,
         )
         func_details = resource_provider.get_deploy_templates()
@@ -595,7 +601,6 @@ class ResourceProviderExecutor:
             return plugin.factory()
         except Exception as e:
             if resource_type in self.legacy_base_models:
-                # TODO: wrap with adapter class
                 return LegacyResourceProvider(resource_type, self.legacy_base_models[resource_type])
             else:
                 usage.missing_resource_types.record(resource_type)
