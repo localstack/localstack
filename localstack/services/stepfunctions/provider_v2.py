@@ -16,6 +16,7 @@ from localstack.aws.api.stepfunctions import (
     IncludeExecutionDataGetExecutionHistory,
     InvalidExecutionInput,
     InvalidName,
+    InvalidToken,
     ListExecutionsOutput,
     ListExecutionsPageToken,
     ListStateMachinesOutput,
@@ -24,6 +25,8 @@ from localstack.aws.api.stepfunctions import (
     PageSize,
     PageToken,
     ReverseOrder,
+    SendTaskFailureOutput,
+    SendTaskSuccessOutput,
     SensitiveCause,
     SensitiveData,
     SensitiveError,
@@ -35,7 +38,15 @@ from localstack.aws.api.stepfunctions import (
     StateMachineType,
     StepfunctionsApi,
     StopExecutionOutput,
+    TaskDoesNotExist,
+    TaskTimedOut,
+    TaskToken,
     TraceHeader,
+)
+from localstack.services.stepfunctions.asl.eval.callback.callback import (
+    CallbackConsumerTimeout,
+    CallbackNotifyConsumerError,
+    CallbackOutcomeSuccess,
 )
 from localstack.services.stepfunctions.backend.execution import Execution
 from localstack.services.stepfunctions.backend.state_machine import StateMachine
@@ -146,6 +157,46 @@ class StepFunctionsProvider(StepfunctionsApi):
             creationDate=sm.create_date,
             loggingConfiguration=sm.logging_config,
         )
+
+    def send_task_success(
+        self, context: RequestContext, task_token: TaskToken, output: SensitiveData
+    ) -> SendTaskSuccessOutput:
+        outcome = CallbackOutcomeSuccess(callback_id=task_token, output=output)
+        store = self.get_store(context)
+        for exec in store.executions.values():
+            try:
+                if exec.exec_worker.env.callback_pool_manager.notify(
+                    callback_id=task_token, outcome=outcome
+                ):
+                    return SendTaskSuccessOutput()
+            except CallbackNotifyConsumerError as consumer_error:
+                if isinstance(consumer_error, CallbackConsumerTimeout):
+                    raise TaskTimedOut()
+                else:
+                    raise TaskDoesNotExist()
+        raise InvalidToken()
+
+    def send_task_failure(
+        self,
+        context: RequestContext,
+        task_token: TaskToken,
+        error: SensitiveError = None,
+        cause: SensitiveCause = None,
+    ) -> SendTaskFailureOutput:
+        outcome = CallbackOutcomeSuccess(callback_id=task_token)
+        store = self.get_store(context)
+        for exec in store.executions.values():
+            try:
+                if exec.exec_worker.env.callback_pool_manager.notify(
+                    callback_id=task_token, outcome=outcome
+                ):
+                    return SendTaskFailureOutput()
+            except CallbackNotifyConsumerError as consumer_error:
+                if isinstance(consumer_error, CallbackConsumerTimeout):
+                    raise TaskTimedOut()
+                else:
+                    raise TaskDoesNotExist()
+        raise InvalidToken()
 
     def start_execution(
         self,

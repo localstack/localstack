@@ -77,10 +77,12 @@ class SecretsManagerSecret(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create_params(params, **kwargs):
+        def _create_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             attributes = ["Name", "Description", "KmsKeyId", "SecretString", "Tags"]
-            result = select_attributes(params, attributes)
-            gen_secret = params.get("GenerateSecretString")
+            result = select_attributes(properties, attributes)
+            gen_secret = properties.get("GenerateSecretString")
             if gen_secret:
                 excl_lower = gen_secret.get("ExcludeLowercase")
                 excl_upper = gen_secret.get("ExcludeUppercase")
@@ -158,11 +160,13 @@ class SecretsManagerResourcePolicy(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def create_params(params, **kwargs):
+        def create_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             return {
-                "SecretId": params["SecretId"].split(":")[-1],
-                "ResourcePolicy": json.dumps(params["ResourcePolicy"]),
-                "BlockPublicPolicy": params.get("BlockPublicPolicy"),
+                "SecretId": properties["SecretId"].split(":")[-1],
+                "ResourcePolicy": json.dumps(properties["ResourcePolicy"]),
+                "BlockPublicPolicy": properties.get("BlockPublicPolicy"),
             }
 
         def _set_physical_resource_id(

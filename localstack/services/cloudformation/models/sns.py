@@ -37,14 +37,16 @@ class SNSTopic(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create_params(params, *args, **kwargs):
+        def _create_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             attributes = {}
-            dedup = params.get("ContentBasedDeduplication")
-            display_name = params.get("DisplayName")
-            fifo_topic = params.get("FifoTopic")
-            kms_master_key = params.get("KmsMasterKeyId")
-            tags = params.get("Tags") or []
-            topic_name = params.get("TopicName")
+            dedup = properties.get("ContentBasedDeduplication")
+            display_name = properties.get("DisplayName")
+            fifo_topic = properties.get("FifoTopic")
+            kms_master_key = properties.get("KmsMasterKeyId")
+            tags = properties.get("Tags") or []
+            topic_name = properties.get("TopicName")
             if dedup is not None:
                 attributes["ContentBasedDeduplication"] = canonicalize_bool_to_str(dedup)
             if display_name:
@@ -56,9 +58,11 @@ class SNSTopic(GenericBaseModel):
             result = {"Name": topic_name, "Attributes": attributes, "Tags": tags}
             return result
 
-        def _topic_arn(params, resources, resource_id, **kwargs):
-            resource = cls(resources[resource_id])
-            return resource.physical_resource_id
+        def _topic_arn(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
+            provider = cls(resource)
+            return provider.physical_resource_id
 
         def _list_all_topics(sns_client):
             rs = sns_client.list_topics()
@@ -131,11 +135,14 @@ class SNSSubscription(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def sns_subscription_arn(params, resources, resource_id, **kwargs):
-            resource = resources[resource_id]
+        def sns_subscription_arn(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             return resource["PhysicalResourceId"]
 
-        def sns_subscription_params(params, **kwargs):
+        def sns_subscription_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             def attr_val(val):
                 return json.dumps(val) if isinstance(val, (dict, list)) else str(val)
 
@@ -145,7 +152,7 @@ class SNSSubscription(GenericBaseModel):
                 "RawMessageDelivery",
                 "RedrivePolicy",
             ]
-            result = {a: attr_val(params[a]) for a in attrs if a in params}
+            result = {a: attr_val(properties[a]) for a in attrs if a in properties}
             return result
 
         def _set_physical_resource_id(

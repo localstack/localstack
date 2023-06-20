@@ -115,7 +115,7 @@ class CommonStateField(EvalComponent, ABC):
             ),
         )
 
-        env.context_object["State"] = State(
+        env.context_object_manager.context_object["State"] = State(
             EnteredTime=datetime.datetime.now().isoformat(), Name=self.name, RetryCount=0
         )
 

@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import abc
-from typing import Final, TypedDict
+from typing import Final, Optional, TypedDict
 
 from localstack.services.stepfunctions.asl.component.component import Component
 from localstack.utils.aws import aws_stack
+
+
+class ResourceCondition(str):
+    WaitForTaskToken = "waitForTaskToken"
 
 
 class ResourceARN(TypedDict):
@@ -90,6 +94,7 @@ class ServiceResource(Resource):
     service_name: Final[str]
     api_name: Final[str]
     api_action: Final[str]
+    condition: Final[Optional[str]]
 
     def __init__(
         self,
@@ -105,4 +110,19 @@ class ServiceResource(Resource):
         )
         self.service_name = service_name
         self.api_name = api_name
-        self.api_action = resource_arn.split(":")[-1]
+
+        arn_parts = resource_arn.split(":")
+
+        # We refer to an arn's 'tail' as the formation of service action and optional callback strategy (or condition).
+        # For example in Resource "arn:aws:states:::sqs:sendMessage.waitForTaskToken" the tail is the substring
+        # 'sendMessage.waitForTaskToken'.
+        tail_part = arn_parts[-1]
+        tail_parts = tail_part.split(".")
+        self.api_action = tail_parts[0]
+        self.condition = None
+        if len(tail_parts) > 1:
+            match tail_parts[-1]:
+                case "waitForTaskToken":
+                    self.condition = ResourceCondition.WaitForTaskToken
+                case _:
+                    raise RuntimeError("Unsupported callback condition.")

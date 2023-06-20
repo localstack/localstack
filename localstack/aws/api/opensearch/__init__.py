@@ -397,6 +397,11 @@ class ScheduledBy(str):
     SYSTEM = "SYSTEM"
 
 
+class SkipUnavailableStatus(str):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
+
+
 class TLSSecurityPolicy(str):
     Policy_Min_TLS_1_0_2019_07 = "Policy-Min-TLS-1-0-2019-07"
     Policy_Min_TLS_1_2_2019_07 = "Policy-Min-TLS-1-2-2019-07"
@@ -889,8 +894,13 @@ class CompatibleVersionsMap(TypedDict, total=False):
 CompatibleVersionsList = List[CompatibleVersionsMap]
 
 
+class CrossClusterSearchConnectionProperties(TypedDict, total=False):
+    SkipUnavailable: Optional[SkipUnavailableStatus]
+
+
 class ConnectionProperties(TypedDict, total=False):
     Endpoint: Optional[Endpoint]
+    CrossClusterSearch: Optional[CrossClusterSearchConnectionProperties]
 
 
 class SoftwareUpdateOptions(TypedDict, total=False):
@@ -1027,6 +1037,7 @@ class CreateOutboundConnectionRequest(ServiceRequest):
     RemoteDomainInfo: DomainInformationContainer
     ConnectionAlias: ConnectionAlias
     ConnectionMode: Optional[ConnectionMode]
+    ConnectionProperties: Optional[ConnectionProperties]
 
 
 class OutboundConnectionStatus(TypedDict, total=False):
@@ -1961,6 +1972,7 @@ class OpensearchApi:
         remote_domain_info: DomainInformationContainer,
         connection_alias: ConnectionAlias,
         connection_mode: ConnectionMode = None,
+        connection_properties: ConnectionProperties = None,
     ) -> CreateOutboundConnectionResponse:
         raise NotImplementedError
 

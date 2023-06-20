@@ -185,6 +185,8 @@ from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
 class Preprocessor(ASLParserVisitor):
     @staticmethod
     def _inner_string_of(parse_tree: ParseTree) -> Optional[str]:
+        if Antlr4Utils.is_terminal(parse_tree, ASLLexer.NULL):
+            return None
         pt = Antlr4Utils.is_production(parse_tree) or Antlr4Utils.is_terminal(parse_tree)
         inner_str = pt.getText()
         if inner_str.startswith('"') and inner_str.endswith('"'):
@@ -237,7 +239,7 @@ class Preprocessor(ASLParserVisitor):
         return Next(name=inner_str)
 
     def visitResult_path_decl(self, ctx: ASLParser.Result_path_declContext) -> ResultPath:
-        inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
         return ResultPath(result_path_src=inner_str)
 
     def visitInput_path_decl(self, ctx: ASLParser.Input_path_declContext) -> InputPath:

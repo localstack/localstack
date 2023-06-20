@@ -6,6 +6,8 @@ from urllib.parse import urlparse
 import pytest
 import requests
 from botocore.exceptions import ClientError
+from pytest_httpserver import HTTPServer
+from werkzeug import Request, Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
@@ -14,6 +16,7 @@ from localstack.services.apigateway.helpers import path_based_url
 from localstack.services.awslambda.lambda_utils import get_main_endpoint_from_container
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest.fixtures import PUBLIC_HTTP_ECHO_SERVER_URL
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry
 from tests.integration.apigateway.apigateway_fixtures import (
@@ -51,6 +54,111 @@ def test_http_integration(create_rest_apigw, aws_client, echo_http_server):
     response = requests.get(url)
 
     assert response.status_code == 200
+
+
+@pytest.fixture
+def status_code_http_server(httpserver: HTTPServer):
+    """Spins up a local HTTP echo server and returns the endpoint URL"""
+    if is_aws_cloud():
+        return f"{PUBLIC_HTTP_ECHO_SERVER_URL}/"
+
+    def _echo(request: Request) -> Response:
+        result = {
+            "data": request.data or "{}",
+            "headers": dict(request.headers),
+            "url": request.url,
+            "method": request.method,
+        }
+        status_code = request.url.rpartition("/")[2]
+        response_body = json.dumps(result)
+        return Response(response_body, status=int(status_code))
+
+    httpserver.expect_request("").respond_with_handler(_echo)
+    http_endpoint = httpserver.url_for("/")
+    return http_endpoint
+
+
+@pytest.mark.aws_validated
+def test_http_integration_status_code_selection(
+    create_rest_apigw, aws_client, status_code_http_server
+):
+    api_id, _, root_id = create_rest_apigw(name="my_api", description="this is my api")
+
+    resource_id = aws_client.apigateway.create_resource(
+        restApiId=api_id, parentId=root_id, pathPart="{status}"
+    )["id"]
+
+    aws_client.apigateway.put_method(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        authorizationType="none",
+        requestParameters={"method.request.path.status": True},
+    )
+
+    aws_client.apigateway.put_integration(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        type="HTTP",
+        uri=f"{status_code_http_server}status/{{status}}",
+        requestParameters={"integration.request.path.status": "method.request.path.status"},
+        integrationHttpMethod="GET",
+    )
+
+    aws_client.apigateway.put_method_response(
+        restApiId=api_id, resourceId=resource_id, statusCode="200", httpMethod="GET"
+    )
+    aws_client.apigateway.put_integration_response(
+        restApiId=api_id, resourceId=resource_id, statusCode="200", httpMethod="GET"
+    )
+    # forward 4xx errors to 400, so the assertions of the test fixtures hold
+    aws_client.apigateway.put_method_response(
+        restApiId=api_id, resourceId=resource_id, statusCode="400", httpMethod="GET"
+    )
+    aws_client.apigateway.put_integration_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        statusCode="400",
+        httpMethod="GET",
+        selectionPattern=r"4\d{2}",
+    )
+
+    stage_name = "test"
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+    invocation_url = api_invoke_url(
+        api_id=api_id,
+        stage=stage_name,
+        path="/",
+    )
+
+    def invoke_api(url, requested_response_code: int, expected_response_code: int):
+        apigw_response = requests.get(
+            f"{url}{requested_response_code}",
+            headers={"User-Agent": "python-requests/testing"},
+            verify=False,
+        )
+        assert expected_response_code == apigw_response.status_code
+        return apigw_response
+
+    # retry is necessary against AWS
+    retry(
+        invoke_api,
+        sleep=2,
+        retries=10,
+        url=invocation_url,
+        expected_response_code=400,
+        requested_response_code=404,
+    )
+    retry(
+        invoke_api,
+        sleep=2,
+        retries=10,
+        url=invocation_url,
+        expected_response_code=200,
+        requested_response_code=201,
+    )
 
 
 @pytest.mark.aws_validated
