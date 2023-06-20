@@ -3808,9 +3808,11 @@ class TestSqsQueryApi:
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
         queue_name = f"test-queue-{short_uid()}"
+        region1 = "us-west-1"
+        region2 = "eu-north-1"
 
-        sqs_region1 = create_boto_client("sqs", "us-east-1")
-        sqs_region2 = create_boto_client("sqs", "eu-west-1")
+        sqs_region1 = create_boto_client("sqs", region1)
+        sqs_region2 = create_boto_client("sqs", region2)
 
         queue_region1 = sqs_region1.create_queue(QueueName=queue_name)["QueueUrl"]
         cleanups.append(lambda: sqs_region1.delete_queue(QueueUrl=queue_region1))
@@ -3821,11 +3823,11 @@ class TestSqsQueryApi:
             assert queue_region1 == queue_region2
         else:
             assert queue_region1 != queue_region2
-            assert "eu-west-1" in queue_region2
+            assert region2 in queue_region2
             # us-east-1 is the default region, so it's not necessarily part of the queue URL
 
-        client_region1 = aws_http_client_factory("sqs", "us-east-1")
-        client_region2 = aws_http_client_factory("sqs", "eu-west-1")
+        client_region1 = aws_http_client_factory("sqs", region1)
+        client_region2 = aws_http_client_factory("sqs", region2)
 
         response = client_region1.get(
             queue_region1, params={"Action": "SendMessage", "MessageBody": "foobar"}
