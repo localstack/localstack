@@ -25,17 +25,13 @@ class SSMParameterProperties(TypedDict):
     Tier: Optional[str]
 
 
-class SSMParameterAllProperties(SSMParameterProperties):
-    physical_resource_id: Optional[str]
-
-
-class SSMParameterProvider(ResourceProvider[SSMParameterAllProperties]):
+class SSMParameterProvider(ResourceProvider[SSMParameterProperties]):
     TYPE = "AWS::SSM::Parameter"
 
     def create(
         self,
-        request: ResourceRequest[SSMParameterAllProperties],
-    ) -> ProgressEvent[SSMParameterAllProperties]:
+        request: ResourceRequest[SSMParameterProperties],
+    ) -> ProgressEvent[SSMParameterProperties]:
         """
         Create a new resource.
         """
@@ -50,7 +46,11 @@ class SSMParameterProvider(ResourceProvider[SSMParameterAllProperties]):
             model["DataType"] = "text"
 
         if model.get("Name") is None:
+            # TODO: fix auto-generation
             model["Name"] = f"param-{short_uid()}"
+
+        # TODO: add comment why we set this to Id as well
+        model["Id"] = model["Name"]
 
         # idempotency
         try:
@@ -69,18 +69,14 @@ class SSMParameterProvider(ResourceProvider[SSMParameterAllProperties]):
             Type=model["Type"],
             Value=model["Value"],
         )
-
         model["Tier"] = res.get("Tier", "Standard")
-
-        # TODO
-        model["physical_resource_id"] = "my-ssm-parameter"
 
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
     def delete(
         self,
-        request: ResourceRequest[SSMParameterAllProperties],
-    ) -> ProgressEvent[SSMParameterAllProperties]:
+        request: ResourceRequest[SSMParameterProperties],
+    ) -> ProgressEvent[SSMParameterProperties]:
         name = request.desired_state["Name"]
         request.aws_client_factory.ssm.delete_parameter(Name=name)
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=request.desired_state)

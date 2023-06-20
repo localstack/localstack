@@ -474,10 +474,23 @@ class ResourceProviderExecutor:
         self, raw_payload: ResourceProviderPayload, max_iterations: int = 30, sleep_time: float = 5
     ) -> ProgressEvent[Properties]:
         payload = copy.deepcopy(raw_payload)
+
         for _ in range(max_iterations):
             event = self.execute_action(payload)
+
             if event.status == OperationStatus.SUCCESS:
                 # TODO: validate physical_resource_id is not None
+                resource = self.resources[raw_payload["requestData"]["logicalResourceId"]]
+                if "PhysicalResourceId" not in resource:
+                    # branch for non-legacy providers
+                    # TODO: move out of if? (physical res id can be set earlier possibly)
+                    resource_type_schema = self.load_resource_schema(raw_payload["resourceType"])
+                    physical_resource_id = self.extract_physical_resource_id_from_model_with_schema(
+                        event.resource_model, resource_type_schema
+                    )
+
+                    resource["PhysicalResourceId"] = physical_resource_id
+                    resource["Properties"] = event.resource_model
                 return event
 
             # update the shared state
@@ -530,6 +543,15 @@ class ResourceProviderExecutor:
             else:
                 usage.missing_resource_types.record(resource_type)
                 raise NoResourceProvider from e
+
+    def extract_physical_resource_id_from_model_with_schema(
+        self, resource_model: Properties, resource_type_schema: dict
+    ) -> str:
+        # id_path = resource_type_schema['primaryIdentifier'][0]
+        return resource_model["Id"]
+
+    def load_resource_schema(self, resource_type: str) -> dict:
+        return {}
 
 
 plugin_manager = PluginManager(CloudFormationResourceProviderPlugin.namespace)
