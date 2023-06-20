@@ -35,7 +35,7 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
     }
 
     def _get_supported_parameters(self) -> Optional[set[str]]:
-        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower(), None)
+        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, ClientError):

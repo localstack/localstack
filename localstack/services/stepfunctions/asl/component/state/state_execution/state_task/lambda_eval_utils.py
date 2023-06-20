@@ -3,9 +3,9 @@ from json import JSONDecodeError
 from typing import Any, Final, Optional
 
 from localstack.aws.api.lambda_ import InvocationResponse
+from localstack.aws.connect import connect_to
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.utils.aws.aws_stack import connect_to_service
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
@@ -21,7 +21,7 @@ class LambdaFunctionErrorException(Exception):
 
 
 def exec_lambda_function(env: Environment, parameters: dict) -> None:
-    lambda_client = connect_to_service("lambda")
+    lambda_client = connect_to().awslambda
     invocation_resp: InvocationResponse = lambda_client.invoke(**parameters)
 
     func_error: Optional[str] = invocation_resp.get("FunctionError")

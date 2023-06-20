@@ -86,7 +86,7 @@ class StateTask(ExecutionState, abc.ABC):
         # Normalise bindings.
         parameter_normalisers = self._get_parameters_normalising_bindings()
         for parameter_key in list(parameters.keys()):
-            norm_parameter_key = parameter_normalisers.get(parameter_key, None)
+            norm_parameter_key = parameter_normalisers.get(parameter_key)
             if norm_parameter_key:
                 tmp = parameters[parameter_key]
                 del parameters[parameter_key]

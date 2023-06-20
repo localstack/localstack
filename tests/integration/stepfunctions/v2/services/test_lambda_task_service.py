@@ -56,6 +56,7 @@ class TestTaskServiceLambda:
         )
 
     # AWS's stepfuctions documentation seems to incorrectly classify LogType parameters as unsupported.
+    @pytest.mark.aws_validated
     def test_invoke_unsupported_param(
         self,
         aws_client,
