@@ -71,8 +71,7 @@ class CloudFormationStack(GenericBaseModel):
             }
             return result
 
-        def result_handler(result, resource_id: str, resources: dict, resource_type: str):
-            resource = resources[resource_id]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = result["StackId"]
             connect_to().cloudformation.get_waiter("stack_create_complete").wait(
                 StackName=result["StackId"]
@@ -88,7 +87,7 @@ class CloudFormationStack(GenericBaseModel):
             "create": {
                 "function": "create_stack",
                 "parameters": get_nested_stack_params,
-                "result_handler": result_handler,
+                "result_handler": _handle_result,
             }
         }
 
@@ -113,16 +112,13 @@ class CloudFormationMacro(GenericBaseModel):
             name = properties["Name"]
             get_cloudformation_store().macros.pop(name)
 
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resource = resources[resource_id]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = resource["Properties"]["Name"]
 
         return {
             "create": {
                 "function": _store_macro,
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": _delete_macro,
@@ -157,16 +153,16 @@ class CloudFormationWaitConditionHandle(GenericBaseModel):
             # no resources to create as such, but the physical resource id needs the stack name
             return {"stack_name": stack_name}
 
-        def _set_physical_resource_id(result, resource_id, resources, resource_type):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             waitcondition_url = generate_waitcondition_url(
                 stack_name=result["stack_name"],
             )
-            resources[resource_id]["PhysicalResourceId"] = waitcondition_url
+            resource["PhysicalResourceId"] = waitcondition_url
 
         return {
             "create": {
                 "function": _create,
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": lambda *args, **kwargs: {},
@@ -189,16 +185,14 @@ class CloudFormationWaitCondition(GenericBaseModel):
             # no resources to create, but the physical resource id requires the stack name
             return {"stack_name": stack_name}
 
-        def _set_physical_resource_id(result, resource_id, resources, resource_type):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             stack_arn = arns.cloudformation_stack_arn(result["stack_name"])
-            resources[resource_id][
-                "PhysicalResourceId"
-            ] = f"{stack_arn}/{uuid.uuid4()}/{resource_id}"
+            resource["PhysicalResourceId"] = f"{stack_arn}/{uuid.uuid4()}/{logical_resource_id}"
 
         return {
             "create": {
                 "function": _create,
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": lambda *args, **kwargs: {},

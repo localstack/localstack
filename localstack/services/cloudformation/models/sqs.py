@@ -111,10 +111,8 @@ class SQSQueue(GenericBaseModel):
                 return queue_url
             return arns.sqs_queue_url_for_arn(properties["QueueArn"])
 
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resources[resource_id]["PhysicalResourceId"] = result["QueueUrl"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["QueueUrl"]
 
         return {
             "create": {
@@ -133,7 +131,7 @@ class SQSQueue(GenericBaseModel):
                     ),
                     "tags": params_list_to_dict("Tags"),
                 },
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_queue",

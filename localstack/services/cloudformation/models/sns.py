@@ -94,16 +94,16 @@ class SNSTopic(GenericBaseModel):
                     TopicArn=topic_arn, Protocol=subscription["Protocol"], Endpoint=endpoint
                 )
 
-        def result_handler(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["TopicArn"]
-            resources[resource_id]["Properties"]["TopicArn"] = result["TopicArn"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["TopicArn"]
+            resource["Properties"]["TopicArn"] = result["TopicArn"]
 
         return {
             "create": [
                 {
                     "function": "create_topic",
                     "parameters": _create_params,
-                    "result_handler": result_handler,
+                    "result_handler": _handle_result,
                 },
                 {"function": _add_topics},
             ],
@@ -155,10 +155,8 @@ class SNSSubscription(GenericBaseModel):
             result = {a: attr_val(properties[a]) for a in attrs if a in properties}
             return result
 
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resources[resource_id]["PhysicalResourceId"] = result["SubscriptionArn"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["SubscriptionArn"]
 
         return {
             "create": {
@@ -169,7 +167,7 @@ class SNSSubscription(GenericBaseModel):
                     "Endpoint": "Endpoint",
                     "Attributes": sns_subscription_params,
                 },
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "unsubscribe",

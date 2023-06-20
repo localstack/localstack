@@ -25,15 +25,15 @@ class SFNActivity(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _store_arn(result, resource_id, resources, resource_type):
-            resources[resource_id]["Properties"]["Arn"] = result["activityArn"]
-            resources[resource_id]["PhysicalResourceId"] = result["activityArn"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["Properties"]["Arn"] = result["activityArn"]
+            resource["PhysicalResourceId"] = result["activityArn"]
 
         return {
             "create": {
                 "function": "create_activity",
                 "parameters": {"name": "Name", "tags": "Tags"},
-                "result_handler": _store_arn,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_activity",
@@ -87,9 +87,9 @@ class SFNStateMachine(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def result_handler(result, resource_id, resources, resource_type):
-            resources[resource_id]["Properties"]["Arn"] = result["stateMachineArn"]
-            resources[resource_id]["PhysicalResourceId"] = result["stateMachineArn"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["Properties"]["Arn"] = result["stateMachineArn"]
+            resource["PhysicalResourceId"] = result["stateMachineArn"]
 
         def _create_params(
             properties: dict, logical_resource_id: str, resource: dict, stack_name: str
@@ -122,7 +122,7 @@ class SFNStateMachine(GenericBaseModel):
             "create": {
                 "function": "create_state_machine",
                 "parameters": _create_params,
-                "result_handler": result_handler,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_state_machine",

@@ -20,10 +20,8 @@ class ResourceGroupsGroup(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resources[resource_id]["PhysicalResourceId"] = result["Group"]["Name"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["Group"]["Name"]
 
         return {
             "create": {
@@ -35,7 +33,7 @@ class ResourceGroupsGroup(GenericBaseModel):
                     "Configuration": "Configuration",
                     "Tags": params_list_to_dict("Tags"),
                 },
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {"function": "delete_group", "parameters": {"Group": "Name"}},
         }
