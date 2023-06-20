@@ -375,9 +375,14 @@ class LegacyResourceProvider(ResourceProvider):
         return self.create_or_delete(request)
 
     def update(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
+        physical_resource_id = self.all_resources[request.logical_resource_id]["PhysicalResourceId"]
         resource_provider = self.resource_provider_cls(
             # TODO: other top level keys
-            resource_json={"Type": self.resource_type, "Properties": request.desired_state},
+            resource_json={
+                "Type": self.resource_type,
+                "Properties": request.desired_state,
+                "PhysicalResourceId": physical_resource_id,
+            },
             region_name=request.region_name,
         )
         if not resource_provider.is_updatable():
@@ -488,7 +493,7 @@ class LegacyResourceProvider(ResourceProvider):
                     result, request.logical_resource_id, self.all_resources, self.resource_type
                 )
 
-        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=resource_provider.props)
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=resource["Properties"])
 
 
 class NoResourceProvider(Exception):
@@ -524,7 +529,8 @@ class ResourceProviderExecutor:
 
             if event.status == OperationStatus.SUCCESS:
                 # TODO: validate physical_resource_id is not None
-                resource = self.resources[raw_payload["requestData"]["logicalResourceId"]]
+                logical_resource_id = raw_payload["requestData"]["logicalResourceId"]
+                resource = self.resources[logical_resource_id]
                 if "PhysicalResourceId" not in resource:
                     # branch for non-legacy providers
                     # TODO: move out of if? (physical res id can be set earlier possibly)
