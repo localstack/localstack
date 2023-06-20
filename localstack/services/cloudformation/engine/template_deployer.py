@@ -678,24 +678,6 @@ def evaluate_resource_condition(stack_name, resources, resource):
     return True
 
 
-# FIXME: rework
-def update_resource(resource_id, resources, stack_name):
-    resource = resources[resource_id]
-    resource_type = get_resource_type(resource)
-
-    resource_instance = get_resource_model_instance(resource["LogicalResourceId"], resources)
-    if not resource_instance.is_updatable():
-        LOG.warning('Unable to update resource type "%s", id "%s"', resource_type, resource_id)
-        return
-    LOG.info("Updating resource %s of type %s", resource_id, resource_type)
-
-    instance = get_resource_model_instance(resource_id, resources)
-    if instance:
-        result = instance.update_resource(resource, stack_name=stack_name, resources=resources)
-        instance.fetch_and_update_state(stack_name=stack_name, resources=resources)
-        return result
-
-
 # TODO: move (registry/util)
 def get_resource_model_instance(resource_id: str, resources) -> Optional[GenericBaseModel]:
     """Obtain a typed resource entity instance representing the given stack resource."""

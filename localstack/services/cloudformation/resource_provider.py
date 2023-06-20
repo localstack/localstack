@@ -375,7 +375,36 @@ class LegacyResourceProvider(ResourceProvider):
         return self.create_or_delete(request)
 
     def update(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
-        raise NotImplementedError
+        resource_provider = self.resource_provider_cls(
+            # TODO: other top level keys
+            resource_json={"Type": self.resource_type, "Properties": request.desired_state},
+            region_name=request.region_name,
+        )
+        if not resource_provider.is_updatable():
+            LOG.warning(
+                'Unable to update resource type "%s", id "%s"',
+                self.resource_type,
+                request.logical_resource_id,
+            )
+            # TODO: should not really claim the update was successful, but the
+            # API does not really let us signal this in any other way.
+            return ProgressEvent(
+                status=OperationStatus.SUCCESS, resource_model=request.desired_state
+            )
+
+        LOG.info("Updating resource %s of type %s", request.logical_resource_id, self.resource_type)
+        resource_provider.update_resource(
+            self.all_resources[request.logical_resource_id],
+            stack_name=request.stack_name,
+            resources=self.all_resources,
+        )
+        resource_provider.fetch_and_update_state(
+            stack_name=request.stack_name, resources=self.all_resources
+        )
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=self.all_resources[request.logical_resource_id]["Properties"],
+        )
 
     def delete(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
         return self.create_or_delete(request)
