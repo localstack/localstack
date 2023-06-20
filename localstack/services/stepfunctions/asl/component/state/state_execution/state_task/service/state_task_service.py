@@ -15,7 +15,10 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 class StateTaskService(StateTask, abc.ABC):
     resource: ServiceResource
 
-    def _get_resource_type(self) -> str:
+    def _get_sfn_resource(self) -> str:
+        return self.resource.api_action
+
+    def _get_sfn_resource_type(self) -> str:
         return self.resource.service_name
 
     def _eval_parameters(self, env: Environment) -> dict:

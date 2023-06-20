@@ -1530,5 +1530,35 @@
         }
       }
     }
+  },
+  "tests/integration/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_pair": {
+    "recorded-date": "16-06-2023, 17:51:27",
+    "recorded-content": {
+      "decrypt-without-encryption-context": {
+        "Error": {
+          "Code": "InvalidCiphertextException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_pair_without_plaintext": {
+    "recorded-date": "16-06-2023, 17:51:43",
+    "recorded-content": {
+      "decrypt-without-encryption-context": {
+        "Error": {
+          "Code": "InvalidCiphertextException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

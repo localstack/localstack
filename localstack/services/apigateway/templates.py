@@ -9,6 +9,7 @@ from urllib.parse import quote_plus, unquote_plus
 from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.context import ApiInvocationContext
+from localstack.services.apigateway.helpers import select_integration_response
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.strings import to_str
@@ -254,15 +255,8 @@ class ResponseTemplates(Templates):
 
         # if there is integration response for the status code returned
         # by the integration we use the template configured for that status code
-        if status_code in integration_responses:
-            response_templates = integration_responses[status_code].get("responseTemplates", {})
-        else:
-            # if there is no integration response for the status code returned
-            # by the integration we use the first integration response status code
-            LOG.info(
-                f"Found multiple integration response status codes: {integration_status_codes}"
-            )
-            response_templates = integration_responses[0].get("responseTemplates", {})
+        selected_integration_response = select_integration_response(status_code, api_context)
+        response_templates = selected_integration_response.get("responseTemplates", {})
 
         # we only support JSON templates for now - if there is no template we return
         # the response as is

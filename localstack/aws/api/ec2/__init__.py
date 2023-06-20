@@ -149,6 +149,8 @@ ImportTaskId = str
 InferenceDeviceCount = int
 InferenceDeviceManufacturerName = str
 InferenceDeviceName = str
+InstanceConnectEndpointId = str
+InstanceConnectEndpointMaxResults = int
 InstanceEventId = str
 InstanceEventWindowCronExpression = str
 InstanceEventWindowId = str
@@ -783,6 +785,15 @@ class EbsOptimizedSupport(str):
     unsupported = "unsupported"
     supported = "supported"
     default = "default"
+
+
+class Ec2InstanceConnectEndpointState(str):
+    create_in_progress = "create-in-progress"
+    create_complete = "create-complete"
+    create_failed = "create-failed"
+    delete_in_progress = "delete-in-progress"
+    delete_complete = "delete-complete"
+    delete_failed = "delete-failed"
 
 
 class ElasticGpuState(str):
@@ -2449,6 +2460,7 @@ class ResourceType(str):
     vpc_block_public_access_exclusion = "vpc-block-public-access-exclusion"
     ipam_resource_discovery = "ipam-resource-discovery"
     ipam_resource_discovery_association = "ipam-resource-discovery-association"
+    instance_connect_endpoint = "instance-connect-endpoint"
 
 
 class RootDeviceType(str):
@@ -5962,6 +5974,45 @@ class CreateImageResult(TypedDict, total=False):
     ImageId: Optional[String]
 
 
+SecurityGroupIdStringListRequest = List[SecurityGroupId]
+
+
+class CreateInstanceConnectEndpointRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    SubnetId: SubnetId
+    SecurityGroupIds: Optional[SecurityGroupIdStringListRequest]
+    PreserveClientIp: Optional[Boolean]
+    ClientToken: Optional[String]
+    TagSpecifications: Optional[TagSpecificationList]
+
+
+SecurityGroupIdSet = List[SecurityGroupId]
+NetworkInterfaceIdSet = List[String]
+
+
+class Ec2InstanceConnectEndpoint(TypedDict, total=False):
+    OwnerId: Optional[String]
+    InstanceConnectEndpointId: Optional[InstanceConnectEndpointId]
+    InstanceConnectEndpointArn: Optional[ResourceArn]
+    State: Optional[Ec2InstanceConnectEndpointState]
+    StateMessage: Optional[String]
+    DnsName: Optional[String]
+    FipsDnsName: Optional[String]
+    NetworkInterfaceIds: Optional[NetworkInterfaceIdSet]
+    VpcId: Optional[VpcId]
+    AvailabilityZone: Optional[String]
+    CreatedAt: Optional[MillisecondDateTime]
+    SubnetId: Optional[SubnetId]
+    PreserveClientIp: Optional[Boolean]
+    SecurityGroupIds: Optional[SecurityGroupIdSet]
+    Tags: Optional[TagList]
+
+
+class CreateInstanceConnectEndpointResult(TypedDict, total=False):
+    InstanceConnectEndpoint: Optional[Ec2InstanceConnectEndpoint]
+    ClientToken: Optional[String]
+
+
 class InstanceEventWindowTimeRangeRequest(TypedDict, total=False):
     StartWeekDay: Optional[WeekDay]
     StartHour: Optional[Hour]
@@ -8695,6 +8746,15 @@ class DeleteFpgaImageResult(TypedDict, total=False):
     Return: Optional[Boolean]
 
 
+class DeleteInstanceConnectEndpointRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    InstanceConnectEndpointId: InstanceConnectEndpointId
+
+
+class DeleteInstanceConnectEndpointResult(TypedDict, total=False):
+    InstanceConnectEndpoint: Optional[Ec2InstanceConnectEndpoint]
+
+
 class DeleteInstanceEventWindowRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     ForceDelete: Optional[Boolean]
@@ -10489,6 +10549,22 @@ class DescribeInstanceAttributeRequest(ServiceRequest):
     Attribute: InstanceAttributeName
     DryRun: Optional[Boolean]
     InstanceId: InstanceId
+
+
+class DescribeInstanceConnectEndpointsRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    MaxResults: Optional[InstanceConnectEndpointMaxResults]
+    NextToken: Optional[NextToken]
+    Filters: Optional[FilterList]
+    InstanceConnectEndpointIds: Optional[ValueStringList]
+
+
+InstanceConnectEndpointSet = List[Ec2InstanceConnectEndpoint]
+
+
+class DescribeInstanceConnectEndpointsResult(TypedDict, total=False):
+    InstanceConnectEndpoints: Optional[InstanceConnectEndpointSet]
+    NextToken: Optional[NextToken]
 
 
 class DescribeInstanceCreditSpecificationsRequest(ServiceRequest):
@@ -18013,6 +18089,19 @@ class Ec2Api:
     ) -> CreateImageResult:
         raise NotImplementedError
 
+    @handler("CreateInstanceConnectEndpoint")
+    def create_instance_connect_endpoint(
+        self,
+        context: RequestContext,
+        subnet_id: SubnetId,
+        dry_run: Boolean = None,
+        security_group_ids: SecurityGroupIdStringListRequest = None,
+        preserve_client_ip: Boolean = None,
+        client_token: String = None,
+        tag_specifications: TagSpecificationList = None,
+    ) -> CreateInstanceConnectEndpointResult:
+        raise NotImplementedError
+
     @handler("CreateInstanceEventWindow")
     def create_instance_event_window(
         self,
@@ -18962,6 +19051,15 @@ class Ec2Api:
     def delete_fpga_image(
         self, context: RequestContext, fpga_image_id: FpgaImageId, dry_run: Boolean = None
     ) -> DeleteFpgaImageResult:
+        raise NotImplementedError
+
+    @handler("DeleteInstanceConnectEndpoint")
+    def delete_instance_connect_endpoint(
+        self,
+        context: RequestContext,
+        instance_connect_endpoint_id: InstanceConnectEndpointId,
+        dry_run: Boolean = None,
+    ) -> DeleteInstanceConnectEndpointResult:
         raise NotImplementedError
 
     @handler("DeleteInstanceEventWindow")
@@ -20049,6 +20147,18 @@ class Ec2Api:
         instance_id: InstanceId,
         dry_run: Boolean = None,
     ) -> InstanceAttribute:
+        raise NotImplementedError
+
+    @handler("DescribeInstanceConnectEndpoints")
+    def describe_instance_connect_endpoints(
+        self,
+        context: RequestContext,
+        dry_run: Boolean = None,
+        max_results: InstanceConnectEndpointMaxResults = None,
+        next_token: NextToken = None,
+        filters: FilterList = None,
+        instance_connect_endpoint_ids: ValueStringList = None,
+    ) -> DescribeInstanceConnectEndpointsResult:
         raise NotImplementedError
 
     @handler("DescribeInstanceCreditSpecifications")

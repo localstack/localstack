@@ -278,17 +278,17 @@ class IAMRole(GenericBaseModel):
     def _post_create(cls, logical_resource_id: str, resource: dict, stack_name: str):
         """attaches managed policies from the template to the role"""
 
+        properties = resource["Properties"]
         iam = aws_stack.connect_to_service("iam")
-        props = resource["Properties"]
-        role_name = props["RoleName"]
+        role_name = properties["RoleName"]
 
         # attach managed policies
-        policy_arns = props.get("ManagedPolicyArns", [])
+        policy_arns = properties.get("ManagedPolicyArns", [])
         for arn in policy_arns:
             iam.attach_role_policy(RoleName=role_name, PolicyArn=arn)
 
         # add inline policies
-        inline_policies = props.get("Policies", [])
+        inline_policies = properties.get("Policies", [])
         for policy in inline_policies:
             assert not isinstance(
                 policy, list
@@ -297,7 +297,9 @@ class IAMRole(GenericBaseModel):
                 continue
             if not isinstance(policy, dict):
                 LOG.info(
-                    'Invalid format of policy for IAM role "%s": %s', props.get("RoleName"), policy
+                    'Invalid format of policy for IAM role "%s": %s',
+                    properties.get("RoleName"),
+                    policy,
                 )
                 continue
             pol_name = policy.get("PolicyName")
@@ -314,7 +316,7 @@ class IAMRole(GenericBaseModel):
                     statement["Resource"] = [r for r in statement["Resource"] if r]
             doc = json.dumps(doc)
             iam.put_role_policy(
-                RoleName=props["RoleName"],
+                RoleName=properties["RoleName"],
                 PolicyName=pol_name,
                 PolicyDocument=doc,
             )
@@ -484,8 +486,10 @@ class IAMPolicy(GenericBaseModel):
                     GroupName=group, PolicyName=policy_name, PolicyDocument=policy_doc
                 )
 
-        def _delete_params(params, *args, **kwargs):
-            return {"PolicyArn": arns.policy_arn(params["PolicyName"])}
+        def _delete_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
+            return {"PolicyArn": arns.policy_arn(properties["PolicyName"])}
 
         return {
             "create": {

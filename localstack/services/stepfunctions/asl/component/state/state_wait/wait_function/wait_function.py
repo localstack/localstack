@@ -29,7 +29,7 @@ class WaitFunction(EvalComponent, abc.ABC):
                 f"Wait function '{self}' successfully reentered waiting for "
                 f"another '{max_seconds - tot_sec_waited}' seconds."
             )
-            return WaitFunction._wait_interval(
+            return self._wait_interval(
                 env=env, seconds_waited=tot_sec_waited, max_seconds=max_seconds
             )
         else:

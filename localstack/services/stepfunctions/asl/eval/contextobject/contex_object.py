@@ -1,4 +1,6 @@
-from typing import Optional, TypedDict
+from typing import Final, Optional, TypedDict
+
+from localstack.utils.strings import long_uid
 
 
 class Execution(TypedDict):
@@ -41,6 +43,18 @@ class ContextObject(TypedDict):
     StateMachine: StateMachine
     Task: Optional[Task]  # Null if the Parameters field is outside a task state.
     Map: Optional[Map]  # Only available when processing a Map state.
+
+
+class ContextObjectManager:
+    context_object: Final[ContextObject]
+
+    def __init__(self, context_object: ContextObject):
+        self.context_object = context_object
+
+    def update_task_token(self) -> str:
+        new_token = long_uid()
+        self.context_object["Task"] = Task(Token=new_token)
+        return new_token
 
 
 class ContextObjectInitData(TypedDict):

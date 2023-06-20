@@ -12,7 +12,6 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     Resource,
 )
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
-from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import Task
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
@@ -61,6 +60,7 @@ class StateTask(ExecutionState, abc.ABC):
         self.resource = state_props.get(Resource)
 
     def _eval_body(self, env: Environment) -> None:
-        env.context_object["Task"] = Task(Token="Unsupported")
+        if self.name == "Send":
+            print(self.name)
         super(StateTask, self)._eval_body(env=env)
-        env.context_object["Task"] = None
+        env.context_object_manager.context_object["Task"] = None
