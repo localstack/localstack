@@ -159,7 +159,7 @@ except Exception:
     MAX_POOL_CONNECTIONS = 150
 
 # credentials used in the test suite
-TEST_AWS_ACCESS_KEY_ID = "test"
+TEST_AWS_ACCESS_KEY_ID = "000000000001"  # REVERT THIS
 TEST_AWS_SECRET_ACCESS_KEY = (
     "test"  # NOTE: In the near future, this will be set to a structured Access Key ID
 )
