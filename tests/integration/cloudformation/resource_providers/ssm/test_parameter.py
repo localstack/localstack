@@ -7,6 +7,7 @@ from localstack.aws.connect import ServiceLevelClientFactory
 
 
 class TestBasicCRD:
+    @pytest.mark.skip_snapshot_verify(paths=["$..error-message"])
     def test_black_box(self, deploy_cfn_template, aws_client: ServiceLevelClientFactory, snapshot):
         stack = deploy_cfn_template(
             template_path=os.path.join(
@@ -16,6 +17,9 @@ class TestBasicCRD:
         )
 
         # TODO: implement fetching the resource and performing any required validations here
+        parameter_name = stack.outputs["MyRef"]
+        snapshot.add_transformer(snapshot.transform.regex(parameter_name, "<parameter>"))
+
         res = aws_client.ssm.get_parameter(Name=stack.outputs["MyRef"])
         snapshot.match("describe-resource", res)
 
@@ -25,7 +29,7 @@ class TestBasicCRD:
         with pytest.raises(ClientError) as exc_info:
             aws_client.ssm.get_parameter(Name=stack.outputs["MyRef"])
 
-        snapshot.match("deleted-resource", str(exc_info.value))
+        snapshot.match("deleted-resource", {"error-message": str(exc_info.value)})
 
 
 class TestUpdates:
