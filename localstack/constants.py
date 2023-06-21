@@ -160,10 +160,15 @@ except Exception:
 
 # credentials used in the test suite
 TEST_AWS_ACCESS_KEY_ID = "test"
-TEST_AWS_SECRET_ACCESS_KEY = "test"
+TEST_AWS_SECRET_ACCESS_KEY = (
+    "test"  # NOTE: In the near future, this will be set to a structured Access Key ID
+)
 
 # additional credentials used in the test suite (mainly for cross-account access)
-SECONDARY_TEST_AWS_ACCESS_KEY_ID = "000000000002"
+SECONDARY_TEST_AWS_ACCOUNT_ID = "000000000002"
+SECONDARY_TEST_AWS_ACCESS_KEY_ID = (
+    "000000000002"  # NOTE: In the near future, this will be set to a structured Access Key ID
+)
 SECONDARY_TEST_AWS_SECRET_ACCESS_KEY = "test2"
 SECONDARY_TEST_AWS_REGION_NAME = "ap-southeast-1"
 
