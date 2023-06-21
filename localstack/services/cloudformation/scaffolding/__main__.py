@@ -42,11 +42,24 @@ class Property(TypedDict):
     items: Optional[dict]
 
 
+class HandlerDefinition(TypedDict):
+    permissions: Optional[list[str]]
+
+
+class HandlersDefinition(TypedDict):
+    create: HandlerDefinition
+    read: HandlerDefinition
+    update: HandlerDefinition
+    delete: HandlerDefinition
+    list: HandlerDefinition
+
+
 class ResourceSchema(TypedDict):
     typeName: str
     description: Optional[str]
     required: Optional[list[str]]
     properties: dict[str, Property]
+    handlers: HandlersDefinition
 
 
 def resolve_ref(schema: ResourceSchema, target: str) -> dict:
@@ -227,6 +240,25 @@ class TemplateRenderer:
                     provider_prefix=resource_name.provider_name(),
                 )
                 kwargs["provider_properties"] = property_ir
+                kwargs["required_properties"] = self.schema.get("required")
+                kwargs["create_only_properties"] = self.schema.get("createOnlyProperties")
+                kwargs["read_only_properties"] = self.schema.get("readOnlyProperties")
+                kwargs["primary_identifier"] = self.schema.get("primaryIdentifier")
+                kwargs["create_permissions"] = (
+                    self.schema.get("handlers", {}).get("create", {}).get("permissions")
+                )
+                kwargs["delete_permissions"] = (
+                    self.schema.get("handlers", {}).get("delete", {}).get("permissions")
+                )
+                kwargs["read_permissions"] = (
+                    self.schema.get("handlers", {}).get("read", {}).get("permissions")
+                )
+                kwargs["update_permissions"] = (
+                    self.schema.get("handlers", {}).get("update", {}).get("permissions")
+                )
+                kwargs["list_permissions"] = (
+                    self.schema.get("handlers", {}).get("list", {}).get("permissions")
+                )
             case FileType.integration_test:
                 kwargs["black_box_template_path"] = str(
                     template_path(resource_name, FileType.minimal_template, tests_output_path)
