@@ -105,17 +105,14 @@ class KMSAlias(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resource = resources[resource_id]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = resource["Properties"]["AliasName"]
 
         return {
             "create": {
                 "function": "create_alias",
                 "parameters": {"AliasName": "AliasName", "TargetKeyId": "TargetKeyId"},
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_alias",

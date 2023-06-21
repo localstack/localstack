@@ -24,8 +24,8 @@ class EC2RouteTable(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _store_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["RouteTable"]["RouteTableId"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["RouteTable"]["RouteTableId"]
 
         return {
             "create": {
@@ -34,7 +34,7 @@ class EC2RouteTable(GenericBaseModel):
                     "VpcId": "VpcId",
                     "TagSpecifications": get_tags_param("route-table"),
                 },
-                "result_handler": _store_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_route_table",
@@ -68,10 +68,10 @@ class EC2Route(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _id(result, resource_id, resources, resource_type):
-            resource_props = resources[resource_id]["Properties"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource_props = resource["Properties"]
 
-            resources[resource_id]["PhysicalResourceId"] = generate_route_id(
+            resource["PhysicalResourceId"] = generate_route_id(
                 resource_props["RouteTableId"],
                 resource_props.get("DestinationCidrBlock", ""),
                 resource_props.get("DestinationIpv6CidrBlock"),
@@ -81,7 +81,7 @@ class EC2Route(GenericBaseModel):
             "create": {
                 "function": "create_route",
                 "parameters": ["DestinationCidrBlock", "DestinationIpv6CidrBlock", "RouteTableId"],
-                "result_handler": _id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_route",
@@ -111,19 +111,17 @@ class EC2InternetGateway(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _store_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["Properties"]["InternetGatewayId"] = result["InternetGateway"][
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["Properties"]["InternetGatewayId"] = result["InternetGateway"][
                 "InternetGatewayId"
             ]
-            resources[resource_id]["PhysicalResourceId"] = result["InternetGateway"][
-                "InternetGatewayId"
-            ]
+            resource["PhysicalResourceId"] = result["InternetGateway"]["InternetGatewayId"]
 
         return {
             "create": {
                 "function": "create_internet_gateway",
                 "parameters": {"TagSpecifications": get_tags_param("internet-gateway")},
-                "result_handler": _store_id,
+                "result_handler": _handle_result,
             }
         }
 
@@ -150,10 +148,8 @@ class EC2SubnetRouteTableAssociation(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resources[resource_id]["PhysicalResourceId"] = result["AssociationId"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["AssociationId"]
 
         return {
             "create": {
@@ -163,7 +159,7 @@ class EC2SubnetRouteTableAssociation(GenericBaseModel):
                     "RouteTableId": "RouteTableId",
                     "SubnetId": "SubnetId",
                 },
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "disassociate_route_table",
@@ -209,17 +205,12 @@ class EC2VPCGatewayAttachment(GenericBaseModel):
             elif vpngw_id:
                 return client.attach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=vpngw_id)
 
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resource = resources[resource_id]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             props = resource["Properties"]
             gw_id = props.get("VpnGatewayId") or props.get("InternetGatewayId")
             resource["PhysicalResourceId"] = f"{gw_id}-{props['VpcId']}"
 
-        return {
-            "create": {"function": _attach_gateway, "result_handler": _set_physical_resource_id}
-        }
+        return {"create": {"function": _attach_gateway, "result_handler": _handle_result}}
 
 
 class SecurityGroup(GenericBaseModel):
@@ -255,9 +246,9 @@ class SecurityGroup(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _store_group_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["Properties"]["GroupId"] = result["GroupId"]
-            resources[resource_id]["PhysicalResourceId"] = result["GroupId"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["Properties"]["GroupId"] = result["GroupId"]
+            resource["PhysicalResourceId"] = result["GroupId"]
 
         return {
             "create": {
@@ -267,7 +258,7 @@ class SecurityGroup(GenericBaseModel):
                     "VpcId": "VpcId",
                     "Description": "GroupDescription",
                 },
-                "result_handler": _store_group_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_security_group",
@@ -333,9 +324,9 @@ class EC2Subnet(GenericBaseModel):
                         PrivateDnsHostnameTypeOnLaunch=dns_options.get("HostnameType"),
                     )
 
-        def _store_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["Subnet"]["SubnetId"]
-            resources[resource_id]["Properties"]["SubnetId"] = result["Subnet"]["SubnetId"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["Subnet"]["SubnetId"]
+            resource["Properties"]["SubnetId"] = result["Subnet"]["SubnetId"]
 
         return {
             "create": [
@@ -351,7 +342,7 @@ class EC2Subnet(GenericBaseModel):
                         {"TagSpecifications": get_tags_param("subnet")},
                         "VpcId",
                     ],
-                    "result_handler": _store_id,
+                    "result_handler": _handle_result,
                 },
                 {"function": _post_create},
             ],
@@ -427,9 +418,9 @@ class EC2VPC(GenericBaseModel):
                         )
                     ec2_client.delete_route_table(RouteTableId=rt["RouteTableId"])
 
-        def _store_vpc_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["Vpc"]["VpcId"]
-            resources[resource_id]["Properties"]["VpcId"] = result["Vpc"]["VpcId"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["Vpc"]["VpcId"]
+            resource["Properties"]["VpcId"] = result["Vpc"]["VpcId"]
 
         return {
             "create": {
@@ -439,7 +430,7 @@ class EC2VPC(GenericBaseModel):
                     "InstanceTenancy": "InstanceTenancy",
                     "TagSpecifications": get_tags_param("vpc"),
                 },
-                "result_handler": _store_vpc_id,
+                "result_handler": _handle_result,
             },
             "delete": [
                 {"function": _pre_delete},
@@ -474,10 +465,8 @@ class EC2NatGateway(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resources[resource_id]["PhysicalResourceId"] = result["NatGateway"]["NatGatewayId"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["NatGateway"]["NatGatewayId"]
 
         return {
             "create": {
@@ -487,7 +476,7 @@ class EC2NatGateway(GenericBaseModel):
                     "AllocationId": "AllocationId",
                     "TagSpecifications": get_tags_param("natgateway"),
                 },
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_nat_gateway",
@@ -558,8 +547,8 @@ class EC2Instance(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         # TODO: validate again
-        def _store_instance_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["Instances"][0]["InstanceId"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["Instances"][0]["InstanceId"]
 
         return {
             "create": {
@@ -572,7 +561,7 @@ class EC2Instance(GenericBaseModel):
                     "MaxCount": "MaxCount",
                     "MinCount": "MinCount",
                 },
-                "result_handler": _store_instance_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "terminate_instances",

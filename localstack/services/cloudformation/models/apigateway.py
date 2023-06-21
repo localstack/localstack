@@ -833,8 +833,8 @@ class GatewayModel(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _store_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["id"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["id"]
 
         return {
             "create": {
@@ -846,7 +846,7 @@ class GatewayModel(GenericBaseModel):
                     "contentType": "ContentType",
                 },
                 "types": {"schema": str},
-                "result_handler": _store_id,
+                "result_handler": _handle_result,
             }
         }
 

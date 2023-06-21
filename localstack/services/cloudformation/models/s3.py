@@ -27,10 +27,7 @@ class S3BucketPolicy(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resource = resources[resource_id]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = md5(
                 canonical_json(resource["Properties"]["PolicyDocument"])
             )
@@ -42,7 +39,7 @@ class S3BucketPolicy(GenericBaseModel):
                     dump_json_params(None, "PolicyDocument"),
                     {"PolicyDocument": "Policy", "Bucket": "Bucket"},
                 ),
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {"function": "delete_bucket_policy", "parameters": {"Bucket": "Bucket"}},
         }
@@ -168,10 +165,7 @@ class S3Bucket(GenericBaseModel):
             }
             return result
 
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resource = resources[resource_id]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = resource["Properties"]["BucketName"]
 
         def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
@@ -260,7 +254,7 @@ class S3Bucket(GenericBaseModel):
             "create": [
                 {
                     "function": _create_bucket,
-                    "result_handler": _set_physical_resource_id,
+                    "result_handler": _handle_result,
                 },
                 {
                     "function": "put_bucket_notification_configuration",

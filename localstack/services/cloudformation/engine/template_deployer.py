@@ -97,18 +97,24 @@ ParamsFuncSignatureLegacy = Callable[[dict, str, dict[str, dict], str], dict]
 # - instances of the parameter function (current or legacy)
 ParamsDefinition = dict[str, str | ParamsFuncSignature | ParamsFuncSignatureLegacy]
 
+# - result
+# - logical_resource_id
+# - resource
+ResultHandlerSignature = Callable[[dict, str, dict], None]
+
+# - result
+# - resource_id
+# - resources
+# - resource_type
+ResultHandlerSignatureLegacy = Callable[[dict, str, dict, str], None]
+
 
 class FuncDetailsValue(TypedDict):
     function: str | FunctionFuncSignature | FunctionFuncSignatureLegacy
     """Either an api method to call directly with `parameters` or a callable to directly invoke"""
     parameters: Optional[ParamsDefinition | ParamsFuncSignature | ParamsFuncSignatureLegacy]
     """arguments to the function, or a function that generates the arguments to the function"""
-    # Callable here takes the arguments
-    # - result
-    # - resource_id
-    # - resources
-    # - resource_type
-    result_handler: Optional[Callable[[dict, str, list[dict], str], None]]
+    result_handler: Optional[ResultHandlerSignature | ResultHandlerSignatureLegacy]
     """Take the result of the operation and patch the state of the resources, yuck..."""
     types: Optional[dict[str, Callable]]
     """Possible type conversions"""
@@ -118,7 +124,7 @@ class FuncDetailsValue(TypedDict):
 FuncDetails = list[FuncDetailsValue] | FuncDetailsValue
 
 # Type definition returned by GenericBaseModel.get_deploy_templates
-DeployTemplates = dict[str, FuncDetails | Callable]
+DeployTemplates = dict[str, FuncDetails]
 
 
 class NoStackUpdates(Exception):
@@ -855,8 +861,12 @@ def execute_resource_action(
 
         if "result_handler" in func and executed:
             LOG.debug(f"Executing callback method for {resource_type}:{resource_id}")
-            # TODO(srw): 4 - pass resource directly here
-            func["result_handler"](result, resource_id, resources, resource_type)
+            result_handler = func["result_handler"]
+            sig = inspect.signature(result_handler)
+            if "logical_resource_id" in sig.parameters:
+                result_handler(result, resource_id, resources[resource_id])
+            else:
+                result_handler(result, resource_id, resources, resource_type)
 
     return (results or [None])[0]
 

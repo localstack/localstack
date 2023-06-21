@@ -99,9 +99,9 @@ class DynamoDBTable(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _set_attributes(result: dict, resource_id: str, resources: dict, resource_type: str):
-            resources[resource_id]["PhysicalResourceId"] = result["TableDescription"]["TableName"]
-            resources[resource_id]["Properties"]["Table"] = result["TableDescription"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["TableDescription"]["TableName"]
+            resource["Properties"]["Table"] = result["TableDescription"]
 
         return {
             "create": [
@@ -123,7 +123,7 @@ class DynamoDBTable(GenericBaseModel):
                             )
                         ),
                     },
-                    "result_handler": _set_attributes,
+                    "result_handler": _handle_result,
                 },
                 {
                     "function": "enable_kinesis_streaming_destination",

@@ -60,24 +60,22 @@ class KinesisStream(GenericBaseModel):
         ) -> dict:
             return {"StreamName": properties["Name"], "EnforceConsumerDeletion": True}
 
-        def _store_arn(result, resource_id, resources, resource_type):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             client = aws_stack.connect_to_service("kinesis")
-            stream_name = resources[resource_id]["Properties"]["Name"]
+            stream_name = resource["Properties"]["Name"]
 
             description = client.describe_stream(StreamName=stream_name)
             while description["StreamDescription"]["StreamStatus"] != "ACTIVE":
                 description = client.describe_stream(StreamName=stream_name)
 
-            resources[resource_id]["PhysicalResourceId"] = stream_name
-            resources[resource_id]["Properties"]["Arn"] = description["StreamDescription"][
-                "StreamARN"
-            ]
+            resource["PhysicalResourceId"] = stream_name
+            resource["Properties"]["Arn"] = description["StreamDescription"]["StreamARN"]
 
         return {
             "create": {
                 "function": "create_stream",
                 "parameters": {"StreamName": "Name", "ShardCount": "ShardCount"},
-                "result_handler": _store_arn,
+                "result_handler": _handle_result,
             },
             "delete": {"function": "delete_stream", "parameters": get_delete_params},
         }
