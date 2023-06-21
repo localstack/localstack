@@ -7,29 +7,22 @@ from localstack.services.cloudformation.resource_provider import (
     ProgressEvent,
     ResourceProvider,
     ResourceRequest,
-    register_resource_provider,
 )
 
 {{ provider_properties }}
 
 
-class {{ resource }}AllProperties({{ resource }}Properties):
-    physical_resource_id: Optional[str] = None
-
-
-@register_resource_provider
-class {{ resource }}Provider(ResourceProvider[{{ resource }}AllProperties]):
+class {{ resource }}Provider(ResourceProvider[{{ resource }}Properties]):
 
     TYPE = "{{ name }}"
 
     def create(
         self,
-        request: ResourceRequest[{{ resource }}AllProperties],
-    ) -> ProgressEvent[{{ resource }}AllProperties]:
+        request: ResourceRequest[{{ resource }}Properties],
+    ) -> ProgressEvent[{{ resource }}Properties]:
         """
         Create a new resource.
         """
-        raise NotImplementedError
         model = request.desired_state
 
         # TODO: validations
@@ -52,6 +45,16 @@ class {{ resource }}Provider(ResourceProvider[{{ resource }}AllProperties]):
 
     def delete(
             self,
-            request: ResourceRequest[{{ resource }}AllProperties],
-    ) -> ProgressEvent[{{ resource }}AllProperties]:
+            request: ResourceRequest[{{ resource }}Properties],
+    ) -> ProgressEvent[{{ resource }}Properties]:
         raise NotImplementedError
+
+
+class {{ resource }}ProviderPlugin(CloudFormationResourceProviderPlugin):
+    name = "{{ name }}"
+
+    def __init__(self):
+        self.factory: Optional[Type[ResourceProvider]] = None
+
+    def load(self):
+        self.factory = {{ resource }}Provider

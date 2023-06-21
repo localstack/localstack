@@ -131,18 +131,28 @@ class TemplateRenderer:
 
     def render(
         self,
-        file_type: Literal["provider", "test", "attribute_template", "template"],
+        file_type: Literal[
+            "provider",
+            "integration_test",
+            "getatt_test",
+            "attribute_template",
+            "minimal_template",
+            "update_without_replacement_template",
+        ],
         resource_name: ResourceName,
     ) -> str:
         # TODO: remove this ugly conditional
         if file_type == "attribute_template":
             return self.render_attribute_template(resource_name)
-        elif file_type == "template":
-            return self.render_template(resource_name)
+        elif file_type == "minimal_template":
+            return self.render_minimal_template(resource_name)
+        elif file_type == "update_without_replacement_template":
+            return self.render_update_without_replacement_template(resource_name)
 
         template_mapping = {
             "provider": "provider_template.py.j2",
-            "test": "test_template.py.j2",
+            "getatt_test": "test_getatt_template.py.j2",
+            "integration_test": "test_integration_template.py.j2",
         }
         kwargs = dict(
             name=resource_name.full_name,  # AWS::SNS::Topic
@@ -151,7 +161,7 @@ class TemplateRenderer:
 
         # add extra parameters
         match file_type:
-            case "test":
+            case "getatt_test":
                 kwargs["getatt_targets"] = list(self.get_getatt_targets())
                 kwargs["service"] = resource_name.service.lower()
                 kwargs["resource"] = resource_name.resource.lower()
@@ -172,18 +182,54 @@ class TemplateRenderer:
             if "type" in defn and defn["type"] in ["string"]:
                 yield name
 
-    def render_template(self, resource_name: ResourceName) -> str:
+    def render_minimal_template(self, resource_name: ResourceName) -> str:
         template = {
             "AWSTemplateFormatVersion": "2010-09-09",
-            "Description": f"Template to exercise {resource_name.full_name}",
+            "Description": f"Template to exercise create and delete operations for {resource_name.full_name}",
             "Resources": {
                 "MyResource": {
                     "Type": resource_name.full_name,
                     "Properties": {},
                 },
             },
+            "Outputs": {
+                "MyRef": {
+                    "Value": {
+                        "Ref": "MyResource",
+                    },
+                },
+            },
         }
 
+        return safe_dump(template, sort_keys=False)
+
+    def render_update_without_replacement_template(self, resource_name: ResourceName) -> str:
+        template = {
+            "AWSTemplateFormatVersion": "2010-09-09",
+            "Description": f"Template to exercise updating {resource_name.full_name}",
+            "Parameters": {
+                "AttributeValue": {
+                    "Type": "String",
+                    "Description": "Value of property to change to force an update",
+                },
+            },
+            "Resources": {
+                "MyResource": {
+                    "Type": resource_name.full_name,
+                    "Properties": "# TODO: set one property to !Ref AttributeValue",
+                },
+            },
+            "Outputs": {
+                "MyRef": {
+                    "Value": {
+                        "Ref": "MyResource",
+                    },
+                },
+                "MyOutput": {
+                    "Value": "# TODO: the value to verify",
+                },
+            },
+        }
         return safe_dump(template, sort_keys=False)
 
     def render_attribute_template(self, resource_name: ResourceName) -> str:
@@ -381,9 +427,13 @@ def generate(resource_type: str, write: bool):
 
     template_renderer = TemplateRenderer(schema, env)
     provider_file = template_renderer.render("provider", resource_name)
-    tests_file = template_renderer.render("test", resource_name)
+    integration_test_file = template_renderer.render("integration_test", resource_name)
+    getatt_tests_file = template_renderer.render("getatt_test", resource_name)
     test_attributes_template = template_renderer.render("attribute_template", resource_name)
-    test_template = template_renderer.render("template", resource_name)
+    test_template = template_renderer.render("minimal_template", resource_name)
+    update_without_replacement_template = template_renderer.render(
+        "update_without_replacement_template", resource_name
+    )
 
     # for pretty printing
     console = Console()
@@ -391,19 +441,24 @@ def generate(resource_type: str, write: bool):
     if not write:
         console.print("\n[underline]Provider template[/underline]\n")
         console.print(Syntax(provider_file, "python"))
-        console.print("\n[underline]Test file[/underline]\n")
-        console.print(Syntax(tests_file, "python"))
+        console.print("\n[underline]Integration test file[/underline]\n")
+        console.print(Syntax(integration_test_file, "python"))
+        console.print("\n[underline]GetAtt test file[/underline]\n")
+        console.print(Syntax(getatt_tests_file, "python"))
         console.print("\n[underline]Attribute Test Template[/underline]\n")
         console.print(Syntax(test_attributes_template, "yaml"))
-        console.print("\n[underline]Template[/underline]\n")
+        console.print("\n[underline]Minimal template[/underline]\n")
         console.print(Syntax(test_template, "yaml"))
+        console.print("\n[underline]Update test template[/underline]\n")
+        console.print(Syntax(update_without_replacement_template, "yaml"))
         return
 
     # render the output to the file system locations
     root_path = Path(__file__).joinpath("..", "..", "..", "..", "..").resolve()
     writer = FileWriter(root_path, resource_name, console)
     writer.write_provider(provider_file)
-    writer.write_tests(tests_file)
+    writer.write_provider(integration_test_file)
+    writer.write_tests(getatt_tests_file)
     writer.write_test_template(test_template)
     return
 
