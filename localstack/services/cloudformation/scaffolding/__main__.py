@@ -121,7 +121,12 @@ class SchemaProvider:
                     self.schemas[typename] = schema
 
     def schema(self, resource_name: ResourceName) -> ResourceSchema:
-        return self.schemas[resource_name.full_name]
+        try:
+            return self.schemas[resource_name.full_name]
+        except KeyError as e:
+            raise click.ClickException(
+                f"Could not find CFn schema for type: {resource_name.full_name}"
+            ) from e
 
 
 class TemplateRenderer:
