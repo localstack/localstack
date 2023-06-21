@@ -14,6 +14,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
+from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.utils.aws import aws_stack
@@ -26,28 +27,24 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
         "stepfunctions": {"send_task_success": {"Output": "output", "TaskToken": "taskToken"}}
     }
 
+    _normalised_api_name: str
+    _normalised_api_action: str
+
+    def from_state_props(self, state_props: StateProps) -> None:
+        super().from_state_props(state_props=state_props)
+        self._normalised_api_name = self._normalise_api_name(self.resource.api_name)
+        self._normalised_api_action = camel_to_snake_case(self.resource.api_action)
+
+    def _get_parameters_normalising_bindings(self) -> dict[str, str]:
+        api_normalisers = self._SFN_TO_BOTO_PARAM_NORMALISERS.get(self._normalised_api_name, dict())
+        action_normalisers = api_normalisers.get(self._normalised_api_action, dict())
+        return action_normalisers
+
     def _get_sfn_resource_type(self) -> str:
         return f"{self.resource.service_name}:{self.resource.api_name}"
 
     def _normalise_api_name(self, api_name: str) -> str:
         return self._API_NAMES.get(api_name, api_name)
-
-    def _boto_normalise_parameters(self, api_name: str, api_action: str, parameters: dict) -> None:
-        api_normalisers = self._SFN_TO_BOTO_PARAM_NORMALISERS.get(api_name)
-        if not api_normalisers:
-            return
-
-        action_normalisers = api_normalisers.get(api_action)
-        if not action_normalisers:
-            return None
-
-        parameter_keys = list(parameters.keys())
-        for parameter_key in parameter_keys:
-            norm_parameter_key = action_normalisers.get(parameter_key)
-            if norm_parameter_key:
-                tmp = parameters[parameter_key]
-                del parameters[parameter_key]
-                parameters[norm_parameter_key] = tmp
 
     @staticmethod
     def _normalise_service_name(service_name: str) -> str:
@@ -97,18 +94,8 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
         return failure_event
 
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
-        api_name = self.resource.api_name
-        api_name = self._normalise_api_name(api_name)
-        api_action = camel_to_snake_case(self.resource.api_action)
-
-        self._boto_normalise_parameters(
-            api_name=api_name, api_action=api_action, parameters=parameters
-        )
-
-        api_client = aws_stack.create_external_boto_client(service_name=api_name)
-
-        response = getattr(api_client, api_action)(**parameters) or dict()
+        api_client = aws_stack.create_external_boto_client(service_name=self._normalised_api_name)
+        response = getattr(api_client, self._normalised_api_action)(**parameters) or dict()
         if response:
             response.pop("ResponseMetadata", None)
-
         env.stack.append(response)

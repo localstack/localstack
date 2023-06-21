@@ -1,3 +1,5 @@
+from typing import Final, Optional
+
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
@@ -13,18 +15,32 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task import (
+    lambda_eval_utils,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
-)
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task_lambda import (
-    LambdaFunctionErrorException,
-    StateTaskLambda,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 
 
-class StateTaskServiceLambda(StateTaskServiceCallback, StateTaskLambda):
+class StateTaskServiceLambda(StateTaskServiceCallback):
+    _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
+        "invoke": {
+            "ClientContext",
+            "FunctionName",
+            "InvocationType",
+            "Qualifier",
+            "Payload",
+            # Outside the specification, but supported in practice:
+            "LogType",
+        }
+    }
+
+    def _get_supported_parameters(self) -> Optional[set[str]]:
+        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
+
     @staticmethod
     def _error_cause_from_client_error(client_error: ClientError) -> tuple[str, str]:
         error_code: str = client_error.response["Error"]["Code"]
@@ -43,7 +59,7 @@ class StateTaskServiceLambda(StateTaskServiceCallback, StateTaskLambda):
         return error, cause
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        if isinstance(ex, LambdaFunctionErrorException):
+        if isinstance(ex, lambda_eval_utils.LambdaFunctionErrorException):
             error = "Exception"
             error_name = CustomErrorName(error)
             cause = ex.payload
@@ -69,4 +85,6 @@ class StateTaskServiceLambda(StateTaskServiceCallback, StateTaskLambda):
         )
 
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
-        super()._exec_lambda_function(env=env)
+        if "Payload" in parameters:
+            parameters["Payload"] = lambda_eval_utils.to_payload_type(parameters["Payload"])
+        lambda_eval_utils.exec_lambda_function(env=env, parameters=parameters)

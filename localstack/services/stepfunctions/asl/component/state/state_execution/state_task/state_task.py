@@ -59,6 +59,41 @@ class StateTask(ExecutionState, abc.ABC):
         self.parameters = state_props.get(Parameters)
         self.resource = state_props.get(Resource)
 
+    def _get_supported_parameters(self) -> Optional[set[str]]:  # noqa
+        return None
+
+    def _get_parameters_normalising_bindings(self) -> dict[str, str]:  # noqa
+        return dict()
+
+    def _eval_parameters(self, env: Environment) -> dict:
+        # Eval raw parameters.
+        parameters = dict()
+        if self.parameters:
+            self.parameters.eval(env=env)
+            parameters = env.stack.pop()
+
+        # Handle supported parameters.
+        supported_parameters = self._get_supported_parameters()
+        if supported_parameters:
+            unsupported_parameters: list[str] = [
+                parameter
+                for parameter in parameters.keys()
+                if parameter not in supported_parameters
+            ]
+            for unsupported_parameter in unsupported_parameters:
+                parameters.pop(unsupported_parameter, None)
+
+        # Normalise bindings.
+        parameter_normalisers = self._get_parameters_normalising_bindings()
+        for parameter_key in list(parameters.keys()):
+            norm_parameter_key = parameter_normalisers.get(parameter_key)
+            if norm_parameter_key:
+                tmp = parameters[parameter_key]
+                del parameters[parameter_key]
+                parameters[norm_parameter_key] = tmp
+
+        return parameters
+
     def _eval_body(self, env: Environment) -> None:
         if self.name == "Send":
             print(self.name)

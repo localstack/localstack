@@ -34,6 +34,9 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
         }
     }
 
+    def _get_supported_parameters(self) -> Optional[set[str]]:
+        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
+
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, ClientError):
             return FailureEvent(
@@ -63,24 +66,6 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
                     )
                 ),
             )
-
-    def _eval_parameters(self, env: Environment) -> dict:
-        api_action: str = self.resource.api_action
-        supported_parameters: Optional[set[str]] = self._SUPPORTED_API_PARAM_BINDINGS.get(
-            api_action.lower(), None
-        )
-        if supported_parameters is None:
-            raise RuntimeError("TODO: raise unsupported api error?")
-
-        parameters: dict = super()._eval_parameters(env=env)
-        unsupported_parameters: list[str] = [
-            parameter for parameter in parameters.keys() if parameter not in supported_parameters
-        ]
-        if unsupported_parameters:
-            for unsupported_parameter in unsupported_parameters:
-                parameters.pop(unsupported_parameter, None)
-
-        return parameters
 
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
         # TODO: Stepfunctions automatically dumps to json MessageBody's definitions.

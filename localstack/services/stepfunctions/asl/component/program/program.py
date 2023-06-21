@@ -3,6 +3,7 @@ from typing import Final, Optional
 
 from localstack.aws.api.stepfunctions import (
     ExecutionAbortedEventDetails,
+    ExecutionFailedEventDetails,
     ExecutionSucceededEventDetails,
     HistoryEventExecutionDataDetails,
     HistoryEventType,
@@ -19,6 +20,7 @@ from localstack.services.stepfunctions.asl.eval.programstate.program_error impor
 from localstack.services.stepfunctions.asl.eval.programstate.program_state import ProgramState
 from localstack.services.stepfunctions.asl.eval.programstate.program_stopped import ProgramStopped
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.utils.collections import select_from_typed_dict
 
 LOG = logging.getLogger(__name__)
 
@@ -49,9 +51,12 @@ class Program(EvalComponent):
 
         program_state: ProgramState = env.program_state()
         if isinstance(program_state, ProgramError):
+            exec_failed_event_details = select_from_typed_dict(
+                typed_dict=ExecutionFailedEventDetails, obj=program_state.error
+            )
             env.event_history.add_event(
                 hist_type_event=HistoryEventType.ExecutionFailed,
-                event_detail=EventDetails(executionFailedEventDetails=program_state.error),
+                event_detail=EventDetails(executionFailedEventDetails=exec_failed_event_details),
             )
         elif isinstance(program_state, ProgramStopped):
             env.event_history.add_event(
