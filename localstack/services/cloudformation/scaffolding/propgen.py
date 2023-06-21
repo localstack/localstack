@@ -137,6 +137,10 @@ def render_types(
                         item = Item.new(
                             name=property, type="list", required=property in required_properties
                         )
+                    case "number":
+                        item = Item.new(
+                            name=property, type="float", required=property in required_properties
+                        )
                     case _:
                         raise NotImplementedError(prop_type)
 
