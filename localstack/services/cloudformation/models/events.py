@@ -33,8 +33,11 @@ class EventConnection(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = resource["Properties"]["Name"]
+
         return {
-            "create": {"function": "create_connection"},
+            "create": {"function": "create_connection", "result_handler": _handle_result},
             "delete": {"function": "delete_connection", "parameters": ["Name"]},
         }
 
