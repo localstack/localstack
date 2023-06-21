@@ -1750,10 +1750,10 @@ class TestS3:
             )
         snapshot.match("exc-invalid-request-storage-class", e.value.response)
 
-    # TODO: maybe different checksums?
     @pytest.mark.aws_validated
+    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256"])
     @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
-    def test_s3_copy_object_with_checksum(self, s3_create_bucket, snapshot, aws_client):
+    def test_s3_copy_object_with_checksum(self, s3_create_bucket, snapshot, aws_client, algorithm):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "source-object"
         bucket_name = s3_create_bucket()
@@ -1779,7 +1779,7 @@ class TestS3:
             Bucket=bucket_name,
             CopySource=f"{bucket_name}/{object_key}",
             Key=object_key,
-            ChecksumAlgorithm="SHA256",
+            ChecksumAlgorithm=algorithm,
             Metadata={"key1": "value1"},
             MetadataDirective="REPLACE",
         )

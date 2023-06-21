@@ -508,6 +508,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 )
             else:
                 dest_key_object.checksum_value = source_key_object.checksum_value
+                if checksum_algorithm == ChecksumAlgorithm.CRC32C:
+                    # TODO: the logic for rendering the template in moto is the following:
+                    # if `CRC32` in `key.checksum_algorithm` which is valid for both CRC32 and CRC32C
+                    # remove the key if it's CRC32C.
+                    response["CopyObjectResult"].pop("ChecksumCRC32", None)
             dest_key_object.checksum_algorithm = checksum_algorithm
 
             response["CopyObjectResult"][
