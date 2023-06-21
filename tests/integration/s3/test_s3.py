@@ -5745,8 +5745,8 @@ class TestS3PresignedUrl:
         if not is_aws_cloud():
             # moto does not respect credentials passed, and will always set hard coded values from a template here
             # until this can be used, we are hardcoding the AccessKeyId and SecretAccessKey
-            response["Credentials"]["AccessKeyId"] = "test"
-            response["Credentials"]["SecretAccessKey"] = "test"
+            response["Credentials"]["AccessKeyId"] = TEST_AWS_ACCESS_KEY_ID
+            response["Credentials"]["SecretAccessKey"] = TEST_AWS_SECRET_ACCESS_KEY
 
         client = boto3.client(
             "s3",

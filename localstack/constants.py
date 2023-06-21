@@ -158,7 +158,7 @@ except Exception:
 # credentials used in the test suite
 TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
 TEST_AWS_ACCESS_KEY_ID = "test"
-TEST_AWS_SECRET_ACCESS_KEY = "test1"
+TEST_AWS_SECRET_ACCESS_KEY = "test"
 TEST_AWS_REGION_NAME = "us-east-1"
 
 # additional credentials used in the test suite (mainly when running cross-account assertions)
