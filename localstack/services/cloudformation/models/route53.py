@@ -19,7 +19,9 @@ class Route53RecordSet(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def param_change_batch(params, **kwargs):
+        def param_change_batch(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ):
             attr_names = [
                 "Name",
                 "Type",
@@ -34,7 +36,7 @@ class Route53RecordSet(GenericBaseModel):
                 "AliasTarget",
                 "HealthCheckId",
             ]
-            attrs = select_attributes(params, attr_names)
+            attrs = select_attributes(properties, attr_names)
             if "TTL" in attrs:
                 if isinstance(attrs["TTL"], str):
                     attrs["TTL"] = int(attrs["TTL"])
@@ -44,15 +46,17 @@ class Route53RecordSet(GenericBaseModel):
             if "ResourceRecords" in attrs:
                 attrs["ResourceRecords"] = [{"Value": r} for r in attrs["ResourceRecords"]]
             return {
-                "Comment": params.get("Comment", ""),
+                "Comment": properties.get("Comment", ""),
                 "Changes": [{"Action": "CREATE", "ResourceRecordSet": attrs}],
             }
 
-        def hosted_zone_id_change_batch(params, **kwargs):
+        def hosted_zone_id_change_batch(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ):
             route53 = aws_stack.connect_to_service("route53")
-            hosted_zone_id = params.get("HostedZoneId")
+            hosted_zone_id = properties.get("HostedZoneId")
             if not hosted_zone_id:
-                hosted_zone_name = params.get("HostedZoneName")
+                hosted_zone_name = properties.get("HostedZoneName")
                 # https://docs.aws.amazon.com/Route53/latest/APIReference/API_ChangeResourceRecordSets.html"
                 # "Specify either HostedZoneName or HostedZoneId, but not both. If you have multiple hosted zones with
                 # the same domain name, you must specify the hosted zone using HostedZoneId."

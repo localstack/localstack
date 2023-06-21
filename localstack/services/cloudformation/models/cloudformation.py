@@ -52,20 +52,22 @@ class CloudFormationStack(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def get_nested_stack_params(params, **kwargs):
-            nested_stack_name = params["StackName"]
-            stack_params = params.get("Parameters", {})
-            stack_params = [
+        def get_nested_stack_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ):
+            nested_stack_name = properties["StackName"]
+            stack_parameters = properties.get("Parameters", {})
+            stack_parameters = [
                 {
                     "ParameterKey": k,
                     "ParameterValue": str(v).lower() if isinstance(v, bool) else str(v),
                 }
-                for k, v in stack_params.items()
+                for k, v in stack_parameters.items()
             ]
             result = {
                 "StackName": nested_stack_name,
-                "TemplateURL": params.get("TemplateURL"),
-                "Parameters": stack_params,
+                "TemplateURL": properties.get("TemplateURL"),
+                "Parameters": stack_parameters,
             }
             return result
 

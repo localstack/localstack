@@ -10,12 +10,15 @@ import requests
 from botocore.exceptions import ClientError
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
     DEFAULT_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+    SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
@@ -48,8 +51,6 @@ TEST_POLICY = """
 }
 """
 
-TEST_REGION = "us-east-1"
-
 
 def get_qsize(sqs_client, queue_url: str) -> int:
     """
@@ -80,17 +81,21 @@ class TestSqsProvider:
         sqs_create_queue(QueueName=queue_name)
 
         queue_url = aws_client.sqs.get_queue_url(QueueName=queue_name)["QueueUrl"]
-        account_id = get_aws_account_id()
 
         host = config.get_edge_url()
         # our current queue pattern looks like this, but may change going forward, or may be configurable
-        assert queue_url == f"{host}/{account_id}/{queue_name}"
+        assert queue_url == f"{host}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
 
         # attempt to connect through a different host and make sure the URL contains that host
         host = f"http://127.0.0.1:{config.EDGE_PORT}"
-        client = aws_stack.connect_to_service("sqs", endpoint_url=host)
+        client = aws_stack.connect_to_service(
+            "sqs",
+            endpoint_url=host,
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        )
         queue_url = client.get_queue_url(QueueName=queue_name)["QueueUrl"]
-        assert queue_url == f"{host}/{account_id}/{queue_name}"
+        assert queue_url == f"{host}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
 
     @pytest.mark.parametrize("strategy", ["domain", "path"])
     def test_cross_account_access(
@@ -137,13 +142,13 @@ class TestSqsProvider:
         queue_url = sqs_create_queue(QueueName=queue_name)
         account_id, region_name, queue_name_from_url = parse_queue_url(queue_url)
         assert account_id == DEFAULT_AWS_ACCOUNT_ID
-        assert region_name == TEST_REGION
+        assert region_name == TEST_AWS_REGION_NAME
         assert queue_name_from_url == queue_name
 
         # Get another client in the same region
         client = aws_client_factory.get_client(
             "sqs",
-            TEST_REGION,
+            TEST_AWS_REGION_NAME,
             aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
         )
@@ -242,7 +247,7 @@ class TestSqsProvider:
         )
 
         time.sleep(1.5)
-        store = sqs_stores[get_aws_account_id()][aws_stack.get_region()]
+        store = sqs_stores[TEST_AWS_ACCOUNT_ID][TEST_AWS_REGION_NAME]
         assert name in store.deleted
         assert queue_url == sqs_create_queue(QueueName=name)
         assert name not in store.deleted
@@ -1183,7 +1188,7 @@ class TestSqsProvider:
         assert result.status_code == 200
         assert url in result.text
 
-        queue_url = f"http://{url}/{get_aws_account_id()}/{queue_name}"
+        queue_url = f"http://{url}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
         message_body = f"test message {short_uid()}"
         payload = f"Action=SendMessage&QueueUrl={queue_url}&MessageBody={message_body}"
         result = requests.post(edge_url, data=payload, headers=headers)
@@ -1196,14 +1201,14 @@ class TestSqsProvider:
         assert message_body in result.text
 
         # the customer said that he used to be able to access it via "127.0.0.1" instead of "aws-local" as well
-        queue_url = f"http://127.0.0.1/{get_aws_account_id()}/{queue_name}"
+        queue_url = f"http://127.0.0.1/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
 
         payload = f"Action=SendMessage&QueueUrl={queue_url}&MessageBody={message_body}"
         result = requests.post(edge_url, data=payload, headers=headers)
         assert result.status_code == 200
         assert "MD5" in result.text
 
-        queue_url = f"http://127.0.0.1/{get_aws_account_id()}/{queue_name}"
+        queue_url = f"http://127.0.0.1/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
 
         payload = f"Action=ReceiveMessage&QueueUrl={queue_url}&VisibilityTimeout=0"
         result = requests.post(edge_url, data=payload, headers=headers)
@@ -2285,7 +2290,7 @@ class TestSqsProvider:
 
         dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
         url_parts = dl_queue_url.split("/")
-        region = get_region()
+        region = TEST_AWS_REGION_NAME
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
             region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
@@ -2301,7 +2306,7 @@ class TestSqsProvider:
     def test_dead_letter_queue_list_sources(self, sqs_create_queue, aws_client):
         dl_queue_url = sqs_create_queue()
         url_parts = dl_queue_url.split("/")
-        region = get_region()
+        region = TEST_AWS_REGION_NAME
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
             region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
@@ -2401,14 +2406,20 @@ class TestSqsProvider:
 
         # create queues
         queue_names = [f"q-{short_uid()}", f"q-{short_uid()}", f"q-{short_uid()}"]
+        queue_urls = []
+
         for queue_name in queue_names:
-            sqs_create_queue(QueueName=queue_name, Attributes={"VisibilityTimeout": "0"})
-        queue_urls = [arns.get_sqs_queue_url(queue_name) for queue_name in queue_names]
+            url = sqs_create_queue(QueueName=queue_name, Attributes={"VisibilityTimeout": "0"})
+            queue_urls.append(url)
 
         # set redrive policies
         for idx, queue_name in enumerate(queue_names[:2]):
             policy = {
-                "deadLetterTargetArn": arns.sqs_queue_arn(queue_names[idx + 1]),
+                "deadLetterTargetArn": arns.sqs_queue_arn(
+                    queue_names[idx + 1],
+                    account_id=TEST_AWS_ACCOUNT_ID,
+                    region_name=TEST_AWS_REGION_NAME,
+                ),
                 "maxReceiveCount": 1,
             }
             aws_client.sqs.set_queue_attributes(
@@ -2452,7 +2463,7 @@ class TestSqsProvider:
         dead_letter_queue_name = f"dead_letter_queue-{short_uid()}"
 
         dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
-        region = get_region()
+        region = TEST_AWS_REGION_NAME
         dl_result = aws_client.sqs.get_queue_attributes(
             QueueUrl=dl_queue_url, AttributeNames=["QueueArn"]
         )
@@ -2873,7 +2884,7 @@ class TestSqsProvider:
 
         # create arn
         url_parts = dl_queue_url.split("/")
-        region = get_region()
+        region = TEST_AWS_REGION_NAME
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
             region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
@@ -3424,13 +3435,9 @@ class TestSqsProvider:
         snapshot.add_transformer(GenericTransformer(_remove_error_details))
 
 
-def get_region():
-    return os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
-
-
 @pytest.fixture()
 def sqs_http_client(aws_http_client_factory):
-    yield aws_http_client_factory("sqs")
+    yield aws_http_client_factory("sqs", region=TEST_AWS_REGION_NAME)
 
 
 class TestSqsQueryApi:
@@ -3561,7 +3568,12 @@ class TestSqsQueryApi:
         assert "<Message>Unknown Attribute Foobar.</Message>" in response.text
 
     @pytest.mark.aws_validated
-    def test_get_delete_queue(self, sqs_create_queue, sqs_http_client, sqs_queue_exists):
+    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    def test_get_delete_queue(
+        self, monkeypatch, sqs_create_queue, sqs_http_client, sqs_queue_exists, strategy
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         queue_url = sqs_create_queue()
 
         response = sqs_http_client.get(
@@ -3582,15 +3594,15 @@ class TestSqsQueryApi:
         # set up regular boto clients for creating the queues
         client1 = aws_client_factory.get_client(
             service_name="sqs",
-            region_name="us-east-1",
-            aws_access_key_id="000000000001",
+            region_name=TEST_AWS_REGION_NAME,
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
         client2 = aws_client_factory.get_client(
             service_name="sqs",
-            region_name="us-east-1",
-            aws_access_key_id="000000000002",
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            region_name=TEST_AWS_REGION_NAME,
+            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
         )
 
         # set up the queues in the two accounts
@@ -3599,25 +3611,25 @@ class TestSqsQueryApi:
         queue2_name = f"{prefix}-queue-{short_uid()}"
         response = client1.create_queue(QueueName=queue1_name)
         queue1_url = response["QueueUrl"]
-        assert parse_queue_url(queue1_url)[0] == "000000000001"
+        assert parse_queue_url(queue1_url)[0] == TEST_AWS_ACCOUNT_ID
 
         response = client2.create_queue(QueueName=queue2_name)
         queue2_url = response["QueueUrl"]
-        assert parse_queue_url(queue2_url)[0] == "000000000002"
+        assert parse_queue_url(queue2_url)[0] == SECONDARY_TEST_AWS_ACCOUNT_ID
 
         # now prepare the query api clients
         client1_http = aws_http_client_factory(
             service="sqs",
-            region="us-east-1",
-            aws_access_key_id="000000000001",
+            region=TEST_AWS_REGION_NAME,
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
 
         client2_http = aws_http_client_factory(
             service="sqs",
-            region="us-east-1",
-            aws_access_key_id="000000000002",
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            region=TEST_AWS_REGION_NAME,
+            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
         )
 
         # try and delete the queue from one account using the query API and make sure a) it works, and b) it's not deleting the queue from the other account
@@ -3738,7 +3750,16 @@ class TestSqsQueryApi:
         assert response.status_code == 400
 
     @pytest.mark.aws_validated
-    def test_get_queue_url_works_for_same_queue(self, sqs_create_queue, sqs_http_client):
+    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    def test_get_queue_url_works_for_same_queue(
+        self,
+        monkeypatch,
+        sqs_create_queue,
+        sqs_http_client,
+        strategy,
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         queue_url = sqs_create_queue()
 
         response = sqs_http_client.get(
@@ -3752,7 +3773,12 @@ class TestSqsQueryApi:
         assert response.status_code == 200
 
     @pytest.mark.aws_validated
-    def test_get_queue_url_work_for_different_queue(self, sqs_create_queue, sqs_http_client):
+    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    def test_get_queue_url_work_for_different_queue(
+        self, monkeypatch, sqs_create_queue, sqs_http_client, strategy
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
         # for some reason this is allowed 🤷
         queue1_url = sqs_create_queue()
         queue2_url = sqs_create_queue()
@@ -3782,9 +3808,11 @@ class TestSqsQueryApi:
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
         queue_name = f"test-queue-{short_uid()}"
+        region1 = "us-west-1"
+        region2 = "eu-north-1"
 
-        sqs_region1 = create_boto_client("sqs", "us-east-1")
-        sqs_region2 = create_boto_client("sqs", "eu-west-1")
+        sqs_region1 = create_boto_client("sqs", region1)
+        sqs_region2 = create_boto_client("sqs", region2)
 
         queue_region1 = sqs_region1.create_queue(QueueName=queue_name)["QueueUrl"]
         cleanups.append(lambda: sqs_region1.delete_queue(QueueUrl=queue_region1))
@@ -3795,11 +3823,11 @@ class TestSqsQueryApi:
             assert queue_region1 == queue_region2
         else:
             assert queue_region1 != queue_region2
-            assert "eu-west-1" in queue_region2
+            assert region2 in queue_region2
             # us-east-1 is the default region, so it's not necessarily part of the queue URL
 
-        client_region1 = aws_http_client_factory("sqs", "us-east-1")
-        client_region2 = aws_http_client_factory("sqs", "eu-west-1")
+        client_region1 = aws_http_client_factory("sqs", region1)
+        client_region2 = aws_http_client_factory("sqs", region2)
 
         response = client_region1.get(
             queue_region1, params={"Action": "SendMessage", "MessageBody": "foobar"}
@@ -3825,7 +3853,8 @@ class TestSqsQueryApi:
         queue_name = f"path_queue_{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         assert (
-            f"localhost:4566/queue/{get_region()}/{get_aws_account_id()}/{queue_name}" in queue_url
+            f"localhost:4566/queue/{TEST_AWS_REGION_NAME}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
+            in queue_url
         )
 
     @pytest.mark.aws_validated

@@ -12,9 +12,11 @@ from localstack.utils.collections import convert_to_typed_dict
 # OpenSearch still uses "es" ARNs
 # See examples in:
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-opensearchservice-domain.html
-def opensearch_add_tags_params(params, **kwargs):
-    es_arn = arns.es_domain_arn(params.get("DomainName"))
-    tags = params.get("Tags", [])
+def opensearch_add_tags_params(
+    properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+):
+    es_arn = arns.es_domain_arn(properties.get("DomainName"))
+    tags = properties.get("Tags", [])
     return {"ARN": es_arn, "TagList": tags}
 
 
@@ -32,9 +34,11 @@ class OpenSearchDomain(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _create_params(params, **kwargs):
-            params = remove_none_values(params)
-            result = convert_to_typed_dict(CreateDomainRequest, params)
+        def _create_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ):
+            properties = remove_none_values(properties)
+            result = convert_to_typed_dict(CreateDomainRequest, properties)
             cluster_config = result.get("ClusterConfig")
             if isinstance(cluster_config, dict):
                 # set defaults required for boto3 calls

@@ -70,20 +70,38 @@ RESOURCE_MODELS: dict[str, Type[GenericBaseModel]] = {
 ResourceProp = str | Callable[[dict, str, dict, str], dict]
 ResourceDefinition = dict[str, ResourceProp]
 
+# - logical_resource_id
+# - resource
+# - stack_name
+FunctionFuncSignature = Callable[[str, dict, str], Any]
+# - resource_id
+# - resources
+# - resource_type
+# - func
+# - stack_name
+FunctionFuncSignatureLegacy = Callable[[str, dict[str, dict], str, Any, str], Any]
+
+# - resource_props
+# - logical_resource_id
+# - resource
+# - stack_name
+ParamsFuncSignature = Callable[[dict, str, dict, str], dict]
+# - resource_props
+# - stack_name
+# - resources
+# - resource_id
+ParamsFuncSignatureLegacy = Callable[[dict, str, dict[str, dict], str], dict]
+
+# either a dictionary of strings to
+# - strings, or
+# - instances of the parameter function (current or legacy)
+ParamsDefinition = dict[str, str | ParamsFuncSignature | ParamsFuncSignatureLegacy]
+
 
 class FuncDetailsValue(TypedDict):
-    # Callable here takes the arguments:
-    # - logical_resource_id
-    # - resource
-    # - stack_name
-    function: str | Callable[[str, dict, str], Any]
+    function: str | FunctionFuncSignature | FunctionFuncSignatureLegacy
     """Either an api method to call directly with `parameters` or a callable to directly invoke"""
-    # Callable here takes the arguments:
-    # - resource_props
-    # - stack_name
-    # - resources
-    # - resource_id
-    parameters: Optional[ResourceDefinition | Callable[[dict, str, list[dict], str], dict]]
+    parameters: Optional[ParamsDefinition | ParamsFuncSignature | ParamsFuncSignatureLegacy]
     """arguments to the function, or a function that generates the arguments to the function"""
     # Callable here takes the arguments
     # - result
@@ -808,7 +826,6 @@ def execute_resource_action(
     for func in func_details:
         result = None
         executed = False
-        # TODO(srw) 3 - callable function
         if callable(func.get("function")):
             sig = inspect.signature(func["function"])
             if "logical_resource_id" in sig.parameters:
@@ -893,20 +910,26 @@ def resolve_resource_parameters(
     resource_id: str,
     func_details: FuncDetailsValue,
 ) -> dict | None:
-    params = func_details.get("parameters") or (lambda params, **kwargs: params)
+    params = func_details.get("parameters") or (
+        lambda properties, logical_resource_id, *args, **kwargs: properties
+    )
     resource_props = resource_definition["Properties"] = resource_definition.get("Properties", {})
     resource_props = dict(resource_props)
     resource_state = resource_definition.get(KEY_RESOURCE_STATE, {})
 
     if callable(params):
         # resolve parameter map via custom function
-        # TODO(srw): 1 - callable for resolving params
-        params = params(
-            resource_props,
-            stack_name=stack_name,
-            resources=resources,
-            resource_id=resource_id,
-        )
+        sig = inspect.signature(params)
+        if "logical_resource_id" in sig.parameters:
+            params = params(resource_props, resource_id, resource_definition, stack_name)
+        else:
+            raise NotImplementedError(func_details)
+            params = params(
+                resource_props,
+                stack_name=stack_name,
+                resources=resources,
+                resource_id=resource_id,
+            )
     else:
         # it could be a list like ['param1', 'param2', {'apiCallParamName': 'cfResourcePropName'}]
         if isinstance(params, list):
@@ -926,13 +949,22 @@ def resolve_resource_parameters(
                 prop_keys = [prop_keys]
             for prop_key in prop_keys:
                 if callable(prop_key):
-                    # TODO(srw): 2 - callable for a property value
-                    prop_value = prop_key(
-                        resource_props,
-                        stack_name=stack_name,
-                        resources=resources,
-                        resource_id=resource_id,
-                    )
+                    sig = inspect.signature(prop_key)
+                    if "logical_resource_id" in sig.parameters:
+                        prop_value = prop_key(
+                            resource_props,
+                            resource_id,
+                            resource_definition,
+                            stack_name,
+                        )
+                    else:
+                        raise NotImplementedError
+                        prop_value = prop_key(
+                            resource_props,
+                            stack_name=stack_name,
+                            resources=resources,
+                            resource_id=resource_id,
+                        )
                 else:
                     prop_value = resource_props.get(
                         prop_key,

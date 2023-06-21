@@ -104,13 +104,12 @@ class SQSQueue(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _queue_url(params, resources, resource_id, **kwargs):
-            resource = cls(resources[resource_id])
-            props = resource.props
-            queue_url = resource.physical_resource_id or props.get("QueueUrl")
+        def _queue_url(properties: dict, logical_resource_id: str, resource: dict, stack_name: str):
+            provider = cls(resource)
+            queue_url = provider.physical_resource_id or properties.get("QueueUrl")
             if queue_url:
                 return queue_url
-            return arns.sqs_queue_url_for_arn(props["QueueArn"])
+            return arns.sqs_queue_url_for_arn(properties["QueueArn"])
 
         def _set_physical_resource_id(
             result: dict, resource_id: str, resources: dict, resource_type: str

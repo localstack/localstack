@@ -519,6 +519,7 @@ class RestoreRequestType(str):
 class ServerSideEncryption(str):
     AES256 = "AES256"
     aws_kms = "aws:kms"
+    aws_kms_dsse = "aws:kms:dsse"
 
 
 class SseKmsEncryptedObjectsStatus(str):
@@ -1478,11 +1479,13 @@ FilterRuleList = List[FilterRule]
 
 class GetBucketAccelerateConfigurationOutput(TypedDict, total=False):
     Status: Optional[BucketAccelerateStatus]
+    RequestCharged: Optional[RequestCharged]
 
 
 class GetBucketAccelerateConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     ExpectedBucketOwner: Optional[AccountId]
+    RequestPayer: Optional[RequestPayer]
 
 
 class GetBucketAclOutput(TypedDict, total=False):
@@ -2301,6 +2304,7 @@ class ListMultipartUploadsOutput(TypedDict, total=False):
     Uploads: Optional[MultipartUploadList]
     CommonPrefixes: Optional[CommonPrefixList]
     EncodingType: Optional[EncodingType]
+    RequestCharged: Optional[RequestCharged]
 
 
 class ListMultipartUploadsRequest(ServiceRequest):
@@ -2312,6 +2316,7 @@ class ListMultipartUploadsRequest(ServiceRequest):
     Prefix: Optional[Prefix]
     UploadIdMarker: Optional[UploadIdMarker]
     ExpectedBucketOwner: Optional[AccountId]
+    RequestPayer: Optional[RequestPayer]
 
 
 class ObjectVersion(TypedDict, total=False):
@@ -2343,6 +2348,7 @@ class ListObjectVersionsOutput(TypedDict, total=False):
     MaxKeys: Optional[MaxKeys]
     CommonPrefixes: Optional[CommonPrefixList]
     EncodingType: Optional[EncodingType]
+    RequestCharged: Optional[RequestCharged]
 
 
 class ListObjectVersionsRequest(ServiceRequest):
@@ -2354,6 +2360,7 @@ class ListObjectVersionsRequest(ServiceRequest):
     Prefix: Optional[Prefix]
     VersionIdMarker: Optional[VersionIdMarker]
     ExpectedBucketOwner: Optional[AccountId]
+    RequestPayer: Optional[RequestPayer]
 
 
 class Object(TypedDict, total=False):
@@ -2379,6 +2386,7 @@ class ListObjectsOutput(TypedDict, total=False):
     MaxKeys: Optional[MaxKeys]
     CommonPrefixes: Optional[CommonPrefixList]
     EncodingType: Optional[EncodingType]
+    RequestCharged: Optional[RequestCharged]
     BucketRegion: Optional[BucketRegion]
     Contents: Optional[ObjectList]
 
@@ -2406,6 +2414,7 @@ class ListObjectsV2Output(TypedDict, total=False):
     ContinuationToken: Optional[Token]
     NextContinuationToken: Optional[NextToken]
     StartAfter: Optional[StartAfter]
+    RequestCharged: Optional[RequestCharged]
     BucketRegion: Optional[BucketRegion]
     Contents: Optional[ObjectList]
 
@@ -3384,7 +3393,11 @@ class S3Api:
 
     @handler("GetBucketAccelerateConfiguration")
     def get_bucket_accelerate_configuration(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
     ) -> GetBucketAccelerateConfigurationOutput:
         raise NotImplementedError
 
@@ -3726,6 +3739,7 @@ class S3Api:
         prefix: Prefix = None,
         upload_id_marker: UploadIdMarker = None,
         expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
     ) -> ListMultipartUploadsOutput:
         raise NotImplementedError
 
@@ -3741,6 +3755,7 @@ class S3Api:
         prefix: Prefix = None,
         version_id_marker: VersionIdMarker = None,
         expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
     ) -> ListObjectVersionsOutput:
         raise NotImplementedError
 

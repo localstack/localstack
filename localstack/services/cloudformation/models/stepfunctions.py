@@ -91,11 +91,13 @@ class SFNStateMachine(GenericBaseModel):
             resources[resource_id]["Properties"]["Arn"] = result["stateMachineArn"]
             resources[resource_id]["PhysicalResourceId"] = result["stateMachineArn"]
 
-        def _create_params(params, **kwargs):
-            def _get_definition(params):
+        def _create_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
+            def _get_definition(properties):
                 # TODO: support "Definition" parameter
-                definition_str = params.get("DefinitionString")
-                s3_location = params.get("DefinitionS3Location")
+                definition_str = properties.get("DefinitionString")
+                s3_location = properties.get("DefinitionS3Location")
                 if not definition_str and s3_location:
                     # TODO: currently not covered by tests - add a test to mimick the behavior of "sam deploy ..."
                     s3_client = aws_stack.connect_to_service("s3")
@@ -104,16 +106,16 @@ class SFNStateMachine(GenericBaseModel):
                         Bucket=s3_location["Bucket"], Key=s3_location["Key"]
                     )
                     definition_str = to_str(result["Body"].read())
-                substitutions = params.get("DefinitionSubstitutions")
+                substitutions = properties.get("DefinitionSubstitutions")
                 if substitutions is not None:
                     definition_str = _apply_substitutions(definition_str, substitutions)
                 return definition_str
 
             return {
-                "name": params.get("StateMachineName"),
-                "definition": _get_definition(params),
-                "roleArn": params.get("RoleArn"),
-                "type": params.get("StateMachineType", None),
+                "name": properties.get("StateMachineName"),
+                "definition": _get_definition(properties),
+                "roleArn": properties.get("RoleArn"),
+                "type": properties.get("StateMachineType", None),
             }
 
         return {
