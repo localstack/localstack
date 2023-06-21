@@ -368,9 +368,12 @@ class EC2VPC(GenericBaseModel):
         return "AWS::EC2::VPC"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("ec2")
-        resp = client.describe_vpcs(Filters=[{"Name": "cidr", "Values": [self.props["CidrBlock"]]}])
-        return (resp["Vpcs"] or [None])[0]
+        if self.physical_resource_id:
+            client = aws_stack.connect_to_service("ec2")
+            resp = client.describe_vpcs(
+                Filters=[{"Name": "vpc-id", "Values": [self.physical_resource_id]}]
+            )
+            return (resp["Vpcs"] or [None])[0]
 
     def get_cfn_attribute(self, attribute_name):
         ec2_client = aws_stack.connect_to_service("ec2")
