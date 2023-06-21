@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess as sp
 import zipfile
 from dataclasses import dataclass
+from enum import Enum, auto
 from functools import reduce
 from pathlib import Path
 from typing import Any, Generator, Literal, Optional, TypedDict, TypeVar
@@ -129,6 +131,53 @@ class SchemaProvider:
             ) from e
 
 
+LOCALSTACK_ROOT_DIR = Path(__file__).parent.joinpath("../../../..").resolve()
+
+
+def template_path(
+    resource_name: ResourceName, file_type: FileType, root: Optional[Path] = None
+) -> Path:
+    """
+    Given a resource name and file type, return the path of the template relative to the template root.
+    """
+    match file_type:
+        case FileType.attribute_template:
+            stub = f"aws_{resource_name.service.lower()}_{resource_name.resource.lower()}_getatt_exploration.yaml"
+
+        case FileType.minimal_template:
+            stub = (
+                f"aws_{resource_name.service.lower()}_{resource_name.resource.lower()}_minimal.yaml"
+            )
+        case FileType.update_without_replacement_template:
+            stub = f"aws_{resource_name.service.lower()}_{resource_name.resource.lower()}_update_without_replacement.yaml"
+        case _:
+            raise ValueError(f"File type {file_type} is not a template")
+
+    output_path = LOCALSTACK_ROOT_DIR.joinpath(
+        f"tests/integration/templates/resource_providers/{resource_name.service.lower()}/{stub}"
+    ).resolve()
+
+    if root:
+        test_path = LOCALSTACK_ROOT_DIR.joinpath(
+            f"tests/integration/cloudformation/resource_providers/{resource_name.service.lower()}"
+        ).resolve()
+
+        common_root = os.path.relpath(output_path, test_path)
+        return Path(common_root)
+    else:
+        return output_path
+
+
+class FileType(Enum):
+    provider = auto()
+    integration_test = auto()
+    getatt_test = auto()
+    attribute_template = auto()
+    minimal_template = auto()
+    update_without_replacement_template = auto()
+    schema = auto()
+
+
 class TemplateRenderer:
     def __init__(self, schema: ResourceSchema, environment: Environment):
         self.schema = schema
@@ -136,28 +185,23 @@ class TemplateRenderer:
 
     def render(
         self,
-        file_type: Literal[
-            "provider",
-            "integration_test",
-            "getatt_test",
-            "attribute_template",
-            "minimal_template",
-            "update_without_replacement_template",
-        ],
+        file_type: FileType,
         resource_name: ResourceName,
     ) -> str:
         # TODO: remove this ugly conditional
-        if file_type == "attribute_template":
+        if file_type == FileType.attribute_template:
             return self.render_attribute_template(resource_name)
-        elif file_type == "minimal_template":
+        elif file_type == FileType.minimal_template:
             return self.render_minimal_template(resource_name)
-        elif file_type == "update_without_replacement_template":
+        elif file_type == FileType.update_without_replacement_template:
             return self.render_update_without_replacement_template(resource_name)
+        elif file_type == FileType.schema:
+            return json.dumps(self.schema, indent=2)
 
         template_mapping = {
-            "provider": "provider_template.py.j2",
-            "getatt_test": "test_getatt_template.py.j2",
-            "integration_test": "test_integration_template.py.j2",
+            FileType.provider: "provider_template.py.j2",
+            FileType.getatt_test: "test_getatt_template.py.j2",
+            FileType.integration_test: "test_integration_template.py.j2",
         }
         kwargs = dict(
             name=resource_name.full_name,  # AWS::SNS::Topic
@@ -165,18 +209,37 @@ class TemplateRenderer:
         )
 
         # add extra parameters
+        tests_output_path = LOCALSTACK_ROOT_DIR.joinpath(
+            f"tests/integration/cloudformation/resource_providers/{resource_name.service.lower()}"
+        )
         match file_type:
-            case "getatt_test":
+            case FileType.getatt_test:
                 kwargs["getatt_targets"] = list(self.get_getatt_targets())
                 kwargs["service"] = resource_name.service.lower()
                 kwargs["resource"] = resource_name.resource.lower()
-            case "provider":
+                kwargs["template_path"] = str(
+                    template_path(resource_name, FileType.attribute_template, tests_output_path)
+                )
+            case FileType.provider:
                 property_ir = generate_ir_for_type(
                     [self.schema],
                     resource_name.full_name,
                     provider_prefix=resource_name.provider_name(),
                 )
                 kwargs["provider_properties"] = property_ir
+            case FileType.integration_test:
+                kwargs["black_box_template_path"] = str(
+                    template_path(resource_name, FileType.minimal_template, tests_output_path)
+                )
+                kwargs["update_template_path"] = str(
+                    template_path(
+                        resource_name,
+                        FileType.update_without_replacement_template,
+                        tests_output_path,
+                    )
+                )
+            case _:
+                raise NotImplementedError(f"Rendering template of type {file_type}")
 
         return get_formatted_template_output(
             self.environment, template_mapping[file_type], **kwargs
@@ -312,27 +375,40 @@ class PropertyRenderer:
 
 
 class FileWriter:
-    destination_files: dict[str, Path]
+    destination_files: dict[FileType, Path]
 
     def __init__(
         self,
-        root: Path,
         resource_name: ResourceName,
         console: Console,
     ):
-        self.root = root
         self.resource_name = resource_name
         self.console = console
 
         self.destination_files = {
-            "provider": self.root.joinpath(
+            FileType.provider: LOCALSTACK_ROOT_DIR.joinpath(
                 "localstack",
                 "services",
                 self.resource_name.service.lower(),
                 "resource_providers",
                 f"{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.py",
             ),
-            "tests": self.root.joinpath(
+            FileType.schema: LOCALSTACK_ROOT_DIR.joinpath(
+                "localstack",
+                "services",
+                self.resource_name.service.lower(),
+                "resource_providers",
+                f"aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.schema.json",
+            ),
+            FileType.getatt_test: LOCALSTACK_ROOT_DIR.joinpath(
+                "tests",
+                "integration",
+                "cloudformation",
+                "resource_providers",
+                self.resource_name.service.lower(),
+                f"test_{self.resource_name.resource.lower()}_getatt_exploration.py",
+            ),
+            FileType.integration_test: LOCALSTACK_ROOT_DIR.joinpath(
                 "tests",
                 "integration",
                 "cloudformation",
@@ -340,17 +416,51 @@ class FileWriter:
                 self.resource_name.service.lower(),
                 f"test_{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.py",
             ),
-            "test_attribute_template": self.root.joinpath(
-                "tests",
-                "integration",
-                "templates",
-                "resource_providers",
-                self.resource_name.service.lower(),
-                f"{self.resource_name.resource.lower()}.yaml",
-            ),
         }
 
-        self.confirm_if_existing_files()
+        # output files that are templates
+        templates = [
+            FileType.attribute_template,
+            FileType.minimal_template,
+            FileType.update_without_replacement_template,
+        ]
+        for template_type in templates:
+            self.destination_files[template_type] = template_path(
+                self.resource_name, FileType.attribute_template
+            )
+
+    def write(self, file_type: FileType, contents: str):
+        file_destination = self.destination_files[file_type]
+        destination_path = file_destination.parent
+        destination_path.mkdir(parents=True, exist_ok=True)
+
+        match file_type:
+            case FileType.provider:
+                self.ensure_python_init_files(destination_path)
+                self.write_text(contents, file_destination)
+                self.console.print(f"Written provider to {file_destination}")
+            case FileType.integration_test:
+                self.write_text(contents, file_destination)
+                self.console.print(f"Written integration test to {file_destination}")
+            case FileType.getatt_test:
+                self.write_text(contents, file_destination)
+                self.console.print(f"Written getatt to {file_destination}")
+            case FileType.attribute_template:
+                self.write_text(contents, file_destination)
+                self.console.print(f"Written attribute template to {file_destination}")
+            case FileType.minimal_template:
+                self.write_text(contents, file_destination)
+                self.console.print(f"Written minimal template to {file_destination}")
+            case FileType.update_without_replacement_template:
+                self.write_text(contents, file_destination)
+                self.console.print(
+                    f"Written update without replacement template to {file_destination}"
+                )
+            case FileType.schema:
+                self.write_text(contents, file_destination)
+                self.console.print(f"Written schema to {file_destination}")
+            case _:
+                raise NotImplementedError(f"Writing {file_type}")
 
     def confirm_if_existing_files(self):
         """
@@ -362,25 +472,6 @@ class FileWriter:
                     break
                 else:
                     raise SystemExit(1)
-
-    def write_provider(self, contents: str):
-        destination = self.destination_files["provider"]
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        self.ensure_python_init_files(destination.parent)
-        self.write_text(contents, destination)
-        self.console.print(f"written provider to {destination}")
-
-    def write_tests(self, contents: str):
-        destination = self.destination_files["tests"]
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        self.write_text(contents, destination)
-        self.console.print(f"written tests to {destination}")
-
-    def write_test_template(self, contents: str):
-        destination = self.destination_files["test_attribute_template"]
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        self.write_text(contents, destination)
-        self.console.print(f"written test CFn template to {destination}")
 
     @staticmethod
     def write_text(contents: str, destination: Path):
@@ -402,6 +493,70 @@ class FileWriter:
                 # touch file
                 with test_path.open("w"):
                     pass
+
+
+class OutputFactory:
+    def __init__(self, template_renderer: TemplateRenderer, printer: Console, writer: FileWriter):
+        self.template_renderer = template_renderer
+        self.printer = printer
+        self.writer = writer
+
+    def get(self, file_type: FileType, resource_name: ResourceName) -> Output:
+        contents = self.template_renderer.render(file_type, resource_name)
+        return Output(contents, file_type, self.printer, self.writer, resource_name)
+
+
+class Output:
+    def __init__(
+        self,
+        contents: str,
+        file_type: FileType,
+        printer: Console,
+        writer: FileWriter,
+        resource_name: ResourceName,
+    ):
+        self.contents = contents
+        self.file_type = file_type
+        self.printer = printer
+        self.writer = writer
+        self.resource_name = resource_name
+
+    def handle(self, should_write: bool = False):
+        if should_write:
+            self.write()
+        else:
+            self.print()
+
+    def write(self):
+        # TODO
+        # self.writer.confirm_if_existing_files()
+        self.writer.write(self.file_type, self.contents)
+
+    def print(self):
+        match self.file_type:
+            case FileType.provider:
+                self.printer.print("\n[underline]Provider template[/underline]\n")
+                self.printer.print(Syntax(self.contents, "python"))
+            case FileType.integration_test:
+                self.printer.print("\n[underline]Integration test file[/underline]\n")
+                self.printer.print(Syntax(self.contents, "python"))
+            case FileType.getatt_test:
+                self.printer.print("\n[underline]GetAtt test file[/underline]\n")
+                self.printer.print(Syntax(self.contents, "python"))
+            case FileType.attribute_template:
+                self.printer.print("\n[underline]Attribute Test Template[/underline]\n")
+                self.printer.print(Syntax(self.contents, "yaml"))
+            case FileType.minimal_template:
+                self.printer.print("\n[underline]Minimal template[/underline]\n")
+                self.printer.print(Syntax(self.contents, "yaml"))
+            case FileType.update_without_replacement_template:
+                self.printer.print("\n[underline]Update test template[/underline]\n")
+                self.printer.print(Syntax(self.contents, "yaml"))
+            case FileType.schema:
+                self.printer.print("\n[underline]Schema[/underline]\n")
+                self.printer.print(Syntax(self.contents, "json"))
+            case _:
+                raise NotImplementedError(self.file_type)
 
 
 @click.group()
@@ -431,41 +586,12 @@ def generate(resource_type: str, write: bool):
     )
 
     template_renderer = TemplateRenderer(schema, env)
-    provider_file = template_renderer.render("provider", resource_name)
-    integration_test_file = template_renderer.render("integration_test", resource_name)
-    getatt_tests_file = template_renderer.render("getatt_test", resource_name)
-    test_attributes_template = template_renderer.render("attribute_template", resource_name)
-    test_template = template_renderer.render("minimal_template", resource_name)
-    update_without_replacement_template = template_renderer.render(
-        "update_without_replacement_template", resource_name
-    )
-
-    # for pretty printing
     console = Console()
+    writer = FileWriter(resource_name, console)
+    output_factory = OutputFactory(template_renderer, console, writer)
 
-    if not write:
-        console.print("\n[underline]Provider template[/underline]\n")
-        console.print(Syntax(provider_file, "python"))
-        console.print("\n[underline]Integration test file[/underline]\n")
-        console.print(Syntax(integration_test_file, "python"))
-        console.print("\n[underline]GetAtt test file[/underline]\n")
-        console.print(Syntax(getatt_tests_file, "python"))
-        console.print("\n[underline]Attribute Test Template[/underline]\n")
-        console.print(Syntax(test_attributes_template, "yaml"))
-        console.print("\n[underline]Minimal template[/underline]\n")
-        console.print(Syntax(test_template, "yaml"))
-        console.print("\n[underline]Update test template[/underline]\n")
-        console.print(Syntax(update_without_replacement_template, "yaml"))
-        return
-
-    # render the output to the file system locations
-    root_path = Path(__file__).joinpath("..", "..", "..", "..", "..").resolve()
-    writer = FileWriter(root_path, resource_name, console)
-    writer.write_provider(provider_file)
-    writer.write_provider(integration_test_file)
-    writer.write_tests(getatt_tests_file)
-    writer.write_test_template(test_template)
-    return
+    for file_type in FileType:
+        output_factory.get(file_type, resource_name).handle(should_write=write)
 
 
 @cli.command()
