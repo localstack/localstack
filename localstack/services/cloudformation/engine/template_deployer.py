@@ -1,5 +1,4 @@
 import base64
-import inspect
 import json
 import logging
 import re
@@ -28,7 +27,6 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProviderExecutor,
     ResourceProviderPayload,
     check_not_found_exception,
-    resolve_resource_parameters,
 )
 from localstack.services.cloudformation.service_models import (
     DependencyNotYetSatisfied,
@@ -688,77 +686,6 @@ def get_resource_model_instance(resource_id: str, resources) -> Optional[Generic
         return None
     instance = resource_class(resource)
     return instance
-
-
-# yeah `Any | None` is a bit pointless, but I want to ensure that None values are represented
-def execute_resource_action(
-    resource_id: str, stack_name: str, resources: dict, action_name: str
-) -> list[Any | None] | None:
-    resource = resources[resource_id]
-    resource_type = get_resource_type(resource)
-    if action_name == ACTION_CREATE and resource_type:
-        usage.resource_type.record(resource_type)
-
-    func_details = get_deployment_config(resource_type)
-
-    if not func_details or action_name not in func_details:
-        if resource_type in ["Parameter"]:
-            return
-        log_not_available_message(
-            resource_type=resource_type,
-            message=f"Action {action_name} for resource type {resource_type} not available",
-        )
-        return
-
-    LOG.debug(
-        'Running action "%s" for resource type "%s" id "%s"',
-        action_name,
-        resource_type,
-        resource_id,
-    )
-    func_details = func_details[action_name]
-    func_details = func_details if isinstance(func_details, list) else [func_details]
-    results = []
-    for func in func_details:
-        result = None
-        executed = False
-        if callable(func.get("function")):
-            sig = inspect.signature(func["function"])
-            if "logical_resource_id" in sig.parameters:
-                result = func["function"](resource_id, resources[resource_id], stack_name)
-            else:
-                result = func["function"](resource_id, resources, resource_type, func, stack_name)
-            results.append(result)
-            executed = True
-
-        elif not executed and get_client(resource):
-            # get the service client to invoke
-            client = get_client(resource)
-
-            # get the method on that function
-            function = getattr(client, func["function"])
-
-            # unify the resource parameters
-            params = resolve_resource_parameters(stack_name, resource, resources, resource_id, func)
-            if params is None:
-                result = None
-            else:
-                result = invoke_function(
-                    function, params, resource_type, func, action_name, resource
-                )
-            results.append(result)
-            executed = True
-
-        if "result_handler" in func and executed:
-            LOG.debug(f"Executing callback method for {resource_type}:{resource_id}")
-            result_handler = func["result_handler"]
-            sig = inspect.signature(result_handler)
-            if "logical_resource_id" in sig.parameters:
-                result_handler(result, resource_id, resources[resource_id])
-            else:
-                result_handler(result, resource_id, resources, resource_type)
-
-    return (results or [None])[0]
 
 
 def invoke_function(

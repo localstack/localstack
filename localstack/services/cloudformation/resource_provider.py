@@ -501,10 +501,18 @@ class LegacyResourceProvider(ResourceProvider):
                 LOG.debug(
                     f"Executing callback method for {self.resource_type}:{request.logical_resource_id}"
                 )
-                # TODO(srw): 4 - pass resource directly here
-                func["result_handler"](
-                    result, request.logical_resource_id, self.all_resources, self.resource_type
-                )
+                result_handler = func["result_handler"]
+                sig = inspect.signature(result_handler)
+                if "logical_resource_id" in sig.parameters:
+                    result_handler(
+                        result,
+                        request.logical_resource_id,
+                        self.all_resources[request.logical_resource_id],
+                    )
+                else:
+                    result_handler(
+                        result, request.logical_resource_id, self.all_resources, self.resource_type
+                    )
 
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=resource["Properties"])
 
