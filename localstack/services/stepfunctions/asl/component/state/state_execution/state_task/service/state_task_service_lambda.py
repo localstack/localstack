@@ -39,7 +39,7 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
     }
 
     def _get_supported_parameters(self) -> Optional[set[str]]:
-        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower(), None)
+        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     @staticmethod
     def _error_cause_from_client_error(client_error: ClientError) -> tuple[str, str]:
