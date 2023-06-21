@@ -1,6 +1,6 @@
 from localstack.services.cloudformation.deployment_utils import select_parameters
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import aws_stack
 
 
 class FirehoseDeliveryStream(GenericBaseModel):
@@ -14,18 +14,14 @@ class FirehoseDeliveryStream(GenericBaseModel):
             DeliveryStreamName=stream_name
         )
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Arn":
-            return arns.firehose_stream_arn(self.props.get("DeliveryStreamName"))
-        return super().get_cfn_attribute(attribute_name)
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        if attribute == "Arn":
-            return self.get_cfn_attribute("Arn")
-        return self.props.get("DeliveryStreamName")
-
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["Properties"]["Arn"] = result["DeliveryStreamARN"]
+            resources[resource_id]["PhysicalResourceId"] = resources[resource_id]["Properties"][
+                "DeliveryStreamName"
+            ]
+
         return {
             "create": {
                 "function": "create_delivery_stream",
@@ -43,6 +39,7 @@ class FirehoseDeliveryStream(GenericBaseModel):
                     "SplunkDestinationConfiguration",
                     "Tags",
                 ),
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_delivery_stream",

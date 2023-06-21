@@ -889,7 +889,10 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             LogType="Tail",
         )
 
-        log_output = base64.b64decode(response.get("LogResult") or b"").decode("utf-8")
+        # Decode may fail when log is cut off at 4kbytes if it contains multi-byte characters
+        log_output = base64.b64decode(response.get("LogResult") or b"").decode(
+            "utf-8", errors="replace"
+        )
         result = response["Payload"].read().decode("utf-8")
 
         if "FunctionError" in response:

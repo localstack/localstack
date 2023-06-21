@@ -28,6 +28,7 @@ from localstack.utils.testutil import create_lambda_archive
 from .test_lambda import (
     TEST_LAMBDA_ENV,
     TEST_LAMBDA_LIBS,
+    TEST_LAMBDA_NODEJS_ECHO,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
 )
@@ -346,6 +347,30 @@ class TestDockerExecutors(unittest.TestCase):
             self.assertEqual(0, len(executor.get_all_container_names()))
 
         retry(assert_container_destroyed, retries=3)
+
+        # clean up
+        testutil.delete_lambda_function(func_name)
+
+    @pytest.mark.skipif(
+        condition=not isinstance(
+            lambda_api.LAMBDA_EXECUTOR, lambda_executors.LambdaExecutorReuseContainers
+        ),
+        reason="Test only applicable if docker-reuse executor is selected",
+    )
+    def test_logresult_more_than_4k_characters(self):
+        lambda_api.LAMBDA_EXECUTOR.cleanup()
+
+        func_name = "test_logresult_more_than_4k_characters"
+
+        testutil.create_lambda_function(
+            func_name=func_name, handler_file=TEST_LAMBDA_NODEJS_ECHO, runtime="nodejs16.x"
+        )
+        self.lambda_client.get_waiter("function_active_v2").wait(FunctionName=func_name)
+
+        result = self.lambda_client.invoke(
+            FunctionName=func_name, Payload=('{"key":"%s"}' % ("😀" + " " * 4091))
+        )
+        assert "FunctionError" not in result
 
         # clean up
         testutil.delete_lambda_function(func_name)

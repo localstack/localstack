@@ -12,5 +12,13 @@
         "WaitConditionName": "arn:aws:cloudformation:<region>:111111111111:stack/stack-6cc1b50e/f9764ac0-f563-11ed-82f7-061d4a7b8a1e/WaitHandle"
       }
     }
+  },
+  "tests/integration/cloudformation/resources/test_cloudformation.py::test_create_macro": {
+    "recorded-date": "09-06-2023, 14:30:11",
+    "recorded-content": {
+      "stack-outputs": {
+        "MacroRef": "<macro-name>"
+      }
+    }
   }
 }

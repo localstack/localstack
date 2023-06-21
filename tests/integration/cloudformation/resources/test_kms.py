@@ -1,5 +1,7 @@
 import os.path
 
+import pytest
+
 from localstack.utils.strings import short_uid
 
 
@@ -16,12 +18,20 @@ def test_kms_key_disabled(deploy_cfn_template, aws_client):
     assert not my_key["KeyMetadata"]["Enabled"]
 
 
-def test_cfn_with_kms_resources(deploy_cfn_template, aws_client):
-    stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../../templates/template34.yaml")
-    )
+@pytest.mark.aws_validated
+def test_cfn_with_kms_resources(deploy_cfn_template, aws_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.key_value("KeyAlias"))
 
-    alias_name = "alias/sample-5302"
+    alias_name = f"alias/sample-{short_uid()}"
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/template34.yaml"),
+        parameters={"AliasName": alias_name},
+        max_wait=300,
+    )
+    snapshot.match("stack-outputs", stack.outputs)
+
     assert stack.outputs.get("KeyAlias") == alias_name
 
     def _get_matching_aliases():

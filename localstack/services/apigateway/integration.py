@@ -4,20 +4,29 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from functools import lru_cache
 from http import HTTPStatus
 from typing import Any, Dict, List, Union
 from urllib.parse import urljoin
 
 import requests
+from botocore.exceptions import ClientError
 from moto.apigatewayv2.exceptions import BadRequestException
 from requests import Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.connect import (
+    INTERNAL_REQUEST_PARAMS_HEADER,
+    InternalRequestParameters,
+    connect_to,
+    dump_dto,
+)
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
+    ApiGatewayIntegrationError,
     IntegrationParameters,
     RequestParametersResolver,
     extract_path_params,
@@ -39,6 +48,7 @@ from localstack.utils.aws.aws_responses import (
     request_response_stream,
     requests_response,
 )
+from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.templating import VtlTemplate
 from localstack.utils.collections import dict_multi_values, remove_attributes
 from localstack.utils.common import make_http_request, to_str
@@ -47,6 +57,15 @@ from localstack.utils.json import json_safe
 from localstack.utils.strings import camel_to_snake_case, to_bytes
 
 LOG = logging.getLogger(__name__)
+
+
+class IntegrationAccessError(ApiGatewayIntegrationError):
+    """
+    Error message when an integration cannot be accessed.
+    """
+
+    def __init__(self):
+        super().__init__("Internal server error", 500)
 
 
 class BackendIntegration(ABC):
@@ -100,11 +119,58 @@ class BackendIntegration(ABC):
         return response
 
 
-def call_lambda(function_arn: str, event: bytes, asynchronous: bool) -> str:
-    lambda_client = aws_stack.connect_to_service(
-        "lambda", region_name=extract_region_from_arn(function_arn)
+@lru_cache(maxsize=64)
+def get_service_factory(region_name: str, role_arn: str):
+    if role_arn:
+        return connect_to.with_assumed_role(
+            role_arn=role_arn,
+            region_name=region_name,
+            service_principal=ServicePrincipal.apigateway,
+            session_name="BackplaneAssumeRoleSession",
+        )
+    else:
+        return connect_to(region_name=region_name)
+
+
+@lru_cache(maxsize=64)
+def get_internal_mocked_headers(
+    service_name: str, region_name: str, source_arn: str, role_arn: str | None
+) -> dict[str, str]:
+    if role_arn:
+        access_key_id = (
+            connect_to()
+            .sts.request_metadata(service_principal=ServicePrincipal.apigateway)
+            .assume_role(RoleArn=role_arn, RoleSessionName="BackplaneAssumeRoleSession")[
+                "Credentials"
+            ]["AccessKeyId"]
+        )
+    else:
+        access_key_id = None
+    headers = aws_stack.mock_aws_request_headers(
+        service=service_name, region_name=region_name, access_key=access_key_id
     )
-    inv_result = lambda_client.invoke(
+
+    dto = InternalRequestParameters(
+        service_principal=ServicePrincipal.apigateway, source_arn=source_arn
+    )
+    headers[INTERNAL_REQUEST_PARAMS_HEADER] = dump_dto(dto)
+    return headers
+
+
+def get_source_arn(invocation_context: ApiInvocationContext):
+    return f"arn:aws:execute-api:{invocation_context.region_name}:{invocation_context.account_id}:{invocation_context.api_id}/{invocation_context.stage}/{invocation_context.method}{invocation_context.path}"
+
+
+def call_lambda(
+    function_arn: str, event: bytes, asynchronous: bool, invocation_context: ApiInvocationContext
+) -> str:
+    region_name = extract_region_from_arn(function_arn)
+    clients = get_service_factory(
+        region_name=region_name, role_arn=invocation_context.integration.get("credentials")
+    )
+    inv_result = clients.awslambda.request_metadata(
+        service_principal=ServicePrincipal.apigateway, source_arn=get_source_arn(invocation_context)
+    ).invoke(
         FunctionName=function_arn,
         Payload=event,
         InvocationType="Event" if asynchronous else "RequestResponse",
@@ -237,14 +303,18 @@ class LambdaProxyIntegration(BackendIntegration):
             )
             asynchronous = invocation_context.headers.get("X-Amz-Invocation-Type") == "'Event'"
             return call_lambda(
-                function_arn=func_arn, event=to_bytes(json.dumps(event)), asynchronous=asynchronous
+                function_arn=func_arn,
+                event=to_bytes(json.dumps(event)),
+                asynchronous=asynchronous,
+                invocation_context=invocation_context,
             )
-
+        except ClientError as e:
+            raise IntegrationAccessError() from e
         except Exception as e:
-            if LOG.isEnabledFor(logging.DEBUG):
-                LOG.exception("Unable to run Lambda function on API Gateway message: %s", e)
-            else:
-                LOG.warning("Unable to run Lambda function on API Gateway message: %s", e)
+            LOG.warning(
+                "Unable to run Lambda function on API Gateway message: %s",
+                e,
+            )
 
     def invoke(self, invocation_context: ApiInvocationContext):
         uri = (
@@ -349,9 +419,15 @@ class LambdaIntegration(BackendIntegration):
         func_arn = self._lambda_integration_uri(invocation_context)
         event = self.request_templates.render(invocation_context) or b""
         asynchronous = headers.get("X-Amz-Invocation-Type", "").strip("'") == "Event"
-        result = call_lambda(
-            function_arn=func_arn, event=to_bytes(event), asynchronous=asynchronous
-        )
+        try:
+            result = call_lambda(
+                function_arn=func_arn,
+                event=to_bytes(event),
+                asynchronous=asynchronous,
+                invocation_context=invocation_context,
+            )
+        except ClientError as e:
+            raise IntegrationAccessError() from e
 
         response = LambdaResponse()
 
@@ -426,8 +502,11 @@ class KinesisIntegration(BackendIntegration):
             raise
 
         # forward records to target kinesis stream
-        headers = aws_stack.mock_aws_request_headers(
-            service="kinesis", region_name=invocation_context.region_name
+        headers = get_internal_mocked_headers(
+            service_name="kinesis",
+            region_name=invocation_context.region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+            source_arn=get_source_arn(invocation_context),
         )
         headers["X-Amz-Target"] = target
 
@@ -443,6 +522,7 @@ class KinesisIntegration(BackendIntegration):
 
 class DynamoDBIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
+        # TODO we might want to do it plain http instead of using boto here, like kinesis
         integration = invocation_context.integration
         uri = integration.get("uri") or integration.get("integrationUri") or ""
 
@@ -454,15 +534,31 @@ class DynamoDBIntegration(BackendIntegration):
         payload = json.loads(payload)
 
         # determine target method via reflection
-        dynamo_client = aws_stack.connect_to_service("dynamodb")
+        clients = get_service_factory(
+            region_name=invocation_context.region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+        )
+        dynamo_client = clients.dynamodb.request_metadata(
+            service_principal=ServicePrincipal.apigateway,
+            source_arn=get_source_arn(invocation_context),
+        )
         method_name = camel_to_snake_case(action)
         client_method = getattr(dynamo_client, method_name, None)
         if not client_method:
             raise Exception(f"Unsupported action {action} in API Gateway integration URI {uri}")
 
         # run request against DynamoDB backend
-        response = client_method(**payload)
+        try:
+            response = client_method(**payload)
+        except ClientError as e:
+            response = e.response
+            # The request body is packed into the "Error" field. To make the response match AWS, we will remove that
+            # field and merge with the response dict
+            error = response.pop("Error", {})
+            error.pop("Code", None)  # the Code is also something not relayed
+            response |= error
 
+        status_code = response.get("ResponseMetadata", {}).get("HTTPStatusCode", 200)
         # apply response templates
         response_content = json.dumps(remove_attributes(response, ["ResponseMetadata"]))
         response_obj = requests_response(content=response_content)
@@ -471,7 +567,7 @@ class DynamoDBIntegration(BackendIntegration):
         # construct final response
         # TODO: set response header based on response templates
         headers = {HEADER_CONTENT_TYPE: APPLICATION_JSON}
-        response = requests_response(response, headers=headers)
+        response = requests_response(response, headers=headers, status_code=status_code)
 
         return response
 
@@ -590,7 +686,14 @@ class SQSIntegration(BackendIntegration):
             payload = request_templates.render(invocation_context)
             queue_url = f"{config.get_edge_url()}/{account_id}/{queue}"
             new_request = f"{payload}&QueueUrl={queue_url}"
-        headers = aws_stack.mock_aws_request_headers(service="sqs", region_name=region_name)
+
+        # forward records to target kinesis stream
+        headers = get_internal_mocked_headers(
+            service_name="sqs",
+            region_name=region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+            source_arn=get_source_arn(invocation_context),
+        )
 
         url = urljoin(config.service_url("sqs"), f"{get_aws_account_id()}/{queue}")
         result = common.make_http_request(url, method="POST", headers=headers, data=new_request)

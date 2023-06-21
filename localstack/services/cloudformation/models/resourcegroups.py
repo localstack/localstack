@@ -18,11 +18,13 @@ class ResourceGroupsGroup(GenericBaseModel):
         if attribute_name == "Arn":
             return self.props.get("GroupArn")
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("Name")
-
     @classmethod
     def get_deploy_templates(cls):
+        def _set_physical_resource_id(
+            result: dict, resource_id: str, resources: dict, resource_type: str
+        ):
+            resources[resource_id]["PhysicalResourceId"] = result["Group"]["Name"]
+
         return {
             "create": {
                 "function": "create_group",
@@ -33,6 +35,7 @@ class ResourceGroupsGroup(GenericBaseModel):
                     "Configuration": "Configuration",
                     "Tags": params_list_to_dict("Tags"),
                 },
+                "result_handler": _set_physical_resource_id,
             },
             "delete": {"function": "delete_group", "parameters": {"Group": "Name"}},
         }

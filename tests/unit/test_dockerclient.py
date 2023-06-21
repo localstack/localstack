@@ -186,6 +186,9 @@ class TestArgumentParsing:
         argument_string = r"--privileged"
         flags = Util.parse_additional_flags(argument_string)
         assert flags.privileged
+        argument_string = ""
+        flags = Util.parse_additional_flags(argument_string)
+        assert not flags.privileged
 
     def test_ulimits(self):
         argument_string = r"--ulimit nofile=1024"
