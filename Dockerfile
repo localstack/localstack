@@ -1,5 +1,5 @@
 # builder: Stage to build a custom JRE (with jlink)
-FROM python:3.10.11-slim-bullseye@sha256:12af6fa557c55d85754107e59d0e21530d7a253757e128b3682d138e58712e54 as java-builder
+FROM python:3.10.12-slim-bullseye@sha256:55b99191de1e61f0f95464ec44e656939abd150a0a4d9aa497bebbfa4e22b554 as java-builder
 ARG TARGETARCH
 
 # install OpenJDK 11
@@ -37,7 +37,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.10.11-slim-bullseye@sha256:12af6fa557c55d85754107e59d0e21530d7a253757e128b3682d138e58712e54 as base
+FROM python:3.10.12-slim-bullseye@sha256:55b99191de1e61f0f95464ec44e656939abd150a0a4d9aa497bebbfa4e22b554 as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies

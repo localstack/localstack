@@ -40,6 +40,7 @@ from localstack.aws.api.s3 import (
     GetBucketAclOutput,
     GetBucketAnalyticsConfigurationOutput,
     GetBucketCorsOutput,
+    GetBucketIntelligentTieringConfigurationOutput,
     GetBucketLifecycleConfigurationOutput,
     GetBucketLifecycleOutput,
     GetBucketLocationOutput,
@@ -57,10 +58,14 @@ from localstack.aws.api.s3 import (
     GetObjectTaggingRequest,
     HeadObjectOutput,
     HeadObjectRequest,
+    IntelligentTieringConfiguration,
+    IntelligentTieringConfigurationList,
+    IntelligentTieringId,
     InvalidBucketName,
     InvalidPartOrder,
     InvalidStorageClass,
     ListBucketAnalyticsConfigurationsOutput,
+    ListBucketIntelligentTieringConfigurationsOutput,
     ListMultipartUploadsOutput,
     ListMultipartUploadsRequest,
     ListObjectsOutput,
@@ -73,6 +78,7 @@ from localstack.aws.api.s3 import (
     NoSuchCORSConfiguration,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
+    NoSuchUpload,
     NoSuchWebsiteConfiguration,
     NotificationConfiguration,
     ObjectIdentifier,
@@ -100,7 +106,7 @@ from localstack.aws.api.s3 import (
     Token,
 )
 from localstack.aws.api.s3 import Type as GranteeType
-from localstack.aws.api.s3 import WebsiteConfiguration
+from localstack.aws.api.s3 import UploadPartOutput, UploadPartRequest, WebsiteConfiguration
 from localstack.aws.handlers import (
     modify_service_response,
     preprocess_request,
@@ -121,6 +127,7 @@ from localstack.services.s3.presigned_url import (
 from localstack.services.s3.utils import (
     _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
+    extract_bucket_key_version_id_from_copy_source,
     get_bucket_from_moto,
     get_header_name,
     get_key_from_moto_bucket,
@@ -401,13 +408,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["ContentEncoding"] = ""
 
         if request.get("ChecksumMode") == "ENABLED" and checksum_algorithm:
-            # TODO: moto does not store the checksum of object, there is a TODO there as well
-            # in the meantime, just compute the hash everytime it's requested
-            checksum = get_object_checksum_for_algorithm(
-                checksum_algorithm=checksum_algorithm,
-                data=key_object.value,
-            )
-            response[f"Checksum{checksum_algorithm.upper()}"] = checksum  # noqa
+            response[f"Checksum{checksum_algorithm.upper()}"] = key_object.checksum_value  # noqa
 
         response["AcceptRanges"] = "bytes"
         return response
@@ -460,6 +461,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
             response["SSEKMSKeyId"] = key_object.kms_key_id
 
+        if key_object.checksum_algorithm == ChecksumAlgorithm.CRC32C:
+            # moto does not support CRC32C yet, it uses CRC32 instead
+            # recalculate the proper checksum to store in the key
+            key_object.checksum_value = get_object_checksum_for_algorithm(
+                ChecksumAlgorithm.CRC32C,
+                key_object.value,
+            )
+
         self._notify(context)
 
         return response
@@ -470,12 +479,51 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: CopyObjectRequest,
     ) -> CopyObjectOutput:
+        moto_backend = get_moto_s3_backend(context)
+        dest_moto_bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
         if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
-            moto_backend = get_moto_s3_backend(context)
-            bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
-            validate_kms_key_id(sse_kms_key_id, bucket)
+            validate_kms_key_id(sse_kms_key_id, dest_moto_bucket)
 
         response: CopyObjectOutput = call_moto(context)
+
+        src_bucket, src_key, src_version_id = extract_bucket_key_version_id_from_copy_source(
+            request["CopySource"]
+        )
+        src_moto_bucket = get_bucket_from_moto(moto_backend, bucket=src_bucket)
+        source_key_object = get_key_from_moto_bucket(
+            src_moto_bucket, key=src_key, version_id=src_version_id
+        )
+
+        # we properly calculate the Checksum for the destination Key
+        checksum_algorithm = (
+            request.get("ChecksumAlgorithm") or source_key_object.checksum_algorithm
+        )
+        if checksum_algorithm:
+            dest_key_object = get_key_from_moto_bucket(dest_moto_bucket, key=request["Key"])
+            dest_key_object.checksum_algorithm = checksum_algorithm
+
+            if (
+                not source_key_object.checksum_value
+                or checksum_algorithm == ChecksumAlgorithm.CRC32C
+            ):
+                dest_key_object.checksum_value = get_object_checksum_for_algorithm(
+                    checksum_algorithm, source_key_object.value
+                )
+            else:
+                dest_key_object.checksum_value = source_key_object.checksum_value
+
+            if checksum_algorithm == ChecksumAlgorithm.CRC32C:
+                # TODO: the logic for rendering the template in moto is the following:
+                # if `CRC32` in `key.checksum_algorithm` which is valid for both CRC32 and CRC32C, and will render both
+                # remove the key if it's CRC32C.
+                response["CopyObjectResult"].pop("ChecksumCRC32", None)
+
+            dest_key_object.checksum_algorithm = checksum_algorithm
+
+            response["CopyObjectResult"][
+                f"Checksum{checksum_algorithm.upper()}"
+            ] = dest_key_object.checksum_value  # noqa
+
         self._notify(context)
         return response
 
@@ -577,13 +625,34 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 UploadId=request["UploadId"],
             )
 
+        bucket_name = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket_name)
+        if not (upload_id := request.get("UploadId")) in moto_bucket.multiparts:
+            raise NoSuchUpload(
+                "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+                UploadId=upload_id,
+            )
+
         response: CompleteMultipartUploadOutput = call_moto(context)
 
         # moto return the Location in AWS `http://{bucket}.s3.amazonaws.com/{key}`
-        response[
-            "Location"
-        ] = f'{get_full_default_bucket_location(request["Bucket"])}{response["Key"]}'
+        response["Location"] = f'{get_full_default_bucket_location(bucket_name)}{response["Key"]}'
         self._notify(context)
+        return response
+
+    @handler("UploadPart", expand=False)
+    def upload_part(self, context: RequestContext, request: UploadPartRequest) -> UploadPartOutput:
+        bucket_name = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket_name)
+        if not (upload_id := request.get("UploadId")) in moto_bucket.multiparts:
+            raise NoSuchUpload(
+                "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+                UploadId=upload_id,
+            )
+
+        response: UploadPartOutput = call_moto(context)
         return response
 
     @handler("ListMultipartUploads", expand=False)
@@ -1141,13 +1210,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if "ObjectSize" in object_attrs:
             response["ObjectSize"] = key.size
         if "Checksum" in object_attrs and (checksum_algorithm := key.checksum_algorithm):
-            # TODO: moto does not store the checksum of object, there is a TODO there as well
-            # in the meantime, just compute the hash everytime it's requested
-            checksum = get_object_checksum_for_algorithm(
-                checksum_algorithm=checksum_algorithm,
-                data=key.value,
-            )
-            response["Checksum"] = {f"Checksum{checksum_algorithm.upper()}": checksum}  # noqa
+            response["Checksum"] = {
+                f"Checksum{checksum_algorithm.upper()}": key.checksum_value
+            }  # noqa
 
         response["LastModified"] = key.last_modified
 
@@ -1178,8 +1243,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             id=id, analytics_configuration=analytics_configuration
         )
 
-        bucket_analytics_configuration = store.bucket_analytics_configuration.setdefault(bucket, {})
-        bucket_analytics_configuration[id] = analytics_configuration
+        bucket_analytics_configurations = store.bucket_analytics_configuration.setdefault(
+            bucket, {}
+        )
+        bucket_analytics_configurations[id] = analytics_configuration
 
     def get_bucket_analytics_configuration(
         self,
@@ -1236,11 +1303,86 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not analytics_configurations.pop(id, None):
             raise NoSuchConfiguration("The specified configuration does not exist.")
 
+    def put_bucket_intelligent_tiering_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: IntelligentTieringId,
+        intelligent_tiering_configuration: IntelligentTieringConfiguration,
+    ) -> None:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        validate_bucket_intelligent_tiering_configuration(id, intelligent_tiering_configuration)
+
+        store = self.get_store()
+        bucket_intelligent_tiering_configurations = (
+            store.bucket_intelligent_tiering_configuration.setdefault(bucket, {})
+        )
+        bucket_intelligent_tiering_configurations[id] = intelligent_tiering_configuration
+
+    def get_bucket_intelligent_tiering_configuration(
+        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
+    ) -> GetBucketIntelligentTieringConfigurationOutput:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        store = self.get_store()
+        intelligent_tiering_configuration: IntelligentTieringConfiguration = (
+            store.bucket_intelligent_tiering_configuration.get(bucket, {}).get(id)
+        )
+        if not intelligent_tiering_configuration:
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+        return GetBucketIntelligentTieringConfigurationOutput(
+            IntelligentTieringConfiguration=intelligent_tiering_configuration
+        )
+
+    def delete_bucket_intelligent_tiering_configuration(
+        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
+    ) -> None:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        store = self.get_store()
+        bucket_intelligent_tiering_configurations = (
+            store.bucket_intelligent_tiering_configuration.get(bucket, {})
+        )
+        if not bucket_intelligent_tiering_configurations.pop(id, None):
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+
+    def list_bucket_intelligent_tiering_configurations(
+        self, context: RequestContext, bucket: BucketName, continuation_token: Token = None
+    ) -> ListBucketIntelligentTieringConfigurationsOutput:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        store = self.get_store()
+        bucket_intelligent_tiering_configurations: Dict[
+            IntelligentTieringId, IntelligentTieringConfiguration
+        ] = store.bucket_intelligent_tiering_configuration.get(bucket, {})
+
+        bucket_intelligent_tiering_configurations: IntelligentTieringConfigurationList = sorted(
+            bucket_intelligent_tiering_configurations.values(), key=lambda x: x["Id"]
+        )
+        return ListBucketIntelligentTieringConfigurationsOutput(
+            IsTruncated=False,
+            IntelligentTieringConfigurationList=bucket_intelligent_tiering_configurations,
+        )
+
 
 def validate_bucket_analytics_configuration(
     id: AnalyticsId, analytics_configuration: AnalyticsConfiguration
 ) -> None:
     if id != analytics_configuration.get("Id"):
+        raise MalformedXML(
+            "The XML you provided was not well-formed or did not validate against our published schema"
+        )
+
+
+def validate_bucket_intelligent_tiering_configuration(
+    id: IntelligentTieringId, intelligent_tiering_configuration: IntelligentTieringConfiguration
+) -> None:
+    if id != intelligent_tiering_configuration.get("Id"):
         raise MalformedXML(
             "The XML you provided was not well-formed or did not validate against our published schema"
         )

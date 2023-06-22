@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "test",
+    "title": "Import swagger JSON",
     "version": "2"
   },
   "basePath": "/base",

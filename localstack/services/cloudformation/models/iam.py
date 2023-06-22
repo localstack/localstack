@@ -29,9 +29,6 @@ class IAMManagedPolicy(GenericBaseModel):
     def cloudformation_type():
         return "AWS::IAM::ManagedPolicy"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return arns.policy_arn(self.props["ManagedPolicyName"])
-
     def fetch_state(self, stack_name, resources):
         return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=True)
 
@@ -45,9 +42,8 @@ class IAMManagedPolicy(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(resource_id, resources, resource_type, func, stack_name, *args, **kwargs):
+        def _create(logical_resource_id: str, resource: dict, stack_name: str):
             iam = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
 
             policy_doc = json.dumps(remove_none_values(props["PolicyDocument"]))
@@ -61,18 +57,18 @@ class IAMManagedPolicy(GenericBaseModel):
                 iam.attach_user_policy(UserName=user, PolicyArn=policy_arn)
             for group in resource.get("Groups", []):
                 iam.attach_group_policy(GroupName=group, PolicyArn=policy_arn)
-            return {}
+            return policy
 
-        return {"create": {"function": _create}}
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["Policy"]["Arn"]
+
+        return {"create": {"function": _create, "result_handler": _handle_result}}
 
 
 class IAMUser(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::IAM::User"
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("UserName")
 
     def fetch_state(self, stack_name, resources):
         user_name = self.props.get("UserName")
@@ -88,9 +84,8 @@ class IAMUser(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _post_create(resource_id, resources, resource_type, func, stack_name):
+        def _post_create(logical_resource_id: str, resource: dict, stack_name: str):
             client = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
             username = props["UserName"]
 
@@ -113,9 +108,8 @@ class IAMUser(GenericBaseModel):
                     PasswordResetRequired=login_profile.get("PasswordResetRequired"),
                 )
 
-        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+        def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
             client = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
             user_name = props["UserName"]
 
@@ -138,11 +132,15 @@ class IAMUser(GenericBaseModel):
             for inline_policy_name in remaining_policies:
                 client.delete_user_policy(UserName=user_name, PolicyName=inline_policy_name)
 
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["User"]["UserName"]
+
         return {
             "create": [
                 {
                     "function": "create_user",
                     "parameters": ["Path", "UserName", "PermissionsBoundary", "Tags"],
+                    "result_handler": _handle_result,
                 },
                 {"function": _post_create},
             ],
@@ -161,16 +159,13 @@ class IAMAccessKey(GenericBaseModel):
     def cloudformation_type():
         return "AWS::IAM::AccessKey"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.physical_resource_id
-
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == "SecretAccessKey":
             return self.props.get("SecretAccessKey")
 
     def fetch_state(self, stack_name, resources):
         user_name = self.props.get("UserName")
-        access_key_id = self.get_physical_resource_id()
+        access_key_id = self.physical_resource_id
         if access_key_id:
             keys = aws_stack.connect_to_service("iam").list_access_keys(UserName=user_name)[
                 "AccessKeyMetadata"
@@ -178,7 +173,7 @@ class IAMAccessKey(GenericBaseModel):
             return [key for key in keys if key["AccessKeyId"] == access_key_id][0]
 
     def update_resource(self, new_resource, stack_name, resources):
-        access_key_id = self.get_physical_resource_id()
+        access_key_id = self.physical_resource_id
         new_props = new_resource["Properties"]
         user_name = new_props.get("UserName")
         status = new_props.get("Status")
@@ -189,9 +184,8 @@ class IAMAccessKey(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _delete(resource_id, resources, resource_type, func, stack_name):
+        def _delete(logical_resource_id: str, resource: dict, stack_name: str):
             iam_client = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
             user_name = props["UserName"]
             access_key_id = resource["PhysicalResourceId"]
@@ -202,15 +196,13 @@ class IAMAccessKey(GenericBaseModel):
                 if "NotSuchEntity" not in err.response["Error"]["Code"]:
                     raise
 
-        def _store_key_id(result, resource_id, resources, resource_type):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             access_key_id = result["AccessKey"]["AccessKeyId"]
-            resources[resource_id]["PhysicalResourceId"] = access_key_id
-            resources[resource_id]["Properties"]["SecretAccessKey"] = result["AccessKey"][
-                "SecretAccessKey"
-            ]
-            status = resources[resource_id]["Properties"].get("Status", "Active")
+            resource["PhysicalResourceId"] = access_key_id
+            resource["Properties"]["SecretAccessKey"] = result["AccessKey"]["SecretAccessKey"]
+            status = resource["Properties"].get("Status", "Active")
             if status == "Inactive":
-                user_name = resources[resource_id]["Properties"]["UserName"]
+                user_name = resource["Properties"]["UserName"]
                 client = aws_stack.connect_to_service("iam")
                 client.update_access_key(
                     UserName=user_name, AccessKeyId=access_key_id, Status="Inactive"
@@ -220,7 +212,7 @@ class IAMAccessKey(GenericBaseModel):
             "create": {
                 "function": "create_access_key",
                 "parameters": ["UserName"],
-                "result_handler": _store_key_id,
+                "result_handler": _handle_result,
             },
             "delete": {"function": _delete},
         }
@@ -235,14 +227,6 @@ class IAMRole(GenericBaseModel):
         if attribute_name == "Arn":
             return self.props.get("Arn")
         return super(IAMRole, self).get_cfn_attribute(attribute_name)
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        role_name = self.properties.get("RoleName")
-        if not role_name:
-            return role_name
-        if attribute == "Arn":
-            return arns.role_arn(role_name)
-        return role_name
 
     def fetch_state(self, stack_name, resources):
         role_name = self.props.get("RoleName")
@@ -262,16 +246,14 @@ class IAMRole(GenericBaseModel):
             )
             if name_changed or policy_changed:
                 resource_id = new_resource.get("LogicalResourceId")
-                dummy_resources = {
-                    resource_id: {"Properties": {"RoleName": _states.get("RoleName")}}
-                }
-                IAMRole._pre_delete(resource_id, dummy_resources, None, None, None)
+                dummy_resource = {"Properties": {"RoleName": _states.get("RoleName")}}
+                IAMRole._pre_delete(resource_id, dummy_resource, stack_name)
                 client.delete_role(RoleName=_states.get("RoleName"))
                 role = client.create_role(
                     RoleName=props.get("RoleName"),
-                    AssumeRolePolicyDocument=str(props_policy),
+                    AssumeRolePolicyDocument=json.dumps(props_policy),
                 )
-                IAMRole._post_create(resource_id, resources, None, None, None)
+                IAMRole._post_create(resource_id, resources[resource_id], stack_name)
                 return role["Role"]
 
         return client.update_role(
@@ -287,21 +269,20 @@ class IAMRole(GenericBaseModel):
             )
 
     @classmethod
-    def _post_create(cls, resource_id, resources, resource_type, func, stack_name):
+    def _post_create(cls, logical_resource_id: str, resource: dict, stack_name: str):
         """attaches managed policies from the template to the role"""
 
+        properties = resource["Properties"]
         iam = aws_stack.connect_to_service("iam")
-        resource = resources[resource_id]
-        props = resource["Properties"]
-        role_name = props["RoleName"]
+        role_name = properties["RoleName"]
 
         # attach managed policies
-        policy_arns = props.get("ManagedPolicyArns", [])
+        policy_arns = properties.get("ManagedPolicyArns", [])
         for arn in policy_arns:
             iam.attach_role_policy(RoleName=role_name, PolicyArn=arn)
 
         # add inline policies
-        inline_policies = props.get("Policies", [])
+        inline_policies = properties.get("Policies", [])
         for policy in inline_policies:
             assert not isinstance(
                 policy, list
@@ -310,7 +291,9 @@ class IAMRole(GenericBaseModel):
                 continue
             if not isinstance(policy, dict):
                 LOG.info(
-                    'Invalid format of policy for IAM role "%s": %s', props.get("RoleName"), policy
+                    'Invalid format of policy for IAM role "%s": %s',
+                    properties.get("RoleName"),
+                    policy,
                 )
                 continue
             pol_name = policy.get("PolicyName")
@@ -327,16 +310,15 @@ class IAMRole(GenericBaseModel):
                     statement["Resource"] = [r for r in statement["Resource"] if r]
             doc = json.dumps(doc)
             iam.put_role_policy(
-                RoleName=props["RoleName"],
+                RoleName=properties["RoleName"],
                 PolicyName=pol_name,
                 PolicyDocument=doc,
             )
 
     @staticmethod
-    def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+    def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
         """detach managed policies from role before deleting"""
         iam_client = aws_stack.connect_to_service("iam")
-        resource = resources[resource_id]
         props = resource["Properties"]
         role_name = props["RoleName"]
 
@@ -375,6 +357,9 @@ class IAMRole(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["Role"]["RoleName"]
+
         return {
             "create": [
                 {
@@ -394,6 +379,7 @@ class IAMRole(GenericBaseModel):
                         ),
                         {"RoleName": "RoleName"},
                     ),
+                    "result_handler": _handle_result,
                 },
                 {"function": IAMRole._post_create},
             ],
@@ -421,13 +407,16 @@ class IAMServiceLinkedRole(GenericBaseModel):
             if statements and statements[0].get("Principal") == {"Service": service_name}:
                 return role
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("RoleName")
-
     @classmethod
     def get_deploy_templates(cls):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["Role"]["RoleName"]
+
         return {
-            "create": {"function": "create_service_linked_role"},
+            "create": {
+                "function": "create_service_linked_role",
+                "result_handler": _handle_result,
+            },
             "delete": {"function": "delete_service_linked_role", "parameters": ["RoleName"]},
         }
 
@@ -462,16 +451,15 @@ class IAMPolicy(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _store_physical_id(result, resource_id, resources, resource_type):
-            resource = resources[resource_id]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             # the physical resource ID here has a bit of a weird format
             # e.g. 'stack-fnSe-1OKWZIBB89193' where fnSe are the first 4 characters of the LogicalResourceId (or name?)
             suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=13))
             resource["PhysicalResourceId"] = f"stack-{resource.get('PolicyName', '')[:4]}-{suffix}"
 
-        def _create(resource_id, resources, resource_type, func, stack_name, *args, **kwargs):
+        def _create(logical_resource_id: str, resource: dict, stack_name: str):
             iam = aws_stack.connect_to_service("iam")
-            props = resources[resource_id]["Properties"]
+            props = resource["Properties"]
             policy_doc = json.dumps(remove_none_values(props["PolicyDocument"]))
             policy_name = props["PolicyName"]
             for role in props.get("Roles", []):
@@ -487,13 +475,15 @@ class IAMPolicy(GenericBaseModel):
                     GroupName=group, PolicyName=policy_name, PolicyDocument=policy_doc
                 )
 
-        def _delete_params(params, *args, **kwargs):
-            return {"PolicyArn": arns.policy_arn(params["PolicyName"])}
+        def _delete_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
+            return {"PolicyArn": arns.policy_arn(properties["PolicyName"])}
 
         return {
             "create": {
                 "function": _create,
-                "result_handler": _store_physical_id,
+                "result_handler": _handle_result,
             },
             "delete": {"function": "delete_policy", "parameters": _delete_params},
         }
@@ -544,15 +534,12 @@ class InstanceProfile(GenericBaseModel):
         return "AWS::IAM::InstanceProfile"
 
     def fetch_state(self, stack_name, resources):
-        instance_profile_name = self.get_physical_resource_id()
+        instance_profile_name = self.physical_resource_id
         if not instance_profile_name:
             return None
         client = aws_stack.connect_to_service("iam")
         resp = client.get_instance_profile(InstanceProfileName=instance_profile_name)
         return resp["InstanceProfile"]
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.physical_resource_id or self.props.get("InstanceProfileName")
 
     @staticmethod
     def add_defaults(resource, stack_name):
@@ -564,9 +551,8 @@ class InstanceProfile(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _add_roles(resource_id, resources, resource_type, func, stack_name):
+        def _add_roles(logical_resource_id: str, resource: dict, stack_name: str):
             client = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
             roles = props.get("Roles")
             if roles:
@@ -577,9 +563,8 @@ class InstanceProfile(GenericBaseModel):
                     RoleName=roles[0],
                 )
 
-        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+        def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
             iam_client = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
             roles = props.get("Roles")
             assert len(roles) == 1
@@ -592,10 +577,8 @@ class InstanceProfile(GenericBaseModel):
                 if "NoSuchEntity" not in str(e):
                     raise
 
-        def _store_profile_name(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["InstanceProfile"][
-                "InstanceProfileName"
-            ]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["InstanceProfile"]["InstanceProfileName"]
 
         return {
             "create": [
@@ -605,7 +588,7 @@ class InstanceProfile(GenericBaseModel):
                         "InstanceProfileName": "InstanceProfileName",
                         "Path": "Path",
                     },
-                    "result_handler": _store_profile_name,
+                    "result_handler": _handle_result,
                 },
                 {"function": _add_roles},
             ],
@@ -624,9 +607,6 @@ class IAMGroup(GenericBaseModel):
     def cloudformation_type():
         return "AWS::IAM::Group"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("GroupName")
-
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get("GroupName")
         return aws_stack.connect_to_service("iam").get_group(GroupName=group_name)["Group"]
@@ -641,9 +621,8 @@ class IAMGroup(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _post_create(resource_id, resources, resource_type, func, stack_name):
+        def _post_create(logical_resource_id: str, resource: dict, stack_name: str):
             client = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
             group_name = props["GroupName"]
 
@@ -658,9 +637,8 @@ class IAMGroup(GenericBaseModel):
                     PolicyDocument=doc,
                 )
 
-        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+        def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
             client = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
             props = resource["Properties"]
             group_name = props["GroupName"]
 
@@ -677,11 +655,15 @@ class IAMGroup(GenericBaseModel):
             for inline_policy_name in remaining_policies:
                 client.delete_group_policy(GroupName=group_name, PolicyName=inline_policy_name)
 
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["Group"]["GroupName"]
+
         return {
             "create": [
                 {
                     "function": "create_group",
                     "parameters": ["GroupName", "Path"],
+                    "result_handler": _handle_result,
                 },
                 {"function": _post_create},
             ],

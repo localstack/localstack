@@ -7,6 +7,7 @@ from localstack.aws.api.stepfunctions import (
     LambdaFunctionFailedEventDetails,
     LambdaFunctionScheduledEventDetails,
     LambdaFunctionSucceededEventDetails,
+    LambdaFunctionTimedOutEventDetails,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
@@ -38,6 +39,17 @@ class StateTaskLambda(StateTask):
     resource: LambdaResource
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        if isinstance(ex, TimeoutError):
+            return FailureEvent(
+                error_name=StatesErrorName(typ=StatesErrorNameType.StatesTimeout),
+                event_type=HistoryEventType.LambdaFunctionTimedOut,
+                event_details=EventDetails(
+                    lambdaFunctionTimedOutEventDetails=LambdaFunctionTimedOutEventDetails(
+                        error=StatesErrorNameType.StatesTimeout.to_name(),
+                    )
+                ),
+            )
+
         error = "Exception"
         if isinstance(ex, lambda_eval_utils.LambdaFunctionErrorException):
             error_name = CustomErrorName(error)
@@ -74,18 +86,23 @@ class StateTaskLambda(StateTask):
         return parameters
 
     def _eval_execution(self, env: Environment) -> None:
-        env.event_history.add_event(
-            hist_type_event=HistoryEventType.LambdaFunctionScheduled,
-            event_detail=EventDetails(
-                lambdaFunctionScheduledEventDetails=LambdaFunctionScheduledEventDetails(
-                    resource=self.resource.resource_arn,
-                    input=to_json_str(env.inp),
-                    inputDetails=HistoryEventExecutionDataDetails(
-                        truncated=False  # Always False for api calls.
-                    ),
-                )
+
+        scheduled_event_details = LambdaFunctionScheduledEventDetails(
+            resource=self.resource.resource_arn,
+            input=to_json_str(env.inp),
+            inputDetails=HistoryEventExecutionDataDetails(
+                truncated=False  # Always False for api calls.
             ),
         )
+        if not self.timeout.is_default_value():
+            self.timeout.eval(env=env)
+            timeout_seconds = env.stack.pop()
+            scheduled_event_details["timeoutInSeconds"] = timeout_seconds
+        env.event_history.add_event(
+            hist_type_event=HistoryEventType.LambdaFunctionScheduled,
+            event_detail=EventDetails(lambdaFunctionScheduledEventDetails=scheduled_event_details),
+        )
+
         env.event_history.add_event(
             hist_type_event=HistoryEventType.LambdaFunctionStarted,
             event_detail=EventDetails(),

@@ -1,8 +1,12 @@
 import logging
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Optional, TypedDict
 
 from localstack.aws.api.cloudformation import Capability, ChangeSetType, Parameter
-from localstack.utils.aws import arns, aws_stack
+from localstack.services.cloudformation.engine.parameters import (
+    convert_stack_parameters_to_list,
+    map_to_legacy_structure,
+)
+from localstack.utils.aws import arns
 from localstack.utils.collections import select_attributes
 from localstack.utils.json import clone_safe
 from localstack.utils.objects import recurse_object
@@ -53,6 +57,7 @@ class StackTemplate(TypedDict):
     Resources: dict
 
 
+# TODO: remove metadata (flatten into individual fields)
 class Stack:
     def __init__(
         self,
@@ -64,6 +69,7 @@ class Stack:
             template = {}
 
         self.resolved_outputs = list()  # TODO
+        self.resolved_parameters: dict[str, Parameter] = {}
 
         self.metadata = metadata or {}
         self.template = template or {}
@@ -99,6 +105,11 @@ class Stack:
         # list of stack change sets
         self.change_sets = []
 
+    def set_resolved_parameters(self, resolved_parameters: dict[str, Parameter]):
+        self.resolved_parameters = resolved_parameters
+        if resolved_parameters:
+            self.metadata["Parameters"] = list(resolved_parameters.values())
+
     def describe_details(self):
         attrs = [
             "StackId",
@@ -124,12 +135,12 @@ class Stack:
         outputs = self.resolved_outputs
         if outputs:
             result["Outputs"] = outputs
-        params = self.stack_parameters()
-        if params:
-            result["Parameters"] = params
+        stack_parameters = convert_stack_parameters_to_list(self.resolved_parameters)
+        if stack_parameters:
+            result["Parameters"] = stack_parameters
         if not result.get("DriftInformation"):
             result["DriftInformation"] = {"StackDriftStatus": "NOT_CHECKED"}
-        for attr in ["Capabilities", "Tags", "NotificationARNs"]:
+        for attr in ["Tags", "NotificationARNs"]:
             result.setdefault(attr, [])
         return result
 
@@ -232,9 +243,9 @@ class Stack:
         """Return dict of resources, parameters, conditions, and other stack metadata."""
         result = dict(self.template_resources)
 
-        # add stack params (without defaults)
-        stack_params = self._resolve_stack_parameters(defaults=False, existing=result)
-        result.update(stack_params)
+        result.update(
+            {k: map_to_legacy_structure(k, v) for k, v in self.resolved_parameters.items()}
+        )
 
         # TODO: conditions and mappings don't really belong here and should be handled separately
         for name, value in self.conditions.items():
@@ -252,41 +263,6 @@ class Stack:
                     "Properties": {"Value": value},
                 }
 
-        stack_params = self._resolve_stack_parameters(defaults=True, existing=result)
-        result.update(stack_params)
-
-        return result
-
-    # TODO: check duplication with stack_parameters(..) property method
-    def _resolve_stack_parameters(
-        self, defaults=True, existing: Dict[str, Dict] = None
-    ) -> Dict[str, Dict]:
-        """Resolve the parameter values of this stack, skipping the params already present in `existing`"""
-        existing = existing or {}
-        result = {}
-        for param in self.stack_parameters(defaults=defaults):
-            param_key = param["ParameterKey"]
-            if param_key not in existing:
-                template_parameter = self.template_parameters.get(param_key, {})
-                param_type = template_parameter.get("Type")
-                resolved_value = param.get("ResolvedValue")
-                # TODO: check if we should fall back to template_parameter.get("Default") in case prop_value is None
-                prop_value = (
-                    resolved_value if resolved_value is not None else param.get("ParameterValue")
-                )
-                # TODO: consider replacing "Value" with "ResolvedValue", to have a clearer distinction
-                properties = {
-                    "Value": prop_value,
-                    "ParameterType": param_type,
-                    "ParameterValue": param.get("ParameterValue"),
-                }
-                if resolved_value is not None:
-                    properties["ResolvedValue"] = resolved_value
-                result[param_key] = {
-                    "Type": "Parameter",
-                    "LogicalResourceId": param_key,
-                    "Properties": properties,
-                }
         return result
 
     @property
@@ -308,43 +284,6 @@ class Stack:
 
         result = set()
         recurse_object(self.resources, _collect)
-        return result
-
-    # TODO: check if metadata already populated/resolved and use it if possible (avoid unnecessary re-resolving)
-    def stack_parameters(self, defaults=True) -> List[Dict[str, Any]]:
-        result = {}
-        # add default template parameter values
-        if defaults:
-            for key, value in self.template_parameters.items():
-                param_value = value.get("Default")
-                result[key] = {
-                    "ParameterKey": key,
-                    "ParameterValue": param_value,
-                }
-                # TODO: extract dynamic parameter resolving
-                # TODO: support different types and refactor logic to use metadata (here not yet populated properly)
-                param_type = value.get("Type", "")
-                if not param_type:
-                    if param_type == "AWS::SSM::Parameter::Value<String>":
-                        result[key]["ResolvedValue"] = resolve_ssm_parameter_value(
-                            param_type, param_value
-                        )
-                    elif param_type.startswith("AWS::"):
-                        LOG.info(
-                            f"Parameter Type '{param_type}' is currently not supported. Coming soon, stay tuned!"
-                        )
-                    else:
-                        # lets assume we support the normal CFn parameters
-                        pass
-
-        # add stack parameters
-        result.update({p["ParameterKey"]: p for p in self.metadata["Parameters"]})
-        # add parameters of change sets
-        for change_set in self.change_sets:
-            for param in change_set.metadata["Parameters"]:
-                if not param.get("UsePreviousValue"):
-                    result.update({param["ParameterKey"]: param})
-        result = list(result.values())
         return result
 
     @property
@@ -423,24 +362,3 @@ class StackChangeSet(Stack):
     def changes(self):
         result = self.metadata["Changes"] = self.metadata.get("Changes", [])
         return result
-
-    def stack_parameters(self, defaults=True) -> List[Dict[str, Any]]:
-        return self.stack.stack_parameters(defaults=defaults)
-
-
-def resolve_ssm_parameter_value(parameter_type: str, parameter_value: str) -> str:
-    """
-    Resolve the SSM stack parameter with the name specified via the given `parameter_value`.
-
-    Given a stack template with parameter {"param1": {"Type": "AWS::SSM::Parameter::Value<String>"}} and
-    a stack instance with stack parameter {"ParameterKey": "param1", "ParameterValue": "test-param"}, this
-    function will resolve the SSM parameter with name `test-param` and return the SSM parameter's value.
-    """
-    # TODO: support different parameter value types
-    if (
-        parameter_type == "AWS::SSM::Parameter::Value<String>"
-        or parameter_type == "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
-    ):
-        ssm_client = aws_stack.connect_to_service("ssm")
-        return ssm_client.get_parameter(Name=parameter_value)["Parameter"]["Value"]
-    raise Exception(f"Unsupported parameter value type {parameter_type}")

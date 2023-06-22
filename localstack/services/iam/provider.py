@@ -28,6 +28,7 @@ from localstack.aws.api.iam import (
     IamApi,
     ListInstanceProfileTagsResponse,
     ListRolesResponse,
+    MalformedPolicyDocumentException,
     NoSuchEntityException,
     PolicyEvaluationDecisionType,
     ResourceHandlingOptionType,
@@ -101,6 +102,10 @@ class IamProvider(IamApi):
     def create_role(
         self, context: RequestContext, request: CreateRoleRequest
     ) -> CreateRoleResponse:
+        try:
+            json.loads(request["AssumeRolePolicyDocument"])
+        except json.JSONDecodeError:
+            raise MalformedPolicyDocumentException("This policy contains invalid Json")
         result = call_moto(context)
 
         if not request.get("MaxSessionDuration") and result["Role"].get("MaxSessionDuration"):

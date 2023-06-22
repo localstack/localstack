@@ -45,6 +45,8 @@ state_stmt
     | items_path_decl
     | item_processor_decl
     | max_concurrency_decl
+    | timeout_seconds_decl
+    | timeout_seconds_path_decl
     | branches_decl
     | parameters_decl
     | retry_decl
@@ -148,6 +150,15 @@ max_concurrency_decl
 parameters_decl
     : PARAMETERS COLON payload_tmpl_decl
     ;
+
+timeout_seconds_decl
+    : TIMEOUTSECONDS COLON INT
+    ;
+
+timeout_seconds_path_decl
+    : TIMEOUTSECONDSPATH COLON STRINGPATH
+    ;
+
 
 payload_tmpl_decl
     : LBRACE payload_binding (COMMA payload_binding)* RBRACE

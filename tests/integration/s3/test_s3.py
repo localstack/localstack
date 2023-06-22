@@ -33,6 +33,9 @@ from localstack.config import LEGACY_S3_PROVIDER
 from localstack.constants import (
     LOCALHOST_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
+    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+    SECONDARY_TEST_AWS_REGION_NAME,
+    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
@@ -890,6 +893,33 @@ class TestS3:
         snapshot.match("list-all-uploads-completed", list_multipart_uploads)
 
     @pytest.mark.aws_validated
+    def test_multipart_no_such_upload(self, s3_bucket, snapshot, aws_client):
+        fake_upload_id = "fakeid"
+        fake_key = "fake-key"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=fake_key,
+                Body=BytesIO(b"data"),
+                PartNumber=1,
+                UploadId=fake_upload_id,
+            )
+        snapshot.match("upload-exc", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket, Key=fake_key, UploadId=fake_upload_id
+            )
+        snapshot.match("complete-exc", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.abort_multipart_upload(
+                Bucket=s3_bucket, Key=fake_key, UploadId=fake_upload_id
+            )
+        snapshot.match("abort-exc", e.value.response)
+
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
     )
@@ -1720,10 +1750,10 @@ class TestS3:
             )
         snapshot.match("exc-invalid-request-storage-class", e.value.response)
 
-    # TODO: maybe different checksums?
     @pytest.mark.aws_validated
+    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256"])
     @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
-    def test_s3_copy_object_with_checksum(self, s3_create_bucket, snapshot, aws_client):
+    def test_s3_copy_object_with_checksum(self, s3_create_bucket, snapshot, aws_client, algorithm):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "source-object"
         bucket_name = s3_create_bucket()
@@ -1749,7 +1779,7 @@ class TestS3:
             Bucket=bucket_name,
             CopySource=f"{bucket_name}/{object_key}",
             Key=object_key,
-            ChecksumAlgorithm="SHA256",
+            ChecksumAlgorithm=algorithm,
             Metadata={"key1": "value1"},
             MetadataDirective="REPLACE",
         )
@@ -3767,6 +3797,15 @@ class TestS3:
             )
         snapshot.match("put-obj-disabled-key", e.value.response)
 
+        # schedule the deletion of the key
+        aws_client.kms.schedule_key_deletion(KeyId=kms_key["KeyId"], PendingWindowInDays=7)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+            )
+        snapshot.match("get-obj-pending-deletion-key", e.value.response)
+
     @pytest.mark.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
@@ -4602,6 +4641,164 @@ class TestS3:
             LegalHold={"Status": "OFF"},
             VersionId=version_id_2,
         )
+
+    @pytest.mark.aws_validated
+    def test_s3_intelligent_tier_config(self, aws_client, s3_create_bucket, snapshot):
+        bucket = s3_create_bucket()
+        intelligent_tier_configuration = {
+            "Id": "test1",
+            "Filter": {
+                "Prefix": "test1",
+            },
+            "Status": "Enabled",
+            "Tierings": [
+                {"Days": 90, "AccessTier": "ARCHIVE_ACCESS"},
+            ],
+        }
+
+        # different id in tiering config and in put request
+        with pytest.raises(ClientError) as put_err_1:
+            aws_client.s3.put_bucket_intelligent_tiering_configuration(
+                Bucket=bucket,
+                Id="incorrect_id",
+                IntelligentTieringConfiguration=intelligent_tier_configuration,
+            )
+        snapshot.match(
+            "put_bucket_intelligent_tiering_configuration_err_1`", put_err_1.value.response
+        )
+
+        # put tiering config
+        aws_client.s3.put_bucket_intelligent_tiering_configuration(
+            Bucket=bucket,
+            Id=intelligent_tier_configuration["Id"],
+            IntelligentTieringConfiguration=intelligent_tier_configuration,
+        )
+
+        # get tiering config and snapshot match
+        response = aws_client.s3.get_bucket_intelligent_tiering_configuration(
+            Bucket=bucket,
+            Id=intelligent_tier_configuration["Id"],
+        )
+        snapshot.match("get_bucket_intelligent_tiering_configuration_1", response)
+
+        # put tiering config with different id
+        intelligent_tier_configuration["Id"] = "test2"
+        intelligent_tier_configuration["Filter"]["Prefix"] = "test2"
+
+        aws_client.s3.put_bucket_intelligent_tiering_configuration(
+            Bucket=bucket,
+            Id=intelligent_tier_configuration["Id"],
+            IntelligentTieringConfiguration=intelligent_tier_configuration,
+        )
+
+        response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=bucket)
+        snapshot.match("list_bucket_intelligent_tiering_configurations_1", response)
+
+        # update the config by adding config with same id
+        intelligent_tier_configuration["Id"] = "test1"
+        intelligent_tier_configuration["Filter"]["Prefix"] = "testupdate"
+
+        aws_client.s3.put_bucket_intelligent_tiering_configuration(
+            Bucket=bucket,
+            Id=intelligent_tier_configuration["Id"],
+            IntelligentTieringConfiguration=intelligent_tier_configuration,
+        )
+
+        response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=bucket)
+        snapshot.match("list_bucket_intelligent_tiering_configurations_2", response)
+
+        # delete the config with non-existing bucket
+        with pytest.raises(ClientError) as delete_err_1:
+            aws_client.s3.delete_bucket_intelligent_tiering_configuration(
+                Bucket="non-existing-bucket",
+                Id=intelligent_tier_configuration["Id"],
+            )
+        snapshot.match(
+            "delete_bucket_intelligent_tiering_configuration_err_1", delete_err_1.value.response
+        )
+
+        # delete the config with non-existing id
+        with pytest.raises(ClientError) as delete_err_2:
+            aws_client.s3.delete_bucket_intelligent_tiering_configuration(
+                Bucket=bucket,
+                Id="non-existing-id",
+            )
+        snapshot.match(
+            "delete_bucket_intelligent_tiering_configuration_err_2", delete_err_2.value.response
+        )
+
+        # delete the config
+        aws_client.s3.delete_bucket_intelligent_tiering_configuration(
+            Bucket=bucket,
+            Id=intelligent_tier_configuration["Id"],
+        )
+
+        response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=bucket)
+        snapshot.match("list_bucket_intelligent_tiering_configurations_3", response)
+
+
+class TestS3MultiAccounts:
+    @pytest.fixture
+    def primary_client(self, aws_client):
+        return aws_client.s3
+
+    @pytest.fixture
+    def secondary_client(self, aws_client_factory):
+        """
+        Create a boto client with secondary test credentials and region.
+        """
+        return aws_client_factory.get_client(
+            "s3",
+            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+            region_name=SECONDARY_TEST_AWS_REGION_NAME,
+        )
+
+    def test_shared_bucket_namespace(self, primary_client, secondary_client):
+        # Ensure that the bucket name space is shared by all accounts and regions
+        primary_client.create_bucket(Bucket="foo")
+
+        with pytest.raises(ClientError) as exc:
+            secondary_client.create_bucket(
+                Bucket="foo",
+                CreateBucketConfiguration={"LocationConstraint": SECONDARY_TEST_AWS_REGION_NAME},
+            )
+        exc.match("BucketAlreadyExists")
+
+    def test_cross_account_access(self, primary_client, secondary_client):
+        # Ensure that following operations can be performed across accounts
+        # - ListObjects
+        # - PutObject
+        # - GetObject
+
+        bucket_name = "foo"
+        key_name = "lorem/ipsum"
+        body1 = b"zaphod beeblebrox"
+        body2 = b"42"
+
+        # First user creates a bucket and puts an object
+        primary_client.create_bucket(Bucket=bucket_name)
+        response = primary_client.list_buckets()
+        assert bucket_name in [bucket["Name"] for bucket in response["Buckets"]]
+        primary_client.put_object(Bucket=bucket_name, Key=key_name, Body=body1)
+
+        # Second user must not see this bucket in their `ListBuckets` response
+        response = secondary_client.list_buckets()
+        assert bucket_name not in [bucket["Name"] for bucket in response["Buckets"]]
+
+        # Yet they should be able to `ListObjects` in that bucket
+        response = secondary_client.list_objects(Bucket=bucket_name)
+        assert key_name in [key["Key"] for key in response["Contents"]]
+
+        # Along with `GetObject` and `PutObject`
+        # ACL and permission enforcement is currently not implemented
+        response = secondary_client.get_object(Bucket=bucket_name, Key=key_name)
+        assert response["Body"].read() == body1
+        assert secondary_client.put_object(Bucket=bucket_name, Key=key_name, Body=body2)
+
+        # The modified object must be reflected for the first user
+        response = primary_client.get_object(Bucket=bucket_name, Key=key_name)
+        assert response["Body"].read() == body2
 
 
 class TestS3TerraformRawRequests:

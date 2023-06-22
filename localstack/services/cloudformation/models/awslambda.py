@@ -2,6 +2,7 @@ import json
 import os
 import random
 import string
+import uuid
 
 from localstack.aws.connect import connect_to
 from localstack.services.awslambda.lambda_utils import get_handler_file_from_name
@@ -36,12 +37,6 @@ class LambdaFunction(GenericBaseModel):
         func_name = self.props["FunctionName"]
         return connect_to().awslambda.get_function(FunctionName=func_name)
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        func_name = self.props.get("FunctionName")
-        if attribute == "Arn":
-            return arns.lambda_function_arn(func_name)
-        return func_name
-
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
         client = aws_stack.connect_to_service("lambda")
@@ -68,7 +63,13 @@ class LambdaFunction(GenericBaseModel):
                 LOG.debug(
                     'Updating code for Lambda "%s" from location: %s', props["FunctionName"], code
                 )
-            code = LambdaFunction.get_lambda_code_param(props, _include_arch=True)
+            code = LambdaFunction.get_lambda_code_param(
+                props,
+                new_resource["LogicalResourceId"],
+                new_resource,
+                stack_name,
+                _include_arch=True,
+            )
             client.update_function_code(FunctionName=props["FunctionName"], **code)
         if "Environment" in update_config_props:
             environment_variables = update_config_props["Environment"].get("Variables", {})
@@ -91,12 +92,20 @@ class LambdaFunction(GenericBaseModel):
             )
 
     @staticmethod
-    def get_lambda_code_param(params, _include_arch=False, **kwargs):
-        code = params.get("Code", {}).copy()
+    def get_lambda_code_param(
+        properties: dict,
+        logical_resource_id: str,
+        resource: dict,
+        stack_name: str,
+        _include_arch=False,
+    ):
+        code = properties.get("Code", {}).copy()
         zip_file = code.get("ZipFile")
         if zip_file and not is_base64(zip_file) and not is_zip_file(to_bytes(zip_file)):
             tmp_dir = new_tmp_dir()
-            handler_file = get_handler_file_from_name(params["Handler"], runtime=params["Runtime"])
+            handler_file = get_handler_file_from_name(
+                properties["Handler"], runtime=properties["Runtime"]
+            )
             tmp_file = os.path.join(tmp_dir, handler_file)
             save_file(tmp_file, zip_file)
 
@@ -117,27 +126,33 @@ class LambdaFunction(GenericBaseModel):
             zip_file = create_zip_file(tmp_dir, get_content=True)
             code["ZipFile"] = zip_file
             rm_rf(tmp_dir)
-        if _include_arch and "Architectures" in params:
-            code["Architectures"] = params.get("Architectures")
+        if _include_arch and "Architectures" in properties:
+            code["Architectures"] = properties.get("Architectures")
         return code
 
     @staticmethod
     def get_deploy_templates():
-        def get_delete_params(params, **kwargs):
-            return {"FunctionName": params.get("FunctionName")}
+        def get_delete_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
+            return {"FunctionName": properties.get("FunctionName")}
 
-        def get_environment_params(params, **kwargs):
+        def get_environment_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ):
             # botocore/data/lambda/2015-03-31/service-2.json:1161 (EnvironmentVariableValue)
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-lambda-function-environment.html
-            if "Environment" in params:
-                environment_variables = params["Environment"].get("Variables", {})
+            if "Environment" in properties:
+                environment_variables = properties["Environment"].get("Variables", {})
                 return {"Variables": {k: str(v) for k, v in environment_variables.items()}}
 
-        def result_handler(result, resource_id, resources, resource_type):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             """waits for the lambda to be in a "terminal" state, i.e. not pending"""
-            resources[resource_id]["Properties"]["Arn"] = result["FunctionArn"]
-            lambda_client = aws_stack.connect_to_service("lambda")
-            lambda_client.get_waiter("function_active_v2").wait(FunctionName=result["FunctionArn"])
+            resource["Properties"]["Arn"] = result["FunctionArn"]
+            resource["PhysicalResourceId"] = resource["Properties"]["FunctionName"]
+            connect_to().awslambda.get_waiter("function_active_v2").wait(
+                FunctionName=result["FunctionArn"]
+            )
 
         return {
             "create": {
@@ -161,7 +176,7 @@ class LambdaFunction(GenericBaseModel):
                     # TODO add missing fields
                 },
                 "types": {"Timeout": int, "MemorySize": int},
-                "result_handler": result_handler,
+                "result_handler": _handle_result,
             },
             "delete": {"function": "delete_function", "parameters": get_delete_params},
         }
@@ -173,7 +188,6 @@ class LambdaFunctionVersion(GenericBaseModel):
         return "AWS::Lambda::Version"
 
     def fetch_state(self, stack_name, resources):
-
         props = self.props
         if not self.physical_resource_id:
             return None
@@ -191,15 +205,15 @@ class LambdaFunctionVersion(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _store_version(result, resource_id, resources, resource_type):
-            resources[resource_id]["Properties"]["Version"] = result["Version"]
-            resources[resource_id]["PhysicalResourceId"] = result["FunctionArn"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["Properties"]["Version"] = result["Version"]
+            resource["PhysicalResourceId"] = result["FunctionArn"]
 
         return {
             "create": {
                 "function": "publish_version",
                 "parameters": select_parameters("FunctionName", "CodeSha256", "Description"),
-                "result_handler": _store_version,
+                "result_handler": _handle_result,
             }
         }
 
@@ -236,13 +250,13 @@ class LambdaEventSourceMapping(GenericBaseModel):
         if attribute_name == "Id":
             return self.props.get("UUID")
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("UUID")
-
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["UUID"]
+
         return {
-            "create": {"function": "create_event_source_mapping"},
+            "create": {"function": "create_event_source_mapping", "result_handler": _handle_result},
             "delete": {"function": "delete_event_source_mapping", "parameters": ["UUID"]},
         }
 
@@ -284,36 +298,38 @@ class LambdaPermission(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _store_physical_id(result, resource_id, resources, resource_type):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             parsed_statement = json.loads(result["Statement"])
-            resources[resource_id]["PhysicalResourceId"] = parsed_statement["Sid"]
+            resource["PhysicalResourceId"] = parsed_statement["Sid"]
 
-        def lambda_permission_params(params, resources, resource_id, **kwargs):
+        def lambda_permission_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             result = select_parameters("FunctionName", "Action", "Principal", "SourceArn")(
-                params, **kwargs
+                properties, logical_resource_id, resource, stack_name
             )
             # generate SID
             # e.g. stack-78d0ac66-fnAllowInvokeLambdaPermissionsStacktopicF723B1A748672DB5-1D7VMEAZ2UQIN
             # e.g. stack-6283277e-fnAllowInvokeLambdaPermissionsStacktopicF48672DB5-19EAQW5GIWOS5 when the functional ID is shorter
             suffix = "".join(random.choices(string.digits + string.ascii_uppercase, k=13))
-            prefix = kwargs.get("stack_name")
+            prefix = stack_name
             if prefix:
-                result["StatementId"] = f"{prefix}-{resource_id}-{suffix}"
+                result["StatementId"] = f"{prefix}-{logical_resource_id}-{suffix}"
             else:
-                result["StatementId"] = f"{resource_id}-{suffix}"
+                result["StatementId"] = f"{logical_resource_id}-{suffix}"
             return result
 
-        def get_delete_params(params, **kwargs):
-            resources = kwargs["resources"]
-            resource_id = kwargs["resource_id"]
-            statement_id = resources[resource_id]["PhysicalResourceId"]
-            return {"FunctionName": params.get("FunctionName"), "StatementId": statement_id}
+        def get_delete_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
+            statement_id = resource["PhysicalResourceId"]
+            return {"FunctionName": properties.get("FunctionName"), "StatementId": statement_id}
 
         return {
             "create": {
                 "function": "add_permission",
                 "parameters": lambda_permission_params,
-                "result_handler": _store_physical_id,
+                "result_handler": _handle_result,
             },
             "delete": {"function": "remove_permission", "parameters": get_delete_params},
         }
@@ -333,17 +349,19 @@ class LambdaEventInvokeConfig(GenericBaseModel):
         )
         return result
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        props = self.props
-        return "lambdaconfig-%s-%s" % (
-            props.get("FunctionName"),
-            props.get("Qualifier"),
-        )
-
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = str(
+                uuid.uuid4()
+            )  # TODO: not actually a UUIDv4
+            # example format: 6403f864-a20b-4373-ac8f-f8d888f6bc0f
+
         return {
-            "create": {"function": "put_function_event_invoke_config"},
+            "create": {
+                "function": "put_function_event_invoke_config",
+                "result_handler": _handle_result,
+            },
             "delete": {
                 "function": "delete_function_event_invoke_config",
                 "parameters": {
@@ -358,11 +376,6 @@ class LambdaUrl(GenericBaseModel):
     @classmethod
     def cloudformation_type(cls):
         return "AWS::Lambda::Url"
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get(
-            "TargetFunctionArn"
-        )  # TODO: if this isn't an ARN we need to resolve the full ARN here
 
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("lambda")
@@ -386,6 +399,11 @@ class LambdaUrl(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["FunctionArn"]
+            resources[resource_id]["Properties"]["FunctionArn"] = result["FunctionArn"]
+            resources[resource_id]["Properties"]["FunctionUrl"] = result["FunctionUrl"]
+
         return {
             "create": {
                 "function": "create_function_url_config",
@@ -395,6 +413,7 @@ class LambdaUrl(GenericBaseModel):
                     "FunctionName": "TargetFunctionArn",
                     "AuthType": "AuthType",
                 },
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_function_url_config",
@@ -416,11 +435,11 @@ class LambdaAlias(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _store_arn(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["AliasArn"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["AliasArn"]
 
         return {
-            "create": {"function": "create_alias", "result_handler": _store_arn},
+            "create": {"function": "create_alias", "result_handler": _handle_result},
             "delete": {
                 "function": "delete_alias",
                 "parameters": {
@@ -446,32 +465,20 @@ class LambdaCodeSigningConfig(GenericBaseModel):
         ]
         return result
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.physical_resource_id
-
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "CodeSigningConfigId":
-            return self.props["CodeSigningConfigId"]
-
-        return self.physical_resource_id
-
     @classmethod
     def get_deploy_templates(cls):
-        def _store_arn(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["CodeSigningConfig"][
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["CodeSigningConfig"]["CodeSigningConfigArn"]
+            resource["Properties"]["CodeSigningConfigArn"] = result["CodeSigningConfig"][
                 "CodeSigningConfigArn"
             ]
 
-        def _arn(params, resources, resource_id, **kwargs):
-            resource = cls(resources[resource_id])
-            return resource.physical_resource_id or resource.get_physical_resource_id()
-
         return {
-            "create": {"function": "create_code_signing_config", "result_handler": _store_arn},
+            "create": {"function": "create_code_signing_config", "result_handler": _handle_result},
             "delete": {
                 "function": "delete_code_signing_config",
                 "parameters": {
-                    "CodeSigningConfigArn": _arn,
+                    "CodeSigningConfigArn": "CodeSigningConfigArn",
                 },
             },
         }
@@ -482,9 +489,6 @@ class LambdaLayerVersion(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::Lambda::LayerVersion"
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.state.get("LayerVersionArn")
 
     def fetch_state(self, stack_name, resources):
         layer_name = self.props.get("LayerName")
@@ -501,7 +505,10 @@ class LambdaLayerVersion(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        return {"create": {"function": "publish_layer_version"}}
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["LayerVersionArn"]
+
+        return {"create": {"function": "publish_layer_version", "result_handler": _handle_result}}
 
 
 # TODO: test
@@ -530,9 +537,11 @@ class LambdaLayerVersionPermission(LambdaPermission):
 
     @classmethod
     def get_deploy_templates(cls):
-        def layer_permission_params(params, **kwargs):
-            layer_name, version_number = cls.layer_name_and_version(params)
-            result = select_attributes(params, ["Action", "Principal"])
+        def layer_permission_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ):
+            layer_name, version_number = cls.layer_name_and_version(properties)
+            result = select_attributes(properties, ["Action", "Principal"])
             result["StatementId"] = short_uid()
             result["LayerName"] = layer_name
             result["VersionNumber"] = version_number

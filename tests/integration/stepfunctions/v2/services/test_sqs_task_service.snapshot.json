@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message": {
-    "recorded-date": "20-04-2023, 08:02:55",
+    "recorded-date": "22-06-2023, 13:41:17",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -76,9 +76,7 @@
                     "Content-Length": [
                       "378"
                     ],
-                    "Date": [
-                      "Thu, 20 Apr 2023 06:02:54 GMT"
-                    ],
+                    "Date": "date",
                     "Content-Type": [
                       "text/xml"
                     ]
@@ -86,7 +84,7 @@
                   "HttpHeaders": {
                     "Content-Length": "378",
                     "Content-Type": "text/xml",
-                    "Date": "Thu, 20 Apr 2023 06:02:54 GMT",
+                    "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
                   "HttpStatusCode": 200
@@ -120,9 +118,7 @@
                     "Content-Length": [
                       "378"
                     ],
-                    "Date": [
-                      "Thu, 20 Apr 2023 06:02:54 GMT"
-                    ],
+                    "Date": "date",
                     "Content-Type": [
                       "text/xml"
                     ]
@@ -130,7 +126,7 @@
                   "HttpHeaders": {
                     "Content-Length": "378",
                     "Content-Type": "text/xml",
-                    "Date": "Thu, 20 Apr 2023 06:02:54 GMT",
+                    "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
                   "HttpStatusCode": 200
@@ -159,9 +155,7 @@
                     "Content-Length": [
                       "378"
                     ],
-                    "Date": [
-                      "Thu, 20 Apr 2023 06:02:54 GMT"
-                    ],
+                    "Date": "date",
                     "Content-Type": [
                       "text/xml"
                     ]
@@ -169,7 +163,7 @@
                   "HttpHeaders": {
                     "Content-Length": "378",
                     "Content-Type": "text/xml",
-                    "Date": "Thu, 20 Apr 2023 06:02:54 GMT",
+                    "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
                   "HttpStatusCode": 200
@@ -196,7 +190,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message_unsupported_parameters": {
-    "recorded-date": "25-04-2023, 07:39:27",
+    "recorded-date": "22-06-2023, 13:41:34",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -278,9 +272,7 @@
                     "Content-Length": [
                       "378"
                     ],
-                    "Date": [
-                      "Tue, 25 Apr 2023 05:39:26 GMT"
-                    ],
+                    "Date": "date",
                     "Content-Type": [
                       "text/xml"
                     ]
@@ -288,7 +280,7 @@
                   "HttpHeaders": {
                     "Content-Length": "378",
                     "Content-Type": "text/xml",
-                    "Date": "Tue, 25 Apr 2023 05:39:26 GMT",
+                    "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
                   "HttpStatusCode": 200
@@ -322,9 +314,7 @@
                     "Content-Length": [
                       "378"
                     ],
-                    "Date": [
-                      "Tue, 25 Apr 2023 05:39:26 GMT"
-                    ],
+                    "Date": "date",
                     "Content-Type": [
                       "text/xml"
                     ]
@@ -332,7 +322,7 @@
                   "HttpHeaders": {
                     "Content-Length": "378",
                     "Content-Type": "text/xml",
-                    "Date": "Tue, 25 Apr 2023 05:39:26 GMT",
+                    "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
                   "HttpStatusCode": 200
@@ -361,9 +351,7 @@
                     "Content-Length": [
                       "378"
                     ],
-                    "Date": [
-                      "Tue, 25 Apr 2023 05:39:26 GMT"
-                    ],
+                    "Date": "date",
                     "Content-Type": [
                       "text/xml"
                     ]
@@ -371,7 +359,7 @@
                   "HttpHeaders": {
                     "Content-Length": "378",
                     "Content-Type": "text/xml",
-                    "Date": "Tue, 25 Apr 2023 05:39:26 GMT",
+                    "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
                   "HttpStatusCode": 200

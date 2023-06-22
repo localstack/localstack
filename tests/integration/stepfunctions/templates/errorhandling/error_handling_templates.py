@@ -29,6 +29,10 @@ class ErrorHandlingTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/task_service_lambda_invoke_catch_unknown.json5"
     )
 
+    AWS_SERVICE_LAMBDA_INVOKE_CATCH_TIMEOUT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/task_service_lambda_invoke_catch_timeout.json5"
+    )
+
     AWS_SERVICE_LAMBDA_INVOKE_CATCH_RELEVANT: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/task_service_lambda_invoke_catch_relevant.json5"
     )

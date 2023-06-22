@@ -260,6 +260,12 @@ class RecorderStatus(str):
     Failure = "Failure"
 
 
+class RecordingStrategyType(str):
+    ALL_SUPPORTED_RESOURCE_TYPES = "ALL_SUPPORTED_RESOURCE_TYPES"
+    INCLUSION_BY_RESOURCE_TYPES = "INCLUSION_BY_RESOURCE_TYPES"
+    EXCLUSION_BY_RESOURCE_TYPES = "EXCLUSION_BY_RESOURCE_TYPES"
+
+
 class RemediationExecutionState(str):
     QUEUED = "QUEUED"
     IN_PROGRESS = "IN_PROGRESS"
@@ -1327,13 +1333,25 @@ class ConfigurationItem(TypedDict, total=False):
 
 
 ConfigurationItemList = List[ConfigurationItem]
+
+
+class RecordingStrategy(TypedDict, total=False):
+    useOnly: Optional[RecordingStrategyType]
+
+
 ResourceTypeList = List[ResourceType]
+
+
+class ExclusionByResourceTypes(TypedDict, total=False):
+    resourceTypes: Optional[ResourceTypeList]
 
 
 class RecordingGroup(TypedDict, total=False):
     allSupported: Optional[AllSupported]
     includeGlobalResourceTypes: Optional[IncludeGlobalResourceTypes]
     resourceTypes: Optional[ResourceTypeList]
+    exclusionByResourceTypes: Optional[ExclusionByResourceTypes]
+    recordingStrategy: Optional[RecordingStrategy]
 
 
 class ConfigurationRecorder(TypedDict, total=False):

@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_no_such_queue": {
-    "recorded-date": "25-04-2023, 08:53:17",
+    "recorded-date": "22-06-2023, 13:31:36",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -65,7 +65,7 @@
             "id": 5,
             "previousEventId": 4,
             "taskFailedEventDetails": {
-              "cause": "Unable to execute HTTP request: no-such-queue-c3be3514: Name or service not known",
+              "cause": "Unable to execute HTTP request: no-such-queue-73e08fde: Name or service not known",
               "error": "SQS.SdkClientException",
               "resource": "sendMessage",
               "resourceType": "sqs"
@@ -80,7 +80,7 @@
               "name": "Start",
               "output": {
                 "Error": "SQS.SdkClientException",
-                "Cause": "Unable to execute HTTP request: no-such-queue-c3be3514: Name or service not known"
+                "Cause": "Unable to execute HTTP request: no-such-queue-73e08fde: Name or service not known"
               },
               "outputDetails": {
                 "truncated": false
@@ -95,7 +95,7 @@
             "stateEnteredEventDetails": {
               "input": {
                 "Error": "SQS.SdkClientException",
-                "Cause": "Unable to execute HTTP request: no-such-queue-c3be3514: Name or service not known"
+                "Cause": "Unable to execute HTTP request: no-such-queue-73e08fde: Name or service not known"
               },
               "inputDetails": {
                 "truncated": false
@@ -112,10 +112,10 @@
               "name": "EndWithClientHandler",
               "output": {
                 "Error": "SQS.SdkClientException",
-                "Cause": "Unable to execute HTTP request: no-such-queue-c3be3514: Name or service not known",
+                "Cause": "Unable to execute HTTP request: no-such-queue-73e08fde: Name or service not known",
                 "client_error": {
                   "Error": "SQS.SdkClientException",
-                  "Cause": "Unable to execute HTTP request: no-such-queue-c3be3514: Name or service not known"
+                  "Cause": "Unable to execute HTTP request: no-such-queue-73e08fde: Name or service not known"
                 }
               },
               "outputDetails": {
@@ -129,10 +129,10 @@
             "executionSucceededEventDetails": {
               "output": {
                 "Error": "SQS.SdkClientException",
-                "Cause": "Unable to execute HTTP request: no-such-queue-c3be3514: Name or service not known",
+                "Cause": "Unable to execute HTTP request: no-such-queue-73e08fde: Name or service not known",
                 "client_error": {
                   "Error": "SQS.SdkClientException",
-                  "Cause": "Unable to execute HTTP request: no-such-queue-c3be3514: Name or service not known"
+                  "Cause": "Unable to execute HTTP request: no-such-queue-73e08fde: Name or service not known"
                 }
               },
               "outputDetails": {
@@ -153,7 +153,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_empty_body": {
-    "recorded-date": "26-04-2023, 16:28:35",
+    "recorded-date": "22-06-2023, 13:32:07",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -306,7 +306,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_no_such_queue_no_catch": {
-    "recorded-date": "25-04-2023, 08:53:29",
+    "recorded-date": "22-06-2023, 13:31:50",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -371,7 +371,7 @@
             "id": 5,
             "previousEventId": 4,
             "taskFailedEventDetails": {
-              "cause": "Unable to execute HTTP request: no-such-queue-734b943e: Name or service not known",
+              "cause": "Unable to execute HTTP request: no-such-queue-fa484d45: Name or service not known",
               "error": "SQS.SdkClientException",
               "resource": "sendMessage",
               "resourceType": "sqs"
@@ -381,7 +381,7 @@
           },
           {
             "executionFailedEventDetails": {
-              "cause": "Unable to execute HTTP request: no-such-queue-734b943e: Name or service not known",
+              "cause": "Unable to execute HTTP request: no-such-queue-fa484d45: Name or service not known",
               "error": "SQS.SdkClientException"
             },
             "id": 6,

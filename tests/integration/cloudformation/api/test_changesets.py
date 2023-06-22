@@ -236,6 +236,7 @@ def test_create_change_set_missing_stackname(aws_client):
         )
 
 
+@pytest.mark.aws_validated
 def test_create_change_set_with_ssm_parameter(
     cleanup_changesets,
     cleanup_stacks,
