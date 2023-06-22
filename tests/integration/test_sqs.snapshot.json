@@ -855,5 +855,162 @@
         }
       }
     }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_sqs_permission_lifecycle": {
+    "recorded-date": "22-06-2023, 17:01:51",
+    "recorded-content": {
+      "add-permission-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Statement": [
+              {
+                "Sid": "crossaccountpermission",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": [
+                    "arn:aws:iam::111111111111:<resource:3>",
+                    "arn:aws:iam::668614515564:<resource:3>"
+                  ]
+                },
+                "Action": "SQS:ReceiveMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove-permission-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-after-removal": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-first-account-same-label": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Statement": [
+              {
+                "Sid": "crossaccountpermission",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                },
+                "Action": "SQS:ReceiveMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-second-account-same-label": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value crossaccountpermission for parameter Label is invalid. Reason: Already exists.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-queue-policy-attribute-second-account-different-label": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Statement": [
+              {
+                "Sid": "crossaccountpermission",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                },
+                "Action": "SQS:ReceiveMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+              },
+              {
+                "Sid": "crossaccountpermission2",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                },
+                "Action": "SQS:ReceiveMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-delete-first-permission": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Statement": [
+              {
+                "Sid": "crossaccountpermission2",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                },
+                "Action": "SQS:ReceiveMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-delete-second-permission": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-delete-non-existent-label": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value crossaccountpermission2 for parameter Label is invalid. Reason: can't find label.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
