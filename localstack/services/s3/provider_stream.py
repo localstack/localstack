@@ -23,6 +23,7 @@ from requests.structures import CaseInsensitiveDict
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.s3 import (
+    ChecksumAlgorithm,
     CopyObjectOutput,
     CopyObjectRequest,
     InvalidStorageClass,
@@ -41,6 +42,7 @@ from localstack.services.s3.utils import (
     get_bucket_from_moto,
     get_key_from_moto_bucket,
     get_s3_checksum,
+    is_presigned_url_request,
     validate_kms_key_id,
 )
 from localstack.utils.aws import arns
@@ -79,6 +81,15 @@ class S3ProviderStream(S3Provider):
 
         try:
             request_without_body = copy.copy(request)
+            # we need to pass the query string parameters to the request to properly recreate it
+            if is_presigned_url_request(context):
+                for key, value in context.request.args.items():
+                    if key in request_without_body:
+                        request_without_body[key] = value
+                    elif key.startswith("x-amz-meta"):
+                        metadata_key = key.removeprefix("x-amz-meta-")
+                        request_without_body["Metadata"][metadata_key] = value
+
             body = request_without_body.pop("Body", BytesIO(b""))
             request_without_body["Body"] = BytesIO(b"")
             checksums_keys = {
@@ -195,6 +206,12 @@ class S3ProviderStream(S3Provider):
             else:
                 dest_key_object.checksum_value = source_key_object.checksum_value
             dest_key_object.checksum_algorithm = checksum_algorithm
+
+            if checksum_algorithm == ChecksumAlgorithm.CRC32C:
+                # TODO: the logic for rendering the template in moto is the following:
+                # if `CRC32` in `key.checksum_algorithm` which is valid for both CRC32 and CRC32C, and will render both
+                # remove the key if it's CRC32C.
+                response["CopyObjectResult"].pop("ChecksumCRC32", None)
 
             response["CopyObjectResult"][
                 f"Checksum{checksum_algorithm.upper()}"

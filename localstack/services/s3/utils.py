@@ -12,7 +12,7 @@ from moto.s3.exceptions import MissingBucket
 from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 from moto.s3.utils import clean_key_name
 
-from localstack.aws.api import CommonServiceException, ServiceException
+from localstack.aws.api import CommonServiceException, RequestContext, ServiceException
 from localstack.aws.api.s3 import (
     BucketName,
     ChecksumAlgorithm,
@@ -24,6 +24,8 @@ from localstack.aws.api.s3 import (
 )
 from localstack.services.s3.constants import (
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
+    SIGNATURE_V2_PARAMS,
+    SIGNATURE_V4_PARAMS,
     VALID_CANNED_ACLS_BUCKET,
 )
 from localstack.utils.aws import arns, aws_stack
@@ -139,6 +141,19 @@ def verify_checksum(checksum_algorithm: str, data: bytes, request: Dict):
         raise InvalidRequest(
             f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
         )
+
+
+def is_presigned_url_request(context: RequestContext) -> bool:
+    """
+    Detects pre-signed URL from query string parameters
+    Return True if any kind of presigned URL query string parameter is encountered
+    :param context: the request context from the handler chain
+    """
+    # Detecting pre-sign url and checking signature
+    query_parameters = context.request.args
+    return any(p in query_parameters for p in SIGNATURE_V2_PARAMS) or any(
+        p in query_parameters for p in SIGNATURE_V4_PARAMS
+    )
 
 
 def is_key_expired(key_object: Union[FakeKey, FakeDeleteMarker]) -> bool:

@@ -72,7 +72,11 @@ def call_moto_with_request(
     if override_headers:
         headers = copy.deepcopy(context.request.headers)
         # remove the headers that are parameters from the original request
-        header_to_remove = list(header for header in headers.keys() if header.startswith("x-amz"))
+        header_to_remove = list(
+            header
+            for header in headers.keys()
+            if header.startswith("x-amz") and not header.startswith("x-amz-meta")
+        )
         for header in header_to_remove:
             headers.remove(header)
 

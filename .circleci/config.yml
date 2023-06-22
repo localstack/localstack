@@ -434,7 +434,6 @@ workflows:
           requires:
             - itest-lambda-legacy-local
             - itest-sfn-v2-provider
-            - itest-s3-stream-provider
             - docker-test-amd64
             - docker-test-arm64
             - collect-not-implemented
