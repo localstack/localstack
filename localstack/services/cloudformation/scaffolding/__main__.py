@@ -325,10 +325,15 @@ def cli():
 
 
 @cli.command()
-@click.option("-s", "--service", required=True, help="Service to generate")
+@click.option(
+    "-r",
+    "--resource-type",
+    required=True,
+    help="CloudFormation resource type (e.g. 'AWS::SSM::Parameter') to generate",
+)
 @click.option("--write/--no-write", default=False)
-def generate(service: str, write: bool):
-    resource_name = ResourceName.from_name(service)
+def generate(resource_type: str, write: bool):
+    resource_name = ResourceName.from_name(resource_type)
 
     schema_provider = SchemaProvider(
         zipfile_path=Path(__file__).parent.joinpath("CloudformationSchema.zip")
