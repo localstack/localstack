@@ -338,11 +338,14 @@ def modify_context_region(context: RequestContext, region: str):
         flags=re.IGNORECASE,
     )
 
-    yield context
-
-    # revert the original context
-    context.region = original_region
-    context.request.headers["Authorization"] = original_authorization
+    try:
+        yield context
+    except Exception:
+        raise
+    finally:
+        # revert the original context
+        context.region = original_region
+        context.request.headers["Authorization"] = original_authorization
 
 
 class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
