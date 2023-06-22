@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from typing import Optional, TypedDict
+from typing import Optional, TypedDict, Type
 
 from localstack.services.cloudformation.resource_provider import (
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
     ResourceRequest,
-    register_resource_provider,
+    CloudFormationResourceProviderPlugin,
+    # register_resource_provider,
 )
 
 
@@ -28,46 +29,64 @@ class IAMUserProperties(TypedDict):
     Tags: Optional[list]
     UserName: Optional[str]
 
-
-class IAMUserAllProperties(IAMUserProperties):
-    physical_resource_id: Optional[str] = None
-
-
-@register_resource_provider
-class IAMUserProvider(ResourceProvider[IAMUserAllProperties]):
+# @register_resource_provider
+class IAMUserProvider(ResourceProvider[IAMUserProperties]):
 
     TYPE = "AWS::IAM::User"
 
     def create(
         self,
-        request: ResourceRequest[IAMUserAllProperties],
-    ) -> ProgressEvent[IAMUserAllProperties]:
+        request: ResourceRequest[IAMUserProperties],
+    ) -> ProgressEvent[IAMUserProperties]:
         """
         Create a new resource.
         """
-        raise NotImplementedError
+
         model = request.desired_state
 
         # TODO: validations
 
-        if model.physical_resource_id is None:
-            # this is the first time this callback is invoked
-            # TODO: defaults
-            # TODO: idempotency
-            # TODO: actually create the resource
-            # TODO: set model.physical_resource_id
-            return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
+        if model['UserName'] is None:
+            model['UserName'] = "hello"
 
-        # TODO: check the status of the resource
-        # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
-        # - else
-        #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
+        model['Id'] = model['UserName']
 
-        raise NotImplementedError
+        create_result = request.aws_client_factory.iam.create_user(
+            UserName=model['UserName']
+        )
+
+        model['Arn'] = create_result['User']['Arn']
+
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
+        #
+        #     # this is the first time this callback is invoked
+        #     # TODO: defaults
+        #     # TODO: idempotency
+        #     # TODO: actually create the resource
+        #     # TODO: set model.physical_resource_id
+        #     # return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
+        #
+        # # TODO: check the status of the resource
+        # # - if finished, update the model with all fields and return success event:
+        # #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
+        # # - else
+        # #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
+        #
+        # raise NotImplementedError
 
     def delete(
         self,
-        request: ResourceRequest[IAMUserAllProperties],
-    ) -> ProgressEvent[IAMUserAllProperties]:
-        raise NotImplementedError
+        request: ResourceRequest[IAMUserProperties],
+    ) -> ProgressEvent[IAMUserProperties]:
+        request.aws_client_factory.iam.delete_user(UserName=request.desired_state['Id'])
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
+
+
+class IamUserProviderPlugin(CloudFormationResourceProviderPlugin):
+    name = "AWS::IAM::User"
+
+    def __init__(self):
+        self.factory: Optional[Type[ResourceProvider]] = None
+
+    def load(self):
+        self.factory = IAMUserProvider

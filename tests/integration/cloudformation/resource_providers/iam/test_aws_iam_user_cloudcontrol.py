@@ -1,28 +1,20 @@
 # flake8: noqa
-"""
-You should not add your own tests here. If you want to do additional checks, put them into `test_aws_iam_user_parity.py`.
-
-The tests here are meant as the most basic common test skeleton for a minimal resource provider implementation.
-"""
-import os
-
 import pytest
 
-from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.aws.util import is_aws_cloud
-from localstack.testing.pytest.fixtures import StackDeployError
-from localstack.utils.strings import short_uid
 
 pytestmark = [pytest.mark.skip(reason="in progress")]
 
-
-class TestBasic:
+@pytest.mark.skipif(condition=not is_aws_cloud(), reason="Not supported yet")
+class TestNative:
+    """
+    WARNING: Not all CloudFormation resource types are supported by Cloud Control!
+    """
     def test_lifecycle(
         self,
         aws_client,
         snapshot,
     ):
-
         # aws_client.cloudcontrol.create_resource()
         # create
         # read
@@ -30,3 +22,4 @@ class TestBasic:
         # update
         # delete
         ...
+

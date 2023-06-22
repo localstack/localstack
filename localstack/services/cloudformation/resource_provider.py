@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import inspect
+import json
 import logging
 import time
 import uuid
@@ -38,7 +39,6 @@ LOG = logging.getLogger(__name__)
 Properties = TypeVar("Properties")
 
 PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
-
 
 class OperationStatus(Enum):
     PENDING = auto()
@@ -537,6 +537,20 @@ class NoResourceProvider(Exception):
     pass
 
 
+def resolve_json_pointer(resource_props: Properties, primary_id_path: str) -> str:
+    primary_id_path = primary_id_path.replace("/properties", "")
+    parts = [p for p in primary_id_path.split("/") if p]
+
+    resolved_part = resource_props.copy()
+    for i in range(len(parts)):
+        part = parts[i]
+        resolved_part = resolved_part.get(part)
+        if i == len(parts) - 1:
+            # last part
+            return resolved_part
+
+    raise Exception(f"Resource properties is missing field: {part}")
+
 class ResourceProviderExecutor:
     """
     Point of abstraction between our integration with generic base models, and the new providers.
@@ -575,6 +589,7 @@ class ResourceProviderExecutor:
                     physical_resource_id = self.extract_physical_resource_id_from_model_with_schema(
                         event.resource_model, resource_type_schema
                     )
+
 
                     resource["PhysicalResourceId"] = physical_resource_id
                     resource["Properties"] = event.resource_model
@@ -645,11 +660,17 @@ class ResourceProviderExecutor:
     def extract_physical_resource_id_from_model_with_schema(
         self, resource_model: Properties, resource_type_schema: dict
     ) -> str:
-        # id_path = resource_type_schema['primaryIdentifier'][0]
-        return resource_model["Id"]
+        primary_id_paths = resource_type_schema["primaryIdentifier"]
+        # TODO: add logic to identify primary Id path
+        primary_id_path = primary_id_paths[0]
+        return resolve_json_pointer(resource_model, primary_id_path)
+        # return resolve_json_pointer(resource_model, primary_id_path)
 
     def load_resource_schema(self, resource_type: str) -> dict:
-        return {}
+        # TODO: technically we should have this available in the registry anyway
+        schema_file_for_resource_type = "/home/dominik/work/localstack/localstack/localstack/services/iam/resource_providers/aws_iam_user.schema.json"
+        with open(schema_file_for_resource_type) as fd:
+            return json.load(fd)
 
 
 plugin_manager = PluginManager(CloudFormationResourceProviderPlugin.namespace)
