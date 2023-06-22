@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional, Type, TypedDict
 
 from localstack.services.cloudformation.resource_provider import (
+    CloudFormationResourceProviderPlugin,
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
@@ -11,6 +12,8 @@ from localstack.services.cloudformation.resource_provider import (
 
 {{ provider_properties }}
 
+
+INITIALISED_KEY = "initialised"
 
 class {{ resource }}Provider(ResourceProvider[{{ resource }}Properties]):
 
@@ -62,13 +65,18 @@ class {{ resource }}Provider(ResourceProvider[{{ resource }}Properties]):
 
         # TODO: validations
 
-        if model.physical_resource_id is None:
+        if not request.custom_context.get(INITIALISED_KEY):
             # this is the first time this callback is invoked
             # TODO: defaults
             # TODO: idempotency
             # TODO: actually create the resource
             # TODO: set model.physical_resource_id
-            return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
+            request.custom_context[INITIALISED_KEY] = True
+            return ProgressEvent(
+                status=OperationStatus.IN_PROGRESS,
+                resource_model=model,
+                custom_context=request.custom_context,
+            )
 
         # TODO: check the status of the resource
         # - if finished, update the model with all fields and return success event:
