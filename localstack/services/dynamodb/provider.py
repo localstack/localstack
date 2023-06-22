@@ -556,17 +556,18 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         replica_description_list = []
         for source_region, replicated_regions in replicas.items():
-            # Contrary to AWS, we show all regions including the current context region where a replica exists
-            # This is due to the limitation of internal request forwarding mechanism for global tables
-            replica_description_list.append(
-                ReplicaDescription(RegionName=source_region, ReplicaStatus=ReplicaStatus.ACTIVE)
-            )
-            for replicated_region in replicated_regions:
+            # The replica in the region being queries must not be returned
+            if source_region != context.region:
                 replica_description_list.append(
-                    ReplicaDescription(
-                        RegionName=replicated_region, ReplicaStatus=ReplicaStatus.ACTIVE
-                    )
+                    ReplicaDescription(RegionName=source_region, ReplicaStatus=ReplicaStatus.ACTIVE)
                 )
+            for replicated_region in replicated_regions:
+                if replicated_region != context.region:
+                    replica_description_list.append(
+                        ReplicaDescription(
+                            RegionName=replicated_region, ReplicaStatus=ReplicaStatus.ACTIVE
+                        )
+                    )
         table_description.update({"Replicas": replica_description_list})
 
         # update only TableId and SSEDescription if present
@@ -642,7 +643,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
             # update response content
             schema = SchemaExtractor.get_table_schema(
-                table_name, context.account_id, global_table_region
+                table_name, context.account_id, context.region
             )
             return UpdateTableOutput(TableDescription=schema["Table"])
 
