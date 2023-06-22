@@ -740,17 +740,13 @@ def apply_stream_patches():
 
 def get_generator_from_stream(response_content: Any):
     # Werkzeug will only read 1 everytime, so we control how much we return
-    if isinstance(response_content, SpooledTemporaryFile):
+    if isinstance(response_content, (SpooledTemporaryFile, PartialStream)):
 
         def get_data():
-            pos = 0
             while True:
-                response_content.seek(pos)
                 data = response_content.read(CHUNK_SIZE)
                 if not data:
                     return b""
-                read = len(data)
-                pos += read
                 yield data
 
         return get_data()
