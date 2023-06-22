@@ -609,7 +609,9 @@ class ResourceProviderExecutor:
             return plugin.factory()
         except Exception as e:
             if resource_type in self.legacy_base_models:
-                return LegacyResourceProvider(resource_type, self.legacy_base_models[resource_type])
+                return LegacyResourceProvider(
+                    resource_type, self.legacy_base_models[resource_type], self.resources
+                )
             else:
                 usage.missing_resource_types.record(resource_type)
                 raise NoResourceProvider from e
