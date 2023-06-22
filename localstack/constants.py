@@ -155,19 +155,20 @@ try:
 except Exception:
     MAX_POOL_CONNECTIONS = 150
 
-# credentials used in the test suite
+# Credentials used in the test suite
+# When the test suite is run against production AWS, the credentials can be overridden in the env
 TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
 TEST_AWS_ACCESS_KEY_ID = "test"
 TEST_AWS_SECRET_ACCESS_KEY = "test"
 TEST_AWS_REGION_NAME = "us-east-1"
 
-# additional credentials used in the test suite (mainly when running cross-account assertions)
+# Additional credentials used in the test suite (when running cross-account tests)
 SECONDARY_TEST_AWS_ACCOUNT_ID = "000000000002"
 SECONDARY_TEST_AWS_ACCESS_KEY_ID = "000000000002"
 SECONDARY_TEST_AWS_SECRET_ACCESS_KEY = "test2"
 SECONDARY_TEST_AWS_REGION_NAME = "ap-southeast-1"
 
-# credentials being used for internal calls
+# Credentials used for internal calls
 INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"
 INTERNAL_AWS_SECRET_ACCESS_KEY = "__internal_call__"
 
