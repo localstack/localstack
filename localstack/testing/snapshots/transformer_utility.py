@@ -549,8 +549,6 @@ class TransformerUtility:
                 "X-Amzn-Trace-Id",
                 replace_reference=False,
             ),
-            SortingTransformer("VersionStages"),
-            SortingTransformer("Versions", lambda e: e.get("CreatedDate")),
         ]
 
     # TODO add example
