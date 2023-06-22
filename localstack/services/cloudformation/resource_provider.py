@@ -168,7 +168,10 @@ class ResourceProvider(Generic[Properties]):
 # legacy helpers
 def get_resource_type(resource: dict) -> str:
     """this is currently overwritten in PRO to add support for custom resources"""
-    return resource["Type"]
+    resource_type: str = resource["Type"]
+    if resource_type.startswith("Custom::"):
+        return "AWS::CloudFormation::CustomResource"
+    return resource_type
 
 
 def check_not_found_exception(e, resource_type, resource, resource_status=None):
@@ -383,6 +386,7 @@ class LegacyResourceProvider(ResourceProvider):
                 "Type": self.resource_type,
                 "Properties": request.desired_state,
                 "PhysicalResourceId": physical_resource_id,
+                "LogicalResourceId": request.logical_resource_id,
             },
             region_name=request.region_name,
         )
