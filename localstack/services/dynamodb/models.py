@@ -1,5 +1,6 @@
-from typing import Dict, Set
+from typing import Dict
 
+from localstack.aws.api.dynamodb import RegionName, ReplicaDescription, TableName
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -7,14 +8,18 @@ from localstack.services.stores import (
     LocalAttribute,
 )
 
-TableName = str
-Region = str
-Replica = Dict[Region, Set[Region]]
-
 
 class DynamoDBStore(BaseStore):
-    # maps global table names to configurations
+    # maps global table names to configurations (for the legacy v.2017 tables)
     GLOBAL_TABLES: Dict[str, Dict] = CrossRegionAttribute(default=dict)
+
+    # Maps table name to the region they exist in on DDBLocal (for v.2019 global tables)
+    TABLE_REGION: Dict[TableName, RegionName] = CrossRegionAttribute(default=dict)
+
+    # Maps the table replicas (for v.2019 global tables)
+    REPLICAS: Dict[TableName, Dict[RegionName, ReplicaDescription]] = CrossRegionAttribute(
+        default=dict
+    )
 
     # cache table taggings - maps table ARN to tags dict
     TABLE_TAGS: Dict[str, Dict] = CrossRegionAttribute(default=dict)
@@ -24,9 +29,6 @@ class DynamoDBStore(BaseStore):
 
     # maps table names to additional table properties that are not stored upstream (e.g., ReplicaUpdates)
     table_properties: Dict[str, Dict] = LocalAttribute(default=dict)
-
-    # maps the replicas for the v.2019 tables
-    REPLICA_UPDATES: Dict[TableName, Replica] = CrossRegionAttribute(default=dict)
 
     # maps table names to TTL specifications
     ttl_specifications: Dict[str, Dict] = LocalAttribute(default=dict)
