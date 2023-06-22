@@ -424,7 +424,7 @@ LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 # whether legacy s3 is enabled
 LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "legacy"
 
-# FIXME: remove, this is for testing this PR
+# FIXME: remove, this is for testing this PR with the full test suite (also in -ext thanks to the PR there)
 if not os.environ.get("PROVIDER_OVERRIDE_S3", ""):
     os.environ["PROVIDER_OVERRIDE_S3"] = "stream"
 

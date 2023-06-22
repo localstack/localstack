@@ -722,11 +722,14 @@ def get_generator_from_stream(response_content: Any):
     if isinstance(response_content, SpooledTemporaryFile):
 
         def get_data():
+            pos = 0
             while True:
+                response_content.seek(pos)
                 data = response_content.read(CHUNK_SIZE)
                 if not data:
-                    return
-
+                    return b""
+                read = len(data)
+                pos += read
                 yield data
 
         return get_data()
