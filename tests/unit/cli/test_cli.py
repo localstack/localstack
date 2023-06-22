@@ -40,7 +40,7 @@ def test_version(runner):
 def test_status_services_error(runner):
     result = runner.invoke(cli, ["status", "services"])
     assert result.exit_code == 1
-    assert "ERROR" in result.output
+    assert "Error" in result.output
 
 
 def test_start_docker_is_default(runner, monkeypatch):
@@ -147,7 +147,7 @@ def test_validate_config_syntax_error(runner, monkeypatch, tmp_path):
     result = runner.invoke(cli, ["config", "validate", "--file", str(file)])
 
     assert result.exit_code == 1
-    assert "error" in result.output
+    assert "Error" in result.output
 
 
 @pytest.mark.parametrize(
