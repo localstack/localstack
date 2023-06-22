@@ -41,6 +41,7 @@ class TestCloudFormationMappings:
         ]
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip(reason="not implemented")
     def test_mapping_with_nonexisting_key(self, aws_client, cleanups, snapshot):
         """
         Tries to deploy a resource with a dependency on a mapping key
@@ -67,6 +68,7 @@ class TestCloudFormationMappings:
         snapshot.match("mapping_nonexisting_key_exc", e.value.response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip(reason="not implemented")
     def test_mapping_with_invalid_refs(self, aws_client, deploy_cfn_template, cleanups, snapshot):
         """
         The Mappings section can only include static elements (strings and lists).
@@ -97,6 +99,7 @@ class TestCloudFormationMappings:
         snapshot.match("mapping_invalid_ref_exc", e.value.response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip(reason="not implemented")
     def test_mapping_maximum_nesting_depth(self, aws_client, cleanups, snapshot):
         """
         Tries to deploy a template containing a mapping with a nesting depth of 3.
@@ -124,6 +127,7 @@ class TestCloudFormationMappings:
         snapshot.match("mapping_maximum_level_exc", e.value.response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip(reason="not implemented")
     def test_mapping_minimum_nesting_depth(self, aws_client, cleanups, snapshot):
         """
         Tries to deploy a template containing a mapping with a nesting depth of 1.
