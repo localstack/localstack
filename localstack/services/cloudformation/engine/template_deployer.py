@@ -27,6 +27,7 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProviderExecutor,
     ResourceProviderPayload,
     check_not_found_exception,
+    get_resource_type,
 )
 from localstack.services.cloudformation.service_models import (
     DependencyNotYetSatisfied,
@@ -79,51 +80,6 @@ def get_deployment_config(res_type: str) -> DeployTemplates | None:
         return resource_class.get_deploy_templates()
     else:
         usage.missing_resource_types.record(res_type)
-
-
-def get_resource_type(resource: dict) -> str:
-    """this is currently overwritten in PRO to add support for custom resources"""
-    return resource["Type"]
-
-
-def get_service_name(resource):
-    res_type = resource["Type"]
-    parts = res_type.split("::")
-    if len(parts) == 1:
-        return None
-    if res_type.endswith("Cognito::UserPool"):
-        return "cognito-idp"
-    if parts[-2] == "Cognito":
-        return "cognito-idp"
-    if parts[-2] == "Elasticsearch":
-        return "es"
-    if parts[-2] == "OpenSearchService":
-        return "opensearch"
-    if parts[-2] == "KinesisFirehose":
-        return "firehose"
-    if parts[-2] == "ResourceGroups":
-        return "resource-groups"
-    if parts[-2] == "CertificateManager":
-        return "acm"
-    return parts[1].lower()
-
-
-def get_client(resource: dict):
-    resource_type = get_resource_type(resource)
-    service = get_service_name(resource)
-    resource_config = get_deployment_config(resource_type)
-    if resource_config is None:
-        raise Exception(
-            "CloudFormation deployment for resource type %s not yet implemented" % resource_type
-        )
-    try:
-        return aws_stack.connect_to_service(service)
-    except Exception as e:
-        log_method = getattr(LOG, "warning")
-        if config.CFN_VERBOSE_ERRORS:
-            log_method = getattr(LOG, "exception")
-        log_method('Unable to get client for "%s" API, skipping deployment: %s', service, e)
-        return None
 
 
 # TODO(ds): remove next
