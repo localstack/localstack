@@ -488,7 +488,7 @@ class SqsQueue:
             if k not in valid:
                 raise InvalidAttributeName(f"Unknown Attribute {k}.")
 
-    def add_permission(self, actions: list[str], account_ids: list[str], label: str) -> None:
+    def add_permission(self, label: str, actions: list[str], account_ids: list[str]) -> None:
         """
         Create / append to a policy for usage with the add_permission api call
 

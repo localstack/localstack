@@ -1154,7 +1154,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         self._validate_actions(actions)
 
-        queue.add_permission(actions=actions, account_ids=aws_account_ids, label=label)
+        queue.add_permission(label=label, actions=actions, account_ids=aws_account_ids)
 
     def remove_permission(self, context: RequestContext, queue_url: String, label: String) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
