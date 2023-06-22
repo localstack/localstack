@@ -205,7 +205,11 @@ class CloudformationProvider(CloudformationApi):
 
         try:
             template = template_preparer.transform_template(
-                template, list(resolved_parameters.values()), stack.stack_name, stack.resources
+                template,
+                list(resolved_parameters.values()),
+                stack.stack_name,
+                stack.resources,
+                stack.mappings,
             )
         except FailedTransformationException as e:
             stack.add_stack_event(
@@ -285,7 +289,11 @@ class CloudformationProvider(CloudformationApi):
 
         try:
             template = template_preparer.transform_template(
-                template, list(resolved_parameters.values()), stack.stack_name, stack.resources
+                template,
+                list(resolved_parameters.values()),
+                stack.stack_name,
+                stack.resources,
+                stack.mappings,
             )
         except FailedTransformationException as e:
             stack.add_stack_event(
@@ -531,7 +539,11 @@ class CloudformationProvider(CloudformationApi):
         # TODO: everything below should be async
         # apply template transformations
         transformed_template = template_preparer.transform_template(
-            template, parameters, stack_name=temp_stack.stack_name, resources=temp_stack.resources
+            template,
+            parameters,
+            stack_name=temp_stack.stack_name,
+            resources=temp_stack.resources,
+            mappings=temp_stack.mappings,
         )
 
         # create change set for the stack and apply changes
