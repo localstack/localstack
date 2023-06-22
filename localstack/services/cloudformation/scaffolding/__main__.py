@@ -331,7 +331,7 @@ def cli():
     required=True,
     help="CloudFormation resource type (e.g. 'AWS::SSM::Parameter') to generate",
 )
-@click.option("--write/--no-write", default=False)
+@click.option("-w", "--write/--no-write", default=False)
 def generate(resource_type: str, write: bool):
     resource_name = ResourceName.from_name(resource_type)
 
