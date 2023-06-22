@@ -220,10 +220,6 @@ class CloudformationProvider(CloudformationApi):
 
         stack = Stack(request, template)
         stack.set_resolved_parameters(resolved_parameters)
-
-        # TODO: verify order of macro vs. condition evaluation
-
-
         stack.template_body = json.dumps(template)
         state.stacks[stack.stack_id] = stack
         LOG.debug(
@@ -544,8 +540,6 @@ class CloudformationProvider(CloudformationApi):
         change_set.set_resolved_parameters(resolved_parameters)
 
         # TODO: evaluate conditions
-        # technically
-
         # change_set.set_resolved_conditions(resolved_conditions)
 
         deployer = template_deployer.TemplateDeployer(change_set)

@@ -59,17 +59,6 @@ class StackTemplate(TypedDict):
 
 # TODO: remove metadata (flatten into individual fields)
 class Stack:
-
-    # # input
-    # metadata: StackMetadata
-    # template: StackTemplate
-    # template_body: str
-    #
-    # # after processing
-    # template_processed
-    #
-    # # execution related
-
     def __init__(
         self,
         metadata: Optional[StackMetadata] = None,
