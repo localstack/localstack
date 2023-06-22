@@ -574,7 +574,10 @@ class ResourceProviderExecutor:
             raise TimeoutError("Could not perform deploy loop action")
 
     def execute_action(self, raw_payload: ResourceProviderPayload) -> ProgressEvent[Properties]:
-        resource_provider = self.load_resource_provider(raw_payload["resourceType"])
+        resource_type = get_resource_type(
+            {"Type": raw_payload["resourceType"]}
+        )  # TODO: simplify signature of get_resource_type to just take the type
+        resource_provider = self.load_resource_provider(resource_type)
         if resource_provider:
             change_type = raw_payload["action"]
             request = convert_payload(
@@ -596,25 +599,32 @@ class ResourceProviderExecutor:
             raise NoResourceProvider
 
     def load_resource_provider(self, resource_type: str) -> Optional[ResourceProvider]:
-        # lookup provider in private registry
-        if not config.CFN_RESOURCE_PROVIDERS_V2 and resource_type in self.legacy_base_models:
-            return LegacyResourceProvider(
-                resource_type=resource_type,
-                resource_provider_cls=self.legacy_base_models[resource_type],
-                resources=self.resources,
-            )
-
         try:
-            plugin = plugin_manager.load(resource_type)
-            return plugin.factory()
-        except Exception as e:
-            if resource_type in self.legacy_base_models:
-                return LegacyResourceProvider(
-                    resource_type, self.legacy_base_models[resource_type], self.resources
-                )
+            if config.CFN_RESOURCE_PROVIDERS_V2:
+                # attempt to use the new ResourceProvider implementation, if that fails fall back to the old GenericBaseModel
+                try:
+                    plugin = plugin_manager.load(resource_type)
+                    return plugin.factory()
+                except Exception:
+                    LOG.warning(
+                        "Failed to load resource type as a ResourceProvider. Falling back to looking up a GenericBaseModel for %s",
+                        resource_type,
+                        exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    )
+                    return LegacyResourceProvider(
+                        resource_type=resource_type,
+                        resource_provider_cls=self.legacy_base_models[resource_type],
+                        resources=self.resources,
+                    )
             else:
-                usage.missing_resource_types.record(resource_type)
-                raise NoResourceProvider from e
+                return LegacyResourceProvider(
+                    resource_type=resource_type,
+                    resource_provider_cls=self.legacy_base_models[resource_type],
+                    resources=self.resources,
+                )
+        except Exception as e:
+            usage.missing_resource_types.record(resource_type)
+            raise NoResourceProvider from e
 
     def extract_physical_resource_id_from_model_with_schema(
         self, resource_model: Properties, resource_type_schema: dict
