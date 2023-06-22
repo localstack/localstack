@@ -403,6 +403,9 @@ class LegacyResourceProvider(ResourceProvider):
             )
 
         LOG.info("Updating resource %s of type %s", request.logical_resource_id, self.resource_type)
+        # TODO: check if this is the right place for this
+        # resource_provider.add_defaults(request.desired_state, request.stack_name)
+
         resource_provider.update_resource(
             self.all_resources[request.logical_resource_id],
             stack_name=request.stack_name,
@@ -431,6 +434,10 @@ class LegacyResourceProvider(ResourceProvider):
             },
             region_name=request.region_name,
         )
+        resource_provider.add_defaults(
+            self.all_resources[request.logical_resource_id], request.stack_name
+        )
+
         func_details = resource_provider.get_deploy_templates()
         # TODO: be less strict about the return value of func_details
         LOG.debug(

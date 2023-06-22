@@ -259,7 +259,7 @@ class Stack:
             {k: map_to_legacy_structure(k, v) for k, v in self.resolved_parameters.items()}
         )
 
-        # TODO: conditions and mappings don't really belong here and should be handled separately
+        # TODO: conditions don't really belong here and should be handled separately
         for name, value in self.conditions.items():
             if name not in result:
                 result[name] = {

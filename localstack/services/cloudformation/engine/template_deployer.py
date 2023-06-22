@@ -18,7 +18,8 @@ from localstack.services.cloudformation.deployment_utils import (
     fix_boto_parameters_based_on_report,
     get_action_name_for_resource_change,
     is_none_or_empty_value,
-    log_not_available_message, remove_none_values,
+    log_not_available_message,
+    remove_none_values,
 )
 from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet
 from localstack.services.cloudformation.engine.types import DeployTemplates, FuncDetails
@@ -451,7 +452,7 @@ def _resolve_refs_recursively(
                 result = result.replace("${%s}" % key, val)
 
             # resolve placeholders
-            result = resolve_placeholders_in_string(result, stack_name, resources)
+            result = resolve_placeholders_in_string(result, stack_name, resources, mappings)
             return result
 
         if stripped_fn_lower == "findinmap":
@@ -736,18 +737,6 @@ def determine_resource_physical_id(
     )
 
 
-def add_default_resource_props(
-    resource,
-    stack_name,
-):
-    """Apply some fixes to resource props which otherwise cause deployments to fail"""
-
-    res_type = get_resource_type(resource)
-    resource_class = RESOURCE_MODELS.get(res_type)
-    if resource_class is not None:
-        resource_class.add_defaults(resource, stack_name)
-
-
 # -----------------------
 # MAIN TEMPLATE DEPLOYER
 # -----------------------
@@ -875,14 +864,10 @@ class TemplateDeployer:
                 break
             for resource_id, resource in resources.items():
                 try:
-                    # TODO(DS-next): re-enable?
-                    # # remove AWS::NoValue entries and populate defaults if necessary
-                    # resource_props = resource.get("Properties")
-                    # if resource_props:
-                    #     resource["Properties"] = remove_none_values(resource_props)
-                    # add_default_resource_props(resource, self.stack.stack_name)
                     # TODO: cache condition value in resource details on deployment and use cached value here
-                    if evaluate_resource_condition(self.stack_name, self.resources, self.mappings, resource):
+                    if evaluate_resource_condition(
+                        self.stack_name, self.resources, self.mappings, resource
+                    ):
                         executor = self.create_resource_provider_executor()
                         resource_provider_payload = self.create_resource_provider_payload(
                             "Remove", logical_resource_id=resource_id
@@ -1358,6 +1343,11 @@ class TemplateDeployer:
         # condition evaluates to False.
         if not evaluate_resource_condition(stack.stack_name, resources, stack.mappings, resource):
             return
+
+        # remove AWS::NoValue entries
+        resource_props = resource.get("Properties")
+        if resource_props:
+            resource["Properties"] = remove_none_values(resource_props)
 
         executor = self.create_resource_provider_executor()
         resource_provider_payload = self.create_resource_provider_payload(
