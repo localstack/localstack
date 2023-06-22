@@ -167,7 +167,7 @@ def template_path(
             raise ValueError(f"File type {file_type} is not a template")
 
     output_path = TESTS_ROOT_DIR.joinpath(
-        f"{resource_name.service.lower()}/templates/{stub}"
+        f"{resource_name.service.lower()}/templates/{resource_name.resource.lower()}_{stub}"
     ).resolve()
 
     if root:
