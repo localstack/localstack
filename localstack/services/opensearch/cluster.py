@@ -20,6 +20,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import (
     ShellCommandThread,
     chmod_r,
@@ -303,6 +304,10 @@ class OpensearchCluster(Server):
         self.is_security_enabled = self.security_options and self.security_options.enabled
         self.auth = security_options.auth if self.is_security_enabled else None
 
+        parsed_arn = parse_arn(arn)
+        self.account_id = parsed_arn["account"]
+        self.region_name = parsed_arn["region"]
+
     @property
     def default_version(self) -> str:
         return constants.OPENSEARCH_DEFAULT_VERSION
@@ -549,6 +554,10 @@ class EdgeProxiedOpensearchCluster(Server):
         self.cluster = None
         self.cluster_port = None
         self.proxy = None
+
+        parsed_arn = parse_arn(arn)
+        self.account_id = parsed_arn["account"]
+        self.region_name = parsed_arn["region"]
 
     @property
     def version(self):
