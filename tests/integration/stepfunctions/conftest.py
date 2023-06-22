@@ -12,6 +12,12 @@ LOG = logging.getLogger(__name__)
 
 
 @pytest.fixture
+def sfn_snapshot(snapshot):
+    snapshot.add_transformers_list(snapshot.transform.stepfunctions_api())
+    return snapshot
+
+
+@pytest.fixture
 def create_iam_role_for_sfn(aws_client, cleanups, create_state_machine):
     iam_client = aws_client.iam
     stepfunctions_client = aws_client.stepfunctions

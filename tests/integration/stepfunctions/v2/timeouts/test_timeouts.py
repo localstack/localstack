@@ -24,7 +24,7 @@ class TestTimeouts:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_name = f"lambda_1_func_{short_uid()}"
         create_lambda_function(
@@ -32,7 +32,7 @@ class TestTimeouts:
             handler_file=TT.LAMBDA_WAIT_60_SECONDS,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_1_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_1_name>"))
 
         template = TT.load_sfn_template(TT.SERVICE_LAMBDA_WAIT_WITH_TIMEOUT_SECONDS)
         definition = json.dumps(template)
@@ -42,7 +42,7 @@ class TestTimeouts:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -53,7 +53,7 @@ class TestTimeouts:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_name = f"lambda_1_func_{short_uid()}"
         create_lambda_function(
@@ -61,7 +61,7 @@ class TestTimeouts:
             handler_file=TT.LAMBDA_WAIT_60_SECONDS,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_1_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_1_name>"))
 
         template = TT.load_sfn_template(
             TT.SERVICE_LAMBDA_MAP_FUNCTION_INVOKE_WITH_TIMEOUT_SECONDS_PATH
@@ -75,7 +75,7 @@ class TestTimeouts:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -86,7 +86,7 @@ class TestTimeouts:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_name = f"lambda_1_func_{short_uid()}"
         lambda_creation_response = create_lambda_function(
@@ -94,7 +94,7 @@ class TestTimeouts:
             handler_file=TT.LAMBDA_WAIT_60_SECONDS,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_1_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_1_name>"))
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
 
         template = TT.load_sfn_template(TT.LAMBDA_WAIT_WITH_TIMEOUT_SECONDS)
@@ -106,7 +106,7 @@ class TestTimeouts:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -118,7 +118,7 @@ class TestTimeouts:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_name = f"lambda_1_func_{short_uid()}"
         create_lambda_function(
@@ -126,7 +126,7 @@ class TestTimeouts:
             handler_file=TT.LAMBDA_WAIT_60_SECONDS,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_1_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_1_name>"))
 
         template = TT.load_sfn_template(TT.SERVICE_LAMBDA_MAP_FUNCTION_INVOKE_WITH_TIMEOUT_SECONDS)
         definition = json.dumps(template)
@@ -145,7 +145,7 @@ class TestTimeouts:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )

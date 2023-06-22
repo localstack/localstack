@@ -27,7 +27,7 @@ class TestTaskServiceLambda:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_name = f"lambda_func_{short_uid()}"
         create_lambda_function(
@@ -35,7 +35,7 @@ class TestTaskServiceLambda:
             handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
         template = EHT.load_sfn_template(EHT.AWS_SERVICE_LAMBDA_INVOKE_CATCH_UNKNOWN)
         definition = json.dumps(template)
@@ -45,7 +45,7 @@ class TestTaskServiceLambda:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -56,7 +56,7 @@ class TestTaskServiceLambda:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_name = f"lambda_func_{short_uid()}"
         create_lambda_function(
@@ -64,7 +64,7 @@ class TestTaskServiceLambda:
             handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
         template = EHT.load_sfn_template(EHT.AWS_SERVICE_LAMBDA_INVOKE_CATCH_RELEVANT)
         definition = json.dumps(template)
@@ -74,7 +74,7 @@ class TestTaskServiceLambda:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -85,7 +85,7 @@ class TestTaskServiceLambda:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_name = f"lambda_func_{short_uid()}"
         create_lambda_function(
@@ -93,7 +93,7 @@ class TestTaskServiceLambda:
             handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
         template = EHT.load_sfn_template(EHT.AWS_SERVICE_LAMBDA_INVOKE_CATCH_UNKNOWN)
         definition = json.dumps(template)
@@ -103,7 +103,7 @@ class TestTaskServiceLambda:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -114,7 +114,7 @@ class TestTaskServiceLambda:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_name = f"lambda_func_{short_uid()}"
         create_lambda_function(
@@ -122,7 +122,7 @@ class TestTaskServiceLambda:
             handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
         template = EHT.load_sfn_template(EHT.AWS_SERVICE_LAMBDA_INVOKE_CATCH_RELEVANT)
         definition = json.dumps(template)
@@ -132,7 +132,7 @@ class TestTaskServiceLambda:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -143,7 +143,7 @@ class TestTaskServiceLambda:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_name = f"lambda_1_func_{short_uid()}"
         create_lambda_function(
@@ -151,7 +151,7 @@ class TestTaskServiceLambda:
             handler_file=TT.LAMBDA_WAIT_60_SECONDS,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_1_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_1_name>"))
 
         template = TT.load_sfn_template(EHT.AWS_SERVICE_LAMBDA_INVOKE_CATCH_TIMEOUT)
         definition = json.dumps(template)
@@ -161,7 +161,7 @@ class TestTaskServiceLambda:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )

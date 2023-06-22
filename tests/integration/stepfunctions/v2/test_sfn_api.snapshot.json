@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_delete_valid_sm": {
-    "recorded-date": "06-02-2023, 08:39:41",
+    "recorded-date": "22-06-2023, 13:47:21",
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
@@ -35,7 +35,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_delete_nonexistent_sm": {
-    "recorded-date": "06-02-2023, 08:40:33",
+    "recorded-date": "22-06-2023, 13:47:36",
     "recorded-content": {
       "deletion_resp_1": {
         "ResponseMetadata": {
@@ -46,7 +46,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_exact_duplicate_sm": {
-    "recorded-date": "06-02-2023, 08:40:51",
+    "recorded-date": "22-06-2023, 13:48:01",
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
@@ -163,7 +163,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_duplicate_definition_format_sm": {
-    "recorded-date": "06-02-2023, 08:41:06",
+    "recorded-date": "22-06-2023, 13:48:15",
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
@@ -219,7 +219,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_duplicate_sm_name": {
-    "recorded-date": "06-02-2023, 08:41:20",
+    "recorded-date": "22-06-2023, 13:48:28",
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
@@ -275,7 +275,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_start_execution": {
-    "recorded-date": "01-04-2023, 00:35:46",
+    "recorded-date": "22-06-2023, 13:52:39",
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
@@ -375,7 +375,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_invalid_start_execution_arn": {
-    "recorded-date": "06-02-2023, 08:41:51",
+    "recorded-date": "22-06-2023, 13:52:53",
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
@@ -399,7 +399,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_invalid_start_execution_input": {
-    "recorded-date": "06-02-2023, 08:42:06",
+    "recorded-date": "22-06-2023, 13:53:08",
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
@@ -469,7 +469,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_stop_execution": {
-    "recorded-date": "06-02-2023, 08:42:21",
+    "recorded-date": "22-06-2023, 13:53:24",
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
@@ -538,7 +538,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_sms": {
-    "recorded-date": "06-02-2023, 08:57:45",
+    "recorded-date": "22-06-2023, 13:52:24",
     "recorded-content": {
       "lst_resp_init": {
         "stateMachines": [],

@@ -32,10 +32,10 @@ class TestCallback:
         create_state_machine,
         sqs_create_queue,
         sqs_send_task_success_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.sqs_api())
-        snapshot.add_transformer(
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",
                 replacement="<task_token>",
@@ -45,8 +45,8 @@ class TestCallback:
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
-        snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
 
         sqs_send_task_success_state_machine(queue_url)
 
@@ -59,23 +59,23 @@ class TestCallback:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..MD5OfMessageBody", "$..QueueUrl"])
-    def test_sqs_wait_for_task_tok_timeout(
+    @pytest.mark.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
+    def test_sqs_wait_for_task_token_timeout(
         self,
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         sqs_create_queue,
         sqs_send_task_success_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.sqs_api())
-        snapshot.add_transformer(
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",
                 replacement="<task_token>",
@@ -85,8 +85,8 @@ class TestCallback:
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
-        snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
 
         template = CT.load_sfn_template(CT.SQS_WAIT_FOR_TASK_TOKEN_WITH_TIMEOUT)
         definition = json.dumps(template)
@@ -97,7 +97,7 @@ class TestCallback:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )

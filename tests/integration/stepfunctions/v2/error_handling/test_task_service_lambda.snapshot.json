@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_raise_exception": {
-    "recorded-date": "17-04-2023, 08:26:11",
+    "recorded-date": "22-06-2023, 13:29:17",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -106,7 +106,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_no_such_function": {
-    "recorded-date": "17-04-2023, 08:26:28",
+    "recorded-date": "22-06-2023, 13:29:54",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -198,7 +198,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_raise_exception_catch": {
-    "recorded-date": "17-04-2023, 08:46:45",
+    "recorded-date": "22-06-2023, 13:29:36",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -358,7 +358,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_no_such_function_catch": {
-    "recorded-date": "17-04-2023, 16:48:27",
+    "recorded-date": "22-06-2023, 13:30:13",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -511,7 +511,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_invoke_timeout": {
-    "recorded-date": "26-05-2023, 16:57:07",
+    "recorded-date": "22-06-2023, 13:30:31",
     "recorded-content": {
       "get_execution_history": {
         "events": [
