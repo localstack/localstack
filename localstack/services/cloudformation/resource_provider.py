@@ -441,9 +441,6 @@ class LegacyResourceProvider(ResourceProvider):
         )
 
         func_details = func_details[LEGACY_ACTION_MAP[request.action]]
-        if not func_details:
-            print(":(")
-        #     return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=resource["Properties"])
         func_details = func_details if isinstance(func_details, list) else [func_details]
         results = []
         # TODO: other top level keys
