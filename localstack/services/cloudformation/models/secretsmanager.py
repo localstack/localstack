@@ -111,16 +111,14 @@ class SecretsManagerSecret(GenericBaseModel):
                 result["SecretString"] = secret_value
             return result
 
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resources[resource_id]["PhysicalResourceId"] = result["ARN"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["ARN"]
 
         return {
             "create": {
                 "function": "create_secret",
                 "parameters": _create_params,
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {"function": "delete_secret", "parameters": {"SecretId": "Name"}},
         }
@@ -169,10 +167,7 @@ class SecretsManagerResourcePolicy(GenericBaseModel):
                 "BlockPublicPolicy": properties.get("BlockPublicPolicy"),
             }
 
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resource = resources[resource_id]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = arns.secretsmanager_secret_arn(
                 resource["Properties"]["Name"]
             )
@@ -181,7 +176,7 @@ class SecretsManagerResourcePolicy(GenericBaseModel):
             "create": {
                 "function": "put_resource_policy",
                 "parameters": create_params,
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_resource_policy",

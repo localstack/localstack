@@ -30,17 +30,14 @@ class LogsLogGroup(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resource = resources[resource_id]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = resource["Properties"]["LogGroupName"]
 
         return {
             "create": {
                 "function": "create_log_group",
                 "parameters": {"logGroupName": "LogGroupName"},
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_log_group",
@@ -76,17 +73,14 @@ class LogsLogStream(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resource = resources[resource_id]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = resource["Properties"]["LogStreamName"]
 
         return {
             "create": {
                 "function": "create_log_stream",
                 "parameters": {"logGroupName": "LogGroupName", "logStreamName": "LogStreamName"},
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_log_stream",
@@ -111,10 +105,7 @@ class LogsSubscriptionFilter(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resource = resources[resource_id]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = resource["Properties"]["LogGroupName"]
 
         return {
@@ -126,7 +117,7 @@ class LogsSubscriptionFilter(GenericBaseModel):
                     "filterPattern": "FilterPattern",
                     "destinationArn": "DestinationArn",
                 },
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_subscription_filter",

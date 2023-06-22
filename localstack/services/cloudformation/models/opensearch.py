@@ -50,17 +50,15 @@ class OpenSearchDomain(GenericBaseModel):
                 )
             return result
 
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resources[resource_id]["PhysicalResourceId"] = result["DomainStatus"]["DomainName"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["DomainStatus"]["DomainName"]
 
         return {
             "create": [
                 {
                     "function": "create_domain",
                     "parameters": _create_params,
-                    "result_handler": _set_physical_resource_id,
+                    "result_handler": _handle_result,
                 },
                 {"function": "add_tags", "parameters": opensearch_add_tags_params},
             ],

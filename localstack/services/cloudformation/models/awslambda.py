@@ -146,12 +146,10 @@ class LambdaFunction(GenericBaseModel):
                 environment_variables = properties["Environment"].get("Variables", {})
                 return {"Variables": {k: str(v) for k, v in environment_variables.items()}}
 
-        def result_handler(result, resource_id, resources, resource_type):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             """waits for the lambda to be in a "terminal" state, i.e. not pending"""
-            resources[resource_id]["Properties"]["Arn"] = result["FunctionArn"]
-            resources[resource_id]["PhysicalResourceId"] = resources[resource_id]["Properties"][
-                "FunctionName"
-            ]
+            resource["Properties"]["Arn"] = result["FunctionArn"]
+            resource["PhysicalResourceId"] = resource["Properties"]["FunctionName"]
             connect_to().awslambda.get_waiter("function_active_v2").wait(
                 FunctionName=result["FunctionArn"]
             )
@@ -178,7 +176,7 @@ class LambdaFunction(GenericBaseModel):
                     # TODO add missing fields
                 },
                 "types": {"Timeout": int, "MemorySize": int},
-                "result_handler": result_handler,
+                "result_handler": _handle_result,
             },
             "delete": {"function": "delete_function", "parameters": get_delete_params},
         }
@@ -207,15 +205,15 @@ class LambdaFunctionVersion(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _store_version(result, resource_id, resources, resource_type):
-            resources[resource_id]["Properties"]["Version"] = result["Version"]
-            resources[resource_id]["PhysicalResourceId"] = result["FunctionArn"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["Properties"]["Version"] = result["Version"]
+            resource["PhysicalResourceId"] = result["FunctionArn"]
 
         return {
             "create": {
                 "function": "publish_version",
                 "parameters": select_parameters("FunctionName", "CodeSha256", "Description"),
-                "result_handler": _store_version,
+                "result_handler": _handle_result,
             }
         }
 
@@ -300,9 +298,9 @@ class LambdaPermission(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _store_physical_id(result, resource_id, resources, resource_type):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             parsed_statement = json.loads(result["Statement"])
-            resources[resource_id]["PhysicalResourceId"] = parsed_statement["Sid"]
+            resource["PhysicalResourceId"] = parsed_statement["Sid"]
 
         def lambda_permission_params(
             properties: dict, logical_resource_id: str, resource: dict, stack_name: str
@@ -331,7 +329,7 @@ class LambdaPermission(GenericBaseModel):
             "create": {
                 "function": "add_permission",
                 "parameters": lambda_permission_params,
-                "result_handler": _store_physical_id,
+                "result_handler": _handle_result,
             },
             "delete": {"function": "remove_permission", "parameters": get_delete_params},
         }
@@ -437,11 +435,11 @@ class LambdaAlias(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _store_arn(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["AliasArn"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["AliasArn"]
 
         return {
-            "create": {"function": "create_alias", "result_handler": _store_arn},
+            "create": {"function": "create_alias", "result_handler": _handle_result},
             "delete": {
                 "function": "delete_alias",
                 "parameters": {
@@ -469,16 +467,14 @@ class LambdaCodeSigningConfig(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _store_arn(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["CodeSigningConfig"][
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["CodeSigningConfig"]["CodeSigningConfigArn"]
+            resource["Properties"]["CodeSigningConfigArn"] = result["CodeSigningConfig"][
                 "CodeSigningConfigArn"
             ]
-            resources[resource_id]["Properties"]["CodeSigningConfigArn"] = result[
-                "CodeSigningConfig"
-            ]["CodeSigningConfigArn"]
 
         return {
-            "create": {"function": "create_code_signing_config", "result_handler": _store_arn},
+            "create": {"function": "create_code_signing_config", "result_handler": _handle_result},
             "delete": {
                 "function": "delete_code_signing_config",
                 "parameters": {

@@ -59,12 +59,10 @@ class IAMManagedPolicy(GenericBaseModel):
                 iam.attach_group_policy(GroupName=group, PolicyArn=policy_arn)
             return policy
 
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resources[resource_id]["PhysicalResourceId"] = result["Policy"]["Arn"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["Policy"]["Arn"]
 
-        return {"create": {"function": _create, "result_handler": _set_physical_resource_id}}
+        return {"create": {"function": _create, "result_handler": _handle_result}}
 
 
 class IAMUser(GenericBaseModel):
@@ -134,17 +132,15 @@ class IAMUser(GenericBaseModel):
             for inline_policy_name in remaining_policies:
                 client.delete_user_policy(UserName=user_name, PolicyName=inline_policy_name)
 
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resources[resource_id]["PhysicalResourceId"] = result["User"]["UserName"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["User"]["UserName"]
 
         return {
             "create": [
                 {
                     "function": "create_user",
                     "parameters": ["Path", "UserName", "PermissionsBoundary", "Tags"],
-                    "result_handler": _set_physical_resource_id,
+                    "result_handler": _handle_result,
                 },
                 {"function": _post_create},
             ],
@@ -200,15 +196,13 @@ class IAMAccessKey(GenericBaseModel):
                 if "NotSuchEntity" not in err.response["Error"]["Code"]:
                     raise
 
-        def _store_key_id(result, resource_id, resources, resource_type):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             access_key_id = result["AccessKey"]["AccessKeyId"]
-            resources[resource_id]["PhysicalResourceId"] = access_key_id
-            resources[resource_id]["Properties"]["SecretAccessKey"] = result["AccessKey"][
-                "SecretAccessKey"
-            ]
-            status = resources[resource_id]["Properties"].get("Status", "Active")
+            resource["PhysicalResourceId"] = access_key_id
+            resource["Properties"]["SecretAccessKey"] = result["AccessKey"]["SecretAccessKey"]
+            status = resource["Properties"].get("Status", "Active")
             if status == "Inactive":
-                user_name = resources[resource_id]["Properties"]["UserName"]
+                user_name = resource["Properties"]["UserName"]
                 client = aws_stack.connect_to_service("iam")
                 client.update_access_key(
                     UserName=user_name, AccessKeyId=access_key_id, Status="Inactive"
@@ -218,7 +212,7 @@ class IAMAccessKey(GenericBaseModel):
             "create": {
                 "function": "create_access_key",
                 "parameters": ["UserName"],
-                "result_handler": _store_key_id,
+                "result_handler": _handle_result,
             },
             "delete": {"function": _delete},
         }
@@ -363,10 +357,8 @@ class IAMRole(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resources[resource_id]["PhysicalResourceId"] = result["Role"]["RoleName"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["Role"]["RoleName"]
 
         return {
             "create": [
@@ -387,7 +379,7 @@ class IAMRole(GenericBaseModel):
                         ),
                         {"RoleName": "RoleName"},
                     ),
-                    "result_handler": _set_physical_resource_id,
+                    "result_handler": _handle_result,
                 },
                 {"function": IAMRole._post_create},
             ],
@@ -417,15 +409,13 @@ class IAMServiceLinkedRole(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resources[resource_id]["PhysicalResourceId"] = result["Role"]["RoleName"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["Role"]["RoleName"]
 
         return {
             "create": {
                 "function": "create_service_linked_role",
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {"function": "delete_service_linked_role", "parameters": ["RoleName"]},
         }
@@ -461,8 +451,7 @@ class IAMPolicy(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _store_physical_id(result, resource_id, resources, resource_type):
-            resource = resources[resource_id]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             # the physical resource ID here has a bit of a weird format
             # e.g. 'stack-fnSe-1OKWZIBB89193' where fnSe are the first 4 characters of the LogicalResourceId (or name?)
             suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=13))
@@ -494,7 +483,7 @@ class IAMPolicy(GenericBaseModel):
         return {
             "create": {
                 "function": _create,
-                "result_handler": _store_physical_id,
+                "result_handler": _handle_result,
             },
             "delete": {"function": "delete_policy", "parameters": _delete_params},
         }
@@ -588,10 +577,8 @@ class InstanceProfile(GenericBaseModel):
                 if "NoSuchEntity" not in str(e):
                     raise
 
-        def _store_profile_name(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["InstanceProfile"][
-                "InstanceProfileName"
-            ]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["InstanceProfile"]["InstanceProfileName"]
 
         return {
             "create": [
@@ -601,7 +588,7 @@ class InstanceProfile(GenericBaseModel):
                         "InstanceProfileName": "InstanceProfileName",
                         "Path": "Path",
                     },
-                    "result_handler": _store_profile_name,
+                    "result_handler": _handle_result,
                 },
                 {"function": _add_roles},
             ],
@@ -668,17 +655,15 @@ class IAMGroup(GenericBaseModel):
             for inline_policy_name in remaining_policies:
                 client.delete_group_policy(GroupName=group_name, PolicyName=inline_policy_name)
 
-        def _set_physical_resource_id(
-            result: dict, resource_id: str, resources: dict, resource_type: str
-        ):
-            resources[resource_id]["PhysicalResourceId"] = result["Group"]["GroupName"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["Group"]["GroupName"]
 
         return {
             "create": [
                 {
                     "function": "create_group",
                     "parameters": ["GroupName", "Path"],
-                    "result_handler": _set_physical_resource_id,
+                    "result_handler": _handle_result,
                 },
                 {"function": _post_create},
             ],
