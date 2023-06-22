@@ -5,6 +5,7 @@ import copy
 import hashlib
 import itertools
 import logging
+import os
 from collections.abc import Iterator
 from io import BytesIO, RawIOBase
 from tempfile import SpooledTemporaryFile
@@ -183,7 +184,7 @@ class S3ProviderStream(S3Provider):
             dest_key_object.checksum_algorithm = checksum_algorithm
 
             if not source_key_object.checksum_value:
-                stream_value = source_key_object.value
+                stream_value = dest_key_object.value
                 checksum = get_s3_checksum(checksum_algorithm)
 
                 while data := stream_value.read(4096):
@@ -295,9 +296,12 @@ class StreamedFakeKey(s3_models.FakeKey):
         etag_empty = not self._etag or self._etag == "d41d8cd98f00b204e9800998ecf8427e"
         # it could come from the already calculated and completed CompleteMultipartUpload
         # in that case, set it directly as the buffer
-        if isinstance(new_value, SpooledTemporaryFile):
+        # if the etag is not set, this is the result from CopyObject, in that case we should copy the underlying
+        # SpooledTemporaryFile
+        if self._etag and isinstance(new_value, SpooledTemporaryFile):
             self._value_buffer.close()
             self._value_buffer = new_value
+            self._value_buffer.seek(0, os.SEEK_END)
             self.contentsize = self._value_buffer.tell()
             self._value_buffer.seek(0)
             return
