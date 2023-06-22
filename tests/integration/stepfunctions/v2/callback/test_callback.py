@@ -25,7 +25,7 @@ pytestmark = pytest.mark.skipif(
 )
 class TestCallback:
     @pytest.mark.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
-    def test_sqs_wait_for_task_tok(
+    def test_sqs_wait_for_task_token(
         self,
         aws_client,
         create_iam_role_for_sfn,
