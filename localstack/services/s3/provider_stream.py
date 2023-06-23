@@ -730,25 +730,44 @@ def apply_stream_patches():
             content = response_content[begin : end + 1]
             response_headers["content-length"] = len(content)
         else:
-            stream = PartialStream(response_content, begin, end)
-            content = get_generator_from_stream(stream)
             requested_length = end - begin + 1
+            content = get_range_generator_from_stream(response_content, begin, requested_length)
             response_headers["content-length"] = requested_length
 
         return 206, response_headers, content
 
 
-def get_generator_from_stream(response_content: Any):
+def get_generator_from_stream(response_content: Any) -> Iterator[bytes]:
     # Werkzeug will only read 1 everytime, so we control how much we return
-    if isinstance(response_content, (SpooledTemporaryFile, PartialStream)):
+    if isinstance(response_content, SpooledTemporaryFile):
 
         def get_data():
+            pos = 0
             while True:
+                response_content.seek(pos)
                 data = response_content.read(CHUNK_SIZE)
                 if not data:
                     return b""
+                pos += len(data)
                 yield data
 
         return get_data()
 
     return response_content
+
+
+def get_range_generator_from_stream(
+    response_content: Any, start: int, requested_length: int
+) -> Iterator[bytes]:
+    pos = start
+    max_length = requested_length
+    while True:
+        response_content.seek(pos)
+        amount = min(max_length, CHUNK_SIZE)
+        data = response_content.read(amount)
+        if not data:
+            return b""
+        read = len(data)
+        pos += read
+        max_length -= read
+        yield data
