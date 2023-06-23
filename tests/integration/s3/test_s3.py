@@ -2361,6 +2361,22 @@ class TestS3:
         assert chunk_size == len(content)
         snapshot.match("get-object", resp)
 
+    @pytest.mark.only_localstack
+    def test_download_fileobj_multiple_range_requests(self, s3_bucket, snapshot, aws_client):
+        object_key = "test-download_fileobj"
+
+        body = os.urandom(70_000 * 100 * 5)
+        aws_client.s3.upload_fileobj(BytesIO(body), s3_bucket, object_key)
+
+        # get object and compare results
+        downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        assert downloaded_object["Body"].read() == body
+
+        # use download_fileobj to verify multithreaded range requests work
+        test_fileobj = BytesIO()
+        aws_client.s3.download_fileobj(Bucket=s3_bucket, Key=object_key, Fileobj=test_fileobj)
+        assert body == test_fileobj.getvalue()
+
     @pytest.mark.aws_validated
     def test_get_range_object_headers(self, s3_bucket, aws_client):
         object_key = "sample.bin"

@@ -6,6 +6,7 @@ import hashlib
 import itertools
 import logging
 import os
+import threading
 from collections.abc import Iterator
 from io import BytesIO, RawIOBase
 from tempfile import SpooledTemporaryFile
@@ -47,6 +48,7 @@ from localstack.services.s3.utils import (
 )
 from localstack.utils.aws import arns
 from localstack.utils.patch import patch
+from localstack.utils.sync import SynchronizedDefaultDict
 
 LOG = logging.getLogger(__name__)
 
@@ -56,6 +58,8 @@ S3_MAX_FILE_SIZE_BYTES = 512 * 1024
 MOTO_S3_DEFAULT_KEY_BUFFER_SIZE = str(S3_MAX_FILE_SIZE_BYTES)
 
 CHUNK_SIZE = 1024 * 16 * 4
+
+S3_KEY_LOCKS: dict[int, threading.RLock] = SynchronizedDefaultDict(threading.RLock)
 
 
 class S3ProviderStream(S3Provider):
@@ -195,11 +199,17 @@ class S3ProviderStream(S3Provider):
             dest_key_object.checksum_algorithm = checksum_algorithm
 
             if not source_key_object.checksum_value:
-                stream_value = dest_key_object.value
+                stream_value: SpooledTemporaryFile = dest_key_object.value
                 checksum = get_s3_checksum(checksum_algorithm)
 
-                while data := stream_value.read(4096):
-                    checksum.update(data)
+                stream_id = id(stream_value)
+                key_lock = S3_KEY_LOCKS[stream_id]
+                with key_lock:
+                    while data := stream_value.read(4096):
+                        checksum.update(data)
+                    stream_value.seek(0)
+
+                S3_KEY_LOCKS.pop(stream_id, None)
 
                 calculated_checksum = base64.b64encode(checksum.digest()).decode()
                 dest_key_object.checksum_value = calculated_checksum
@@ -287,12 +297,6 @@ class PartialStream(RawIOBase):
 
         return data
 
-    def readable(self) -> bool:
-        return True
-
-    def tell(self):
-        return self._length
-
 
 class StreamedFakeKey(s3_models.FakeKey):
     def __init__(self, name: str, value: IO[bytes], *args, **kwargs):
@@ -315,15 +319,20 @@ class StreamedFakeKey(s3_models.FakeKey):
         # in that case, set it directly as the buffer
         # if the etag is not set, this is the result from CopyObject, in that case we should copy the underlying
         # SpooledTemporaryFile
+        stream_id = id(self._value_buffer)
+        key_lock = S3_KEY_LOCKS[stream_id]
         if self._etag and isinstance(new_value, SpooledTemporaryFile):
-            self._value_buffer.close()
-            self._value_buffer = new_value
-            self._value_buffer.seek(0, os.SEEK_END)
-            self.contentsize = self._value_buffer.tell()
-            self._value_buffer.seek(0)
+            with key_lock:
+                self._value_buffer.close()
+                self._value_buffer = new_value
+                self._value_buffer.seek(0, os.SEEK_END)
+                self.contentsize = self._value_buffer.tell()
+                self._value_buffer.seek(0)
+
+            S3_KEY_LOCKS.pop(stream_id, None)
             return
 
-        with self.lock:
+        with key_lock:
             self._value_buffer.seek(0)
             self._value_buffer.truncate()
             # We have 2 cases:
@@ -356,9 +365,13 @@ class StreamedFakeKey(s3_models.FakeKey):
             self.contentsize = self._value_buffer.tell()
             self._value_buffer.seek(0)
 
+        S3_KEY_LOCKS.pop(stream_id, None)
+
     def set_value_from_chunked_payload(self, new_value: IO[bytes], content_length: int):
         etag_empty = not self._etag or self._etag == "d41d8cd98f00b204e9800998ecf8427e"
-        with self.lock:
+        stream_id = id(self._value_buffer)
+        key_lock = S3_KEY_LOCKS[stream_id]
+        with key_lock:
             self._value_buffer.seek(0)
             self._value_buffer.truncate()
             # We have 2 cases:
@@ -433,6 +446,8 @@ class StreamedFakeKey(s3_models.FakeKey):
             self.contentsize = self._value_buffer.tell()
             self._value_buffer.seek(0)
 
+        S3_KEY_LOCKS.pop(stream_id, None)
+
 
 class StreamedFakeMultipart(s3_models.FakeMultipart):
     def __init__(self, *args, **kwargs):
@@ -463,8 +478,12 @@ class StreamedFakeMultipart(s3_models.FakeMultipart):
             md5s.extend(decode_hex(part_etag)[0])
             # to not trigger the property every time
             stream_value = part.value
-            while data := stream_value.read(CHUNK_SIZE):
-                total.write(data)
+            stream_id = id(stream_value)
+            key_lock = S3_KEY_LOCKS[stream_id]
+            with key_lock:
+                while data := stream_value.read(CHUNK_SIZE):
+                    total.write(data)
+            S3_KEY_LOCKS.pop(stream_id, None)
 
             last = part
             count += 1
@@ -740,16 +759,25 @@ def apply_stream_patches():
 def get_generator_from_stream(response_content: Any) -> Iterator[bytes]:
     # Werkzeug will only read 1 everytime, so we control how much we return
     if isinstance(response_content, SpooledTemporaryFile):
+        stream_id = id(response_content)
 
         def get_data():
+            # we don't have access to the StreamedFakeKey object from here, so we need a global locking system for that
+            # stream
+            # TODO: use context manager for auto deleting the lock afterwards
+            key_lock = S3_KEY_LOCKS[stream_id]
             pos = 0
             while True:
-                response_content.seek(pos)
-                data = response_content.read(CHUNK_SIZE)
+                with key_lock:
+                    response_content.seek(pos)
+                    data = response_content.read(CHUNK_SIZE)
                 if not data:
-                    return b""
+                    break
                 pos += len(data)
                 yield data
+
+            S3_KEY_LOCKS.pop(stream_id, None)
+            return b""
 
         return get_data()
 
@@ -761,13 +789,20 @@ def get_range_generator_from_stream(
 ) -> Iterator[bytes]:
     pos = start
     max_length = requested_length
+    stream_id = id(response_content)
+    key_lock = S3_KEY_LOCKS[stream_id]
     while True:
-        response_content.seek(pos)
-        amount = min(max_length, CHUNK_SIZE)
-        data = response_content.read(amount)
+        with key_lock:
+            response_content.seek(pos)
+            amount = min(max_length, CHUNK_SIZE)
+            data = response_content.read(amount)
+
         if not data:
-            return b""
+            break
         read = len(data)
         pos += read
         max_length -= read
         yield data
+
+    S3_KEY_LOCKS.pop(stream_id, None)
+    return b""
