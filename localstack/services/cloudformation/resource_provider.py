@@ -445,14 +445,6 @@ class LegacyResourceProvider(ResourceProvider):
         results = []
         # TODO: other top level keys
         resource = self.all_resources[request.logical_resource_id]
-        service = get_service_name(resource)
-        try:
-            client = connect_to.get_client(service)
-        except UnknownServiceError:
-            # e.g. CDK has resources but is not a valid service
-            return ProgressEvent(
-                status=OperationStatus.SUCCESS, resource_model=resource["Properties"]
-            )
 
         for func in func_details:
             result = None
@@ -474,33 +466,40 @@ class LegacyResourceProvider(ResourceProvider):
                     )
                 results.append(result)
                 executed = True
+            elif not executed:
+                service = get_service_name(resource)
+                try:
+                    client = connect_to.get_client(service)
+                    if client:
+                        # get the method on that function
+                        function = getattr(client, func["function"])
 
-            elif not executed and client:
-                # get the method on that function
-                function = getattr(client, func["function"])
-
-                # unify the resource parameters
-                params = resolve_resource_parameters(
-                    request.stack_name,
-                    resource,
-                    self.all_resources,
-                    request.logical_resource_id,
-                    func,
-                )
-                if params is None:
-                    result = None
-                else:
-                    result = invoke_function(
-                        function,
-                        params,
-                        self.resource_type,
-                        func,
-                        request.action,
-                        resource,
+                        # unify the resource parameters
+                        params = resolve_resource_parameters(
+                            request.stack_name,
+                            resource,
+                            self.all_resources,
+                            request.logical_resource_id,
+                            func,
+                        )
+                        if params is None:
+                            result = None
+                        else:
+                            result = invoke_function(
+                                function,
+                                params,
+                                self.resource_type,
+                                func,
+                                request.action,
+                                resource,
+                            )
+                        results.append(result)
+                        executed = True
+                except UnknownServiceError:
+                    # e.g. CDK has resources but is not a valid service
+                    return ProgressEvent(
+                        status=OperationStatus.SUCCESS, resource_model=resource["Properties"]
                     )
-                results.append(result)
-                executed = True
-
             if "result_handler" in func and executed:
                 LOG.debug(
                     f"Executing callback method for {self.resource_type}:{request.logical_resource_id}"
