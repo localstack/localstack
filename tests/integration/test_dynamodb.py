@@ -919,19 +919,23 @@ class TestDynamoDB:
 
         # Replicate table in US and EU
         dynamodb_ap_south_1.update_table(
-            TableName=table_name, ReplicaUpdates=[{"Create": {"RegionName": "us-east-1"}}]
+            TableName=table_name,
+            ReplicaUpdates=[{"Create": {"RegionName": "us-east-1", "KMSMasterKeyId": "foo"}}],
         )
         dynamodb_ap_south_1.update_table(
-            TableName=table_name, ReplicaUpdates=[{"Create": {"RegionName": "eu-west-1"}}]
+            TableName=table_name,
+            ReplicaUpdates=[{"Create": {"RegionName": "eu-west-1", "KMSMasterKeyId": "bar"}}],
         )
 
         # Ensure all replicas can be described
         response = dynamodb_ap_south_1.describe_table(TableName=table_name)
-        assert len(response["Table"]["Replicas"]) == 3
+        assert len(response["Table"]["Replicas"]) == 2
         response = dynamodb_us_east_1.describe_table(TableName=table_name)
-        assert len(response["Table"]["Replicas"]) == 3
+        assert len(response["Table"]["Replicas"]) == 2
+        assert "bar" in [replica.get("KMSMasterKeyId") for replica in response["Table"]["Replicas"]]
         response = dynamodb_eu_west_1.describe_table(TableName=table_name)
-        assert len(response["Table"]["Replicas"]) == 3
+        assert len(response["Table"]["Replicas"]) == 2
+        assert "foo" in [replica.get("KMSMasterKeyId") for replica in response["Table"]["Replicas"]]
         with pytest.raises(Exception) as exc:
             dynamodb_sa_east_1.describe_table(TableName=table_name)
         exc.match("ResourceNotFoundException")
@@ -986,9 +990,9 @@ class TestDynamoDB:
 
         # Ensure replica details are updated in other regions
         response = dynamodb_us_east_1.describe_table(TableName=table_name)
-        assert len(response["Table"]["Replicas"]) == 2
+        assert len(response["Table"]["Replicas"]) == 1
         response = dynamodb_ap_south_1.describe_table(TableName=table_name)
-        assert len(response["Table"]["Replicas"]) == 2
+        assert len(response["Table"]["Replicas"]) == 1
 
         # Ensure removing the last replica disables global table
         dynamodb_us_east_1.update_table(

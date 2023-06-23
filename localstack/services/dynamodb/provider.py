@@ -559,7 +559,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         store = get_store(context.account_id, context.region)
 
         # Update replication details
-        replicas: Dict[TableName, RegionName] = store.REPLICAS.get(table_name, {})
+        replicas: Dict[RegionName, ReplicaDescription] = store.REPLICAS.get(table_name, {})
 
         replica_description_list = []
 
@@ -654,7 +654,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
             # update response content
             schema = SchemaExtractor.get_table_schema(
-                table_name, context.account_id, context.region
+                table_name, context.account_id, global_table_region
             )
             return UpdateTableOutput(TableDescription=schema["Table"])
 
