@@ -1,8 +1,27 @@
 {
-  "Comment": "sqs_success_on_task_token",
-  "StartAt": "WaitAndRestart",
+  "Comment": "sqs_failure_on_task_token",
+  "StartAt": "Iterate",
   "States": {
-    "WaitAndRestart": {
+    "Iterate": {
+      "Type": "Pass",
+      "Parameters": {
+        "Count.$": "States.MathAdd($.Iterator.Count, -1)"
+      },
+      "ResultPath": "$.Iterator",
+      "Next": "IterateStep"
+    },
+    "IterateStep": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.Iterator.Count",
+          "NumericLessThanEquals": 0,
+          "Next": "NoMoreCycles"
+        }
+      ],
+      "Default": "WaitAndReceive",
+    },
+    "WaitAndReceive": {
       "Type": "Wait",
       "Seconds": 1,
       "Next": "Receive"
@@ -25,7 +44,7 @@
           "Next": "SendFailure"
         }
       ],
-      "Default": "WaitAndRestart"
+       "Default": "Iterate"
     },
     "SendFailure": {
       "Type": "Map",
@@ -39,7 +58,7 @@
           "ParseBody": {
             "Type": "Pass",
             "Parameters": {
-              "body.$": "States.StringToJson($.Body)"
+              "Body.$": "States.StringToJson($.Body)"
             },
             "Next": "Send"
           },
@@ -49,15 +68,18 @@
             "Parameters": {
               "Error": "Failure error",
               "Cause": "Failure cause",
-              "TaskToken.$": "$.body.TaskToken"
+              "TaskToken.$": "$.Body.TaskToken"
             },
             "End": true
           }
         },
       },
       "ResultPath": null,
-      "OutputPath": "$.QueueUrl",
-      "Next": "WaitAndRestart"
+      "Next": "Iterate"
+    },
+    "NoMoreCycles": {
+      "Type": "Pass",
+      "End": true
     }
   },
 }

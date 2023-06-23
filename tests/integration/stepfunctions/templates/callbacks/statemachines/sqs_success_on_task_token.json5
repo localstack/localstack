@@ -1,8 +1,27 @@
 {
   "Comment": "sqs_success_on_task_token",
-  "StartAt": "WaitAndRestart",
+  "StartAt": "Iterate",
   "States": {
-    "WaitAndRestart": {
+    "Iterate": {
+      "Type": "Pass",
+      "Parameters": {
+        "Count.$": "States.MathAdd($.Iterator.Count, -1)"
+      },
+      "ResultPath": "$.Iterator",
+      "Next": "IterateStep"
+    },
+    "IterateStep": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.Iterator.Count",
+          "NumericLessThanEquals": 0,
+          "Next": "NoMoreCycles"
+        }
+      ],
+      "Default": "WaitAndReceive",
+    },
+    "WaitAndReceive": {
       "Type": "Wait",
       "Seconds": 1,
       "Next": "Receive"
@@ -25,7 +44,7 @@
           "Next": "SendSuccesses"
         }
       ],
-      "Default": "WaitAndRestart"
+      "Default": "Iterate"
     },
     "SendSuccesses": {
       "Type": "Map",
@@ -39,7 +58,7 @@
           "ParseBody": {
             "Type": "Pass",
             "Parameters": {
-              "body.$": "States.StringToJson($.Body)"
+              "Body.$": "States.StringToJson($.Body)"
             },
             "Next": "Send"
           },
@@ -47,16 +66,19 @@
             "Type": "Task",
             "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskSuccess",
             "Parameters": {
-              "Output.$": "States.JsonToString($.body.Message)",
-              "TaskToken.$": "$.body.TaskToken"
+              "Output.$": "States.JsonToString($.Body.Message)",
+              "TaskToken.$": "$.Body.TaskToken"
             },
             "End": true
           }
         },
       },
       "ResultPath": null,
-      "OutputPath": "$.QueueUrl",
-      "Next": "WaitAndRestart"
+      "Next": "Iterate"
+    },
+    "NoMoreCycles": {
+      "Type": "Pass",
+      "End": true
     }
   },
 }
