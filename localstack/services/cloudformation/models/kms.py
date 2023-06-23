@@ -56,12 +56,12 @@ class KMSKey(GenericBaseModel):
 
             return new_key
 
-        def _handle_key_result(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["KeyMetadata"]["KeyId"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["KeyMetadata"]["KeyId"]
 
         return {
             "create": [
-                {"function": _create, "result_handler": _handle_key_result},
+                {"function": _create, "result_handler": _handle_result},
             ],
             "delete": {
                 # TODO Key needs to be deleted in KMS backend
