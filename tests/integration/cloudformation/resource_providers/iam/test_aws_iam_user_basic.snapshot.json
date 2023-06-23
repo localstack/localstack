@@ -1,0 +1,11 @@
+{
+  "tests/integration/cloudformation/resource_providers/iam/test_aws_iam_user_basic.py::TestBasic::test_basic_lifecycle": {
+    "recorded-date": "22-06-2023, 09:31:26",
+    "recorded-content": {
+      "stack_outputs": {
+        "MyRef": "<user-name>"
+      },
+      "physical_resource_id": "<user-name>"
+    }
+  }
+}

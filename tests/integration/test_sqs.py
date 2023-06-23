@@ -3434,6 +3434,86 @@ class TestSqsProvider:
 
         snapshot.add_transformer(GenericTransformer(_remove_error_details))
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_sqs_permission_lifecycle(self, sqs_queue, aws_client, snapshot, account_id):
+        add_permission_response = aws_client.sqs.add_permission(
+            QueueUrl=sqs_queue,
+            AWSAccountIds=[account_id, "668614515564"],
+            Actions=["ReceiveMessage"],
+            Label="crossaccountpermission",
+        )
+        snapshot.match("add-permission-response", add_permission_response)
+
+        get_queue_policy_attribute = aws_client.sqs.get_queue_attributes(
+            QueueUrl=sqs_queue, AttributeNames=["Policy"]
+        )
+        snapshot.match("get-queue-policy-attribute", get_queue_policy_attribute)
+        remove_permission_response = aws_client.sqs.remove_permission(
+            QueueUrl=sqs_queue,
+            Label="crossaccountpermission",
+        )
+        snapshot.match("remove-permission-response", remove_permission_response)
+        get_queue_policy_attribute = aws_client.sqs.get_queue_attributes(
+            QueueUrl=sqs_queue, AttributeNames=["Policy"]
+        )
+        snapshot.match("get-queue-policy-attribute-after-removal", get_queue_policy_attribute)
+
+        # test two permissions with the same label
+        aws_client.sqs.add_permission(
+            QueueUrl=sqs_queue,
+            AWSAccountIds=[account_id],
+            Actions=["ReceiveMessage"],
+            Label="crossaccountpermission",
+        )
+        get_queue_policy_attribute = aws_client.sqs.get_queue_attributes(
+            QueueUrl=sqs_queue, AttributeNames=["Policy"]
+        )
+        snapshot.match(
+            "get-queue-policy-attribute-first-account-same-label", get_queue_policy_attribute
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs.add_permission(
+                QueueUrl=sqs_queue,
+                AWSAccountIds=["668614515564"],
+                Actions=["ReceiveMessage"],
+                Label="crossaccountpermission",
+            )
+        snapshot.match("get-queue-policy-attribute-second-account-same-label", e.value.response)
+
+        aws_client.sqs.add_permission(
+            QueueUrl=sqs_queue,
+            AWSAccountIds=[account_id],
+            Actions=["ReceiveMessage"],
+            Label="crossaccountpermission2",
+        )
+        get_queue_policy_attribute = aws_client.sqs.get_queue_attributes(
+            QueueUrl=sqs_queue, AttributeNames=["Policy"]
+        )
+        snapshot.match(
+            "get-queue-policy-attribute-second-account-different-label", get_queue_policy_attribute
+        )
+
+        aws_client.sqs.remove_permission(QueueUrl=sqs_queue, Label="crossaccountpermission")
+        get_queue_policy_attribute = aws_client.sqs.get_queue_attributes(
+            QueueUrl=sqs_queue, AttributeNames=["Policy"]
+        )
+        snapshot.match(
+            "get-queue-policy-attribute-delete-first-permission", get_queue_policy_attribute
+        )
+
+        aws_client.sqs.remove_permission(QueueUrl=sqs_queue, Label="crossaccountpermission2")
+        get_queue_policy_attribute = aws_client.sqs.get_queue_attributes(
+            QueueUrl=sqs_queue, AttributeNames=["Policy"]
+        )
+        snapshot.match(
+            "get-queue-policy-attribute-delete-second-permission", get_queue_policy_attribute
+        )
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs.remove_permission(QueueUrl=sqs_queue, Label="crossaccountpermission2")
+        snapshot.match("get-queue-policy-attribute-delete-non-existent-label", e.value.response)
+
 
 @pytest.fixture()
 def sqs_http_client(aws_http_client_factory):

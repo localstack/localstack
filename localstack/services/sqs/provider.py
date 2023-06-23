@@ -71,7 +71,6 @@ from localstack.services.sqs import constants as sqs_constants
 from localstack.services.sqs.exceptions import InvalidParameterValue
 from localstack.services.sqs.models import (
     FifoQueue,
-    Permission,
     SqsMessage,
     SqsQueue,
     SqsStore,
@@ -1155,16 +1154,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         self._validate_actions(actions)
 
-        for account_id in aws_account_ids:
-            for action in actions:
-                queue.permissions.add(Permission(label, account_id, action))
+        queue.add_permission(label=label, actions=actions, account_ids=aws_account_ids)
 
     def remove_permission(self, context: RequestContext, queue_url: String, label: String) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
 
-        candidates = [p for p in queue.permissions if p.label == label]
-        if candidates:
-            queue.permissions.remove(candidates[0])
+        queue.remove_permission(label=label)
 
     def _create_message_attributes(
         self,

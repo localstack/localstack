@@ -168,7 +168,10 @@ class ResourceProvider(Generic[Properties]):
 # legacy helpers
 def get_resource_type(resource: dict) -> str:
     """this is currently overwritten in PRO to add support for custom resources"""
-    return resource["Type"]
+    resource_type: str = resource["Type"]
+    if resource_type.startswith("Custom::"):
+        return "AWS::CloudFormation::CustomResource"
+    return resource_type
 
 
 def check_not_found_exception(e, resource_type, resource, resource_status=None):
@@ -383,6 +386,7 @@ class LegacyResourceProvider(ResourceProvider):
                 "Type": self.resource_type,
                 "Properties": request.desired_state,
                 "PhysicalResourceId": physical_resource_id,
+                "LogicalResourceId": request.logical_resource_id,
             },
             region_name=request.region_name,
         )
@@ -441,14 +445,6 @@ class LegacyResourceProvider(ResourceProvider):
         results = []
         # TODO: other top level keys
         resource = self.all_resources[request.logical_resource_id]
-        service = get_service_name(resource)
-        try:
-            client = connect_to.get_client(service)
-        except UnknownServiceError:
-            # e.g. CDK has resources but is not a valid service
-            return ProgressEvent(
-                status=OperationStatus.SUCCESS, resource_model=resource["Properties"]
-            )
 
         for func in func_details:
             result = None
@@ -470,33 +466,40 @@ class LegacyResourceProvider(ResourceProvider):
                     )
                 results.append(result)
                 executed = True
+            elif not executed:
+                service = get_service_name(resource)
+                try:
+                    client = connect_to.get_client(service)
+                    if client:
+                        # get the method on that function
+                        function = getattr(client, func["function"])
 
-            elif not executed and client:
-                # get the method on that function
-                function = getattr(client, func["function"])
-
-                # unify the resource parameters
-                params = resolve_resource_parameters(
-                    request.stack_name,
-                    resource,
-                    self.all_resources,
-                    request.logical_resource_id,
-                    func,
-                )
-                if params is None:
-                    result = None
-                else:
-                    result = invoke_function(
-                        function,
-                        params,
-                        self.resource_type,
-                        func,
-                        request.action,
-                        resource,
+                        # unify the resource parameters
+                        params = resolve_resource_parameters(
+                            request.stack_name,
+                            resource,
+                            self.all_resources,
+                            request.logical_resource_id,
+                            func,
+                        )
+                        if params is None:
+                            result = None
+                        else:
+                            result = invoke_function(
+                                function,
+                                params,
+                                self.resource_type,
+                                func,
+                                request.action,
+                                resource,
+                            )
+                        results.append(result)
+                        executed = True
+                except UnknownServiceError:
+                    # e.g. CDK has resources but is not a valid service
+                    return ProgressEvent(
+                        status=OperationStatus.SUCCESS, resource_model=resource["Properties"]
                     )
-                results.append(result)
-                executed = True
-
             if "result_handler" in func and executed:
                 LOG.debug(
                     f"Executing callback method for {self.resource_type}:{request.logical_resource_id}"
@@ -574,7 +577,10 @@ class ResourceProviderExecutor:
             raise TimeoutError("Could not perform deploy loop action")
 
     def execute_action(self, raw_payload: ResourceProviderPayload) -> ProgressEvent[Properties]:
-        resource_provider = self.load_resource_provider(raw_payload["resourceType"])
+        resource_type = get_resource_type(
+            {"Type": raw_payload["resourceType"]}
+        )  # TODO: simplify signature of get_resource_type to just take the type
+        resource_provider = self.load_resource_provider(resource_type)
         if resource_provider:
             change_type = raw_payload["action"]
             request = convert_payload(
@@ -596,23 +602,32 @@ class ResourceProviderExecutor:
             raise NoResourceProvider
 
     def load_resource_provider(self, resource_type: str) -> Optional[ResourceProvider]:
-        # lookup provider in private registry
-        if not config.CFN_RESOURCE_PROVIDERS_V2 and resource_type in self.legacy_base_models:
-            return LegacyResourceProvider(
-                resource_type=resource_type,
-                resource_provider_cls=self.legacy_base_models[resource_type],
-                resources=self.resources,
-            )
-
         try:
-            plugin = plugin_manager.load(resource_type)
-            return plugin.factory()
-        except Exception as e:
-            if resource_type in self.legacy_base_models:
-                return LegacyResourceProvider(resource_type, self.legacy_base_models[resource_type])
+            if config.CFN_RESOURCE_PROVIDERS_V2:
+                # attempt to use the new ResourceProvider implementation, if that fails fall back to the old GenericBaseModel
+                try:
+                    plugin = plugin_manager.load(resource_type)
+                    return plugin.factory()
+                except Exception:
+                    LOG.warning(
+                        "Failed to load resource type as a ResourceProvider. Falling back to looking up a GenericBaseModel for %s",
+                        resource_type,
+                        exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    )
+                    return LegacyResourceProvider(
+                        resource_type=resource_type,
+                        resource_provider_cls=self.legacy_base_models[resource_type],
+                        resources=self.resources,
+                    )
             else:
-                usage.missing_resource_types.record(resource_type)
-                raise NoResourceProvider from e
+                return LegacyResourceProvider(
+                    resource_type=resource_type,
+                    resource_provider_cls=self.legacy_base_models[resource_type],
+                    resources=self.resources,
+                )
+        except Exception as e:
+            usage.missing_resource_types.record(resource_type)
+            raise NoResourceProvider from e
 
     def extract_physical_resource_id_from_model_with_schema(
         self, resource_model: Properties, resource_type_schema: dict

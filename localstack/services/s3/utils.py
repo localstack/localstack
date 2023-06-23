@@ -1,6 +1,7 @@
 import datetime
 import re
 from typing import Dict, Literal, Optional, Tuple, Union
+from urllib import parse as urlparser
 
 import moto.s3.models as moto_s3_models
 from botocore.exceptions import ClientError
@@ -54,6 +55,15 @@ class InvalidRequest(ServiceException):
     code: str = "InvalidRequest"
     sender_fault: bool = False
     status_code: int = 400
+
+
+def extract_bucket_key_version_id_from_copy_source(
+    copy_source: str,
+) -> tuple[BucketName, ObjectKey, Optional[str]]:
+    copy_source_parsed = urlparser.urlparse(copy_source)
+    src_bucket, src_key = urlparser.unquote(copy_source_parsed.path).lstrip("/").split("/", 1)
+    src_version_id = urlparser.parse_qs(copy_source_parsed.query).get("versionId", [None])[0]
+    return src_bucket, src_key, src_version_id
 
 
 def get_object_checksum_for_algorithm(checksum_algorithm: str, data: bytes):

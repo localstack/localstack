@@ -7,7 +7,7 @@ import re
 import threading
 import time
 from queue import Empty, PriorityQueue, Queue
-from typing import Dict, NamedTuple, Optional, Set
+from typing import Dict, Optional, Set
 
 from localstack import config
 from localstack.aws.api import RequestContext
@@ -163,13 +163,6 @@ class SqsMessage:
         return f"SqsMessage(id={self.message_id},group={self.message_group_id})"
 
 
-class Permission(NamedTuple):
-    # TODO: just a placeholder for real policies
-    label: str
-    account_id: str
-    action: str
-
-
 class ReceiveMessageResult:
     """
     Object to communicate the result of a "receive messages" operation between the SqsProvider and
@@ -199,7 +192,6 @@ class SqsQueue:
 
     attributes: QueueAttributeMap
     tags: TagMap
-    permissions: Set[Permission]
 
     purge_in_progress: bool
     purge_timestamp: Optional[float]
@@ -495,6 +487,74 @@ class SqsQueue:
         for k in attributes.keys():
             if k not in valid:
                 raise InvalidAttributeName(f"Unknown Attribute {k}.")
+
+    def add_permission(self, label: str, actions: list[str], account_ids: list[str]) -> None:
+        """
+        Create / append to a policy for usage with the add_permission api call
+
+        :param actions: List of actions to be included in the policy, without the SQS: prefix
+        :param account_ids: List of account ids to be included in the policy
+        :param label: Permission label
+        """
+        statement = {
+            "Sid": label,
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": [f"arn:aws:iam::{account_id}:root" for account_id in account_ids]
+                if len(account_ids) > 1
+                else f"arn:aws:iam::{account_ids[0]}:root"
+            },
+            "Action": [f"SQS:{action}" for action in actions]
+            if len(actions) > 1
+            else f"SQS:{actions[0]}",
+            "Resource": self.arn,
+        }
+        if policy := self.attributes.get(QueueAttributeName.Policy):
+            policy = json.loads(policy)
+            policy.setdefault("Statement", [])
+        else:
+            policy = {
+                "Version": "2008-10-17",
+                "Id": f"{self.arn}/SQSDefaultPolicy",
+                "Statement": [],
+            }
+        policy.setdefault("Statement", [])
+        existing_statement_ids = [statement.get("Sid") for statement in policy["Statement"]]
+        if label in existing_statement_ids:
+            raise InvalidParameterValue(
+                f"Value {label} for parameter Label is invalid. Reason: Already exists."
+            )
+        policy["Statement"].append(statement)
+        self.attributes[QueueAttributeName.Policy] = json.dumps(policy)
+
+    def remove_permission(self, label: str) -> None:
+        """
+        Delete a policy statement for usage of the remove_permission call
+
+        :param label: Permission label
+        """
+        if policy := self.attributes.get(QueueAttributeName.Policy):
+            policy = json.loads(policy)
+            # this should not be necessary, but we can upload custom policies, so it's better to be safe
+            policy.setdefault("Statement", [])
+        else:
+            policy = {
+                "Version": "2008-10-17",
+                "Id": f"{self.arn}/SQSDefaultPolicy",
+                "Statement": [],
+            }
+        existing_statement_ids = [statement.get("Sid") for statement in policy["Statement"]]
+        if label not in existing_statement_ids:
+            raise InvalidParameterValue(
+                f"Value {label} for parameter Label is invalid. Reason: can't find label."
+            )
+        policy["Statement"] = [
+            statement for statement in policy["Statement"] if statement.get("Sid") != label
+        ]
+        if policy["Statement"]:
+            self.attributes[QueueAttributeName.Policy] = json.dumps(policy)
+        else:
+            del self.attributes[QueueAttributeName.Policy]
 
 
 class StandardQueue(SqsQueue):
