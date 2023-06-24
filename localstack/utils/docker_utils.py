@@ -146,8 +146,8 @@ def container_ports_can_be_bound(ports: Union[IntOrPort, List[IntOrPort]]) -> bo
     try:
         result = DOCKER_CLIENT.run_container(
             _get_ports_check_docker_image(),
-            entrypoint="",
-            command=["echo", "test123"],
+            entrypoint="sh",
+            command=["-c", "echo test123"],
             ports=port_mappings,
             remove=True,
         )

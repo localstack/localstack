@@ -3,7 +3,7 @@ https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-m
 generic implementation that creates from Query API requests the respective AWS requests, and uses an aws_stack client
 to make the request. """
 import logging
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 from urllib.parse import urlencode
 
 from botocore.exceptions import ClientError
@@ -169,9 +169,10 @@ def try_call_sqs(request: Request, region: str) -> Tuple[Dict, OperationModel]:
     except MissingRequiredField as e:
         raise MissingParameter(f"The request must contain the parameter {e.required_name}.")
 
+    # Extract from auth header to allow cross-account operations
     # TODO: permissions encoded in URL as AUTHPARAMS cannot be accounted for in this method, which is not a big
     #  problem yet since we generally don't enforce permissions.
-    account_id = extract_access_key_id_from_auth_header(headers)
+    account_id: Optional[str] = extract_access_key_id_from_auth_header(headers)
 
     client = connect_to(
         region_name=region,

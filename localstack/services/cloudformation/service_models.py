@@ -50,10 +50,6 @@ class GenericBaseModel:
     # ABSTRACT BASE METHODS
     # ----------------------
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        """Determine the physical resource ID (Ref) of this resource (to be overwritten by subclasses)"""
-        return None
-
     def fetch_state(self, stack_name, resources):
         """Fetch the latest deployment state of this resource, or return None if not currently deployed (NOTE: THIS IS NOT ALWAYS TRUE)."""
         return None
@@ -91,7 +87,7 @@ class GenericBaseModel:
 
     # TODO: make this stricter
     def get_ref(self):
-        return self.physical_resource_id or self.get_physical_resource_id()
+        return self.physical_resource_id
 
     # ---------------------
     # GENERIC UTIL METHODS
@@ -125,14 +121,14 @@ class GenericBaseModel:
         return self.props
 
     @property
-    def physical_resource_id(self):
+    def physical_resource_id(self) -> str | None:
         """Return the (cached) physical resource ID."""
         return self.resource_json.get("PhysicalResourceId")
 
     @property
-    def logical_resource_id(self):
+    def logical_resource_id(self) -> str:
         """Return the logical resource ID."""
-        return self.resource_json.get("LogicalResourceId")
+        return self.resource_json["LogicalResourceId"]
 
     # TODO: rename? make it clearer what props are in comparison with state, properties and resource_json
     @property

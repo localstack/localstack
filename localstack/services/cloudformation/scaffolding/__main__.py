@@ -64,6 +64,7 @@ def resolve_ref(schema: ResourceSchema, target: str) -> dict:
 @dataclass
 class ResourceName:
     full_name: str
+    namespace: str
     service: str
     resource: str
 
@@ -71,7 +72,7 @@ class ResourceName:
         return f"{self.service}{self.resource}"
 
     def schema_filename(self) -> str:
-        return f"aws-{self.service.lower()}-{self.resource.lower()}.json"
+        return f"{self.namespace.lower()}-{self.service.lower()}-{self.resource.lower()}.json"
 
     @classmethod
     def from_name(cls, name: str) -> ResourceName:
@@ -84,6 +85,7 @@ class ResourceName:
 
         return ResourceName(
             full_name=name,
+            namespace=parts[0],
             service=renamed_service,
             resource=parts[2].strip(),
         )
@@ -259,7 +261,7 @@ class FileWriter:
                 "services",
                 self.resource_name.service.lower(),
                 "resource_providers",
-                f"aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.py",
+                f"{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.py",
             ),
             "tests": self.root.joinpath(
                 "tests",
@@ -267,8 +269,9 @@ class FileWriter:
                 "cloudformation",
                 "resource_providers",
                 self.resource_name.service.lower(),
-                f"test_{self.resource_name.resource.lower()}.py",
+                f"test_{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.py",
             ),
+            # TODO: extend
             "test_template": self.root.joinpath(
                 "tests",
                 "integration",
@@ -322,10 +325,15 @@ def cli():
 
 
 @cli.command()
-@click.option("-s", "--service", required=True, help="Service to generate")
-@click.option("--write/--no-write", default=False)
-def generate(service: str, write: bool):
-    resource_name = ResourceName.from_name(service)
+@click.option(
+    "-r",
+    "--resource-type",
+    required=True,
+    help="CloudFormation resource type (e.g. 'AWS::SSM::Parameter') to generate",
+)
+@click.option("-w", "--write/--no-write", default=False)
+def generate(resource_type: str, write: bool):
+    resource_name = ResourceName.from_name(resource_type)
 
     schema_provider = SchemaProvider(
         zipfile_path=Path(__file__).parent.joinpath("CloudformationSchema.zip")

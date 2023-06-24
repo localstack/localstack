@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke": {
-    "recorded-date": "26-04-2023, 22:12:06",
+    "recorded-date": "20-06-2023, 22:54:17",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -86,10 +86,10 @@
                       "2"
                     ],
                     "Date": [
-                      "Wed, 26 Apr 2023 20:12:05 GMT"
+                      "Tue, 20 Jun 2023 20:54:16 GMT"
                     ],
                     "X-Amzn-Trace-Id": [
-                      "root=1-64498594-09e0b0c57d90d9f94efbea5d;sampled=0"
+                      "root=1-649211f7-11790af4260557957b4efd33;sampled=0"
                     ],
                     "Content-Type": [
                       "application/json"
@@ -99,11 +99,11 @@
                     "Connection": "keep-alive",
                     "Content-Length": "2",
                     "Content-Type": "application/json",
-                    "Date": "Wed, 26 Apr 2023 20:12:05 GMT",
+                    "Date": "Tue, 20 Jun 2023 20:54:16 GMT",
                     "X-Amz-Executed-Version": "$LATEST",
                     "x-amzn-Remapped-Content-Length": "0",
                     "x-amzn-RequestId": "<uuid:1>",
-                    "X-Amzn-Trace-Id": "root=1-64498594-09e0b0c57d90d9f94efbea5d;sampled=0"
+                    "X-Amzn-Trace-Id": "root=1-649211f7-11790af4260557957b4efd33;sampled=0"
                   },
                   "HttpStatusCode": 200
                 },
@@ -147,10 +147,10 @@
                       "2"
                     ],
                     "Date": [
-                      "Wed, 26 Apr 2023 20:12:05 GMT"
+                      "Tue, 20 Jun 2023 20:54:16 GMT"
                     ],
                     "X-Amzn-Trace-Id": [
-                      "root=1-64498594-09e0b0c57d90d9f94efbea5d;sampled=0"
+                      "root=1-649211f7-11790af4260557957b4efd33;sampled=0"
                     ],
                     "Content-Type": [
                       "application/json"
@@ -160,11 +160,11 @@
                     "Connection": "keep-alive",
                     "Content-Length": "2",
                     "Content-Type": "application/json",
-                    "Date": "Wed, 26 Apr 2023 20:12:05 GMT",
+                    "Date": "Tue, 20 Jun 2023 20:54:16 GMT",
                     "X-Amz-Executed-Version": "$LATEST",
                     "x-amzn-Remapped-Content-Length": "0",
                     "x-amzn-RequestId": "<uuid:1>",
-                    "X-Amzn-Trace-Id": "root=1-64498594-09e0b0c57d90d9f94efbea5d;sampled=0"
+                    "X-Amzn-Trace-Id": "root=1-649211f7-11790af4260557957b4efd33;sampled=0"
                   },
                   "HttpStatusCode": 200
                 },
@@ -205,10 +205,10 @@
                       "2"
                     ],
                     "Date": [
-                      "Wed, 26 Apr 2023 20:12:05 GMT"
+                      "Tue, 20 Jun 2023 20:54:16 GMT"
                     ],
                     "X-Amzn-Trace-Id": [
-                      "root=1-64498594-09e0b0c57d90d9f94efbea5d;sampled=0"
+                      "root=1-649211f7-11790af4260557957b4efd33;sampled=0"
                     ],
                     "Content-Type": [
                       "application/json"
@@ -218,11 +218,11 @@
                     "Connection": "keep-alive",
                     "Content-Length": "2",
                     "Content-Type": "application/json",
-                    "Date": "Wed, 26 Apr 2023 20:12:05 GMT",
+                    "Date": "Tue, 20 Jun 2023 20:54:16 GMT",
                     "X-Amz-Executed-Version": "$LATEST",
                     "x-amzn-Remapped-Content-Length": "0",
                     "x-amzn-RequestId": "<uuid:1>",
-                    "X-Amzn-Trace-Id": "root=1-64498594-09e0b0c57d90d9f94efbea5d;sampled=0"
+                    "X-Amzn-Trace-Id": "root=1-649211f7-11790af4260557957b4efd33;sampled=0"
                   },
                   "HttpStatusCode": 200
                 },
@@ -265,10 +265,10 @@
                       "2"
                     ],
                     "Date": [
-                      "Wed, 26 Apr 2023 20:12:05 GMT"
+                      "Tue, 20 Jun 2023 20:54:16 GMT"
                     ],
                     "X-Amzn-Trace-Id": [
-                      "root=1-64498594-09e0b0c57d90d9f94efbea5d;sampled=0"
+                      "root=1-649211f7-11790af4260557957b4efd33;sampled=0"
                     ],
                     "Content-Type": [
                       "application/json"
@@ -278,11 +278,11 @@
                     "Connection": "keep-alive",
                     "Content-Length": "2",
                     "Content-Type": "application/json",
-                    "Date": "Wed, 26 Apr 2023 20:12:05 GMT",
+                    "Date": "Tue, 20 Jun 2023 20:54:16 GMT",
                     "X-Amz-Executed-Version": "$LATEST",
                     "x-amzn-Remapped-Content-Length": "0",
                     "x-amzn-RequestId": "<uuid:1>",
-                    "X-Amzn-Trace-Id": "root=1-64498594-09e0b0c57d90d9f94efbea5d;sampled=0"
+                    "X-Amzn-Trace-Id": "root=1-649211f7-11790af4260557957b4efd33;sampled=0"
                   },
                   "HttpStatusCode": 200
                 },
@@ -311,10 +311,10 @@
                         "2"
                       ],
                       "Date": [
-                        "Wed, 26 Apr 2023 20:12:05 GMT"
+                        "Tue, 20 Jun 2023 20:54:16 GMT"
                       ],
                       "X-Amzn-Trace-Id": [
-                        "root=1-64498594-09e0b0c57d90d9f94efbea5d;sampled=0"
+                        "root=1-649211f7-11790af4260557957b4efd33;sampled=0"
                       ],
                       "Content-Type": [
                         "application/json"
@@ -324,11 +324,11 @@
                       "Connection": "keep-alive",
                       "Content-Length": "2",
                       "Content-Type": "application/json",
-                      "Date": "Wed, 26 Apr 2023 20:12:05 GMT",
+                      "Date": "Tue, 20 Jun 2023 20:54:16 GMT",
                       "X-Amz-Executed-Version": "$LATEST",
                       "x-amzn-Remapped-Content-Length": "0",
                       "x-amzn-RequestId": "<uuid:1>",
-                      "X-Amzn-Trace-Id": "root=1-64498594-09e0b0c57d90d9f94efbea5d;sampled=0"
+                      "X-Amzn-Trace-Id": "root=1-649211f7-11790af4260557957b4efd33;sampled=0"
                     },
                     "HttpStatusCode": 200
                   },
@@ -368,10 +368,10 @@
                       "2"
                     ],
                     "Date": [
-                      "Wed, 26 Apr 2023 20:12:05 GMT"
+                      "Tue, 20 Jun 2023 20:54:16 GMT"
                     ],
                     "X-Amzn-Trace-Id": [
-                      "root=1-64498594-09e0b0c57d90d9f94efbea5d;sampled=0"
+                      "root=1-649211f7-11790af4260557957b4efd33;sampled=0"
                     ],
                     "Content-Type": [
                       "application/json"
@@ -381,11 +381,11 @@
                     "Connection": "keep-alive",
                     "Content-Length": "2",
                     "Content-Type": "application/json",
-                    "Date": "Wed, 26 Apr 2023 20:12:05 GMT",
+                    "Date": "Tue, 20 Jun 2023 20:54:16 GMT",
                     "X-Amz-Executed-Version": "$LATEST",
                     "x-amzn-Remapped-Content-Length": "0",
                     "x-amzn-RequestId": "<uuid:1>",
-                    "X-Amzn-Trace-Id": "root=1-64498594-09e0b0c57d90d9f94efbea5d;sampled=0"
+                    "X-Amzn-Trace-Id": "root=1-649211f7-11790af4260557957b4efd33;sampled=0"
                   },
                   "HttpStatusCode": 200
                 },
@@ -414,10 +414,10 @@
                         "2"
                       ],
                       "Date": [
-                        "Wed, 26 Apr 2023 20:12:05 GMT"
+                        "Tue, 20 Jun 2023 20:54:16 GMT"
                       ],
                       "X-Amzn-Trace-Id": [
-                        "root=1-64498594-09e0b0c57d90d9f94efbea5d;sampled=0"
+                        "root=1-649211f7-11790af4260557957b4efd33;sampled=0"
                       ],
                       "Content-Type": [
                         "application/json"
@@ -427,11 +427,508 @@
                       "Connection": "keep-alive",
                       "Content-Length": "2",
                       "Content-Type": "application/json",
-                      "Date": "Wed, 26 Apr 2023 20:12:05 GMT",
+                      "Date": "Tue, 20 Jun 2023 20:54:16 GMT",
                       "X-Amz-Executed-Version": "$LATEST",
                       "x-amzn-Remapped-Content-Length": "0",
                       "x-amzn-RequestId": "<uuid:1>",
-                      "X-Amzn-Trace-Id": "root=1-64498594-09e0b0c57d90d9f94efbea5d;sampled=0"
+                      "X-Amzn-Trace-Id": "root=1-649211f7-11790af4260557957b4efd33;sampled=0"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "<uuid:1>"
+                  },
+                  "StatusCode": 200
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_unsupported_param": {
+    "recorded-date": "20-06-2023, 22:54:35",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null,
+                "LogType": "Tail"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "FunctionName": "<lambda_function_name>",
+                "Payload": null,
+                "LogType": "Tail"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Start"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "FunctionName": "<lambda_function_name>",
+                "LogType": "Tail",
+                "Payload": null
+              },
+              "region": "<region>",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "ExecutedVersion": "$LATEST",
+                "LogResult": "<LogResult:1>",
+                "Payload": {},
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Log-Result": [
+                      "<LogResult:1>"
+                    ],
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "Content-Length": [
+                      "2"
+                    ],
+                    "Date": [
+                      "Tue, 20 Jun 2023 20:54:33 GMT"
+                    ],
+                    "X-Amzn-Trace-Id": [
+                      "root=1-64921209-2c3f56325a0dd82140e7286f;sampled=0"
+                    ],
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "2",
+                    "Content-Type": "application/json",
+                    "Date": "Tue, 20 Jun 2023 20:54:33 GMT",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "X-Amz-Log-Result": "<LogResult:1>",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "<uuid:1>",
+                    "X-Amzn-Trace-Id": "root=1-64921209-2c3f56325a0dd82140e7286f;sampled=0"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "StatusCode": 200
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "Start",
+              "output": {
+                "ExecutedVersion": "$LATEST",
+                "LogResult": "<LogResult:1>",
+                "Payload": {},
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Log-Result": [
+                      "<LogResult:1>"
+                    ],
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "Content-Length": [
+                      "2"
+                    ],
+                    "Date": [
+                      "Tue, 20 Jun 2023 20:54:33 GMT"
+                    ],
+                    "X-Amzn-Trace-Id": [
+                      "root=1-64921209-2c3f56325a0dd82140e7286f;sampled=0"
+                    ],
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "2",
+                    "Content-Type": "application/json",
+                    "Date": "Tue, 20 Jun 2023 20:54:33 GMT",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "X-Amz-Log-Result": "<LogResult:1>",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "<uuid:1>",
+                    "X-Amzn-Trace-Id": "root=1-64921209-2c3f56325a0dd82140e7286f;sampled=0"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "StatusCode": 200
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "ExecutedVersion": "$LATEST",
+                "LogResult": "<LogResult:1>",
+                "Payload": {},
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Log-Result": [
+                      "<LogResult:1>"
+                    ],
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "Content-Length": [
+                      "2"
+                    ],
+                    "Date": [
+                      "Tue, 20 Jun 2023 20:54:33 GMT"
+                    ],
+                    "X-Amzn-Trace-Id": [
+                      "root=1-64921209-2c3f56325a0dd82140e7286f;sampled=0"
+                    ],
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "2",
+                    "Content-Type": "application/json",
+                    "Date": "Tue, 20 Jun 2023 20:54:33 GMT",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "X-Amz-Log-Result": "<LogResult:1>",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "<uuid:1>",
+                    "X-Amzn-Trace-Id": "root=1-64921209-2c3f56325a0dd82140e7286f;sampled=0"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "StatusCode": 200
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "EndWithFinal"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "EndWithFinal",
+              "output": {
+                "ExecutedVersion": "$LATEST",
+                "LogResult": "<LogResult:1>",
+                "Payload": {},
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Log-Result": [
+                      "<LogResult:1>"
+                    ],
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "Content-Length": [
+                      "2"
+                    ],
+                    "Date": [
+                      "Tue, 20 Jun 2023 20:54:33 GMT"
+                    ],
+                    "X-Amzn-Trace-Id": [
+                      "root=1-64921209-2c3f56325a0dd82140e7286f;sampled=0"
+                    ],
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "2",
+                    "Content-Type": "application/json",
+                    "Date": "Tue, 20 Jun 2023 20:54:33 GMT",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "X-Amz-Log-Result": "<LogResult:1>",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "<uuid:1>",
+                    "X-Amzn-Trace-Id": "root=1-64921209-2c3f56325a0dd82140e7286f;sampled=0"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "StatusCode": 200,
+                "final": {
+                  "ExecutedVersion": "$LATEST",
+                  "LogResult": "<LogResult:1>",
+                  "Payload": {},
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "X-Amz-Log-Result": [
+                        "<LogResult:1>"
+                      ],
+                      "X-Amz-Executed-Version": [
+                        "$LATEST"
+                      ],
+                      "x-amzn-Remapped-Content-Length": [
+                        "0"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "<uuid:1>"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Tue, 20 Jun 2023 20:54:33 GMT"
+                      ],
+                      "X-Amzn-Trace-Id": [
+                        "root=1-64921209-2c3f56325a0dd82140e7286f;sampled=0"
+                      ],
+                      "Content-Type": [
+                        "application/json"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/json",
+                      "Date": "Tue, 20 Jun 2023 20:54:33 GMT",
+                      "X-Amz-Executed-Version": "$LATEST",
+                      "X-Amz-Log-Result": "<LogResult:1>",
+                      "x-amzn-Remapped-Content-Length": "0",
+                      "x-amzn-RequestId": "<uuid:1>",
+                      "X-Amzn-Trace-Id": "root=1-64921209-2c3f56325a0dd82140e7286f;sampled=0"
+                    },
+                    "HttpStatusCode": 200
+                  },
+                  "SdkResponseMetadata": {
+                    "RequestId": "<uuid:1>"
+                  },
+                  "StatusCode": 200
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "ExecutedVersion": "$LATEST",
+                "LogResult": "<LogResult:1>",
+                "Payload": {},
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "X-Amz-Log-Result": [
+                      "<LogResult:1>"
+                    ],
+                    "X-Amz-Executed-Version": [
+                      "$LATEST"
+                    ],
+                    "x-amzn-Remapped-Content-Length": [
+                      "0"
+                    ],
+                    "Connection": [
+                      "keep-alive"
+                    ],
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "Content-Length": [
+                      "2"
+                    ],
+                    "Date": [
+                      "Tue, 20 Jun 2023 20:54:33 GMT"
+                    ],
+                    "X-Amzn-Trace-Id": [
+                      "root=1-64921209-2c3f56325a0dd82140e7286f;sampled=0"
+                    ],
+                    "Content-Type": [
+                      "application/json"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Connection": "keep-alive",
+                    "Content-Length": "2",
+                    "Content-Type": "application/json",
+                    "Date": "Tue, 20 Jun 2023 20:54:33 GMT",
+                    "X-Amz-Executed-Version": "$LATEST",
+                    "X-Amz-Log-Result": "<LogResult:1>",
+                    "x-amzn-Remapped-Content-Length": "0",
+                    "x-amzn-RequestId": "<uuid:1>",
+                    "X-Amzn-Trace-Id": "root=1-64921209-2c3f56325a0dd82140e7286f;sampled=0"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                },
+                "StatusCode": 200,
+                "final": {
+                  "ExecutedVersion": "$LATEST",
+                  "LogResult": "<LogResult:1>",
+                  "Payload": {},
+                  "SdkHttpMetadata": {
+                    "AllHttpHeaders": {
+                      "X-Amz-Log-Result": [
+                        "<LogResult:1>"
+                      ],
+                      "X-Amz-Executed-Version": [
+                        "$LATEST"
+                      ],
+                      "x-amzn-Remapped-Content-Length": [
+                        "0"
+                      ],
+                      "Connection": [
+                        "keep-alive"
+                      ],
+                      "x-amzn-RequestId": [
+                        "<uuid:1>"
+                      ],
+                      "Content-Length": [
+                        "2"
+                      ],
+                      "Date": [
+                        "Tue, 20 Jun 2023 20:54:33 GMT"
+                      ],
+                      "X-Amzn-Trace-Id": [
+                        "root=1-64921209-2c3f56325a0dd82140e7286f;sampled=0"
+                      ],
+                      "Content-Type": [
+                        "application/json"
+                      ]
+                    },
+                    "HttpHeaders": {
+                      "Connection": "keep-alive",
+                      "Content-Length": "2",
+                      "Content-Type": "application/json",
+                      "Date": "Tue, 20 Jun 2023 20:54:33 GMT",
+                      "X-Amz-Executed-Version": "$LATEST",
+                      "X-Amz-Log-Result": "<LogResult:1>",
+                      "x-amzn-Remapped-Content-Length": "0",
+                      "x-amzn-RequestId": "<uuid:1>",
+                      "X-Amzn-Trace-Id": "root=1-64921209-2c3f56325a0dd82140e7286f;sampled=0"
                     },
                     "HttpStatusCode": 200
                   },

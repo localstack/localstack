@@ -15,9 +15,6 @@ class CloudFormationStack(GenericBaseModel):
     def cloudformation_type():
         return "AWS::CloudFormation::Stack"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("StackId")
-
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("cloudformation")
         child_stack_name = self.props["StackName"]
@@ -55,34 +52,42 @@ class CloudFormationStack(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def get_nested_stack_params(params, **kwargs):
-            nested_stack_name = params["StackName"]
-            stack_params = params.get("Parameters", {})
-            stack_params = [
+        def get_nested_stack_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ):
+            nested_stack_name = properties["StackName"]
+            stack_parameters = properties.get("Parameters", {})
+            stack_parameters = [
                 {
                     "ParameterKey": k,
                     "ParameterValue": str(v).lower() if isinstance(v, bool) else str(v),
                 }
-                for k, v in stack_params.items()
+                for k, v in stack_parameters.items()
             ]
             result = {
                 "StackName": nested_stack_name,
-                "TemplateURL": params.get("TemplateURL"),
-                "Parameters": stack_params,
-                # "Outputs":
+                "TemplateURL": properties.get("TemplateURL"),
+                "Parameters": stack_parameters,
             }
             return result
 
-        def result_handler(result, *args, **kwargs):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["StackId"]
             connect_to().cloudformation.get_waiter("stack_create_complete").wait(
                 StackName=result["StackId"]
             )
+            # set outputs
+            stack_details = connect_to().cloudformation.describe_stacks(
+                StackName=result["StackId"]
+            )["Stacks"][0]
+            if "Outputs" in stack_details:
+                resource["Properties"]["Outputs"] = stack_details["Outputs"]
 
         return {
             "create": {
                 "function": "create_stack",
                 "parameters": get_nested_stack_params,
-                "result_handler": result_handler,
+                "result_handler": _handle_result,
             }
         }
 
@@ -92,29 +97,28 @@ class CloudFormationMacro(GenericBaseModel):
     def cloudformation_type():
         return "AWS::CloudFormation::Macro"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("Name")
-
     def fetch_state(self, stack_name, resources):
         return get_cloudformation_store().macros.get(self.props.get("Name"))
 
     @classmethod
     def get_deploy_templates(cls):
-        def _store_macro(resource_id, resources, resource_type, func, stack_name):
-            resource = resources[resource_id]
+        def _store_macro(logical_resource_id: str, resource: dict, stack_name: str):
             properties = resource["Properties"]
             name = properties["Name"]
             get_cloudformation_store().macros[name] = properties
 
-        def _delete_macro(resource_id, resources, resource_type, func, stack_name):
-            resource = resources[resource_id]
+        def _delete_macro(logical_resource_id: str, resource: dict, stack_name: str):
             properties = resource["Properties"]
             name = properties["Name"]
             get_cloudformation_store().macros.pop(name)
 
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = resource["Properties"]["Name"]
+
         return {
             "create": {
                 "function": _store_macro,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": _delete_macro,
@@ -145,20 +149,20 @@ class CloudFormationWaitConditionHandle(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _create(resource_id, resources, resource_type, func, stack_name) -> dict:
+        def _create(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
             # no resources to create as such, but the physical resource id needs the stack name
             return {"stack_name": stack_name}
 
-        def _set_physical_resource_id(result, resource_id, resources, resource_type):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             waitcondition_url = generate_waitcondition_url(
                 stack_name=result["stack_name"],
             )
-            resources[resource_id]["PhysicalResourceId"] = waitcondition_url
+            resource["PhysicalResourceId"] = waitcondition_url
 
         return {
             "create": {
                 "function": _create,
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": lambda *args, **kwargs: {},
@@ -177,20 +181,18 @@ class CloudFormationWaitCondition(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _create(resource_id, resources, resource_type, func, stack_name) -> dict:
+        def _create(logical_resource_id: str, resource: dict, stack_name: str) -> dict:
             # no resources to create, but the physical resource id requires the stack name
             return {"stack_name": stack_name}
 
-        def _set_physical_resource_id(result, resource_id, resources, resource_type):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             stack_arn = arns.cloudformation_stack_arn(result["stack_name"])
-            resources[resource_id][
-                "PhysicalResourceId"
-            ] = f"{stack_arn}/{uuid.uuid4()}/{resource_id}"
+            resource["PhysicalResourceId"] = f"{stack_arn}/{uuid.uuid4()}/{logical_resource_id}"
 
         return {
             "create": {
                 "function": _create,
-                "result_handler": _set_physical_resource_id,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": lambda *args, **kwargs: {},

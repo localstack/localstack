@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from mypy_boto3_elasticbeanstalk import ElasticBeanstalkClient
     from mypy_boto3_elbv2 import ElasticLoadBalancingv2Client
     from mypy_boto3_emr import EMRClient
+    from mypy_boto3_emr_serverless import EMRServerlessClient
     from mypy_boto3_es import ElasticsearchServiceClient
     from mypy_boto3_events import EventBridgeClient
     from mypy_boto3_firehose import FirehoseClient
@@ -140,6 +141,7 @@ class TypedServiceClientFactory(abc.ABC):
         "ElasticLoadBalancingv2Client", "MetadataRequestInjector[ElasticLoadBalancingv2Client]"
     ]
     emr: Union["EMRClient", "MetadataRequestInjector[EMRClient]"]
+    emr_serverless: Union["EMRServerlessClient", "MetadataRequestInjector[EMRServerlessClient]"]
     es: Union["ElasticsearchServiceClient", "MetadataRequestInjector[ElasticsearchServiceClient]"]
     events: Union["EventBridgeClient", "MetadataRequestInjector[EventBridgeClient]"]
     firehose: Union["FirehoseClient", "MetadataRequestInjector[FirehoseClient]"]

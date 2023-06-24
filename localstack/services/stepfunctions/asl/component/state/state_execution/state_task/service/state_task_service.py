@@ -8,23 +8,17 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task import (
     StateTask,
 )
-from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 # TODO: improve on factory constructor (don't use SubtypeManager)
 class StateTaskService(StateTask, abc.ABC):
     resource: ServiceResource
 
-    def _get_resource_type(self) -> str:
-        return self.resource.service_name
+    def _get_sfn_resource(self) -> str:
+        return self.resource.api_action
 
-    def _eval_parameters(self, env: Environment) -> dict:
-        parameters = dict()
-        if self.parameters:
-            self.parameters.eval(env=env)
-            env_parameters = env.stack.pop()
-            parameters.update(env_parameters)
-        return parameters
+    def _get_sfn_resource_type(self) -> str:
+        return self.resource.service_name
 
     @classmethod
     def for_service(cls, service_name: str) -> StateTaskService:

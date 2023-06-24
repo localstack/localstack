@@ -86,7 +86,7 @@ class Invocation:
 
 class ArchiveCode(metaclass=ABCMeta):
     @abstractmethod
-    def generate_presigned_url(self, endpoint_url):
+    def generate_presigned_url(self, endpoint_url: str | None = None):
         """
         Generates a presigned url pointing to the code archive
         """

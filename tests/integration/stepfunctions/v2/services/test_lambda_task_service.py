@@ -2,7 +2,8 @@ import json
 
 import pytest
 
-from localstack.testing.snapshots.transformer import RegexTransformer
+from localstack.aws.api.lambda_ import LogType
+from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
@@ -45,6 +46,63 @@ class TestTaskServiceLambda:
         definition = json.dumps(template)
 
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            snapshot,
+            definition,
+            exec_input,
+        )
+
+    # AWS's stepfuctions documentation seems to incorrectly classify LogType parameters as unsupported.
+    @pytest.mark.aws_validated
+    def test_invoke_unsupported_param(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_lambda_function,
+        snapshot,
+    ):
+        function_name = f"lambda_func_{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=ST.LAMBDA_ID_FUNCTION,
+            runtime="python3.9",
+        )
+        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+        snapshot.add_transformer(
+            JsonpathTransformer("$..LogResult", "LogResult", replace_reference=True)
+        )
+
+        template = ST.load_sfn_template(ST.LAMBDA_INVOKE_LOG_TYPE)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {"FunctionName": function_name, "Payload": None, "LogType": LogType.Tail}
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            snapshot,
+            definition,
+            exec_input,
+        )
+
+    @pytest.mark.skip(reason="Add support for Invalid State Machine Definition errors")
+    def test_list_functions(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        snapshot,
+    ):
+        template = ST.load_sfn_template(ST.LAMBDA_LIST_FUNCTIONS)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,

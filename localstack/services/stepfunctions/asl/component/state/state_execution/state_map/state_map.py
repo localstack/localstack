@@ -51,9 +51,11 @@ class StateMap(ExecutionState):
             raise ValueError(f"Missing ItemProcessor definition in props '{state_props}'.")
 
     def _eval_body(self, env: Environment) -> None:
-        env.context_object["Map"] = Map(Item=Item(Index=-1, Value="Unsupported"))
+        env.context_object_manager.context_object["Map"] = Map(
+            Item=Item(Index=-1, Value="Unsupported")
+        )
         super(StateMap, self)._eval_body(env=env)
-        env.context_object["Map"] = None
+        env.context_object_manager.context_object["Map"] = None
 
     def _eval_execution(self, env: Environment) -> None:
         # Reduce the input to the list of items.

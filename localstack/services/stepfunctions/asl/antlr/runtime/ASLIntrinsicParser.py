@@ -1,4 +1,4 @@
-# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLIntrinsicParser.g4 by ANTLR 4.11.1
+# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLIntrinsicParser.g4 by ANTLR 4.12.0
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -143,7 +143,7 @@ class ASLIntrinsicParser ( Parser ):
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.11.1")
+        self.checkVersion("4.12.0")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 
@@ -352,7 +352,7 @@ class ASLIntrinsicParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 31
             _la = self._input.LA(1)
-            if not(((_la) & ~0x3f) == 0 and ((1 << _la) & 274876858368) != 0):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 274876858368) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -1260,7 +1260,7 @@ class ASLIntrinsicParser ( Parser ):
                 if token in [9, 10, 15]:
                     self.state = 89
                     _la = self._input.LA(1)
-                    if not(((_la) & ~0x3f) == 0 and ((1 << _la) & 34304) != 0):
+                    if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 34304) != 0)):
                         self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)

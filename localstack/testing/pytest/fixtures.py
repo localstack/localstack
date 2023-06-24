@@ -41,7 +41,7 @@ from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.collections import ensure_list
 from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests as requests
-from localstack.utils.json import json_safe
+from localstack.utils.json import CustomEncoder, json_safe
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, retry, wait_until
@@ -656,7 +656,7 @@ def wait_for_stream_ready(aws_client):
                 "UPDATING",
             ]
 
-        poll_condition(is_stream_ready)
+        return poll_condition(is_stream_ready)
 
     return _wait_for_stream_ready
 
@@ -935,8 +935,26 @@ class StackDeployError(Exception):
         self.describe_result = describe_res
         self.events = events
         super().__init__(
-            f"Stack deploy failed - describe output: {self.describe_result} events: {self.events}"
+            f"Describe output:\n{json.dumps(self.describe_result, cls=CustomEncoder)}\nEvents:\n{self.format_events(events)}"
         )
+
+    def format_events(self, events: list[dict]) -> str:
+        event_details = (
+            json.dumps(
+                {
+                    key: event.get(key)
+                    for key in [
+                        "LogicalResourceId",
+                        "ResourceType",
+                        "ResourceStatus",
+                        "ResourceStatusReason",
+                    ]
+                },
+                cls=CustomEncoder,
+            )
+            for event in events
+        )
+        return "\n".join(event_details)
 
 
 @pytest.fixture
