@@ -1196,7 +1196,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             raise EmptyBatchRequest
         if batch and (no_entries := len(batch)) > MAX_NUMBER_OF_MESSAGES:
             raise TooManyEntriesInBatchRequest(
-                f"Maximum number of entries per request are #{MAX_NUMBER_OF_MESSAGES}. You have sent {no_entries}."
+                f"Maximum number of entries per request are {MAX_NUMBER_OF_MESSAGES}. You have sent {no_entries}."
             )
         visited = set()
         for entry in batch:
