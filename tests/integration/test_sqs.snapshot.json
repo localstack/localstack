@@ -1014,7 +1014,7 @@
       "error_response": {
         "Error": {
           "Code": "AWS.SimpleQueueService.TooManyEntriesInBatchRequest",
-          "Message": "Maximum number of entries per request are 10. You have sent 12.",
+          "Message": "Maximum number of entries per request are 10. You have sent 20.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -1030,7 +1030,7 @@
       "error_response": {
         "Error": {
           "Code": "AWS.SimpleQueueService.TooManyEntriesInBatchRequest",
-          "Message": "Maximum number of entries per request are 10. You have sent 12.",
+          "Message": "Maximum number of entries per request are 10. You have sent 20.",
           "Type": "Sender"
         },
         "ResponseMetadata": {

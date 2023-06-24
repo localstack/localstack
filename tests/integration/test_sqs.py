@@ -1952,7 +1952,6 @@ class TestSqsProvider:
         snapshot.match("error_response", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Message"])
     def test_delete_message_batch_with_too_large_batch(
         self, sqs_create_queue, snapshot, aws_client
     ):
@@ -1982,13 +1981,18 @@ class TestSqsProvider:
         assert len(successful) == len(message_batch)
 
         result_recv = []
-        while len(result_recv) <= MAX_NUMBER_OF_MESSAGES:
+        target_size = 2 * MAX_NUMBER_OF_MESSAGES
+
+        def _receive_all_messages():
             result_recv.extend(
                 aws_client.sqs.receive_message(
-                    QueueUrl=queue_url, MaxNumberOfMessages=MAX_NUMBER_OF_MESSAGES
+                    QueueUrl=queue_url,
+                    MaxNumberOfMessages=min(MAX_NUMBER_OF_MESSAGES, target_size - len(result_recv)),
                 )["Messages"]
             )
-        assert len(result_recv) > MAX_NUMBER_OF_MESSAGES
+            assert len(result_recv) == target_size
+
+        retry(_receive_all_messages, retries=7, sleep=0.5)
 
         delete_entries = [
             {"Id": str(i), "ReceiptHandle": msg["ReceiptHandle"]}
@@ -1999,7 +2003,6 @@ class TestSqsProvider:
         snapshot.match("error_response", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Message"])
     def test_change_message_visibility_batch_with_too_large_batch(
         self, sqs_create_queue, snapshot, aws_client
     ):
@@ -2029,21 +2032,26 @@ class TestSqsProvider:
         assert len(successful) == len(message_batch)
 
         result_recv = []
-        while len(result_recv) <= MAX_NUMBER_OF_MESSAGES:
+        target_size = 2 * MAX_NUMBER_OF_MESSAGES
+
+        def _receive_all_messages():
             result_recv.extend(
                 aws_client.sqs.receive_message(
-                    QueueUrl=queue_url, MaxNumberOfMessages=MAX_NUMBER_OF_MESSAGES
+                    QueueUrl=queue_url,
+                    MaxNumberOfMessages=min(MAX_NUMBER_OF_MESSAGES, target_size - len(result_recv)),
                 )["Messages"]
             )
-        assert len(result_recv) > MAX_NUMBER_OF_MESSAGES
+            assert len(result_recv) == target_size
 
-        delete_entries = [
+        retry(_receive_all_messages, retries=7, sleep=0.5)
+
+        change_visibility_entries = [
             {"Id": str(i), "ReceiptHandle": msg["ReceiptHandle"], "VisibilityTimeout": 123}
             for i, msg in enumerate(result_recv)
         ]
         with pytest.raises(ClientError) as e:
             aws_client.sqs.change_message_visibility_batch(
-                QueueUrl=queue_url, Entries=delete_entries
+                QueueUrl=queue_url, Entries=change_visibility_entries
             )
         snapshot.match("error_response", e.value.response)
 
