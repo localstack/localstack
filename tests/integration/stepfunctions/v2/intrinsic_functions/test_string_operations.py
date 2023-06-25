@@ -19,7 +19,7 @@ pytestmark = pytest.mark.skipif(
 )
 class TestStringOperations:
     def test_string_split(
-        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
         input_values = [
             {"fst": "1,2,3,4,5", "snd": ","},
@@ -29,7 +29,7 @@ class TestStringOperations:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             IFT.STRING_SPLIT,
             input_values,
         )

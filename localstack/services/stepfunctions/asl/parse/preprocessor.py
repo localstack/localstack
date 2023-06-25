@@ -87,6 +87,10 @@ from localstack.services.stepfunctions.asl.component.common.retry.max_attempts_d
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_decl import RetrierDecl
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_props import RetrierProps
 from localstack.services.stepfunctions.asl.component.common.retry.retry_decl import RetryDecl
+from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import (
+    TimeoutSeconds,
+    TimeoutSecondsPath,
+)
 from localstack.services.stepfunctions.asl.component.component import Component
 from localstack.services.stepfunctions.asl.component.program.program import Program
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
@@ -259,6 +263,18 @@ class Preprocessor(ASLParserVisitor):
     def visitParameters_decl(self, ctx: ASLParser.Parameters_declContext) -> Parameters:
         payload_tmpl: PayloadTmpl = self.visit(ctx.payload_tmpl_decl())
         return Parameters(payload_tmpl=payload_tmpl)
+
+    def visitTimeout_seconds_decl(
+        self, ctx: ASLParser.Timeout_seconds_declContext
+    ) -> TimeoutSeconds:
+        seconds = int(ctx.INT().getText())
+        return TimeoutSeconds(timeout_seconds=seconds)
+
+    def visitTimeout_seconds_path_decl(
+        self, ctx: ASLParser.Timeout_seconds_path_declContext
+    ) -> TimeoutSecondsPath:
+        path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
+        return TimeoutSecondsPath(path=path)
 
     def visitResult_selector_decl(
         self, ctx: ASLParser.Result_selector_declContext

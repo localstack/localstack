@@ -144,6 +144,16 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#timeout_seconds_decl.
+    def visitTimeout_seconds_decl(self, ctx:ASLParser.Timeout_seconds_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#timeout_seconds_path_decl.
+    def visitTimeout_seconds_path_decl(self, ctx:ASLParser.Timeout_seconds_path_declContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#payload_tmpl_decl.
     def visitPayload_tmpl_decl(self, ctx:ASLParser.Payload_tmpl_declContext):
         return self.visitChildren(ctx)

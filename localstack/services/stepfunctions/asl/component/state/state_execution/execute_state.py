@@ -1,6 +1,9 @@
 import abc
+import copy
 import logging
-from typing import Optional
+import threading
+from threading import Thread
+from typing import Any, Optional
 
 from localstack.aws.api.stepfunctions import (
     ExecutionFailedEventDetails,
@@ -25,6 +28,10 @@ from localstack.services.stepfunctions.asl.component.common.path.result_path imp
 from localstack.services.stepfunctions.asl.component.common.result_selector import ResultSelector
 from localstack.services.stepfunctions.asl.component.common.retry.retry_decl import RetryDecl
 from localstack.services.stepfunctions.asl.component.common.retry.retry_outcome import RetryOutcome
+from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import (
+    Timeout,
+    TimeoutSeconds,
+)
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
@@ -62,12 +69,29 @@ class ExecutionState(CommonStateField, abc.ABC):
         # encounters runtime errors and its retry policy is exhausted or isn't defined.
         self.catch: Optional[CatchDecl] = None
 
+        # TimeoutSeconds (Optional)
+        # If the state_task runs longer than the specified seconds, this state fails with a States.Timeout error name.
+        # Must be a positive, non-zero integer. If not provided, the default value is 99999999. The count begins after
+        # the state_task has been started, for example, when ActivityStarted or LambdaFunctionStarted are logged in the
+        # Execution event history.
+        # TimeoutSecondsPath (Optional)
+        # If you want to provide a timeout value dynamically from the state input using a reference path, use
+        # TimeoutSecondsPath. When resolved, the reference path must select fields whose values are positive integers.
+        # TimeoutSeconds and TimeoutSecondsPath fields are encoded by the timeout type.
+        self.timeout: Timeout = TimeoutSeconds(
+            timeout_seconds=TimeoutSeconds.DEFAULT_TIMEOUT_SECONDS
+        )
+
     def from_state_props(self, state_props: StateProps) -> None:
         super().from_state_props(state_props=state_props)
         self.result_path = state_props.get(ResultPath)
         self.result_selector = state_props.get(ResultSelector)
         self.retry = state_props.get(RetryDecl)
         self.catch = state_props.get(CatchDecl)
+
+        timeout = state_props.get(Timeout)
+        if timeout is not None:
+            self.timeout = timeout
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         LOG.warning("State Task executed generic failure event reporting logic.")
@@ -133,9 +157,43 @@ class ExecutionState(CommonStateField, abc.ABC):
             ExecutionFailedEventDetails(**(list(failure_event.event_details.values())[0]))
         )
 
+    def _evaluate_with_timeout(self, env: Environment) -> None:
+        self.timeout.eval(env=env)
+        timeout_seconds: int = env.stack.pop()
+
+        frame: Environment = env.open_frame()
+        frame.inp = copy.deepcopy(env.inp)
+        frame.stack = copy.deepcopy(env.stack)
+        execution_outputs: list[Any] = list()
+        execution_exceptions: list[Optional[Exception]] = [None]
+        terminated_event = threading.Event()
+
+        def _exec_and_notify():
+            try:
+                self._eval_execution(frame)
+                execution_outputs.extend(frame.stack)
+            except Exception as ex:
+                execution_exceptions.append(ex)
+            terminated_event.set()
+
+        thread = Thread(target=_exec_and_notify)
+        thread.start()
+        finished_on_time: bool = terminated_event.wait(timeout_seconds)
+        frame.set_ended()
+
+        execution_exception = execution_exceptions.pop()
+        if execution_exception:
+            raise execution_exception
+
+        if not finished_on_time:
+            raise TimeoutError()
+
+        execution_output = execution_outputs.pop()
+        env.stack.append(execution_output)
+
     def _eval_state(self, env: Environment) -> None:
         try:
-            self._eval_execution(env)
+            self._evaluate_with_timeout(env)
 
             if self.result_selector:
                 self.result_selector.eval(env=env)

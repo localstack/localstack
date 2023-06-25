@@ -50,17 +50,21 @@ class StateTaskServiceCallback(StateTaskService):
         parameters = self._eval_parameters(env=env)
         parameters_str = to_json_str(parameters)
 
+        scheduled_event_details = TaskScheduledEventDetails(
+            resource=self._get_sfn_resource(),
+            resourceType=self._get_sfn_resource_type(),
+            region=self.resource.region,
+            parameters=parameters_str,
+        )
+        if not self.timeout.is_default_value():
+            self.timeout.eval(env=env)
+            timeout_seconds = env.stack.pop()
+            scheduled_event_details["timeoutInSeconds"] = timeout_seconds
         env.event_history.add_event(
             hist_type_event=HistoryEventType.TaskScheduled,
-            event_detail=EventDetails(
-                taskScheduledEventDetails=TaskScheduledEventDetails(
-                    resource=self._get_sfn_resource(),
-                    resourceType=self._get_sfn_resource_type(),
-                    region=self.resource.region,
-                    parameters=parameters_str,
-                )
-            ),
+            event_detail=EventDetails(taskScheduledEventDetails=scheduled_event_details),
         )
+
         env.event_history.add_event(
             hist_type_event=HistoryEventType.TaskStarted,
             event_detail=EventDetails(

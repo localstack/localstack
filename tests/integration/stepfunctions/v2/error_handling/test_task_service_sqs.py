@@ -36,14 +36,14 @@ class TestTaskServiceSqs:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
 
         queue_name = f"queue-{short_uid()}"
         queue_url = f"http://no-such-queue-{short_uid()}"
-        snapshot.add_transformer(RegexTransformer(queue_url, "<no_such_sqs_queue_url>"))
-        snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<no_such_sqs_queue_url>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
 
         template = EHT.load_sfn_template(EHT.AWS_SERVICE_SQS_SEND_MSG_CATCH)
         definition = json.dumps(template)
@@ -54,7 +54,7 @@ class TestTaskServiceSqs:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -64,14 +64,14 @@ class TestTaskServiceSqs:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
 
         queue_name = f"queue-{short_uid()}"
         queue_url = f"http://no-such-queue-{short_uid()}"
-        snapshot.add_transformer(RegexTransformer(queue_url, "<no_such_sqs_queue_url>"))
-        snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<no_such_sqs_queue_url>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
 
         template = ST.load_sfn_template(ST.SQS_SEND_MESSAGE)
         definition = json.dumps(template)
@@ -82,7 +82,7 @@ class TestTaskServiceSqs:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -93,14 +93,14 @@ class TestTaskServiceSqs:
         create_iam_role_for_sfn,
         create_state_machine,
         sqs_create_queue,
-        snapshot,
+        sfn_snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
-        snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
 
         template = EHT.load_sfn_template(EHT.AWS_SERVICE_SQS_SEND_MSG_CATCH)
         definition = json.dumps(template)
@@ -110,7 +110,7 @@ class TestTaskServiceSqs:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )

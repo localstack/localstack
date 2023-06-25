@@ -25,7 +25,7 @@ class TestTaskLambda:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_1_name = f"lambda_1_func_{short_uid()}"
         create_1_res = create_lambda_function(
@@ -33,7 +33,7 @@ class TestTaskLambda:
             handler_file=lambda_functions.ECHO_FUNCTION,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_1_name, "<lambda_function_1_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_1_name, "<lambda_function_1_name>"))
 
         function_2_name = f"lambda_2_func_{short_uid()}"
         create_2_res = create_lambda_function(
@@ -41,7 +41,7 @@ class TestTaskLambda:
             handler_file=lambda_functions.ECHO_FUNCTION,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_2_name, "<lambda_function_2_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_2_name, "<lambda_function_2_name>"))
 
         template = ST.load_sfn_template(ST.LAMBDA_INVOKE_PIPE)
         template["States"]["step1"]["Resource"] = create_1_res["CreateFunctionResponse"][
@@ -57,7 +57,7 @@ class TestTaskLambda:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )

@@ -38,6 +38,9 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
         return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        if isinstance(ex, TimeoutError):
+            return self._get_timed_out_failure_event()
+
         if isinstance(ex, ClientError):
             return FailureEvent(
                 error_name=CustomErrorName(self._ERROR_NAME_CLIENT),

@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/choice_operators/test_boolean_equals.py::TestBooleanEquals::test_boolean_equals": {
-    "recorded-date": "24-04-2023, 09:05:03",
+    "recorded-date": "22-06-2023, 13:06:32",
     "recorded-content": {
       "cases": [
         {
@@ -339,7 +339,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_boolean_equals.py::TestBooleanEquals::test_boolean_equals_path": {
-    "recorded-date": "24-04-2023, 09:05:36",
+    "recorded-date": "22-06-2023, 13:07:20",
     "recorded-content": {
       "cases": [
         {

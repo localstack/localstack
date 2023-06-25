@@ -19,7 +19,7 @@ pytestmark = pytest.mark.skipif(
 )
 class TestAwsSdk:
     def test_invalid_secret_name(
-        self, aws_client, create_iam_role_for_sfn, create_state_machine, snapshot
+        self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot
     ):
         template = EHT.load_sfn_template(EHT.AWS_SDK_TASK_FAILED_SECRETSMANAGER_CREATE_SECRET)
         definition = json.dumps(template)
@@ -28,24 +28,24 @@ class TestAwsSdk:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
 
     def test_no_such_bucket(
-        self, aws_client, create_iam_role_for_sfn, create_state_machine, snapshot
+        self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot
     ):
         template = EHT.load_sfn_template(EHT.AWS_SDK_TASK_FAILED_S3_LIST_OBJECTS)
         definition = json.dumps(template)
         bucket_name = f"someNonexistentBucketName{short_uid()}"
-        snapshot.add_transformer(RegexTransformer(bucket_name, "someNonexistentBucketName"))
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "someNonexistentBucketName"))
         exec_input = json.dumps({"Bucket": bucket_name})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )

@@ -33,16 +33,6 @@ class StateTask(ExecutionState, abc.ABC):
         # Alternatively, you can also specify a JSONPath value that resolves to an IAM role ARN at runtime based on the
         # execution input. If you specify a JSONPath value, you must prefix it with the $. notation.
 
-        # TimeoutSeconds (Optional)
-        # If the state_task runs longer than the specified seconds, this state fails with a States.Timeout error name.
-        # Must be a positive, non-zero integer. If not provided, the default value is 99999999. The count begins after
-        # the state_task has been started, for example, when ActivityStarted or LambdaFunctionStarted are logged in the
-        # Execution event history.
-
-        # TimeoutSecondsPath (Optional)
-        # If you want to provide a timeout value dynamically from the state input using a reference path, use
-        # TimeoutSecondsPath. When resolved, the reference path must select fields whose values are positive integers.
-
         # A Task state cannot include both TimeoutSeconds and TimeoutSecondsPath
         # HeartbeatSeconds (Optional)
         # If more time than the specified seconds elapses between heartbeats from the state_task, this state fails with a
@@ -86,7 +76,7 @@ class StateTask(ExecutionState, abc.ABC):
         # Normalise bindings.
         parameter_normalisers = self._get_parameters_normalising_bindings()
         for parameter_key in list(parameters.keys()):
-            norm_parameter_key = parameter_normalisers.get(parameter_key)
+            norm_parameter_key = parameter_normalisers.get(parameter_key, None)
             if norm_parameter_key:
                 tmp = parameters[parameter_key]
                 del parameters[parameter_key]
@@ -95,7 +85,5 @@ class StateTask(ExecutionState, abc.ABC):
         return parameters
 
     def _eval_body(self, env: Environment) -> None:
-        if self.name == "Send":
-            print(self.name)
         super(StateTask, self)._eval_body(env=env)
         env.context_object_manager.context_object["Task"] = None

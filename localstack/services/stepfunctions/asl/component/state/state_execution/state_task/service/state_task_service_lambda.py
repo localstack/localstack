@@ -59,6 +59,9 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
         return error, cause
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        if isinstance(ex, TimeoutError):
+            return self._get_timed_out_failure_event()
+
         if isinstance(ex, lambda_eval_utils.LambdaFunctionErrorException):
             error = "Exception"
             error_name = CustomErrorName(error)
