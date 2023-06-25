@@ -1,0 +1,103 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "Circular model reference",
+    "version": "1.0"
+  },
+  "x-amazon-apigateway-request-validators" : {
+    "basic": {
+      "validateRequestBody": true,
+      "validateRequestParameters": true
+    }
+  },
+  "x-amazon-apigateway-request-validator" : "basic",
+  "paths": {
+    "/person": {
+      "post": {
+        "description": "Create a Person",
+        "operationId": "CreatePerson",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Person"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Empty",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Empty"
+                }
+              }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseTemplates": {
+                "application/json": "{\"echo\": $input.json('$'), \"response\": \"mocked\"}"
+              }
+            }
+          },
+          "requestTemplates": {
+            "application/json": "{\"statusCode\": 200}"
+          },
+          "passthroughBehavior": "when_no_templates"
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Person": {
+        "type": "object",
+        "description": "Random person schema.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Random property"
+          },
+          "b": {
+            "type": "number"
+          },
+          "house": {
+            "$ref": "#/components/schemas/House"
+          }
+        },
+        "required": ["name", "b"]
+      },
+      "House": {
+        "type": "object",
+        "description": "Where a Person can live",
+        "properties": {
+          "randomProperty": {
+            "type": "string",
+            "description": "Random property",
+            "format": "byte"
+          },
+          "contains": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Person"
+            },
+            "minItems": 1,
+            "description": "The information of who is living in the house"
+          }
+        }
+      },
+      "Empty": {
+        "title": "Empty Schema",
+        "type": "object"
+      }
+    }
+  }
+}

@@ -30,7 +30,7 @@ class TestTaskLambda:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_name = f"lambda_func_{short_uid()}"
         create_res = create_lambda_function(
@@ -38,7 +38,7 @@ class TestTaskLambda:
             handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
         template = EHT.load_sfn_template(EHT.AWS_LAMBDA_INVOKE_CATCH_UNKNOWN)
         template["States"]["Start"]["Resource"] = create_res["CreateFunctionResponse"][
@@ -51,7 +51,7 @@ class TestTaskLambda:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -62,7 +62,7 @@ class TestTaskLambda:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_name = f"lambda_func_{short_uid()}"
         create_res = create_lambda_function(
@@ -70,7 +70,7 @@ class TestTaskLambda:
             handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
         template = EHT.load_sfn_template(EHT.AWS_LAMBDA_INVOKE_CATCH_RELEVANT)
         template["States"]["Start"]["Resource"] = create_res["CreateFunctionResponse"][
@@ -83,7 +83,7 @@ class TestTaskLambda:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -94,7 +94,7 @@ class TestTaskLambda:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_name = f"lambda_func_{short_uid()}"
         create_res = create_lambda_function(
@@ -102,7 +102,7 @@ class TestTaskLambda:
             handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
         template = EHT.load_sfn_template(EHT.AWS_LAMBDA_INVOKE_CATCH_UNKNOWN)
         template["States"]["Start"]["Resource"] = create_res["CreateFunctionResponse"][
@@ -115,7 +115,7 @@ class TestTaskLambda:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -126,7 +126,7 @@ class TestTaskLambda:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_name = f"lambda_func_{short_uid()}"
         create_res = create_lambda_function(
@@ -134,7 +134,7 @@ class TestTaskLambda:
             handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
         template = EHT.load_sfn_template(EHT.AWS_LAMBDA_INVOKE_CATCH_RELEVANT)
         template["States"]["Start"]["Resource"] = create_res["CreateFunctionResponse"][
@@ -147,7 +147,7 @@ class TestTaskLambda:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )

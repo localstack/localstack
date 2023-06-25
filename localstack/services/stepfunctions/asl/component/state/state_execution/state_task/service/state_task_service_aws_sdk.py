@@ -15,6 +15,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     StateTaskServiceCallback,
 )
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
+from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackOutcomeFailureError
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.utils.aws import aws_stack
@@ -27,6 +28,7 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
         "stepfunctions": {
             "send_task_success": {"Output": "output", "TaskToken": "taskToken"},
             "send_task_heartbeat": {"TaskToken": "taskToken"},
+            "send_task_failure": {"TaskToken": "taskToken", "Error": "error", "Cause": "cause"},
         }
     }
 
@@ -73,6 +75,8 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
         )
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        if isinstance(ex, CallbackOutcomeFailureError):
+            return self._get_callback_outcome_failure_event(ex=ex)
         if isinstance(ex, TimeoutError):
             return self._get_timed_out_failure_event()
 

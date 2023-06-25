@@ -1,6 +1,6 @@
 {
-  "tests/integration/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_tok": {
-    "recorded-date": "10-05-2023, 15:43:08",
+  "tests/integration/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token": {
+    "recorded-date": "25-06-2023, 14:30:26",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -69,7 +69,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "95adacacec73703a3538430d3decf18f",
+                "MD5OfMessageBody": "c1b8689efa515ca4871a83ed8e2dd5fc",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -79,9 +79,7 @@
                     "Content-Length": [
                       "378"
                     ],
-                    "Date": [
-                      "Wed, 10 May 2023 13:43:06 GMT"
-                    ],
+                    "Date": "date",
                     "Content-Type": [
                       "text/xml"
                     ]
@@ -89,7 +87,7 @@
                   "HttpHeaders": {
                     "Content-Length": "378",
                     "Content-Type": "text/xml",
-                    "Date": "Wed, 10 May 2023 13:43:06 GMT",
+                    "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
                   "HttpStatusCode": 200
@@ -154,15 +152,15 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_tok_timeout": {
-    "recorded-date": "26-05-2023, 16:56:20",
+  "tests/integration/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token_timeout": {
+    "recorded-date": "25-06-2023, 14:30:43",
     "recorded-content": {
       "get_execution_history": {
         "events": [
           {
             "executionStartedEventDetails": {
               "input": {
-                "QueueUrl": "https://sqs.<region>.amazonaws.com/111111111111/<sqs_queue_name>",
+                "QueueUrl": "<sqs_queue_url>",
                 "Message": "test_message_txt"
               },
               "inputDetails": {
@@ -180,7 +178,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "QueueUrl": "https://sqs.<region>.amazonaws.com/111111111111/<sqs_queue_name>",
+                "QueueUrl": "<sqs_queue_url>",
                 "Message": "test_message_txt"
               },
               "inputDetails": {
@@ -200,7 +198,7 @@
                   "Message": "test_message_txt",
                   "TaskToken": "<<task_token>:1>"
                 },
-                "QueueUrl": "https://sqs.<region>.amazonaws.com/111111111111/<sqs_queue_name>"
+                "QueueUrl": "<sqs_queue_url>"
               },
               "region": "<region>",
               "resource": "sendMessage.waitForTaskToken",
@@ -225,7 +223,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "183da57f008a0a0a7fc9c0d01781ec6c",
+                "MD5OfMessageBody": "d15eb9a6d32a6653495e8b8765fd56fe",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -235,9 +233,7 @@
                     "Content-Length": [
                       "378"
                     ],
-                    "Date": [
-                      "Fri, 26 May 2023 14:56:18 GMT"
-                    ],
+                    "Date": "date",
                     "Content-Type": [
                       "text/xml"
                     ]
@@ -245,7 +241,7 @@
                   "HttpHeaders": {
                     "Content-Length": "378",
                     "Content-Type": "text/xml",
-                    "Date": "Fri, 26 May 2023 14:56:18 GMT",
+                    "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
                   "HttpStatusCode": 200
@@ -291,8 +287,144 @@
       }
     }
   },
+  "tests/integration/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_failure_in_wait_for_task_token": {
+    "recorded-date": "25-06-2023, 14:31:14",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendMessageWithWait"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "MessageBody": {
+                  "Message": "test_message_txt",
+                  "TaskToken": "<task_token:1>"
+                },
+                "QueueUrl": "<sqs_queue_url>"
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "103af427820fd12011fe1cb454fdcc0a",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "378"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "378",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskFailedEventDetails": {
+              "cause": "Failure cause",
+              "error": "Failure error",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "Failure cause",
+              "error": "Failure error"
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
   "tests/integration/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_tok_with_heartbeat": {
-    "recorded-date": "02-06-2023, 15:04:57",
+    "recorded-date": "25-06-2023, 14:34:21",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -363,7 +495,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "f2f3b243c82cbc7fef8f64e9944c36b2",
+                "MD5OfMessageBody": "5c22318ff95a90991fb6e16a19a89dc1",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -373,9 +505,7 @@
                     "Content-Length": [
                       "378"
                     ],
-                    "Date": [
-                      "Fri, 02 Jun 2023 13:04:50 GMT"
-                    ],
+                    "Date": "date",
                     "Content-Type": [
                       "text/xml"
                     ]
@@ -383,7 +513,7 @@
                   "HttpHeaders": {
                     "Content-Length": "378",
                     "Content-Type": "text/xml",
-                    "Date": "Fri, 02 Jun 2023 13:04:50 GMT",
+                    "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
                   "HttpStatusCode": 200

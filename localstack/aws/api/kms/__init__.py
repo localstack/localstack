@@ -49,6 +49,8 @@ class AlgorithmSpec(str):
     RSAES_PKCS1_V1_5 = "RSAES_PKCS1_V1_5"
     RSAES_OAEP_SHA_1 = "RSAES_OAEP_SHA_1"
     RSAES_OAEP_SHA_256 = "RSAES_OAEP_SHA_256"
+    RSA_AES_KEY_WRAP_SHA_1 = "RSA_AES_KEY_WRAP_SHA_1"
+    RSA_AES_KEY_WRAP_SHA_256 = "RSA_AES_KEY_WRAP_SHA_256"
 
 
 class ConnectionErrorCodeType(str):
@@ -231,6 +233,8 @@ class SigningAlgorithmSpec(str):
 
 class WrappingKeySpec(str):
     RSA_2048 = "RSA_2048"
+    RSA_3072 = "RSA_3072"
+    RSA_4096 = "RSA_4096"
 
 
 class XksProxyConnectivityType(str):

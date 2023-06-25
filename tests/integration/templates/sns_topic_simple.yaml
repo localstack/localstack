@@ -1,4 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
+Metadata:
+  TopicName: sns-topic-simple
 Resources:
   topic123:
     Type: AWS::SNS::Topic

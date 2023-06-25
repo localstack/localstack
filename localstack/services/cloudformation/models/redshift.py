@@ -8,9 +8,6 @@ class RedshiftCluster(GenericBaseModel):
     def cloudformation_type():
         return "AWS::Redshift::Cluster"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("ClusterIdentifier")
-
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("redshift")
         cluster_id = self.props.get("ClusterIdentifier")
@@ -27,4 +24,7 @@ class RedshiftCluster(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        return {"create": {"function": "create_cluster"}}
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["Cluster"]["ClusterIdentifier"]
+
+        return {"create": {"function": "create_cluster", "result_handler": _handle_result}}

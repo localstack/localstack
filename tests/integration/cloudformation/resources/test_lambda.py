@@ -309,14 +309,7 @@ def test_lambda_vpc(deploy_cfn_template, aws_client):
 
 
 @pytest.mark.xfail(condition=is_new_provider(), reason="fails/times out with new provider")
-@pytest.mark.skip_snapshot_verify(
-    paths=[
-        "$..Policy.PolicyArn",
-        "$..Policy.PolicyName",
-        "$..Policy.Statement..Resource",
-        "$..Policy.Statement..Sid",
-    ]
-)
+@pytest.mark.aws_validated
 def test_update_lambda_permissions(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(

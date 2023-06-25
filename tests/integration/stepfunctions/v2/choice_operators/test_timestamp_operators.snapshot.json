@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_greater_than": {
-    "recorded-date": "02-03-2023, 18:09:42",
+    "recorded-date": "22-06-2023, 13:22:29",
     "recorded-content": {
       "cases": [
         {
@@ -34,7 +34,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_equals": {
-    "recorded-date": "02-03-2023, 18:09:32",
+    "recorded-date": "22-06-2023, 13:21:55",
     "recorded-content": {
       "cases": [
         {
@@ -198,7 +198,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_equals_path": {
-    "recorded-date": "02-03-2023, 18:09:38",
+    "recorded-date": "22-06-2023, 13:22:14",
     "recorded-content": {
       "cases": [
         {
@@ -232,7 +232,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_greater_than_path": {
-    "recorded-date": "02-03-2023, 18:09:45",
+    "recorded-date": "22-06-2023, 13:22:44",
     "recorded-content": {
       "cases": [
         {
@@ -248,7 +248,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_greater_than_equals": {
-    "recorded-date": "02-03-2023, 18:09:48",
+    "recorded-date": "22-06-2023, 13:23:00",
     "recorded-content": {
       "cases": [
         {
@@ -282,7 +282,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_greater_than_equals_path": {
-    "recorded-date": "02-03-2023, 18:09:50",
+    "recorded-date": "22-06-2023, 13:23:14",
     "recorded-content": {
       "cases": [
         {
@@ -298,7 +298,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_less_than": {
-    "recorded-date": "02-03-2023, 18:09:54",
+    "recorded-date": "22-06-2023, 13:23:29",
     "recorded-content": {
       "cases": [
         {
@@ -332,7 +332,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_less_than_path": {
-    "recorded-date": "02-03-2023, 18:09:56",
+    "recorded-date": "22-06-2023, 13:23:44",
     "recorded-content": {
       "cases": [
         {
@@ -348,7 +348,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_less_than_equals": {
-    "recorded-date": "02-03-2023, 18:10:00",
+    "recorded-date": "22-06-2023, 13:24:00",
     "recorded-content": {
       "cases": [
         {
@@ -382,7 +382,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_timestamp_operators.py::TestTimestamps::test_timestamp_less_than_equals_path": {
-    "recorded-date": "02-03-2023, 18:10:02",
+    "recorded-date": "22-06-2023, 13:24:14",
     "recorded-content": {
       "cases": [
         {

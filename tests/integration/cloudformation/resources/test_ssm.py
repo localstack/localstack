@@ -16,9 +16,20 @@ def test_parameter_defaults(deploy_cfn_template, aws_client):
     )
 
     parameter_name = stack.outputs["CustomParameterOutput"]
+
     assert "CustomParameter" in parameter_name
     param = aws_client.ssm.get_parameter(Name=parameter_name)
     assert param["Parameter"]["Value"] == ssm_parameter_value
+
+    stack_resources = aws_client.cloudformation.describe_stack_resources(StackName=stack.stack_name)
+    results = [
+        res
+        for res in stack_resources["StackResources"]
+        if res["ResourceType"] == "AWS::SSM::Parameter"
+    ]
+
+    assert results[0]
+    assert results[0]["PhysicalResourceId"]
 
     # make sure parameter is deleted
     stack.destroy()

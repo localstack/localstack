@@ -1,9 +1,10 @@
 import logging
 import os
+import re
 from functools import lru_cache
 from typing import Optional
 
-from localstack import config
+from localstack import config, constants
 from localstack.utils.container_utils.container_client import ContainerException
 from localstack.utils.docker_utils import DOCKER_CLIENT
 
@@ -69,15 +70,30 @@ def get_endpoint_for_network(network: Optional[str] = None) -> str:
             )
         else:
             # default gateway for the network should be the host
-            # (only under Linux - otherwise fall back to DOCKER_HOST_FROM_CONTAINER below)
+            # In a Linux host-mode environment, the default gateway for the network should be the IP of the host
             if config.is_in_linux:
                 main_container_ip = DOCKER_CLIENT.inspect_network(network)["IPAM"]["Config"][0][
                     "Gateway"
                 ]
+            else:
+                # In a non-Linux host-mode environment, we need to determine the IP of the host by running a container
+                # (basically MacOS host mode, i.e. this is a feature to improve the developer experience)
+                image_name = constants.DOCKER_IMAGE_NAME
+                out, _ = DOCKER_CLIENT.run_container(
+                    image_name,
+                    remove=True,
+                    entrypoint="",
+                    command=["ping", "-c", "1", "host.docker.internal"],
+                )
+                out = out.decode(config.DEFAULT_ENCODING) if isinstance(out, bytes) else out
+                ip = re.match(r"PING[^\(]+\(([^\)]+)\).*", out, re.MULTILINE | re.DOTALL)
+                ip = ip and ip.group(1)
+                if ip:
+                    main_container_ip = ip
         LOG.info("Determined main container target IP: %s", main_container_ip)
     except Exception as e:
-        LOG.info('Unable to get IP address of main Docker container "%s": %s', container_name, e)
-    # return (1) predefined endpoint host, or (2) main container IP, or (3) Docker host (e.g., bridge IP)
+        LOG.info("Unable to get main container IP address: %s", e)
+
     return main_container_ip or config.DOCKER_HOST_FROM_CONTAINER
 
 

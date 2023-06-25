@@ -3,6 +3,8 @@ import math
 import time
 from typing import Dict, List, Optional, Tuple
 
+from botocore.exceptions import ClientError
+
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.services.awslambda.event_source_listeners.adapters import (
     EventSourceAdapter,
@@ -59,7 +61,7 @@ class StreamEventSourceListener(EventSourceListener):
         """
         raise NotImplementedError
 
-    def _get_stream_client(self, region_name: str):
+    def _get_stream_client(self, function_arn: str, region_name: str):
         """
         to be implemented by subclasses
         :returns: An AWS service client instance for communicating with the appropriate API
@@ -198,61 +200,72 @@ class StreamEventSourceListener(EventSourceListener):
             num_invocation_failures = 0
 
             while lock_discriminator in self._STREAM_LISTENER_THREADS:
-                records_response = stream_client.get_records(
-                    ShardIterator=shard_iterator, Limit=batch_size
-                )
-                records = records_response.get("Records")
-                event_filter_criterias = self._get_lambda_event_filters_for_arn(
-                    function_arn, stream_arn
-                )
-                if len(event_filter_criterias) > 0:
-                    records = filter_stream_records(records, event_filter_criterias)
-
-                should_get_next_batch = True
-                if records:
-                    payload = self._create_lambda_event_payload(
-                        stream_arn, records, shard_id=shard_id
+                try:
+                    records_response = stream_client.get_records(
+                        ShardIterator=shard_iterator, Limit=batch_size
                     )
-                    is_invocation_successful, status_code = self._invoke_lambda(
-                        function_arn, payload, lock_discriminator, parallelization_factor
-                    )
-                    if is_invocation_successful:
-                        should_get_next_batch = True
+                except ClientError as e:
+                    if "AccessDeniedException" in str(e):
+                        LOG.warning(
+                            "Insufficient permissions to get records from stream %s: %s",
+                            stream_arn,
+                            e,
+                        )
                     else:
-                        num_invocation_failures += 1
-                        if num_invocation_failures >= max_num_retries:
+                        raise
+                else:
+                    records = records_response.get("Records")
+                    event_filter_criterias = self._get_lambda_event_filters_for_arn(
+                        function_arn, stream_arn
+                    )
+                    if len(event_filter_criterias) > 0:
+                        records = filter_stream_records(records, event_filter_criterias)
+
+                    should_get_next_batch = True
+                    if records:
+                        payload = self._create_lambda_event_payload(
+                            stream_arn, records, shard_id=shard_id
+                        )
+                        is_invocation_successful, status_code = self._invoke_lambda(
+                            function_arn, payload, lock_discriminator, parallelization_factor
+                        )
+                        if is_invocation_successful:
                             should_get_next_batch = True
-                            if failure_destination:
-                                first_rec = records[0]
-                                last_rec = records[-1]
-                                (
-                                    first_seq_num,
-                                    last_seq_num,
-                                ) = self._get_starting_and_ending_sequence_numbers(
-                                    first_rec, last_rec
-                                )
-                                (
-                                    first_arrival_time,
-                                    last_arrival_time,
-                                ) = self._get_first_and_last_arrival_time(first_rec, last_rec)
-                                self._send_to_failure_destination(
-                                    shard_id,
-                                    first_seq_num,
-                                    last_seq_num,
-                                    stream_arn,
-                                    function_arn,
-                                    num_invocation_failures,
-                                    status_code,
-                                    batch_size,
-                                    first_arrival_time,
-                                    last_arrival_time,
-                                    failure_destination,
-                                )
                         else:
-                            should_get_next_batch = False
-                if should_get_next_batch:
-                    shard_iterator = records_response["NextShardIterator"]
-                    num_invocation_failures = 0
+                            num_invocation_failures += 1
+                            if num_invocation_failures >= max_num_retries:
+                                should_get_next_batch = True
+                                if failure_destination:
+                                    first_rec = records[0]
+                                    last_rec = records[-1]
+                                    (
+                                        first_seq_num,
+                                        last_seq_num,
+                                    ) = self._get_starting_and_ending_sequence_numbers(
+                                        first_rec, last_rec
+                                    )
+                                    (
+                                        first_arrival_time,
+                                        last_arrival_time,
+                                    ) = self._get_first_and_last_arrival_time(first_rec, last_rec)
+                                    self._send_to_failure_destination(
+                                        shard_id,
+                                        first_seq_num,
+                                        last_seq_num,
+                                        stream_arn,
+                                        function_arn,
+                                        num_invocation_failures,
+                                        status_code,
+                                        batch_size,
+                                        first_arrival_time,
+                                        last_arrival_time,
+                                        failure_destination,
+                                    )
+                            else:
+                                should_get_next_batch = False
+                    if should_get_next_batch:
+                        shard_iterator = records_response["NextShardIterator"]
+                        num_invocation_failures = 0
                 time.sleep(self._POLL_INTERVAL_SEC)
         except Exception as e:
             LOG.error(
@@ -332,7 +345,7 @@ class StreamEventSourceListener(EventSourceListener):
                     mapping_uuid = source["UUID"]
                     stream_arn = source["EventSourceArn"]
                     region_name = extract_region_from_arn(stream_arn)
-                    stream_client = self._get_stream_client(region_name)
+                    stream_client = self._get_stream_client(source["FunctionArn"], region_name)
                     batch_size = source.get("BatchSize", 10)
                     failure_destination = (
                         source.get("DestinationConfig", {})

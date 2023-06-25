@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_lambda": {
-    "recorded-date": "26-05-2023, 16:54:44",
+    "recorded-date": "22-06-2023, 13:42:57",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -83,7 +83,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_service_lambda": {
-    "recorded-date": "26-05-2023, 16:54:04",
+    "recorded-date": "22-06-2023, 13:42:21",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -591,7 +591,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_service_lambda_with_path": {
-    "recorded-date": "26-05-2023, 17:02:05",
+    "recorded-date": "22-06-2023, 13:42:39",
     "recorded-content": {
       "get_execution_history": {
         "events": [

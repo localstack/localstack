@@ -580,5 +580,24 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestStackEvents::test_invalid_stack_deploy": {
+    "recorded-date": "12-06-2023, 17:08:47",
+    "recorded-content": {
+      "failed_event": {
+        "EventId": "MyParameter-CREATE_FAILED-date",
+        "LogicalResourceId": "MyParameter",
+        "PhysicalResourceId": "",
+        "ResourceProperties": {
+          "Value": "abc123"
+        },
+        "ResourceStatus": "CREATE_FAILED",
+        "ResourceStatusReason": "Property validation failure: [The property {/Type} is required]",
+        "ResourceType": "AWS::SSM::Parameter",
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Timestamp": "timestamp"
+      }
+    }
   }
 }

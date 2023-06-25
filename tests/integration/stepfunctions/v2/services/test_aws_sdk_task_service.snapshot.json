@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_list_secrets": {
-    "recorded-date": "26-04-2023, 22:49:58",
+    "recorded-date": "22-06-2023, 13:59:49",
     "recorded-content": {
       "get_execution_history": {
         "events": [

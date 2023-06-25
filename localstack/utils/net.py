@@ -44,7 +44,7 @@ def is_port_open(
     port_or_url: Union[int, str],
     http_path: str = None,
     expect_success: bool = True,
-    protocols: Optional[List[str]] = None,
+    protocols: Optional[Union[str, List[str]]] = None,
     quiet: bool = True,
 ):
     from localstack.utils.http import safe_requests

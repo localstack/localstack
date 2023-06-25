@@ -71,7 +71,6 @@ from localstack.services.sqs import constants as sqs_constants
 from localstack.services.sqs.exceptions import InvalidParameterValue
 from localstack.services.sqs.models import (
     FifoQueue,
-    Permission,
     SqsMessage,
     SqsQueue,
     SqsStore,
@@ -92,6 +91,7 @@ from localstack.utils.time import now
 LOG = logging.getLogger(__name__)
 
 MAX_NUMBER_OF_MESSAGES = 10
+_STORE_LOCK = threading.RLock()
 
 
 class InvalidAddress(ServiceException):
@@ -550,7 +550,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def __init__(self) -> None:
         super().__init__()
-        self._mutex = threading.RLock()
         self._queue_update_worker = QueueUpdateWorker()
         self._router_rules = []
         self._init_cloudwatch_metrics_reporting()
@@ -571,7 +570,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._queue_update_worker.stop()
         self._stop_cloudwatch_metrics_reporting()
 
-    def _require_queue(self, account_id: str, region_name: str, name: str) -> SqsQueue:
+    @staticmethod
+    def _require_queue(account_id: str, region_name: str, name: str) -> SqsQueue:
         """
         Returns the queue for the given name, or raises QueueDoesNotExist if it does not exist.
 
@@ -580,8 +580,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         :returns: the queue
         :raises QueueDoesNotExist: if the queue does not exist
         """
-        store = self.get_store(account_id, region_name)
-        with self._mutex:
+        store = SqsProvider.get_store(account_id, region_name)
+        with _STORE_LOCK:
             if name not in store.queues.keys():
                 raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
 
@@ -627,7 +627,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         store = self.get_store(context.account_id, context.region)
 
-        with self._mutex:
+        with _STORE_LOCK:
             if queue_name in store.queues:
                 queue = store.queues[queue_name]
 
@@ -675,7 +675,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def get_queue_url(
         self, context: RequestContext, queue_name: String, queue_owner_aws_account_id: String = None
     ) -> GetQueueUrlResult:
-        store = self.get_store(context.account_id, context.region)
+        store = self.get_store(queue_owner_aws_account_id or context.account_id, context.region)
         if queue_name not in store.queues.keys():
             raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
 
@@ -756,10 +756,26 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         )
 
     def delete_queue(self, context: RequestContext, queue_url: String) -> None:
-        store = self.get_store(context.account_id, context.region)
+        account_id, region, name = parse_queue_url(queue_url)
+        if region is None:
+            region = context.region
 
-        with self._mutex:
+        if account_id != context.account_id:
+            LOG.warning(
+                "Attempting a cross-account DeleteQueue operation (account from context: %s, account from queue url: %s, which is not allowed in AWS",
+                account_id,
+                context.account_id,
+            )
+
+        with _STORE_LOCK:
+            store = self.get_store(account_id, region)
             queue = self._resolve_queue(context, queue_url=queue_url)
+            LOG.debug(
+                "deleting queue name=%s, region=%s, account=%s",
+                queue.name,
+                queue.region,
+                queue.account_id,
+            )
             del store.queues[queue.name]
             store.deleted[queue.name] = time.time()
 
@@ -1138,16 +1154,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         self._validate_actions(actions)
 
-        for account_id in aws_account_ids:
-            for action in actions:
-                queue.permissions.add(Permission(label, account_id, action))
+        queue.add_permission(label=label, actions=actions, account_ids=aws_account_ids)
 
     def remove_permission(self, context: RequestContext, queue_url: String, label: String) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
 
-        candidates = [p for p in queue.permissions if p.label == label]
-        if candidates:
-            queue.permissions.remove(candidates[0])
+        queue.remove_permission(label=label)
 
     def _create_message_attributes(
         self,

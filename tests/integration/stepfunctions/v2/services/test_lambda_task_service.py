@@ -32,7 +32,7 @@ class TestTaskServiceLambda:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_name = f"lambda_func_{short_uid()}"
         create_lambda_function(
@@ -40,7 +40,7 @@ class TestTaskServiceLambda:
             handler_file=ST.LAMBDA_ID_FUNCTION,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
         template = ST.load_sfn_template(ST.LAMBDA_INVOKE)
         definition = json.dumps(template)
@@ -50,7 +50,7 @@ class TestTaskServiceLambda:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -62,7 +62,7 @@ class TestTaskServiceLambda:
         create_iam_role_for_sfn,
         create_state_machine,
         create_lambda_function,
-        snapshot,
+        sfn_snapshot,
     ):
         function_name = f"lambda_func_{short_uid()}"
         create_lambda_function(
@@ -70,8 +70,8 @@ class TestTaskServiceLambda:
             handler_file=ST.LAMBDA_ID_FUNCTION,
             runtime="python3.9",
         )
-        snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
-        snapshot.add_transformer(
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+        sfn_snapshot.add_transformer(
             JsonpathTransformer("$..LogResult", "LogResult", replace_reference=True)
         )
 
@@ -85,7 +85,7 @@ class TestTaskServiceLambda:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -96,7 +96,7 @@ class TestTaskServiceLambda:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         template = ST.load_sfn_template(ST.LAMBDA_LIST_FUNCTIONS)
         definition = json.dumps(template)
@@ -106,7 +106,7 @@ class TestTaskServiceLambda:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )

@@ -3,7 +3,7 @@ Parameters:
     Type: String
   Param2:
     Type: String
-  BuckeName:
+  BucketName:
     Type: String
 Conditions:
   condition1:

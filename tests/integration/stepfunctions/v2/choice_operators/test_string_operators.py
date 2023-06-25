@@ -40,7 +40,7 @@ class TestStrings:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         type_equals = []
         for var in TYPE_COMPARISONS_VARS:
@@ -50,7 +50,7 @@ class TestStrings:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "StringEquals",
             comparisons=[*type_equals, (" ", "     "), ("\t\n", "\t\r\n"), ("Hello", "Hello")],
         )
@@ -60,7 +60,7 @@ class TestStrings:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         type_equals = []
         for var in TYPE_COMPARISONS_VARS:
@@ -73,7 +73,7 @@ class TestStrings:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "StringEqualsPath",
             comparisons=[(" ", "     "), ("\t\n", "\t\r\n"), ("Hello", "Hello")],
             add_literal_value=False,
@@ -84,13 +84,13 @@ class TestStrings:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "StringGreaterThan",
             comparisons=[("", ""), ("A", "A "), ("A", "A\t\n\r"), ("AB", "ABC")],
         )
@@ -100,13 +100,13 @@ class TestStrings:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "StringGreaterThanPath",
             comparisons=[("", ""), ("A", "A "), ("A", "A\t\n\r"), ("AB", "ABC")],
             add_literal_value=False,
@@ -117,13 +117,13 @@ class TestStrings:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "StringGreaterThanEquals",
             comparisons=[("", ""), ("A", "AB"), ("AB", "A")],
         )
@@ -133,13 +133,13 @@ class TestStrings:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "StringGreaterThanEqualsPath",
             comparisons=[("", ""), ("A", "AB"), ("AB", "A")],
             add_literal_value=False,
@@ -150,13 +150,13 @@ class TestStrings:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "StringLessThan",
             comparisons=[("", ""), ("A", "AB"), ("AB", "A")],
         )
@@ -166,13 +166,13 @@ class TestStrings:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "StringLessThanPath",
             comparisons=[("", ""), ("A", "AB"), ("AB", "A")],
             add_literal_value=False,
@@ -183,13 +183,13 @@ class TestStrings:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "StringLessThanEquals",
             comparisons=[("", ""), ("A", "AB"), ("AB", "A")],
         )
@@ -199,13 +199,13 @@ class TestStrings:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "StringLessThanEqualsPath",
             comparisons=[("", ""), ("A", "AB"), ("AB", "A")],
             add_literal_value=False,

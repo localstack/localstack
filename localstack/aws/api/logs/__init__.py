@@ -10,6 +10,7 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 
 AccessPolicy = str
 AccountId = str
+AccountPolicyDocument = str
 AmazonResourceName = str
 Arn = str
 DataProtectionPolicyDocument = str
@@ -93,9 +94,17 @@ class ExportTaskStatusCode(str):
     RUNNING = "RUNNING"
 
 
+class InheritedProperty(str):
+    ACCOUNT_DATA_PROTECTION = "ACCOUNT_DATA_PROTECTION"
+
+
 class OrderBy(str):
     LogStreamName = "LogStreamName"
     LastEventTime = "LastEventTime"
+
+
+class PolicyType(str):
+    DATA_PROTECTION_POLICY = "DATA_PROTECTION_POLICY"
 
 
 class QueryStatus(str):
@@ -106,6 +115,10 @@ class QueryStatus(str):
     Cancelled = "Cancelled"
     Timeout = "Timeout"
     Unknown = "Unknown"
+
+
+class Scope(str):
+    ALL = "ALL"
 
 
 class StandardUnit(str):
@@ -225,6 +238,19 @@ class UnrecognizedClientException(ServiceException):
 
 
 AccountIds = List[AccountId]
+Timestamp = int
+
+
+class AccountPolicy(TypedDict, total=False):
+    policyName: Optional[PolicyName]
+    policyDocument: Optional[AccountPolicyDocument]
+    lastUpdatedTime: Optional[Timestamp]
+    policyType: Optional[PolicyType]
+    scope: Optional[Scope]
+    accountId: Optional[AccountId]
+
+
+AccountPolicies = List[AccountPolicy]
 
 
 class AssociateKmsKeyRequest(ServiceRequest):
@@ -236,7 +262,6 @@ class CancelExportTaskRequest(ServiceRequest):
     taskId: ExportTaskId
 
 
-Timestamp = int
 CreateExportTaskRequest = TypedDict(
     "CreateExportTaskRequest",
     {
@@ -268,6 +293,11 @@ class CreateLogGroupRequest(ServiceRequest):
 class CreateLogStreamRequest(ServiceRequest):
     logGroupName: LogGroupName
     logStreamName: LogStreamName
+
+
+class DeleteAccountPolicyRequest(ServiceRequest):
+    policyName: PolicyName
+    policyType: PolicyType
 
 
 class DeleteDataProtectionPolicyRequest(ServiceRequest):
@@ -311,6 +341,16 @@ class DeleteRetentionPolicyRequest(ServiceRequest):
 class DeleteSubscriptionFilterRequest(ServiceRequest):
     logGroupName: LogGroupName
     filterName: FilterName
+
+
+class DescribeAccountPoliciesRequest(ServiceRequest):
+    policyType: PolicyType
+    policyName: Optional[PolicyName]
+    accountIdentifiers: Optional[AccountIds]
+
+
+class DescribeAccountPoliciesResponse(TypedDict, total=False):
+    accountPolicies: Optional[AccountPolicies]
 
 
 class DescribeDestinationsRequest(ServiceRequest):
@@ -385,6 +425,7 @@ class DescribeLogGroupsRequest(ServiceRequest):
     includeLinkedAccounts: Optional[IncludeLinkedAccounts]
 
 
+InheritedProperties = List[InheritedProperty]
 StoredBytes = int
 
 
@@ -397,6 +438,7 @@ class LogGroup(TypedDict, total=False):
     storedBytes: Optional[StoredBytes]
     kmsKeyId: Optional[KmsKeyId]
     dataProtectionStatus: Optional[DataProtectionStatus]
+    inheritedProperties: Optional[InheritedProperties]
 
 
 LogGroups = List[LogGroup]
@@ -744,6 +786,17 @@ class MetricFilterMatchRecord(TypedDict, total=False):
 MetricFilterMatches = List[MetricFilterMatchRecord]
 
 
+class PutAccountPolicyRequest(ServiceRequest):
+    policyName: PolicyName
+    policyDocument: AccountPolicyDocument
+    policyType: PolicyType
+    scope: Optional[Scope]
+
+
+class PutAccountPolicyResponse(TypedDict, total=False):
+    accountPolicy: Optional[AccountPolicy]
+
+
 class PutDataProtectionPolicyRequest(ServiceRequest):
     logGroupIdentifier: LogGroupIdentifier
     policyDocument: DataProtectionPolicyDocument
@@ -926,6 +979,12 @@ class LogsApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("DeleteAccountPolicy")
+    def delete_account_policy(
+        self, context: RequestContext, policy_name: PolicyName, policy_type: PolicyType
+    ) -> None:
+        raise NotImplementedError
+
     @handler("DeleteDataProtectionPolicy")
     def delete_data_protection_policy(
         self, context: RequestContext, log_group_identifier: LogGroupIdentifier
@@ -976,6 +1035,16 @@ class LogsApi:
     def delete_subscription_filter(
         self, context: RequestContext, log_group_name: LogGroupName, filter_name: FilterName
     ) -> None:
+        raise NotImplementedError
+
+    @handler("DescribeAccountPolicies")
+    def describe_account_policies(
+        self,
+        context: RequestContext,
+        policy_type: PolicyType,
+        policy_name: PolicyName = None,
+        account_identifiers: AccountIds = None,
+    ) -> DescribeAccountPoliciesResponse:
         raise NotImplementedError
 
     @handler("DescribeDestinations")
@@ -1153,6 +1222,17 @@ class LogsApi:
     def list_tags_log_group(
         self, context: RequestContext, log_group_name: LogGroupName
     ) -> ListTagsLogGroupResponse:
+        raise NotImplementedError
+
+    @handler("PutAccountPolicy")
+    def put_account_policy(
+        self,
+        context: RequestContext,
+        policy_name: PolicyName,
+        policy_document: AccountPolicyDocument,
+        policy_type: PolicyType,
+        scope: Scope = None,
+    ) -> PutAccountPolicyResponse:
         raise NotImplementedError
 
     @handler("PutDataProtectionPolicy")
