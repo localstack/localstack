@@ -338,11 +338,14 @@ def modify_context_region(context: RequestContext, region: str):
         flags=re.IGNORECASE,
     )
 
-    yield context
-
-    # revert the original context
-    context.region = original_region
-    context.request.headers["Authorization"] = original_authorization
+    try:
+        yield context
+    except Exception:
+        raise
+    finally:
+        # revert the original context
+        context.region = original_region
+        context.request.headers["Authorization"] = original_authorization
 
 
 class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
@@ -486,6 +489,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         backend = get_store(context.account_id, context.region)
         backend.table_definitions[table_name] = table_definitions = dict(create_table_input)
+        backend.TABLE_REGION[table_name] = context.region
 
         if "TableId" not in table_definitions:
             table_definitions["TableId"] = long_uid()
@@ -533,7 +537,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         table_arn = result.get("TableDescription", {}).get("TableArn")
         table_arn = self.fix_table_arn(table_arn)
         dynamodbstreams_api.delete_streams(table_arn)
-        get_store(context.account_id, context.region).TABLE_TAGS.pop(table_arn, None)
+
+        store = get_store(context.account_id, context.region)
+        store.TABLE_TAGS.pop(table_arn, None)
+        store.REPLICAS.pop(table_name, None)
 
         return result
 
@@ -552,21 +559,22 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         store = get_store(context.account_id, context.region)
 
         # Update replication details
-        replicas: dict[str, set[str]] = store.REPLICA_UPDATES.get(table_name, {})
+        replicas: Dict[RegionName, ReplicaDescription] = store.REPLICAS.get(table_name, {})
 
         replica_description_list = []
-        for source_region, replicated_regions in replicas.items():
-            # Contrary to AWS, we show all regions including the current context region where a replica exists
-            # This is due to the limitation of internal request forwarding mechanism for global tables
+
+        if global_table_region != context.region:
             replica_description_list.append(
-                ReplicaDescription(RegionName=source_region, ReplicaStatus=ReplicaStatus.ACTIVE)
-            )
-            for replicated_region in replicated_regions:
-                replica_description_list.append(
-                    ReplicaDescription(
-                        RegionName=replicated_region, ReplicaStatus=ReplicaStatus.ACTIVE
-                    )
+                ReplicaDescription(
+                    RegionName=global_table_region, ReplicaStatus=ReplicaStatus.ACTIVE
                 )
+            )
+
+        for replica_region, replica_description in replicas.items():
+            # The replica in the region being queried must not be returned
+            if replica_region != context.region:
+                replica_description_list.append(replica_description)
+
         table_description.update({"Replicas": replica_description_list})
 
         # update only TableId and SSEDescription if present
@@ -608,8 +616,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 store = get_store(context.account_id, global_table_region)
 
                 # Dict with source region to set of replicated regions
-                replicas: dict[str, set(str)] = store.REPLICA_UPDATES.get(table_name, {})
-                replicas.setdefault(global_table_region, set())
+                replicas: Dict[RegionName, ReplicaDescription] = store.REPLICAS.get(table_name, {})
 
                 for replica_update in replica_updates:
                     for key, details in replica_update.items():
@@ -622,23 +629,28 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
                         match key:
                             case "Create":
-                                if target_region in replicas[global_table_region]:
+                                if target_region in replicas.keys():
                                     raise ValidationException(
                                         f"Failed to create a the new replica of table with name: '{table_name}' because one or more replicas already existed as tables."
                                     )
-                                replicas[global_table_region].add(target_region)
+                                replicas[target_region] = ReplicaDescription(
+                                    RegionName=target_region,
+                                    KMSMasterKeyId=details.get("KMSMasterKeyId"),
+                                    ProvisionedThroughputOverride=details.get(
+                                        "ProvisionedThroughputOverride"
+                                    ),
+                                    GlobalSecondaryIndexes=details.get("GlobalSecondaryIndexes"),
+                                    ReplicaStatus=ReplicaStatus.ACTIVE,
+                                )
                             case "Delete":
                                 try:
-                                    replicas[global_table_region].remove(target_region)
-                                    if len(replicas[global_table_region]) == 0:
-                                        # Removing the set indicates that replication is disabled
-                                        replicas.pop(global_table_region)
+                                    replicas.pop(target_region)
                                 except KeyError:
                                     raise ValidationException(
                                         "Update global table operation failed because one or more replicas were not part of the global table."
                                     )
 
-                store.REPLICA_UPDATES[table_name] = replicas
+                store.REPLICAS[table_name] = replicas
 
             # update response content
             schema = SchemaExtractor.get_table_schema(
@@ -663,10 +675,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         response = self.forward_request(context)
 
         # Add replicated tables
-        replicas = get_store(context.account_id, context.region).REPLICA_UPDATES
+        replicas = get_store(context.account_id, context.region).REPLICAS
         for replicated_table, replications in replicas.items():
-            for original_region, replicated_regions in replications.items():
-                if context.region in replicated_regions:
+            for replica_region, replica_description in replications.items():
+                if context.region == replica_region:
                     response["TableNames"].append(replicated_table)
 
         return response
@@ -1343,13 +1355,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         :param table_name: table name
         :return: region
         """
-        replicas = get_store(context.account_id, context.region).REPLICA_UPDATES.get(table_name)
-        if replicas:
-            global_table_region = list(replicas.keys())[0]
-            replicated_at = replicas[global_table_region]
-            # Ensure that a replica exists in the current context region, and that the table exists in DDB Local
-            if context.region == global_table_region or context.region in replicated_at:
-                return global_table_region
+        store = get_store(context.account_id, context.region)
+
+        table_region = store.TABLE_REGION.get(table_name)
+        replicated_at = store.REPLICAS.get(table_name, {}).keys()
+
+        if context.region == table_region or context.region in replicated_at:
+            return table_region
+
         return context.region
 
     @staticmethod

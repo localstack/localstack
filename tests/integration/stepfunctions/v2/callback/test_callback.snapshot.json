@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token": {
-    "recorded-date": "23-06-2023, 12:38:28",
+    "recorded-date": "25-06-2023, 13:22:39",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -69,7 +69,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "637cfc6ef240d08447e8bc0f07a3fcb3",
+                "MD5OfMessageBody": "ab1ab2a9482bb62de300a13d874b618a",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -153,7 +153,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token_timeout": {
-    "recorded-date": "23-06-2023, 12:38:45",
+    "recorded-date": "25-06-2023, 13:22:56",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -223,7 +223,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "0e58ab9161f815cb922d61717d8447f1",
+                "MD5OfMessageBody": "7ffa77cc205fb969ec95e4bc1cb9725a",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -288,7 +288,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_failure_in_wait_for_task_token": {
-    "recorded-date": "23-06-2023, 12:39:14",
+    "recorded-date": "25-06-2023, 13:23:24",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -357,7 +357,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "d42c5a50fca78e5e077f9798ced21963",
+                "MD5OfMessageBody": "55aaf24b94bce0c0aad866a87ad43878",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
