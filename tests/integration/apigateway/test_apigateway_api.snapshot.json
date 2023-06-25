@@ -2451,5 +2451,92 @@
         }
       }
     }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_invoke_test_method": {
+    "recorded-date": "01-07-2023, 18:52:50",
+    "recorded-content": {
+      "test-invoke-method-get": {
+        "body": {
+          "petId": "123"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "latency": "latency",
+        "log": "log",
+        "multiValueHeaders": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "status": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "test-invoke-method-get-with-qs": {
+        "body": {
+          "petId": "123"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "latency": "latency",
+        "log": "log",
+        "multiValueHeaders": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "status": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "test-invoke-method-post-with-body": {
+        "body": {
+          "petId": "123"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "latency": "latency",
+        "log": "log",
+        "multiValueHeaders": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "status": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resource-id-not-found": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "rest-api-not-found": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
