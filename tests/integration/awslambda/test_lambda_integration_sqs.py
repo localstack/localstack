@@ -161,6 +161,94 @@ def test_failing_lambda_retries_after_visibility_timeout(
 
 @pytest.mark.skip_snapshot_verify(
     paths=[
+        # AWS returns empty lists for these values, even though they are not implemented yet
+        # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_MessageAttributeValue.html
+        "$..stringListValues",
+        "$..binaryListValues",
+    ]
+)
+@pytest.mark.aws_validated
+def test_message_body_and_attributes_passed_correctly(
+    create_lambda_function,
+    sqs_create_queue,
+    sqs_queue_arn,
+    lambda_su_role,
+    snapshot,
+    cleanups,
+    aws_client,
+):
+    # create queue used in the lambda to send events to (to verify lambda was invoked)
+    destination_queue_name = f"destination-queue-{short_uid()}"
+    destination_url = sqs_create_queue(QueueName=destination_queue_name)
+    snapshot.match(
+        "get_destination_queue_url", aws_client.sqs.get_queue_url(QueueName=destination_queue_name)
+    )
+
+    # timeout in seconds, used for both the lambda and the queue visibility timeout
+    retry_timeout = 5
+    retries = 2
+
+    # set up lambda function
+    function_name = f"lambda-{short_uid()}"
+    create_lambda_function(
+        func_name=function_name,
+        handler_file=LAMBDA_SQS_INTEGRATION_FILE,
+        runtime=LAMBDA_RUNTIME_PYTHON38,
+        role=lambda_su_role,
+        timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
+    )
+
+    # create dlq for event source queue
+    event_dlq_url = sqs_create_queue(QueueName=f"event-dlq-{short_uid()}")
+    event_dlq_arn = sqs_queue_arn(event_dlq_url)
+
+    # create event source queue
+    event_source_url = sqs_create_queue(
+        QueueName=f"source-queue-{short_uid()}",
+        Attributes={
+            # the visibility timeout is implicitly also the time between retries
+            "VisibilityTimeout": str(retry_timeout),
+            "RedrivePolicy": json.dumps(
+                {"deadLetterTargetArn": event_dlq_arn, "maxReceiveCount": retries}
+            ),
+        },
+    )
+    event_source_arn = sqs_queue_arn(event_source_url)
+
+    # wire everything with the event source mapping
+    mapping_uuid = aws_client.awslambda.create_event_source_mapping(
+        EventSourceArn=event_source_arn,
+        FunctionName=function_name,
+        BatchSize=1,
+    )["UUID"]
+    cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=mapping_uuid))
+    _await_event_source_mapping_enabled(aws_client.awslambda, mapping_uuid)
+
+    # trigger lambda with a message and pass the result destination url. the event format is expected by the
+    # lambda_sqs_integration.py lambda.
+    event = {"destination": destination_url, "fail_attempts": 0}
+    aws_client.sqs.send_message(
+        QueueUrl=event_source_url,
+        MessageBody=json.dumps(event),
+        MessageAttributes={
+            "Title": {"DataType": "String", "StringValue": "The Whistler"},
+            "Author": {"DataType": "String", "StringValue": "John Grisham"},
+            "WeeksOn": {"DataType": "Number", "StringValue": "6"},
+        },
+    )
+
+    # now wait for the first invocation result which is expected to fail
+    response = aws_client.sqs.receive_message(
+        QueueUrl=destination_url,
+        WaitTimeSeconds=15,
+        MaxNumberOfMessages=1,
+    )
+    assert "Messages" in response
+    snapshot.match("first_attempt", response)
+
+
+@pytest.mark.skip_snapshot_verify(
+    paths=[
         "$..ParallelizationFactor",
         "$..LastProcessingResult",
         "$..Topics",
