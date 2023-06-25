@@ -170,19 +170,18 @@ def test_failing_lambda_retries_after_visibility_timeout(
 @pytest.mark.aws_validated
 def test_message_body_and_attributes_passed_correctly(
     create_lambda_function,
-    lambda_client,
-    sqs_client,
     sqs_create_queue,
     sqs_queue_arn,
     lambda_su_role,
     snapshot,
     cleanups,
+    aws_client,
 ):
     # create queue used in the lambda to send events to (to verify lambda was invoked)
     destination_queue_name = f"destination-queue-{short_uid()}"
     destination_url = sqs_create_queue(QueueName=destination_queue_name)
     snapshot.match(
-        "get_destination_queue_url", sqs_client.get_queue_url(QueueName=destination_queue_name)
+        "get_destination_queue_url", aws_client.sqs.get_queue_url(QueueName=destination_queue_name)
     )
 
     # timeout in seconds, used for both the lambda and the queue visibility timeout
@@ -217,18 +216,18 @@ def test_message_body_and_attributes_passed_correctly(
     event_source_arn = sqs_queue_arn(event_source_url)
 
     # wire everything with the event source mapping
-    mapping_uuid = lambda_client.create_event_source_mapping(
+    mapping_uuid = aws_client.awslambda.create_event_source_mapping(
         EventSourceArn=event_source_arn,
         FunctionName=function_name,
         BatchSize=1,
     )["UUID"]
-    cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=mapping_uuid))
-    _await_event_source_mapping_enabled(lambda_client, mapping_uuid)
+    cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=mapping_uuid))
+    _await_event_source_mapping_enabled(aws_client.awslambda, mapping_uuid)
 
     # trigger lambda with a message and pass the result destination url. the event format is expected by the
     # lambda_sqs_integration.py lambda.
     event = {"destination": destination_url, "fail_attempts": 0}
-    sqs_client.send_message(
+    aws_client.sqs.send_message(
         QueueUrl=event_source_url,
         MessageBody=json.dumps(event),
         MessageAttributes={
@@ -239,7 +238,7 @@ def test_message_body_and_attributes_passed_correctly(
     )
 
     # now wait for the first invocation result which is expected to fail
-    response = sqs_client.receive_message(
+    response = aws_client.sqs.receive_message(
         QueueUrl=destination_url,
         WaitTimeSeconds=15,
         MaxNumberOfMessages=1,
