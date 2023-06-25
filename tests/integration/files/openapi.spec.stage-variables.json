@@ -1,0 +1,19 @@
+{
+  "openapi":"3.0.1",
+  "info":{
+    "title":"example",
+    "version":"1.0"
+  },
+  "paths":{
+    "/path1":{
+      "get":{
+        "x-amazon-apigateway-integration":{
+          "httpMethod":"GET",
+          "payloadFormatVersion":"1.0",
+          "type":"HTTP_PROXY",
+          "uri":"${stageVariables.foo}"
+        }
+      }
+    }
+  }
+}
