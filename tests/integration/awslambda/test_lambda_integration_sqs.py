@@ -167,6 +167,7 @@ def test_failing_lambda_retries_after_visibility_timeout(
         "$..binaryListValues",
     ]
 )
+@pytest.mark.aws_validated
 def test_message_body_and_attributes_passed_correctly(
     create_lambda_function,
     lambda_client,
