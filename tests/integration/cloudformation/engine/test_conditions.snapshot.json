@@ -1,6 +1,6 @@
 {
   "tests/integration/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[test-nobucket-nopolicy]": {
-    "recorded-date": "06-06-2023, 23:53:29",
+    "recorded-date": "26-06-2023, 14:20:49",
     "recorded-content": {
       "create_cs_result": {
         "Id": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -122,7 +122,7 @@
     }
   },
   "tests/integration/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[test-bucket-nopolicy]": {
-    "recorded-date": "06-06-2023, 23:54:34",
+    "recorded-date": "26-06-2023, 14:21:54",
     "recorded-content": {
       "create_cs_result": {
         "Id": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -308,7 +308,7 @@
     }
   },
   "tests/integration/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[prod-nobucket-nopolicy]": {
-    "recorded-date": "06-06-2023, 23:55:38",
+    "recorded-date": "26-06-2023, 14:22:58",
     "recorded-content": {
       "create_cs_result": {
         "Id": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -430,7 +430,7 @@
     }
   },
   "tests/integration/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[prod-bucket-policy]": {
-    "recorded-date": "06-06-2023, 23:56:44",
+    "recorded-date": "26-06-2023, 14:24:03",
     "recorded-content": {
       "create_cs_result": {
         "Id": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -729,12 +729,28 @@
     }
   },
   "tests/integration/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_dependent_ref": {
-    "recorded-date": "07-06-2023, 11:30:09",
+    "recorded-date": "26-06-2023, 14:18:26",
     "recorded-content": {
       "dependent_ref_exc": {
         "Error": {
           "Code": "ValidationError",
           "Message": "Template format error: Unresolved resource dependencies [MyTopic] in the Resources block of the template",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_output_reference_to_skipped_resource": {
+    "recorded-date": "27-06-2023, 00:43:18",
+    "recorded-content": {
+      "unresolved_resource_reference_exception": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Unresolved resource dependencies [MyTopic] in the Outputs block of the template",
           "Type": "Sender"
         },
         "ResponseMetadata": {
