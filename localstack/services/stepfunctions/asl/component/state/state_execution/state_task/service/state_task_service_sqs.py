@@ -12,6 +12,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
+from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackOutcomeFailureError
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
@@ -38,6 +39,8 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
         return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        if isinstance(ex, CallbackOutcomeFailureError):
+            return self._get_callback_outcome_failure_event(ex=ex)
         if isinstance(ex, TimeoutError):
             return self._get_timed_out_failure_event()
 

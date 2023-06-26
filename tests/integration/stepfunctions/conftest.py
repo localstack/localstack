@@ -148,3 +148,24 @@ def sqs_send_task_success_state_machine(aws_client, create_state_machine, create
         )
 
     return _create_state_machine
+
+
+@pytest.fixture
+def sqs_send_task_failure_state_machine(aws_client, create_state_machine, create_iam_role_for_sfn):
+    def _create_state_machine(sqs_queue_url):
+        snf_role_arn = create_iam_role_for_sfn()
+        sm_name: str = f"sqs_send_task_failure_state_machine_{short_uid()}"
+        template = CallbackTemplates.load_sfn_template(CallbackTemplates.SQS_FAILURE_ON_TASK_TOKEN)
+        definition = json.dumps(template)
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition, roleArn=snf_role_arn
+        )
+        state_machine_arn = creation_resp["stateMachineArn"]
+
+        aws_client.stepfunctions.start_execution(
+            stateMachineArn=state_machine_arn,
+            input=json.dumps({"QueueUrl": sqs_queue_url, "Iterator": {"Count": 300}}),
+        )
+
+    return _create_state_machine

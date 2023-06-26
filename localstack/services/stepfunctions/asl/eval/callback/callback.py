@@ -76,6 +76,13 @@ class CallbackNotifyConsumerError(RuntimeError):
         self.callback_consumer_error = callback_consumer_error
 
 
+class CallbackOutcomeFailureError(RuntimeError):
+    callback_outcome_failure: CallbackOutcomeFailure
+
+    def __init__(self, callback_outcome_failure: CallbackOutcomeFailure):
+        self.callback_outcome_failure = callback_outcome_failure
+
+
 class CallbackPoolManager:
     _pool: dict[CallbackId, CallbackEndpoint]
 
