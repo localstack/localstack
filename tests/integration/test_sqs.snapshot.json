@@ -54,6 +54,27 @@
           "HTTPHeaders": {}
         }
       },
+      "all_wildcard_asterisk": {
+        "Body": "msg",
+        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+        "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
+        "MessageAttributes": {
+          "General": {
+            "DataType": "String",
+            "StringValue": "Kenobi"
+          },
+          "Hello": {
+            "DataType": "String",
+            "StringValue": "There"
+          },
+          "Help.Me": {
+            "DataType": "String",
+            "StringValue": "Me"
+          }
+        },
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:3>"
+      },
       "all_wildcard": {
         "MessageId": "<uuid:1>",
         "ReceiptHandle": "<receipt-handle:3>",
