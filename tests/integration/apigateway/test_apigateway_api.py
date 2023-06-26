@@ -1,14 +1,17 @@
 import json
 import logging
+import os.path
 import time
 from operator import itemgetter
 
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.aws.api.apigateway import PutMode
 from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
+from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.integration.apigateway.apigateway_fixtures import (
@@ -20,6 +23,9 @@ from tests.integration.apigateway.apigateway_fixtures import (
 )
 
 LOG = logging.getLogger(__name__)
+
+PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OAS_30_DOCUMENTATION_PARTS = os.path.join(PARENT_DIR, "files", "oas30_documentation_parts.json")
 
 
 @pytest.fixture(autouse=True)
@@ -2049,3 +2055,36 @@ class TestApiGatewayApiDocumentationPart:
                 documentationPartId=documentation_part_id,
             )
         snapshot.match("delete_already_deleted_documentation_part", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_import_documentation_parts(self, aws_client, import_apigw, snapshot):
+        # snapshot array "ids"
+        snapshot.add_transformer(snapshot.transform.jsonpath("$..ids[*]", "id"))
+        # create api with documentation imports
+        spec_file = load_file(OAS_30_DOCUMENTATION_PARTS)
+        response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
+        rest_api_id = response["id"]
+
+        # get documentation parts to make sure import worked
+        response = aws_client.apigateway.get_documentation_parts(restApiId=rest_api_id)
+        snapshot.match("create-import-documentations_parts", response["items"])
+
+        # delete documentation parts
+        for doc_part_item in response["items"]:
+            response = aws_client.apigateway.delete_documentation_part(
+                restApiId=rest_api_id,
+                documentationPartId=doc_part_item["id"],
+            )
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 202
+
+        # make sure delete parts are gone
+        response = aws_client.apigateway.get_documentation_parts(restApiId=rest_api_id)
+        assert len(response["items"]) == 0
+
+        # import documentation parts using import documentation parts api
+        response = aws_client.apigateway.import_documentation_parts(
+            restApiId=rest_api_id,
+            mode=PutMode.overwrite,
+            body=spec_file,
+        )
+        snapshot.match("import-documentation-parts", response)

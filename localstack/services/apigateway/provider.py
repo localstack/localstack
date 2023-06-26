@@ -31,6 +31,7 @@ from localstack.aws.api.apigateway import (
     CreateAuthorizerRequest,
     CreateRestApiRequest,
     DocumentationPart,
+    DocumentationPartIds,
     DocumentationPartLocation,
     DocumentationParts,
     ExportResponse,
@@ -51,6 +52,7 @@ from localstack.aws.api.apigateway import (
     NullableInteger,
     PutIntegrationRequest,
     PutIntegrationResponseRequest,
+    PutMode,
     PutRestApiRequest,
     RequestValidator,
     RequestValidators,
@@ -71,6 +73,7 @@ from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
     ERROR_MODEL,
     OpenApiExporter,
+    OpenAPIExt,
     apply_json_patch_safe,
     get_apigateway_store,
     import_api_from_openapi_spec,
@@ -78,6 +81,7 @@ from localstack.services.apigateway.helpers import (
     is_variable_path,
     log_template,
     multi_value_dict_for_list,
+    resolve_references,
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.models import RestApiContainer
@@ -945,6 +949,41 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if rest_api_container:
             rest_api_container.documentation_parts.pop(documentation_part_id, None)
 
+    def import_documentation_parts(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        body: IO[Blob],
+        mode: PutMode = None,
+        fail_on_warnings: Boolean = None,
+    ) -> DocumentationPartIds:
+
+        body_data = body.read()
+        openapi_spec = parse_json_or_yaml(to_str(body_data))
+
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        if not (rest_api_container := store.rest_apis.get(rest_api_id)):
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
+
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-documenting-api-quick-start-import-export.html
+        resolved_schema = resolve_references(openapi_spec, rest_api_id=rest_api_id)
+        documentation = resolved_schema.get(OpenAPIExt.DOCUMENTATION)
+
+        ids = []
+        # overwrite mode
+        if mode == PutMode.overwrite:
+            rest_api_container.documentation_parts.clear()
+            for doc_part in documentation["documentationParts"]:
+                entity_id = short_uid()[:6]
+                rest_api_container.documentation_parts[entity_id] = DocumentationPart(
+                    id=entity_id, **doc_part
+                )
+                ids.append(entity_id)
+        # TODO: implement the merge mode
+        return DocumentationPartIds(ids=ids)
+
     # base path mappings
 
     def get_base_path_mappings(
@@ -1642,13 +1681,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
 def get_moto_rest_api(context: RequestContext, rest_api_id: str) -> MotoRestAPI:
     moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
-    rest_api = moto_backend.apis.get(rest_api_id)
-    if not rest_api:
+    if rest_api := moto_backend.apis.get(rest_api_id):
+        return rest_api
+    else:
         raise NotFoundException(
             f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
         )
-
-    return rest_api
 
 
 def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True) -> RestApi:
