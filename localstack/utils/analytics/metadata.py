@@ -101,32 +101,55 @@ def _generate_session_id() -> str:
 
 
 def _generate_machine_id() -> str:
-    if config.is_in_docker:
-        return short_uid()
+    try:
+        # try to get a robust ID from the docker socket
+        from localstack.utils.docker_utils import DOCKER_CLIENT
 
-    # this can potentially be useful when generated on the host using the CLI and then mounted into the container via
-    # machine.json
+        if docker_id := DOCKER_CLIENT.get_system_id():
+            return f"d_{md5(docker_id)[:12]}"
+    except Exception:
+        pass
+
+    if config.is_in_docker:
+        return f"g_{short_uid()}"
+
+    # this can potentially be useful when generated on the host using the CLI and then mounted into the
+    # container via machine.json
     try:
         if os.path.exists("/etc/machine-id"):
             with open("/etc/machine-id") as fd:
-                return md5(str(fd.read()))[:8]
+                return f"m_{md5(str(fd.read()))[:12]}"
     except Exception:
         pass
 
     # always fall back to short_uid()
-    return short_uid()
+    return f"g_{short_uid()}"
 
 
 def read_api_key_safe():
     try:
         # FIXME this info (maybe along with other info) should be plugged in by ext instead of importing it here
-        from localstack_ext.bootstrap.licensing import read_api_key
+        from localstack_ext.bootstrap.licensingv2 import get_credentials_from_environment
 
-        return read_api_key(raise_if_missing=False)
+        return get_credentials_from_environment()
     except ImportError:
         # the ext package is not available, API key cannot be read (or used)
         return None
 
 
+@singleton_factory
 def get_system() -> str:
-    return platform.system()
+    try:
+        # try to get the system from the docker socket
+        from localstack.utils.docker_utils import DOCKER_CLIENT
+
+        if system := DOCKER_CLIENT.get_system_info()["OSType"]:
+            DOCKER_CLIENT.get_system_info()
+            return system.lower()
+    except Exception:
+        pass
+
+    if config.is_in_docker:
+        return "docker"
+
+    return platform.system().lower()
