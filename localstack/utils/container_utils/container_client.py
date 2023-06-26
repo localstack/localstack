@@ -456,6 +456,14 @@ class ContainerClient(metaclass=ABCMeta):
     STOP_TIMEOUT = 0
 
     @abstractmethod
+    def get_system_info(self) -> dict:
+        """Returns the docker system-wide information as dictionary (``docker info``)."""
+
+    def get_system_id(self) -> str:
+        """Returns the unique and stable ID of the docker daemon."""
+        return self.get_system_info()["ID"]
+
+    @abstractmethod
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
         """Returns the status of the container with the given name"""
         pass
