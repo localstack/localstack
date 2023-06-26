@@ -610,7 +610,7 @@ class ResourceProviderExecutor:
         try:
             plugin = plugin_manager.load(resource_type)
             return plugin.factory()
-        except Exception as e:
+        except Exception:
             LOG.warning(
                 "Failed to load resource type as a ResourceProvider. Falling back to looking up a GenericBaseModel for %s",
                 resource_type,
