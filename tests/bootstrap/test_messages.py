@@ -6,7 +6,7 @@ from click.testing import CliRunner
 from localstack.cli.localstack import localstack as cli
 from tests.fixtures.HTTPMockServer import HTTPMockServer, ResponseMock
 from tests.fixtures.docker_fixture import localstack_docker, LOCALSTACK_TEST_PORT
-from localstack import constants
+from localstack import constants, config
 
 
 @pytest.fixture
@@ -51,11 +51,15 @@ class TestMessages:
 
 
 class TestMessageDisplay:
-    def test_show_messages_in_cli(self):
+    def test_show_messages_in_cli(self, runner: CliRunner):
+
+        print(f"test cache folder: '{config.dirs.cache}'")
         # with cached messages file
         # start cli
+        result = runner.invoke(cli, ["start", "-d"])
+        print("-------------------- output ----------------------")
+        print(result.output)
         # assert messages shown before logs, exactly once
-        pytest.fail()
 
     def test_show_messages_in_docker(self):
         # with cached messages file

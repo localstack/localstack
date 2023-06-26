@@ -163,6 +163,7 @@ class TestCliContainerLifecycle:
             env_vars={"LOCALSTACK_VOLUME_DIR": "/tmp/ls-volume"},
         )
         stdout = to_str(output[0])
+        print(stdout)
         assert "starting LocalStack" in stdout
         assert "detaching" in stdout
 

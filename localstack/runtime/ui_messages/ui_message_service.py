@@ -32,6 +32,7 @@ class UIMessageService:
 
 
     def _read_file_cache(self):
+        print(f"reading cache at: '{self._cache_path}'")
         try:
             with open(self._cache_path, 'r', encoding='utf-8') as file:
                 self._cache = json.load(file)
@@ -68,8 +69,9 @@ class UIMessageService:
     def print_cached_messages(self):
         ordered_messages = self._get_ordered_messages()
 
-        if len(ordered_messages) > 0:
+        if True: #len(ordered_messages) > 0:
             print()
+            # print('foobar')
             console.rule("messages")
             for message in ordered_messages:
                 print(message['content']['title'] + ' - ' + message['content']['body'])
