@@ -146,6 +146,15 @@ class LambdaFunction(GenericBaseModel):
                 environment_variables = properties["Environment"].get("Variables", {})
                 return {"Variables": {k: str(v) for k, v in environment_variables.items()}}
 
+        def get_vpc_config_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ):
+            if "VpcConfig" in properties:
+                vpc_config = properties["VpcConfig"]
+                if "SubnetIds" in vpc_config:
+                    vpc_config["SubnetIds"] = vpc_config["SubnetIds"].split(",")
+                return vpc_config
+
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             """waits for the lambda to be in a "terminal" state, i.e. not pending"""
             resource["Properties"]["Arn"] = result["FunctionArn"]
@@ -172,7 +181,7 @@ class LambdaFunction(GenericBaseModel):
                     "Role": "Role",
                     "Timeout": "Timeout",
                     "TracingConfig": "TracingConfig",
-                    "VpcConfig": "VpcConfig"
+                    "VpcConfig": get_vpc_config_params
                     # TODO add missing fields
                 },
                 "types": {"Timeout": int, "MemorySize": int},
