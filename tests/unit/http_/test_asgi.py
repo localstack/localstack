@@ -101,20 +101,21 @@ def test_chunked_transfer_encoding_client_timeout(serve_asgi_adapter):
     # this test makes sure that creating a response with a generator automatically creates a
     # transfer-encoding=chunked response
 
-    ended = False
+    generator_exited = threading.Event()
     continue_request = threading.Event()
 
     @Request.application
     def app(_request: Request) -> Response:
         def _gen():
-            nonlocal ended
-            yield "foo"
-            yield "bar\n"
-            continue_request.wait()
-            # only three are needed, let's send some more to make sure
-            for _ in range(10):
-                yield "baz\n"
-            ended = True
+            try:
+                yield "foo"
+                yield "bar\n"
+                continue_request.wait()
+                # only three are needed, let's send some more to make sure
+                for _ in range(10):
+                    yield "baz\n"
+            except GeneratorExit:
+                generator_exited.set()
 
         return Response(_gen(), 200)
 
@@ -129,10 +130,8 @@ def test_chunked_transfer_encoding_client_timeout(serve_asgi_adapter):
 
     # request is now closed, continue the response generator
     continue_request.set()
-    # we need to wait for a second, to ensure the iterator had a chance to terminate one way or the other
-    time.sleep(1)
     # the generator should have been terminated before setting this value
-    assert not ended
+    assert generator_exited.wait(timeout=10)
 
 
 def test_chunked_transfer_encoding_request(serve_asgi_adapter):

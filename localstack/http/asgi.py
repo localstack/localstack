@@ -383,6 +383,8 @@ class ASGIAdapter:
                 client_info = f"{address}:{port}"
             LOG.debug("Error while writing responses: %s (client_info: %s)", e, client_info)
         finally:
+            if iterable and hasattr(iterable, "aclose"):
+                await iterable.aclose()
             await response.close()
 
     async def handle_lifespan(
