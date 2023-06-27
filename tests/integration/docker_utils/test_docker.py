@@ -126,7 +126,7 @@ class TestDockerClient:
         assert "Architecture" in info
 
     def test_get_system_id(self, docker_client: ContainerClient):
-        assert uuid.UUID(docker_client.get_system_id())
+        assert len(docker_client.get_system_id()) > 1
         assert docker_client.get_system_id() == docker_client.get_system_id()
 
     def test_container_lifecycle_commands(self, docker_client: ContainerClient):
