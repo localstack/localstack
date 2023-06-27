@@ -69,6 +69,15 @@ class TestCliContainerLifecycle:
         with pytest.raises(requests.ConnectionError):
             requests.get(get_edge_url() + "/_localstack/health")
 
+    def test_start_already_running(self, runner, container_client):
+        runner.invoke(cli, ["start", "-d"])
+        runner.invoke(cli, ["wait", "-t", "180"])
+        result = runner.invoke(cli, ["start"])
+        assert container_exists(container_client, config.MAIN_CONTAINER_NAME)
+        assert result.exit_code == 1
+        assert "Error" in result.output
+        assert "is already running" in result.output
+
     def test_wait_timeout_raises_exception(self, runner, container_client):
         # assume a wait without start fails
         result = runner.invoke(cli, ["wait", "-t", "0.5"])

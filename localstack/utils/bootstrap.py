@@ -618,6 +618,10 @@ def start_infra_in_docker():
     try:
         server.start()
         server.join()
+        error = server.get_error()
+        if error:
+            # if the server failed, raise the error
+            raise error
     except KeyboardInterrupt:
         print("ok, bye!")
         shutdown_handler()
