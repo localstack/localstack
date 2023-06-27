@@ -9,7 +9,9 @@ else:
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
+AliasDescription = str
 Arn = str
+CharacterRestrictedName = str
 ConnectorParameters = str
 Definition = str
 Enabled = bool
@@ -24,7 +26,9 @@ MaxConcurrency = int
 Name = str
 PageSize = int
 PageToken = str
+Publish = bool
 ReverseOrder = bool
+RevisionId = str
 SensitiveCause = str
 SensitiveData = str
 SensitiveDataJobInput = str
@@ -35,6 +39,8 @@ TaskToken = str
 ToleratedFailurePercentage = float
 TraceHeader = str
 UnsignedInteger = int
+VersionDescription = str
+VersionWeight = int
 includedDetails = bool
 truncated = bool
 
@@ -143,6 +149,7 @@ class ValidationExceptionReason(str):
     API_DOES_NOT_SUPPORT_LABELED_ARNS = "API_DOES_NOT_SUPPORT_LABELED_ARNS"
     MISSING_REQUIRED_PARAMETER = "MISSING_REQUIRED_PARAMETER"
     CANNOT_UPDATE_COMPLETED_MAP_RUN = "CANNOT_UPDATE_COMPLETED_MAP_RUN"
+    INVALID_ROUTING_CONFIGURATION = "INVALID_ROUTING_CONFIGURATION"
 
 
 class ActivityDoesNotExist(ServiceException):
@@ -159,6 +166,12 @@ class ActivityLimitExceeded(ServiceException):
 
 class ActivityWorkerLimitExceeded(ServiceException):
     code: str = "ActivityWorkerLimitExceeded"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class ConflictException(ServiceException):
+    code: str = "ConflictException"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -240,6 +253,12 @@ class ResourceNotFound(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     resourceName: Optional[Arn]
+
+
+class ServiceQuotaExceededException(ServiceException):
+    code: str = "ServiceQuotaExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class StateMachineAlreadyExists(ServiceException):
@@ -384,6 +403,25 @@ class CreateActivityOutput(TypedDict, total=False):
     creationDate: Timestamp
 
 
+class RoutingConfigurationListItem(TypedDict, total=False):
+    stateMachineVersionArn: Arn
+    weight: VersionWeight
+
+
+RoutingConfigurationList = List[RoutingConfigurationListItem]
+
+
+class CreateStateMachineAliasInput(ServiceRequest):
+    description: Optional[AliasDescription]
+    name: CharacterRestrictedName
+    routingConfiguration: RoutingConfigurationList
+
+
+class CreateStateMachineAliasOutput(TypedDict, total=False):
+    stateMachineAliasArn: Arn
+    creationDate: Timestamp
+
+
 class TracingConfiguration(TypedDict, total=False):
     enabled: Optional[Enabled]
 
@@ -411,6 +449,8 @@ CreateStateMachineInput = TypedDict(
         "loggingConfiguration": Optional[LoggingConfiguration],
         "tags": Optional[TagList],
         "tracingConfiguration": Optional[TracingConfiguration],
+        "publish": Optional[Publish],
+        "versionDescription": Optional[VersionDescription],
     },
     total=False,
 )
@@ -419,6 +459,7 @@ CreateStateMachineInput = TypedDict(
 class CreateStateMachineOutput(TypedDict, total=False):
     stateMachineArn: Arn
     creationDate: Timestamp
+    stateMachineVersionArn: Optional[Arn]
 
 
 class DeleteActivityInput(ServiceRequest):
@@ -429,11 +470,27 @@ class DeleteActivityOutput(TypedDict, total=False):
     pass
 
 
+class DeleteStateMachineAliasInput(ServiceRequest):
+    stateMachineAliasArn: Arn
+
+
+class DeleteStateMachineAliasOutput(TypedDict, total=False):
+    pass
+
+
 class DeleteStateMachineInput(ServiceRequest):
     stateMachineArn: Arn
 
 
 class DeleteStateMachineOutput(TypedDict, total=False):
+    pass
+
+
+class DeleteStateMachineVersionInput(ServiceRequest):
+    stateMachineVersionArn: LongArn
+
+
+class DeleteStateMachineVersionOutput(TypedDict, total=False):
     pass
 
 
@@ -466,6 +523,8 @@ class DescribeExecutionOutput(TypedDict, total=False):
     mapRunArn: Optional[LongArn]
     error: Optional[SensitiveError]
     cause: Optional[SensitiveCause]
+    stateMachineVersionArn: Optional[Arn]
+    stateMachineAliasArn: Optional[Arn]
 
 
 class DescribeMapRunInput(ServiceRequest):
@@ -513,6 +572,19 @@ class DescribeMapRunOutput(TypedDict, total=False):
     executionCounts: MapRunExecutionCounts
 
 
+class DescribeStateMachineAliasInput(ServiceRequest):
+    stateMachineAliasArn: Arn
+
+
+class DescribeStateMachineAliasOutput(TypedDict, total=False):
+    stateMachineAliasArn: Optional[Arn]
+    name: Optional[Name]
+    description: Optional[AliasDescription]
+    routingConfiguration: Optional[RoutingConfigurationList]
+    creationDate: Optional[Timestamp]
+    updateDate: Optional[Timestamp]
+
+
 class DescribeStateMachineForExecutionInput(ServiceRequest):
     executionArn: Arn
 
@@ -527,6 +599,7 @@ class DescribeStateMachineForExecutionOutput(TypedDict, total=False):
     tracingConfiguration: Optional[TracingConfiguration]
     mapRunArn: Optional[LongArn]
     label: Optional[MapRunLabel]
+    revisionId: Optional[RevisionId]
 
 
 class DescribeStateMachineInput(ServiceRequest):
@@ -546,6 +619,8 @@ DescribeStateMachineOutput = TypedDict(
         "loggingConfiguration": Optional[LoggingConfiguration],
         "tracingConfiguration": Optional[TracingConfiguration],
         "label": Optional[MapRunLabel],
+        "revisionId": Optional[RevisionId],
+        "description": Optional[VersionDescription],
     },
     total=False,
 )
@@ -571,6 +646,8 @@ class ExecutionListItem(TypedDict, total=False):
     stopDate: Optional[Timestamp]
     mapRunArn: Optional[LongArn]
     itemCount: Optional[UnsignedInteger]
+    stateMachineVersionArn: Optional[Arn]
+    stateMachineAliasArn: Optional[Arn]
 
 
 ExecutionList = List[ExecutionListItem]
@@ -580,6 +657,8 @@ class ExecutionStartedEventDetails(TypedDict, total=False):
     input: Optional[SensitiveData]
     inputDetails: Optional[HistoryEventExecutionDataDetails]
     roleArn: Optional[Arn]
+    stateMachineAliasArn: Optional[Arn]
+    stateMachineVersionArn: Optional[Arn]
 
 
 class ExecutionSucceededEventDetails(TypedDict, total=False):
@@ -833,6 +912,44 @@ class ListMapRunsOutput(TypedDict, total=False):
     nextToken: Optional[PageToken]
 
 
+class ListStateMachineAliasesInput(ServiceRequest):
+    stateMachineArn: Arn
+    nextToken: Optional[PageToken]
+    maxResults: Optional[PageSize]
+
+
+class StateMachineAliasListItem(TypedDict, total=False):
+    stateMachineAliasArn: LongArn
+    creationDate: Timestamp
+
+
+StateMachineAliasList = List[StateMachineAliasListItem]
+
+
+class ListStateMachineAliasesOutput(TypedDict, total=False):
+    stateMachineAliases: StateMachineAliasList
+    nextToken: Optional[PageToken]
+
+
+class ListStateMachineVersionsInput(ServiceRequest):
+    stateMachineArn: Arn
+    nextToken: Optional[PageToken]
+    maxResults: Optional[PageSize]
+
+
+class StateMachineVersionListItem(TypedDict, total=False):
+    stateMachineVersionArn: LongArn
+    creationDate: Timestamp
+
+
+StateMachineVersionList = List[StateMachineVersionListItem]
+
+
+class ListStateMachineVersionsOutput(TypedDict, total=False):
+    stateMachineVersions: StateMachineVersionList
+    nextToken: Optional[PageToken]
+
+
 class ListStateMachinesInput(ServiceRequest):
     maxResults: Optional[PageSize]
     nextToken: Optional[PageToken]
@@ -862,6 +979,17 @@ class ListTagsForResourceInput(ServiceRequest):
 
 class ListTagsForResourceOutput(TypedDict, total=False):
     tags: Optional[TagList]
+
+
+class PublishStateMachineVersionInput(ServiceRequest):
+    stateMachineArn: Arn
+    revisionId: Optional[RevisionId]
+    description: Optional[VersionDescription]
+
+
+class PublishStateMachineVersionOutput(TypedDict, total=False):
+    creationDate: Timestamp
+    stateMachineVersionArn: Arn
 
 
 class SendTaskFailureInput(ServiceRequest):
@@ -969,16 +1097,30 @@ class UpdateMapRunOutput(TypedDict, total=False):
     pass
 
 
+class UpdateStateMachineAliasInput(ServiceRequest):
+    stateMachineAliasArn: Arn
+    description: Optional[AliasDescription]
+    routingConfiguration: Optional[RoutingConfigurationList]
+
+
+class UpdateStateMachineAliasOutput(TypedDict, total=False):
+    updateDate: Timestamp
+
+
 class UpdateStateMachineInput(ServiceRequest):
     stateMachineArn: Arn
     definition: Optional[Definition]
     roleArn: Optional[Arn]
     loggingConfiguration: Optional[LoggingConfiguration]
     tracingConfiguration: Optional[TracingConfiguration]
+    publish: Optional[Publish]
+    versionDescription: Optional[VersionDescription]
 
 
 class UpdateStateMachineOutput(TypedDict, total=False):
     updateDate: Timestamp
+    revisionId: Optional[RevisionId]
+    stateMachineVersionArn: Optional[Arn]
 
 
 class StepfunctionsApi:
@@ -998,6 +1140,16 @@ class StepfunctionsApi:
     ) -> CreateStateMachineOutput:
         raise NotImplementedError
 
+    @handler("CreateStateMachineAlias")
+    def create_state_machine_alias(
+        self,
+        context: RequestContext,
+        name: CharacterRestrictedName,
+        routing_configuration: RoutingConfigurationList,
+        description: AliasDescription = None,
+    ) -> CreateStateMachineAliasOutput:
+        raise NotImplementedError
+
     @handler("DeleteActivity")
     def delete_activity(self, context: RequestContext, activity_arn: Arn) -> DeleteActivityOutput:
         raise NotImplementedError
@@ -1006,6 +1158,18 @@ class StepfunctionsApi:
     def delete_state_machine(
         self, context: RequestContext, state_machine_arn: Arn
     ) -> DeleteStateMachineOutput:
+        raise NotImplementedError
+
+    @handler("DeleteStateMachineAlias")
+    def delete_state_machine_alias(
+        self, context: RequestContext, state_machine_alias_arn: Arn
+    ) -> DeleteStateMachineAliasOutput:
+        raise NotImplementedError
+
+    @handler("DeleteStateMachineVersion")
+    def delete_state_machine_version(
+        self, context: RequestContext, state_machine_version_arn: LongArn
+    ) -> DeleteStateMachineVersionOutput:
         raise NotImplementedError
 
     @handler("DescribeActivity")
@@ -1030,6 +1194,12 @@ class StepfunctionsApi:
     def describe_state_machine(
         self, context: RequestContext, state_machine_arn: Arn
     ) -> DescribeStateMachineOutput:
+        raise NotImplementedError
+
+    @handler("DescribeStateMachineAlias")
+    def describe_state_machine_alias(
+        self, context: RequestContext, state_machine_alias_arn: Arn
+    ) -> DescribeStateMachineAliasOutput:
         raise NotImplementedError
 
     @handler("DescribeStateMachineForExecution")
@@ -1084,6 +1254,26 @@ class StepfunctionsApi:
     ) -> ListMapRunsOutput:
         raise NotImplementedError
 
+    @handler("ListStateMachineAliases")
+    def list_state_machine_aliases(
+        self,
+        context: RequestContext,
+        state_machine_arn: Arn,
+        next_token: PageToken = None,
+        max_results: PageSize = None,
+    ) -> ListStateMachineAliasesOutput:
+        raise NotImplementedError
+
+    @handler("ListStateMachineVersions")
+    def list_state_machine_versions(
+        self,
+        context: RequestContext,
+        state_machine_arn: Arn,
+        next_token: PageToken = None,
+        max_results: PageSize = None,
+    ) -> ListStateMachineVersionsOutput:
+        raise NotImplementedError
+
     @handler("ListStateMachines")
     def list_state_machines(
         self, context: RequestContext, max_results: PageSize = None, next_token: PageToken = None
@@ -1094,6 +1284,16 @@ class StepfunctionsApi:
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: Arn
     ) -> ListTagsForResourceOutput:
+        raise NotImplementedError
+
+    @handler("PublishStateMachineVersion")
+    def publish_state_machine_version(
+        self,
+        context: RequestContext,
+        state_machine_arn: Arn,
+        revision_id: RevisionId = None,
+        description: VersionDescription = None,
+    ) -> PublishStateMachineVersionOutput:
         raise NotImplementedError
 
     @handler("SendTaskFailure")
@@ -1182,5 +1382,17 @@ class StepfunctionsApi:
         role_arn: Arn = None,
         logging_configuration: LoggingConfiguration = None,
         tracing_configuration: TracingConfiguration = None,
+        publish: Publish = None,
+        version_description: VersionDescription = None,
     ) -> UpdateStateMachineOutput:
+        raise NotImplementedError
+
+    @handler("UpdateStateMachineAlias")
+    def update_state_machine_alias(
+        self,
+        context: RequestContext,
+        state_machine_alias_arn: Arn,
+        description: AliasDescription = None,
+        routing_configuration: RoutingConfigurationList = None,
+    ) -> UpdateStateMachineAliasOutput:
         raise NotImplementedError

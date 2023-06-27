@@ -12,7 +12,9 @@ from localstack.aws.api import RequestContext, ServiceRequest, handler
 AddressMaxResults = int
 AllocationId = str
 AllowedInstanceType = str
+AssetId = str
 AutoRecoveryFlag = bool
+AvailabilityZoneId = str
 AvailabilityZoneName = str
 BareMetalFlag = bool
 BaselineBandwidthInMbps = int
@@ -303,6 +305,8 @@ VpnConnectionDeviceSampleConfiguration = str
 VpnConnectionDeviceTypeId = str
 VpnConnectionId = str
 VpnGatewayId = str
+customerGatewayConfiguration = str
+preSharedKey = str
 totalFpgaMemory = int
 totalGpuMemory = int
 
@@ -3735,17 +3739,21 @@ class AllocateAddressResult(TypedDict, total=False):
     CarrierIp: Optional[String]
 
 
+AssetIdList = List[AssetId]
+
+
 class AllocateHostsRequest(ServiceRequest):
     AutoPlacement: Optional[AutoPlacement]
     AvailabilityZone: String
     ClientToken: Optional[String]
     InstanceType: Optional[String]
     InstanceFamily: Optional[String]
-    Quantity: Integer
+    Quantity: Optional[Integer]
     TagSpecifications: Optional[TagSpecificationList]
     HostRecovery: Optional[HostRecovery]
     OutpostArn: Optional[String]
     HostMaintenance: Optional[HostMaintenance]
+    AssetIds: Optional[AssetIdList]
 
 
 ResponseHostIdList = List[String]
@@ -5393,8 +5401,8 @@ class CreateCapacityReservationRequest(ServiceRequest):
     ClientToken: Optional[String]
     InstanceType: String
     InstancePlatform: CapacityReservationInstancePlatform
-    AvailabilityZone: Optional[String]
-    AvailabilityZoneId: Optional[String]
+    AvailabilityZone: Optional[AvailabilityZoneName]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     Tenancy: Optional[CapacityReservationTenancy]
     InstanceCount: Integer
     EbsOptimized: Optional[Boolean]
@@ -8373,7 +8381,7 @@ Phase1EncryptionAlgorithmsRequestList = List[Phase1EncryptionAlgorithmsRequestLi
 class VpnTunnelOptionsSpecification(TypedDict, total=False):
     TunnelInsideCidr: Optional[String]
     TunnelInsideIpv6Cidr: Optional[String]
-    PreSharedKey: Optional[String]
+    PreSharedKey: Optional[preSharedKey]
     Phase1LifetimeSeconds: Optional[Integer]
     Phase2LifetimeSeconds: Optional[Integer]
     RekeyMarginTimeSeconds: Optional[Integer]
@@ -8497,7 +8505,7 @@ class TunnelOption(TypedDict, total=False):
     OutsideIpAddress: Optional[String]
     TunnelInsideCidr: Optional[String]
     TunnelInsideIpv6Cidr: Optional[String]
-    PreSharedKey: Optional[String]
+    PreSharedKey: Optional[preSharedKey]
     Phase1LifetimeSeconds: Optional[Integer]
     Phase2LifetimeSeconds: Optional[Integer]
     RekeyMarginTimeSeconds: Optional[Integer]
@@ -8534,7 +8542,7 @@ class VpnConnectionOptions(TypedDict, total=False):
 
 
 class VpnConnection(TypedDict, total=False):
-    CustomerGatewayConfiguration: Optional[String]
+    CustomerGatewayConfiguration: Optional[customerGatewayConfiguration]
     CustomerGatewayId: Optional[String]
     Category: Optional[String]
     State: Optional[VpnState]
@@ -10334,6 +10342,7 @@ class Host(TypedDict, total=False):
     MemberOfServiceLinkedResourceGroup: Optional[Boolean]
     OutpostArn: Optional[String]
     HostMaintenance: Optional[HostMaintenance]
+    AssetId: Optional[AssetId]
 
 
 HostList = List[Host]
@@ -13081,6 +13090,8 @@ class VerifiedAccessLogs(TypedDict, total=False):
     S3: Optional[VerifiedAccessLogS3Destination]
     CloudWatchLogs: Optional[VerifiedAccessLogCloudWatchLogsDestination]
     KinesisDataFirehose: Optional[VerifiedAccessLogKinesisDataFirehoseDestination]
+    LogVersion: Optional[String]
+    IncludeTrustContext: Optional[Boolean]
 
 
 class VerifiedAccessInstanceLoggingConfiguration(TypedDict, total=False):
@@ -16072,6 +16083,8 @@ class VerifiedAccessLogOptions(TypedDict, total=False):
     S3: Optional[VerifiedAccessLogS3DestinationOptions]
     CloudWatchLogs: Optional[VerifiedAccessLogCloudWatchLogsDestinationOptions]
     KinesisDataFirehose: Optional[VerifiedAccessLogKinesisDataFirehoseDestinationOptions]
+    LogVersion: Optional[String]
+    IncludeTrustContext: Optional[Boolean]
 
 
 class ModifyVerifiedAccessInstanceLoggingConfigurationRequest(ServiceRequest):
@@ -16288,7 +16301,7 @@ class ModifyVpnTunnelCertificateResult(TypedDict, total=False):
 class ModifyVpnTunnelOptionsSpecification(TypedDict, total=False):
     TunnelInsideCidr: Optional[String]
     TunnelInsideIpv6Cidr: Optional[String]
-    PreSharedKey: Optional[String]
+    PreSharedKey: Optional[preSharedKey]
     Phase1LifetimeSeconds: Optional[Integer]
     Phase2LifetimeSeconds: Optional[Integer]
     RekeyMarginTimeSeconds: Optional[Integer]
@@ -17383,15 +17396,16 @@ class Ec2Api:
         self,
         context: RequestContext,
         availability_zone: String,
-        quantity: Integer,
         auto_placement: AutoPlacement = None,
         client_token: String = None,
         instance_type: String = None,
         instance_family: String = None,
+        quantity: Integer = None,
         tag_specifications: TagSpecificationList = None,
         host_recovery: HostRecovery = None,
         outpost_arn: String = None,
         host_maintenance: HostMaintenance = None,
+        asset_ids: AssetIdList = None,
     ) -> AllocateHostsResult:
         raise NotImplementedError
 
@@ -17891,8 +17905,8 @@ class Ec2Api:
         instance_platform: CapacityReservationInstancePlatform,
         instance_count: Integer,
         client_token: String = None,
-        availability_zone: String = None,
-        availability_zone_id: String = None,
+        availability_zone: AvailabilityZoneName = None,
+        availability_zone_id: AvailabilityZoneId = None,
         tenancy: CapacityReservationTenancy = None,
         ebs_optimized: Boolean = None,
         ephemeral_storage: Boolean = None,
