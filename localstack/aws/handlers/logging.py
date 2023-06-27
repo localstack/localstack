@@ -143,7 +143,7 @@ class ResponseLogger:
                     "request_headers": dict(context.request.headers),
                     # response
                     "output_type": "Response",
-                    "output": response.data,
+                    "output": "StreamingBody(unknown)" if response.is_streamed else response.data,
                     "response_headers": dict(response.headers),
                 },
             )

@@ -130,7 +130,7 @@ def test_chunked_transfer_encoding_client_timeout(serve_asgi_adapter):
 
     # request is now closed, continue the response generator
     continue_request.set()
-    # the generator should have been terminated before setting this value
+    # this flag is only set when generator is exited
     assert generator_exited.wait(timeout=10)
 
 
