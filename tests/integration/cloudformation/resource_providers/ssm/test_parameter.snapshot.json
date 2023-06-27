@@ -46,5 +46,28 @@
   "tests/integration/cloudformation/resource_providers/ssm/test_parameter.py::TestAttributeAccess::test_getattr[Name]": {
     "recorded-date": "19-05-2023, 16:58:53",
     "recorded-content": {}
+  },
+  "tests/integration/cloudformation/resource_providers/ssm/test_parameter.py::TestBasicCRD::test_black_box": {
+    "recorded-date": "21-06-2023, 16:57:04",
+    "recorded-content": {
+      "describe-resource": {
+        "Parameter": {
+          "ARN": "arn:aws:ssm:<region>:111111111111:parameter/<parameter>",
+          "DataType": "text",
+          "LastModifiedDate": "datetime",
+          "Name": "<parameter>",
+          "Type": "String",
+          "Value": "abc123",
+          "Version": 1
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deleted-resource": {
+        "error-message": "An error occurred (ParameterNotFound) when calling the GetParameter operation: "
+      }
+    }
   }
 }

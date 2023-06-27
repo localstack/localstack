@@ -602,32 +602,32 @@ class ResourceProviderExecutor:
             raise NoResourceProvider
 
     def load_resource_provider(self, resource_type: str) -> Optional[ResourceProvider]:
+        # TODO: unify behavior here in regards to raising NoResourceProvider
+        if not config.CFN_RESOURCE_PROVIDERS_V2:
+            return self._load_legacy_resource_provider(resource_type)
+
+        # attempt to use the new ResourceProvider implementation, if that fails fall back to the old GenericBaseModel
         try:
-            if config.CFN_RESOURCE_PROVIDERS_V2:
-                # attempt to use the new ResourceProvider implementation, if that fails fall back to the old GenericBaseModel
-                try:
-                    plugin = plugin_manager.load(resource_type)
-                    return plugin.factory()
-                except Exception:
-                    LOG.warning(
-                        "Failed to load resource type as a ResourceProvider. Falling back to looking up a GenericBaseModel for %s",
-                        resource_type,
-                        exc_info=LOG.isEnabledFor(logging.DEBUG),
-                    )
-                    return LegacyResourceProvider(
-                        resource_type=resource_type,
-                        resource_provider_cls=self.legacy_base_models[resource_type],
-                        resources=self.resources,
-                    )
-            else:
-                return LegacyResourceProvider(
-                    resource_type=resource_type,
-                    resource_provider_cls=self.legacy_base_models[resource_type],
-                    resources=self.resources,
-                )
-        except Exception as e:
+            plugin = plugin_manager.load(resource_type)
+            return plugin.factory()
+        except Exception:
+            LOG.warning(
+                "Failed to load resource type as a ResourceProvider. Falling back to looking up a GenericBaseModel for %s",
+                resource_type,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            return self._load_legacy_resource_provider(resource_type)
+
+    def _load_legacy_resource_provider(self, resource_type: str) -> LegacyResourceProvider:
+        if resource_type in self.legacy_base_models:
+            return LegacyResourceProvider(
+                resource_type=resource_type,
+                resource_provider_cls=self.legacy_base_models[resource_type],
+                resources=self.resources,
+            )
+        else:
             usage.missing_resource_types.record(resource_type)
-            raise NoResourceProvider from e
+            raise NoResourceProvider
 
     def extract_physical_resource_id_from_model_with_schema(
         self, resource_model: Properties, resource_type_schema: dict

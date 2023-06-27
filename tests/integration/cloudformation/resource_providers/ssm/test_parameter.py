@@ -1,52 +1,64 @@
 import os
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack.aws.connect import ServiceLevelClientFactory
-from localstack.testing.aws.util import is_aws_cloud
-from localstack.testing.pytest.fixtures import StackDeployError
-
-RESOURCE_GETATT_TARGETS = [
-    "Type",
-    "Description",
-    "Policies",
-    "AllowedPattern",
-    "Tier",
-    "Value",
-    "DataType",
-    "Id",
-    "Name",
-]
 
 
-class TestAttributeAccess:
-    @pytest.mark.parametrize("attribute", RESOURCE_GETATT_TARGETS)
-    @pytest.mark.xfail(
-        reason="Some tests are expected to fail, since they try to access invalid CFn attributes",
-        raises=StackDeployError,
-    )
-    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Exploratory test only")
-    def test_getattr(
-        self,
-        aws_client: ServiceLevelClientFactory,
-        deploy_cfn_template,
-        attribute,
-        snapshot,
-    ):
-        """
-        Capture the behaviour of getting all available attributes of the model
-        """
+class TestBasicCRD:
+    @pytest.mark.skip(reason="re-enable after fixing schema extraction")
+    @pytest.mark.skip_snapshot_verify(paths=["$..error-message"])
+    def test_black_box(self, deploy_cfn_template, aws_client: ServiceLevelClientFactory, snapshot):
         stack = deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__),
-                "../../../templates/resource_providers/ssm/parameter.yaml",
+                "../../../templates/resource_providers/ssm/aws_ssm_parameter_minimal.yaml",
             ),
-            parameter={"AttributeName": attribute},
         )
-        snapshot.match("stack_outputs", stack.outputs)
 
-        # check physical resource id
-        res = aws_client.cloudformation.describe_stack_resource(
-            StackName=stack.stack_name, LogicalResourceId="MyResource"
-        )["StackResourceDetail"]
-        snapshot.match("physical_resource_id", res.get("PhysicalResourceId"))
+        # TODO: implement fetching the resource and performing any required validations here
+        parameter_name = stack.outputs["MyRef"]
+        snapshot.add_transformer(snapshot.transform.regex(parameter_name, "<parameter>"))
+
+        res = aws_client.ssm.get_parameter(Name=stack.outputs["MyRef"])
+        snapshot.match("describe-resource", res)
+
+        stack.destroy()
+
+        # TODO: fetch the resource again and assert that it no longer exists
+        with pytest.raises(ClientError) as exc_info:
+            aws_client.ssm.get_parameter(Name=stack.outputs["MyRef"])
+
+        snapshot.match("deleted-resource", {"error-message": str(exc_info.value)})
+
+
+class TestUpdates:
+    @pytest.mark.skip(reason="TODO")
+    def test_update_without_replacement(self, deploy_cfn_template, aws_client, snapshot):
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../../../templates/resource_providers/ssm/aws_ssm_parameter_update_without_replacement.yaml",
+            ),
+            parameters={"AttributeValue": "first"},
+        )
+
+        # TODO: implement fetching the resource and performing any required validations here
+        res = aws_client.ssm.get_parameter(Name=stack.outputs["MyRef"])
+        snapshot.match("describe-resource-before-update", res)
+
+        # TODO: update the stack
+        deploy_cfn_template(
+            stack_name=stack.stack_name,
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../../../templates/resource_providers/ssm/aws_ssm_parameter_update_without_replacement.yaml",
+            ),
+            parameters={"AttributeValue": "second"},
+            is_update=True,
+        )
+
+        # TODO: check the value has changed
+        res = aws_client.ssm.get_parameter(Name=stack.outputs["MyRef"])
+        snapshot.match("describe-resource-after-update", res)

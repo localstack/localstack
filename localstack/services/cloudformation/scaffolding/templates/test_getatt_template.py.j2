@@ -7,7 +7,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest.fixtures import StackDeployError
 
 
-RESOURCE_GETATT_TARGETS = {{ getatt_targets }}
+RESOURCE_GETATT_TARGETS = {{getatt_targets}}
 
 
 class TestAttributeAccess:
@@ -31,7 +31,7 @@ class TestAttributeAccess:
         stack = deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__),
-                "../../../templates/resource_providers/{{ service }}/{{ resource }}.yaml",
+                "{{ template_path }}",
             ),
             parameters={"AttributeName": attribute},
         )
