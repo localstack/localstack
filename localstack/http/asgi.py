@@ -253,6 +253,8 @@ class WsgiStartResponse:
     async def write(self, data: bytes) -> None:
         if not self.started:
             raise ValueError("not started the response yet")
+        if getattr(self.send.__self__, "closed", None):
+            raise BrokenPipeError("Connection closed")
         await self.send({"type": "http.response.body", "body": data, "more_body": True})
         self.sent += len(data)
         if self.sent >= self.content_length:
@@ -374,7 +376,15 @@ class ASGIAdapter:
                 else:
                     for packet in iterable:
                         await response.write(packet)
+        except ConnectionError as e:
+            client_info = "unknown"
+            if client := scope.get("client"):
+                address, port = client
+                client_info = f"{address}:{port}"
+            LOG.debug("Error while writing responses: %s (client_info: %s)", e, client_info)
         finally:
+            if iterable and hasattr(iterable, "aclose"):
+                await iterable.aclose()
             await response.close()
 
     async def handle_lifespan(
