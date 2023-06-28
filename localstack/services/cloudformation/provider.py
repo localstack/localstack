@@ -489,7 +489,9 @@ class CloudformationProvider(CloudformationApi):
                 raise ValidationError(
                     f"Stack '{stack_name}' does not exist."
                 )  # stack should exist already
-            old_parameters = {k: strip_parameter_type(v) for k, v in stack.resolved_parameters}
+            old_parameters = {
+                k: strip_parameter_type(v) for k, v in stack.resolved_parameters.items()
+            }
         elif change_set_type == "CREATE":
             # create new (empty) stack
             if stack is not None:
