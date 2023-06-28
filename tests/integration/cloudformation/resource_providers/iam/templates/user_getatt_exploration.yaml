@@ -1,12 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Template to exercise getting attributes of AWS::IAM::Role
+Description: Template to exercise getting attributes of AWS::IAM::User
 Parameters:
   AttributeName:
     Type: String
     Description: Name of the attribute to fetch from the resource
 Resources:
   MyResource:
-    Type: AWS::IAM::Role
+    Type: AWS::IAM::User
     Properties: {}
 Outputs:
   MyRef:
