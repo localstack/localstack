@@ -262,7 +262,13 @@ def resolve_ref(stack_name: str, resources: dict, mappings: dict, ref: str, attr
 
         # TODO: remove after refactoring parameter resolution
         if resource["Type"] == "Parameter":
-            return resource["Properties"]["Value"]
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html
+            # TODO: extract this into a util function and extend type support
+            parameter_type: str = resource["Properties"]["ParameterType"]
+            if parameter_type in ["CommaDelimitedList"] or parameter_type.startswith("List<"):
+                return [p.strip() for p in resource["Properties"]["Value"].split(",")]
+            else:
+                return resource["Properties"]["Value"]
         else:
             # TODO: this shouldn't be needed when dependency graph and deployment status is honored
             resolve_refs_recursively(stack_name, resources, mappings, resources.get(ref))

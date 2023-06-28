@@ -1,5 +1,7 @@
 Parameters:
   SubnetParam:
+    # fun fact: this works but is not documented in the docs
+    # see: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html
     Type: List<String>
   SecurityGroupId:
     Type: String

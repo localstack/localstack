@@ -591,36 +591,25 @@ def test_events_resource_types(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("resource_types", resource_types)
 
 
-
-# TODO: move to parameters tests when the parameter test PR is merged
-def test_list_parameter_type(aws_client, cleanups, lambda_su_role):
+# TODO: rewrite this for proper compatibility with AWS by using a different resource (that doesn't need a deployed VPC)
+# technically this is validated, but you'll need to replace the two parameters SubnetParam and SecurityGroupId with valid values
+# @pytest.mark.aws_validated
+@pytest.mark.only_localstack
+def test_list_parameter_type(aws_client, deploy_cfn_template, cleanups, lambda_su_role):
     stack_name = f"test-stack-{short_uid()}"
     cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
-    changeset_name = "init"
-    try:
-        template_body = load_file(os.path.join(os.path.dirname(__file__), "../../templates/cfn_parameter_list_type.yaml"))
-        create_cs = aws_client.cloudformation.create_change_set(
-            StackName=stack_name,
-            ChangeSetType="CREATE",
-            ChangeSetName=changeset_name,
-            TemplateBody=template_body,
-            Capabilities=["CAPABILITY_IAM"],
-            Parameters=[
-                {"ParameterKey": "SubnetParam", "ParameterValue": "subnet-0f09422873fa875d0,subnet-08974bcce674becf3"},
-                {"ParameterKey": "SecurityGroupId", "ParameterValue": "sg-0f7230557f9e0abe7"},
-                {"ParameterKey": "FunctionRole", "ParameterValue": lambda_su_role}
-            ]
-        )
-        describe_cs = aws_client.cloudformation.describe_change_set(ChangeSetName=changeset_name, StackName=stack_name)
-        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(ChangeSetName=changeset_name, StackName=stack_name)
-        describe_cs_2 = aws_client.cloudformation.describe_change_set(ChangeSetName=changeset_name, StackName=stack_name)
+    deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_parameter_list_type.yaml"
+        ),
+        parameters={
+            "SubnetParam": "subnet-1,subnet-2",
+            "SecurityGroupId": "sg-1",
+            "FunctionRole": lambda_su_role,
+        },
+    )
 
-        aws_client.cloudformation.execute_change_set(ChangeSetName=changeset_name, StackName=stack_name)
-        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
-        describe_stacks = aws_client.cloudformation.describe_stacks(StackName=stack_name)
-
-        print('done')
-    except Exception as e:
-        events = aws_client.cloudformation.describe_stack_events(StackName=stack_name)
-        print('error done')
-
+    # TODO: the lambda provider doesn't currently support the vpc config (even as CRUD-only)
+    # vpc_config = aws_client.awslambda.get_function_configuration(FunctionName=stack.outputs["LambdaName"])['VpcConfig']
+    # assert vpc_config['SecurityGroupIds'] == ["sg-1"]
+    # assert vpc_config['SubnetIds'] == ["subnet-1", "subnet-2"]
