@@ -5,11 +5,13 @@ from localstack.testing.aws.util import is_aws_cloud
 
 pytestmark = [pytest.mark.skip(reason="in progress")]
 
+
 @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Not supported yet")
 class TestNative:
     """
     WARNING: Not all CloudFormation resource types are supported by Cloud Control!
     """
+
     def test_lifecycle(
         self,
         aws_client,
@@ -22,4 +24,3 @@ class TestNative:
         # update
         # delete
         ...
-
