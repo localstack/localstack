@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import time
-import uuid
 from typing import NamedTuple
 
 import pytest
