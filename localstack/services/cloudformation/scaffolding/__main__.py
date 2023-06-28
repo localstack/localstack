@@ -238,6 +238,7 @@ class TemplateRenderer:
         kwargs = dict(
             name=resource_name.full_name,  # AWS::SNS::Topic
             resource=resource_name.provider_name(),  # SNSTopic
+            scaffolding_version=f"v{SCAFFOLDING_VERSION}",
         )
         # TODO: we might want to segregate each provider in its own directory
         # e.g. .../resource_providers/aws_iam_role/test_X.py vs. .../resource_providers/iam/test_X.py
@@ -259,7 +260,6 @@ class TemplateRenderer:
                     resource_name.full_name,
                     provider_prefix=resource_name.provider_name(),
                 )
-                kwargs["scaffolding_version"] = f"v{SCAFFOLDING_VERSION}"
                 kwargs["provider_properties"] = property_ir
                 kwargs["required_properties"] = self.schema.get("required")
                 kwargs["create_only_properties"] = self.schema.get("createOnlyProperties")
