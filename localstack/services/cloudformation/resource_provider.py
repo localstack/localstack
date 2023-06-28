@@ -24,7 +24,7 @@ from localstack.services.cloudformation.deployment_utils import (
     fix_boto_parameters_based_on_report,
     remove_none_values,
 )
-from localstack.services.cloudformation.engine.id_mapping import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
+from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
 from localstack.services.cloudformation.engine.schema import SchemaProvider
 from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE, GenericBaseModel
 from localstack.utils.aws import aws_stack

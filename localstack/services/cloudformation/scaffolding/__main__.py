@@ -236,7 +236,8 @@ class TemplateRenderer:
             name=resource_name.full_name,  # AWS::SNS::Topic
             resource=resource_name.provider_name(),  # SNSTopic
         )
-
+        # TODO: we might want to segregate each provider in its own directory
+        # e.g. .../resource_providers/aws_iam_role/test_X.py vs. .../resource_providers/iam/test_X.py
         # add extra parameters
         tests_output_path = LOCALSTACK_ROOT_DIR.joinpath(
             f"tests/integration/cloudformation/resource_providers/{resource_name.service.lower()}"
@@ -697,10 +698,12 @@ def generate(resource_type: str, write: bool):
     template_renderer = TemplateRenderer(schema, env)
     console = Console()
     writer = FileWriter(resource_name, console)
-    output_factory = OutputFactory(template_renderer, console, writer)
+    output_factory = OutputFactory(template_renderer, console, writer)  # noqa
 
-    for file_type in FileType:
-        output_factory.get(file_type, resource_name).handle(should_write=write)
+    # for file_type in FileType:
+    #     output_factory.get(file_type, resource_name).handle(should_write=write)
+
+    console.print("Done :)")
 
 
 @cli.command()

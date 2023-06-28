@@ -24,11 +24,17 @@ class TestAttributeAccess:
     ):
         """
         Capture the behaviour of getting all available attributes of the model
+
+        How to use this test:
+
+        1. Start with a single value that is most likely to be a valid GetAtt target in RESOURCE_GETATT_TARGETS by commenting out all other values
+        2. Get the test to pass
+        3. Execute the test with all values un-commented to see if any other properties can be accessed with GetAtt
         """
         stack = deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__),
-                "../../../templates/resource_providers/iam/user.yaml",
+                "templates/user_getatt_exploration.yaml",
             ),
             parameters={"AttributeName": attribute},
         )
