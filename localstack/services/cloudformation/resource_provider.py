@@ -583,7 +583,7 @@ class ResourceProviderExecutor:
     ) -> ProgressEvent[Properties]:
         payload = copy.deepcopy(raw_payload)
 
-        for _ in range(max_iterations):
+        for current_iteration in range(max_iterations):
             resource_type = get_resource_type(
                 {"Type": raw_payload["resourceType"]}
             )  # TODO: simplify signature of get_resource_type to just take the type
@@ -610,7 +610,10 @@ class ResourceProviderExecutor:
             payload["callbackContext"] = context
             payload["requestData"]["resourceProperties"] = event.resource_model
 
-            time.sleep(sleep_time)
+            if current_iteration == 0:
+                time.sleep(0)
+            else:
+                time.sleep(sleep_time)
         else:
             raise TimeoutError("Could not perform deploy loop action")
 

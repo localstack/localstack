@@ -3,6 +3,8 @@ import os
 
 import pytest
 
+from localstack.testing.aws.util import is_aws_cloud
+
 
 RESOURCE_GETATT_TARGETS = {{getatt_targets}}
 
@@ -12,7 +14,7 @@ class TestAttributeAccess:
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Exploratory test only")
     def test_getatt(
         self,
-        aws_client: ServiceLevelClientFactory,
+        aws_client,
         deploy_cfn_template,
         attribute,
         snapshot,

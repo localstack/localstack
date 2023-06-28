@@ -345,7 +345,9 @@ class TemplateRenderer:
             "Resources": {
                 "MyResource": {
                     "Type": resource_name.full_name,
-                    "Properties": "# TODO: set one property to !Ref AttributeValue",
+                    "Properties": {
+                        "SomeProperty": "!Ref AttributeValue",
+                    },
                 },
             },
             "Outputs": {

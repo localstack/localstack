@@ -14,7 +14,7 @@ from localstack.services.cloudformation.resource_provider import (
 {{ provider_properties }}
 
 
-INITIALISED_KEY = "initialised"
+REPEATED_INVOCATION = "repeated_invocation"
 
 class {{ resource }}Provider(ResourceProvider[{{ resource }}Properties]):
 
@@ -67,13 +67,12 @@ class {{ resource }}Provider(ResourceProvider[{{ resource }}Properties]):
 
         # TODO: validations
 
-        if not request.custom_context.get(INITIALISED_KEY):
+        if not request.custom_context.get(REPEATED_INVOCATION):
             # this is the first time this callback is invoked
             # TODO: defaults
             # TODO: idempotency
             # TODO: actually create the resource
-            # TODO: set model.physical_resource_id
-            request.custom_context[INITIALISED_KEY] = True
+            request.custom_context[REPEATED_INVOCATION] = True
             return ProgressEvent(
                 status=OperationStatus.IN_PROGRESS,
                 resource_model=model,
