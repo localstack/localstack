@@ -397,12 +397,13 @@ class LegacyResourceProvider(ResourceProvider):
                 request.logical_resource_id,
             )
             # TODO: should not really claim the update was successful, but the
-            # API does not really let us signal this in any other way.
+            #   API does not really let us signal this in any other way.
             return ProgressEvent(
                 status=OperationStatus.SUCCESS, resource_model=request.desired_state
             )
 
         LOG.info("Updating resource %s of type %s", request.logical_resource_id, self.resource_type)
+
         resource_provider.update_resource(
             self.all_resources[request.logical_resource_id],
             stack_name=request.stack_name,
@@ -431,6 +432,11 @@ class LegacyResourceProvider(ResourceProvider):
             },
             region_name=request.region_name,
         )
+        # TODO: only really necessary for the create and update operation
+        resource_provider.add_defaults(
+            self.all_resources[request.logical_resource_id], request.stack_name
+        )
+
         func_details = resource_provider.get_deploy_templates()
         # TODO: be less strict about the return value of func_details
         LOG.debug(

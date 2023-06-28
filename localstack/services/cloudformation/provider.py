@@ -189,6 +189,7 @@ class CloudformationProvider(CloudformationApi):
                 "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
             )
 
+        # resolve stack parameters
         new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
             request.get("Parameters")
         )
@@ -199,11 +200,16 @@ class CloudformationProvider(CloudformationApi):
             old_parameters={},
         )
 
+        # handle conditions
         stack = Stack(request, template)
 
         try:
             template = template_preparer.transform_template(
-                template, list(resolved_parameters.values()), stack.stack_name, stack.resources
+                template,
+                list(resolved_parameters.values()),
+                stack.stack_name,
+                stack.resources,
+                stack.mappings,
             )
         except FailedTransformationException as e:
             stack.add_stack_event(
@@ -283,7 +289,11 @@ class CloudformationProvider(CloudformationApi):
 
         try:
             template = template_preparer.transform_template(
-                template, list(resolved_parameters.values()), stack.stack_name, stack.resources
+                template,
+                list(resolved_parameters.values()),
+                stack.stack_name,
+                stack.resources,
+                stack.mappings,
             )
         except FailedTransformationException as e:
             stack.add_stack_event(
@@ -506,7 +516,7 @@ class CloudformationProvider(CloudformationApi):
             )
             raise ValidationError(msg)
 
-        # apply template transformations
+        # resolve parameters
         new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
             request.get("Parameters")
         )
@@ -526,14 +536,23 @@ class CloudformationProvider(CloudformationApi):
         temp_stack = Stack(req_params_copy, template)
         temp_stack.set_resolved_parameters(resolved_parameters)
 
+        # TODO: everything below should be async
+        # apply template transformations
         transformed_template = template_preparer.transform_template(
-            template, parameters, stack_name=temp_stack.stack_name, resources=temp_stack.resources
+            template,
+            parameters,
+            stack_name=temp_stack.stack_name,
+            resources=temp_stack.resources,
+            mappings=temp_stack.mappings,
         )
 
         # create change set for the stack and apply changes
         change_set = StackChangeSet(stack, req_params, transformed_template)
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.set_resolved_parameters(resolved_parameters)
+
+        # TODO: evaluate conditions
+        # change_set.set_resolved_conditions(resolved_conditions)
 
         deployer = template_deployer.TemplateDeployer(change_set)
         changes = deployer.construct_changes(

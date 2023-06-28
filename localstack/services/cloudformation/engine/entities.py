@@ -104,6 +104,7 @@ class Stack:
         self.events = []
         # list of stack change sets
         self.change_sets = []
+        # self.evaluated_conditions = {}
 
     def set_resolved_parameters(self, resolved_parameters: dict[str, Parameter]):
         self.resolved_parameters = resolved_parameters
@@ -247,15 +248,8 @@ class Stack:
             {k: map_to_legacy_structure(k, v) for k, v in self.resolved_parameters.items()}
         )
 
-        # TODO: conditions and mappings don't really belong here and should be handled separately
+        # TODO: conditions don't really belong here and should be handled separately
         for name, value in self.conditions.items():
-            if name not in result:
-                result[name] = {
-                    "Type": "Parameter",
-                    "LogicalResourceId": name,
-                    "Properties": {"Value": value},
-                }
-        for name, value in self.mappings.items():
             if name not in result:
                 result[name] = {
                     "Type": "Parameter",
