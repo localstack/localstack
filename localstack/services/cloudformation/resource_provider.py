@@ -24,6 +24,7 @@ from localstack.services.cloudformation.deployment_utils import (
     fix_boto_parameters_based_on_report,
     remove_none_values,
 )
+from localstack.services.cloudformation.engine.id_mapping import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
 from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE, GenericBaseModel
 from localstack.utils.aws import aws_stack
 
@@ -39,6 +40,7 @@ LOG = logging.getLogger(__name__)
 Properties = TypeVar("Properties")
 
 PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
+
 
 class OperationStatus(Enum):
     PENDING = auto()
@@ -551,6 +553,7 @@ def resolve_json_pointer(resource_props: Properties, primary_id_path: str) -> st
 
     raise Exception(f"Resource properties is missing field: {part}")
 
+
 class ResourceProviderExecutor:
     """
     Point of abstraction between our integration with generic base models, and the new providers.
@@ -587,9 +590,8 @@ class ResourceProviderExecutor:
                     # TODO: move out of if? (physical res id can be set earlier possibly)
                     resource_type_schema = self.load_resource_schema(raw_payload["resourceType"])
                     physical_resource_id = self.extract_physical_resource_id_from_model_with_schema(
-                        event.resource_model, resource_type_schema
+                        event.resource_model, raw_payload["resourceType"], resource_type_schema
                     )
-
 
                     resource["PhysicalResourceId"] = physical_resource_id
                     resource["Properties"] = event.resource_model
@@ -658,13 +660,22 @@ class ResourceProviderExecutor:
             raise NoResourceProvider
 
     def extract_physical_resource_id_from_model_with_schema(
-        self, resource_model: Properties, resource_type_schema: dict
+        self, resource_model: Properties, resource_type: str, resource_type_schema: dict
     ) -> str:
-        primary_id_paths = resource_type_schema["primaryIdentifier"]
-        # TODO: add logic to identify primary Id path
-        primary_id_path = primary_id_paths[0]
-        return resolve_json_pointer(resource_model, primary_id_path)
-        # return resolve_json_pointer(resource_model, primary_id_path)
+        if resource_type in PHYSICAL_RESOURCE_ID_SPECIAL_CASES:
+            primary_id_path = PHYSICAL_RESOURCE_ID_SPECIAL_CASES[resource_type]
+            physical_resource_id = resolve_json_pointer(resource_model, primary_id_path)
+        else:
+            primary_id_paths = resource_type_schema["primaryIdentifier"]
+            if len(primary_id_paths) > 1:
+                # TODO: auto-merge. Verify logic here with AWS
+                physical_resource_id = "-".join(
+                    [resolve_json_pointer(resource_model, pip) for pip in primary_id_paths]
+                )
+            else:
+                physical_resource_id = resolve_json_pointer(resource_model, primary_id_paths[0])
+
+        return physical_resource_id
 
     def load_resource_schema(self, resource_type: str) -> dict:
         # TODO: technically we should have this available in the registry anyway
