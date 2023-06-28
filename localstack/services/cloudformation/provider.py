@@ -80,6 +80,7 @@ from localstack.services.cloudformation.engine.entities import (
     StackInstance,
     StackSet,
 )
+from localstack.services.cloudformation.engine.parameters import strip_parameter_type
 from localstack.services.cloudformation.engine.template_deployer import NoStackUpdates
 from localstack.services.cloudformation.engine.template_preparer import (
     FailedTransformationException,
@@ -190,9 +191,7 @@ class CloudformationProvider(CloudformationApi):
             )
 
         # resolve stack parameters
-        new_parameters: dict[str, Parameter] = param_resolver.convert_stack_parameters_to_dict(
-            request.get("Parameters")
-        )
+        new_parameters = param_resolver.convert_stack_parameters_to_dict(request.get("Parameters"))
         parameter_declarations = param_resolver.extract_stack_parameter_declarations(template)
         resolved_parameters = param_resolver.resolve_parameters(
             parameter_declarations=parameter_declarations,
@@ -490,7 +489,9 @@ class CloudformationProvider(CloudformationApi):
                 raise ValidationError(
                     f"Stack '{stack_name}' does not exist."
                 )  # stack should exist already
-            old_parameters = stack.resolved_parameters
+            old_parameters = {
+                k: strip_parameter_type(v) for k, v in stack.resolved_parameters.items()
+            }
         elif change_set_type == "CREATE":
             # create new (empty) stack
             if stack is not None:
@@ -612,7 +613,8 @@ class CloudformationProvider(CloudformationApi):
             "Transform",
         ]
         result = remove_attributes(deepcopy(change_set.metadata), attrs)
-        # result["Parameters"] = list(change_set.resolved_parameters.values())
+        # TODO: replace this patch with a better solution
+        result["Parameters"] = [strip_parameter_type(p) for p in result.get("Parameters", [])]
         return result
 
     @handler("DeleteChangeSet")

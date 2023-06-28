@@ -261,8 +261,20 @@ def resolve_ref(stack_name: str, resources: dict, mappings: dict, ref: str, attr
             raise Exception("Should be detected earlier")
 
         # TODO: remove after refactoring parameter resolution
+        # TODO: split this apart in parameter resource types and stack parameter handling
         if resource["Type"] == "Parameter":
-            return resource["Properties"]["Value"]
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html
+            # TODO: extract this into a util function and extend type support
+            parameter_type = resource.get("Properties", {}).get("ParameterType")
+            if not parameter_type:
+                # assuming this is an actual resource type now
+                return resource["Properties"]["Value"]
+            else:
+                parameter_type: str = resource["Properties"]["ParameterType"]
+                if parameter_type in ["CommaDelimitedList"] or parameter_type.startswith("List<"):
+                    return [p.strip() for p in resource["Properties"]["Value"].split(",")]
+                else:
+                    return resource["Properties"]["Value"]
         else:
             # TODO: this shouldn't be needed when dependency graph and deployment status is honored
             resolve_refs_recursively(stack_name, resources, mappings, resources.get(ref))
@@ -428,9 +440,15 @@ def _resolve_refs_recursively(
 
         if stripped_fn_lower == "join":
             join_values = value[keys_list[0]][1]
+
+            # this can actually be another ref that produces a list as output
+            if isinstance(join_values, dict):
+                join_values = resolve_refs_recursively(stack_name, resources, mappings, join_values)
+
             join_values = [
                 resolve_refs_recursively(stack_name, resources, mappings, v) for v in join_values
             ]
+
             none_values = [v for v in join_values if v is None]
             if none_values:
                 raise Exception(
