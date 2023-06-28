@@ -135,7 +135,8 @@ class StateTaskServiceCallback(StateTaskService):
             ),
         )
 
-        self._eval_service_task(env=env, parameters=parameters)
+        normalised_parameters = self._normalised_parameters_bindings(parameters)
+        self._eval_service_task(env=env, parameters=normalised_parameters)
 
         if self._is_condition():
             output = env.stack.pop()

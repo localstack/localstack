@@ -143,13 +143,11 @@ def await_execution_aborted(stepfunctions_client, execution_arn: str):
         LOG.warning(f"Timed out whilst awaiting for execution '{execution_arn}' to abort.")
 
 
-def create_and_record_execution(
-    stepfunctions_client,
+def create(
     create_iam_role_for_sfn,
     create_state_machine,
     snapshot,
     definition,
-    execution_input,
 ):
     snf_role_arn = create_iam_role_for_sfn()
     snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -167,6 +165,18 @@ def create_and_record_execution(
     creation_resp = create_state_machine(name=sm_name, definition=definition, roleArn=snf_role_arn)
     snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
     state_machine_arn = creation_resp["stateMachineArn"]
+    return state_machine_arn
+
+
+def create_and_record_execution(
+    stepfunctions_client,
+    create_iam_role_for_sfn,
+    create_state_machine,
+    snapshot,
+    definition,
+    execution_input,
+):
+    state_machine_arn = create(create_iam_role_for_sfn, create_state_machine, snapshot, definition)
 
     exec_resp = stepfunctions_client.start_execution(
         stateMachineArn=state_machine_arn, input=execution_input

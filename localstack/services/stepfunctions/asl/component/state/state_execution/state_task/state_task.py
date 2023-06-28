@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import copy
 from typing import Optional
 
 from localstack.aws.api.stepfunctions import HistoryEventType
@@ -55,6 +56,18 @@ class StateTask(ExecutionState, abc.ABC):
     def _get_parameters_normalising_bindings(self) -> dict[str, str]:  # noqa
         return dict()
 
+    def _normalised_parameters_bindings(self, parameters: dict[str, str]) -> dict[str, str]:
+        normalised_parameters = copy.deepcopy(parameters)
+        # Normalise bindings.
+        parameter_normalisers = self._get_parameters_normalising_bindings()
+        for parameter_key in list(normalised_parameters.keys()):
+            norm_parameter_key = parameter_normalisers.get(parameter_key, None)
+            if norm_parameter_key:
+                tmp = normalised_parameters[parameter_key]
+                del normalised_parameters[parameter_key]
+                normalised_parameters[norm_parameter_key] = tmp
+        return normalised_parameters
+
     def _eval_parameters(self, env: Environment) -> dict:
         # Eval raw parameters.
         parameters = dict()
@@ -72,15 +85,6 @@ class StateTask(ExecutionState, abc.ABC):
             ]
             for unsupported_parameter in unsupported_parameters:
                 parameters.pop(unsupported_parameter, None)
-
-        # Normalise bindings.
-        parameter_normalisers = self._get_parameters_normalising_bindings()
-        for parameter_key in list(parameters.keys()):
-            norm_parameter_key = parameter_normalisers.get(parameter_key, None)
-            if norm_parameter_key:
-                tmp = parameters[parameter_key]
-                del parameters[parameter_key]
-                parameters[norm_parameter_key] = tmp
 
         return parameters
 
