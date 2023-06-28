@@ -12,6 +12,9 @@ from typing import Any, Generator, Literal, Optional, TypedDict, TypeVar
 
 import click
 from jinja2 import Environment, FileSystemLoader
+from yaml import safe_dump
+
+from .propgen import generate_ir_for_type
 
 try:
     from rich.console import Console
@@ -26,9 +29,9 @@ except ImportError:
         return text
 
 
-from yaml import safe_dump
-
-from localstack.services.cloudformation.scaffolding.propgen import generate_ir_for_type
+# increase when any major changes are done to the scaffolding,
+# so that we can reason better about previously scaffolded resources in the future
+SCAFFOLDING_VERSION = 1
 
 # Some services require their names to be re-written as we know them by different names
 SERVICE_NAME_MAP = {
@@ -256,6 +259,7 @@ class TemplateRenderer:
                     resource_name.full_name,
                     provider_prefix=resource_name.provider_name(),
                 )
+                kwargs["scaffolding_version"] = f"v{SCAFFOLDING_VERSION}"
                 kwargs["provider_properties"] = property_ir
                 kwargs["required_properties"] = self.schema.get("required")
                 kwargs["create_only_properties"] = self.schema.get("createOnlyProperties")
