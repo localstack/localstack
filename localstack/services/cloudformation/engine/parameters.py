@@ -151,6 +151,7 @@ class LegacyParameter(TypedDict):
     Properties: LegacyParameterProperties
 
 
+# TODO: not actually parameter_type but the logical "ID"
 def map_to_legacy_structure(parameter_type: str, new_parameter: Parameter) -> LegacyParameter:
     """
     Helper util to convert a normal (resolved) stack parameter to a legacy parameter structure that can then be merged with stack resources.
