@@ -60,7 +60,7 @@ class {{ resource }}Provider(ResourceProvider[{{ resource }}Properties]):
         {%- for permission in create_permissions %}
           - {{ permission }}
         {%- endfor -%}
-        {%- endif -%}
+        {%- endif %}
 
         """
         model = request.desired_state
