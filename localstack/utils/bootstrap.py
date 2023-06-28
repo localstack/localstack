@@ -244,7 +244,7 @@ def is_api_enabled(api: str) -> bool:
         return True
 
     for enabled_api in apis:
-        if api.startswith("%s:" % enabled_api):
+        if api.startswith(f"{enabled_api}:"):
             return True
 
     return False
@@ -275,9 +275,9 @@ def validate_localstack_config(name: str):
         msg = f"{e}\n{to_str(e.output)}".strip()
         raise ValueError(msg)
 
-    # validating docker-compose variable
     import yaml  # keep import here to avoid issues in test Lambdas
 
+    # validating docker-compose variable
     with open(compose_file_name) as file:
         compose_content = yaml.full_load(file)
     services_config = compose_content.get("services", {})
@@ -295,12 +295,10 @@ def validate_localstack_config(name: str):
     image_name = ls_service_details.get("image", "")
     if image_name.split(":")[0] not in constants.OFFICIAL_IMAGES:
         warns.append(
-            'Using custom image "%s", we recommend using an official image: %s'
-            % (image_name, constants.OFFICIAL_IMAGES)
+            f'Using custom image "{image_name}", we recommend using an official image: {constants.OFFICIAL_IMAGES}'
         )
 
     # prepare config options
-    image_name = ls_service_details.get("image")
     container_name = ls_service_details.get("container_name") or ""
     docker_ports = (port.split(":")[-2] for port in ls_service_details.get("ports", []))
     docker_env = dict(
@@ -313,8 +311,7 @@ def validate_localstack_config(name: str):
 
     if (main_container not in container_name) and not docker_env.get("MAIN_CONTAINER_NAME"):
         warns.append(
-            'Please use "container_name: %s" or add "MAIN_CONTAINER_NAME" in "environment".'
-            % main_container
+            f'Please use "container_name: {main_container}" or add "MAIN_CONTAINER_NAME" in "environment".'
         )
 
     def port_exposed(port):
@@ -325,10 +322,9 @@ def validate_localstack_config(name: str):
     if not port_exposed(edge_port):
         warns.append(
             (
-                "Edge port %s is not exposed. You may have to add the entry "
+                f"Edge port {edge_port} is not exposed. You may have to add the entry "
                 'to the "ports" section of the docker-compose file.'
             )
-            % edge_port
         )
 
     # print warning/info messages
@@ -343,13 +339,6 @@ def get_docker_image_to_start():
     image_name = os.environ.get("IMAGE_NAME")
     if not image_name:
         image_name = constants.DOCKER_IMAGE_NAME
-        if os.environ.get("USE_LIGHT_IMAGE") in constants.FALSE_STRINGS:
-            # FIXME deprecated - remove with 2.0
-            LOG.warning(
-                "USE_LIGHT_IMAGE is deprecated (since 1.3.0) and will be removed in upcoming releases of LocalStack! "
-                "The localstack/localstack-full image is deprecated. Please remove this environment variable."
-            )
-            image_name = constants.DOCKER_IMAGE_NAME_FULL
         if is_api_key_configured():
             image_name = constants.DOCKER_IMAGE_NAME_PRO
     return image_name
