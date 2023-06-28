@@ -61,6 +61,7 @@ class {{ resource }}Provider(ResourceProvider[{{ resource }}Properties]):
           - {{ permission }}
         {%- endfor -%}
         {%- endif -%}
+
         """
         model = request.desired_state
 
