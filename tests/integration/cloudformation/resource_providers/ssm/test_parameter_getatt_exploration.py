@@ -34,7 +34,7 @@ class TestAttributeAccess:
         stack = deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__),
-                "../../../templates/resource_providers/ssm/aws_ssm_parameter_getatt_exploration.yaml",
+                "templates/aws_ssm_parameter_getatt_exploration.yaml",
             ),
             parameter={"AttributeName": attribute},
         )
