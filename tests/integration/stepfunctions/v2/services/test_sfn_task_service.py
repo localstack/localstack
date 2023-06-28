@@ -67,3 +67,46 @@ class TestTaskServiceSfn:
             definition,
             exec_input,
         )
+
+    def test_start_execution_input_json(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..output.StartDate",
+                replacement="start-date",
+                replace_reference=False,
+            )
+        )
+
+        template_target = BT.load_sfn_template(BT.BASE_PASS_RESULT)
+        definition_target = json.dumps(template_target)
+        state_machine_arn_target = create(
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition_target,
+        )
+
+        template = ST.load_sfn_template(ST.SFN_START_EXECUTION)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {
+                "StateMachineArn": state_machine_arn_target,
+                "Input": {"Hello": "World"},
+                "Name": "TestStartTarget",
+            }
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )

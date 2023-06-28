@@ -16,6 +16,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackOutcomeFailureError
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import camel_to_snake_case
 
@@ -84,6 +85,16 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
                     )
                 ),
             )
+
+    def _normalised_parameters_bindings(self, parameters: dict[str, str]) -> dict[str, str]:
+        normalised_parameters = super()._normalised_parameters_bindings(parameters=parameters)
+
+        if self.resource.api_action.lower() == "startexecution":
+            optional_input = normalised_parameters.get("input")
+            if not isinstance(optional_input, str):
+                normalised_parameters["input"] = to_json_str(optional_input)
+
+        return normalised_parameters
 
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
         api_action = camel_to_snake_case(self.resource.api_action)
