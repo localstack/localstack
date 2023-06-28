@@ -408,12 +408,13 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool) -> None
         else:
             console.log("starting LocalStack in Docker mode :whale:")
 
-    bootstrap.prepare_host(console)
-
     if not no_banner and not detached:
         console.rule("LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)")
 
     if host:
+        # call hooks to prepare host
+        bootstrap.prepare_host(console)
+
         # from here we abandon the regular CLI control path and start treating the process like a localstack
         # runtime process
         os.environ["LOCALSTACK_CLI"] = "0"
@@ -435,6 +436,9 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool) -> None
         config.OVERRIDE_IN_DOCKER = False
         config.is_in_docker = False
         config.dirs = config.init_directories()
+
+        # call hooks to prepare host (note that this call should stay below the config overrides above)
+        bootstrap.prepare_host(console)
 
         if detached:
             bootstrap.start_infra_in_docker_detached(console)
