@@ -140,7 +140,7 @@ class SchemaProvider:
             return self.schemas[resource_name.full_name]
         except KeyError as e:
             raise click.ClickException(
-                f"Could not find CFn schema for type: {resource_name.full_name}"
+                f"Could not find schema for CloudFormation resource type: {resource_name.full_name}"
             ) from e
 
 
@@ -523,7 +523,7 @@ class FileWriter:
                 self.console.print(f"Written integration test to {file_destination}")
             case FileType.getatt_test:
                 self.write_text(contents, file_destination)
-                self.console.print(f"Written getatt teststo {file_destination}")
+                self.console.print(f"Written getatt tests to {file_destination}")
             case FileType.cloudcontrol_test:
                 self.write_text(contents, file_destination)
                 self.console.print(f"Written cloudcontrol tests to {file_destination}")
@@ -683,12 +683,13 @@ def cli():
 )
 @click.option("-w", "--write/--no-write", default=False)
 def generate(resource_type: str, write: bool):
+    console = Console()
     resource_name = ResourceName.from_name(resource_type)
-
     schema_provider = SchemaProvider(
         zipfile_path=Path(__file__).parent.joinpath("CloudformationSchema.zip")
     )
     schema = schema_provider.schema(resource_name)
+    console.rule(title=resource_type)
 
     template_root = Path(__file__).parent.joinpath("templates")
     env = Environment(
@@ -696,17 +697,23 @@ def generate(resource_type: str, write: bool):
     )
 
     template_renderer = TemplateRenderer(schema, env)
-    console = Console()
     writer = FileWriter(resource_name, console)
     output_factory = OutputFactory(template_renderer, console, writer)  # noqa
+    for file_type in FileType:
+        output_factory.get(file_type, resource_name).handle(should_write=write)
 
-    # for file_type in FileType:
-    #     output_factory.get(file_type, resource_name).handle(should_write=write)
+    console.rule(title="Resources & Instructions")
+    console.print(
+        "Resource types: https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/resource-types.html"
+    )
+    console.print(
+        f"Resource reference: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-{resource_name.service.lower()}-{resource_name.resource.lower()}.html\n"
+    )
+    console.print(
+        'Wondering where to get started? Start off by finalizing the generated minimal ("basic") template and get it to deploy against AWS.'
+    )
 
-    console.print("Done :)")
 
-
-@cli.command()
 def capture():
     print("Capturing")
 
