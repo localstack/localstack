@@ -579,10 +579,13 @@ class ResourceProviderExecutor:
         payload = copy.deepcopy(raw_payload)
 
         for _ in range(max_iterations):
-            event = self.execute_action(payload)
+            resource_type = get_resource_type(
+                {"Type": raw_payload["resourceType"]}
+            )  # TODO: simplify signature of get_resource_type to just take the type
+            resource_provider = self.load_resource_provider(resource_type)
+            event = self.execute_action(resource_provider, payload)
 
             if event.status == OperationStatus.SUCCESS:
-                # TODO: validate physical_resource_id is not None
                 logical_resource_id = raw_payload["requestData"]["logicalResourceId"]
                 resource = self.resources[logical_resource_id]
                 if "PhysicalResourceId" not in resource:
@@ -606,30 +609,23 @@ class ResourceProviderExecutor:
         else:
             raise TimeoutError("Could not perform deploy loop action")
 
-    def execute_action(self, raw_payload: ResourceProviderPayload) -> ProgressEvent[Properties]:
-        resource_type = get_resource_type(
-            {"Type": raw_payload["resourceType"]}
-        )  # TODO: simplify signature of get_resource_type to just take the type
-        resource_provider = self.load_resource_provider(resource_type)
-        if resource_provider:
-            change_type = raw_payload["action"]
-            request = convert_payload(
-                stack_name=self.stack_name, stack_id=self.stack_id, payload=raw_payload
-            )
+    def execute_action(
+        self, resource_provider: ResourceProvider, raw_payload: ResourceProviderPayload
+    ) -> ProgressEvent[Properties]:
+        change_type = raw_payload["action"]
+        request = convert_payload(
+            stack_name=self.stack_name, stack_id=self.stack_id, payload=raw_payload
+        )
 
-            match change_type:
-                case "Add":
-                    return resource_provider.create(request)
-                case "Dynamic" | "Modify":
-                    return resource_provider.update(request)
-                case "Remove":
-                    return resource_provider.delete(request)
-                case _:
-                    raise NotImplementedError(change_type)
-
-        else:
-            # custom provider
-            raise NoResourceProvider
+        match change_type:
+            case "Add":
+                return resource_provider.create(request)
+            case "Dynamic" | "Modify":
+                return resource_provider.update(request)
+            case "Remove":
+                return resource_provider.delete(request)
+            case _:
+                raise NotImplementedError(change_type)
 
     def load_resource_provider(self, resource_type: str) -> Optional[ResourceProvider]:
         # TODO: unify behavior here in regards to raising NoResourceProvider
@@ -679,6 +675,7 @@ class ResourceProviderExecutor:
 
     def load_resource_schema(self, resource_type: str) -> dict:
         # TODO: technically we should have this available in the registry anyway
+
         schema_file_for_resource_type = "/home/dominik/work/localstack/localstack/localstack/services/iam/resource_providers/aws_iam_user.schema.json"
         with open(schema_file_for_resource_type) as fd:
             return json.load(fd)
