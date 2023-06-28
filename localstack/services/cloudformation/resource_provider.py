@@ -446,7 +446,14 @@ class LegacyResourceProvider(ResourceProvider):
             request.logical_resource_id,
         )
 
-        func_details = func_details[LEGACY_ACTION_MAP[request.action]]
+        func_details = func_details.get(LEGACY_ACTION_MAP[request.action])
+        if not func_details:
+            LOG.debug(
+                "No resource handler for %s action on resource type %s available. Skipping.",
+                request.action,
+                self.resource_type,
+            )
+            return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
         func_details = func_details if isinstance(func_details, list) else [func_details]
         results = []
         # TODO: other top level keys
