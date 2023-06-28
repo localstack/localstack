@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import copy
 import inspect
-import json
 import logging
 import time
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from logging import Logger
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, Type, TypedDict, TypeVar
 
 import botocore
@@ -25,6 +25,7 @@ from localstack.services.cloudformation.deployment_utils import (
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.id_mapping import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
+from localstack.services.cloudformation.engine.schema import SchemaProvider
 from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE, GenericBaseModel
 from localstack.utils.aws import aws_stack
 
@@ -572,6 +573,10 @@ class ResourceProviderExecutor:
         self.stack_id = stack_id
         self.resources = resources
         self.legacy_base_models = legacy_base_models
+        # TODO: add storing this schema package to packages.py and get from there
+        self.schemas = SchemaProvider(
+            zipfile_path=Path(__file__).parent.joinpath("scaffolding", "CloudformationSchema.zip"),
+        ).schemas
 
     def deploy_loop(
         self, raw_payload: ResourceProviderPayload, max_iterations: int = 30, sleep_time: float = 5
@@ -674,11 +679,8 @@ class ResourceProviderExecutor:
         return physical_resource_id
 
     def load_resource_schema(self, resource_type: str) -> dict:
-        # TODO: technically we should have this available in the registry anyway
-
-        schema_file_for_resource_type = "/home/dominik/work/localstack/localstack/localstack/services/iam/resource_providers/aws_iam_user.schema.json"
-        with open(schema_file_for_resource_type) as fd:
-            return json.load(fd)
+        # TODO: should just get this from the registry in the future
+        return self.schemas.get(resource_type)
 
 
 plugin_manager = PluginManager(CloudFormationResourceProviderPlugin.namespace)
