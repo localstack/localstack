@@ -10,6 +10,8 @@ else:
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
 ActionNameType = str
+CertificationKeyType = str
+CertificationValueType = str
 ColumnNumber = int
 ConcurrentModificationMessage = str
 ContextKeyNameType = str
@@ -507,6 +509,7 @@ class AttachedPolicy(TypedDict, total=False):
 
 
 BootstrapDatum = bytes
+CertificationMapType = Dict[CertificationKeyType, CertificationValueType]
 
 
 class ChangePasswordRequest(ServiceRequest):
@@ -1207,6 +1210,18 @@ class GetLoginProfileRequest(ServiceRequest):
 
 class GetLoginProfileResponse(TypedDict, total=False):
     LoginProfile: LoginProfile
+
+
+class GetMFADeviceRequest(ServiceRequest):
+    SerialNumber: serialNumberType
+    UserName: Optional[userNameType]
+
+
+class GetMFADeviceResponse(TypedDict, total=False):
+    UserName: Optional[userNameType]
+    SerialNumber: serialNumberType
+    EnableDate: Optional[dateType]
+    Certifications: Optional[CertificationMapType]
 
 
 class GetOpenIDConnectProviderRequest(ServiceRequest):
@@ -2731,6 +2746,15 @@ class IamApi:
     def get_login_profile(
         self, context: RequestContext, user_name: userNameType
     ) -> GetLoginProfileResponse:
+        raise NotImplementedError
+
+    @handler("GetMFADevice")
+    def get_mfa_device(
+        self,
+        context: RequestContext,
+        serial_number: serialNumberType,
+        user_name: userNameType = None,
+    ) -> GetMFADeviceResponse:
         raise NotImplementedError
 
     @handler("GetOpenIDConnectProvider")
