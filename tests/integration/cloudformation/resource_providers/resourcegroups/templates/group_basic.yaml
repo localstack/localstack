@@ -3,7 +3,8 @@ Description: Template to exercise create and delete operations for AWS::Resource
 Resources:
   MyResource:
     Type: AWS::ResourceGroups::Group
-    Properties: {}
+    Properties:
+      Name: MyResource
 Outputs:
   MyRef:
     Value:

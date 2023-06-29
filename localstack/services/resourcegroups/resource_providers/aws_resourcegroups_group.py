@@ -119,13 +119,15 @@ class ResourceGroupsGroupProvider(ResourceProvider[ResourceGroupsGroupProperties
             request.custom_context[REPEATED_INVOCATION] = True
 
             try:
-                request.aws_client_factory.resource_groups.create_group(
+                response = request.aws_client_factory.resource_groups.create_group(
                     Name=model.get("Name"),
                     Description=model.get("Description"),
                     ResourceQuery=model.get("ResourceQuery"),
                     Tags=model.get("Tags"),
                     Configuration=model.get("Configuration"),
                 )
+                model["Arn"] = response["Group"]["Arn"]
+
             except Exception as e:
                 if "GroupAlreadyExistsException" in str(e):
                     return ProgressEvent(
