@@ -524,6 +524,7 @@ class FileWriter:
 
             # tests
             case FileType.integration_test:
+                self.ensure_python_init_files(destination_path)
                 self.write_text(contents, file_destination)
                 self.console.print(f"Written integration test to {file_destination}")
             case FileType.getatt_test:

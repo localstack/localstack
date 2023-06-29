@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Optional, Type, TypedDict
 
-from localstack.services.cloudformation.provider_utils import generate_default_name
+import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
     CloudFormationResourceProviderPlugin,
     OperationStatus,
@@ -13,23 +13,32 @@ from localstack.services.cloudformation.resource_provider import (
 )
 
 
+class IAMUserProperties(TypedDict):
+    Arn: Optional[str]
+    Groups: Optional[list[str]]
+    Id: Optional[str]
+    LoginProfile: Optional[LoginProfile]
+    ManagedPolicyArns: Optional[list[str]]
+    Path: Optional[str]
+    PermissionsBoundary: Optional[str]
+    Policies: Optional[list[Policy]]
+    Tags: Optional[list[Tag]]
+    UserName: Optional[str]
+
+
+class Policy(TypedDict):
+    PolicyDocument: Optional[dict]
+    PolicyName: Optional[str]
+
+
 class LoginProfile(TypedDict):
     Password: Optional[str]
     PasswordResetRequired: Optional[bool]
 
 
-# FIXME
-class IAMUserProperties(TypedDict):
-    Arn: Optional[str]
-    Groups: Optional[list]
-    Id: Optional[str]
-    LoginProfile: Optional[LoginProfile]
-    ManagedPolicyArns: Optional[list]
-    Path: Optional[str]
-    PermissionsBoundary: Optional[str]
-    Policies: Optional[list]
-    Tags: Optional[list]
-    UserName: Optional[str]
+class Tag(TypedDict):
+    Key: Optional[str]
+    Value: Optional[str]
 
 
 REPEATED_INVOCATION = "repeated_invocation"
@@ -66,22 +75,29 @@ class IAMUserProvider(ResourceProvider[IAMUserProperties]):
 
             # Set defaults
             if not model.get("UserName"):
-                model["UserName"] = generate_default_name(
+                model["UserName"] = util.generate_default_name(
                     request.stack_name, request.logical_resource_id
                 )
 
             # actually create the resource
             # note: technically we could make this synchronous, but for the sake of this being an example it is intentionally "asynchronous" and returns IN_PROGRESS
+
+            # this example uses a helper utility, check out the module for more helpful utilities and add your own!
             iam_client.create_user(
-                UserName=model["UserName"],
-                Path=model["Path"],
-                PermissionsBoundary=model["PermissionsBoundary"],
-                Tags=model["Tags"],
+                **util.select_attributes(model, ["UserName", "Path", "PermissionsBoundary", "Tags"])
             )
 
-            # for group in model["Groups"]:
-            #     group
-            # iam_client.add_user_to_group()
+            # alternatively you can also just do:
+            # iam_client.create_user(
+            #     UserName=model["UserName"],
+            #     Path=model["Path"],
+            #     PermissionsBoundary=model["PermissionsBoundary"],
+            #     Tags=model["Tags"],
+            # )
+
+            # this kind of logic below was previously done in either a result_handler or a custom "_post_create" function
+            for group in model.get("Groups", []):
+                iam_client.add_user_to_group(GroupName=group, UserName=model["UserName"])
 
             request.custom_context[REPEATED_INVOCATION] = True
             return ProgressEvent(
