@@ -1,0 +1,11 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Template to exercise create and delete operations for AWS::ResourceGroups::Group
+Resources:
+  MyResource:
+    Type: AWS::ResourceGroups::Group
+    Properties: {}
+Outputs:
+  MyRef:
+    Value:
+      Ref: MyResource
+

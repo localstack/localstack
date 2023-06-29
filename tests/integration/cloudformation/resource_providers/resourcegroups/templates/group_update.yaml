@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Template to exercise updating AWS::ResourceGroups::Group
+Parameters:
+  AttributeValue:
+    Type: String
+    Description: Value of property to change to force an update
+Resources:
+  MyResource:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      SomeProperty: '!Ref AttributeValue'
+Outputs:
+  MyRef:
+    Value:
+      Ref: MyResource
+  MyOutput:
+    Value: '# TODO: the value to verify'
+
