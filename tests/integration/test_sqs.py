@@ -1952,6 +1952,110 @@ class TestSqsProvider:
         snapshot.match("error_response", e.value.response)
 
     @pytest.mark.aws_validated
+    def test_delete_message_batch_with_too_large_batch(
+        self, sqs_create_queue, snapshot, aws_client
+    ):
+        self._add_error_detail_transformer(snapshot)
+
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        message_batch = [
+            {
+                "Id": f"message-{i}",
+                "MessageBody": f"messageBody-{i}",
+            }
+            for i in range(MAX_NUMBER_OF_MESSAGES)
+        ]
+
+        result_send_batch = aws_client.sqs.send_message_batch(
+            QueueUrl=queue_url, Entries=message_batch
+        )
+        successful = result_send_batch["Successful"]
+        assert len(successful) == len(message_batch)
+
+        result_send_batch = aws_client.sqs.send_message_batch(
+            QueueUrl=queue_url, Entries=message_batch
+        )
+        successful = result_send_batch["Successful"]
+        assert len(successful) == len(message_batch)
+
+        result_recv = []
+        target_size = 2 * MAX_NUMBER_OF_MESSAGES
+
+        def _receive_all_messages():
+            result_recv.extend(
+                aws_client.sqs.receive_message(
+                    QueueUrl=queue_url,
+                    MaxNumberOfMessages=min(MAX_NUMBER_OF_MESSAGES, target_size - len(result_recv)),
+                )["Messages"]
+            )
+            assert len(result_recv) == target_size
+
+        retry(_receive_all_messages, retries=7, sleep=0.5)
+
+        delete_entries = [
+            {"Id": str(i), "ReceiptHandle": msg["ReceiptHandle"]}
+            for i, msg in enumerate(result_recv)
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs.delete_message_batch(QueueUrl=queue_url, Entries=delete_entries)
+        snapshot.match("error_response", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_change_message_visibility_batch_with_too_large_batch(
+        self, sqs_create_queue, snapshot, aws_client
+    ):
+        self._add_error_detail_transformer(snapshot)
+
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        message_batch = [
+            {
+                "Id": f"message-{i}",
+                "MessageBody": f"messageBody-{i}",
+            }
+            for i in range(MAX_NUMBER_OF_MESSAGES)
+        ]
+
+        result_send_batch = aws_client.sqs.send_message_batch(
+            QueueUrl=queue_url, Entries=message_batch
+        )
+        successful = result_send_batch["Successful"]
+        assert len(successful) == len(message_batch)
+
+        result_send_batch = aws_client.sqs.send_message_batch(
+            QueueUrl=queue_url, Entries=message_batch
+        )
+        successful = result_send_batch["Successful"]
+        assert len(successful) == len(message_batch)
+
+        result_recv = []
+        target_size = 2 * MAX_NUMBER_OF_MESSAGES
+
+        def _receive_all_messages():
+            result_recv.extend(
+                aws_client.sqs.receive_message(
+                    QueueUrl=queue_url,
+                    MaxNumberOfMessages=min(MAX_NUMBER_OF_MESSAGES, target_size - len(result_recv)),
+                )["Messages"]
+            )
+            assert len(result_recv) == target_size
+
+        retry(_receive_all_messages, retries=7, sleep=0.5)
+
+        change_visibility_entries = [
+            {"Id": str(i), "ReceiptHandle": msg["ReceiptHandle"], "VisibilityTimeout": 123}
+            for i, msg in enumerate(result_recv)
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.sqs.change_message_visibility_batch(
+                QueueUrl=queue_url, Entries=change_visibility_entries
+            )
+        snapshot.match("error_response", e.value.response)
+
+    @pytest.mark.aws_validated
     def test_create_and_send_to_fifo_queue(self, sqs_create_queue, aws_client):
         # Old name: test_create_fifo_queue
         queue_name = f"queue-{short_uid()}.fifo"
