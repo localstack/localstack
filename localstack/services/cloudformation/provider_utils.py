@@ -5,9 +5,11 @@ Avoid any imports to localstack here and keep external imports to a minimum!
 This is because we want to be able to package a resource provider without including localstack code.
 """
 import builtins
+import json
 import re
 import uuid
 from copy import deepcopy
+from pathlib import Path
 
 
 def generate_default_name(stack_name: str, logical_resource_id: str):
@@ -81,3 +83,10 @@ def fix_boto_parameters_based_on_report(original_params: dict, report: str) -> d
             new_value = cast_class(old_value)
         set_nested(params, param_name, new_value)
     return params
+
+
+#  LocalStack specific utilities
+def get_schema_path(file_path: Path) -> Path:
+    file_name_base = file_path.name.removesuffix(".py")
+    with Path(file_path).parent.joinpath(f"{file_name_base}.schema.json").open() as fd:
+        return json.load(fd)

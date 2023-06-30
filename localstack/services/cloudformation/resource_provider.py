@@ -8,7 +8,6 @@ import uuid
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from logging import Logger
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, Type, TypedDict, TypeVar
 
 import botocore
@@ -25,7 +24,6 @@ from localstack.services.cloudformation.deployment_utils import (
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
-from localstack.services.cloudformation.engine.schema import SchemaProvider
 from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE, GenericBaseModel
 from localstack.utils.aws import aws_stack
 
@@ -573,10 +571,6 @@ class ResourceProviderExecutor:
         self.stack_id = stack_id
         self.resources = resources
         self.legacy_base_models = legacy_base_models
-        # TODO: add storing this schema package to packages.py and get from there
-        self.schemas = SchemaProvider(
-            zipfile_path=Path(__file__).parent.joinpath("scaffolding", "CloudformationSchema.zip"),
-        ).schemas
 
     def deploy_loop(
         self, raw_payload: ResourceProviderPayload, max_iterations: int = 30, sleep_time: float = 5
@@ -596,7 +590,17 @@ class ResourceProviderExecutor:
                 if "PhysicalResourceId" not in resource:
                     # branch for non-legacy providers
                     # TODO: move out of if? (physical res id can be set earlier possibly)
-                    resource_type_schema = self.load_resource_schema(raw_payload["resourceType"])
+                    if isinstance(resource_provider, LegacyResourceProvider):
+                        raise Exception(
+                            "A GenericBaseModel should always have a PhysicalResourceId set after deployment"
+                        )
+
+                    if not hasattr(resource_provider, "SCHEMA"):
+                        raise Exception(
+                            "A ResourceProvider should always have a SCHEMA property defined."
+                        )
+
+                    resource_type_schema = resource_provider.SCHEMA
                     physical_resource_id = self.extract_physical_resource_id_from_model_with_schema(
                         event.resource_model, raw_payload["resourceType"], resource_type_schema
                     )
@@ -680,10 +684,6 @@ class ResourceProviderExecutor:
                 physical_resource_id = resolve_json_pointer(resource_model, primary_id_paths[0])
 
         return physical_resource_id
-
-    def load_resource_schema(self, resource_type: str) -> dict:
-        # TODO: should just get this from the registry in the future
-        return self.schemas.get(resource_type)
 
 
 plugin_manager = PluginManager(CloudFormationResourceProviderPlugin.namespace)
