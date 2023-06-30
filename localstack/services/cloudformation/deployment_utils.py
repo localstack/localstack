@@ -33,6 +33,7 @@ def dump_json_params(param_func=None, *param_names):
     return replace
 
 
+# TODO: remove
 def param_defaults(param_func, defaults):
     def replace(properties: dict, logical_resource_id: str, *args, **kwargs):
         result = param_func(properties, logical_resource_id, *args, **kwargs)
@@ -102,6 +103,7 @@ def params_dict_to_list(param_name, key_attr_name="Key", value_attr_name="Value"
     return do_replace
 
 
+# TODO: remove
 def params_select_attributes(*attrs):
     def do_select(params, logical_resource_id, *args, **kwargs):
         result = {}
@@ -151,18 +153,6 @@ def generate_default_name_without_stack(logical_resource_id: str):
     return f"{resource_id_part}-{random_id_part}"
 
 
-def pre_create_default_name(key: str) -> Callable[[str, dict, str, dict, str], None]:
-    def _pre_create_default_name(
-        resource_id: str, resources: dict, resource_type: str, func: dict, stack_name: str
-    ):
-        resource = resources[resource_id]
-        props = resource["Properties"]
-        if not props.get(key):
-            props[key] = generate_default_name(stack_name, resource_id)
-
-    return _pre_create_default_name
-
-
 # Utils for parameter conversion
 
 # TODO: handling of multiple valid types
@@ -201,7 +191,6 @@ def fix_boto_parameters_based_on_report(original_params: dict, report: str) -> d
         cast_class = getattr(builtins, valid_class)
         old_value = get_nested(params, param_name)
 
-        new_value = None
         if cast_class == bool and str(old_value).lower() in ["true", "false"]:
             new_value = str(old_value).lower() == "true"
         else:

@@ -23,6 +23,7 @@ from localstack.services.cloudformation.deployment_utils import (
     fix_boto_parameters_based_on_report,
     remove_none_values,
 )
+from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
 from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE, GenericBaseModel
 from localstack.utils.aws import aws_stack
 
@@ -537,6 +538,21 @@ class NoResourceProvider(Exception):
     pass
 
 
+def resolve_json_pointer(resource_props: Properties, primary_id_path: str) -> str:
+    primary_id_path = primary_id_path.replace("/properties", "")
+    parts = [p for p in primary_id_path.split("/") if p]
+
+    resolved_part = resource_props.copy()
+    for i in range(len(parts)):
+        part = parts[i]
+        resolved_part = resolved_part.get(part)
+        if i == len(parts) - 1:
+            # last part
+            return resolved_part
+
+    raise Exception(f"Resource properties is missing field: {part}")
+
+
 class ResourceProviderExecutor:
     """
     Point of abstraction between our integration with generic base models, and the new providers.
@@ -561,19 +577,32 @@ class ResourceProviderExecutor:
     ) -> ProgressEvent[Properties]:
         payload = copy.deepcopy(raw_payload)
 
-        for _ in range(max_iterations):
-            event = self.execute_action(payload)
+        for current_iteration in range(max_iterations):
+            resource_type = get_resource_type(
+                {"Type": raw_payload["resourceType"]}
+            )  # TODO: simplify signature of get_resource_type to just take the type
+            resource_provider = self.load_resource_provider(resource_type)
+            event = self.execute_action(resource_provider, payload)
 
             if event.status == OperationStatus.SUCCESS:
-                # TODO: validate physical_resource_id is not None
                 logical_resource_id = raw_payload["requestData"]["logicalResourceId"]
                 resource = self.resources[logical_resource_id]
                 if "PhysicalResourceId" not in resource:
                     # branch for non-legacy providers
                     # TODO: move out of if? (physical res id can be set earlier possibly)
-                    resource_type_schema = self.load_resource_schema(raw_payload["resourceType"])
+                    if isinstance(resource_provider, LegacyResourceProvider):
+                        raise Exception(
+                            "A GenericBaseModel should always have a PhysicalResourceId set after deployment"
+                        )
+
+                    if not hasattr(resource_provider, "SCHEMA"):
+                        raise Exception(
+                            "A ResourceProvider should always have a SCHEMA property defined."
+                        )
+
+                    resource_type_schema = resource_provider.SCHEMA
                     physical_resource_id = self.extract_physical_resource_id_from_model_with_schema(
-                        event.resource_model, resource_type_schema
+                        event.resource_model, raw_payload["resourceType"], resource_type_schema
                     )
 
                     resource["PhysicalResourceId"] = physical_resource_id
@@ -585,34 +614,30 @@ class ResourceProviderExecutor:
             payload["callbackContext"] = context
             payload["requestData"]["resourceProperties"] = event.resource_model
 
-            time.sleep(sleep_time)
+            if current_iteration == 0:
+                time.sleep(0)
+            else:
+                time.sleep(sleep_time)
         else:
             raise TimeoutError("Could not perform deploy loop action")
 
-    def execute_action(self, raw_payload: ResourceProviderPayload) -> ProgressEvent[Properties]:
-        resource_type = get_resource_type(
-            {"Type": raw_payload["resourceType"]}
-        )  # TODO: simplify signature of get_resource_type to just take the type
-        resource_provider = self.load_resource_provider(resource_type)
-        if resource_provider:
-            change_type = raw_payload["action"]
-            request = convert_payload(
-                stack_name=self.stack_name, stack_id=self.stack_id, payload=raw_payload
-            )
+    def execute_action(
+        self, resource_provider: ResourceProvider, raw_payload: ResourceProviderPayload
+    ) -> ProgressEvent[Properties]:
+        change_type = raw_payload["action"]
+        request = convert_payload(
+            stack_name=self.stack_name, stack_id=self.stack_id, payload=raw_payload
+        )
 
-            match change_type:
-                case "Add":
-                    return resource_provider.create(request)
-                case "Dynamic" | "Modify":
-                    return resource_provider.update(request)
-                case "Remove":
-                    return resource_provider.delete(request)
-                case _:
-                    raise NotImplementedError(change_type)
-
-        else:
-            # custom provider
-            raise NoResourceProvider
+        match change_type:
+            case "Add":
+                return resource_provider.create(request)
+            case "Dynamic" | "Modify":
+                return resource_provider.update(request)
+            case "Remove":
+                return resource_provider.delete(request)
+            case _:
+                raise NotImplementedError(change_type)
 
     def load_resource_provider(self, resource_type: str) -> Optional[ResourceProvider]:
         # TODO: unify behavior here in regards to raising NoResourceProvider
@@ -643,13 +668,22 @@ class ResourceProviderExecutor:
             raise NoResourceProvider
 
     def extract_physical_resource_id_from_model_with_schema(
-        self, resource_model: Properties, resource_type_schema: dict
+        self, resource_model: Properties, resource_type: str, resource_type_schema: dict
     ) -> str:
-        # id_path = resource_type_schema['primaryIdentifier'][0]
-        return resource_model["Id"]
+        if resource_type in PHYSICAL_RESOURCE_ID_SPECIAL_CASES:
+            primary_id_path = PHYSICAL_RESOURCE_ID_SPECIAL_CASES[resource_type]
+            physical_resource_id = resolve_json_pointer(resource_model, primary_id_path)
+        else:
+            primary_id_paths = resource_type_schema["primaryIdentifier"]
+            if len(primary_id_paths) > 1:
+                # TODO: auto-merge. Verify logic here with AWS
+                physical_resource_id = "-".join(
+                    [resolve_json_pointer(resource_model, pip) for pip in primary_id_paths]
+                )
+            else:
+                physical_resource_id = resolve_json_pointer(resource_model, primary_id_paths[0])
 
-    def load_resource_schema(self, resource_type: str) -> dict:
-        return {}
+        return physical_resource_id
 
 
 plugin_manager = PluginManager(CloudFormationResourceProviderPlugin.namespace)

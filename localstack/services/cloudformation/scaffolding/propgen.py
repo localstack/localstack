@@ -6,12 +6,13 @@ from __future__ import annotations
 
 import textwrap
 from dataclasses import dataclass
-from functools import reduce
 from typing import Optional, TypedDict
 
 
 @dataclass
 class Item:
+    """An Item is a single field definition"""
+
     name: str
     type: str
     required: bool
@@ -28,7 +29,20 @@ class Item:
 
 
 @dataclass
+class PrimitiveStruct:
+    name: str
+    primitive_type: str
+
+    def __str__(self) -> str:
+        return f"""
+{self.name} = {self.primitive_type}
+"""
+
+
+@dataclass
 class Struct:
+    """A struct represents a single rendered class"""
+
     name: str
     items: list[Item]
 
@@ -67,6 +81,7 @@ class IR:
 
 class Schema(TypedDict):
     properties: dict
+    definitions: dict
     typeName: str
     required: Optional[list[str]]
 
@@ -78,104 +93,102 @@ TYPE_MAP = {
 }
 
 
-def render_types(
-    schema: Schema,
-    required_properties: list[str],
-    provider_prefix: str,
-    name: Optional[str] = None,
-    sub_schema: Optional[dict] = None,
-) -> list[Struct]:
-    """
-    Render the types contained within a schema to a list of structs.
-    """
-    structs = []
+class PropertyTypeScaffolding:
+    resource_type: str
+    provider_prefix: str
+    schema: Schema
 
-    top_level_props = Struct(name=name or f"{provider_prefix}Properties", items=[])
+    structs: list[Struct]
 
-    if sub_schema is not None:
-        current_schema = sub_schema
-    else:
-        current_schema = schema
+    required_properties: list[str]
 
-    if "properties" not in current_schema:
-        # Simple type
-        if prop_type := current_schema.get("type"):
-            if isinstance(prop_type, str) and (python_type := TYPE_MAP.get(prop_type)):
-                item = Item.new(name=name, type=python_type, required=name in required_properties)
-                top_level_props.items.append(item)
-                return structs
-        raise NotImplementedError(name, current_schema)
+    def __init__(self, resource_type: str, provider_prefix: str, schema: Schema):
+        self.resource_type = resource_type
+        self.provider_prefix = provider_prefix
+        self.schema = schema
+        self.structs = []
+        self.required_properties = schema.get("required", [])
 
-    for property, defn in current_schema["properties"].items():
-        if prop_type := defn.get("type"):
-            if isinstance(prop_type, str) and (python_type := TYPE_MAP.get(prop_type)):
-                item = Item.new(
-                    name=property, type=python_type, required=property in required_properties
-                )
-            elif isinstance(prop_type, list):
-                # e.g. ["object", "string"] => dict[str, str]
-                container = prop_type[0]
-                match container:
-                    case "object":
-                        # value types are the next element
-                        value_type = TYPE_MAP[prop_type[1]]
-                        item = Item.new(
-                            name=property,
-                            type=f"dict[str, {value_type}]",
-                            required=property in required_properties,
-                        )
-                    case _:
-                        raise NotImplementedError(property, prop_type)
-            else:
-                match prop_type:
-                    case "object":
-                        item = Item.new(
-                            name=property, type="dict", required=property in required_properties
-                        )
-                    case "array":
-                        # TODO
-                        item = Item.new(
-                            name=property, type="list", required=property in required_properties
-                        )
-                    case "number":
-                        item = Item.new(
-                            name=property, type="float", required=property in required_properties
-                        )
-                    case _:
-                        raise NotImplementedError(prop_type)
+    def get_structs(self) -> list[Struct]:
+        root_struct = Struct(f"{self.provider_prefix}Properties", items=[])
+        self._add_struct(root_struct)
 
-            top_level_props.items.append(item)
-        elif ref := defn.get("$ref"):
-            new_defn_path = ref[2:].split("/")
-            new_defn = reduce(lambda s, p: s[p], new_defn_path, schema)
-            new_structs = render_types(
-                schema=schema,
-                required_properties=required_properties,
-                provider_prefix=provider_prefix,
-                name=property,
-                sub_schema=new_defn,
-            )
-            structs.extend(new_structs)
-            item = Item.new(name=property, type=property, required=property in required_properties)
-            top_level_props.items.append(item)
-        elif options := defn.get("oneOf"):
-            for option in options:
-                if type := option.get("type"):
-                    match type:
-                        case "object":
-                            item = Item.new(
-                                name=property, type="dict", required=property in required_properties
-                            )
-                            top_level_props.items.append(item)
-                            break
-                        case _:
-                            continue
+        for property_name, property_def in self.schema["properties"].items():
+            is_required = property_name in self.required_properties
+            item = self.property_to_item(property_name, property_def, is_required)
+            root_struct.items.append(item)
+
+        return self.structs
+
+    def _add_struct(self, struct: Struct):
+        if struct.name in [s.name for s in self.structs]:
+            return
         else:
-            raise NotImplementedError(property, defn)
+            self.structs.append(struct)
 
-    structs.append(top_level_props)
+    def get_ref_definition(self, property_ref: str) -> dict:
+        property_ref_name = property_ref.lstrip("#").rpartition("/")[-1]
+        return self.schema["definitions"][property_ref_name]
 
-    return structs
+    def resolve_type_of_property(self, property_def: dict) -> str:
+        if property_ref := property_def.get("$ref"):
+            ref_definition = self.get_ref_definition(property_ref)
+            ref_type = ref_definition.get("type")
+            if ref_type not in ["object", "array"]:
+                # in this case we simply flatten it (instead of for example creating a type alias)
+                resolved_type = TYPE_MAP[ref_type]
+            else:
+                if ref_type == "object":
+                    # the object might only have a pattern defined and no actual properties
+                    if "properties" not in ref_definition:
+                        resolved_type = "dict"
+                    else:
+                        nested_struct = self.ref_to_struct(property_ref)
+                        resolved_type = nested_struct.name
+                        self._add_struct(nested_struct)
+                elif ref_type == "array":
+                    item_def = ref_definition["items"]
+                    item_type = self.resolve_type_of_property(item_def)
+                    resolved_type = f"list[{item_type}]"
+                else:
+                    raise Exception(f"Unknown property type encountered: {ref_type}")
+        else:
+            match property_type := property_def.get("type"):
+                # primitives
+                case "string":
+                    resolved_type = "str"
+                case "boolean":
+                    resolved_type = "bool"
+                case "integer":
+                    resolved_type = "int"
+                # complex objects
+                case "object":
+                    resolved_type = "dict"  # TODO: any cases where we need to continue here?
+                case "array":
+                    item_type = self.resolve_type_of_property(property_def["items"])
+                    resolved_type = f"list[{item_type}]"
+                case _:
+                    raise Exception(f"TODO: {property_type}")
+        return resolved_type
+
+    def property_to_item(self, property_name: str, property_def: dict, required: bool) -> Item:
+        resolved_type = self.resolve_type_of_property(property_def)
+        return Item(name=property_name, type=f"Optional[{resolved_type}]", required=required)
+
+    def ref_to_struct(self, property_ref: str) -> Struct:
+        property_ref_name = property_ref.lstrip("#").rpartition("/")[-1]
+        resolved_def = self.schema["definitions"][property_ref_name]
+        nested_struct = Struct(name=property_ref_name, items=[])
+        if resolved_properties := resolved_def.get("properties"):
+            required_props = resolved_def.get("required", [])
+            for k, v in resolved_properties.items():
+                is_required = k in required_props
+                item = self.property_to_item(k, v, is_required)
+                nested_struct.items.append(item)
+        else:
+            raise Exception("Unknown resource format. Expected properties on object")
+
+        return nested_struct
 
 
 def generate_ir_for_type(schema: list[Schema], type_name: str, provider_prefix: str = "") -> IR:
@@ -184,10 +197,7 @@ def generate_ir_for_type(schema: list[Schema], type_name: str, provider_prefix: 
     except IndexError:
         raise ValueError(f"could not find schema for type {type_name}")
 
-    required_properties = resource_schema.get("required", [])
-    structs = render_types(
-        resource_schema,
-        required_properties=required_properties,
-        provider_prefix=provider_prefix,
-    )
+    structs = PropertyTypeScaffolding(
+        resource_type=type_name, provider_prefix=provider_prefix, schema=resource_schema
+    ).get_structs()
     return IR(structs=structs)
