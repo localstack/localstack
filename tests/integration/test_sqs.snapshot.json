@@ -1003,7 +1003,12 @@
         "Error": {
           "Code": "InvalidParameterValue",
           "Detail": null,
-          "Message": "Value crossaccountpermission2 for parameter Label is invalid. Reason: can't find label."
+          "Message": "Value crossaccountpermission2 for parameter Label is invalid. Reason: can't find label.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
