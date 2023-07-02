@@ -22,6 +22,8 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.apigateway import (
     Authorizer,
     ConnectionType,
+    DocumentationPart,
+    DocumentationPartLocation,
     IntegrationType,
     Model,
     RequestValidator,
@@ -778,6 +780,25 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
     return (results or [subject])[-1]
 
 
+def add_documentation_parts(rest_api_container, documentation):
+    for doc_part in documentation.get("documentationParts", []):
+        entity_id = short_uid()[:6]
+        location = doc_part["location"]
+        rest_api_container.documentation_parts[entity_id] = DocumentationPart(
+            id=entity_id,
+            location=DocumentationPartLocation(
+                type=location.get("type"),
+                path=location.get("path", "/")
+                if location.get("type") not in ["API", "MODEL"]
+                else None,
+                method=location.get("method"),
+                statusCode=location.get("statusCode"),
+                name=location.get("name"),
+            ),
+            properties=doc_part["properties"],
+        )
+
+
 def import_api_from_openapi_spec(
     rest_api: RestAPI, body: Dict, query_params: Dict, account_id: str = None, region: str = None
 ) -> Optional[RestAPI]:
@@ -1227,6 +1248,9 @@ def import_api_from_openapi_spec(
     if api_key_source is not None:
         rest_api.api_key_source = api_key_source.upper()
 
+    documentation = resolved_schema.get(OpenAPIExt.DOCUMENTATION)
+    if documentation:
+        add_documentation_parts(rest_api_container, documentation)
     return rest_api
 
 
