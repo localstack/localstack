@@ -4,6 +4,7 @@ import json
 import logging
 import re
 import time
+from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union
 from urllib import parse as urlparse
@@ -43,7 +44,7 @@ from localstack.utils.aws import resources as resource_utils
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
-from localstack.utils.strings import long_uid, short_uid
+from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 from localstack.utils.urls import localstack_host
 
@@ -71,7 +72,18 @@ PATH_REGEX_PATH_MAPPINGS = r"/domainnames/([^/]+)/basepathmappings/?(.*)"
 PATH_REGEX_CLIENT_CERTS = r"/clientcertificates/?([^/]+)?$"
 PATH_REGEX_VPC_LINKS = r"/vpclinks/([^/]+)?(.*)"
 PATH_REGEX_TEST_INVOKE_API = r"^\/restapis\/([A-Za-z0-9_\-]+)\/resources\/([A-Za-z0-9_\-]+)\/methods\/([A-Za-z0-9_\-]+)/?(\?.*)?"
-
+INVOKE_TEST_LOG_TEMPLATE = """Execution log for request {request_id}
+        {formatted_date} : Starting execution for request: {request_id}
+        {formatted_date} : HTTP Method: {http_method}, Resource Path: {resource_path}
+        {formatted_date} : Method request path: {request_path}
+        {formatted_date} : Method request query string: {query_string}
+        {formatted_date} : Method request headers: {request_headers}
+        {formatted_date} : Method request body before transformations: {request_body}
+        {formatted_date} : Method response body after transformations: {response_body}
+        {formatted_date} : Method response headers: {response_headers}
+        {formatted_date} : Successfully completed execution
+        {formatted_date} : Method completed with status: {status_code}
+        """
 # template for SQS inbound data
 APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
     "Action=SendMessage&MessageBody=$util.base64Encode($input.json('$'))"
@@ -1332,18 +1344,9 @@ def set_api_id_stage_invocation_path(
         stage = path.strip("/").split("/")[0]
         relative_path_w_query_params = "/%s" % path.lstrip("/").partition("/")[2]
     elif test_invoke_match:
-        # special case: fetch the resource details for TestInvokeApi invocations
-        stage = None
-        region_name = invocation_context.region_name
-        api_id = test_invoke_match.group(1)
-        resource_id = test_invoke_match.group(2)
-        query_string = test_invoke_match.group(4) or ""
-        apigateway = aws_stack.connect_to_service(
-            service_name="apigateway", region_name=region_name
-        )
-        resource = apigateway.get_resource(restApiId=api_id, resourceId=resource_id)
-        resource_path = resource.get("path")
-        relative_path_w_query_params = f"{resource_path}{query_string}"
+        stage = invocation_context.stage
+        api_id = invocation_context.api_id
+        relative_path_w_query_params = invocation_context.path_with_query_string
     else:
         raise Exception(
             f"Unable to extract API Gateway details from request: {path} {dict(headers)}"
@@ -1479,3 +1482,45 @@ def is_greedy_path(path_part: str) -> bool:
 
 def is_variable_path(path_part: str) -> bool:
     return path_part.startswith("{") and path_part.endswith("}")
+
+
+def multi_value_dict_for_list(elements: Union[List, Dict]) -> Dict:
+    temp_mv_dict = defaultdict(list)
+    for key in elements:
+        if isinstance(key, (list, tuple)):
+            key, value = key
+        else:
+            value = elements[key]
+
+        key = to_str(key)
+        temp_mv_dict[key].append(value)
+    return {k: tuple(v) for k, v in temp_mv_dict.items()}
+
+
+def log_template(
+    request_id: str,
+    date: datetime,
+    http_method: str,
+    resource_path: str,
+    request_path: str,
+    query_string: str,
+    request_headers: str,
+    request_body: str,
+    response_body: str,
+    response_headers: str,
+    status_code: str,
+):
+    formatted_date = date.strftime("%a %b %d %H:%M:%S %Z %Y")
+    return INVOKE_TEST_LOG_TEMPLATE.format(
+        request_id=request_id,
+        formatted_date=formatted_date,
+        http_method=http_method,
+        resource_path=resource_path,
+        request_path=request_path,
+        query_string=query_string,
+        request_headers=request_headers,
+        request_body=request_body,
+        response_body=response_body,
+        response_headers=response_headers,
+        status_code=status_code,
+    )
