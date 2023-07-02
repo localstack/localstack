@@ -8,10 +8,15 @@
     "/path1":{
       "get":{
         "x-amazon-apigateway-integration":{
-          "httpMethod":"GET",
+          "httpMethod":"POST",
           "payloadFormatVersion":"1.0",
           "type":"HTTP_PROXY",
-          "uri":"${stageVariables.foo}"
+          "uri": "http://${stageVariables.url}"
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
         }
       }
     }
