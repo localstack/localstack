@@ -724,6 +724,7 @@ class TestApiGatewayImportRestApi:
         assert request.status_code == 400
         assert request.json().get("message") == "Invalid request body"
 
+    @pytest.mark.aws_validated
     def test_import_with_stage_variables(self, import_apigw, aws_client, echo_http_server_post):
 
         spec_file = load_file(OAS_30_STAGE_VARIABLES)
