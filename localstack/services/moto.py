@@ -70,19 +70,15 @@ def call_moto_with_request(
     )
 
     if override_headers:
+        # by default, we first re-serialize the parameters from the `service_request` and then we update the
+        # local_context headers with the ones from the original request, which means you will override your previously
+        # set parameter with the one from the original request.
+        # we reverse the order if `override_headers` is set, and properly override the original request with all
+        # parameters from the `service_request`
         headers = copy.deepcopy(context.request.headers)
-        # remove the headers that are parameters from the original request
-        header_to_remove = list(
-            header
-            for header in headers.keys()
-            if header.startswith("x-amz") and not header.startswith("x-amz-meta")
-        )
-        for header in header_to_remove:
-            headers.remove(header)
-
         headers.update(local_context.request.headers)
-
         local_context.request.headers = headers
+
     else:
         local_context.request.headers.update(context.request.headers)
 
