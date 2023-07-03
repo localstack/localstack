@@ -7415,8 +7415,6 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_get_object_special_character": {
-    "recorded-date": "24-05-2023, 19:17:18",
   "tests/integration/s3/test_s3.py::TestS3::test_put_get_object_special_character[file%2Fname]": {
     "recorded-date": "09-06-2023, 17:15:35",
     "recorded-content": {
