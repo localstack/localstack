@@ -389,7 +389,7 @@ def _create_new_request(request: Request, headers: Dict[str, str], query_string:
     """
     Create a new request from an existent one, with new headers and query string
     It is easier to create a new one as the existing request has a lot of cached properties based on query_string
-    We are not using the request body to reverse the signature, so do not pass it to the new request
+    We are not using the request body to generate the signature, so do not pass it to the new request
     :param request: the incoming pre-signed request
     :param headers: new headers used for signature calculation
     :param query_string: new query string for signature calculation

@@ -4361,8 +4361,20 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_complete_multipart_parts_order": {
-    "recorded-date": "14-01-2023, 13:07:10",
+    "recorded-date": "03-07-2023, 17:28:01",
     "recorded-content": {
+      "upload-part-negative-part-number": {
+        "Error": {
+          "ArgumentName": "partNumber",
+          "ArgumentValue": "-1",
+          "Code": "InvalidArgument",
+          "Message": "Part number must be an integer between 1 and 10000, inclusive"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "complete-multipart-unordered": {
         "Error": {
           "Code": "InvalidPartOrder",
@@ -4379,6 +4391,7 @@
         "ETag": "\"c7cb0938a47e31f70cf07028d22e6913-3\"",
         "Key": "test-order-parts",
         "Location": "<location:1>",
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -4389,6 +4402,7 @@
         "ETag": "\"c7cb0938a47e31f70cf07028d22e6913-3\"",
         "Key": "key-sequence-with-step-2",
         "Location": "<location:2>",
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

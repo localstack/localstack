@@ -27,6 +27,7 @@ from localstack.aws.api.s3 import (
     ChecksumAlgorithm,
     CopyObjectOutput,
     CopyObjectRequest,
+    InvalidArgument,
     InvalidStorageClass,
     NoSuchUpload,
     PutObjectOutput,
@@ -48,7 +49,6 @@ from localstack.services.s3.utils import (
 )
 from localstack.utils.aws import arns
 from localstack.utils.patch import patch
-from localstack.utils.sync import SynchronizedDefaultDict
 
 LOG = logging.getLogger(__name__)
 
@@ -58,8 +58,6 @@ S3_MAX_FILE_SIZE_BYTES = 512 * 1024
 MOTO_S3_DEFAULT_KEY_BUFFER_SIZE = str(S3_MAX_FILE_SIZE_BYTES)
 
 CHUNK_SIZE = 1024 * 16 * 4
-
-S3_KEY_LOCKS: dict[int, threading.RLock] = SynchronizedDefaultDict(threading.RLock)
 
 
 class S3ProviderStream(S3Provider):
@@ -202,14 +200,10 @@ class S3ProviderStream(S3Provider):
                 stream_value: SpooledTemporaryFile = dest_key_object.value
                 checksum = get_s3_checksum(checksum_algorithm)
 
-                stream_id = id(stream_value)
-                key_lock = S3_KEY_LOCKS[stream_id]
-                with key_lock:
+                with dest_key_object.lock:
                     while data := stream_value.read(4096):
                         checksum.update(data)
                     stream_value.seek(0)
-
-                S3_KEY_LOCKS.pop(stream_id, None)
 
                 calculated_checksum = base64.b64encode(checksum.digest()).decode()
                 dest_key_object.checksum_value = calculated_checksum
@@ -240,13 +234,14 @@ class S3ProviderStream(S3Provider):
                 "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
             )
-        elif request.get("PartNumber", 0) < 1:
-            # TODO: find the right exception for this?
-            raise NoSuchUpload()
+        elif (part_number := request.get("PartNumber", 0)) < 1:
+            raise InvalidArgument(
+                "Part number must be an integer between 1 and 10000, inclusive",
+                ArgumentName="partNumber",
+                ArgumentValue=part_number,
+            )
 
-        key = moto_backend.upload_part(
-            bucket_name, upload_id, request.get("PartNumber"), request.get("Body")
-        )
+        key = moto_backend.upload_part(bucket_name, upload_id, part_number, request.get("Body"))
         response = UploadPartOutput(ETag=key.etag)
 
         if key.checksum_algorithm is not None:
@@ -274,6 +269,10 @@ class ChecksumInvalid(s3_exceptions.S3ClientError):
 
 
 class PartialStream(RawIOBase):
+    """
+    This class will take a source stream, and return only a range of it based on the parameters start_byte and end_byte
+    """
+
     def __init__(self, base_stream: IO[bytes], start_byte: int, end_byte: int):
         super().__init__()
         self._base_stream = base_stream
@@ -299,6 +298,12 @@ class PartialStream(RawIOBase):
 
 
 class StreamedFakeKey(s3_models.FakeKey):
+    """
+    We are overriding the `FakeKey` object from moto to allow streaming input and output instead of loading its full
+    value into memory. Most of the changes are related to checksum validation, as we would pass the entire value to the
+    checksum before, and we now do it in a chunked manner.
+    """
+
     def __init__(self, name: str, value: IO[bytes], *args, **kwargs):
         # when we set the value to nothing to first initialize the key for `PutObject` until we pull all logic in the
         # provider
@@ -314,25 +319,23 @@ class StreamedFakeKey(s3_models.FakeKey):
 
     @value.setter
     def value(self, new_value: IO[bytes] | SpooledTemporaryFile):
+        # "d41d8cd98f00b204e9800998ecf8427e" is the ETag of an empty object
         etag_empty = not self._etag or self._etag == "d41d8cd98f00b204e9800998ecf8427e"
         # it could come from the already calculated and completed CompleteMultipartUpload
         # in that case, set it directly as the buffer
         # if the etag is not set, this is the result from CopyObject, in that case we should copy the underlying
         # SpooledTemporaryFile
-        stream_id = id(self._value_buffer)
-        key_lock = S3_KEY_LOCKS[stream_id]
         if self._etag and isinstance(new_value, SpooledTemporaryFile):
-            with key_lock:
+            with self.lock:
                 self._value_buffer.close()
                 self._value_buffer = new_value
                 self._value_buffer.seek(0, os.SEEK_END)
                 self.contentsize = self._value_buffer.tell()
                 self._value_buffer.seek(0)
 
-            S3_KEY_LOCKS.pop(stream_id, None)
             return
 
-        with key_lock:
+        with self.lock:
             self._value_buffer.seek(0)
             self._value_buffer.truncate()
             # We have 2 cases:
@@ -365,13 +368,9 @@ class StreamedFakeKey(s3_models.FakeKey):
             self.contentsize = self._value_buffer.tell()
             self._value_buffer.seek(0)
 
-        S3_KEY_LOCKS.pop(stream_id, None)
-
     def set_value_from_chunked_payload(self, new_value: IO[bytes], content_length: int):
         etag_empty = not self._etag or self._etag == "d41d8cd98f00b204e9800998ecf8427e"
-        stream_id = id(self._value_buffer)
-        key_lock = S3_KEY_LOCKS[stream_id]
-        with key_lock:
+        with self.lock:
             self._value_buffer.seek(0)
             self._value_buffer.truncate()
             # We have 2 cases:
@@ -446,10 +445,12 @@ class StreamedFakeKey(s3_models.FakeKey):
             self.contentsize = self._value_buffer.tell()
             self._value_buffer.seek(0)
 
-        S3_KEY_LOCKS.pop(stream_id, None)
-
 
 class StreamedFakeMultipart(s3_models.FakeMultipart):
+    """
+    We override FakeMultipart to prevent `complete` to load every single part into memory.
+    """
+
     def __init__(self, *args, **kwargs):
         super(StreamedFakeMultipart, self).__init__(*args, **kwargs)
         self.parts: dict[int, StreamedFakeKey] = {}
@@ -457,6 +458,7 @@ class StreamedFakeMultipart(s3_models.FakeMultipart):
     def complete(self, body: Iterator[Tuple[int, str]]) -> Tuple[SpooledTemporaryFile, str]:
         decode_hex = codecs.getdecoder("hex_codec")
 
+        # we create a SpooledTemporaryFile which will hold all the parts' data,
         total = SpooledTemporaryFile(max_size=S3_MAX_FILE_SIZE_BYTES)
         md5s = bytearray()
 
@@ -478,12 +480,9 @@ class StreamedFakeMultipart(s3_models.FakeMultipart):
             md5s.extend(decode_hex(part_etag)[0])
             # to not trigger the property every time
             stream_value = part.value
-            stream_id = id(stream_value)
-            key_lock = S3_KEY_LOCKS[stream_id]
-            with key_lock:
+            with part.lock:
                 while data := stream_value.read(CHUNK_SIZE):
                     total.write(data)
-            S3_KEY_LOCKS.pop(stream_id, None)
 
             last = part
             count += 1
@@ -502,7 +501,6 @@ class StreamedFakeMultipart(s3_models.FakeMultipart):
 
         return total, f"{full_etag.hexdigest()}-{count}"
 
-    # TODO: we might do this in our provider, to properly pass the IO bytes value
     def set_part(self, part_id: int, value: IO[bytes]) -> StreamedFakeKey:
         if part_id < 1:
             raise s3_exceptions.NoSuchUpload(upload_id=part_id)
@@ -577,6 +575,10 @@ def apply_stream_patches():
         start_byte: int,
         end_byte: int,
     ) -> StreamedFakeKey:
+        """
+        We are patching `copy_part` to be able to only select a part of a Source object with PartialStream, representing
+        only a range of a source stream.
+        """
         dest_bucket = self.get_bucket(dest_bucket_name)
         multipart = dest_bucket.multiparts[multipart_id]
 
@@ -646,6 +648,8 @@ def apply_stream_patches():
             checksum_value=checksum_value,
         )
 
+        # small patch to avoid using `copy.deepcopy` in list_object_versions
+        # we remove the flag from the last existing key
         existing_key = bucket.keys.get(key_name)
         if existing_key:
             existing_key.is_latest = False
@@ -667,6 +671,10 @@ def apply_stream_patches():
         key_marker: Optional[str] = None,
         prefix: str = "",
     ) -> Tuple[list[StreamedFakeKey], list[str], list[s3_models.FakeDeleteMarker]]:
+        """
+        Small override because moto's `list_object_versions` is using `copy.deepcopy` which is not compatible with
+        streams
+        """
         bucket = self.get_bucket(bucket_name)
 
         common_prefixes: list[str] = []
@@ -704,98 +712,100 @@ def apply_stream_patches():
 
         return requested_versions, common_prefixes, delete_markers
 
-    @patch(s3_responses.S3Response.key_response)
-    def _fix_key_response(fn, self, *args, **kwargs):
-        """Return an iterator from the stream value in `key_value`"""
-        status_code, resp_headers, key_value = fn(self, *args, **kwargs)
-        content = get_generator_from_stream(key_value)
-        return status_code, resp_headers, content
-
-    @patch(s3_responses.S3Response._handle_range_header, pass_target=False)
-    def _handle_range_header(
-        self, request: Any, response_headers: dict[str, Any], response_content: Any
+    @patch(s3_responses.S3Response._key_response_get)
+    def _fix_key_response_get(
+        fn,
+        self,
+        bucket_name: str,
+        query: dict[str, Any],
+        key_name: str,
+        headers: dict[str, Any],
+        *args,
+        **kwargs,
     ) -> TYPE_RESPONSE:
-        is_streamed = isinstance(response_content, SpooledTemporaryFile)
-        if is_streamed:
-            response_content.seek(0, 2)
-            length = response_content.tell()
-            response_content.seek(0)
-        else:
-            length = len(response_content)
+        """Return an iterator if the content returned is a `SpooledTemporaryFile`, which indicates that the return
+        value is from `GetObject`. We transform this stream into an iterator, to control how much we return"""
+        code, response_headers, body = fn(
+            self, bucket_name, query, key_name, headers, *args, **kwargs
+        )
 
-        last = length - 1
-        _, rspec = request.headers.get("range").split("=")
-        if "," in rspec:
-            raise NotImplementedError("Multiple range specifiers not supported")
+        if isinstance(body, SpooledTemporaryFile):
+            # it means we got a successful `GetObject`, retrieve the key object to get its lock
+            version_id = query.get("versionId", [None])[0]
+            key = self.backend.get_object(bucket_name, key_name, version_id=version_id)
 
-        def toint(i: Any) -> Optional[int]:
-            return int(i) if i else None
+            # we will handle `range` requests already here as we have access to the `StreamedFakeKey` object and lock
+            # as we already return 206, this won't pass to the `_handle_range_header` method again
+            # there is some duplication from moto, but it's easier to handle that way
+            if code == 200 and (range_header := headers.get("range", "")) != "":
+                length = key.size
+                last = length - 1
+                _, rspec = range_header.split("=")
+                if "," in rspec:
+                    raise NotImplementedError("Multiple range specifiers not supported")
 
-        begin, end = map(toint, rspec.split("-"))
-        if begin is not None:  # byte range
-            end = last if end is None else min(end, last)
-        elif end is not None:  # suffix byte range
-            begin = length - min(end, length)
-            end = last
-        else:
-            return 400, response_headers, ""
-        if begin < 0 or end > last or begin > min(end, last):
-            raise s3_exceptions.InvalidRange(
-                actual_size=str(length), range_requested=request.headers.get("range")
-            )
-        response_headers["content-range"] = f"bytes {begin}-{end}/{length}"
+                def toint(i: Any) -> Optional[int]:
+                    return int(i) if i else None
 
-        if not is_streamed:
-            content = response_content[begin : end + 1]
-            response_headers["content-length"] = len(content)
-        else:
-            requested_length = end - begin + 1
-            content = get_range_generator_from_stream(response_content, begin, requested_length)
-            response_headers["content-length"] = requested_length
+                begin, end = map(toint, rspec.split("-"))
+                if begin is not None:  # byte range
+                    end = last if end is None else min(end, last)
+                elif end is not None:  # suffix byte range
+                    begin = length - min(end, length)
+                    end = last
+                else:
+                    return 400, response_headers, ""
+                if begin < 0 or end > last or begin > min(end, last):
+                    raise s3_exceptions.InvalidRange(
+                        actual_size=str(length), range_requested=range_header
+                    )
+                response_headers["content-range"] = f"bytes {begin}-{end}/{length}"
+                requested_length = end - begin + 1
+                content = get_range_generator_from_stream(
+                    key_stream=key.value,
+                    key_lock=key.lock,
+                    start=begin,
+                    requested_length=requested_length,
+                )
+                response_headers["content-length"] = requested_length
 
-        return 206, response_headers, content
+                return 206, response_headers, content
+
+            body = get_generator_from_key(key_stream=key.value, key_lock=key.lock)
+
+        return code, response_headers, body
 
 
-def get_generator_from_stream(response_content: Any) -> Iterator[bytes]:
+def get_generator_from_key(
+    key_stream: SpooledTemporaryFile, key_lock: threading.RLock
+) -> Iterator[bytes]:
     # Werkzeug will only read 1 everytime, so we control how much we return
-    if isinstance(response_content, SpooledTemporaryFile):
-        stream_id = id(response_content)
+    pos = 0
+    while True:
+        with key_lock:
+            key_stream.seek(pos)
+            data = key_stream.read(CHUNK_SIZE)
+        if not data:
+            break
+        pos += len(data)
+        yield data
 
-        def get_data():
-            # we don't have access to the StreamedFakeKey object from here, so we need a global locking system for that
-            # stream
-            # TODO: use context manager for auto deleting the lock afterwards
-            key_lock = S3_KEY_LOCKS[stream_id]
-            pos = 0
-            while True:
-                with key_lock:
-                    response_content.seek(pos)
-                    data = response_content.read(CHUNK_SIZE)
-                if not data:
-                    break
-                pos += len(data)
-                yield data
-
-            S3_KEY_LOCKS.pop(stream_id, None)
-            return b""
-
-        return get_data()
-
-    return response_content
+    return b""
 
 
 def get_range_generator_from_stream(
-    response_content: Any, start: int, requested_length: int
+    key_stream: SpooledTemporaryFile,
+    key_lock: threading.RLock,
+    start: int,
+    requested_length: int,
 ) -> Iterator[bytes]:
     pos = start
     max_length = requested_length
-    stream_id = id(response_content)
-    key_lock = S3_KEY_LOCKS[stream_id]
     while True:
         with key_lock:
-            response_content.seek(pos)
+            key_stream.seek(pos)
             amount = min(max_length, CHUNK_SIZE)
-            data = response_content.read(amount)
+            data = key_stream.read(amount)
 
         if not data:
             break
@@ -804,5 +814,4 @@ def get_range_generator_from_stream(
         max_length -= read
         yield data
 
-    S3_KEY_LOCKS.pop(stream_id, None)
     return b""

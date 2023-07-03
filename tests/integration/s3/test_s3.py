@@ -2361,8 +2361,8 @@ class TestS3:
         assert chunk_size == len(content)
         snapshot.match("get-object", resp)
 
-    @pytest.mark.only_localstack
-    def test_download_fileobj_multiple_range_requests(self, s3_bucket, snapshot, aws_client):
+    @pytest.mark.aws_validated
+    def test_download_fileobj_multiple_range_requests(self, s3_bucket, aws_client):
         object_key = "test-download_fileobj"
 
         body = os.urandom(70_000 * 100 * 5)
@@ -3889,6 +3889,7 @@ class TestS3:
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
     )
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_complete_multipart_parts_order(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -3920,6 +3921,16 @@ class TestS3:
                 UploadId=upload_id,
             )
             multipart_upload_parts.append({"ETag": response["ETag"], "PartNumber": part_number})
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=BytesIO(b""),
+                PartNumber=-1,
+                UploadId=upload_id,
+            )
+        snapshot.match("upload-part-negative-part-number", e.value.response)
 
         # testing completing the multipart with an unordered sequence of parts
         with pytest.raises(ClientError) as e:
