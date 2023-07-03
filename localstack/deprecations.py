@@ -203,12 +203,6 @@ DEPRECATIONS = [
         "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2",
     ),
     EnvVarDeprecation(
-        "LAMBDA_DOCKER_DNS",
-        "2.0.0",
-        "This feature is currently not supported in the new lambda provider "
-        "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2",
-    ),
-    EnvVarDeprecation(
         "LAMBDA_CONTAINER_REGISTRY",
         "2.0.0",
         "The new lambda provider uses LAMBDA_RUNTIME_IMAGE_MAPPING instead "
