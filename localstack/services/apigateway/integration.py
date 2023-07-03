@@ -635,8 +635,21 @@ class HTTPIntegration(BackendIntegration):
         if isinstance(payload, dict):
             payload = json.dumps(payload)
 
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/aws-api-gateway-stage-variables-reference.html
+        # HTTP integration URIs
+        #
+        # A stage variable can be used as part of an HTTP integration URL, as shown in the following examples:
+        #
+        # A full URI without protocol – http://${stageVariables.<variable_name>}
+        # A full domain – http://${stageVariables.<variable_name>}/resource/operation
+        # A subdomain – http://${stageVariables.<variable_name>}.example.com/resource/operation
+        # A path – http://example.com/${stageVariables.<variable_name>}/bar
+        # A query string – http://example.com/foo?q=${stageVariables.<variable_name>}
+        render_vars = {"stageVariables": invocation_context.stage_variables}
+        rendered_uri = VtlTemplate().render_vtl(uri, render_vars)
+
         uri = apply_request_parameters(
-            uri,
+            rendered_uri,
             integration=integration,
             path_params=path_params,
             query_params=query_string_params,

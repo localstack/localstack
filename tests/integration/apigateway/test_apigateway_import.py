@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import time
 from operator import itemgetter
 
@@ -43,7 +44,7 @@ OAS_30_CIRCULAR_REF = os.path.join(PARENT_DIR, "files", "openapi.spec.circular-r
 OAS_30_CIRCULAR_REF_WITH_REQUEST_BODY = os.path.join(
     PARENT_DIR, "files", "openapi.spec.circular-ref-with-request-body.json"
 )
-
+OAS_30_STAGE_VARIABLES = os.path.join(PARENT_DIR, "files", "openapi.spec.stage-variables.json")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "awslambda/functions/lambda_echo.py")
 
 
@@ -722,3 +723,29 @@ class TestApiGatewayImportRestApi:
         request = requests.post(url, json=wrong_request_schema)
         assert request.status_code == 400
         assert request.json().get("message") == "Invalid request body"
+
+    @pytest.mark.aws_validated
+    def test_import_with_stage_variables(self, import_apigw, aws_client, echo_http_server_post):
+
+        spec_file = load_file(OAS_30_STAGE_VARIABLES)
+        import_resp, root_id = import_apigw(body=spec_file, failOnWarnings=True)
+        rest_api_id = import_resp["id"]
+
+        response = aws_client.apigateway.create_deployment(restApiId=rest_api_id)
+        # workaround to remove the fixture scheme prefix. AWS won't allow stage variables
+        # on the OpenAPI uri without the scheme. So we let the scheme on the spec, "http://{stageVariables.url}",
+        # and remove it from the fixture
+        endpoint = re.sub(r"https?://", "", echo_http_server_post)
+        aws_client.apigateway.create_stage(
+            restApiId=rest_api_id,
+            stageName="v1",
+            variables={"url": endpoint},
+            deploymentId=response["id"],
+        )
+
+        def call_api():
+            url = api_invoke_url(api_id=rest_api_id, stage="v1", path="/path1")
+            res = requests.get(url)
+            assert res.ok
+
+        retry(call_api, retries=5, sleep=2)
