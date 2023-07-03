@@ -358,9 +358,9 @@ class StreamedFakeKey(s3_models.FakeKey):
             if self.checksum_algorithm:
                 calculated_checksum = base64.b64encode(checksum.digest()).decode()
 
-            if self.checksum_value and self.checksum_value != calculated_checksum:
-                self.dispose()
-                raise ChecksumInvalid(self.checksum_algorithm)
+                if self.checksum_value and self.checksum_value != calculated_checksum:
+                    self.dispose()
+                    raise ChecksumInvalid(self.checksum_algorithm)
 
             if etag_empty:
                 self._etag = etag.hexdigest()
@@ -608,6 +608,10 @@ def apply_stream_patches():
         checksum_value: Optional[str] = None,
     ) -> StreamedFakeKey:
         key_name = clean_key_name(key_name)
+        # due to `call_moto_with_request`, it's possible we're passing a double URL encoded key name. Decode it twice
+        # if that's the case
+        if "%" in key_name:  # FIXME: fix it in `call_moto_with_request`
+            key_name = clean_key_name(key_name)
         if storage is not None and storage not in s3_models.STORAGE_CLASS:
             raise s3_exceptions.InvalidStorageClass(storage=storage)
 
