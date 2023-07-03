@@ -176,7 +176,7 @@ class S3Code(ArchiveCode):
         """
         Generates a presigned url pointing to the code archive
         """
-        s3_client = connect_to(region_name="us-east-1", endpoint_url=endpoint_url)
+        s3_client = connect_to(region_name="us-east-1", endpoint_url=endpoint_url).s3
         params = {"Bucket": self.s3_bucket, "Key": self.s3_key}
         if self.s3_object_version:
             params["VersionId"] = self.s3_object_version
