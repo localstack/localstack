@@ -84,6 +84,11 @@ class StateTaskServiceCallback(StateTaskService):
         else:
             raise NotImplementedError(f"Unsupported CallbackOutcome type '{type(outcome)}'.")
 
+    def _sync(self, env: Environment) -> None:
+        raise RuntimeError(
+            f"Unsupported .sync callback procedure in resource {self.resource.resource_arn}"
+        )
+
     def _is_condition(self):
         return self.resource.condition is not None
 
@@ -139,7 +144,7 @@ class StateTaskServiceCallback(StateTaskService):
         self._eval_service_task(env=env, parameters=normalised_parameters)
 
         if self._is_condition():
-            output = env.stack.pop()
+            output = env.stack[-1]
             env.event_history.add_event(
                 hist_type_event=HistoryEventType.TaskSubmitted,
                 event_detail=EventDetails(
@@ -154,6 +159,8 @@ class StateTaskServiceCallback(StateTaskService):
             match self.resource.condition:
                 case ResourceCondition.WaitForTaskToken:
                     self._wait_for_task_token(env=env)
+                case ResourceCondition.Sync:
+                    self._sync(env=env)
                 case unsupported:
                     raise NotImplementedError(f"Unsupported callback type '{unsupported}'.")
 

@@ -3,7 +3,12 @@ from typing import Any, Final, Optional
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
-from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
+from localstack.aws.api.stepfunctions import (
+    DescribeExecutionOutput,
+    ExecutionStatus,
+    HistoryEventType,
+    TaskFailedEventDetails,
+)
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
 )
@@ -18,12 +23,12 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.utils.aws import aws_stack
+from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import camel_to_snake_case
 
 
 class StateTaskServiceSfn(StateTaskServiceCallback):
-    _ERROR_NAME_CLIENT: Final[str] = "SQS.TODO1"
-    _ERROR_NAME_AWS: Final[str] = "SQS.TODO2"
+    _ERROR_NAME_AWS: Final[str] = "StepFunctions.TODO2"
 
     _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
         "startexecution": {"Input", "Name", "StateMachineArn"}
@@ -34,7 +39,19 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
     }
 
     _BOTO_TO_SFN_RESPONSE_BINDINGS = {
-        "startexecution": {"startDate": "StartDate", "executionArn": "ExecutionArn"}
+        "startexecution": ["StartDate", "ExecutionArn"],
+        "describeexecution": [
+            "ExecutionArn",
+            "Input",
+            ["InputDetails", ["Included"]],
+            "Name",
+            "Output",
+            ["OutputDetails", ["Included"]],
+            "StartDate",
+            "StateMachineArn",
+            "Status",
+            "StopDate",
+        ],
     }
 
     def _get_supported_parameters(self) -> Optional[set[str]]:
@@ -43,48 +60,91 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
     def _get_parameters_normalising_bindings(self) -> dict[str, str]:
         return self._SFN_TO_BOTO_PARAM_NORMALISERS.get(self.resource.api_action.lower(), dict())
 
-    def _normalise_botocore_response(self, api_action: str, response: dict[str, Any]):
-        overrides = self._BOTO_TO_SFN_RESPONSE_BINDINGS.get(api_action.lower())
-        if overrides:
-            for fault_key, key_override in overrides.items():
-                if fault_key in response:
-                    response[key_override] = response[fault_key]
-                    del response[fault_key]
+    def _normalise_botocore_response(self, api_action: str, response: dict[str, Any]) -> None:
+        keys = self._BOTO_TO_SFN_RESPONSE_BINDINGS.get(api_action.lower())
+        if keys is None:
+            return
+
+        def _build_lower_to_key_dict(key_list: list[str]) -> dict[str, Any]:
+            lower_to_key_dict = dict()
+            for key in key_list:
+                if isinstance(key, str):
+                    lower_to_key_dict[key.lower()] = key
+                elif isinstance(key, list):
+                    lower_to_key_dict[key[0].lower()] = [key[0], _build_lower_to_key_dict(key[1])]
+            return lower_to_key_dict
+
+        def _update_key(old_key, new_key, obj):
+            if new_key != old_key:
+                value_bind = obj[old_key]
+                del obj[old_key]
+                obj[new_key] = value_bind
+
+        def _apply_normalisation(lookup_keys, dictionary):
+            input_keys = list(dictionary.keys())
+            for input_key in input_keys:
+                normalised_key = lookup_keys.get(input_key.lower())
+                if isinstance(normalised_key, str):
+                    _update_key(input_key, normalised_key, dictionary)
+                elif isinstance(normalised_key, list):
+                    _update_key(input_key, normalised_key[0], dictionary)
+                    _apply_normalisation(normalised_key[1], dictionary[normalised_key[0]])
+
+        lower_to_normalise_key = _build_lower_to_key_dict(keys)
+        _apply_normalisation(lower_to_normalise_key, response)
+
+    @staticmethod
+    def _get_sfn_client():
+        return aws_stack.create_external_boto_client(
+            "stepfunctions", config=Config(parameter_validation=False)
+        )
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, CallbackOutcomeFailureError):
             return self._get_callback_outcome_failure_event(ex=ex)
         if isinstance(ex, TimeoutError):
             return self._get_timed_out_failure_event()
-
         if isinstance(ex, ClientError):
+            error_code = ex.response["Error"]["Code"]
+            error_name: str = f"StepFunctions.{error_code}Exception"
+            error_cause_details = [
+                "Service: AWSStepFunctions",
+                f"Status Code: {ex.response['ResponseMetadata']['HTTPStatusCode']}",
+                f"Error Code: {error_code}",
+                f"Request ID: {ex.response['ResponseMetadata']['RequestId']}",
+                "Proxy: null",  # TODO: investigate this proxy value.
+            ]
+            if "HostId" in ex.response["ResponseMetadata"]:
+                error_cause_details.append(
+                    f'Extended Request ID: {ex.response["ResponseMetadata"]["HostId"]}'
+                )
+            error_cause: str = (
+                f"{ex.response['Error']['Message']} ({'; '.join(error_cause_details)})"
+            )
             return FailureEvent(
-                error_name=CustomErrorName(self._ERROR_NAME_CLIENT),
+                error_name=CustomErrorName(error_name),
                 event_type=HistoryEventType.TaskFailed,
                 event_details=EventDetails(
                     taskFailedEventDetails=TaskFailedEventDetails(
-                        error=self._ERROR_NAME_CLIENT,
-                        cause=ex.response["Error"][
-                            "Message"
-                        ],  # TODO: update to report expected cause.
+                        error=error_name,
+                        cause=error_cause,
                         resource=self._get_sfn_resource(),
                         resourceType=self._get_sfn_resource_type(),
                     )
                 ),
             )
-        else:
-            return FailureEvent(
-                error_name=CustomErrorName(self._ERROR_NAME_AWS),
-                event_type=HistoryEventType.TaskFailed,
-                event_details=EventDetails(
-                    taskFailedEventDetails=TaskFailedEventDetails(
-                        error=self._ERROR_NAME_AWS,
-                        cause=str(ex),  # TODO: update to report expected cause.
-                        resource=self._get_sfn_resource(),
-                        resourceType=self._get_sfn_resource_type(),
-                    )
-                ),
-            )
+        return FailureEvent(
+            error_name=CustomErrorName(self._ERROR_NAME_AWS),
+            event_type=HistoryEventType.TaskFailed,
+            event_details=EventDetails(
+                taskFailedEventDetails=TaskFailedEventDetails(
+                    error=self._ERROR_NAME_AWS,
+                    cause=str(ex),  # TODO: update to report expected cause.
+                    resource=self._get_sfn_resource(),
+                    resourceType=self._get_sfn_resource_type(),
+                )
+            ),
+        )
 
     def _normalised_parameters_bindings(self, parameters: dict[str, str]) -> dict[str, str]:
         normalised_parameters = super()._normalised_parameters_bindings(parameters=parameters)
@@ -92,16 +152,50 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
         if self.resource.api_action.lower() == "startexecution":
             optional_input = normalised_parameters.get("input")
             if not isinstance(optional_input, str):
+
+                # AWS Sfn's documentation states:
+                # If you don't include any JSON input data, you still must include the two braces.
+                if optional_input is None:
+                    optional_input = {}
+
                 normalised_parameters["input"] = to_json_str(optional_input)
 
         return normalised_parameters
 
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
         api_action = camel_to_snake_case(self.resource.api_action)
-        sfn_client = aws_stack.create_external_boto_client(
-            "stepfunctions", config=Config(parameter_validation=False)
-        )
+        sfn_client = self._get_sfn_client()
         response = getattr(sfn_client, api_action)(**parameters)
         response.pop("ResponseMetadata", None)
         self._normalise_botocore_response(self.resource.api_action, response)
         env.stack.append(response)
+
+    def _sync_to_start_machine(self, env: Environment) -> None:
+        sfn_client = self._get_sfn_client()
+
+        submission_output: dict = env.stack.pop()
+        execution_arn: str = submission_output["ExecutionArn"]
+
+        def _has_terminated() -> Optional[dict]:
+            describe_execution_output = sfn_client.describe_execution(executionArn=execution_arn)
+            describe_execution_output: DescribeExecutionOutput = select_from_typed_dict(
+                DescribeExecutionOutput, describe_execution_output
+            )
+            execution_status: ExecutionStatus = describe_execution_output["status"]
+            if execution_status != ExecutionStatus.RUNNING:
+                self._normalise_botocore_response("describeexecution", describe_execution_output)
+                return describe_execution_output
+            return None
+
+        termination_output: Optional[dict] = None
+        while env.is_running() and not termination_output:
+            termination_output: Optional[dict] = _has_terminated()
+
+        env.stack.append(termination_output)
+
+    def _sync(self, env: Environment) -> None:
+        match self.resource.api_action.lower():
+            case "startexecution":
+                self._sync_to_start_machine(env=env)
+            case _:
+                super()._sync(env=env)
