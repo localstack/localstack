@@ -41,14 +41,6 @@ SSL_CERT_URL_FALLBACK = "{api_endpoint}/proxy/localstack.cert.key"
 # host to bind to when starting the services
 BIND_HOST = "0.0.0.0"
 
-# Fallback Account ID if not available in the client request
-DEFAULT_AWS_ACCOUNT_ID = "000000000000"
-
-# AWS user account ID used for tests - TODO move to config.py
-if "TEST_AWS_ACCOUNT_ID" not in os.environ:
-    os.environ["TEST_AWS_ACCOUNT_ID"] = DEFAULT_AWS_ACCOUNT_ID
-
-
 # root code folder
 MODULE_MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
 # TODO rename to "ROOT_FOLDER"!
@@ -155,17 +147,19 @@ try:
 except Exception:
     MAX_POOL_CONNECTIONS = 150
 
+# Fallback Account ID if not available in the client request
+DEFAULT_AWS_ACCOUNT_ID = "000000000000"
+
 # Credentials used in the test suite
-# When the test suite is run against production AWS, the credentials can be overridden in the env
-TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
-TEST_AWS_ACCESS_KEY_ID = "test"
-TEST_AWS_SECRET_ACCESS_KEY = "test"
+TEST_AWS_ACCOUNT_ID = os.getenv("TEST_AWS_ACCOUNT_ID") or DEFAULT_AWS_ACCOUNT_ID
+TEST_AWS_ACCESS_KEY_ID = os.getenv("TEST_AWS_ACCESS_KEY_ID") or "test"
+TEST_AWS_SECRET_ACCESS_KEY = os.getenv("TEST_AWS_SECRET_ACCESS_KEY") or "test"
 TEST_AWS_REGION_NAME = "us-east-1"
 
 # Additional credentials used in the test suite (when running cross-account tests)
-SECONDARY_TEST_AWS_ACCOUNT_ID = "000000000002"
-SECONDARY_TEST_AWS_ACCESS_KEY_ID = "000000000002"
-SECONDARY_TEST_AWS_SECRET_ACCESS_KEY = "test2"
+SECONDARY_TEST_AWS_ACCOUNT_ID = os.getenv("SECONDARY_TEST_AWS_ACCOUNT_ID") or "000000000002"
+SECONDARY_TEST_AWS_ACCESS_KEY_ID = os.getenv("SECONDARY_TEST_AWS_ACCESS_KEY_ID") or "000000000002"
+SECONDARY_TEST_AWS_SECRET_ACCESS_KEY = os.getenv("SECONDARY_TEST_AWS_SECRET_ACCESS_KEY") or "test2"
 SECONDARY_TEST_AWS_REGION_NAME = "ap-southeast-1"
 
 # Credentials used for internal calls
