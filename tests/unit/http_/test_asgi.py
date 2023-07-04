@@ -1,5 +1,6 @@
 import json
 import logging
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
@@ -94,6 +95,43 @@ def test_chunked_transfer_encoding_response(serve_asgi_adapter):
 
     assert next(it) == b"foobar"
     assert next(it) == b"baz"
+
+
+def test_chunked_transfer_encoding_client_timeout(serve_asgi_adapter):
+    # this test makes sure that creating a response with a generator automatically creates a
+    # transfer-encoding=chunked response
+
+    generator_exited = threading.Event()
+    continue_request = threading.Event()
+
+    @Request.application
+    def app(_request: Request) -> Response:
+        def _gen():
+            try:
+                yield "foo"
+                yield "bar\n"
+                continue_request.wait()
+                # only three are needed, let's send some more to make sure
+                for _ in range(10):
+                    yield "baz\n"
+            except GeneratorExit:
+                generator_exited.set()
+
+        return Response(_gen(), 200)
+
+    server = serve_asgi_adapter(app)
+
+    with requests.get(server.url, stream=True) as response:
+        assert response.headers["Transfer-Encoding"] == "chunked"
+
+        it = response.iter_lines()
+
+        assert next(it) == b"foobar"
+
+    # request is now closed, continue the response generator
+    continue_request.set()
+    # this flag is only set when generator is exited
+    assert generator_exited.wait(timeout=10)
 
 
 def test_chunked_transfer_encoding_request(serve_asgi_adapter):

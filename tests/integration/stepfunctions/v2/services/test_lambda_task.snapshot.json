@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_pipe": {
-    "recorded-date": "05-05-2023, 15:18:46",
+    "recorded-date": "22-06-2023, 13:34:18",
     "recorded-content": {
       "get_execution_history": {
         "events": [

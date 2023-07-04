@@ -18,7 +18,6 @@ from localstack.runtime import events
 from localstack.services import infra
 from localstack.testing.aws.util import base_aws_client, base_aws_client_factory, base_aws_session
 from localstack.utils.common import safe_requests
-from tests.integration.apigateway.apigateway_fixtures import delete_rest_api, import_rest_api
 from tests.integration.test_es import install_async as es_install_async
 from tests.integration.test_opensearch import install_async as opensearch_install_async
 from tests.integration.test_terraform import TestTerraform
@@ -178,21 +177,6 @@ def localstack_runtime():
     localstack_started.wait()
     yield
     return
-
-
-@pytest.fixture
-def import_apigw(aws_client):
-    rest_api_ids = []
-
-    def _import_apigateway_function(*args, **kwargs):
-        response, root_id = import_rest_api(aws_client.apigateway, **kwargs)
-        rest_api_ids.append(response.get("id"))
-        return response, root_id
-
-    yield _import_apigateway_function
-
-    for rest_api_id in rest_api_ids:
-        delete_rest_api(aws_client.apigateway, restApiId=rest_api_id)
 
 
 @pytest.fixture(scope="session")

@@ -27,6 +27,7 @@ class MessageSystemAttributeName(str):
     MessageDeduplicationId = "MessageDeduplicationId"
     MessageGroupId = "MessageGroupId"
     AWSTraceHeader = "AWSTraceHeader"
+    DeadLetterQueueSourceArn = "DeadLetterQueueSourceArn"
 
 
 class MessageSystemAttributeNameForSends(str):
@@ -142,6 +143,12 @@ class ReceiptHandleIsInvalid(ServiceException):
     status_code: int = 400
 
 
+class ResourceNotFoundException(ServiceException):
+    code: str = "ResourceNotFoundException"
+    sender_fault: bool = True
+    status_code: int = 404
+
+
 class TooManyEntriesInBatchRequest(ServiceException):
     code: str = "AWS.SimpleQueueService.TooManyEntriesInBatchRequest"
     sender_fault: bool = True
@@ -178,6 +185,17 @@ class BatchResultErrorEntry(TypedDict, total=False):
 BatchResultErrorEntryList = List[BatchResultErrorEntry]
 Binary = bytes
 BinaryList = List[Binary]
+
+
+class CancelMessageMoveTaskRequest(ServiceRequest):
+    TaskHandle: String
+
+
+Long = int
+
+
+class CancelMessageMoveTaskResult(TypedDict, total=False):
+    ApproximateNumberOfMessagesMoved: Optional[Long]
 
 
 class ChangeMessageVisibilityBatchRequestEntry(TypedDict, total=False):
@@ -290,6 +308,30 @@ QueueUrlList = List[String]
 class ListDeadLetterSourceQueuesResult(TypedDict, total=False):
     queueUrls: QueueUrlList
     NextToken: Optional[Token]
+
+
+class ListMessageMoveTasksRequest(ServiceRequest):
+    SourceArn: String
+    MaxResults: Optional[Integer]
+
+
+class ListMessageMoveTasksResultEntry(TypedDict, total=False):
+    TaskHandle: Optional[String]
+    Status: Optional[String]
+    SourceArn: Optional[String]
+    DestinationArn: Optional[String]
+    MaxNumberOfMessagesPerSecond: Optional[Integer]
+    ApproximateNumberOfMessagesMoved: Optional[Long]
+    ApproximateNumberOfMessagesToMove: Optional[Long]
+    FailureReason: Optional[String]
+    StartedTimestamp: Optional[Long]
+
+
+ListMessageMoveTasksResultEntryList = List[ListMessageMoveTasksResultEntry]
+
+
+class ListMessageMoveTasksResult(TypedDict, total=False):
+    Results: Optional[ListMessageMoveTasksResultEntryList]
 
 
 class ListQueueTagsRequest(ServiceRequest):
@@ -434,6 +476,16 @@ class SetQueueAttributesRequest(ServiceRequest):
     Attributes: QueueAttributeMap
 
 
+class StartMessageMoveTaskRequest(ServiceRequest):
+    SourceArn: String
+    DestinationArn: Optional[String]
+    MaxNumberOfMessagesPerSecond: Optional[Integer]
+
+
+class StartMessageMoveTaskResult(TypedDict, total=False):
+    TaskHandle: Optional[String]
+
+
 TagKeyList = List[TagKey]
 
 
@@ -461,6 +513,12 @@ class SqsApi:
         aws_account_ids: AWSAccountIdList,
         actions: ActionNameList,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("CancelMessageMoveTask")
+    def cancel_message_move_task(
+        self, context: RequestContext, task_handle: String
+    ) -> CancelMessageMoveTaskResult:
         raise NotImplementedError
 
     @handler("ChangeMessageVisibility")
@@ -533,6 +591,12 @@ class SqsApi:
     ) -> ListDeadLetterSourceQueuesResult:
         raise NotImplementedError
 
+    @handler("ListMessageMoveTasks")
+    def list_message_move_tasks(
+        self, context: RequestContext, source_arn: String, max_results: Integer = None
+    ) -> ListMessageMoveTasksResult:
+        raise NotImplementedError
+
     @handler("ListQueueTags")
     def list_queue_tags(self, context: RequestContext, queue_url: String) -> ListQueueTagsResult:
         raise NotImplementedError
@@ -593,6 +657,16 @@ class SqsApi:
     def set_queue_attributes(
         self, context: RequestContext, queue_url: String, attributes: QueueAttributeMap
     ) -> None:
+        raise NotImplementedError
+
+    @handler("StartMessageMoveTask")
+    def start_message_move_task(
+        self,
+        context: RequestContext,
+        source_arn: String,
+        destination_arn: String = None,
+        max_number_of_messages_per_second: Integer = None,
+    ) -> StartMessageMoveTaskResult:
         raise NotImplementedError
 
     @handler("TagQueue")

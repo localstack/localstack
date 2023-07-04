@@ -1,7 +1,5 @@
 import os
 
-import localstack_client.config
-
 import localstack
 
 # LocalStack version
@@ -39,9 +37,6 @@ ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 # Download URLs
 SSL_CERT_URL = f"{ARTIFACTS_REPO}/raw/master/local-certs/server.key"
 SSL_CERT_URL_FALLBACK = "{api_endpoint}/proxy/localstack.cert.key"
-
-# map of default service APIs and ports to be spun up (fetch map from localstack_client)
-DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
 
 # host to bind to when starting the services
 BIND_HOST = "0.0.0.0"
@@ -143,12 +138,6 @@ OPENSEARCH_PLUGIN_LIST = [
     "ingest-attachment",
 ]
 
-ELASTICMQ_JAR_URL = (
-    "https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-1.1.0.jar"
-)
-STEPFUNCTIONS_ZIP_URL = "https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip"
-KMS_URL_PATTERN = "https://s3-eu-west-2.amazonaws.com/local-kms/3/local-kms_<arch>.bin"
-
 # API endpoint for analytics events
 API_ENDPOINT = os.environ.get("API_ENDPOINT") or "https://api.localstack.cloud/v1"
 # new analytics API endpoint
@@ -171,11 +160,17 @@ except Exception:
 
 # credentials used in the test suite
 TEST_AWS_ACCESS_KEY_ID = "test"
-TEST_AWS_SECRET_ACCESS_KEY = "test"
+TEST_AWS_SECRET_ACCESS_KEY = (
+    "test"  # NOTE: In the near future, this will be set to a structured Access Key ID
+)
 
 # additional credentials used in the test suite (mainly for cross-account access)
-SECONDARY_TEST_AWS_ACCESS_KEY_ID = "000000000002"
+SECONDARY_TEST_AWS_ACCOUNT_ID = "000000000002"
+SECONDARY_TEST_AWS_ACCESS_KEY_ID = (
+    "000000000002"  # NOTE: In the near future, this will be set to a structured Access Key ID
+)
 SECONDARY_TEST_AWS_SECRET_ACCESS_KEY = "test2"
+SECONDARY_TEST_AWS_REGION_NAME = "ap-southeast-1"
 
 # credentials being used for internal calls
 INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"
@@ -194,8 +189,7 @@ TRACE_LOG_LEVELS = [LS_LOG_TRACE, LS_LOG_TRACE_INTERNAL]
 # list of official docker images
 OFFICIAL_IMAGES = [
     "localstack/localstack",
-    "localstack/localstack-light",
-    "localstack/localstack-full",
+    "localstack/localstack-pro",
 ]
 
 # s3 virtual host name

@@ -1,0 +1,11 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Minimal template to exercise AWS::SSM::Parameter
+Resources:
+  MyResource:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: abc123
+Outputs:
+  MyRef:
+    Value: !Ref MyResource

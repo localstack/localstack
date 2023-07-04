@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_invalid_secret_name": {
-    "recorded-date": "31-03-2023, 23:10:30",
+    "recorded-date": "22-06-2023, 13:25:51",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -161,7 +161,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_no_such_bucket": {
-    "recorded-date": "31-03-2023, 23:10:41",
+    "recorded-date": "22-06-2023, 13:26:06",
     "recorded-content": {
       "get_execution_history": {
         "events": [

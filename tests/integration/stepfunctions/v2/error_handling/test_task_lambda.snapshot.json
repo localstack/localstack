@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/error_handling/test_task_lambda.py::TestTaskLambda::test_raise_exception": {
-    "recorded-date": "05-05-2023, 15:28:05",
+    "recorded-date": "22-06-2023, 13:27:25",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -101,7 +101,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/error_handling/test_task_lambda.py::TestTaskLambda::test_raise_exception_catch": {
-    "recorded-date": "05-05-2023, 15:28:20",
+    "recorded-date": "22-06-2023, 13:27:43",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -256,7 +256,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/error_handling/test_task_lambda.py::TestTaskLambda::test_no_such_function": {
-    "recorded-date": "05-05-2023, 15:28:35",
+    "recorded-date": "22-06-2023, 13:28:01",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -357,7 +357,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/error_handling/test_task_lambda.py::TestTaskLambda::test_no_such_function_catch": {
-    "recorded-date": "05-05-2023, 15:28:51",
+    "recorded-date": "22-06-2023, 13:28:19",
     "recorded-content": {
       "get_execution_history": {
         "events": [

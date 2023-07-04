@@ -18,7 +18,7 @@ from localstack.testing.aws.lambda_utils import (
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import poll_condition, retry
+from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
 from tests.integration.awslambda.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
@@ -40,22 +40,6 @@ def _snapshot_transformers(snapshot):
     snapshot.add_transformer(snapshot.transform.key_value("SequenceNumber"))
     snapshot.add_transformer(snapshot.transform.key_value("eventID"))
     snapshot.add_transformer(snapshot.transform.key_value("shardId"))
-
-
-@pytest.fixture
-def wait_for_dynamodb_stream_enabled(aws_client):
-    def _wait_for_stream_enabled(latest_stream_arn: str):
-        def _is_stream_enabled():
-            return (
-                aws_client.dynamodbstreams.describe_stream(StreamArn=latest_stream_arn)[
-                    "StreamDescription"
-                ]["StreamStatus"]
-                == "ENABLED"
-            )
-
-        return poll_condition(_is_stream_enabled, timeout=30)
-
-    return _wait_for_stream_enabled
 
 
 @pytest.fixture
@@ -90,10 +74,12 @@ def get_lambda_logs_event(aws_client):
     paths=[
         # dynamodb issues, not related to lambda
         "$..TableDescription.BillingModeSummary.LastUpdateToPayPerRequestDateTime",
+        "$..TableDescription.DeletionProtectionEnabled",
         "$..TableDescription.ProvisionedThroughput.LastDecreaseDateTime",
         "$..TableDescription.ProvisionedThroughput.LastIncreaseDateTime",
         "$..TableDescription.StreamSpecification",
         "$..TableDescription.TableStatus",
+        "$..Records..dynamodb.NewImage.binary_key.B",
         "$..Records..dynamodb.SizeBytes",
         "$..Records..eventVersion",
     ],
@@ -107,7 +93,7 @@ class TestDynamoDBEventSourceMapping:
         dynamodb_create_table,
         get_lambda_logs_event,
         cleanups,
-        wait_for_dynamodb_stream_enabled,
+        wait_for_dynamodb_stream_ready,
         snapshot,
         aws_client,
     ):
@@ -117,7 +103,7 @@ class TestDynamoDBEventSourceMapping:
         policy_name = f"test-lambda-policy-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
         partition_key = "my_partition_key"
-        db_item = {partition_key: {"S": "hello world"}}
+        db_item = {partition_key: {"S": "hello world"}, "binary_key": {"B": b"foobar"}}
         role_arn = create_iam_role_with_policy(
             RoleName=role,
             PolicyName=policy_name,
@@ -141,7 +127,7 @@ class TestDynamoDBEventSourceMapping:
             TableName=table_name,
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
         )["TableDescription"]["LatestStreamArn"]
-        assert wait_for_dynamodb_stream_enabled(stream_arn)
+        assert wait_for_dynamodb_stream_ready(stream_arn)
         create_event_source_mapping_response = aws_client.awslambda.create_event_source_mapping(
             FunctionName=function_name,
             BatchSize=1,
@@ -180,7 +166,7 @@ class TestDynamoDBEventSourceMapping:
         dynamodb_create_table,
         lambda_su_role,
         cleanups,
-        wait_for_dynamodb_stream_enabled,
+        wait_for_dynamodb_stream_ready,
         snapshot,
         aws_client,
     ):
@@ -213,7 +199,7 @@ class TestDynamoDBEventSourceMapping:
         cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=uuid))
         _await_event_source_mapping_enabled(aws_client.awslambda, uuid)
 
-        assert wait_for_dynamodb_stream_enabled(latest_stream_arn)
+        assert wait_for_dynamodb_stream_ready(latest_stream_arn)
         table = dynamodb_resource.Table(ddb_table)
 
         table.put_item(Item=items[0])

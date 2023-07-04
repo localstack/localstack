@@ -1,12 +1,14 @@
 import datetime
 import re
 from typing import Dict, Literal, Optional, Tuple, Union
+from urllib import parse as urlparser
 
 import moto.s3.models as moto_s3_models
 from botocore.exceptions import ClientError
 from botocore.utils import InvalidArnException
 from moto.s3.exceptions import MissingBucket
 from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
+from moto.s3.utils import clean_key_name
 
 from localstack.aws.api import CommonServiceException, ServiceException
 from localstack.aws.api.s3 import (
@@ -54,6 +56,15 @@ class InvalidRequest(ServiceException):
     code: str = "InvalidRequest"
     sender_fault: bool = False
     status_code: int = 400
+
+
+def extract_bucket_key_version_id_from_copy_source(
+    copy_source: str,
+) -> tuple[BucketName, ObjectKey, Optional[str]]:
+    copy_source_parsed = urlparser.urlparse(copy_source)
+    src_bucket, src_key = urlparser.unquote(copy_source_parsed.path).lstrip("/").split("/", 1)
+    src_version_id = urlparser.parse_qs(copy_source_parsed.query).get("versionId", [None])[0]
+    return src_bucket, src_key, src_version_id
 
 
 def get_object_checksum_for_algorithm(checksum_algorithm: str, data: bytes):
@@ -152,10 +163,11 @@ def get_key_from_moto_bucket(
 ) -> FakeKey | FakeDeleteMarker:
     # TODO: rework the delete marker handling
     # we basically need to re-implement moto `get_object` to account for FakeDeleteMarker
+    clean_key = clean_key_name(key)
     if version_id is None:
-        fake_key = moto_bucket.keys.get(key)
+        fake_key = moto_bucket.keys.get(clean_key)
     else:
-        for key_version in moto_bucket.keys.getlist(key, default=[]):
+        for key_version in moto_bucket.keys.getlist(clean_key, default=[]):
             if str(key_version.version_id) == str(version_id):
                 fake_key = key_version
                 break
@@ -235,6 +247,11 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket) -> None:
     try:
         key = kms_client.describe_key(KeyId=kms_key)
         if not key["KeyMetadata"]["Enabled"]:
+            if key["KeyMetadata"]["KeyState"] == "PendingDeletion":
+                raise CommonServiceException(
+                    code="KMS.KMSInvalidStateException",
+                    message=f'{key["KeyMetadata"]["Arn"]} is pending deletion.',
+                )
             raise CommonServiceException(
                 code="KMS.DisabledException", message=f'{key["KeyMetadata"]["Arn"]} is disabled.'
             )

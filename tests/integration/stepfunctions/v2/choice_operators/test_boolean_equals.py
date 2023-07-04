@@ -19,25 +19,25 @@ pytestmark = pytest.mark.skipif(
 )
 class TestBooleanEquals:
     def test_boolean_equals(
-        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "BooleanEquals",
             comparisons=TYPE_COMPARISONS,
         )
 
     def test_boolean_equals_path(
-        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "BooleanEqualsPath",
             comparisons=TYPE_COMPARISONS,
             add_literal_value=False,

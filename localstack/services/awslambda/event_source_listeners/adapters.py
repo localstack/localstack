@@ -1,14 +1,18 @@
+import abc
 import json
 import logging
 import threading
 from abc import ABC
 from concurrent.futures import Future
+from functools import lru_cache
 from typing import Callable, Optional
 
 from localstack import config
 from localstack.aws.api.lambda_ import InvocationType
+from localstack.aws.connect import ServiceLevelClientFactory, connect_to
 from localstack.aws.protocol.serializer import gen_amzn_requestid
 from localstack.services.awslambda import api_utils
+from localstack.services.awslambda.api_utils import function_locators_from_arn, qualifier_is_version
 from localstack.services.awslambda.invocation.lambda_models import InvocationError, InvocationResult
 from localstack.services.awslambda.invocation.lambda_service import LambdaService
 from localstack.services.awslambda.invocation.models import lambda_stores
@@ -16,6 +20,8 @@ from localstack.services.awslambda.lambda_executors import (
     InvocationResult as LegacyInvocationResult,  # TODO: extract
 )
 from localstack.services.awslambda.lambda_utils import event_source_arn_matches
+from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.json import BytesEncoder
 from localstack.utils.strings import to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -55,6 +61,10 @@ class EventSourceAdapter(ABC):
     def get_event_sources(self, source_arn: str):
         pass
 
+    @abc.abstractmethod
+    def get_client_factory(self, function_arn: str, region_name: str) -> ServiceLevelClientFactory:
+        pass
+
 
 class EventSourceLegacyAdapter(EventSourceAdapter):
     def __init__(self):
@@ -62,6 +72,11 @@ class EventSourceLegacyAdapter(EventSourceAdapter):
 
     def invoke(self, function_arn, context, payload, invocation_type, callback=None):
         from localstack.services.awslambda.lambda_api import run_lambda
+
+        try:
+            json.dumps(payload)
+        except TypeError:
+            payload = json.loads(json.dumps(payload or {}, cls=BytesEncoder))
 
         run_lambda(
             func_arn=function_arn,
@@ -92,6 +107,11 @@ class EventSourceLegacyAdapter(EventSourceAdapter):
         else:
             lock_discriminator = None
 
+        try:
+            json.dumps(payload)
+        except TypeError:
+            payload = json.loads(json.dumps(payload or {}, cls=BytesEncoder))
+
         result = run_lambda(
             func_arn=function_arn,
             event=payload,
@@ -107,6 +127,9 @@ class EventSourceLegacyAdapter(EventSourceAdapter):
         from localstack.services.awslambda.lambda_api import get_event_sources
 
         return get_event_sources(source_arn=source_arn)
+
+    def get_client_factory(self, function_arn: str, region_name: str) -> ServiceLevelClientFactory:
+        return connect_to(region_name=region_name)
 
 
 class EventSourceAsfAdapter(EventSourceAdapter):
@@ -132,7 +155,7 @@ class EventSourceAsfAdapter(EventSourceAdapter):
             account_id=fn_parts["account_id"],
             invocation_type=invocation_type,
             client_context=json.dumps(context or {}),
-            payload=to_bytes(json.dumps(payload or {})),
+            payload=to_bytes(json.dumps(payload or {}, cls=BytesEncoder)),
             request_id=gen_amzn_requestid(),
         )
 
@@ -189,7 +212,7 @@ class EventSourceAsfAdapter(EventSourceAdapter):
                 account_id=fn_parts["account_id"],
                 invocation_type=invocation_type,
                 client_context=json.dumps(context or {}),
-                payload=to_bytes(json.dumps(payload or {})),
+                payload=to_bytes(json.dumps(payload or {}, cls=BytesEncoder)),
                 request_id=gen_amzn_requestid(),
             )
 
@@ -247,3 +270,29 @@ class EventSourceAsfAdapter(EventSourceAdapter):
                     ):
                         results.append(esm.copy())
         return results
+
+    @lru_cache(maxsize=64)
+    def _cached_client_factory(self, region_name: str, role_arn: str) -> ServiceLevelClientFactory:
+        return connect_to.with_assumed_role(
+            role_arn=role_arn, region_name=region_name, service_principal=ServicePrincipal.awslambda
+        )
+
+    def _get_role_for_function(self, function_arn: str) -> str:
+        function_name, qualifier, account, region = function_locators_from_arn(function_arn)
+        store = lambda_stores[account][region]
+        function = store.functions.get(function_name)
+        if qualifier and qualifier != "$LATEST":
+            if qualifier_is_version(qualifier):
+                version_number = qualifier
+            else:
+                # the role of the routing config version and the regular configured version has to be identical
+                version_number = function.aliases.get(qualifier).function_version
+            version = function.versions.get(version_number)
+        else:
+            version = function.latest()
+        return version.config.role
+
+    def get_client_factory(self, function_arn: str, region_name: str) -> ServiceLevelClientFactory:
+        role_arn = self._get_role_for_function(function_arn)
+
+        return self._cached_client_factory(region_name=region_name, role_arn=role_arn)

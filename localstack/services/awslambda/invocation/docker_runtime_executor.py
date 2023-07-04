@@ -273,6 +273,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             network=network,
             entrypoint=RAPID_ENTRYPOINT,
             platform=docker_platform(self.function_version.config.architectures[0]),
+            dns=config.LAMBDA_DOCKER_DNS,
             additional_flags=config.LAMBDA_DOCKER_FLAGS,
         )
         if self.function_version.config.package_type == PackageType.Zip:

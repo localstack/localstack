@@ -2,18 +2,13 @@ import json
 
 import pytest
 import requests
+from botocore.exceptions import ClientError
 
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
-from tests.integration.apigateway.apigateway_fixtures import (
-    api_invoke_url,
-    create_rest_api_integration,
-    create_rest_api_integration_response,
-    create_rest_api_method_response,
-    create_rest_resource,
-    create_rest_resource_method,
-)
+from tests.integration.apigateway.apigateway_fixtures import api_invoke_url, create_rest_resource
 from tests.integration.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
 from tests.integration.awslambda.test_lambda import TEST_LAMBDA_AWS_PROXY, TEST_LAMBDA_PYTHON_ECHO
 
@@ -243,6 +238,13 @@ def test_lambda_aws_proxy_integration(
 def test_lambda_aws_integration(
     create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client
 ):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("cacheNamespace"),
+            snapshot.transform.key_value("credentials"),
+            snapshot.transform.key_value("uri"),
+        ]
+    )
     function_name = f"test-{short_uid()}"
     stage_name = "api"
     create_function_response = create_lambda_function(
@@ -256,50 +258,166 @@ def test_lambda_aws_integration(
         "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
     )
     lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
+    target_uri = arns.apigateway_invocations_arn(lambda_arn)
 
     api_id, _, root = create_rest_apigw(name=f"test-api-{short_uid()}")
     resource_id, _ = create_rest_resource(
         aws_client.apigateway, restApiId=api_id, parentId=root, pathPart="test"
     )
-    create_rest_resource_method(
-        aws_client.apigateway,
+
+    response = aws_client.apigateway.put_method(
         restApiId=api_id,
         resourceId=resource_id,
         httpMethod="POST",
         authorizationType="NONE",
     )
-    create_rest_api_integration(
-        aws_client.apigateway,
+    snapshot.match("put-method", response)
+
+    response = aws_client.apigateway.put_integration(
         restApiId=api_id,
         resourceId=resource_id,
         httpMethod="POST",
         type="AWS",
         integrationHttpMethod="POST",
-        uri=f"arn:aws:apigateway:{aws_client.apigateway.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+        uri=target_uri,
         credentials=role_arn,
     )
-    create_rest_api_integration_response(
-        aws_client.apigateway,
+    snapshot.match("put-integration", response)
+
+    response = aws_client.apigateway.put_integration_response(
         restApiId=api_id,
         resourceId=resource_id,
         httpMethod="POST",
         statusCode="200",
     )
-    create_rest_api_method_response(
-        aws_client.apigateway,
+    snapshot.match("put-integration-response", response)
+
+    response = aws_client.apigateway.put_method_response(
         restApiId=api_id,
         resourceId=resource_id,
         httpMethod="POST",
         statusCode="200",
     )
+    snapshot.match("put-method-response", response)
+
     aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
     invocation_url = api_invoke_url(api_id=api_id, stage=stage_name, path="/test")
 
     def invoke_api(url):
-        response = requests.post(url, data=json.dumps({"message": "hello world"}), verify=False)
-        assert response.ok
-        assert response.json() == {"message": "hello world"}
-        return response
+        _response = requests.post(url, data=json.dumps({"message": "hello world"}), verify=False)
+        assert _response.ok
+        response_content = _response.json()
+        assert response_content == {"message": "hello world"}
+        return response_content
 
-    response = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
-    snapshot.match("lambda-aws-integration", response.json())
+    response_data = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
+    snapshot.match("lambda-aws-integration", response_data)
+
+
+@pytest.mark.aws_validated
+def test_lambda_aws_integration_with_request_template(
+    create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client
+):
+    # this test almost follow
+    # https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-custom-integrations.html
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("cacheNamespace"),
+            snapshot.transform.key_value("credentials"),
+            snapshot.transform.key_value("uri"),
+        ]
+    )
+    function_name = f"test-{short_uid()}"
+    stage_name = "api"
+    create_function_response = create_lambda_function(
+        func_name=function_name,
+        handler_file=TEST_LAMBDA_PYTHON_ECHO,
+        handler="lambda_echo.handler",
+        runtime=LAMBDA_RUNTIME_PYTHON39,
+    )
+    # create invocation role
+    _, role_arn = create_role_with_policy(
+        "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
+    )
+
+    lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
+    target_uri = arns.apigateway_invocations_arn(lambda_arn)
+
+    api_id, _, root = create_rest_apigw(name=f"test-api-{short_uid()}")
+    resource_id, _ = create_rest_resource(
+        aws_client.apigateway, restApiId=api_id, parentId=root, pathPart="test"
+    )
+
+    response = aws_client.apigateway.put_method(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        authorizationType="NONE",
+        requestParameters={
+            "method.request.querystring.param1": False,
+        },
+    )
+    snapshot.match("put-method", response)
+
+    response = aws_client.apigateway.put_method_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        statusCode="200",
+    )
+    snapshot.match("put-method-response", response)
+
+    response = aws_client.apigateway.put_integration(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        integrationHttpMethod="POST",
+        type="AWS",
+        uri=target_uri,
+        credentials=role_arn,
+        requestTemplates={"application/json": '{"param1": "$input.params(\'param1\')"}'},
+    )
+    snapshot.match("put-integration", response)
+
+    response = aws_client.apigateway.put_integration_response(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        statusCode="200",
+        selectionPattern="",
+    )
+    snapshot.match("put-integration-response", response)
+
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+    invocation_url = api_invoke_url(api_id=api_id, stage=stage_name, path="/test")
+
+    def invoke_api(url):
+        _response = requests.get(url, verify=False)
+        assert _response.ok
+        content = _response.json()
+        assert content == {"param1": "foobar"}
+        return content
+
+    invoke_param_1 = f"{invocation_url}?param1=foobar"
+    response_data = retry(invoke_api, sleep=2, retries=10, url=invoke_param_1)
+    snapshot.match("lambda-aws-integration-1", response_data)
+
+    # additional checks from https://github.com/localstack/localstack/issues/5041
+    # pass Signature param
+    invoke_param_2 = f"{invocation_url}?param1=foobar&Signature=1"
+    response_data = retry(invoke_api, sleep=2, retries=10, url=invoke_param_2)
+    snapshot.match("lambda-aws-integration-2", response_data)
+
+    response = aws_client.apigateway.delete_integration(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+    )
+    snapshot.match("delete-integration", response)
+
+    with pytest.raises(ClientError) as e:
+        # This call should not be successful as the integration is deleted
+        aws_client.apigateway.get_integration(
+            restApiId=api_id, resourceId=resource_id, httpMethod="GET"
+        )
+    snapshot.match("get-integration-after-delete", e.value.response)

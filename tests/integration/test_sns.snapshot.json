@@ -1141,7 +1141,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_sns_to_sqs": {
-    "recorded-date": "09-08-2022, 11:36:59",
+    "recorded-date": "12-06-2023, 18:15:59",
     "recorded-content": {
       "sub-attrs-raw-true": {
         "Attributes": {
@@ -1152,6 +1152,7 @@
           "Protocol": "sqs",
           "RawMessageDelivery": "true",
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
         },
         "ResponseMetadata": {
@@ -1161,10 +1162,6 @@
       },
       "publish-batch": {
         "Failed": [],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "Successful": [
           {
             "Id": "1",
@@ -1181,8 +1178,16 @@
           {
             "Id": "4",
             "MessageId": "<uuid:4>"
+          },
+          {
+            "Id": "5",
+            "MessageId": "<uuid:5>"
           }
-        ]
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       },
       "messages": {
         "Messages": [
@@ -1202,7 +1207,7 @@
                 "StringValue": "19.12"
               }
             },
-            "MessageId": "<uuid:5>",
+            "MessageId": "<uuid:6>",
             "ReceiptHandle": "<receipt-handle:1>"
           },
           {
@@ -1225,7 +1230,7 @@
                 "StringValue": "109.12"
               }
             },
-            "MessageId": "<uuid:6>",
+            "MessageId": "<uuid:7>",
             "ReceiptHandle": "<receipt-handle:2>"
           },
           {
@@ -1237,7 +1242,7 @@
             },
             "Body": "Test Message without attribute",
             "MD5OfBody": "<md5-hash>",
-            "MessageId": "<uuid:7>",
+            "MessageId": "<uuid:8>",
             "ReceiptHandle": "<receipt-handle:3>"
           },
           {
@@ -1249,15 +1254,27 @@
             },
             "Body": "Test Message without subject",
             "MD5OfBody": "<md5-hash>",
-            "MessageId": "<uuid:8>",
+            "MessageId": "<uuid:9>",
             "ReceiptHandle": "<receipt-handle:4>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": "test sqs",
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:10>",
+            "ReceiptHandle": "<receipt-handle:5>"
           }
         ]
       }
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_exceptions": {
-    "recorded-date": "09-08-2022, 11:35:46",
+    "recorded-date": "12-06-2023, 18:22:01",
     "recorded-content": {
       "no-group-id": {
         "Error": {
@@ -1296,6 +1313,17 @@
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "no-default-key-json": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Message Structure - No default entry in JSON message body",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -3976,6 +4004,152 @@
         "Token": "<token:2>",
         "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
         "Type": "UnsubscribeConfirmation"
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_wrong_arn_format": {
+    "recorded-date": "01-06-2023, 20:18:02",
+    "recorded-content": {
+      "invalid-topic-arn": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not 1",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-topic-arn-1": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not 2",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_create_subscriptions_with_attributes": {
+    "recorded-date": "07-06-2023, 18:27:05",
+    "recorded-content": {
+      "subscribe": {
+        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-attrs": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "true",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:1>",
+          "SubscriptionPrincipal": "<sub-principal>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-attrs-nonexistent-sub": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "Subscription does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_create_topic_with_attributes": {
+    "recorded-date": "07-06-2023, 18:34:51",
+    "recorded-content": {
+      "get-topic-attrs": {
+        "Attributes": {
+          "ContentBasedDeduplication": "false",
+          "DisplayName": "TestTopic",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
+            }
+          },
+          "FifoTopic": "true",
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SignatureVersion": "2",
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-attrs-nonexistent-topic": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "Topic does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
       }
     }
   }

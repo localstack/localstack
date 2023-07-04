@@ -37,18 +37,18 @@ class StatePass(CommonStateField):
         self.result_path = state_props.get(ResultPath)
         self.parameters = state_props.get(Parameters)
 
-        if self.result is not None and self.result_path is None:
+        if self.result_path is None:
             self.result_path = ResultPath(result_path_src=ResultPath.DEFAULT_PATH)
 
     def _eval_state(self, env: Environment) -> None:
+        if self.name == "ParseBody":
+            print(self.name)
+
         if self.parameters:
             self.parameters.eval(env=env)
-            env.inp = env.stack.pop()
 
         if self.result:
             env.stack.append(self.result.result_obj)
-        else:
-            env.stack.append(env.inp)
 
         if self.result_path:
             self.result_path.eval(env)

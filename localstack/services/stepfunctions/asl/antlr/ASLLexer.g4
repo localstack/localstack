@@ -82,6 +82,9 @@ SECONDS: '"Seconds"';
 TIMESTAMPPATH: '"TimestampPath"';
 TIMESTAMP: '"Timestamp"';
 
+TIMEOUTSECONDS: '"TimeoutSeconds"';
+TIMEOUTSECONDSPATH: '"TimeoutSecondsPath"';
+
 PROCESSORCONFIG: '"ProcessorConfig"';
 MODE: '"Mode"';
 INLINE: '"INLINE"';

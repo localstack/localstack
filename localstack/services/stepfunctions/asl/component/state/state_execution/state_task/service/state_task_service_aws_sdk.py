@@ -1,13 +1,6 @@
 from botocore.exceptions import ClientError
 
-from localstack.aws.api.stepfunctions import (
-    HistoryEventExecutionDataDetails,
-    HistoryEventType,
-    TaskFailedEventDetails,
-    TaskScheduledEventDetails,
-    TaskStartedEventDetails,
-    TaskSucceededEventDetails,
-)
+from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.aws.protocol.service_router import get_service_catalog
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
@@ -18,70 +11,44 @@ from localstack.services.stepfunctions.asl.component.common.error_name.states_er
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
-    StateTaskService,
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
+    StateTaskServiceCallback,
 )
+from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
+from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackOutcomeFailureError
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case
 
 
-class StateTaskServiceAwsSdk(StateTaskService):
-    def _get_resource_type(self) -> str:
+class StateTaskServiceAwsSdk(StateTaskServiceCallback):
+    _API_NAMES: dict[str, str] = {"sfn": "stepfunctions"}
+    _SFN_TO_BOTO_PARAM_NORMALISERS = {
+        "stepfunctions": {
+            "send_task_success": {"Output": "output", "TaskToken": "taskToken"},
+            "send_task_failure": {"TaskToken": "taskToken", "Error": "error", "Cause": "cause"},
+        }
+    }
+
+    _normalised_api_name: str
+    _normalised_api_action: str
+
+    def from_state_props(self, state_props: StateProps) -> None:
+        super().from_state_props(state_props=state_props)
+        self._normalised_api_name = self._normalise_api_name(self.resource.api_name)
+        self._normalised_api_action = camel_to_snake_case(self.resource.api_action)
+
+    def _get_parameters_normalising_bindings(self) -> dict[str, str]:
+        api_normalisers = self._SFN_TO_BOTO_PARAM_NORMALISERS.get(self._normalised_api_name, dict())
+        action_normalisers = api_normalisers.get(self._normalised_api_action, dict())
+        return action_normalisers
+
+    def _get_sfn_resource_type(self) -> str:
         return f"{self.resource.service_name}:{self.resource.api_name}"
 
-    def _eval_execution(self, env: Environment) -> None:
-        super()._eval_execution(env=env)
-
-        api_name = self.resource.api_name
-        api_action = camel_to_snake_case(self.resource.api_action)
-
-        parameters = self._eval_parameters(env=env)
-
-        # Simulate scheduled-start workflow.
-        parameters_str = to_json_str(parameters)
-        env.event_history.add_event(
-            hist_type_event=HistoryEventType.TaskScheduled,
-            event_detail=EventDetails(
-                taskScheduledEventDetails=TaskScheduledEventDetails(
-                    resourceType=self._get_resource_type(),
-                    resource=self.resource.api_action,
-                    region=self.resource.region,
-                    parameters=parameters_str,
-                )
-            ),
-        )
-        env.event_history.add_event(
-            hist_type_event=HistoryEventType.TaskStarted,
-            event_detail=EventDetails(
-                taskStartedEventDetails=TaskStartedEventDetails(
-                    resourceType=self._get_resource_type(),
-                    resource=self.resource.api_action,
-                )
-            ),
-        )
-
-        api_client = aws_stack.create_external_boto_client(service_name=api_name)
-
-        response = getattr(api_client, api_action)(**parameters) or dict()
-        if response:
-            response.pop("ResponseMetadata", None)
-
-        env.stack.append(response)
-
-        env.event_history.add_event(
-            hist_type_event=HistoryEventType.TaskSucceeded,
-            event_detail=EventDetails(
-                taskSucceededEventDetails=TaskSucceededEventDetails(
-                    resourceType=self._get_resource_type(),
-                    resource=self.resource.api_action,
-                    output=to_json_str(response),
-                    outputDetails=HistoryEventExecutionDataDetails(truncated=False),
-                )
-            ),
-        )
+    def _normalise_api_name(self, api_name: str) -> str:
+        return self._API_NAMES.get(api_name, api_name)
 
     @staticmethod
     def _normalise_service_name(service_name: str) -> str:
@@ -98,8 +65,8 @@ class StateTaskServiceAwsSdk(StateTaskService):
             event_type=HistoryEventType.TaskFailed,
             event_details=EventDetails(
                 taskFailedEventDetails=TaskFailedEventDetails(
-                    resourceType=self._get_resource_type(),
-                    resource=self.resource.api_action,
+                    resource=self._get_sfn_resource(),
+                    resourceType=self._get_sfn_resource_type(),
                     error=error,
                     cause=cause,
                 )
@@ -107,6 +74,11 @@ class StateTaskServiceAwsSdk(StateTaskService):
         )
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        if isinstance(ex, CallbackOutcomeFailureError):
+            return self._get_callback_outcome_failure_event(ex=ex)
+        if isinstance(ex, TimeoutError):
+            return self._get_timed_out_failure_event()
+
         norm_service_name: str = self._normalise_service_name(self.resource.api_name)
         error: str = self._normalise_exception_name(norm_service_name, ex)
         if isinstance(ex, ClientError):
@@ -129,3 +101,10 @@ class StateTaskServiceAwsSdk(StateTaskService):
             error=error, cause=str(ex)  # TODO: update cause decoration.
         )
         return failure_event
+
+    def _eval_service_task(self, env: Environment, parameters: dict) -> None:
+        api_client = aws_stack.create_external_boto_client(service_name=self._normalised_api_name)
+        response = getattr(api_client, self._normalised_api_action)(**parameters) or dict()
+        if response:
+            response.pop("ResponseMetadata", None)
+        env.stack.append(response)

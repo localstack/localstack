@@ -10,6 +10,8 @@ from tests.integration.apigateway.apigateway_fixtures import (
     create_rest_api_stage,
     create_rest_resource,
     create_rest_resource_method,
+    delete_rest_api,
+    import_rest_api,
 )
 
 # default name used for created REST API stages
@@ -151,3 +153,18 @@ def apigw_redeploy_api(aws_client):
         )
 
     return _factory
+
+
+@pytest.fixture
+def import_apigw(aws_client):
+    rest_api_ids = []
+
+    def _import_apigateway_function(*args, **kwargs):
+        response, root_id = import_rest_api(aws_client.apigateway, **kwargs)
+        rest_api_ids.append(response.get("id"))
+        return response, root_id
+
+    yield _import_apigateway_function
+
+    for rest_api_id in rest_api_ids:
+        delete_rest_api(aws_client.apigateway, restApiId=rest_api_id)

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from localstack.testing.snapshots.transformer import RegexTransformer
+from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.templates.errorhandling.error_handling_templates import (
     ErrorHandlingTemplate as EHT,
@@ -36,14 +36,14 @@ class TestTaskServiceSqs:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
 
         queue_name = f"queue-{short_uid()}"
         queue_url = f"http://no-such-queue-{short_uid()}"
-        snapshot.add_transformer(RegexTransformer(queue_url, "<no_such_sqs_queue_url>"))
-        snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<no_such_sqs_queue_url>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
 
         template = EHT.load_sfn_template(EHT.AWS_SERVICE_SQS_SEND_MSG_CATCH)
         definition = json.dumps(template)
@@ -54,7 +54,7 @@ class TestTaskServiceSqs:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -64,14 +64,14 @@ class TestTaskServiceSqs:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
 
         queue_name = f"queue-{short_uid()}"
         queue_url = f"http://no-such-queue-{short_uid()}"
-        snapshot.add_transformer(RegexTransformer(queue_url, "<no_such_sqs_queue_url>"))
-        snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<no_such_sqs_queue_url>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
 
         template = ST.load_sfn_template(ST.SQS_SEND_MESSAGE)
         definition = json.dumps(template)
@@ -82,7 +82,7 @@ class TestTaskServiceSqs:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -93,19 +93,60 @@ class TestTaskServiceSqs:
         create_iam_role_for_sfn,
         create_state_machine,
         sqs_create_queue,
+        sfn_snapshot,
+    ):
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
+
+        template = EHT.load_sfn_template(EHT.AWS_SERVICE_SQS_SEND_MSG_CATCH)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"QueueUrl": queue_url, "MessageBody": None})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @pytest.mark.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
+    def test_sqs_failure_in_wait_for_task_tok(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sqs_create_queue,
+        sqs_send_task_failure_state_machine,
         snapshot,
     ):
         snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..TaskToken",
+                replacement="task_token",
+                replace_reference=True,
+            )
+        )
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
         snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
 
-        template = EHT.load_sfn_template(EHT.AWS_SERVICE_SQS_SEND_MSG_CATCH)
-        definition = json.dumps(template)
+        sqs_send_task_failure_state_machine(queue_url)
 
-        exec_input = json.dumps({"QueueUrl": queue_url, "MessageBody": None})
+        template = EHT.load_sfn_template(EHT.AWS_SERVICE_SQS_SEND_MSG_CATCH_TOKEN_FAILURE)
+        definition = json.dumps(template)
+        definition = definition.replace("<%WaitForTaskTokenFailureErrorName%>", "Failure error")
+
+        message_txt = "test_message_txt"
+        exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,

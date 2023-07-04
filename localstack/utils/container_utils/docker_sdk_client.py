@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import queue
+import re
 import socket
 import threading
 from time import sleep
@@ -40,7 +41,13 @@ SDK_ISDIR = 1 << 31
 
 
 class SdkDockerClient(ContainerClient):
-    """Class for managing docker using the python docker sdk"""
+    """
+    Class for managing Docker (or Podman) using the Python Docker SDK.
+
+    The client also supports targeting Podman engines, as Podman is almost a drop-in replacement
+    for Docker these days (with ongoing efforts to further streamline the two), and the Docker SDK
+    is doing some of the heavy lifting for us to support both target platforms.
+    """
 
     docker_client: Optional[DockerClient]
 
@@ -54,10 +61,9 @@ class SdkDockerClient(ContainerClient):
     def client(self):
         if self.docker_client:
             return self.docker_client
-        else:
-            # if the initialization failed before, try to initialize on-demand
-            self.docker_client = self._create_client()
-            return self.docker_client
+        # if the initialization failed before, try to initialize on-demand
+        self.docker_client = self._create_client()
+        return self.docker_client
 
     @staticmethod
     def _create_client():
@@ -118,6 +124,9 @@ class SdkDockerClient(ContainerClient):
             stats = json.loads(base64.b64decode(stats).decode("utf-8"))
         target_is_dir = target_exists and bool(stats["mode"] & SDK_ISDIR)
         return target_exists, target_is_dir
+
+    def get_system_info(self) -> dict:
+        return self.client().info()
 
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
         # LOG.debug("Getting container status for container: %s", container_name) #  too verbose
@@ -276,6 +285,9 @@ class SdkDockerClient(ContainerClient):
         except ImageNotFound:
             raise NoSuchImage(docker_image)
         except APIError as e:
+            # note: error message 'image not known' raised by Podman API
+            if "image not known" in str(e):
+                raise NoSuchImage(docker_image)
             raise ContainerException() from e
 
     def build_image(
@@ -309,19 +321,26 @@ class SdkDockerClient(ContainerClient):
                 raise NoSuchImage(source_ref)
             raise ContainerException("Unable to tag Docker image") from e
 
-    def get_docker_image_names(self, strip_latest=True, include_tags=True):
+    def get_docker_image_names(
+        self,
+        strip_latest: bool = True,
+        include_tags: bool = True,
+        strip_wellknown_repo_prefixes: bool = True,
+    ):
         try:
             images = self.client().images.list()
             image_names = [tag for image in images for tag in image.tags if image.tags]
             if not include_tags:
-                image_names = list(map(lambda image_name: image_name.split(":")[0], image_names))
+                image_names = [image_name.rpartition(":")[0] for image_name in image_names]
+            if strip_wellknown_repo_prefixes:
+                image_names = Util.strip_wellknown_repo_prefixes(image_names)
             if strip_latest:
                 Util.append_without_latest(image_names)
             return image_names
         except APIError as e:
             raise ContainerException() from e
 
-    def get_container_logs(self, container_name_or_id: str, safe=False) -> str:
+    def get_container_logs(self, container_name_or_id: str, safe: bool = False) -> str:
         try:
             container = self.client().containers.get(container_name_or_id)
             return to_str(container.logs())
@@ -351,9 +370,22 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
-    def inspect_image(self, image_name: str, pull: bool = True) -> Dict[str, Union[Dict, str]]:
+    def inspect_image(
+        self,
+        image_name: str,
+        pull: bool = True,
+        strip_wellknown_repo_prefixes: bool = True,
+    ) -> Dict[str, Union[dict, list, str]]:
         try:
-            return self.client().images.get(image_name).attrs
+            result = self.client().images.get(image_name).attrs
+            if strip_wellknown_repo_prefixes:
+                if result.get("RepoDigests"):
+                    result["RepoDigests"] = Util.strip_wellknown_repo_prefixes(
+                        result["RepoDigests"]
+                    )
+                if result.get("RepoTags"):
+                    result["RepoTags"] = Util.strip_wellknown_repo_prefixes(result["RepoTags"])
+            return result
         except NotFound:
             if pull:
                 self.pull_image(image_name)
@@ -446,6 +478,8 @@ class SdkDockerClient(ContainerClient):
             if not force:
                 raise NoSuchImage(image)
         except APIError as e:
+            if "image not known" in str(e):
+                raise NoSuchImage(image)
             raise ContainerException() from e
 
     def commit(
@@ -644,6 +678,7 @@ class SdkDockerClient(ContainerClient):
             try:
                 container = create_container()
             except ImageNotFound:
+                LOG.debug("Image not found. Pulling image %s", image_name)
                 self.pull_image(image_name, platform)
                 container = create_container()
             return container.id
@@ -788,3 +823,24 @@ class SdkDockerClient(ContainerClient):
             self.client().login(username, password=password, registry=registry, reauth=True)
         except APIError as e:
             raise ContainerException() from e
+
+
+# apply patches required for podman API compatibility
+
+
+@property
+def _container_image(self):
+    image_id = self.attrs.get("ImageID", self.attrs["Image"])
+    if image_id is None:
+        return None
+    image_ref = image_id
+    # Fix for podman API response: Docker returns "sha:..." for `Image`, podman returns "<image-name>:<tag>".
+    # See https://github.com/containers/podman/issues/8329 . Without this check, the Docker client would
+    # blindly strip off the suffix after the colon `:` (which is the `<tag>` in podman's case) which would
+    # then lead to "no such image" errors.
+    if re.match("sha256:[0-9a-f]{64}", image_id, flags=re.IGNORECASE):
+        image_ref = image_id.split(":")[1]
+    return self.client.images.get(image_ref)
+
+
+Container.image = _container_image

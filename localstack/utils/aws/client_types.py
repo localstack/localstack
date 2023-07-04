@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from mypy_boto3_elasticbeanstalk import ElasticBeanstalkClient
     from mypy_boto3_elbv2 import ElasticLoadBalancingv2Client
     from mypy_boto3_emr import EMRClient
+    from mypy_boto3_emr_serverless import EMRServerlessClient
     from mypy_boto3_es import ElasticsearchServiceClient
     from mypy_boto3_events import EventBridgeClient
     from mypy_boto3_firehose import FirehoseClient
@@ -83,6 +84,7 @@ if TYPE_CHECKING:
     from mypy_boto3_sns import SNSClient
     from mypy_boto3_sqs import SQSClient
     from mypy_boto3_ssm import SSMClient
+    from mypy_boto3_sso_admin import SSOAdminClient
     from mypy_boto3_stepfunctions import SFNClient
     from mypy_boto3_sts import STSClient
     from mypy_boto3_timestream_query import TimestreamQueryClient
@@ -139,6 +141,7 @@ class TypedServiceClientFactory(abc.ABC):
         "ElasticLoadBalancingv2Client", "MetadataRequestInjector[ElasticLoadBalancingv2Client]"
     ]
     emr: Union["EMRClient", "MetadataRequestInjector[EMRClient]"]
+    emr_serverless: Union["EMRServerlessClient", "MetadataRequestInjector[EMRServerlessClient]"]
     es: Union["ElasticsearchServiceClient", "MetadataRequestInjector[ElasticsearchServiceClient]"]
     events: Union["EventBridgeClient", "MetadataRequestInjector[EventBridgeClient]"]
     firehose: Union["FirehoseClient", "MetadataRequestInjector[FirehoseClient]"]
@@ -204,6 +207,7 @@ class TypedServiceClientFactory(abc.ABC):
     sns: Union["SNSClient", "MetadataRequestInjector[SNSClient]"]
     sqs: Union["SQSClient", "MetadataRequestInjector[SQSClient]"]
     ssm: Union["SSMClient", "MetadataRequestInjector[SSMClient]"]
+    sso_admin: Union["SSOAdminClient", "MetadataRequestInjector[SSOAdminClient]"]
     stepfunctions: Union["SFNClient", "MetadataRequestInjector[SFNClient]"]
     sts: Union["STSClient", "MetadataRequestInjector[STSClient]"]
     timestream_query: Union[

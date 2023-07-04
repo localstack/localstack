@@ -1118,6 +1118,12 @@ def test_restxml_header_list_parsing():
     )
 
 
+def test_restxml_header_optional_list_parsing():
+    """Tests that non-existing header list attributes are working correctly."""
+    # OptionalObjectAttributes (the "x-amz-optional-object-attributes") in ListObjectsV2Request is optional
+    _botocore_parser_integration_test(service="s3", action="ListObjectsV2", Bucket="test-bucket")
+
+
 def test_restxml_header_date_parsing():
     """Test the parsing of a map with the location trait 'headers'."""
     _botocore_parser_integration_test(

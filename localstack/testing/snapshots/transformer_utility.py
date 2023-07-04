@@ -400,6 +400,8 @@ class TransformerUtility:
             TransformerUtility.jsonpath(
                 jsonpath="$..Mac", value_replacement="<mac>", reference_replacement=False
             ),
+            TransformerUtility.key_value("CiphertextBlob", reference_replacement=False),
+            TransformerUtility.key_value("Plaintext", reference_replacement=False),
             RegexTransformer(PATTERN_KEY_ARN, replacement="<key-arn>"),
         ]
 
@@ -523,6 +525,31 @@ class TransformerUtility:
         arn_part_repl = f"<ExecArnPart_{index}idx>"
         arn_part: str = "".join(start_exec["executionArn"].rpartition(":")[-1])
         return RegexTransformer(arn_part, arn_part_repl)
+
+    @staticmethod
+    def stepfunctions_api():
+        return [
+            JsonpathTransformer(
+                "$..SdkHttpMetadata.AllHttpHeaders.Date",
+                "date",
+                replace_reference=False,
+            ),
+            JsonpathTransformer(
+                "$..SdkHttpMetadata.AllHttpHeaders.X-Amzn-Trace-Id",
+                "X-Amzn-Trace-Id",
+                replace_reference=False,
+            ),
+            JsonpathTransformer(
+                "$..SdkHttpMetadata.HttpHeaders.Date",
+                "date",
+                replace_reference=False,
+            ),
+            JsonpathTransformer(
+                "$..SdkHttpMetadata.HttpHeaders.X-Amzn-Trace-Id",
+                "X-Amzn-Trace-Id",
+                replace_reference=False,
+            ),
+        ]
 
     # TODO add example
     # @staticmethod

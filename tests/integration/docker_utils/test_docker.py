@@ -7,6 +7,7 @@ import time
 from typing import NamedTuple
 
 import pytest
+from docker.models.containers import Container
 
 from localstack import config
 from localstack.config import in_docker
@@ -35,7 +36,9 @@ from localstack.utils.docker_utils import (
     reserve_container_port,
 )
 from localstack.utils.net import Port, PortNotAvailableException, get_free_tcp_port
+from localstack.utils.strings import to_bytes
 from localstack.utils.threads import FuncThread
+from tests.integration.docker_utils.conftest import is_podman_test, skip_for_podman
 
 ContainerInfo = NamedTuple(
     "ContainerInfo",
@@ -52,6 +55,11 @@ container_name_prefix = "lst_test_"
 
 def _random_container_name() -> str:
     return f"{container_name_prefix}{short_uid()}"
+
+
+def _is_podman_test() -> bool:
+    """Return whether this is a test running against Podman"""
+    return os.getenv("DOCKER_CMD") == "podman"
 
 
 @pytest.fixture
@@ -110,6 +118,16 @@ def create_network(docker_client: ContainerClient):
 
 
 class TestDockerClient:
+    def test_get_system_info(self, docker_client: ContainerClient):
+        info = docker_client.get_system_info()
+        assert "ID" in info
+        assert "OperatingSystem" in info
+        assert "Architecture" in info
+
+    def test_get_system_id(self, docker_client: ContainerClient):
+        assert len(docker_client.get_system_id()) > 1
+        assert docker_client.get_system_id() == docker_client.get_system_id()
+
     def test_container_lifecycle_commands(self, docker_client: ContainerClient):
         container_name = _random_container_name()
         output = docker_client.create_container(
@@ -124,10 +142,11 @@ class TestDockerClient:
             docker_client.start_container(container_id)
             assert DockerContainerStatus.UP == docker_client.get_container_status(container_name)
 
+            # consider different "paused" statuses for Docker / Podman
             docker_client.pause_container(container_id)
-            assert DockerContainerStatus.PAUSED == docker_client.get_container_status(
-                container_name
-            )
+            expected_statuses = (DockerContainerStatus.PAUSED, DockerContainerStatus.DOWN)
+            container_status = docker_client.get_container_status(container_name)
+            assert container_status in expected_statuses
 
             docker_client.unpause_container(container_id)
             assert DockerContainerStatus.UP == docker_client.get_container_status(container_name)
@@ -153,7 +172,7 @@ class TestDockerClient:
 
         # start the container
         output, _ = docker_client.start_container(info.container_id, attach=True)
-        output = output.decode(config.DEFAULT_ENCODING)
+        output = to_str(output)
         time.sleep(1)  # give the docker daemon some time to remove the container after execution
 
         assert 0 == len(docker_client.list_containers(f"id={info.container_id}"))
@@ -174,7 +193,7 @@ class TestDockerClient:
         output, _ = docker_client.exec_in_container(
             dummy_container.container_id, command=["echo", "foobar"]
         )
-        output = output.decode(config.DEFAULT_ENCODING)
+        output = to_str(output)
         assert "foobar" == output.strip()
 
     def test_exec_in_container_not_running_raises_exception(
@@ -206,6 +225,7 @@ class TestDockerClient:
         output = output.decode(config.DEFAULT_ENCODING)
         assert "MYVAR=foo_var" in output
 
+    @skip_for_podman
     def test_exec_in_container_with_env_deletion(
         self, docker_client: ContainerClient, create_container
     ):
@@ -220,13 +240,18 @@ class TestDockerClient:
         )
         assert "MYVAR=SHOULD_BE_OVERWRITTEN" in log_output
 
-        env = {"MYVAR": None}
-
+        env = {"MYVAR": "test123"}
         output, _ = docker_client.exec_in_container(
             container_info.container_id, env_vars=env, command=["env"]
         )
-        output = output.decode(config.DEFAULT_ENCODING)
-        assert "MYVAR" not in output
+        assert "MYVAR=test123" in to_str(output)
+
+        # TODO: doesn't work for podman CmdDockerClient - check if we're relying on this behavior
+        env = {"MYVAR": None}
+        output, _ = docker_client.exec_in_container(
+            container_info.container_id, env_vars=env, command=["env"]
+        )
+        assert "MYVAR" not in to_str(output)
 
     def test_exec_error_in_container(self, docker_client: ContainerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
@@ -236,7 +261,9 @@ class TestDockerClient:
                 dummy_container.container_id, command=["./doesnotexist"]
             )
 
-        assert ex.match("doesnotexist: no such file or directory")
+        # consider different error messages for Docker/Podman
+        error_messages = ("doesnotexist: no such file or directory", "No such file or directory")
+        assert any(msg in str(ex) for msg in error_messages)
 
     def test_create_container_with_max_env_vars(
         self, docker_client: ContainerClient, create_container
@@ -304,10 +331,17 @@ class TestDockerClient:
         with pytest.raises(NoSuchContainer):
             docker_client.start_container("this_container_does_not_exist")
 
+    # TODO: currently failing under Podman in CI (works locally under MacOS)
+    @pytest.mark.xfail(
+        _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
+    )
     def test_get_network(self, docker_client: ContainerClient, dummy_container):
-        n = docker_client.get_networks(dummy_container.container_name)
-        assert ["bridge"] == n
+        networks = docker_client.get_networks(dummy_container.container_name)
+        expected_networks = [_get_default_network()]
+        assert networks == expected_networks
 
+    # TODO: skipped due to "Error: "slirp4netns" is not supported: invalid network mode" in CI
+    @skip_for_podman
     def test_get_network_multiple_networks(
         self, docker_client: ContainerClient, dummy_container, create_network
     ):
@@ -319,9 +353,11 @@ class TestDockerClient:
         docker_client.start_container(dummy_container.container_id)
         networks = docker_client.get_networks(dummy_container.container_id)
         assert network_name in networks
-        assert "bridge" in networks
+        assert _get_default_network() in networks
         assert len(networks) == 2
 
+    # TODO: skipped due to "Error: "slirp4netns" is not supported: invalid network mode" in CI
+    @skip_for_podman
     def test_get_container_ip_for_network(
         self, docker_client: ContainerClient, dummy_container, create_network
     ):
@@ -331,11 +367,14 @@ class TestDockerClient:
             network_name=network_id, container_name_or_id=dummy_container.container_id
         )
         docker_client.start_container(dummy_container.container_id)
+        default_network = _get_default_network()
         result_bridge_network = docker_client.get_container_ipv4_for_network(
-            container_name_or_id=dummy_container.container_id, container_network="bridge"
+            container_name_or_id=dummy_container.container_id, container_network=default_network
         ).strip()
         assert is_ipv4_address(result_bridge_network)
-        bridge_network = docker_client.inspect_network("bridge")["IPAM"]["Config"][0]["Subnet"]
+        bridge_network = docker_client.inspect_network(default_network)["IPAM"]["Config"][0][
+            "Subnet"
+        ]
         assert ipaddress.IPv4Address(result_bridge_network) in ipaddress.IPv4Network(bridge_network)
         result_custom_network = docker_client.get_container_ipv4_for_network(
             container_name_or_id=dummy_container.container_id, container_network=network_name
@@ -345,6 +384,10 @@ class TestDockerClient:
         custom_network = docker_client.inspect_network(network_name)["IPAM"]["Config"][0]["Subnet"]
         assert ipaddress.IPv4Address(result_custom_network) in ipaddress.IPv4Network(custom_network)
 
+    # TODO: currently failing under Podman
+    @pytest.mark.xfail(
+        _is_podman_test(), reason="Podman inspect_network does not return `Containers` attribute"
+    )
     def test_get_container_ip_for_network_wrong_network(
         self, docker_client: ContainerClient, dummy_container, create_network
     ):
@@ -352,7 +395,8 @@ class TestDockerClient:
         create_network(network_name)
         docker_client.start_container(dummy_container.container_id)
         result_bridge_network = docker_client.get_container_ipv4_for_network(
-            container_name_or_id=dummy_container.container_id, container_network="bridge"
+            container_name_or_id=dummy_container.container_id,
+            container_network=_get_default_network(),
         ).strip()
         assert is_ipv4_address(result_bridge_network)
 
@@ -361,6 +405,10 @@ class TestDockerClient:
                 container_name_or_id=dummy_container.container_id, container_network=network_name
             )
 
+    # TODO: currently failing under Podman in CI (works locally under MacOS)
+    @pytest.mark.xfail(
+        _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
+    )
     def test_get_container_ip_for_host_network(
         self, docker_client: ContainerClient, create_container
     ):
@@ -384,6 +432,10 @@ class TestDockerClient:
                 container_name_or_id=dummy_container.container_id, container_network=network_name
             )
 
+    # TODO: currently failing under Podman in CI (works locally under MacOS)
+    @pytest.mark.xfail(
+        _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
+    )
     def test_create_with_host_network(self, docker_client: ContainerClient, create_container):
         info = create_container("alpine", network="host")
         network = docker_client.get_networks(info.container_name)
@@ -412,6 +464,7 @@ class TestDockerClient:
     @pytest.mark.skipif(
         condition=in_docker(), reason="cannot test volume mounts from host when in docker"
     )
+    @skip_for_podman  # TODO: Volume mounting test currently not working against Podman
     def test_inspect_container_volumes(
         self, tmpdir, docker_client: ContainerClient, create_container
     ):
@@ -690,7 +743,8 @@ class TestDockerClient:
         assert 1 == len(container_list)
         assert c2.container_id.startswith(container_list[0]["id"])
         assert c2.container_name == container_list[0]["name"]
-        assert "created" == container_list[0]["status"]
+        # note: Docker returns "created", Podman returns "configured"
+        assert container_list[0]["status"] in ["created", "configured"]
 
         # per name pattern
         container_list = docker_client.list_containers(filter=f"name={name_prefix}")
@@ -709,6 +763,42 @@ class TestDockerClient:
         )
         assert 1 == len(container_list)
         assert c1.container_name == container_list[0]["name"]
+
+    def test_list_containers_with_podman_image_ref_format(
+        self, docker_client: ContainerClient, create_container, cleanups, monkeypatch
+    ):
+        # create custom image tag
+        image_name = f"alpine:tag-{short_uid()}"
+        _pull_image_if_not_exists(docker_client, "alpine")
+        docker_client.tag_image("alpine", image_name)
+        cleanups.append(lambda: docker_client.remove_image(image_name))
+
+        # apply patch to simulate podman behavior
+        container_init_orig = Container.__init__
+
+        def container_init(self, attrs=None, *args, **kwargs):
+            # Simulate podman API response, Docker returns "sha:..." for Image, podman returns "<image-name>:<tag>".
+            #  See https://github.com/containers/podman/issues/8329
+            attrs["Image"] = image_name
+            container_init_orig(self, attrs=attrs, *args, **kwargs)
+
+        monkeypatch.setattr(Container, "__init__", container_init)
+
+        # start a container from the custom image tag
+        c1 = create_container(image_name, command=["sleep", "3"])
+        docker_client.start_container(c1.container_id, attach=False)
+
+        # list containers, assert that container is contained in the list
+        container_list = docker_client.list_containers()
+        running_containers = [cnt for cnt in container_list if cnt["status"] == "running"]
+        assert running_containers
+        container_names = [info["name"] for info in container_list]
+        assert c1.container_name in container_names
+
+        # assert that get_running_container_names(..) call is successful as well
+        container_names = docker_client.get_running_container_names()
+        assert len(running_containers) == len(container_names)
+        assert c1.container_name in container_names
 
     def test_get_container_entrypoint(self, docker_client: ContainerClient):
         entrypoint = docker_client.get_image_entrypoint("alpine")
@@ -744,7 +834,13 @@ class TestDockerClient:
         with pytest.raises(NoSuchImage):
             docker_client.get_image_cmd("thisdoesnotexist")
 
-    def test_create_start_container_with_stdin_to_stdout(self, docker_client: ContainerClient):
+    @pytest.mark.parametrize("attach", [True, False])
+    def test_create_start_container_with_stdin_to_stdout(
+        self, attach: bool, docker_client: ContainerClient
+    ):
+        if isinstance(docker_client, CmdDockerClient) and _is_podman_test() and not attach:
+            # TODO: Podman behavior deviates from Docker if attach=False (prints container ID instead of stdin)
+            pytest.skip("Podman output deviates from Docker if attach=False")
         container_name = _random_container_name()
         message = "test_message_stdin"
         try:
@@ -756,17 +852,22 @@ class TestDockerClient:
             )
 
             output, _ = docker_client.start_container(
-                container_name, interactive=True, stdin=message.encode(config.DEFAULT_ENCODING)
+                container_name, interactive=True, stdin=to_bytes(message), attach=attach
             )
+            output = to_str(output)
 
-            assert message == output.decode(config.DEFAULT_ENCODING).strip()
+            assert message == output.strip()
         finally:
             docker_client.remove_container(container_name)
-            pass
 
+    @pytest.mark.parametrize("attach", [True, False])
     def test_create_start_container_with_stdin_to_file(
-        self, tmpdir, docker_client: ContainerClient
+        self, tmpdir, attach, docker_client: ContainerClient
     ):
+        if isinstance(docker_client, CmdDockerClient) and _is_podman_test() and not attach:
+            # TODO: Podman behavior deviates from Docker if attach=False (prints container ID instead of stdin)
+            pytest.skip("Podman output deviates from Docker if attach=False")
+
         container_name = _random_container_name()
         message = "test_message_stdin"
         try:
@@ -778,7 +879,10 @@ class TestDockerClient:
             )
 
             output, _ = docker_client.start_container(
-                container_name, interactive=True, stdin=message.encode(config.DEFAULT_ENCODING)
+                container_name,
+                interactive=True,
+                stdin=message.encode(config.DEFAULT_ENCODING),
+                attach=attach,
             )
             target_path = tmpdir.join("test_file")
             docker_client.copy_from_container(container_name, str(target_path), "test_file")
@@ -985,7 +1089,11 @@ class TestDockerClient:
 
     @pytest.mark.skip_offline
     def test_tag_image(self, docker_client: ContainerClient):
-        docker_client.pull_image("alpine")
+        if _is_podman_test() and isinstance(docker_client, SdkDockerClient):
+            # TODO: Podman raises "normalizing image: normalizing name for compat API: invalid reference format"
+            pytest.skip("Image tagging not fully supported using SDK client against Podman API")
+
+        _pull_image_if_not_exists(docker_client, "alpine")
         img_refs = [
             "localstack_dummy_image",
             "localstack_dummy_image:latest",
@@ -1001,7 +1109,10 @@ class TestDockerClient:
                 assert expected in images
         finally:
             for img_ref in img_refs:
-                docker_client.remove_image(img_ref)
+                try:
+                    docker_client.remove_image(img_ref)
+                except Exception as e:
+                    LOG.info("Unable to remove image '%s': %s", img_ref, e)
 
     @pytest.mark.skip_offline
     def test_tag_non_existing_image(self, docker_client: ContainerClient):
@@ -1014,8 +1125,12 @@ class TestDockerClient:
     @pytest.mark.parametrize("custom_context", [True, False])
     @pytest.mark.parametrize("dockerfile_as_dir", [True, False])
     def test_build_image(
-        self, docker_client: ContainerClient, custom_context, dockerfile_as_dir, tmp_path
+        self, docker_client: ContainerClient, custom_context, dockerfile_as_dir, tmp_path, cleanups
     ):
+        if custom_context and is_podman_test():
+            # TODO: custom context currently failing with Podman
+            pytest.skip("Test not applicable when run against Podman (only Docker)")
+
         dockerfile_dir = tmp_path / "dockerfile"
         tmp_file = short_uid()
         ctx_dir = tmp_path / "context" if custom_context else dockerfile_dir
@@ -1034,12 +1149,12 @@ class TestDockerClient:
 
         image_name = f"img-{short_uid()}"
         docker_client.build_image(dockerfile_path=dockerfile_ref, image_name=image_name, **kwargs)
+        cleanups.append(lambda: docker_client.remove_image(image_name, force=True))
+
         assert image_name in docker_client.get_docker_image_names()
         result = docker_client.inspect_image(image_name, pull=False)
         assert "foo=bar" in result["Config"]["Env"]
         assert "45329/tcp" in result["Config"]["ExposedPorts"]
-
-        docker_client.remove_image(image_name, force=True)
 
     @pytest.mark.skip_offline
     def test_run_container_non_existent_image(self, docker_client: ContainerClient):
@@ -1109,21 +1224,25 @@ class TestDockerClient:
         docker_client.start_container(dummy_container.container_id)
         for identifier in [dummy_container.container_id, dummy_container.container_name]:
             assert dummy_container.container_id == docker_client.inspect_container(identifier)["Id"]
-            assert (
-                f"/{dummy_container.container_name}"
-                == docker_client.inspect_container(identifier)["Name"]
-            )
+            # considering container names with (Docker) and without (Podman) leading slashes
+            candidates = (f"/{dummy_container.container_name}", dummy_container.container_name)
+            assert docker_client.inspect_container(identifier)["Name"] in candidates
 
     @pytest.mark.skip_offline
     def test_inspect_image(self, docker_client: ContainerClient):
-        docker_client.pull_image("alpine")
+        _pull_image_if_not_exists(docker_client, "alpine")
         assert "alpine" in docker_client.inspect_image("alpine")["RepoTags"][0]
 
+    # TODO: currently failing under Podman
+    @pytest.mark.xfail(
+        _is_podman_test(), reason="Podman inspect_network does not return `Id` attribute"
+    )
     def test_inspect_network(self, docker_client: ContainerClient, create_network):
         network_name = f"ls_test_network_{short_uid()}"
         network_id = create_network(network_name)
-        assert network_name == docker_client.inspect_network(network_name)["Name"]
-        assert network_id == docker_client.inspect_network(network_name)["Id"]
+        result = docker_client.inspect_network(network_name)
+        assert network_name == result["Name"]
+        assert network_id == result["Id"]
 
     def test_inspect_network_non_existent_network(self, docker_client: ContainerClient):
         network_name = "ls_test_network_non_existent"
@@ -1207,7 +1326,7 @@ class TestDockerClient:
             command=["getent", "hosts", "sometest.localstack.cloud"],
             additional_flags=additional_flags,
         )
-        stdout = stdout.decode(config.DEFAULT_ENCODING)
+        stdout = to_str(stdout)
         assert "127.0.0.1" in stdout
         assert "sometest.localstack.cloud" in stdout
 
@@ -1215,6 +1334,8 @@ class TestDockerClient:
         with pytest.raises(NoSuchContainer):
             docker_client.get_container_ip(f"hopefully_non_existent_container_{short_uid()}")
 
+    # TODO: getting container IP not yet working against Podman
+    @skip_for_podman
     def test_get_container_ip(self, docker_client: ContainerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
         ip = docker_client.get_container_ip(dummy_container.container_id)
@@ -1255,6 +1376,9 @@ class TestDockerImages:
             docker_client.remove_image(image, force=False)
 
 
+# TODO: most of these tests currently failing under Podman in our CI pipeline, due
+#  to "Error: "slirp4netns" is not supported: invalid network mode" in CI
+@skip_for_podman
 class TestDockerNetworking:
     def test_network_lifecycle(self, docker_client: ContainerClient):
         network_name = f"test-network-{short_uid()}"
@@ -1295,6 +1419,7 @@ class TestDockerNetworking:
         docker_client.connect_container_to_network(
             network_name, container_name_or_id=container.container_id
         )
+        # TODO: podman CmdDockerClient currently not returning `Containers` list
         assert (
             container.container_id
             in docker_client.inspect_network(network_name).get("Containers").keys()
@@ -1361,6 +1486,7 @@ class TestDockerNetworking:
                 container_name_or_id=container_2.container_id, attach=True
             )
 
+    @skip_for_podman  # note: manually creating SdkDockerClient can fail for clients
     def test_docker_sdk_timeout_seconds(self, monkeypatch):
         # check that the timeout seconds are defined by the config variable
         monkeypatch.setattr(config, "DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS", 1337)
@@ -1466,6 +1592,8 @@ class TestDockerPermissions:
                 container_name_or_id=container.container_id, attach=True
             )
 
+    # TODO: currently fails in Podman with "Apparmor is not enabled on this system"
+    @skip_for_podman
     def test_container_with_sec_opt(self, docker_client: ContainerClient, create_container):
         security_opt = ["apparmor=unrestricted"]
         container = create_container(
@@ -1565,3 +1693,13 @@ class TestDockerLabels:
         result = docker_client.inspect_container(container.container_id)
         result_labels = result.get("Config", {}).get("Labels")
         assert result_labels == labels
+
+
+def _pull_image_if_not_exists(docker_client: ContainerClient, image_name: str):
+    if image_name not in docker_client.get_docker_image_names():
+        docker_client.pull_image(image_name)
+
+
+def _get_default_network() -> str:
+    """Return the default container network name - `bridge` for Docker, `podman` for Podman."""
+    return "podman" if _is_podman_test() else "bridge"

@@ -10,6 +10,7 @@ from functools import wraps
 from typing import Dict, Iterable, List, Optional, Set
 
 from localstack import config, constants
+from localstack.config import get_edge_port_http, is_env_true
 from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
@@ -213,7 +214,26 @@ def get_enabled_apis() -> Set[str]:
 
     The result is cached, so it's safe to call. Clear the cache with get_enabled_apis.cache_clear().
     """
-    return resolve_apis(config.parse_service_ports().keys())
+    services_env = os.environ.get("SERVICES", "").strip()
+    services = None
+    if services_env and not is_env_true("EAGER_SERVICE_LOADING"):
+        LOG.warning("SERVICES variable is ignored if EAGER_SERVICE_LOADING=0.")
+    elif services_env:
+        # SERVICES and EAGER_SERVICE_LOADING are set
+        # SERVICES env var might contain ports, but we do not support these anymore
+        services = []
+        for service_port in re.split(r"\s*,\s*", services_env):
+            # Only extract the service name, discard the port
+            parts = re.split(r"[:=]", service_port)
+            service = parts[0]
+            services.append(service)
+
+    if not services:
+        from localstack.services.plugins import SERVICE_PLUGINS
+
+        services = SERVICE_PLUGINS.list_available()
+
+    return resolve_apis(services)
 
 
 # DEPRECATED, lazy loading should be assumed
@@ -224,7 +244,7 @@ def is_api_enabled(api: str) -> bool:
         return True
 
     for enabled_api in apis:
-        if api.startswith("%s:" % enabled_api):
+        if api.startswith(f"{enabled_api}:"):
             return True
 
     return False
@@ -236,7 +256,7 @@ def start_infra_locally():
     return infra.start_infra()
 
 
-def validate_localstack_config(name):
+def validate_localstack_config(name: str):
     # TODO: separate functionality from CLI output
     #  (use exceptions to communicate errors, and return list of warnings)
     from subprocess import CalledProcessError
@@ -255,9 +275,9 @@ def validate_localstack_config(name):
         msg = f"{e}\n{to_str(e.output)}".strip()
         raise ValueError(msg)
 
-    # validating docker-compose variable
     import yaml  # keep import here to avoid issues in test Lambdas
 
+    # validating docker-compose variable
     with open(compose_file_name) as file:
         compose_content = yaml.full_load(file)
     services_config = compose_content.get("services", {})
@@ -275,12 +295,10 @@ def validate_localstack_config(name):
     image_name = ls_service_details.get("image", "")
     if image_name.split(":")[0] not in constants.OFFICIAL_IMAGES:
         warns.append(
-            'Using custom image "%s", we recommend using an official image: %s'
-            % (image_name, constants.OFFICIAL_IMAGES)
+            f'Using custom image "{image_name}", we recommend using an official image: {constants.OFFICIAL_IMAGES}'
         )
 
     # prepare config options
-    image_name = ls_service_details.get("image")
     container_name = ls_service_details.get("container_name") or ""
     docker_ports = (port.split(":")[-2] for port in ls_service_details.get("ports", []))
     docker_env = dict(
@@ -293,8 +311,7 @@ def validate_localstack_config(name):
 
     if (main_container not in container_name) and not docker_env.get("MAIN_CONTAINER_NAME"):
         warns.append(
-            'Please use "container_name: %s" or add "MAIN_CONTAINER_NAME" in "environment".'
-            % main_container
+            f'Please use "container_name: {main_container}" or add "MAIN_CONTAINER_NAME" in "environment".'
         )
 
     def port_exposed(port):
@@ -305,10 +322,9 @@ def validate_localstack_config(name):
     if not port_exposed(edge_port):
         warns.append(
             (
-                "Edge port %s is not exposed. You may have to add the entry "
+                f"Edge port {edge_port} is not exposed. You may have to add the entry "
                 'to the "ports" section of the docker-compose file.'
             )
-            % edge_port
         )
 
     # print warning/info messages
@@ -323,13 +339,6 @@ def get_docker_image_to_start():
     image_name = os.environ.get("IMAGE_NAME")
     if not image_name:
         image_name = constants.DOCKER_IMAGE_NAME
-        if os.environ.get("USE_LIGHT_IMAGE") in constants.FALSE_STRINGS:
-            # FIXME deprecated - remove with 2.0
-            LOG.warning(
-                "USE_LIGHT_IMAGE is deprecated (since 1.3.0) and will be removed in upcoming releases of LocalStack! "
-                "The localstack/localstack-full image is deprecated. Please remove this environment variable."
-            )
-            image_name = constants.DOCKER_IMAGE_NAME_FULL
         if is_api_key_configured():
             image_name = constants.DOCKER_IMAGE_NAME_PRO
     return image_name
@@ -510,12 +519,7 @@ def configure_container(container: LocalstackContainer):
     hooks.configure_localstack_container.run(container)
 
     # construct default port mappings
-    service_ports = config.SERVICE_PORTS
-    if service_ports.get("edge") == 0:
-        service_ports.pop("edge")
-    for port in service_ports.values():
-        if port:
-            container.ports.add(port)
+    container.ports.add(get_edge_port_http())
     for port in range(config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END):
         container.ports.add(port)
 
@@ -603,6 +607,10 @@ def start_infra_in_docker():
     try:
         server.start()
         server.join()
+        error = server.get_error()
+        if error:
+            # if the server failed, raise the error
+            raise error
     except KeyboardInterrupt:
         print("ok, bye!")
         shutdown_handler()

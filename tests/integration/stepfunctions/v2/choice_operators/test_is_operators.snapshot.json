@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_boolean": {
-    "recorded-date": "24-04-2023, 09:06:34",
+    "recorded-date": "22-06-2023, 13:08:16",
     "recorded-content": {
       "cases": [
         {
@@ -339,7 +339,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_null": {
-    "recorded-date": "24-04-2023, 09:07:07",
+    "recorded-date": "22-06-2023, 13:09:08",
     "recorded-content": {
       "cases": [
         {
@@ -678,7 +678,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_numeric": {
-    "recorded-date": "24-04-2023, 09:08:02",
+    "recorded-date": "22-06-2023, 13:09:58",
     "recorded-content": {
       "cases": [
         {
@@ -1017,7 +1017,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_present": {
-    "recorded-date": "24-04-2023, 09:09:14",
+    "recorded-date": "22-06-2023, 13:11:07",
     "recorded-content": {
       "cases": [
         {
@@ -1356,7 +1356,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_string": {
-    "recorded-date": "24-04-2023, 09:10:08",
+    "recorded-date": "22-06-2023, 13:12:11",
     "recorded-content": {
       "cases": [
         {
