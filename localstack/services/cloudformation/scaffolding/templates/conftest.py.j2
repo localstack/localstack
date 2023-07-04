@@ -10,4 +10,4 @@ def use_new_providers(monkeypatch):
     """
     For tests within this subdirectory, make sure we are using the new provider
     """
-    monkeypatch.setattr(config, "CFN_RESOURCE_PROVIDERS_OVERRIDE", json.dumps({"{{ name }}": "ResourceProvider"}))
+    monkeypatch.setattr(config, "CFN_RESOURCE_PROVIDER_OVERRIDES", json.dumps({"{{ name }}": "ResourceProvider"}))

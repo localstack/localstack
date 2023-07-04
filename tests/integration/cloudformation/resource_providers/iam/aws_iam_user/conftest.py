@@ -14,6 +14,6 @@ def use_new_providers(monkeypatch):
     """
     monkeypatch.setattr(
         config,
-        "CFN_RESOURCE_PROVIDERS_OVERRIDE",
+        "CFN_RESOURCE_PROVIDER_OVERRIDES",
         json.dumps({"AWS::IAM::User": "ResourceProvider"}),
     )
