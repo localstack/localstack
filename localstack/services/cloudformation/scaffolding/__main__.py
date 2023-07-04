@@ -93,6 +93,9 @@ class ResourceName:
     def schema_filename(self) -> str:
         return f"{self.namespace.lower()}-{self.service.lower()}-{self.resource.lower()}.json"
 
+    def path_compatible_full_name(self) -> str:
+        return f"{self.namespace.lower()}_{self.service.lower()}_{self.resource.lower()}"
+
     @classmethod
     def from_name(cls, name: str) -> ResourceName:
         parts = name.split("::")
@@ -172,12 +175,12 @@ def template_path(
             raise ValueError(f"File type {file_type} is not a template")
 
     output_path = TESTS_ROOT_DIR.joinpath(
-        f"{resource_name.python_compatible_service_name.lower()}/templates/{resource_name.resource.lower()}_{stub}"
+        f"{resource_name.python_compatible_service_name.lower()}/{resource_name.path_compatible_full_name()}/templates/{stub}"
     ).resolve()
 
     if root:
         test_path = LOCALSTACK_ROOT_DIR.joinpath(
-            f"tests/integration/cloudformation/resource_providers/{resource_name.python_compatible_service_name.lower()}"
+            f"tests/integration/cloudformation/resource_providers/{resource_name.python_compatible_service_name.lower()}/{resource_name.path_compatible_full_name()}"
         ).resolve()
 
         common_root = os.path.relpath(output_path, test_path)
@@ -302,9 +305,7 @@ class TemplateRenderer:
                 )
             # case FileType.cloudcontrol_test:
             case FileType.parity_test:
-                kwargs[
-                    "parity_test_filename"
-                ] = f"test_{resource_name.service.lower()}_{resource_name.resource.lower()}_parity.py"
+                kwargs["parity_test_filename"] = "test_parity.py"
             case FileType.conftest:
                 pass
             case _:
@@ -492,11 +493,13 @@ class FileWriter:
             ),
             FileType.integration_test: TESTS_ROOT_DIR.joinpath(
                 self.resource_name.python_compatible_service_name.lower(),
-                f"test_aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_basic.py",
+                self.resource_name.path_compatible_full_name(),
+                "test_basic.py",
             ),
             FileType.getatt_test: TESTS_ROOT_DIR.joinpath(
                 self.resource_name.python_compatible_service_name.lower(),
-                f"test_aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_exploration.py",
+                self.resource_name.path_compatible_full_name(),
+                "test_exploration.py",
             ),
             # FileType.cloudcontrol_test: TESTS_ROOT_DIR.joinpath(
             #     self.resource_name.python_compatible_service_name.lower(),
@@ -504,10 +507,12 @@ class FileWriter:
             # ),
             FileType.parity_test: TESTS_ROOT_DIR.joinpath(
                 self.resource_name.python_compatible_service_name.lower(),
-                f"test_aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_parity.py",
+                self.resource_name.path_compatible_full_name(),
+                "test_parity.py",
             ),
             FileType.conftest: TESTS_ROOT_DIR.joinpath(
                 self.resource_name.python_compatible_service_name.lower(),
+                self.resource_name.path_compatible_full_name(),
                 "conftest.py",
             ),
         }
