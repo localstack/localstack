@@ -16,7 +16,7 @@ from localstack.services.awslambda.lambda_utils import (
     filter_stream_records,
     message_attributes_to_lower,
 )
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.threads import FuncThread
 
@@ -63,7 +63,10 @@ class SQSEventSourceListener(EventSourceListener):
                 for source in sources:
                     queue_arn = source["EventSourceArn"]
                     region_name = extract_region_from_arn(queue_arn)
-                    sqs_client = aws_stack.connect_to_service("sqs", region_name=region_name)
+
+                    sqs_client = self._get_client(
+                        function_arn=source["FunctionArn"], region_name=region_name
+                    )
                     batch_size = max(min(source.get("BatchSize", 1), 10), 1)
 
                     try:
@@ -109,6 +112,11 @@ class SQSEventSourceListener(EventSourceListener):
             report_partial_failures=report_partial_failures,
         )
 
+    def _get_client(self, function_arn: str, region_name: str):
+        return self._invoke_adapter.get_client_factory(
+            function_arn=function_arn, region_name=region_name
+        ).sqs.request_metadata(source_arn=function_arn)
+
     def _get_lambda_event_filters_for_arn(self, function_arn: str, queue_arn: str):
         result = []
         sources = self._invoke_adapter.get_event_sources(queue_arn)
@@ -134,7 +142,7 @@ class SQSEventSourceListener(EventSourceListener):
                 return
 
             region_name = extract_region_from_arn(queue_arn)
-            sqs_client = aws_stack.connect_to_service("sqs", region_name=region_name)
+            sqs_client = self._get_client(function_arn=lambda_arn, region_name=region_name)
 
             if report_partial_failures:
                 valid_message_ids = [r["messageId"] for r in records]

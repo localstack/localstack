@@ -8,10 +8,7 @@ from localstack.services.cloudformation.deployment_utils import (
     params_list_to_dict,
     params_select_attributes,
 )
-from localstack.services.cloudformation.service_models import (
-    DependencyNotYetSatisfied,
-    GenericBaseModel,
-)
+from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import short_uid
 
@@ -29,15 +26,14 @@ class QueuePolicy(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create(resource_id, resources, resource_type, func, stack_name):
+        def _create(logical_resource_id: str, resource: dict, stack_name: str):
             sqs_client = aws_stack.connect_to_service("sqs")
-            resource = cls(resources[resource_id])
-            props = resource.props
+            resource_provider = cls(resource)
+            props = resource_provider.props
 
-            # TODO: generalize/support in get_physical_resource_id
-            resources[resource_id]["PhysicalResourceId"] = "%s-%s-%s" % (
+            resource["PhysicalResourceId"] = "%s-%s-%s" % (
                 stack_name,
-                resource_id,
+                logical_resource_id,
                 short_uid(),
             )
 
@@ -45,10 +41,10 @@ class QueuePolicy(GenericBaseModel):
             for queue in props["Queues"]:
                 sqs_client.set_queue_attributes(QueueUrl=queue, Attributes={"Policy": policy})
 
-        def _delete(resource_id, resources, *args, **kwargs):
+        def _delete(logical_resource_id: str, resource: dict, stack_name: str):
             sqs_client = aws_stack.connect_to_service("sqs")
-            resource = cls(resources[resource_id])
-            props = resource.props
+            resource_provider = cls(resource)
+            props = resource_provider.props
 
             for queue in props["Queues"]:
                 try:
@@ -70,19 +66,10 @@ class SQSQueue(GenericBaseModel):
     def cloudformation_type(cls):
         return "AWS::SQS::Queue"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        queue_url = None
-        props = self.props
-        try:
-            queue_url = arns.get_sqs_queue_url(props.get("QueueName"))
-        except Exception as e:
-            if "NonExistentQueue" in str(e):
-                raise DependencyNotYetSatisfied(
-                    resource_ids=self.logical_resource_id, message="Unable to get queue: %s" % e
-                )
-        if attribute == "Arn":
-            return arns.sqs_queue_arn(props.get("QueueName"))
-        return queue_url
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "Arn":
+            return arns.sqs_queue_arn(self.properties["QueueName"])
+        return super().get_cfn_attribute(attribute_name)
 
     def fetch_state(self, stack_name, resources):
         queue_name = self.props["QueueName"]
@@ -117,13 +104,15 @@ class SQSQueue(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _queue_url(params, resources, resource_id, **kwargs):
-            resource = cls(resources[resource_id])
-            props = resource.props
-            queue_url = resource.physical_resource_id or props.get("QueueUrl")
+        def _queue_url(properties: dict, logical_resource_id: str, resource: dict, stack_name: str):
+            provider = cls(resource)
+            queue_url = provider.physical_resource_id or properties.get("QueueUrl")
             if queue_url:
                 return queue_url
-            return arns.sqs_queue_url_for_arn(props["QueueArn"])
+            return arns.sqs_queue_url_for_arn(properties["QueueArn"])
+
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["QueueUrl"]
 
         return {
             "create": {
@@ -142,6 +131,7 @@ class SQSQueue(GenericBaseModel):
                     ),
                     "tags": params_list_to_dict("Tags"),
                 },
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_queue",

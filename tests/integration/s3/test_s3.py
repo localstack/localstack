@@ -627,6 +627,22 @@ class TestS3:
         snapshot.match("get_object", obj)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @pytest.mark.parametrize("key", ["file%2Fname", "test@key/"])
+    def test_put_get_object_special_character(self, s3_bucket, aws_client, snapshot, key):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"test")
+        snapshot.match("put-object-special-char", resp)
+        resp = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        # FIXME: Moto will by default clean up key name, but they will return the cleaned up key name in ListObject...
+        if "%" not in key or is_aws_cloud():
+            snapshot.match("list-object-special-char", resp)
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("get-object-special-char", resp)
+        resp = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("del-object-special-char", resp)
+
+    @pytest.mark.aws_validated
     @pytest.mark.parametrize("delimiter", ["/", "%2F"])
     def test_list_objects_with_prefix(self, s3_create_bucket, delimiter, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -1750,10 +1766,10 @@ class TestS3:
             )
         snapshot.match("exc-invalid-request-storage-class", e.value.response)
 
-    # TODO: maybe different checksums?
     @pytest.mark.aws_validated
+    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256"])
     @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
-    def test_s3_copy_object_with_checksum(self, s3_create_bucket, snapshot, aws_client):
+    def test_s3_copy_object_with_checksum(self, s3_create_bucket, snapshot, aws_client, algorithm):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "source-object"
         bucket_name = s3_create_bucket()
@@ -1779,7 +1795,7 @@ class TestS3:
             Bucket=bucket_name,
             CopySource=f"{bucket_name}/{object_key}",
             Key=object_key,
-            ChecksumAlgorithm="SHA256",
+            ChecksumAlgorithm=algorithm,
             Metadata={"key1": "value1"},
             MetadataDirective="REPLACE",
         )

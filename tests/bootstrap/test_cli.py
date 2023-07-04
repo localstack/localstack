@@ -8,8 +8,9 @@ from click.testing import CliRunner
 import localstack.utils.container_utils.docker_cmd_client
 from localstack import config, constants
 from localstack.cli.localstack import localstack as cli
-from localstack.config import get_edge_url, in_docker
-from localstack.constants import MODULE_MAIN_PATH
+from localstack.config import Directories, get_edge_url, in_docker
+from localstack.constants import MODULE_MAIN_PATH, TRUE_STRINGS
+from localstack.utils import bootstrap
 from localstack.utils.bootstrap import in_ci
 from localstack.utils.common import poll_condition
 from localstack.utils.files import mkdir
@@ -68,6 +69,15 @@ class TestCliContainerLifecycle:
 
         with pytest.raises(requests.ConnectionError):
             requests.get(get_edge_url() + "/_localstack/health")
+
+    def test_start_already_running(self, runner, container_client):
+        runner.invoke(cli, ["start", "-d"])
+        runner.invoke(cli, ["wait", "-t", "180"])
+        result = runner.invoke(cli, ["start"])
+        assert container_exists(container_client, config.MAIN_CONTAINER_NAME)
+        assert result.exit_code == 1
+        assert "Error" in result.output
+        assert "is already running" in result.output
 
     def test_wait_timeout_raises_exception(self, runner, container_client):
         # assume a wait without start fails
@@ -169,3 +179,45 @@ class TestCliContainerLifecycle:
 
         # assert that container is running
         runner.invoke(cli, ["wait", "-t", "60"])
+
+
+class TestHooks:
+    def test_prepare_host_hook_called_with_correct_dirs(self, runner, monkeypatch):
+        """
+        Assert that the prepare_host(..) hook is called with the appropriate dirs layout (e.g., cache
+        dir writeable). Required, for example, for API key activation and local key caching.
+        """
+
+        # simulate that we're running in Docker
+        monkeypatch.setattr(config, "is_in_docker", True)
+
+        result_configs = []
+
+        def _prepare_host(*args, **kwargs):
+            # store the configs that will be passed to prepare_host hooks (Docker status, infra process, dirs layout)
+            result_configs.append(
+                (config.is_in_docker, os.getenv(constants.LOCALSTACK_INFRA_PROCESS), config.dirs)
+            )
+
+        # patch the prepare_host function which calls the hooks
+        monkeypatch.setattr(bootstrap, "prepare_host", _prepare_host)
+
+        def noop(*args, **kwargs):
+            pass
+
+        # patch start_infra_in_docker to be a no-op (we don't actually want to start the container for this test)
+        assert bootstrap.start_infra_in_docker
+        monkeypatch.setattr(bootstrap, "start_infra_in_docker", noop)
+
+        # run the 'start' command, which should call the prepare_host hooks
+        runner.invoke(cli, ["start"])
+
+        # assert that result configs are as expected
+        assert len(result_configs) == 1
+        dirs: Directories
+        in_docker, is_infra_process, dirs = result_configs[0]
+        assert in_docker is False
+        assert is_infra_process not in TRUE_STRINGS
+        # cache dir should exist and be writeable
+        assert os.path.exists(dirs.cache)
+        assert os.access(dirs.cache, os.W_OK)

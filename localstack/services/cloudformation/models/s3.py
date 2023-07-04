@@ -1,4 +1,3 @@
-import json
 import re
 
 from botocore.exceptions import ClientError
@@ -22,16 +21,17 @@ class S3BucketPolicy(GenericBaseModel):
     def cloudformation_type():
         return "AWS::S3::BucketPolicy"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        policy = self.props.get("Policy")
-        return policy and md5(canonical_json(json.loads(policy)))
-
     def fetch_state(self, stack_name, resources):
         bucket_name = self.props.get("Bucket") or self.logical_resource_id
         return aws_stack.connect_to_service("s3").get_bucket_policy(Bucket=bucket_name)
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = md5(
+                canonical_json(resource["Properties"]["PolicyDocument"])
+            )
+
         return {
             "create": {
                 "function": "put_bucket_policy",
@@ -39,6 +39,7 @@ class S3BucketPolicy(GenericBaseModel):
                     dump_json_params(None, "PolicyDocument"),
                     {"PolicyDocument": "Policy", "Bucket": "Bucket"},
                 ),
+                "result_handler": _handle_result,
             },
             "delete": {"function": "delete_bucket_policy", "parameters": {"Bucket": "Bucket"}},
         }
@@ -119,8 +120,10 @@ class S3Bucket(GenericBaseModel):
 
             return {"CORSRules": cors_rules}
 
-        def s3_bucket_notification_config(params, **kwargs):
-            notif_config = params.get("NotificationConfiguration")
+        def s3_bucket_notification_config(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict | None:
+            notif_config = properties.get("NotificationConfiguration")
             if not notif_config:
                 return None
 
@@ -153,7 +156,7 @@ class S3Bucket(GenericBaseModel):
 
             # construct final result
             result = {
-                "Bucket": params.get("BucketName"),
+                "Bucket": properties.get("BucketName"),
                 "NotificationConfiguration": {
                     "LambdaFunctionConfigurations": lambda_configs,
                     "QueueConfigurations": queue_configs,
@@ -162,9 +165,11 @@ class S3Bucket(GenericBaseModel):
             }
             return result
 
-        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = resource["Properties"]["BucketName"]
+
+        def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
             s3 = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             try:
@@ -179,18 +184,16 @@ class S3Bucket(GenericBaseModel):
                 if "NoSuchBucket" not in str(e):
                     raise
 
-        def _add_bucket_tags(resource_id, resources, resource_type, func, stack_name):
+        def _add_bucket_tags(logical_resource_id: str, resource: dict, stack_name: str):
             s3 = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             tags = props.get("Tags", [])
             if len(tags) > 0:
                 s3.put_bucket_tagging(Bucket=bucket_name, Tagging={"TagSet": tags})
 
-        def _put_bucket_versioning(resource_id, resources, resource_type, func, stack_name):
+        def _put_bucket_versioning(logical_resource_id: str, resource: dict, stack_name: str):
             s3_client = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             versioning_config = props.get("VersioningConfiguration")
@@ -202,9 +205,10 @@ class S3Bucket(GenericBaseModel):
                     },
                 )
 
-        def _put_bucket_cors_configuration(resource_id, resources, resource_type, func, stack_name):
+        def _put_bucket_cors_configuration(
+            logical_resource_id: str, resource: dict, stack_name: str
+        ):
             s3_client = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             cors_configuration = transform_cfn_cors(props.get("CorsConfiguration"))
@@ -215,10 +219,9 @@ class S3Bucket(GenericBaseModel):
                 )
 
         def _put_bucket_website_configuration(
-            resource_id, resources, resource_type, func, stack_name
+            logical_resource_id: str, resource: dict, stack_name: str
         ):
             s3_client = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             website_config = transform_website_configuration(props.get("WebsiteConfiguration"))
@@ -228,9 +231,8 @@ class S3Bucket(GenericBaseModel):
                     WebsiteConfiguration=website_config,
                 )
 
-        def _create_bucket(resource_id, resources, resource_type, func, stack_name):
+        def _create_bucket(logical_resource_id: str, resource: dict, stack_name: str):
             s3_client = aws_stack.connect_to_service("s3")
-            resource = resources[resource_id]
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             try:
@@ -250,7 +252,10 @@ class S3Bucket(GenericBaseModel):
 
         result = {
             "create": [
-                {"function": _create_bucket},
+                {
+                    "function": _create_bucket,
+                    "result_handler": _handle_result,
+                },
                 {
                     "function": "put_bucket_notification_configuration",
                     "parameters": s3_bucket_notification_config,
@@ -308,12 +313,6 @@ class S3Bucket(GenericBaseModel):
             return f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}:{get_edge_port_http()}"
 
         return super(S3Bucket, self).get_cfn_attribute(attribute_name)
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        bucket_name = self.props.get("BucketName")
-        if attribute == "Arn":
-            return arns.s3_bucket_arn(bucket_name)
-        return bucket_name
 
     def _get_bucket_name(self):
         return self.props.get("BucketName") or self.logical_resource_id

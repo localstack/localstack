@@ -68,6 +68,17 @@ class CmdDockerClient(ContainerClient):
         """Return the string to be used for running Docker commands."""
         return config.DOCKER_CMD.split()
 
+    def get_system_info(self) -> dict:
+        cmd = [
+            *self._docker_cmd(),
+            "info",
+            "--format",
+            "{{json .}}",
+        ]
+        cmd_result = run(cmd)
+
+        return json.loads(cmd_result)
+
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
         cmd = self._docker_cmd()
         cmd += [

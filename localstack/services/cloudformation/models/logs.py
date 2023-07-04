@@ -14,11 +14,6 @@ class LogsLogGroup(GenericBaseModel):
             return props.get("arn")
         return super(LogsLogGroup, self).get_cfn_attribute(attribute_name)
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        if attribute == "Arn":
-            return self.get_cfn_attribute("Arn")
-        return self.props.get("LogGroupName")
-
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get("LogGroupName")
         logs = aws_stack.connect_to_service("logs")
@@ -35,10 +30,14 @@ class LogsLogGroup(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = resource["Properties"]["LogGroupName"]
+
         return {
             "create": {
                 "function": "create_log_group",
                 "parameters": {"logGroupName": "LogGroupName"},
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_log_group",
@@ -54,9 +53,6 @@ class LogsLogStream(GenericBaseModel):
 
     def get_cfn_attribute(self, attribute_name):
         return super(LogsLogStream, self).get_cfn_attribute(attribute_name)
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("LogStreamName")
 
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get("LogGroupName")
@@ -77,10 +73,14 @@ class LogsLogStream(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = resource["Properties"]["LogStreamName"]
+
         return {
             "create": {
                 "function": "create_log_stream",
                 "parameters": {"logGroupName": "LogGroupName", "logStreamName": "LogStreamName"},
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_log_stream",
@@ -94,9 +94,6 @@ class LogsSubscriptionFilter(GenericBaseModel):
     def cloudformation_type():
         return "AWS::Logs::SubscriptionFilter"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("LogGroupName")
-
     def fetch_state(self, stack_name, resources):
         props = self.props
         group_name = props.get("LogGroupName")
@@ -108,6 +105,9 @@ class LogsSubscriptionFilter(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = resource["Properties"]["LogGroupName"]
+
         return {
             "create": {
                 "function": "put_subscription_filter",
@@ -117,6 +117,7 @@ class LogsSubscriptionFilter(GenericBaseModel):
                     "filterPattern": "FilterPattern",
                     "destinationArn": "DestinationArn",
                 },
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_subscription_filter",

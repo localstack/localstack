@@ -25,14 +25,15 @@ class SFNActivity(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _store_arn(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["activityArn"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["Properties"]["Arn"] = result["activityArn"]
+            resource["PhysicalResourceId"] = result["activityArn"]
 
         return {
             "create": {
                 "function": "create_activity",
                 "parameters": {"name": "Name", "tags": "Tags"},
-                "result_handler": _store_arn,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_activity",
@@ -46,15 +47,12 @@ class SFNStateMachine(GenericBaseModel):
     def cloudformation_type():
         return "AWS::StepFunctions::StateMachine"
 
-    def get_cfn_attribute(self, attribute_name):
+    def get_cfn_attribute(self, attribute_name: str):
         if attribute_name == "Arn":
-            return self.props.get("stateMachineArn")
+            return self.props.get("Arn")
         if attribute_name == "Name":
             return self.props.get("StateMachineName")
         return super(SFNStateMachine, self).get_cfn_attribute(attribute_name)
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("stateMachineArn")
 
     def fetch_state(self, stack_name, resources):
         sm_name = self.props.get("StateMachineName") or self.logical_resource_id
@@ -89,11 +87,17 @@ class SFNStateMachine(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create_params(params, **kwargs):
-            def _get_definition(params):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["Properties"]["Arn"] = result["stateMachineArn"]
+            resource["PhysicalResourceId"] = result["stateMachineArn"]
+
+        def _create_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
+            def _get_definition(properties):
                 # TODO: support "Definition" parameter
-                definition_str = params.get("DefinitionString")
-                s3_location = params.get("DefinitionS3Location")
+                definition_str = properties.get("DefinitionString")
+                s3_location = properties.get("DefinitionS3Location")
                 if not definition_str and s3_location:
                     # TODO: currently not covered by tests - add a test to mimick the behavior of "sam deploy ..."
                     s3_client = aws_stack.connect_to_service("s3")
@@ -102,22 +106,23 @@ class SFNStateMachine(GenericBaseModel):
                         Bucket=s3_location["Bucket"], Key=s3_location["Key"]
                     )
                     definition_str = to_str(result["Body"].read())
-                substitutions = params.get("DefinitionSubstitutions")
+                substitutions = properties.get("DefinitionSubstitutions")
                 if substitutions is not None:
                     definition_str = _apply_substitutions(definition_str, substitutions)
                 return definition_str
 
             return {
-                "name": params.get("StateMachineName"),
-                "definition": _get_definition(params),
-                "roleArn": params.get("RoleArn"),
-                "type": params.get("StateMachineType", None),
+                "name": properties.get("StateMachineName"),
+                "definition": _get_definition(properties),
+                "roleArn": properties.get("RoleArn"),
+                "type": properties.get("StateMachineType", None),
             }
 
         return {
             "create": {
                 "function": "create_state_machine",
                 "parameters": _create_params,
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_state_machine",

@@ -47,21 +47,35 @@ LocalStack supports a growing number of AWS services, like AWS Lambda, S3, Dynam
 
 LocalStack also provides additional features to make your life as a cloud developer easier! Check out LocalStack's [Cloud Developer Tools](https://docs.localstack.cloud/user-guide/tools/) for more information.
 
-## Requirements
+## Installation
+The quickest way get started with LocalStack is by using the LocalStack CLI.
+It allows you to start and manage the LocalStack Docker container from your command line.
+Please make sure that you have a working [`docker` environment](https://docs.docker.com/get-docker/) on your machine before moving on.
+
+### Brew (MacOS or Linux with Homebrew)
+Install the LocalStack CLI by using our [official LocalStack Brew Tap](https://github.com/localstack/homebrew-tap):
+```
+$ brew install localstack/tap/localstack-cli
+```
+
+### Binary download (MacOS, Linux, Windows)
+If you do not have Brew on your machine, you can directly download the pre-built LocalStack CLI binary for your system:
+- Download the latest release for your platform on [localstack/localstack-cli](https://github.com/localstack/localstack-cli/releases/latest).
+- Extract the archive to a folder in your `PATH` variable:
+  - MacOS / Linux: ```sudo tar xvzf ~/Downloads/localstack-cli-*-darwin-*-onefile.tar.gz -C /usr/local/bin```
+
+### Python package (MacOS, Linux, Windows)
+LocalStack is built with Python.
+You can directly install the LocalStack CLI in your Python environment using `pip`.
+
+#### Prerequisites
 
 * `python` (Python 3.7 up to 3.11 supported)
-* `pip` (Python package manager)
-* `Docker`
 
-## Installing
-
-The easiest way to install LocalStack is via `pip`:
-
+#### Installation
 ```
-pip install localstack
+python3 -m pip install localstack
 ```
-
-This installs the `localstack-cli` which is used to run the Docker image that hosts the LocalStack runtime.
 
 > **Important**: Do not use `sudo` or run as `root` user. LocalStack must be installed and started entirely under a local non-root user. If you have problems with permissions in macOS High Sierra, install with `pip install --user localstack`
 

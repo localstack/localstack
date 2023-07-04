@@ -1358,5 +1358,73 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_integration_sqs.py::test_message_body_and_attributes_passed_correctly": {
+    "recorded-date": "17-03-2023, 17:04:06",
+    "recorded-content": {
+      "get_destination_queue_url": {
+        "QueueUrl": "<queue-url:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "first_attempt": {
+        "Messages": [
+          {
+            "Body": {
+              "error": null,
+              "event": {
+                "Records": [
+                  {
+                    "messageId": "<uuid:1>",
+                    "receiptHandle": "<receipt-handle:2>",
+                    "body": "{\"destination\": \"<queue-url:1>\", \"fail_attempts\": 0}",
+                    "attributes": {
+                      "ApproximateReceiveCount": "1",
+                      "SentTimestamp": "timestamp",
+                      "SenderId": "sender-id",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {
+                      "WeeksOn": {
+                        "stringValue": "6",
+                        "stringListValues": [],
+                        "binaryListValues": [],
+                        "dataType": "Number"
+                      },
+                      "Author": {
+                        "stringValue": "John Grisham",
+                        "stringListValues": [],
+                        "binaryListValues": [],
+                        "dataType": "String"
+                      },
+                      "Title": {
+                        "stringValue": "The Whistler",
+                        "stringListValues": [],
+                        "binaryListValues": [],
+                        "dataType": "String"
+                      }
+                    },
+                    "md5OfMessageAttributes": "d25a6aea97eb8f585bfa92d314504a92",
+                    "md5OfBody": "<md5-of-body:1>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  }
+                ]
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

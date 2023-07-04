@@ -605,6 +605,27 @@ class ResourceType(str):
     )
     AWS_SageMaker_AppImageConfig = "AWS::SageMaker::AppImageConfig"
     AWS_SageMaker_Image = "AWS::SageMaker::Image"
+    AWS_ECS_TaskSet = "AWS::ECS::TaskSet"
+    AWS_Cassandra_Keyspace = "AWS::Cassandra::Keyspace"
+    AWS_Signer_SigningProfile = "AWS::Signer::SigningProfile"
+    AWS_Amplify_App = "AWS::Amplify::App"
+    AWS_AppMesh_VirtualNode = "AWS::AppMesh::VirtualNode"
+    AWS_AppMesh_VirtualService = "AWS::AppMesh::VirtualService"
+    AWS_AppRunner_VpcConnector = "AWS::AppRunner::VpcConnector"
+    AWS_AppStream_Application = "AWS::AppStream::Application"
+    AWS_CodeArtifact_Repository = "AWS::CodeArtifact::Repository"
+    AWS_EC2_PrefixList = "AWS::EC2::PrefixList"
+    AWS_EC2_SpotFleet = "AWS::EC2::SpotFleet"
+    AWS_Evidently_Project = "AWS::Evidently::Project"
+    AWS_Forecast_Dataset = "AWS::Forecast::Dataset"
+    AWS_IAM_SAMLProvider = "AWS::IAM::SAMLProvider"
+    AWS_IAM_ServerCertificate = "AWS::IAM::ServerCertificate"
+    AWS_Pinpoint_Campaign = "AWS::Pinpoint::Campaign"
+    AWS_Pinpoint_InAppTemplate = "AWS::Pinpoint::InAppTemplate"
+    AWS_SageMaker_Domain = "AWS::SageMaker::Domain"
+    AWS_Transfer_Agreement = "AWS::Transfer::Agreement"
+    AWS_Transfer_Connector = "AWS::Transfer::Connector"
+    AWS_KinesisFirehose_DeliveryStream = "AWS::KinesisFirehose::DeliveryStream"
 
 
 class ResourceValueType(str):

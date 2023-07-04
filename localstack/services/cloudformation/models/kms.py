@@ -3,7 +3,6 @@ import json
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import arns, aws_stack
-from localstack.utils.common import short_uid
 
 
 class KMSKey(GenericBaseModel):
@@ -41,26 +40,12 @@ class KMSKey(GenericBaseModel):
             return
         return client.describe_key(KeyId=physical_res_id)
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        # TODO: ?
-        return self.physical_resource_id and arns.kms_key_arn(self.physical_resource_id)
-
-    # TODO: try to remove this workaround (ensures idempotency)
-    @staticmethod
-    def add_defaults(resource, stack_name: str):
-        props = resource["Properties"] = resource.get("Properties", {})
-        tags = props["Tags"] = props.get("Tags", [])
-        existing = [t for t in tags if t["Key"] == "localstack-key-id"]
-        if not existing:
-            # append tags, to allow us to determine in fetch_state whether this key is already deployed
-            tags.append({"Key": "localstack-key-id", "Value": short_uid()})
-
     @classmethod
     def get_deploy_templates(cls):
-        def _create(resource_id, resources, resource_type, func, stack_name):
+        def _create(logical_resource_id: str, resource: dict, stack_name: str):
             kms_client = aws_stack.connect_to_service("kms")
-            resource = cls(resources[resource_id])
-            props = resource.props
+            resource_provider = cls(resource)
+            props = resource_provider.props
             params = {}
             if props.get("KeyPolicy"):
                 params["Policy"] = json.dumps(props["KeyPolicy"])
@@ -111,9 +96,6 @@ class KMSAlias(GenericBaseModel):
     def cloudformation_type():
         return "AWS::KMS::Alias"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("AliasName")
-
     def fetch_state(self, stack_name, resources):
         aliases = connect_to().kms.list_aliases()["Aliases"]
         for alias in aliases:
@@ -123,10 +105,14 @@ class KMSAlias(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = resource["Properties"]["AliasName"]
+
         return {
             "create": {
                 "function": "create_alias",
                 "parameters": {"AliasName": "AliasName", "TargetKeyId": "TargetKeyId"},
+                "result_handler": _handle_result,
             },
             "delete": {
                 "function": "delete_alias",

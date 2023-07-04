@@ -2,6 +2,7 @@ from typing import Any
 
 from localstack.services.stepfunctions.asl.component.common.flow.end import End
 from localstack.services.stepfunctions.asl.component.common.flow.next import Next
+from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import Timeout
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     Resource,
 )
@@ -30,6 +31,10 @@ class StateProps(TypedProps):
         # Wait functions.
         if issubclass(type(instance), WaitFunction):
             super()._add(WaitFunction, instance)
+
+        # TODO: add logic support between Timeout and HeartBeat here.
+        if issubclass(type(instance), Timeout):
+            super()._add(Timeout, instance)
 
         # Base and delegate to preprocessor.
         else:
