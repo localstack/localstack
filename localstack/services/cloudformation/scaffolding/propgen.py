@@ -168,7 +168,11 @@ class PropertyTypeScaffolding:
                     item_type = self.resolve_type_of_property(property_def["items"])
                     resolved_type = f"list[{item_type}]"
                 case _:
-                    raise Exception(f"TODO: {property_type}")
+                    # TODO: allOf, anyOf, patternProperties
+                    if one_of := property_def.get("oneOf"):
+                        resolved_type = "|".join([self.resolve_type_of_property(x) for x in one_of])
+                    else:
+                        raise Exception(f"TODO: {property_type}")
         return resolved_type
 
     def property_to_item(self, property_name: str, property_def: dict, required: bool) -> Item:
