@@ -31,7 +31,7 @@ except ImportError:
 
 # increase when any major changes are done to the scaffolding,
 # so that we can reason better about previously scaffolded resources in the future
-SCAFFOLDING_VERSION = 1
+SCAFFOLDING_VERSION = 2
 
 # Some services require their names to be re-written as we know them by different names
 SERVICE_NAME_MAP = {
@@ -85,6 +85,7 @@ class ResourceName:
     namespace: str
     service: str
     resource: str
+    python_compatible_service_name: str
 
     def provider_name(self) -> str:
         return f"{self.service}{self.resource}"
@@ -104,7 +105,8 @@ class ResourceName:
         return ResourceName(
             full_name=name,
             namespace=parts[0],
-            service=renamed_service,
+            service=raw_service_name,
+            python_compatible_service_name=renamed_service,
             resource=parts[2].strip(),
         )
 
@@ -170,12 +172,12 @@ def template_path(
             raise ValueError(f"File type {file_type} is not a template")
 
     output_path = TESTS_ROOT_DIR.joinpath(
-        f"{resource_name.service.lower()}/templates/{resource_name.resource.lower()}_{stub}"
+        f"{resource_name.python_compatible_service_name.lower()}/templates/{resource_name.resource.lower()}_{stub}"
     ).resolve()
 
     if root:
         test_path = LOCALSTACK_ROOT_DIR.joinpath(
-            f"tests/integration/cloudformation/resource_providers/{resource_name.service.lower()}"
+            f"tests/integration/cloudformation/resource_providers/{resource_name.python_compatible_service_name.lower()}"
         ).resolve()
 
         common_root = os.path.relpath(output_path, test_path)
@@ -471,31 +473,31 @@ class FileWriter:
             FileType.provider: LOCALSTACK_ROOT_DIR.joinpath(
                 "localstack",
                 "services",
-                self.resource_name.service.lower(),
+                self.resource_name.python_compatible_service_name.lower(),
                 "resource_providers",
                 f"{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.py",
             ),
             FileType.schema: LOCALSTACK_ROOT_DIR.joinpath(
                 "localstack",
                 "services",
-                self.resource_name.service.lower(),
+                self.resource_name.python_compatible_service_name.lower(),
                 "resource_providers",
                 f"aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.schema.json",
             ),
             FileType.integration_test: TESTS_ROOT_DIR.joinpath(
-                self.resource_name.service.lower(),
+                self.resource_name.python_compatible_service_name.lower(),
                 f"test_aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_basic.py",
             ),
             FileType.getatt_test: TESTS_ROOT_DIR.joinpath(
-                self.resource_name.service.lower(),
+                self.resource_name.python_compatible_service_name.lower(),
                 f"test_aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_exploration.py",
             ),
             # FileType.cloudcontrol_test: TESTS_ROOT_DIR.joinpath(
-            #     self.resource_name.service.lower(),
+            #     self.resource_name.python_compatible_service_name.lower(),
             #     f"test_aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_cloudcontrol.py",
             # ),
             FileType.parity_test: TESTS_ROOT_DIR.joinpath(
-                self.resource_name.service.lower(),
+                self.resource_name.python_compatible_service_name.lower(),
                 f"test_aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_parity.py",
             ),
         }
@@ -713,6 +715,7 @@ def generate(resource_type: str, write: bool):
         "Resource types: https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/resource-types.html"
     )
     console.print(
+        # awslambda should become lambda (re-use the same list we use for generating the models)
         f"Resource reference: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-{resource_name.service.lower()}-{resource_name.resource.lower()}.html\n"
     )
     console.print("Wondering where to get started?")
