@@ -250,7 +250,7 @@ class TemplateRenderer:
         # e.g. .../resource_providers/aws_iam_role/test_X.py vs. .../resource_providers/iam/test_X.py
         # add extra parameters
         tests_output_path = LOCALSTACK_ROOT_DIR.joinpath(
-            f"tests/integration/cloudformation/resource_providers/{resource_name.service.lower()}"
+            f"tests/integration/cloudformation/resource_providers/{resource_name.python_compatible_service_name.lower()}/{resource_name.full_name.lower()}"
         )
         match file_type:
             case FileType.getatt_test:
