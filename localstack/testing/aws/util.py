@@ -181,6 +181,11 @@ def RequestContextClient(client: T) -> T:
 
 
 def base_aws_session() -> boto3.Session:
+    # When running against AWS, initial credentials must be read from environment or config file
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return boto3.Session()
+
+    # Otherwise, when running against LS, use primary test credentials.
     # Initial creds are set here in the session so that both `aws_client` and `aws_client_factory` can work
     # without explicit creds.
     return boto3.Session(
@@ -215,7 +220,7 @@ def primary_testing_aws_client(client_factory: ClientFactory) -> ServiceLevelCli
 
 
 def secondary_testing_aws_client(client_factory: ClientFactory) -> ServiceLevelClientFactory:
-    # Setting secondary creds here overrides the ones from the session
+    # Setting secondary creds here, overriding the ones from the session
     return client_factory(
         aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
         aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
