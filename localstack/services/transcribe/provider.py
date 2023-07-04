@@ -354,4 +354,3 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             job["TranscriptionJobStatus"] = TranscriptionJobStatus.FAILED
 
             LOG.exception("Transcription job %s failed: %s", job_name, job["FailureReason"])
-
