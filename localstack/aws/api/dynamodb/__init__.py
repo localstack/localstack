@@ -348,10 +348,33 @@ class BackupNotFoundException(ServiceException):
     status_code: int = 400
 
 
+class AttributeValue(TypedDict, total=False):
+    S: Optional["StringAttributeValue"]
+    N: Optional["NumberAttributeValue"]
+    B: Optional["BinaryAttributeValue"]
+    SS: Optional["StringSetAttributeValue"]
+    NS: Optional["NumberSetAttributeValue"]
+    BS: Optional["BinarySetAttributeValue"]
+    M: Optional["MapAttributeValue"]
+    L: Optional["ListAttributeValue"]
+    NULL: Optional["NullAttributeValue"]
+    BOOL: Optional["BooleanAttributeValue"]
+
+
+ListAttributeValue = List[AttributeValue]
+MapAttributeValue = Dict[AttributeName, AttributeValue]
+BinaryAttributeValue = bytes
+BinarySetAttributeValue = List[BinaryAttributeValue]
+NumberSetAttributeValue = List[NumberAttributeValue]
+StringSetAttributeValue = List[StringAttributeValue]
+AttributeMap = Dict[AttributeName, AttributeValue]
+
+
 class ConditionalCheckFailedException(ServiceException):
     code: str = "ConditionalCheckFailedException"
     sender_fault: bool = False
     status_code: int = 400
+    Item: Optional[AttributeMap]
 
 
 class ContinuousBackupsUnavailableException(ServiceException):
@@ -502,28 +525,6 @@ class TableNotFoundException(ServiceException):
     code: str = "TableNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-
-
-class AttributeValue(TypedDict, total=False):
-    S: Optional["StringAttributeValue"]
-    N: Optional["NumberAttributeValue"]
-    B: Optional["BinaryAttributeValue"]
-    SS: Optional["StringSetAttributeValue"]
-    NS: Optional["NumberSetAttributeValue"]
-    BS: Optional["BinarySetAttributeValue"]
-    M: Optional["MapAttributeValue"]
-    L: Optional["ListAttributeValue"]
-    NULL: Optional["NullAttributeValue"]
-    BOOL: Optional["BooleanAttributeValue"]
-
-
-ListAttributeValue = List[AttributeValue]
-MapAttributeValue = Dict[AttributeName, AttributeValue]
-BinaryAttributeValue = bytes
-BinarySetAttributeValue = List[BinaryAttributeValue]
-NumberSetAttributeValue = List[NumberAttributeValue]
-StringSetAttributeValue = List[StringAttributeValue]
-AttributeMap = Dict[AttributeName, AttributeValue]
 
 
 class CancellationReason(TypedDict, total=False):
@@ -754,6 +755,7 @@ class BatchStatementRequest(TypedDict, total=False):
     Statement: PartiQLStatement
     Parameters: Optional[PreparedStatementParameters]
     ConsistentRead: Optional[ConsistentRead]
+    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
 
 
 PartiQLBatchRequest = List[BatchStatementRequest]
@@ -789,6 +791,7 @@ ConsumedCapacityMultiple = List[ConsumedCapacity]
 class BatchStatementError(TypedDict, total=False):
     Code: Optional[BatchStatementErrorCodeEnum]
     Message: Optional[String]
+    Item: Optional[AttributeMap]
 
 
 class BatchStatementResponse(TypedDict, total=False):
@@ -1194,6 +1197,7 @@ class DeleteItemInput(ServiceRequest):
     ConditionExpression: Optional[ConditionExpression]
     ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
     ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
+    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
 
 
 class DeleteItemOutput(TypedDict, total=False):
@@ -1506,6 +1510,7 @@ class ExecuteStatementInput(ServiceRequest):
     NextToken: Optional[PartiQLNextToken]
     ReturnConsumedCapacity: Optional[ReturnConsumedCapacity]
     Limit: Optional[PositiveIntegerObject]
+    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
 
 
 class ExecuteStatementOutput(TypedDict, total=False):
@@ -1518,6 +1523,7 @@ class ExecuteStatementOutput(TypedDict, total=False):
 class ParameterizedStatement(TypedDict, total=False):
     Statement: PartiQLStatement
     Parameters: Optional[PreparedStatementParameters]
+    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
 
 
 ParameterizedStatements = List[ParameterizedStatement]
@@ -1779,6 +1785,7 @@ class PutItemInput(ServiceRequest):
     ConditionExpression: Optional[ConditionExpression]
     ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
     ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
+    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
 
 
 class PutItemOutput(TypedDict, total=False):
@@ -2067,6 +2074,7 @@ class UpdateItemInput(ServiceRequest):
     ConditionExpression: Optional[ConditionExpression]
     ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
     ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
+    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
 
 
 class UpdateItemOutput(TypedDict, total=False):
@@ -2194,6 +2202,7 @@ class DynamodbApi:
         condition_expression: ConditionExpression = None,
         expression_attribute_names: ExpressionAttributeNameMap = None,
         expression_attribute_values: ExpressionAttributeValueMap = None,
+        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
     ) -> DeleteItemOutput:
         raise NotImplementedError
 
@@ -2301,6 +2310,7 @@ class DynamodbApi:
         next_token: PartiQLNextToken = None,
         return_consumed_capacity: ReturnConsumedCapacity = None,
         limit: PositiveIntegerObject = None,
+        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
     ) -> ExecuteStatementOutput:
         raise NotImplementedError
 
@@ -2442,6 +2452,7 @@ class DynamodbApi:
         condition_expression: ConditionExpression = None,
         expression_attribute_names: ExpressionAttributeNameMap = None,
         expression_attribute_values: ExpressionAttributeValueMap = None,
+        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
     ) -> PutItemOutput:
         raise NotImplementedError
 
@@ -2612,6 +2623,7 @@ class DynamodbApi:
         condition_expression: ConditionExpression = None,
         expression_attribute_names: ExpressionAttributeNameMap = None,
         expression_attribute_values: ExpressionAttributeValueMap = None,
+        return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
     ) -> UpdateItemOutput:
         raise NotImplementedError
 

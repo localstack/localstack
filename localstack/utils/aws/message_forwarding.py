@@ -93,7 +93,9 @@ def send_event_to_target(
             send_event_to_api_destination(target_arn, event, target.get("HttpParameters"))
 
         else:
-            events_client = connect_to_service("events", region_name=region)
+            events_client = clients.events.request_metadata(
+                service_principal=source_service, source_arn=source_arn
+            )
             eventbus_name = target_arn.split(":")[-1].split("/")[-1]
             events_client.put_events(
                 Entries=[

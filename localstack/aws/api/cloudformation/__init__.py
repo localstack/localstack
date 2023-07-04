@@ -306,6 +306,12 @@ class OnFailure(str):
     DELETE = "DELETE"
 
 
+class OnStackFailure(str):
+    DO_NOTHING = "DO_NOTHING"
+    ROLLBACK = "ROLLBACK"
+    DELETE = "DELETE"
+
+
 class OperationResultFilterName(str):
     OPERATION_RESULT_STATUS = "OPERATION_RESULT_STATUS"
 
@@ -945,6 +951,7 @@ class CreateChangeSetInput(ServiceRequest):
     ChangeSetType: Optional[ChangeSetType]
     ResourcesToImport: Optional[ResourcesToImport]
     IncludeNestedStacks: Optional[IncludeNestedStacks]
+    OnStackFailure: Optional[OnStackFailure]
 
 
 class CreateChangeSetOutput(TypedDict, total=False):
@@ -1166,6 +1173,7 @@ class DescribeChangeSetOutput(TypedDict, total=False):
     IncludeNestedStacks: Optional[IncludeNestedStacks]
     ParentChangeSetId: Optional[ChangeSetId]
     RootChangeSetId: Optional[ChangeSetId]
+    OnStackFailure: Optional[OnStackFailure]
 
 
 class DescribeOrganizationsAccessInput(ServiceRequest):
@@ -2293,6 +2301,7 @@ class CloudformationApi:
         change_set_type: ChangeSetType = None,
         resources_to_import: ResourcesToImport = None,
         include_nested_stacks: IncludeNestedStacks = None,
+        on_stack_failure: OnStackFailure = None,
     ) -> CreateChangeSetOutput:
         raise NotImplementedError
 

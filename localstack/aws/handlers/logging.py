@@ -82,7 +82,9 @@ class ResponseLogger:
     def _log(self, context: RequestContext, response: Response):
         aws_logger = self.aws_logger
         http_logger = self.http_logger
-        is_internal_call = is_internal_call_context(context.request.headers)
+        is_internal_call = (
+            is_internal_call_context(context.request.headers) or context.is_internal_call
+        )
         if is_internal_call:
             aws_logger = self.internal_aws_logger
             http_logger = self.internal_http_logger
@@ -143,7 +145,7 @@ class ResponseLogger:
                     "request_headers": dict(context.request.headers),
                     # response
                     "output_type": "Response",
-                    "output": response.data,
+                    "output": "StreamingBody(unknown)" if response.is_streamed else response.data,
                     "response_headers": dict(response.headers),
                 },
             )

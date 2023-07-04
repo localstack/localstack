@@ -3,10 +3,9 @@ import json
 import logging
 import re
 from abc import ABC, abstractmethod
-from collections import defaultdict
 from functools import lru_cache
 from http import HTTPStatus
-from typing import Any, Dict, List, Union
+from typing import Any, Dict
 from urllib.parse import urljoin
 
 import requests
@@ -33,6 +32,7 @@ from localstack.services.apigateway.helpers import (
     extract_query_string_params,
     get_event_request_context,
     make_error_response,
+    multi_value_dict_for_list,
 )
 from localstack.services.apigateway.templates import (
     MappingTemplates,
@@ -224,19 +224,6 @@ class LambdaProxyIntegration(BackendIntegration):
         return response
 
     @staticmethod
-    def multi_value_dict_for_list(elements: Union[List, Dict]) -> Dict:
-        temp_mv_dict = defaultdict(list)
-        for key in elements:
-            if isinstance(key, (list, tuple)):
-                key, value = key
-            else:
-                value = elements[key]
-            key = to_str(key)
-            temp_mv_dict[key].append(value)
-
-        return dict((k, tuple(v)) for k, v in temp_mv_dict.items())
-
-    @staticmethod
     def fix_proxy_path_params(path_params):
         proxy_path_param_value = path_params.get("proxy+")
         if not proxy_path_param_value:
@@ -258,7 +245,7 @@ class LambdaProxyIntegration(BackendIntegration):
         return {
             "path": path,
             "headers": dict(headers),
-            "multiValueHeaders": cls.multi_value_dict_for_list(headers),
+            "multiValueHeaders": multi_value_dict_for_list(headers),
             "body": data,
             "isBase64Encoded": is_base64_encoded,
             "httpMethod": method,
@@ -648,8 +635,21 @@ class HTTPIntegration(BackendIntegration):
         if isinstance(payload, dict):
             payload = json.dumps(payload)
 
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/aws-api-gateway-stage-variables-reference.html
+        # HTTP integration URIs
+        #
+        # A stage variable can be used as part of an HTTP integration URL, as shown in the following examples:
+        #
+        # A full URI without protocol – http://${stageVariables.<variable_name>}
+        # A full domain – http://${stageVariables.<variable_name>}/resource/operation
+        # A subdomain – http://${stageVariables.<variable_name>}.example.com/resource/operation
+        # A path – http://example.com/${stageVariables.<variable_name>}/bar
+        # A query string – http://example.com/foo?q=${stageVariables.<variable_name>}
+        render_vars = {"stageVariables": invocation_context.stage_variables}
+        rendered_uri = VtlTemplate().render_vtl(uri, render_vars)
+
         uri = apply_request_parameters(
-            uri,
+            rendered_uri,
             integration=integration,
             path_params=path_params,
             query_params=query_string_params,

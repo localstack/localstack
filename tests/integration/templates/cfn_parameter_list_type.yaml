@@ -1,0 +1,29 @@
+Parameters:
+  SubnetParam:
+    # fun fact: this works but is not documented in the docs
+    # see: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html
+    Type: List<String>
+  SecurityGroupId:
+    Type: String
+  FunctionRole:
+    Type: String
+Resources:
+  Function76856677:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          def handler(event, context):
+              return {"hello": "world"}
+      Role: !Ref FunctionRole
+      Handler: index.handler
+      Runtime: python3.9
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref SecurityGroupId
+        SubnetIds:
+          Ref: SubnetParam
+Outputs:
+  LambdaName:
+    Value:
+      Ref: Function76856677

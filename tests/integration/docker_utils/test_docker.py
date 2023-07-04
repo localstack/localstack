@@ -118,6 +118,16 @@ def create_network(docker_client: ContainerClient):
 
 
 class TestDockerClient:
+    def test_get_system_info(self, docker_client: ContainerClient):
+        info = docker_client.get_system_info()
+        assert "ID" in info
+        assert "OperatingSystem" in info
+        assert "Architecture" in info
+
+    def test_get_system_id(self, docker_client: ContainerClient):
+        assert len(docker_client.get_system_id()) > 1
+        assert docker_client.get_system_id() == docker_client.get_system_id()
+
     def test_container_lifecycle_commands(self, docker_client: ContainerClient):
         container_name = _random_container_name()
         output = docker_client.create_container(

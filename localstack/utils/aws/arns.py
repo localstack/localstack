@@ -1,44 +1,49 @@
 import logging
 import re
+from functools import cache
 from typing import Optional, TypedDict
 
 from botocore.utils import ArnParser, InvalidArnException
 
 from localstack.aws.accounts import DEFAULT_AWS_ACCOUNT_ID, get_aws_account_id
+from localstack.constants import INTERNAL_AWS_ACCESS_KEY_ID, INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws.aws_stack import connect_to_service, get_region, get_valid_regions
 
 # set up logger
 LOG = logging.getLogger(__name__)
-
-# maps SQS queue ARNs to queue URLs
-SQS_ARN_TO_URL_CACHE = {}
 
 # TODO: extract ARN utils into separate file!
 
 _arn_parser = ArnParser()
 
 
-def sqs_queue_url_for_arn(queue_arn):
+@cache
+def sqs_queue_url_for_arn(queue_arn: str) -> str:
+    """
+    Return the SQS queue URL for the given queue ARN.
+    """
     if "://" in queue_arn:
         return queue_arn
-    if queue_arn in SQS_ARN_TO_URL_CACHE:
-        return SQS_ARN_TO_URL_CACHE[queue_arn]
 
     try:
         arn = parse_arn(queue_arn)
+        account_id = arn["account"]
         region_name = arn["region"]
         queue_name = arn["resource"]
-        account_id = arn["account"]
     except InvalidArnException:
+        account_id = DEFAULT_AWS_ACCOUNT_ID
         region_name = None
         queue_name = queue_arn
-        account_id = DEFAULT_AWS_ACCOUNT_ID
 
-    sqs_client = connect_to_service("sqs", region_name=region_name)
+    sqs_client = connect_to_service(
+        "sqs",
+        region_name=region_name,
+        aws_access_key_id=INTERNAL_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
+    )
     result = sqs_client.get_queue_url(QueueName=queue_name, QueueOwnerAWSAccountId=account_id)[
         "QueueUrl"
     ]
-    SQS_ARN_TO_URL_CACHE[queue_arn] = result
     return result
 
 

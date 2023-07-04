@@ -32,7 +32,7 @@ class TestSnfApi:
         create_iam_role_for_sfn,
         create_lambda_function,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
         aws_client,
     ):
         create_lambda_1 = create_lambda_function(
@@ -43,7 +43,7 @@ class TestSnfApi:
         lambda_arn_1 = create_lambda_1["CreateFunctionResponse"]["FunctionArn"]
 
         snf_role_arn = create_iam_role_for_sfn()
-        snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_TASK_SEQ_2)
         definition["States"]["State_1"]["Resource"] = lambda_arn_1
@@ -54,22 +54,22 @@ class TestSnfApi:
         creation_resp_1 = create_state_machine(
             name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
-        snapshot.match("creation_resp_1", creation_resp_1)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
+        sfn_snapshot.match("creation_resp_1", creation_resp_1)
 
         state_machine_arn = creation_resp_1["stateMachineArn"]
 
         deletion_resp_1 = aws_client.stepfunctions.delete_state_machine(
             stateMachineArn=state_machine_arn
         )
-        snapshot.match("deletion_resp_1", deletion_resp_1)
+        sfn_snapshot.match("deletion_resp_1", deletion_resp_1)
 
     @pytest.mark.skip("Add support for invalid language derivation.")
     def test_create_delete_invalid_sm(
-        self, create_iam_role_for_sfn, create_state_machine, snapshot
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot
     ):
         snf_role_arn = create_iam_role_for_sfn()
-        snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_INVALID_DER)
         definition_str = json.dumps(definition)
@@ -78,13 +78,13 @@ class TestSnfApi:
 
         with pytest.raises(Exception) as resource_not_found:
             create_state_machine(name=sm_name, definition=definition_str, roleArn=snf_role_arn)
-        snapshot.match("invalid_definition_1", resource_not_found.value.response)
+        sfn_snapshot.match("invalid_definition_1", resource_not_found.value.response)
 
     def test_delete_nonexistent_sm(
-        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
         snf_role_arn = create_iam_role_for_sfn()
-        snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
@@ -101,13 +101,13 @@ class TestSnfApi:
         deletion_resp_1 = aws_client.stepfunctions.delete_state_machine(
             stateMachineArn=sm_nonexistent_arn
         )
-        snapshot.match("deletion_resp_1", deletion_resp_1)
+        sfn_snapshot.match("deletion_resp_1", deletion_resp_1)
 
     def test_create_exact_duplicate_sm(
-        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
         snf_role_arn = create_iam_role_for_sfn()
-        snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
@@ -116,37 +116,37 @@ class TestSnfApi:
         creation_resp_1 = create_state_machine(
             name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
-        snapshot.match("creation_resp_1", creation_resp_1)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
+        sfn_snapshot.match("creation_resp_1", creation_resp_1)
         state_machine_arn_1 = creation_resp_1["stateMachineArn"]
 
         describe_resp_1 = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_arn_1
         )
-        snapshot.match("describe_resp_1", describe_resp_1)
+        sfn_snapshot.match("describe_resp_1", describe_resp_1)
 
         creation_resp_2 = create_state_machine(
             name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp_2, 1))
-        snapshot.match("creation_resp_2", creation_resp_2)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_2, 1))
+        sfn_snapshot.match("creation_resp_2", creation_resp_2)
         state_machine_arn_2 = creation_resp_2["stateMachineArn"]
 
         describe_resp_2 = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_arn_2
         )
-        snapshot.match("describe_resp_2", describe_resp_2)
+        sfn_snapshot.match("describe_resp_2", describe_resp_2)
 
         describe_resp_1_2 = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_arn_1
         )
-        snapshot.match("describe_resp_1_2", describe_resp_1_2)
+        sfn_snapshot.match("describe_resp_1_2", describe_resp_1_2)
 
     def test_create_duplicate_definition_format_sm(
-        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
         snf_role_arn = create_iam_role_for_sfn()
-        snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
@@ -155,25 +155,25 @@ class TestSnfApi:
         creation_resp_1 = create_state_machine(
             name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
-        snapshot.match("creation_resp_1", creation_resp_1)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
+        sfn_snapshot.match("creation_resp_1", creation_resp_1)
         state_machine_arn_1 = creation_resp_1["stateMachineArn"]
 
         describe_resp_1 = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_arn_1
         )
-        snapshot.match("describe_resp_1", describe_resp_1)
+        sfn_snapshot.match("describe_resp_1", describe_resp_1)
 
         definition_str_2 = json.dumps(definition, indent=4)
         with pytest.raises(Exception) as resource_not_found:
             create_state_machine(name=sm_name, definition=definition_str_2, roleArn=snf_role_arn)
-        snapshot.match("already_exists_1", resource_not_found.value.response)
+        sfn_snapshot.match("already_exists_1", resource_not_found.value.response)
 
     def test_create_duplicate_sm_name(
-        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
         snf_role_arn = create_iam_role_for_sfn()
-        snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition_1 = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str_1 = json.dumps(definition_1)
@@ -182,14 +182,14 @@ class TestSnfApi:
         creation_resp_1 = create_state_machine(
             name=sm_name, definition=definition_str_1, roleArn=snf_role_arn
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
-        snapshot.match("creation_resp_1", creation_resp_1)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
+        sfn_snapshot.match("creation_resp_1", creation_resp_1)
         state_machine_arn_1 = creation_resp_1["stateMachineArn"]
 
         describe_resp_1 = aws_client.stepfunctions.describe_state_machine(
             stateMachineArn=state_machine_arn_1
         )
-        snapshot.match("describe_resp_1", describe_resp_1)
+        sfn_snapshot.match("describe_resp_1", describe_resp_1)
 
         definition_2 = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_2["States"]["State_1"]["Result"].update({"Arg2": "Argument2"})
@@ -197,11 +197,13 @@ class TestSnfApi:
 
         with pytest.raises(Exception) as resource_not_found:
             create_state_machine(name=sm_name, definition=definition_str_2, roleArn=snf_role_arn)
-        snapshot.match("already_exists_1", resource_not_found.value.response)
+        sfn_snapshot.match("already_exists_1", resource_not_found.value.response)
 
-    def test_list_sms(self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client):
+    def test_list_sms(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
         snf_role_arn = create_iam_role_for_sfn()
-        snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
@@ -209,7 +211,7 @@ class TestSnfApi:
         await_no_state_machines_listed(stepfunctions_client=aws_client.stepfunctions)
 
         lst_resp = aws_client.stepfunctions.list_state_machines()
-        snapshot.match("lst_resp_init", lst_resp)
+        sfn_snapshot.match("lst_resp_init", lst_resp)
 
         sm_names = [
             f"statemachine_1_{short_uid()}",
@@ -225,8 +227,8 @@ class TestSnfApi:
                 roleArn=snf_role_arn,
                 type=StateMachineType.EXPRESS,
             )
-            snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp, i))
-            snapshot.match(f"creation_resp_{i}", creation_resp)
+            sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, i))
+            sfn_snapshot.match(f"creation_resp_{i}", creation_resp)
             state_machine_arn: str = creation_resp["stateMachineArn"]
             state_machine_arns.append(state_machine_arn)
 
@@ -234,29 +236,29 @@ class TestSnfApi:
                 stepfunctions_client=aws_client.stepfunctions, state_machine_arn=state_machine_arn
             )
             lst_resp = aws_client.stepfunctions.list_state_machines()
-            snapshot.match(f"lst_resp_{i}", lst_resp)
+            sfn_snapshot.match(f"lst_resp_{i}", lst_resp)
 
         for i, state_machine_arn in enumerate(state_machine_arns):
             deletion_resp = aws_client.stepfunctions.delete_state_machine(
                 stateMachineArn=state_machine_arn
             )
-            snapshot.match(f"deletion_resp_{i}", deletion_resp)
+            sfn_snapshot.match(f"deletion_resp_{i}", deletion_resp)
 
             await_state_machine_not_listed(
                 stepfunctions_client=aws_client.stepfunctions, state_machine_arn=state_machine_arn
             )
 
             lst_resp = aws_client.stepfunctions.list_state_machines()
-            snapshot.match(f"lst_resp_del_{i}", lst_resp)
+            sfn_snapshot.match(f"lst_resp_del_{i}", lst_resp)
 
         lst_resp = aws_client.stepfunctions.list_state_machines()
-        snapshot.match("lst_resp_del_end", lst_resp)
+        sfn_snapshot.match("lst_resp_del_end", lst_resp)
 
     def test_start_execution(
-        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
         snf_role_arn = create_iam_role_for_sfn()
-        snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         sm_name: str = f"statemachine_{short_uid()}"
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -265,13 +267,13 @@ class TestSnfApi:
         creation_resp = create_state_machine(
             name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
-        snapshot.match("creation_resp", creation_resp)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+        sfn_snapshot.match("creation_resp", creation_resp)
         state_machine_arn = creation_resp["stateMachineArn"]
 
         exec_resp = aws_client.stepfunctions.start_execution(stateMachineArn=state_machine_arn)
-        snapshot.add_transformer(snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
-        snapshot.match("exec_resp", exec_resp)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
+        sfn_snapshot.match("exec_resp", exec_resp)
         execution_arn = exec_resp["executionArn"]
 
         await_execution_success(
@@ -279,16 +281,16 @@ class TestSnfApi:
         )
 
         exec_list_resp = aws_client.stepfunctions.list_executions(stateMachineArn=state_machine_arn)
-        snapshot.match("exec_list_resp", exec_list_resp)
+        sfn_snapshot.match("exec_list_resp", exec_list_resp)
 
         exec_hist_resp = aws_client.stepfunctions.get_execution_history(executionArn=execution_arn)
-        snapshot.match("exec_hist_resp", exec_hist_resp)
+        sfn_snapshot.match("exec_hist_resp", exec_hist_resp)
 
     def test_invalid_start_execution_arn(
-        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
         snf_role_arn = create_iam_role_for_sfn()
-        snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         sm_name: str = f"statemachine_{short_uid()}"
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -297,8 +299,8 @@ class TestSnfApi:
         creation_resp = create_state_machine(
             name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
-        snapshot.match("creation_resp", creation_resp)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+        sfn_snapshot.match("creation_resp", creation_resp)
         state_machine_arn = creation_resp["stateMachineArn"]
         state_machine_arn_invalid = state_machine_arn.replace(
             sm_name, f"statemachine_invalid_{sm_name}"
@@ -308,14 +310,14 @@ class TestSnfApi:
 
         with pytest.raises(Exception) as resource_not_found:
             aws_client.stepfunctions.start_execution(stateMachineArn=state_machine_arn_invalid)
-        snapshot.match("start_exec_of_deleted", resource_not_found.value.response)
+        sfn_snapshot.match("start_exec_of_deleted", resource_not_found.value.response)
 
     @pytest.mark.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
     def test_invalid_start_execution_input(
-        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
         snf_role_arn = create_iam_role_for_sfn()
-        snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         sm_name: str = f"statemachine_{short_uid()}"
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
@@ -324,49 +326,49 @@ class TestSnfApi:
         creation_resp = create_state_machine(
             name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
-        snapshot.match("creation_resp", creation_resp)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+        sfn_snapshot.match("creation_resp", creation_resp)
         state_machine_arn = creation_resp["stateMachineArn"]
 
         with pytest.raises(Exception) as err:
             aws_client.stepfunctions.start_execution(
                 stateMachineArn=state_machine_arn, input="not some json"
             )
-        snapshot.match("start_exec_str_inp", err.value.response)
+        sfn_snapshot.match("start_exec_str_inp", err.value.response)
 
         with pytest.raises(Exception) as err:
             aws_client.stepfunctions.start_execution(
                 stateMachineArn=state_machine_arn, input="{'not': 'json'"
             )
-        snapshot.match("start_exec_not_json_inp", err.value.response)
+        sfn_snapshot.match("start_exec_not_json_inp", err.value.response)
 
         with pytest.raises(Exception) as err:
             aws_client.stepfunctions.start_execution(stateMachineArn=state_machine_arn, input="")
-        snapshot.match("start_res_empty", err.value.response)
+        sfn_snapshot.match("start_res_empty", err.value.response)
 
         start_res_num = aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_arn, input="2"
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_exec_arn(start_res_num, 0))
-        snapshot.match("start_res_num", start_res_num)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(start_res_num, 0))
+        sfn_snapshot.match("start_res_num", start_res_num)
 
         start_res_str = aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_arn, input='"some text"'
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_exec_arn(start_res_str, 1))
-        snapshot.match("start_res_str", start_res_str)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(start_res_str, 1))
+        sfn_snapshot.match("start_res_str", start_res_str)
 
         start_res_null = aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_arn, input="null"
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_exec_arn(start_res_null, 2))
-        snapshot.match("start_res_null", start_res_null)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(start_res_null, 2))
+        sfn_snapshot.match("start_res_null", start_res_null)
 
     def test_stop_execution(
-        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
         snf_role_arn = create_iam_role_for_sfn()
-        snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         sm_name: str = f"statemachine_{short_uid()}"
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_WAIT_1_MIN)
@@ -375,13 +377,13 @@ class TestSnfApi:
         creation_resp = create_state_machine(
             name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
-        snapshot.match("creation_resp", creation_resp)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+        sfn_snapshot.match("creation_resp", creation_resp)
         state_machine_arn = creation_resp["stateMachineArn"]
 
         exec_resp = aws_client.stepfunctions.start_execution(stateMachineArn=state_machine_arn)
-        snapshot.add_transformer(snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
-        snapshot.match("exec_resp", exec_resp)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
+        sfn_snapshot.match("exec_resp", exec_resp)
         execution_arn = exec_resp["executionArn"]
 
         await_execution_started(
@@ -389,11 +391,11 @@ class TestSnfApi:
         )
 
         stop_res = aws_client.stepfunctions.stop_execution(executionArn=execution_arn)
-        snapshot.match("stop_res", stop_res)
+        sfn_snapshot.match("stop_res", stop_res)
 
         await_execution_aborted(
             stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
         )
 
         exec_hist_resp = aws_client.stepfunctions.get_execution_history(executionArn=execution_arn)
-        snapshot.match("exec_hist_resp", exec_hist_resp)
+        sfn_snapshot.match("exec_hist_resp", exec_hist_resp)

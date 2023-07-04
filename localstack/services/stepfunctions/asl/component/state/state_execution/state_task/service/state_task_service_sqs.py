@@ -12,6 +12,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
+from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackOutcomeFailureError
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
@@ -34,7 +35,15 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
         }
     }
 
+    def _get_supported_parameters(self) -> Optional[set[str]]:
+        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
+
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        if isinstance(ex, CallbackOutcomeFailureError):
+            return self._get_callback_outcome_failure_event(ex=ex)
+        if isinstance(ex, TimeoutError):
+            return self._get_timed_out_failure_event()
+
         if isinstance(ex, ClientError):
             return FailureEvent(
                 error_name=CustomErrorName(self._ERROR_NAME_CLIENT),
@@ -63,24 +72,6 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
                     )
                 ),
             )
-
-    def _eval_parameters(self, env: Environment) -> dict:
-        api_action: str = self.resource.api_action
-        supported_parameters: Optional[set[str]] = self._SUPPORTED_API_PARAM_BINDINGS.get(
-            api_action.lower(), None
-        )
-        if supported_parameters is None:
-            raise RuntimeError("TODO: raise unsupported api error?")
-
-        parameters: dict = super()._eval_parameters(env=env)
-        unsupported_parameters: list[str] = [
-            parameter for parameter in parameters.keys() if parameter not in supported_parameters
-        ]
-        if unsupported_parameters:
-            for unsupported_parameter in unsupported_parameters:
-                parameters.pop(unsupported_parameter, None)
-
-        return parameters
 
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
         # TODO: Stepfunctions automatically dumps to json MessageBody's definitions.
