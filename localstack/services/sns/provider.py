@@ -15,6 +15,7 @@ from localstack.aws.api.sns import (
     BatchEntryIdsNotDistinctException,
     ConfirmSubscriptionResponse,
     CreateEndpointResponse,
+    CreatePlatformApplicationResponse,
     CreateTopicResponse,
     GetSubscriptionAttributesResponse,
     GetTopicAttributesResponse,
@@ -309,6 +310,16 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         store = self.get_store(context.account_id, context.region)
         tags = store.sns_tags.setdefault(resource_arn, [])
         return ListTagsForResourceResponse(Tags=tags)
+
+    def create_platform_application(
+        self, context: RequestContext, name: String, platform: String, attributes: MapStringToString
+    ) -> CreatePlatformApplicationResponse:
+        # TODO: validate platform
+        # see https://docs.aws.amazon.com/cli/latest/reference/sns/create-platform-application.html
+        # list of possible values: ADM, Baidu, APNS, APNS_SANDBOX, GCM, MPNS, WNS
+        # each platform has a specific way to handle credentials
+        # this can also be used for dispatching message to the right platform
+        return call_moto(context)
 
     def create_platform_endpoint(
         self,
