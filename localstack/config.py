@@ -1038,8 +1038,8 @@ PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
 
 # Selectively enable/disable new resource providers
-# e.g. CFN_RESOURCE_PROVIDERS_OVERRIDE='{"AWS::Lambda::Version": "GenericBaseModel","AWS::Lambda::Function": "ResourceProvider"}'
-CFN_RESOURCE_PROVIDERS_OVERRIDE = os.environ.get("CFN_RESOURCE_PROVIDERS_OVERRIDE", "{}")
+# e.g. CFN_RESOURCE_PROVIDER_OVERRIDES='{"AWS::Lambda::Version": "GenericBaseModel","AWS::Lambda::Function": "ResourceProvider"}'
+CFN_RESOURCE_PROVIDER_OVERRIDES = os.environ.get("CFN_RESOURCE_PROVIDER_OVERRIDES", "{}")
 
 # HINT: Please add deprecated environment variables to deprecations.py
 
@@ -1050,7 +1050,7 @@ CONFIG_ENV_VARS = [
     "ALLOW_NONSTANDARD_REGIONS",
     "BUCKET_MARKER_LOCAL",
     "CFN_VERBOSE_ERRORS",
-    "CFN_RESOURCE_PROVIDERS_OVERRIDE",
+    "CFN_RESOURCE_PROVIDER_OVERRIDES",
     "CI",
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",

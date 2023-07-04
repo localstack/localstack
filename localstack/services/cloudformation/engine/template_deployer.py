@@ -784,7 +784,7 @@ class TemplateDeployer:
         self.stack = stack
 
         try:
-            self.provider_config = json.loads(config.CFN_RESOURCE_PROVIDERS_OVERRIDE)
+            self.provider_config = json.loads(config.CFN_RESOURCE_PROVIDER_OVERRIDES)
         except json.JSONDecodeError:
             LOG.warning(
                 "Failed to parse CFN_RESOURCE_PROVIDERS_OVERRIDE config. Not a valid JSON document.",
