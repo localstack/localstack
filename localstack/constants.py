@@ -151,6 +151,8 @@ except Exception:
 DEFAULT_AWS_ACCOUNT_ID = "000000000000"
 
 # Credentials used in the test suite
+# These can be overridden if the tests are being run against AWS
+# If a structured access key ID is used, it must correspond to the account ID
 TEST_AWS_ACCOUNT_ID = os.getenv("TEST_AWS_ACCOUNT_ID") or DEFAULT_AWS_ACCOUNT_ID
 TEST_AWS_ACCESS_KEY_ID = os.getenv("TEST_AWS_ACCESS_KEY_ID") or "test"
 TEST_AWS_SECRET_ACCESS_KEY = os.getenv("TEST_AWS_SECRET_ACCESS_KEY") or "test"

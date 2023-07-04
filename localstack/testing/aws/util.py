@@ -179,15 +179,17 @@ def RequestContextClient(client: T) -> T:
 # Used for the aws_session, aws_client_factory and aws_client pytest fixtures
 # Supports test executions against both LocalStack and production AWS
 
+# TODO: Add the ability to use config profiles for primary and secondary clients
+# See https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#using-a-configuration-file
+
 
 def base_aws_session() -> boto3.Session:
     # When running against AWS, initial credentials must be read from environment or config file
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         return boto3.Session()
 
-    # Otherwise, when running against LS, use primary test credentials.
-    # Initial creds are set here in the session so that both `aws_client` and `aws_client_factory` can work
-    # without explicit creds.
+    # Otherwise, when running against LS, use primary test credentials to start with
+    # This set here in the session so that both `aws_client` and `aws_client_factory` can work without explicit creds.
     return boto3.Session(
         aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
         aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
