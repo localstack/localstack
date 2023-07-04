@@ -190,6 +190,9 @@ class FileType(Enum):
     # service code
     provider = auto()
 
+    # meta test files
+    conftest = auto()
+
     # test files
     integration_test = auto()
     getatt_test = auto()
@@ -236,6 +239,7 @@ class TemplateRenderer:
             FileType.integration_test: "test_integration_template.py.j2",
             # FileType.cloudcontrol_test: "test_cloudcontrol_template.py.j2",
             FileType.parity_test: "test_parity_template.py.j2",
+            FileType.conftest: "conftest.py.j2",
         }
         kwargs = dict(
             name=resource_name.full_name,  # AWS::SNS::Topic
@@ -301,6 +305,8 @@ class TemplateRenderer:
                 kwargs[
                     "parity_test_filename"
                 ] = f"test_{resource_name.service.lower()}_{resource_name.resource.lower()}_parity.py"
+            case FileType.conftest:
+                pass
             case _:
                 raise NotImplementedError(f"Rendering template of type {file_type}")
 
@@ -500,6 +506,10 @@ class FileWriter:
                 self.resource_name.python_compatible_service_name.lower(),
                 f"test_aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_parity.py",
             ),
+            FileType.conftest: TESTS_ROOT_DIR.joinpath(
+                self.resource_name.python_compatible_service_name.lower(),
+                "conftest.py",
+            ),
         }
 
         # output files that are templates
@@ -523,6 +533,12 @@ class FileWriter:
                 self.ensure_python_init_files(destination_path)
                 self.write_text(contents, file_destination)
                 self.console.print(f"Written provider to {file_destination}")
+
+            # tests meta
+            case FileType.conftest:
+                self.ensure_python_init_files(destination_path)
+                self.write_text(contents, file_destination)
+                self.console.print(f"Written pytest conftest to {file_destination}")
 
             # tests
             case FileType.integration_test:

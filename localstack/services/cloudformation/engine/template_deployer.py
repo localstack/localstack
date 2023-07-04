@@ -783,6 +783,15 @@ class TemplateDeployer:
     def __init__(self, stack):
         self.stack = stack
 
+        try:
+            self.provider_config = json.loads(config.CFN_RESOURCE_PROVIDERS_OVERRIDE)
+        except json.JSONDecodeError:
+            LOG.warning(
+                "Failed to parse CFN_RESOURCE_PROVIDERS_OVERRIDE config. Not a valid JSON document.",
+                exc_info=True,
+            )
+            raise
+
     @property
     def resources(self):
         return self.stack.resources
@@ -1385,6 +1394,7 @@ class TemplateDeployer:
         return ResourceProviderExecutor(
             stack_name=self.stack.stack_name,
             stack_id=self.stack.stack_id,
+            provider_config=self.provider_config,
             # FIXME: ugly
             resources=self.resources,
             legacy_base_models=RESOURCE_MODELS,
