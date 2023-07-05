@@ -63,6 +63,7 @@ from localstack.aws.api.ssm import (
     PatchComplianceLevel,
     PatchFilterGroup,
     PatchIdList,
+    PatchOrchestratorFilterList,
     PatchRuleGroup,
     PatchSourceList,
     PSParameterName,
@@ -215,7 +216,7 @@ class SsmProvider(SsmApi, ABC):
     def describe_patch_baselines(
         self,
         context: RequestContext,
-        filters=None,
+        filters: PatchOrchestratorFilterList = None,
         max_results: PatchBaselineMaxResults = None,
         next_token: NextToken = None,
     ) -> DescribePatchBaselinesResult:
