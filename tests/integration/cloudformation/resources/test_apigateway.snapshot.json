@@ -166,5 +166,275 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_models": {
+    "recorded-date": "05-07-2023, 20:11:14",
+    "recorded-content": {
+      "get-resources": {
+        "items": [
+          {
+            "id": "<id:1>",
+            "path": "/"
+          },
+          {
+            "id": "<id:2>",
+            "parentId": "<id:1>",
+            "path": "/validated",
+            "pathPart": "validated",
+            "resourceMethods": {
+              "ANY": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-models": {
+        "items": [
+          {
+            "contentType": "application/json",
+            "description": "This is a default empty schema model",
+            "id": "<id:3>",
+            "name": "<name:1>",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "<name:1> Schema",
+              "type": "object"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "description": "This is a default error schema model",
+            "id": "<id:4>",
+            "name": "<name:2>",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "<name:2> Schema",
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<id:5>",
+            "name": "<name:3>",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "<name:3>",
+              "type": "object",
+              "properties": {
+                "integer_field": {
+                  "type": "number"
+                },
+                "string_field": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "string_field",
+                "integer_field"
+              ]
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-request-validators": {
+        "items": [
+          {
+            "id": "<id:6>",
+            "name": "<name:4>",
+            "validateRequestBody": true,
+            "validateRequestParameters": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-method-any": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<id:2>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {},
+              "responseTemplates": {},
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "NEVER",
+          "requestParameters": {},
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {},
+            "responseParameters": {},
+            "statusCode": "200"
+          }
+        },
+        "requestModels": {
+          "application/json": "<name:3>"
+        },
+        "requestParameters": {},
+        "requestValidatorId": "<id:6>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/resources/test_apigateway.py::test_cfn_with_apigateway_resources": {
+    "recorded-date": "05-07-2023, 20:54:14",
+    "recorded-content": {
+      "get-method-post": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "POST",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "integrationResponses": {
+            "202": {
+              "responseParameters": {},
+              "responseTemplates": {
+                "application/json": {
+                  "operation": "celeste_account_create",
+                  "data": {
+                    "key": "123e4567-e89b-12d3-a456-426614174000",
+                    "secret": "123e4567-e89b-12d3-a456-426614174000"
+                  }
+                }
+              },
+              "selectionPattern": "2\\d{2}",
+              "statusCode": "202"
+            },
+            "500": {
+              "responseParameters": {},
+              "responseTemplates": {
+                "application/json": {
+                  "message": "Unknown <name:2>"
+                }
+              },
+              "selectionPattern": "5\\d{2}",
+              "statusCode": "500"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_TEMPLATES",
+          "requestParameters": {},
+          "requestTemplates": {
+            "application/json": "<name:3>"
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "202": {
+            "responseModels": {
+              "application/json": "<name:4>"
+            },
+            "responseParameters": {},
+            "statusCode": "202"
+          },
+          "500": {
+            "responseModels": {
+              "application/json": "<name:4>"
+            },
+            "responseParameters": {},
+            "statusCode": "500"
+          }
+        },
+        "operationName": "create_account",
+        "requestModels": {},
+        "requestParameters": {
+          "method.request.path.account": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-models": {
+        "items": [
+          {
+            "contentType": "application/json",
+            "description": "This is a default empty schema model",
+            "id": "<id:1>",
+            "name": "<name:1>",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "<name:1> Schema",
+              "type": "object"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "description": "This is a default error schema model",
+            "id": "<id:2>",
+            "name": "<name:2>",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "<name:2> Schema",
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<id:3>",
+            "name": "<name:3>",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "AccountCreate",
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "email": {
+                  "format": "email",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "contentType": "application/json",
+            "id": "<id:4>",
+            "name": "<name:4>",
+            "schema": {}
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

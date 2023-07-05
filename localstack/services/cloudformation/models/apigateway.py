@@ -397,6 +397,7 @@ class GatewayMethod(GenericBaseModel):
                 "requestParameters",
                 "requestModels",
                 "requestValidatorId",
+                "operationName",
             ]
             result = select_attributes(result, param_names)
             result["requestModels"] = result.get("requestModels") or {}
@@ -823,8 +824,7 @@ class GatewayModel(GenericBaseModel):
     @staticmethod
     def add_defaults(resource, stack_name: str):
         props = resource.get("Properties", {})
-        role_name = props.get("Name")
-        if not role_name:
+        if not props.get("Name"):
             props["Name"] = generate_default_name(stack_name, resource["LogicalResourceId"])
 
         content_type = props.get("contentType")
@@ -834,7 +834,12 @@ class GatewayModel(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
-            resource["PhysicalResourceId"] = result["id"]
+            resource["PhysicalResourceId"] = result["name"]
+
+        def _jsonify_schema(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> str:
+            return json.dumps(properties.get("Schema", {}))
 
         return {
             "create": {
@@ -842,7 +847,7 @@ class GatewayModel(GenericBaseModel):
                 "parameters": {
                     "name": "Name",
                     "restApiId": "RestApiId",
-                    "schema": "Schema",
+                    "schema": _jsonify_schema,
                     "contentType": "ContentType",
                 },
                 "types": {"schema": str},
