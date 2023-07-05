@@ -2,6 +2,7 @@ import os.path
 
 import pytest
 
+from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.common import short_uid
 
 
@@ -121,6 +122,7 @@ def test_update_ssm_parameter_tag(deploy_cfn_template, aws_client):
     # assert ssm_tags == []
 
 
+@pytest.mark.skip_snapshot_verify(paths=["$..DriftInformation", "$..Metadata"])
 @pytest.mark.aws_validated
 def test_deploy_patch_baseline(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(
@@ -139,6 +141,7 @@ def test_deploy_patch_baseline(deploy_cfn_template, aws_client, snapshot):
     snapshot.match("patch_baseline", describe_resource)
 
 
+@pytest.mark.aws_validated
 def test_maintenance_window(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -150,4 +153,10 @@ def test_maintenance_window(deploy_cfn_template, aws_client, snapshot):
         StackName=stack.stack_name
     )["StackResources"]
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(
+        snapshot.transform.key_value("PhysicalResourceId", "physical_resource_id")
+    )
+    snapshot.add_transformer(
+        SortingTransformer("MaintenanceWindow", lambda x: x["LogicalResourceId"]), priority=-1
+    )
     snapshot.match("MaintenanceWindow", describe_resource)
