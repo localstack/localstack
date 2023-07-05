@@ -185,7 +185,7 @@ def RequestContextClient(client: T) -> T:
 
 def base_aws_session() -> boto3.Session:
     # When running against AWS, initial credentials must be read from environment or config file
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+    if is_aws_cloud():
         return boto3.Session()
 
     # Otherwise, when running against LS, use primary test credentials to start with
