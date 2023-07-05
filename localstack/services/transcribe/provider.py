@@ -28,6 +28,7 @@ from localstack.aws.api.transcribe import (
     TranscriptionJobStatus,
     TranscriptionJobSummary,
 )
+from localstack.aws.connect import connect_to
 from localstack.packages.ffmpeg import ffmpeg_package
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.utils import (
@@ -139,11 +140,11 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
         if not output_key:
             output_key = f"{job_name}.json"
 
-        s3_client = aws_stack.connect_to_service("s3")
+        s3_client = connect_to().s3
 
         # the presign url is valid for 15 minutes
         presign_url = s3_client.generate_presigned_url(
-            "put_object",
+            "get_object",
             Params={"Bucket": output_bucket, "Key": output_key},
             ExpiresIn=60 * 15,
         )
