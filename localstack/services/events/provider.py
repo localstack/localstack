@@ -324,7 +324,7 @@ def check_valid_numeric_content_base_rule(list_of_operators):
     return True
 
 
-def filter_event_with_content_base_parameter(pattern_value, event_value):
+def filter_event_with_content_base_parameter(pattern_value: list, event_value: str | int):
     for element in pattern_value:
         if (isinstance(element, (str, int))) and (event_value == element or element in event_value):
             return True
@@ -448,7 +448,7 @@ def filter_event_based_on_event_format(
                         if not handle_prefix_filtering(value.get(key_a), value_a):
                             return False
 
-            # 2. check if the pattern is a list and event values are not contained in itEventsApi
+            # 2. check if the pattern is a list and event values are not contained in it
             if isinstance(value, list):
                 if identify_content_base_parameter_in_pattern(value):
                     if not filter_event_with_content_base_parameter(value, event_value):

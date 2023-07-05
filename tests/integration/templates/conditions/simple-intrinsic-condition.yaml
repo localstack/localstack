@@ -1,0 +1,22 @@
+Parameters:
+  TopicName:
+    Type: String
+  ShouldSetCustomName:
+    Type: String
+    AllowedValues:
+      - yep
+      - nope
+Resources:
+  MyTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !If [ShouldSetCustomNameCondition, !Ref TopicName, !Ref AWS::NoValue]
+
+Conditions:
+  ShouldSetCustomNameCondition: !Equals
+    - !Ref ShouldSetCustomName
+    - yep
+
+Outputs:
+  TopicArn:
+    Value: !GetAtt MyTopic.TopicArn

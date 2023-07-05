@@ -33,6 +33,10 @@ class CallbackOutcomeFailure(CallbackOutcome):
         self.cause = cause
 
 
+class CallbackTimeoutError(TimeoutError):
+    pass
+
+
 class CallbackConsumerError(abc.ABC):
     ...
 
@@ -59,6 +63,10 @@ class HeartbeatEndpoint:
 
     def notify(self):
         self._next_heartbeat_event.set()
+
+
+class HeartbeatTimeoutError(TimeoutError):
+    pass
 
 
 class CallbackEndpoint:

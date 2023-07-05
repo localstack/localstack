@@ -125,6 +125,9 @@ class SdkDockerClient(ContainerClient):
         target_is_dir = target_exists and bool(stats["mode"] & SDK_ISDIR)
         return target_exists, target_is_dir
 
+    def get_system_info(self) -> dict:
+        return self.client().info()
+
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
         # LOG.debug("Getting container status for container: %s", container_name) #  too verbose
         try:

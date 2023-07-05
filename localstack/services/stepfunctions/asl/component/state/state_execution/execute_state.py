@@ -33,6 +33,7 @@ from localstack.services.stepfunctions.asl.component.common.timeouts.heartbeat i
     HeartbeatSeconds,
 )
 from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import (
+    EvalTimeoutError,
     Timeout,
     TimeoutSeconds,
 )
@@ -217,7 +218,7 @@ class ExecutionState(CommonStateField, abc.ABC):
             raise execution_exception
 
         if not finished_on_time:
-            raise TimeoutError()
+            raise EvalTimeoutError()
 
         execution_output = execution_outputs.pop()
         env.stack.append(execution_output)

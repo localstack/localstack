@@ -848,11 +848,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> SendMessageBatchResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
 
-        if entries and (no_entries := len(entries)) > 10:
-            raise TooManyEntriesInBatchRequest(
-                f"Maximum number of entries per request are 10. You have sent {no_entries}."
-            )
-
         self._assert_batch(entries)
         # check the total batch size first and raise BatchRequestTooLong id > DEFAULT_MAXIMUM_MESSAGE_SIZE.
         # This is checked before any messages in the batch are sent.  Raising the exception here should
@@ -1194,6 +1189,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def _assert_batch(self, batch: List) -> None:
         if not batch:
             raise EmptyBatchRequest
+        if batch and (no_entries := len(batch)) > MAX_NUMBER_OF_MESSAGES:
+            raise TooManyEntriesInBatchRequest(
+                f"Maximum number of entries per request are {MAX_NUMBER_OF_MESSAGES}. You have sent {no_entries}."
+            )
         visited = set()
         for entry in batch:
             entry_id = entry["Id"]

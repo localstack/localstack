@@ -3,8 +3,10 @@ from typing import Optional, TypedDict
 
 from localstack.aws.api.cloudformation import Capability, ChangeSetType, Parameter
 from localstack.services.cloudformation.engine.parameters import (
+    StackParameter,
     convert_stack_parameters_to_list,
     map_to_legacy_structure,
+    strip_parameter_type,
 )
 from localstack.utils.aws import arns
 from localstack.utils.collections import select_attributes
@@ -69,7 +71,7 @@ class Stack:
             template = {}
 
         self.resolved_outputs = list()  # TODO
-        self.resolved_parameters: dict[str, Parameter] = {}
+        self.resolved_parameters: dict[str, StackParameter] = {}
 
         self.metadata = metadata or {}
         self.template = template or {}
@@ -104,8 +106,9 @@ class Stack:
         self.events = []
         # list of stack change sets
         self.change_sets = []
+        # self.evaluated_conditions = {}
 
-    def set_resolved_parameters(self, resolved_parameters: dict[str, Parameter]):
+    def set_resolved_parameters(self, resolved_parameters: dict[str, StackParameter]):
         self.resolved_parameters = resolved_parameters
         if resolved_parameters:
             self.metadata["Parameters"] = list(resolved_parameters.values())
@@ -137,7 +140,7 @@ class Stack:
             result["Outputs"] = outputs
         stack_parameters = convert_stack_parameters_to_list(self.resolved_parameters)
         if stack_parameters:
-            result["Parameters"] = stack_parameters
+            result["Parameters"] = [strip_parameter_type(sp) for sp in stack_parameters]
         if not result.get("DriftInformation"):
             result["DriftInformation"] = {"StackDriftStatus": "NOT_CHECKED"}
         for attr in ["Tags", "NotificationARNs"]:
@@ -247,15 +250,8 @@ class Stack:
             {k: map_to_legacy_structure(k, v) for k, v in self.resolved_parameters.items()}
         )
 
-        # TODO: conditions and mappings don't really belong here and should be handled separately
+        # TODO: conditions don't really belong here and should be handled separately
         for name, value in self.conditions.items():
-            if name not in result:
-                result[name] = {
-                    "Type": "Parameter",
-                    "LogicalResourceId": name,
-                    "Properties": {"Value": value},
-                }
-        for name, value in self.mappings.items():
             if name not in result:
                 result[name] = {
                     "Type": "Parameter",

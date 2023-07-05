@@ -82,6 +82,7 @@ InventoryId = str
 IsEnabled = bool
 IsLatest = bool
 IsPublic = bool
+IsRestoreInProgress = bool
 IsTruncated = bool
 KMSContext = str
 KeyCount = int
@@ -453,6 +454,10 @@ class ObjectStorageClass(str):
 
 class ObjectVersionStorageClass(str):
     STANDARD = "STANDARD"
+
+
+class OptionalObjectAttributes(str):
+    RestoreStatus = "RestoreStatus"
 
 
 class OwnerOverride(str):
@@ -2319,6 +2324,14 @@ class ListMultipartUploadsRequest(ServiceRequest):
     RequestPayer: Optional[RequestPayer]
 
 
+RestoreExpiryDate = datetime
+
+
+class RestoreStatus(TypedDict, total=False):
+    IsRestoreInProgress: Optional[IsRestoreInProgress]
+    RestoreExpiryDate: Optional[RestoreExpiryDate]
+
+
 class ObjectVersion(TypedDict, total=False):
     ETag: Optional[ETag]
     ChecksumAlgorithm: Optional[ChecksumAlgorithmList]
@@ -2329,6 +2342,7 @@ class ObjectVersion(TypedDict, total=False):
     IsLatest: Optional[IsLatest]
     LastModified: Optional[LastModified]
     Owner: Optional[Owner]
+    RestoreStatus: Optional[RestoreStatus]
 
 
 ObjectVersionList = List[ObjectVersion]
@@ -2351,6 +2365,9 @@ class ListObjectVersionsOutput(TypedDict, total=False):
     RequestCharged: Optional[RequestCharged]
 
 
+OptionalObjectAttributesList = List[OptionalObjectAttributes]
+
+
 class ListObjectVersionsRequest(ServiceRequest):
     Bucket: BucketName
     Delimiter: Optional[Delimiter]
@@ -2361,6 +2378,7 @@ class ListObjectVersionsRequest(ServiceRequest):
     VersionIdMarker: Optional[VersionIdMarker]
     ExpectedBucketOwner: Optional[AccountId]
     RequestPayer: Optional[RequestPayer]
+    OptionalObjectAttributes: Optional[OptionalObjectAttributesList]
 
 
 class Object(TypedDict, total=False):
@@ -2371,6 +2389,7 @@ class Object(TypedDict, total=False):
     Size: Optional[Size]
     StorageClass: Optional[ObjectStorageClass]
     Owner: Optional[Owner]
+    RestoreStatus: Optional[RestoreStatus]
 
 
 ObjectList = List[Object]
@@ -2400,6 +2419,7 @@ class ListObjectsRequest(ServiceRequest):
     Prefix: Optional[Prefix]
     RequestPayer: Optional[RequestPayer]
     ExpectedBucketOwner: Optional[AccountId]
+    OptionalObjectAttributes: Optional[OptionalObjectAttributesList]
 
 
 class ListObjectsV2Output(TypedDict, total=False):
@@ -2430,6 +2450,7 @@ class ListObjectsV2Request(ServiceRequest):
     StartAfter: Optional[StartAfter]
     RequestPayer: Optional[RequestPayer]
     ExpectedBucketOwner: Optional[AccountId]
+    OptionalObjectAttributes: Optional[OptionalObjectAttributesList]
 
 
 class Part(TypedDict, total=False):
@@ -3756,6 +3777,7 @@ class S3Api:
         version_id_marker: VersionIdMarker = None,
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
+        optional_object_attributes: OptionalObjectAttributesList = None,
     ) -> ListObjectVersionsOutput:
         raise NotImplementedError
 
@@ -3771,6 +3793,7 @@ class S3Api:
         prefix: Prefix = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        optional_object_attributes: OptionalObjectAttributesList = None,
     ) -> ListObjectsOutput:
         raise NotImplementedError
 
@@ -3788,6 +3811,7 @@ class S3Api:
         start_after: StartAfter = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        optional_object_attributes: OptionalObjectAttributesList = None,
     ) -> ListObjectsV2Output:
         raise NotImplementedError
 

@@ -58,3 +58,7 @@ class TimeoutSecondsPath(Timeout):
                 f"Expected non-negative integer for TimeoutSecondsPath, got '{seconds}' instead."
             )
         return seconds
+
+
+class EvalTimeoutError(TimeoutError):
+    pass

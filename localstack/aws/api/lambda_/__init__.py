@@ -490,6 +490,13 @@ class ProvisionedConcurrencyConfigNotFoundException(ServiceException):
     Type: Optional[String]
 
 
+class RecursiveInvocationException(ServiceException):
+    code: str = "RecursiveInvocationException"
+    sender_fault: bool = False
+    status_code: int = 400
+    Type: Optional[String]
+
+
 class RequestTooLargeException(ServiceException):
     code: str = "RequestTooLargeException"
     sender_fault: bool = False

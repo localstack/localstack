@@ -1,13 +1,14 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Template to exercise AWS::IAM::User
+Description: Template to exercise updating AWS::IAM::User
 Parameters:
-  CustomUserName:
+  AttributeValue:
     Type: String
+    Description: Value of property to change to force an update
 Resources:
   MyResource:
     Type: AWS::IAM::User
     Properties:
-      UserName: !Ref CustomUserName
+      UserName: !Ref AttributeValue
 Outputs:
   MyRef:
     Value:

@@ -1,0 +1,28 @@
+Parameters:
+  TopicName:
+    Type: String
+  SsmParamName:
+    Type: String
+  OptionParameter:
+    Type: String
+    AllowedValues:
+      - option-a
+      - option-b
+Resources:
+  MyTopic:
+    Type: AWS::SNS::Topic
+    Condition: ShouldCreateTopic
+    Properties:
+      TopicName: !Ref TopicName
+
+  MySsmParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Ref SsmParamName
+      Value: !Ref MyTopic
+
+Conditions:
+  ShouldCreateTopic: !Equals
+    - !Ref OptionParameter
+    - option-a

@@ -7,7 +7,7 @@ import threading
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import IO, TYPE_CHECKING, Dict, Optional, TypedDict
+from typing import IO, Dict, Optional, TypedDict
 
 from botocore.exceptions import ClientError
 
@@ -31,13 +31,10 @@ from localstack.aws.api.lambda_ import (
     StateReasonCode,
     TracingMode,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.awslambda.api_utils import qualified_lambda_arn, unqualified_lambda_arn
 from localstack.utils.archives import unzip
-from localstack.utils.aws import aws_stack
 from localstack.utils.strings import long_uid
-
-if TYPE_CHECKING:
-    from mypy_boto3_s3 import S3Client
 
 LOG = logging.getLogger(__name__)
 
@@ -168,7 +165,7 @@ class S3Code(ArchiveCode):
 
         :param target_file: File the code archive should be downloaded into (IO object)
         """
-        s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
+        s3_client = connect_to(region_name="us-east-1").s3
         extra_args = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
         s3_client.download_fileobj(
             Bucket=self.s3_bucket, Key=self.s3_key, Fileobj=target_file, ExtraArgs=extra_args
@@ -179,9 +176,7 @@ class S3Code(ArchiveCode):
         """
         Generates a presigned url pointing to the code archive
         """
-        s3_client: "S3Client" = aws_stack.connect_to_service(
-            "s3", region_name="us-east-1", endpoint_url=endpoint_url
-        )
+        s3_client = connect_to(region_name="us-east-1", endpoint_url=endpoint_url).s3
         params = {"Bucket": self.s3_bucket, "Key": self.s3_key}
         if self.s3_object_version:
             params["VersionId"] = self.s3_object_version
@@ -239,7 +234,7 @@ class S3Code(ArchiveCode):
         """
         LOG.debug("Final code destruction for %s", self.id)
         self.destroy_cached()
-        s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
+        s3_client = connect_to(region_name="us-east-1").s3
         kwargs = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
         try:
             s3_client.delete_object(Bucket=self.s3_bucket, Key=self.s3_key, **kwargs)

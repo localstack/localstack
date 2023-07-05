@@ -1012,5 +1012,37 @@
         }
       }
     }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_delete_message_batch_with_too_large_batch": {
+    "recorded-date": "24-06-2023, 17:14:03",
+    "recorded-content": {
+      "error_response": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.TooManyEntriesInBatchRequest",
+          "Message": "Maximum number of entries per request are 10. You have sent 20.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_change_message_visibility_batch_with_too_large_batch": {
+    "recorded-date": "24-06-2023, 17:14:36",
+    "recorded-content": {
+      "error_response": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.TooManyEntriesInBatchRequest",
+          "Message": "Maximum number of entries per request are 10. You have sent 20.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

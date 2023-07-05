@@ -26,7 +26,9 @@ from localstack.services.stepfunctions.asl.eval.callback.callback import (
     CallbackOutcomeFailure,
     CallbackOutcomeFailureError,
     CallbackOutcomeSuccess,
+    CallbackTimeoutError,
     HeartbeatEndpoint,
+    HeartbeatTimeoutError,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
@@ -71,11 +73,11 @@ class StateTaskServiceCallback(StateTaskService):
             ):  # Until subprocess hasn't timed out or result wasn't received.
                 received = heartbeat_endpoint.clear_and_wait()
                 if not received and env.is_running():  # Heartbeat timed out.
-                    raise TimeoutError()
+                    raise HeartbeatTimeoutError()
                 outcome = callback_endpoint.get_outcome()
 
         if outcome is None:
-            raise TimeoutError()
+            raise CallbackTimeoutError()
         if isinstance(outcome, CallbackOutcomeSuccess):
             outcome_output = json.loads(outcome.output)
             env.stack.append(outcome_output)

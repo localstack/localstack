@@ -44,11 +44,17 @@ def extract_stack_parameter_declarations(template: dict) -> dict[str, ParameterD
     return result
 
 
+class StackParameter(Parameter):
+    # we need the type information downstream when actually using the resolved value
+    # e.g. in case of lists so that we know that we should interpret the string as a comma-separated list.
+    ParameterType: str
+
+
 def resolve_parameters(
     parameter_declarations: dict[str, ParameterDeclaration],
     new_parameters: dict[str, Parameter],
     old_parameters: dict[str, Parameter],
-) -> dict[str, Parameter]:
+) -> dict[str, StackParameter]:
     """
     Resolves stack parameters or raises an exception if any parameter can not be resolved.
 
@@ -67,7 +73,7 @@ def resolve_parameters(
     # populate values for every parameter declared in the template
     for pm in parameter_declarations.values():
         pm_key = pm["ParameterKey"]
-        resolved_param = Parameter(ParameterKey=pm_key)
+        resolved_param = StackParameter(ParameterKey=pm_key, ParameterType=pm["ParameterType"])
         new_parameter = new_parameters.get(pm_key)
         old_parameter = old_parameters.get(pm_key)
 
@@ -126,7 +132,15 @@ def resolve_ssm_parameter(stack_parameter_value: str) -> str:
     return connect_to().ssm.get_parameter(Name=stack_parameter_value)["Parameter"]["Value"]
 
 
-def convert_stack_parameters_to_list(in_params: dict[str, Parameter] | None) -> list[Parameter]:
+def strip_parameter_type(in_param: StackParameter) -> Parameter:
+    result = in_param.copy()
+    result.pop("ParameterType", None)
+    return result
+
+
+def convert_stack_parameters_to_list(
+    in_params: dict[str, StackParameter] | None
+) -> list[StackParameter]:
     if not in_params:
         return []
     return list(in_params.values())
@@ -151,11 +165,11 @@ class LegacyParameter(TypedDict):
     Properties: LegacyParameterProperties
 
 
-def map_to_legacy_structure(parameter_type: str, new_parameter: Parameter) -> LegacyParameter:
+# TODO: not actually parameter_type but the logical "ID"
+def map_to_legacy_structure(parameter_name: str, new_parameter: StackParameter) -> LegacyParameter:
     """
     Helper util to convert a normal (resolved) stack parameter to a legacy parameter structure that can then be merged with stack resources.
 
-    :param parameter_type: the stack parameter type (e.g. "String", "AWS::SSM::Parameter::Value<String>", ...)
     :param new_parameter: a resolved stack parameter
     :return: legacy parameter that can be merged with stack resources for uniform lookup based on logical ID
     """
@@ -163,7 +177,7 @@ def map_to_legacy_structure(parameter_type: str, new_parameter: Parameter) -> Le
         LogicalResourceId=new_parameter["ParameterKey"],
         Type="Parameter",
         Properties=LegacyParameterProperties(
-            ParameterType=parameter_type,
+            ParameterType=new_parameter.get("ParameterType"),
             ParameterValue=new_parameter.get("ParameterValue"),
             ResolvedValue=new_parameter.get("ResolvedValue"),
             Value=new_parameter.get("ResolvedValue", new_parameter.get("ParameterValue")),
