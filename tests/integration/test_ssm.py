@@ -21,6 +21,9 @@ def _assert(search_name: str, param_name: str, ssm_client):
 
 class TestSSM:
     @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        reason="xfail until https://github.com/getmoto/moto/pull/6484 is in moto-ext"
+    )
     def test_describe_parameters(self, aws_client):
         response = aws_client.ssm.describe_parameters()
         assert "Parameters" in response
