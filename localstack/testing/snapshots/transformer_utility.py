@@ -251,7 +251,12 @@ class TransformerUtility:
         """
         :return: array with Transformers, for iam api.
         """
-        return [TransformerUtility.key_value("UserName"), TransformerUtility.key_value("UserId")]
+        return [
+            TransformerUtility.key_value("UserName"),
+            TransformerUtility.key_value("UserId"),
+            TransformerUtility.key_value("RoleId"),
+            TransformerUtility.key_value("RoleName"),
+        ]
 
     @staticmethod
     def transcribe_api():

@@ -184,6 +184,7 @@ class S3Code(ArchiveCode):
         s3_client = connect_to(
             region_name=AWS_REGION_US_EAST_1,
             aws_access_key_id=self.account_id,
+            endpoint_url=endpoint_url,
         ).s3
         params = {"Bucket": self.s3_bucket, "Key": self.s3_key}
         if self.s3_object_version:

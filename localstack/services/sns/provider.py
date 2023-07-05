@@ -21,7 +21,6 @@ from localstack.aws.api.sns import (
     GetTopicAttributesResponse,
     InvalidParameterException,
     InvalidParameterValueException,
-    ListSubscriptionsResponse,
     ListTagsForResourceResponse,
     MapStringToString,
     MessageAttributeMap,
@@ -45,7 +44,6 @@ from localstack.aws.api.sns import (
     authenticateOnUnsubscribe,
     boolean,
     messageStructure,
-    nextToken,
     subscriptionARN,
     topicARN,
     topicName,
@@ -113,12 +111,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
-        try:
-            moto_response: GetTopicAttributesResponse = call_moto(context)
-        except CommonServiceException as exc:
-            if exc.code == "NotFound":
-                raise NotFoundException("Topic does not exist")
-            raise
+        moto_response: GetTopicAttributesResponse = call_moto(context)
         # TODO: fix some attributes by moto, see snapshot
         # DeliveryPolicy
         # EffectiveDeliveryPolicy
@@ -318,14 +311,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         tags = store.sns_tags.setdefault(resource_arn, [])
         return ListTagsForResourceResponse(Tags=tags)
 
-    def delete_platform_application(
-        self, context: RequestContext, platform_application_arn: String
-    ) -> None:
-        call_moto(context)
-
-    def delete_endpoint(self, context: RequestContext, endpoint_arn: String) -> None:
-        call_moto(context)
-
     def create_platform_application(
         self, context: RequestContext, name: String, platform: String, attributes: MapStringToString
     ) -> CreatePlatformApplicationResponse:
@@ -334,8 +319,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # list of possible values: ADM, Baidu, APNS, APNS_SANDBOX, GCM, MPNS, WNS
         # each platform has a specific way to handle credentials
         # this can also be used for dispatching message to the right platform
-        moto_response: CreatePlatformApplicationResponse = call_moto(context)
-        return moto_response
+        return call_moto(context)
 
     def create_platform_endpoint(
         self,
@@ -412,12 +396,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         attributes = {k: v for k, v in sub.items() if k not in removed_attrs}
         return GetSubscriptionAttributesResponse(Attributes=attributes)
-
-    def list_subscriptions(
-        self, context: RequestContext, next_token: nextToken = None
-    ) -> ListSubscriptionsResponse:
-        moto_response: ListSubscriptionsResponse = call_moto(context)
-        return moto_response
 
     def publish(
         self,

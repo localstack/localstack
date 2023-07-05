@@ -413,11 +413,11 @@ class ContainerConfiguration:
     command: Optional[List[str]] = None
     env_vars: Dict[str, str] = dataclasses.field(default_factory=dict)
 
-    privileged: Optional[bool] = None
-    remove: Optional[bool] = None
-    interactive: Optional[bool] = None
-    tty: Optional[bool] = None
-    detach: Optional[bool] = None
+    privileged: bool = False
+    remove: bool = False
+    interactive: bool = False
+    tty: bool = False
+    detach: bool = False
 
     stdin: Optional[str] = None
     user: Optional[str] = None
@@ -492,6 +492,14 @@ class ContainerClient(metaclass=ABCMeta):
         network_attrs = self.inspect_network(container_network)
         containers = network_attrs.get("Containers") or {}
         if container_id not in containers:
+            LOG.debug("Network attributes: %s", network_attrs)
+            try:
+                inspection = self.inspect_container(container_name_or_id=container_name_or_id)
+                LOG.debug("Container %s Attributes: %s", container_name_or_id, inspection)
+                logs = self.get_container_logs(container_name_or_id=container_name_or_id)
+                LOG.debug("Container %s Logs: %s", container_name_or_id, logs)
+            except ContainerException as e:
+                LOG.debug("Cannot inspect container %s: %s", container_name_or_id, e)
             raise ContainerException(
                 "Container %s is not connected to target network %s",
                 container_name_or_id,
