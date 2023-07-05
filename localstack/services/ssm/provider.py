@@ -1,5 +1,6 @@
 import copy
 import json
+import logging
 import time
 from abc import ABC
 from typing import Dict, Optional
@@ -10,12 +11,17 @@ from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.ssm import (
     Boolean,
     DeleteParameterResult,
+    DescribeParametersResult,
     GetParameterResult,
     GetParametersResult,
     LabelParameterVersionResult,
+    MaxResults,
+    NextToken,
     ParameterLabelList,
     ParameterName,
     ParameterNameList,
+    ParametersFilterList,
+    ParameterStringFilterList,
     PSParameterName,
     PSParameterVersion,
     PutParameterRequest,
@@ -55,8 +61,23 @@ class DoesNotExistException(CommonServiceException):
         )
 
 
+LOG = logging.getLogger(__name__)
+
+
 # TODO: check if _normalize_name(..) calls are still required here
 class SsmProvider(SsmApi, ABC):
+    def describe_parameters(
+        self,
+        context: RequestContext,
+        filters: ParametersFilterList = None,
+        parameter_filters: ParameterStringFilterList = None,
+        max_results: MaxResults = None,
+        next_token: NextToken = None,
+    ) -> DescribeParametersResult:
+        moto_backend = ssm_backends[context.account_id][context.region]
+        LOG.error(f"$$$ DescribeParameters {moto_backend._parameters=}")
+        return call_moto(context)
+
     def get_parameters(
         self,
         context: RequestContext,
@@ -88,6 +109,11 @@ class SsmProvider(SsmApi, ABC):
         else:
             moto_res = call_moto(context)
         SsmProvider._notify_event_subscribers(nname, "Create")
+
+        # REVERT
+        moto_backend = ssm_backends[context.account_id][context.region]
+        LOG.error(f"$$$ PutParameter {request=} {moto_backend._parameters=}")
+
         return PutParameterResult(**moto_res)
 
     def get_parameter(
@@ -120,6 +146,11 @@ class SsmProvider(SsmApi, ABC):
     ) -> DeleteParameterResult:
         SsmProvider._notify_event_subscribers(name, "Delete")
         call_moto(context)  # Return type is an emtpy type.
+
+        # REVERT
+        moto_backend = ssm_backends[context.account_id][context.region]
+        LOG.error(f"$$$ DeleteParameter {name=} {moto_backend._parameters=}")
+
         return DeleteParameterResult()
 
     def label_parameter_version(
