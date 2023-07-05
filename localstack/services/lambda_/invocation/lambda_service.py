@@ -32,6 +32,7 @@ from localstack.services.lambda_.api_utils import (
 )
 from localstack.services.lambda_.invocation.assignment import AssignmentService
 from localstack.services.lambda_.invocation.counting_service import CountingService
+from localstack.services.lambda_.invocation.event_manager import LambdaEventManager
 from localstack.services.lambda_.invocation.lambda_models import (
     BUCKET_ACCOUNT,
     ArchiveCode,
@@ -81,6 +82,8 @@ class LambdaService:
     # mapping from qualified ARN to version manager
     lambda_running_versions: dict[str, LambdaVersionManager]
     lambda_starting_versions: dict[str, LambdaVersionManager]
+    # mapping from qualified ARN to event manager
+    event_managers = dict[str, LambdaEventManager]
     lambda_version_manager_lock: RLock
     task_executor: Executor
 
@@ -91,6 +94,7 @@ class LambdaService:
     def __init__(self) -> None:
         self.lambda_running_versions = {}
         self.lambda_starting_versions = {}
+        self.event_managers = {}
         self.lambda_version_manager_lock = RLock()
         self.task_executor = ThreadPoolExecutor()
         self.assignment_service = AssignmentService()
@@ -137,6 +141,18 @@ class LambdaService:
             raise ValueError(f"Could not find version '{function_arn}'. Is it created?")
 
         return version_manager
+
+    def get_lambda_event_manager(self, function_arn: str) -> LambdaEventManager:
+        """
+        Get the lambda event manager for the given arn
+        :param function_arn: qualified arn for the lambda version
+        :return: LambdaEventManager for the arn
+        """
+        event_manager = self.event_managers.get(function_arn)
+        if not event_manager:
+            raise ValueError(f"Could not find event manager '{function_arn}'. Is it created?")
+
+        return event_manager
 
     def create_function_version(self, function_version: FunctionVersion) -> Future[None]:
         """
@@ -259,6 +275,7 @@ class LambdaService:
         qualified_arn = qualified_lambda_arn(function_name, version_qualifier, account_id, region)
         try:
             version_manager = self.get_lambda_version_manager(qualified_arn)
+            event_manager = self.get_lambda_event_manager(qualified_arn)
             usage.runtime.record(version_manager.function_version.config.runtime)
         except ValueError:
             version = function.versions.get(version_qualifier)
@@ -292,15 +309,17 @@ class LambdaService:
         # TODO payload verification  An error occurred (InvalidRequestContentException) when calling the Invoke operation: Could not parse request body into json: Could not parse payload into json: Unexpected character (''' (code 39)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')
         #  at [Source: (byte[])"'test'"; line: 1, column: 2]
         #
-        # if invocation_type == "Event":
-        #     return event_manager.queue_invoke(invocation=Invocation(
-        #         payload=payload,
-        #         invoked_arn=invoked_arn,
-        #         client_context=client_context,
-        #         invocation_type=invocation_type,
-        #         invoke_time=datetime.now(),
-        #         request_id=request_id,
-        #     ))
+        if invocation_type == InvocationType.Event:
+            return event_manager.enqueue_event(
+                invocation=Invocation(
+                    payload=payload,
+                    invoked_arn=invoked_arn,
+                    client_context=client_context,
+                    invocation_type=invocation_type,
+                    invoke_time=datetime.now(),
+                    request_id=request_id,
+                )
+            )
 
         return version_manager.invoke(
             invocation=Invocation(
@@ -344,6 +363,7 @@ class LambdaService:
         """
         function_arn = function_version.qualified_arn
         old_version = None
+        old_event_manager = None
         with self.lambda_version_manager_lock:
             new_version_manager = self.lambda_starting_versions.pop(function_arn)
             if not new_version_manager:
@@ -352,7 +372,11 @@ class LambdaService:
                 )
             if new_state.state == State.Active:
                 old_version = self.lambda_running_versions.get(function_arn, None)
+                old_event_manager = self.event_managers.get(function_arn, None)
                 self.lambda_running_versions[function_arn] = new_version_manager
+                self.event_managers[function_arn] = LambdaEventManager(
+                    version_manager=new_version_manager
+                )
                 update_status = UpdateStatus(status=LastUpdateStatus.Successful)
             elif new_state.state == State.Failed:
                 update_status = UpdateStatus(status=LastUpdateStatus.Failed)
@@ -390,6 +414,8 @@ class LambdaService:
             self.task_executor.submit(
                 destroy_code_if_not_used, old_version.function_version.config.code, function
             )
+        if old_event_manager:
+            self.task_executor.submit(old_event_manager.stop)
 
     def report_invocation_start(self, unqualified_function_arn: str):
         """
