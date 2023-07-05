@@ -79,8 +79,7 @@ class SSMParameter(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result, resource_id, resources, resource_type):
-            resource = resources[resource_id]
+        def _handle_result(result, logical_resource_id, resource):
             resource["PhysicalResourceId"] = resource["Properties"]["Name"]
 
         return {
@@ -123,8 +122,8 @@ class SSMMaintenanceWindow(GenericBaseModel):
         def _delete_window(logical_resource_id, resource, stack_name):
             connect_to().ssm.delete_maintenance_window(WindowId=resource["PhysicalResourceId"])
 
-        def _handle_result(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["WindowId"]
+        def _handle_result(result, logical_resource_id, resource):
+            resource["PhysicalResourceId"] = result["WindowId"]
 
         return {
             "create": {
@@ -170,8 +169,8 @@ class SSMMaintenanceWindowTarget(GenericBaseModel):
                 WindowTargetId=resource["PhysicalResourceId"],
             )
 
-        def _handle_result(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["WindowTargetId"]
+        def _handle_result(result, logical_resource_id, resource):
+            resource["PhysicalResourceId"] = result["WindowTargetId"]
 
         return {
             "create": {
@@ -208,8 +207,8 @@ class SSMMaintenanceTask(GenericBaseModel):
                 WindowTaskId=resource["PhysicalResourceId"],
             )
 
-        def _handle_result(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["WindowTaskId"]
+        def _handle_result(result, logical_resource_id, resource):
+            resource["PhysicalResourceId"] = result["WindowTaskId"]
 
         def _params(properties, logical_resource_id, resource_def, stack_name):
             kwargs = {
@@ -263,8 +262,8 @@ class SSMPatchBaseline(GenericBaseModel):
         def _delete_patch_baseline(logical_resource_id, resource, stack_name):
             connect_to().ssm.delete_patch_baseline(BaselineId=resource["PhysicalResourceId"])
 
-        def _handle_result(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["BaselineId"]
+        def _handle_result(result, logical_resource_id, resource):
+            resource["PhysicalResourceId"] = result["BaselineId"]
 
         return {
             "create": {
