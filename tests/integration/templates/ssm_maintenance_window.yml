@@ -13,6 +13,7 @@ Resources:
   MaintenanceWindowTask:
     Type: 'AWS::SSM::MaintenanceWindowTask'
     Properties:
+      WindowId: !Ref MaintenanceWindow
       MaxConcurrency: '1'
       MaxErrors: '1'
       Priority: '1'
@@ -21,7 +22,8 @@ Resources:
         - Key: WindowTargetIds
           Values:
             - !Ref MaintenanceWindow
-      TaskArn: 'AWS-RunShellScript'
+      TaskType: RUN_COMMAND
+      TaskArn: 'AWS-RunShellScript'  # this isn't an ARN?
       TaskInvocationParameters:
         MaintenanceWindowRunCommandParameters:
           TimeoutSeconds: 600

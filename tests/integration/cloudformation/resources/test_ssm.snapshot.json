@@ -18,7 +18,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_ssm.py::test_maintenance_window": {
-    "recorded-date": "16-06-2023, 14:08:58",
+    "recorded-date": "05-07-2023, 10:31:40",
     "recorded-content": {}
   }
 }
