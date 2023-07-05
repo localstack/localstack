@@ -913,6 +913,7 @@ class EventBridgeIntegration(BackendIntegration):
         )
         region_name = uri.split(":")[3]
         headers = aws_stack.mock_aws_request_headers(service="events", region_name=region_name)
+        headers.update({"X-Amz-Target": invocation_context.headers.get("X-Amz-Target")})
         response = make_http_request(
             config.service_url("events"), method="POST", headers=headers, data=payload
         )
