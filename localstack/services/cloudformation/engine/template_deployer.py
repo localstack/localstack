@@ -12,6 +12,7 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import usage
+from localstack.constants import FALSE_STRINGS
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     dump_resource_as_json,
@@ -26,8 +27,9 @@ from localstack.services.cloudformation.engine.template_utils import (
     fn_equals_type_conversion,
     get_deps_for_resource,
 )
-from localstack.services.cloudformation.engine.types import DeployTemplates, FuncDetails
+from localstack.services.cloudformation.engine.types import FuncDetails
 from localstack.services.cloudformation.resource_provider import (
+    PROVIDER_DEFAULTS,
     Credentials,
     ResourceProviderExecutor,
     ResourceProviderPayload,
@@ -77,14 +79,6 @@ class NoStackUpdates(Exception):
 # ---------------------
 # CF TEMPLATE HANDLING
 # ---------------------
-
-
-def get_deployment_config(res_type: str) -> DeployTemplates | None:
-    resource_class = RESOURCE_MODELS.get(res_type)
-    if resource_class:
-        return resource_class.get_deploy_templates()
-    else:
-        usage.missing_resource_types.record(res_type)
 
 
 # TODO(ds): remove next
@@ -189,17 +183,35 @@ def extract_resource_attribute(
 def get_attr_from_model_instance(
     resource: dict, attribute: str, resource_type: str, resource_id: Optional[str] = None
 ):
-    model_class = RESOURCE_MODELS.get(resource_type)
-    if not model_class:
-        LOG.debug('Unable to find model class for resource type "%s"', resource_type)
-    try:
-        inst = model_class(resource_name=resource_id, resource_json=resource)
-        return inst.get_cfn_attribute(attribute)
-    except Exception:
-        log_method = getattr(LOG, "debug")
-        if config.CFN_VERBOSE_ERRORS:
-            log_method = getattr(LOG, "exception")
-        log_method("Failed to retrieve model attribute: %s", attribute)
+    def _use_legacy():
+        # TODO: unify legacy detection with ResourceProvider
+        provider_config = json.loads(config.CFN_RESOURCE_PROVIDER_OVERRIDES)
+        # any config overwrites take precedence over the default list
+        PROVIDER_CONFIG = {**PROVIDER_DEFAULTS, **provider_config}
+        if resource_type in PROVIDER_CONFIG:
+            return PROVIDER_CONFIG[resource_type] == "GenericBaseModel"
+
+        return True
+
+    if _use_legacy():
+        # TODO: open a PR with this branch removed to see where the legacy models are not behaving correctly
+        #   then we can remove the
+        model_class = RESOURCE_MODELS.get(resource_type)
+        if not model_class:
+            LOG.debug('Unable to find model class for resource type "%s"', resource_type)
+            return
+        try:
+            inst = model_class(resource_name=resource_id, resource_json=resource)
+            return inst.get_cfn_attribute(attribute)
+        except Exception:
+            log_method = getattr(LOG, "debug")
+            if config.CFN_VERBOSE_ERRORS:
+                log_method = getattr(LOG, "exception")
+            log_method("Failed to retrieve model attribute: %s", attribute)
+
+    else:
+        # TODO: write code for property GetAtt lookup
+        return resource.get("Properties", {}).get(attribute)
 
 
 def get_ref_from_model(resources: dict, logical_resource_id: str) -> Optional[str]:
@@ -1002,26 +1014,18 @@ class TemplateDeployer:
     # DEPENDENCY RESOLUTION UTILS
     # ----------------------------
 
-    def is_deployable_resource(self, resource):
+    # TODO: remove
+    def is_deployable_resource(self, resource: dict) -> bool:
         resource_type = get_resource_type(resource)
-        entry = get_deployment_config(resource_type)
-        if entry is None:
-            resource_str = dump_resource_as_json(resource)
-            LOG.warning(f'Unable to deploy resource type "{resource_type}": {resource_str}')
-        return bool(entry and entry.get(ACTION_CREATE))
+        # TODO: we still need to be able to skip
+        return resource_type != "Parameter"
 
     def is_deployed(self, resource):
-        # TODO: make this a check on the actual resource status instead(!)
-        resource_status = {}
-        resource_id = resource["LogicalResourceId"]
-        details = retrieve_resource_details(
-            resource_id, resource_status, self.stack.resources, self.stack.stack_name
-        )
-        return bool(details)
+        return self.stack.resource_states.get("ResourceStatus") == "CREATE_COMPLETE"
 
     def is_updateable(self, resource):
         """Return whether the given resource can be updated or not."""
-        if not self.is_deployable_resource(resource) or not self.is_deployed(resource):
+        if not self.is_deployable_resource(resource) or not self.is_deployed(resource):  # TODO(RM)
             return False
         resource_instance = get_resource_model_instance(
             resource["LogicalResourceId"], self.stack.resources
@@ -1046,7 +1050,7 @@ class TemplateDeployer:
     ):
         result = {}
         for resource_id, resource in resources.items():
-            if self.is_deployable_resource(resource):
+            if self.is_deployable_resource(resource):  # TODO(RM)
                 if not self.is_deployed(resource):
                     LOG.debug(
                         "Dependency for resource %s not yet deployed: %s %s",
@@ -1080,35 +1084,8 @@ class TemplateDeployer:
 
     # Stack is needed here
     def update_resource_details(self, resource_id, stack=None, action="CREATE"):
-        stack = stack or self.stack
-        # update physical resource id
-        resource = stack.resources[resource_id]
-
-        physical_id = resource.get("PhysicalResourceId")
-
-        physical_id = physical_id or determine_resource_physical_id(
-            resource_id, resources=stack.resources, stack_name=stack.stack_name
-        )
-        if not resource.get("PhysicalResourceId") or action == "UPDATE":
-            if physical_id:
-                resource["PhysicalResourceId"] = physical_id
-
-        # Fetch state for compatibility purposes
-        # Since we now have the PhysicalResourceId available without a fetch_state, other attributes that still depend on fetch-state state might not work otherwise
-        if not resource:
-            return
-        resource_type = get_resource_type(resource)
-        resource_class = RESOURCE_MODELS.get(resource_type)
-        if resource_class:
-            resource_inst = resource_class(resource)
-            resource_inst.fetch_state_if_missing(
-                stack_name=stack.stack_name, resources=stack.resources
-            )
-
-        # set resource status
-        stack.set_resource_status(resource_id, f"{action}_COMPLETE", physical_res_id=physical_id)
-
-        return physical_id
+        stack = stack or self.stack  # TODO: remove
+        stack.set_resource_status(resource_id, f"{action}_COMPLETE")
 
     def get_change_config(
         self, action: str, resource: dict, change_set_id: Optional[str] = None
@@ -1413,7 +1390,7 @@ class TemplateDeployer:
         )
 
         if action in ["Add", "Modify"]:
-            if action == "Add" and not self.is_deployable_resource(resource):
+            if action == "Add" and not self.is_deployable_resource(resource):  # TODO(RM)
                 return False
             is_deployed = self.is_deployed(resource)
             # TODO: Attaching the cached _deployed info here, as we should not change the "Add"/"Modify" attribute
@@ -1431,7 +1408,7 @@ class TemplateDeployer:
                 )
                 return False
         elif action == "Remove":
-            should_remove = self.is_deployable_resource(resource)
+            should_remove = self.is_deployable_resource(resource)  # TODO(RM)
             if not should_remove:
                 LOG.debug(
                     f"Action 'remove' not yet implemented for CF resource type {resource.get('Type')}"

@@ -62,6 +62,39 @@ class TestBasicCRD:
         assert stack.stack_name in user_name
         assert "MyResource" in user_name
 
+    @pytest.mark.skip_snapshot_verify
+    @pytest.mark.aws_validated
+    def test_getatt(self, snapshot, deploy_cfn_template, aws_client):
+        user_name = f"test-user-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(user_name, "<user-name>"))
+        snapshot.add_transformer(snapshot.transform.key_value("UserId", "user-id"))
+
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "templates/user_tmp.yaml",
+            ),
+            parameters={"CustomUserName": user_name},
+        )
+        snapshot.match("stack-outputs", stack.outputs)
+        user_details = aws_client.iam.get_user(UserName=user_name)
+        snapshot.match("describe-resource", user_details)
+
+        stack_resource = aws_client.cloudformation.describe_stack_resource(
+            StackName=stack.stack_name, LogicalResourceId="MyResource"
+        )
+        snapshot.match("stack_resource", stack_resource)
+
+        assert user_details["User"]["Arn"]
+        assert user_details["User"]["Arn"] == stack.outputs["GetAttArn"]
+
+        # verify that the delete operation works
+        stack.destroy()
+
+        # fetch the resource again and assert that it no longer exists
+        with pytest.raises(ClientError):
+            aws_client.iam.get_user(UserName=user_name)
+
 
 @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Not working yet")
 class TestUpdates:

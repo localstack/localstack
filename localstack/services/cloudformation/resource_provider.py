@@ -545,6 +545,11 @@ class LegacyResourceProvider(ResourceProvider):
                         result, request.logical_resource_id, self.all_resources, self.resource_type
                     )
 
+        if request.action.lower() == "create":
+            resource_provider.fetch_and_update_state(
+                stack_name=request.stack_name, resources=self.all_resources
+            )
+
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=resource["Properties"])
 
 
