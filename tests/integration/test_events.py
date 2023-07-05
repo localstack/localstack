@@ -158,17 +158,29 @@ class TestEvents:
         for field in expected_fields:
             assert field in event
 
-    def test_put_rule(self, aws_client):
-        rule_name = f"rule-{short_uid()}"
+    def test_put_rule(self, aws_client, events_put_rule, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("Name", "RULE_NAME"))
 
-        aws_client.events.put_rule(Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN))
+        rule_name = f"rule-{short_uid()}-event-pattern"
+        response = events_put_rule(Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN))
+        snapshot.match("put-rule", response)
 
         rules = aws_client.events.list_rules(NamePrefix=rule_name)["Rules"]
         assert len(rules) == 1
         assert json.loads(rules[0]["EventPattern"]) == TEST_EVENT_PATTERN
+        snapshot.match("put-rule-event-pattern-rules", rules)
 
-        # clean up
-        self.cleanup(rule_name=rule_name)
+        # add scheduled rule
+        rule_name = f"rule-{short_uid()}-event-schedule"
+        response = events_put_rule(
+            Name=rule_name,
+            ScheduleExpression="rate(1 minute)",
+        )
+        snapshot.match("put-rule-event-schedule", response)
+
+        rules = aws_client.events.list_rules(NamePrefix=rule_name)["Rules"]
+        assert len(rules) == 1
+        snapshot.match("put-rule-schedule-rules", rules)
 
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
         self, aws_client

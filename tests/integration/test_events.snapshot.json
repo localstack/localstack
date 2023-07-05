@@ -152,5 +152,54 @@
         }
       }
     }
+  },
+  "tests/integration/test_events.py::TestEvents::test_put_rule": {
+    "recorded-date": "05-07-2023, 10:25:40",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<RULE_NAME:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-rule-event-pattern-rules": [
+        {
+          "Name": "<RULE_NAME:1>",
+          "Arn": "arn:aws:events:<region>:111111111111:rule/<RULE_NAME:1>",
+          "EventPattern": {
+            "source": [
+              "core.update-account-command"
+            ],
+            "detail-type": [
+              "core.update-account-command"
+            ],
+            "detail": {
+              "command": [
+                "update-account"
+              ]
+            }
+          },
+          "State": "ENABLED",
+          "EventBusName": "default"
+        }
+      ],
+      "put-rule-event-schedule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<RULE_NAME:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-rule-schedule-rules": [
+        {
+          "Name": "<RULE_NAME:2>",
+          "Arn": "arn:aws:events:<region>:111111111111:rule/<RULE_NAME:2>",
+          "State": "ENABLED",
+          "ScheduleExpression": "rate(1 minute)",
+          "EventBusName": "default"
+        }
+      ]
+    }
   }
 }
