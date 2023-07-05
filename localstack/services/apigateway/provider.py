@@ -468,14 +468,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 moto_method_integration = moto_resource.resource_methods[
                     http_method
                 ].method_integration
-                for (
-                    status_code,
-                    integration_response,
-                ) in moto_method_integration.integration_responses.items():
-                    if integration_response.response_parameters == {}:
-                        method_integration["integrationResponses"][str(status_code)][
-                            "responseParameters"
-                        ] = {}
+                if moto_method_integration.integration_responses:
+                    for (
+                        status_code,
+                        integration_response,
+                    ) in moto_method_integration.integration_responses.items():
+                        if integration_response.response_parameters == {}:
+                            method_integration["integrationResponses"][str(status_code)][
+                                "responseParameters"
+                            ] = {}
 
         return response
 
