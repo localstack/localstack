@@ -153,7 +153,7 @@ def run_for_max_seconds(max_secs, _function, *args, **kwargs):
 
 def is_command_available(cmd: str) -> bool:
     try:
-        run("which %s" % cmd, print_error=False)
+        run(["which", cmd], print_error=False)
         return True
     except Exception:
         return False

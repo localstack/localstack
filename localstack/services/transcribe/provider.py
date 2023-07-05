@@ -133,10 +133,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
         output_bucket = request.get("OutputBucketName", get_bucket_and_key_from_s3_uri(s3_path)[0])
         output_key = request.get("OutputKey")
 
-        if output_key:
-            if not output_key.endswith(".json"):
-                output_key = f"{output_key}/{job_name}.json"
-        else:
+        if not output_key:
             output_key = f"{job_name}.json"
 
         transcript = Transcript(TranscriptFileUri=f"s3://{output_bucket}/{output_key}")

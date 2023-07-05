@@ -3,6 +3,7 @@ import io
 import json
 import logging
 from copy import deepcopy
+from datetime import datetime
 from typing import IO, Any
 
 from moto.apigateway import models as apigw_models
@@ -30,6 +31,7 @@ from localstack.aws.api.apigateway import (
     CreateAuthorizerRequest,
     CreateRestApiRequest,
     DocumentationPart,
+    DocumentationPartIds,
     DocumentationPartLocation,
     DocumentationParts,
     ExportResponse,
@@ -50,6 +52,7 @@ from localstack.aws.api.apigateway import (
     NullableInteger,
     PutIntegrationRequest,
     PutIntegrationResponseRequest,
+    PutMode,
     PutRestApiRequest,
     RequestValidator,
     RequestValidators,
@@ -70,11 +73,15 @@ from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
     ERROR_MODEL,
     OpenApiExporter,
+    OpenAPIExt,
     apply_json_patch_safe,
     get_apigateway_store,
     import_api_from_openapi_spec,
     is_greedy_path,
     is_variable_path,
+    log_template,
+    multi_value_dict_for_list,
+    resolve_references,
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.models import RestApiContainer
@@ -110,28 +117,49 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def test_invoke_method(
         self, context: RequestContext, request: TestInvokeMethodRequest
     ) -> TestInvokeMethodResponse:
-
         invocation_context = to_invocation_context(context.request)
-        invocation_context.method = request["httpMethod"]
+        invocation_context.method = request.get("httpMethod")
+        invocation_context.api_id = request.get("restApiId")
+        invocation_context.path_with_query_string = request.get("pathWithQueryString")
+
+        moto_rest_api = get_moto_rest_api(context=context, rest_api_id=invocation_context.api_id)
+        resource = moto_rest_api.resources.get(request["resourceId"])
+        if not resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        invocation_context.resource = {"id": resource.id}
+        invocation_context.resource_path = resource.path_part
 
         if data := parse_json_or_yaml(to_str(invocation_context.data or b"")):
-            orig_data = data
-            if path_with_query_string := orig_data.get("pathWithQueryString"):
-                invocation_context.path_with_query_string = path_with_query_string
             invocation_context.data = data.get("body")
-            invocation_context.headers = orig_data.get("headers", {})
+            invocation_context.headers = data.get("headers", {})
 
+        req_start_time = datetime.now()
         result = invoke_rest_api_from_request(invocation_context)
+        req_end_time = datetime.now()
 
-        # TODO: implement the other TestInvokeMethodResponse parameters
-        #   * multiValueHeaders: Optional[MapOfStringToList]
-        #   * log: Optional[String]
-        #   * latency: Optional[Long]
-
+        # TODO: add the missing fields to the log. Next iteration will add helpers to extract the missing fields
+        # from the apicontext
+        log = log_template(
+            request_id=invocation_context.context["requestId"],
+            date=req_start_time,
+            http_method=invocation_context.method,
+            resource_path=invocation_context.invocation_path,
+            request_path="",
+            query_string="",
+            request_headers="",
+            request_body="",
+            response_body="",
+            response_headers=result.headers,
+            status_code=result.status_code,
+        )
         return TestInvokeMethodResponse(
             status=result.status_code,
             headers=dict(result.headers),
             body=to_str(result.content),
+            log=log,
+            latency=int((req_end_time - req_start_time).total_seconds()),
+            multiValueHeaders=multi_value_dict_for_list(result.headers),
         )
 
     @handler("CreateRestApi", expand=False)
@@ -921,6 +949,41 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if rest_api_container:
             rest_api_container.documentation_parts.pop(documentation_part_id, None)
 
+    def import_documentation_parts(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        body: IO[Blob],
+        mode: PutMode = None,
+        fail_on_warnings: Boolean = None,
+    ) -> DocumentationPartIds:
+
+        body_data = body.read()
+        openapi_spec = parse_json_or_yaml(to_str(body_data))
+
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        if not (rest_api_container := store.rest_apis.get(rest_api_id)):
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
+
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-documenting-api-quick-start-import-export.html
+        resolved_schema = resolve_references(openapi_spec, rest_api_id=rest_api_id)
+        documentation = resolved_schema.get(OpenAPIExt.DOCUMENTATION)
+
+        ids = []
+        # overwrite mode
+        if mode == PutMode.overwrite:
+            rest_api_container.documentation_parts.clear()
+            for doc_part in documentation["documentationParts"]:
+                entity_id = short_uid()[:6]
+                rest_api_container.documentation_parts[entity_id] = DocumentationPart(
+                    id=entity_id, **doc_part
+                )
+                ids.append(entity_id)
+        # TODO: implement the merge mode
+        return DocumentationPartIds(ids=ids)
+
     # base path mappings
 
     def get_base_path_mappings(
@@ -1618,13 +1681,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
 def get_moto_rest_api(context: RequestContext, rest_api_id: str) -> MotoRestAPI:
     moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
-    rest_api = moto_backend.apis.get(rest_api_id)
-    if not rest_api:
+    if rest_api := moto_backend.apis.get(rest_api_id):
+        return rest_api
+    else:
         raise NotFoundException(
             f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
         )
-
-    return rest_api
 
 
 def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True) -> RestApi:
