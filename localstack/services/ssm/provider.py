@@ -29,19 +29,32 @@ from localstack.aws.api.ssm import (
     GetParametersResult,
     LabelParameterVersionResult,
     LoggingInfo,
+    MaintenanceWindowAllowUnassociatedTargets,
+    MaintenanceWindowCutoff,
     MaintenanceWindowDescription,
+    MaintenanceWindowDurationHours,
+    MaintenanceWindowFilterList,
     MaintenanceWindowId,
+    MaintenanceWindowMaxResults,
     MaintenanceWindowName,
+    MaintenanceWindowOffset,
+    MaintenanceWindowResourceType,
+    MaintenanceWindowSchedule,
+    MaintenanceWindowStringDateTime,
+    MaintenanceWindowTargetId,
     MaintenanceWindowTaskArn,
     MaintenanceWindowTaskCutoffBehavior,
+    MaintenanceWindowTaskId,
     MaintenanceWindowTaskInvocationParameters,
     MaintenanceWindowTaskParameters,
     MaintenanceWindowTaskPriority,
     MaintenanceWindowTaskType,
+    MaintenanceWindowTimezone,
     MaxConcurrency,
     MaxErrors,
     NextToken,
     OperatingSystem,
+    OwnerInformation,
     ParameterLabelList,
     ParameterName,
     ParameterNameList,
@@ -211,66 +224,64 @@ class SsmProvider(SsmApi, ABC):
     def register_target_with_maintenance_window(
         self,
         context: RequestContext,
-        window_id: str,
-        resource_type: str,
-        targets: list,
-        owner_information: str = None,
-        name: str = None,
-        description: str = None,
-        client_token: str = None,
+        window_id: MaintenanceWindowId,
+        resource_type: MaintenanceWindowResourceType,
+        targets: Targets,
+        owner_information: OwnerInformation = None,
+        name: MaintenanceWindowName = None,
+        description: MaintenanceWindowDescription = None,
+        client_token: ClientToken = None,
     ) -> RegisterTargetWithMaintenanceWindowResult:
         return RegisterTargetWithMaintenanceWindowResult(**call_moto(context))
 
     def deregister_target_from_maintenance_window(
         self,
         context: RequestContext,
-        window_id: str,
-        window_target_id: str,
-        safe: bool = None,
+        window_id: MaintenanceWindowId,
+        window_target_id: MaintenanceWindowTargetId,
+        safe: Boolean = None,
     ) -> DeregisterTargetFromMaintenanceWindowResult:
         return DeregisterTargetFromMaintenanceWindowResult(**call_moto(context))
 
     def describe_maintenance_window_targets(
         self,
         context: RequestContext,
-        window_id: str,
-        filters: list = None,
-        max_results: int = None,
-        next_token: str = None,
+        window_id: MaintenanceWindowId,
+        filters: MaintenanceWindowFilterList = None,
+        max_results: MaintenanceWindowMaxResults = None,
+        next_token: NextToken = None,
     ) -> DescribeMaintenanceWindowTargetsResult:
         return DescribeMaintenanceWindowTargetsResult(**call_moto(context))
 
     def create_maintenance_window(
         self,
         context: RequestContext,
-        name: str,
-        schedule: str,
-        duration: int,
-        cutoff: int,
-        allow_unassociated_targets: bool = None,
-        client_token: str = None,
-        description: str = None,
-        end_date: str = None,
-        schedule_offset: int = None,
-        schedule_timezone: str = None,
-        start_date: str = None,
-        tags: list = None,
+        name: MaintenanceWindowName,
+        schedule: MaintenanceWindowSchedule,
+        duration: MaintenanceWindowDurationHours,
+        cutoff: MaintenanceWindowCutoff,
+        allow_unassociated_targets: MaintenanceWindowAllowUnassociatedTargets,
+        description: MaintenanceWindowDescription = None,
+        start_date: MaintenanceWindowStringDateTime = None,
+        end_date: MaintenanceWindowStringDateTime = None,
+        schedule_timezone: MaintenanceWindowTimezone = None,
+        schedule_offset: MaintenanceWindowOffset = None,
+        client_token: ClientToken = None,
+        tags: TagList = None,
     ) -> CreateMaintenanceWindowResult:
         return CreateMaintenanceWindowResult(**call_moto(context))
 
     def delete_maintenance_window(
-        self,
-        context: RequestContext,
-        window_id: str,
+        self, context: RequestContext, window_id: MaintenanceWindowId
     ) -> DeleteMaintenanceWindowResult:
         return DeleteMaintenanceWindowResult(**call_moto(context))
 
     def describe_maintenance_windows(
         self,
         context: RequestContext,
-        filters: list = None,
-        max_results: int = None,
-        next_token: str = None,
+        filters: MaintenanceWindowFilterList = None,
+        max_results: MaintenanceWindowMaxResults = None,
+        next_token: NextToken = None,
     ) -> DescribeMaintenanceWindowsResult:
         return DescribeMaintenanceWindowsResult(**call_moto(context))
 
@@ -299,18 +310,18 @@ class SsmProvider(SsmApi, ABC):
     def deregister_task_from_maintenance_window(
         self,
         context: RequestContext,
-        window_id: str,
-        window_task_id: str,
+        window_id: MaintenanceWindowId,
+        window_task_id: MaintenanceWindowTaskId,
     ) -> DeregisterTaskFromMaintenanceWindowResult:
         return DeregisterTaskFromMaintenanceWindowResult(**call_moto(context))
 
     def describe_maintenance_window_tasks(
         self,
         context: RequestContext,
-        window_id: str,
-        filters: list = None,
-        max_results: int = None,
-        next_token: str = None,
+        window_id: MaintenanceWindowId,
+        filters: MaintenanceWindowFilterList = None,
+        max_results: MaintenanceWindowMaxResults = None,
+        next_token: NextToken = None,
     ) -> DescribeMaintenanceWindowTasksResult:
         return DescribeMaintenanceWindowTasksResult(**call_moto(context))
 
