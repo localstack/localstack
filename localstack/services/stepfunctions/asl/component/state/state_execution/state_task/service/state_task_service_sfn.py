@@ -14,11 +14,17 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
+    FailureEventException,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
+    StatesErrorNameType,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
-from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackOutcomeFailureError
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
@@ -28,8 +34,6 @@ from localstack.utils.strings import camel_to_snake_case
 
 
 class StateTaskServiceSfn(StateTaskServiceCallback):
-    _ERROR_NAME_AWS: Final[str] = "StepFunctions.TODO2"
-
     _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
         "startexecution": {"Input", "Name", "StateMachineArn"}
     }
@@ -51,6 +55,8 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
             "StateMachineArn",
             "Status",
             "StopDate",
+            "Error",
+            "Cause",
         ],
     }
 
@@ -100,10 +106,6 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
         )
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        if isinstance(ex, CallbackOutcomeFailureError):
-            return self._get_callback_outcome_failure_event(ex=ex)
-        if isinstance(ex, TimeoutError):
-            return self._get_timed_out_failure_event()
         if isinstance(ex, ClientError):
             error_code = ex.response["Error"]["Code"]
             error_name: str = f"StepFunctions.{error_code}Exception"
@@ -133,18 +135,7 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
                     )
                 ),
             )
-        return FailureEvent(
-            error_name=CustomErrorName(self._ERROR_NAME_AWS),
-            event_type=HistoryEventType.TaskFailed,
-            event_details=EventDetails(
-                taskFailedEventDetails=TaskFailedEventDetails(
-                    error=self._ERROR_NAME_AWS,
-                    cause=str(ex),  # TODO: update to report expected cause.
-                    resource=self._get_sfn_resource(),
-                    resourceType=self._get_sfn_resource_type(),
-                )
-            ),
-        )
+        return super()._from_error(env=env, ex=ex)
 
     def _normalised_parameters_bindings(self, parameters: dict[str, str]) -> dict[str, str]:
         normalised_parameters = super()._normalised_parameters_bindings(parameters=parameters)
@@ -158,7 +149,7 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
                 if optional_input is None:
                     optional_input = {}
 
-                normalised_parameters["input"] = to_json_str(optional_input)
+                normalised_parameters["input"] = to_json_str(optional_input, separators=(",", ":"))
 
         return normalised_parameters
 
@@ -182,9 +173,26 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
                 DescribeExecutionOutput, describe_execution_output
             )
             execution_status: ExecutionStatus = describe_execution_output["status"]
+
             if execution_status != ExecutionStatus.RUNNING:
                 self._normalise_botocore_response("describeexecution", describe_execution_output)
-                return describe_execution_output
+                if execution_status == ExecutionStatus.SUCCEEDED:
+                    return describe_execution_output
+                else:
+                    raise FailureEventException(
+                        FailureEvent(
+                            error_name=StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed),
+                            event_type=HistoryEventType.TaskFailed,
+                            event_details=EventDetails(
+                                taskFailedEventDetails=TaskFailedEventDetails(
+                                    resource=self._get_sfn_resource(),
+                                    resourceType=self._get_sfn_resource_type(),
+                                    error=StatesErrorNameType.StatesTaskFailed.to_name(),
+                                    cause=to_json_str(describe_execution_output),
+                                )
+                            ),
+                        )
+                    )
             return None
 
         termination_output: Optional[dict] = None

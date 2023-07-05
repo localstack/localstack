@@ -8,6 +8,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
+    FailureEventException,
 )
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
@@ -39,4 +40,4 @@ class StateFail(CommonStateField):
                 )
             ),
         )
-        env.stack.append(failure_event)
+        raise FailureEventException(failure_event=failure_event)

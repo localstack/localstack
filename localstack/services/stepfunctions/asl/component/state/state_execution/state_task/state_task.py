@@ -4,7 +4,16 @@ import abc
 import copy
 from typing import Optional
 
-from localstack.aws.api.stepfunctions import HistoryEventType
+from localstack.aws.api.stepfunctions import HistoryEventType, TaskTimedOutEventDetails
+from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
+    FailureEvent,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
+    StatesErrorNameType,
+)
 from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
 from localstack.services.stepfunctions.asl.component.state.state_execution.execute_state import (
     ExecutionState,
@@ -14,6 +23,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 
 
 class StateTask(ExecutionState, abc.ABC):
@@ -67,6 +77,22 @@ class StateTask(ExecutionState, abc.ABC):
                 del normalised_parameters[parameter_key]
                 normalised_parameters[norm_parameter_key] = tmp
         return normalised_parameters
+
+    def _get_timed_out_failure_event(self) -> FailureEvent:
+        return FailureEvent(
+            error_name=StatesErrorName(typ=StatesErrorNameType.StatesTimeout),
+            event_type=HistoryEventType.TaskTimedOut,
+            event_details=EventDetails(
+                taskTimedOutEventDetails=TaskTimedOutEventDetails(
+                    error=StatesErrorNameType.StatesTimeout.to_name(),
+                )
+            ),
+        )
+
+    def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        if isinstance(ex, TimeoutError):
+            return self._get_timed_out_failure_event()
+        return super()._from_error(env=env, ex=ex)
 
     def _eval_parameters(self, env: Environment) -> dict:
         # Eval raw parameters.

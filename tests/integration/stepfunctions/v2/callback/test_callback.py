@@ -254,6 +254,13 @@ class TestCallback:
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..cause.StartDate",
+                replacement="start-date",
+                replace_reference=False,
+            )
+        )
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..cause.StopDate",
                 replacement="stop-date",
                 replace_reference=False,
             )
@@ -273,6 +280,75 @@ class TestCallback:
 
         exec_input = json.dumps(
             {"StateMachineArn": state_machine_arn_target, "Input": None, "Name": "TestStartTarget"}
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    def test_start_execution_sync_delegate_timeout(
+        self,
+        aws_client,
+        create_lambda_function,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..output.StartDate",
+                replacement="start-date",
+                replace_reference=False,
+            )
+        )
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..cause.StartDate",
+                replacement="start-date",
+                replace_reference=False,
+            )
+        )
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..cause.StopDate",
+                replacement="stop-date",
+                replace_reference=False,
+            )
+        )
+
+        function_name = f"lambda_1_func_{short_uid()}"
+        lambda_creation_response = create_lambda_function(
+            func_name=function_name,
+            handler_file=TT.LAMBDA_WAIT_60_SECONDS,
+            runtime="python3.9",
+        )
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_1_name>"))
+        lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
+
+        template_target = TT.load_sfn_template(TT.LAMBDA_WAIT_WITH_TIMEOUT_SECONDS)
+        template_target["States"]["Start"]["Resource"] = lambda_arn
+        definition_target = json.dumps(template_target)
+
+        state_machine_arn_target = create(
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition_target,
+        )
+
+        template = CT.load_sfn_template(CT.SFN_START_EXECUTION_SYNC)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {
+                "StateMachineArn": state_machine_arn_target,
+                "Input": {"Payload": None},
+                "Name": "TestStartTarget",
+            }
         )
         create_and_record_execution(
             aws_client.stepfunctions,

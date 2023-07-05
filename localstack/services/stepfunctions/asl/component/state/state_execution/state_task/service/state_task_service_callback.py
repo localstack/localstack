@@ -110,6 +110,11 @@ class StateTaskServiceCallback(StateTaskService):
             ),
         )
 
+    def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        if isinstance(ex, CallbackOutcomeFailureError):
+            return self._get_callback_outcome_failure_event(ex=ex)
+        return super()._from_error(env=env, ex=ex)
+
     def _eval_execution(self, env: Environment) -> None:
         parameters = self._eval_parameters(env=env)
         parameters_str = to_json_str(parameters)

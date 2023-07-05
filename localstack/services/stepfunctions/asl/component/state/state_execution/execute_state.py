@@ -5,11 +5,7 @@ import threading
 from threading import Thread
 from typing import Any, Optional
 
-from localstack.aws.api.stepfunctions import (
-    ExecutionFailedEventDetails,
-    HistoryEventType,
-    TaskFailedEventDetails,
-)
+from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import (
     CatchOutcome,
@@ -17,6 +13,7 @@ from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome 
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
+    FailureEventException,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
     StatesErrorName,
@@ -126,13 +123,17 @@ class ExecutionState(CommonStateField, abc.ABC):
             self.heartbeat = heartbeat
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        LOG.warning("State Task executed generic failure event reporting logic.")
+        if isinstance(ex, FailureEventException):
+            return ex.failure_event
+        LOG.warning(
+            "State Task encountered an unhandled exception that lead to a State.Runtime error."
+        )
         return FailureEvent(
-            error_name=StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed),
+            error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
             event_type=HistoryEventType.TaskFailed,
             event_details=EventDetails(
                 taskFailedEventDetails=TaskFailedEventDetails(
-                    error="Unsupported Error Handling",
+                    error=StatesErrorNameType.StatesRuntime.to_name(),
                     cause=str(ex),
                 )
             ),
@@ -184,10 +185,7 @@ class ExecutionState(CommonStateField, abc.ABC):
 
     @staticmethod
     def _terminate_with_event(failure_event: FailureEvent, env: Environment) -> None:
-        # Halt execution with the given failure event.
-        env.set_error(
-            ExecutionFailedEventDetails(**(list(failure_event.event_details.values())[0]))
-        )
+        raise FailureEventException(failure_event=failure_event)
 
     def _evaluate_with_timeout(self, env: Environment) -> None:
         self.timeout.eval(env=env)
