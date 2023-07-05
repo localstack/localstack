@@ -2433,6 +2433,46 @@ class TestS3:
         snapshot.match("get-object-expiry", response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        reason="Bucket lifecycle doesn't affect object expiration in both providers for now"
+    )
+    def test_bucket_lifecycle_configuration_object_expiry_versioned(
+        self, s3_bucket, snapshot, aws_client
+    ):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value(
+                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
+                ),
+            ]
+        )
+
+        lfc = {
+            "Rules": [
+                {
+                    "Expiration": {"Days": 7},
+                    "ID": "wholebucket",
+                    "Filter": {"Prefix": ""},
+                    "Status": "Enabled",
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+        key = "test-object-expiry"
+        aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("head-object-expiry", response)
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("get-object-expiry", response)
+
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
