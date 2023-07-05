@@ -158,9 +158,10 @@ class TestEvents:
         for field in expected_fields:
             assert field in event
 
-    def test_put_rule(self, aws_client, events_put_rule, snapshot):
+    def test_put_event_pattern_rule_with_sqs_target(self, aws_client, events_put_rule, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("Name", "RULE_NAME"))
 
+        # add event pattern rule
         rule_name = f"rule-{short_uid()}-event-pattern"
         response = events_put_rule(Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN))
         snapshot.match("put-rule", response)
@@ -181,6 +182,21 @@ class TestEvents:
         rules = aws_client.events.list_rules(NamePrefix=rule_name)["Rules"]
         assert len(rules) == 1
         snapshot.match("put-rule-schedule-rules", rules)
+
+        # pattern match forward to target sqs queue
+        entries = [
+            {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(EVENT_DETAIL),
+            }
+        ]
+        self._put_events_with_filter_to_sqs(
+            aws_client.events,
+            aws_client.sqs,
+            pattern=TEST_EVENT_PATTERN,
+            entries_asserts=[(entries, True)],
+        )
 
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
         self, aws_client

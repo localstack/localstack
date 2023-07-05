@@ -153,8 +153,8 @@
       }
     }
   },
-  "tests/integration/test_events.py::TestEvents::test_put_rule": {
-    "recorded-date": "05-07-2023, 10:25:40",
+  "tests/integration/test_events.py::TestEvents::test_put_event_pattern_rule_with_sqs_target": {
+    "recorded-date": "05-07-2023, 20:18:56",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:aws:events:<region>:111111111111:rule/<RULE_NAME:1>",
