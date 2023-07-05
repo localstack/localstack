@@ -48,9 +48,7 @@ def call_moto(context: RequestContext, include_response_metadata=False) -> Servi
 
 
 def call_moto_with_request(
-    context: RequestContext,
-    service_request: ServiceRequest,
-    override_headers=False,
+    context: RequestContext, service_request: ServiceRequest
 ) -> ServiceResponse:
     """
     Like `call_moto`, but you can pass a modified version of the service request before calling moto. The caveat is
@@ -68,19 +66,10 @@ def call_moto_with_request(
         parameters=service_request,
         region=context.region,
     )
-
-    if override_headers:
-        # by default, we first re-serialize the parameters from the `service_request` and then we update the
-        # local_context headers with the ones from the original request, which means you will override your previously
-        # set parameter with the one from the original request.
-        # we reverse the order if `override_headers` is set, and properly override the original request with all
-        # parameters from the `service_request`
-        headers = copy.deepcopy(context.request.headers)
-        headers.update(local_context.request.headers)
-        local_context.request.headers = headers
-
-    else:
-        local_context.request.headers.update(context.request.headers)
+    # we keep the headers from the original request, but override them with the ones created from the `service_request`
+    headers = copy.deepcopy(context.request.headers)
+    headers.update(local_context.request.headers)
+    local_context.request.headers = headers
 
     return call_moto(local_context)
 

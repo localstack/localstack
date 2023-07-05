@@ -94,16 +94,10 @@ class S3ProviderStream(S3Provider):
 
             body = request_without_body.pop("Body", BytesIO(b""))
             request_without_body["Body"] = BytesIO(b"")
-            checksums_keys = {
-                key for key in request_without_body.keys() if key.startswith("Checksum")
-            }
-            for checksum_key in checksums_keys:
-                request_without_body.pop(checksum_key)
 
             response: PutObjectOutput = call_moto_with_request(
                 context,
                 request_without_body,
-                override_headers=True,
             )
         except CommonServiceException as e:
             # missing attributes in exception
