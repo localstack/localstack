@@ -7,9 +7,12 @@ import pytest
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.lambda_utils import is_old_provider
-from localstack.utils.docker_utils import get_host_path_for_path_in_docker
+from localstack.utils.container_networking import get_main_container_network
+from localstack.utils.docker_utils import DOCKER_CLIENT, get_host_path_for_path_in_docker
 from localstack.utils.files import load_file, mkdir, rm_rf
 from localstack.utils.strings import short_uid, to_str
+from localstack.utils.sync import retry
+from localstack.utils.testutil import create_lambda_archive
 from tests.integration.awslambda.test_lambda import TEST_LAMBDA_ENV, THIS_FOLDER
 
 HOT_RELOADING_NODEJS_HANDLER = os.path.join(
@@ -18,6 +21,7 @@ HOT_RELOADING_NODEJS_HANDLER = os.path.join(
 HOT_RELOADING_PYTHON_HANDLER = os.path.join(
     THIS_FOLDER, "functions/hot-reloading/python/handler.py"
 )
+LAMBDA_NETWORKS_PYTHON_HANDLER = os.path.join(THIS_FOLDER, "functions/lambda_networks.py")
 
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="Focussing on the new provider")
@@ -145,3 +149,52 @@ class TestDockerFlags:
         result_data = result["Payload"].read()
         result_data = json.loads(to_str(result_data))
         assert {"Hello": env_value} == result_data
+
+    def test_lambda_docker_networks(self, lambda_su_role, monkeypatch, aws_client, cleanups):
+        function_name = f"test-network-{short_uid()}"
+        container_name = f"server-{short_uid()}"
+        additional_network = f"test-network-{short_uid()}"
+
+        # networking setup
+        main_network = get_main_container_network()
+        DOCKER_CLIENT.create_network(additional_network)
+
+        def _delete_network():
+            retry(lambda: DOCKER_CLIENT.delete_network(additional_network))
+
+        cleanups.append(_delete_network)
+        DOCKER_CLIENT.run_container(
+            image_name="nginx",
+            remove=True,
+            detach=True,
+            name=container_name,
+            network=additional_network,
+        )
+        cleanups.append(lambda: DOCKER_CLIENT.stop_container(container_name=container_name))
+        monkeypatch.setattr(config, "LAMBDA_DOCKER_NETWORK", f"{main_network},{additional_network}")
+
+        # we need to create a lambda manually here for the right cleanup order
+        # (we need to destroy the function before the network, not the other way around. This is only guaranteed
+        # with the cleanups fixture)
+        zip_file = create_lambda_archive(
+            load_file(LAMBDA_NETWORKS_PYTHON_HANDLER),
+            get_content=True,
+            runtime=Runtime.python3_9,
+        )
+        aws_client.awslambda.create_function(
+            FunctionName=function_name,
+            Code={"ZipFile": zip_file},
+            Handler="handler.handler",
+            Runtime=Runtime.python3_9,
+            Role=lambda_su_role,
+        )
+        cleanups.append(lambda: aws_client.awslambda.delete_function(FunctionName=function_name))
+
+        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        result = aws_client.awslambda.invoke(
+            FunctionName=function_name, Payload=json.dumps({"url": f"http://{container_name}"})
+        )
+        result_data = result["Payload"].read()
+        result_data = json.loads(to_str(result_data))
+        assert result_data["status"] == 200
+        assert "nginx" in result_data["response"]
