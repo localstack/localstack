@@ -6,6 +6,7 @@ import pytest
 import yaml
 
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
+from localstack.testing.pytest.snapshot import is_aws
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -581,14 +582,21 @@ def test_events_resource_types(deploy_cfn_template, snapshot, aws_client):
     template_path = os.path.join(
         os.path.dirname(__file__), "../../templates/cfn_cdk_sample_app.yaml"
     )
-    stack = deploy_cfn_template(template_path=template_path, max_wait=500)
+    stack = deploy_cfn_template(template_path=template_path, max_wait=100 if is_aws() else 60)
     events = aws_client.cloudformation.describe_stack_events(StackName=stack.stack_name)[
         "StackEvents"
     ]
 
-    resource_types = list(set([event["ResourceType"] for event in events]))
-    resource_types.sort()
-    snapshot.match("resource_types", resource_types)
+    resource_types_events = {}
+    for event in events:
+        resource_types_events.setdefault(event["ResourceType"], set([])).add(
+            event["ResourceStatus"]
+        )
+
+    for resource_type in resource_types_events:
+        resource_types_events[resource_type] = sorted(resource_types_events[resource_type])
+
+    snapshot.match("resource_types", resource_types_events)
 
 
 # TODO: rewrite this for proper compatibility with AWS by using a different resource (that doesn't need a deployed VPC)

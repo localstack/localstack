@@ -565,15 +565,31 @@
     }
   },
   "tests/integration/cloudformation/api/test_stacks.py::test_events_resource_types": {
-    "recorded-date": "15-02-2023, 10:46:53",
+    "recorded-date": "05-07-2023, 10:48:22",
     "recorded-content": {
-      "resource_types": [
-        "AWS::CloudFormation::Stack",
-        "AWS::SNS::Subscription",
-        "AWS::SNS::Topic",
-        "AWS::SQS::Queue",
-        "AWS::SQS::QueuePolicy"
-      ]
+      "resource_types": {
+        "AWS::CloudFormation::Stack": [
+          "CREATE_COMPLETE",
+          "CREATE_IN_PROGRESS",
+          "REVIEW_IN_PROGRESS"
+        ],
+        "AWS::SNS::Subscription": [
+          "CREATE_COMPLETE",
+          "CREATE_IN_PROGRESS"
+        ],
+        "AWS::SNS::Topic": [
+          "CREATE_COMPLETE",
+          "CREATE_IN_PROGRESS"
+        ],
+        "AWS::SQS::Queue": [
+          "CREATE_COMPLETE",
+          "CREATE_IN_PROGRESS"
+        ],
+        "AWS::SQS::QueuePolicy": [
+          "CREATE_COMPLETE",
+          "CREATE_IN_PROGRESS"
+        ]
+      }
     }
   },
   "tests/integration/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_name_creation": {

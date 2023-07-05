@@ -989,12 +989,6 @@ class TemplateDeployer:
     # DEPLOYMENT UTILS
     # -----------------
 
-    def init_resource_status(self, resources=None, stack=None, action="CREATE"):
-        resources = resources or self.resources
-        stack = stack or self.stack
-        for resource_id, resource in resources.items():
-            stack.set_resource_status(resource_id, f"{action}_IN_PROGRESS")
-
     # Stack is needed here
     def update_resource_details(self, resource_id, stack=None, action="CREATE"):
         stack = stack or self.stack
@@ -1136,10 +1130,8 @@ class TemplateDeployer:
         initialize: Optional[bool] = False,
         action: Optional[str] = None,
     ):
-        old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
         action = action or "CREATE"
-        self.init_resource_status(old_resources, action="UPDATE")
 
         # apply parameter changes to existing stack
         # self.apply_parameter_changes(existing_stack, new_stack)
@@ -1219,7 +1211,6 @@ class TemplateDeployer:
                 action = res_change["Action"]
                 is_add_or_modify = action in ["Add", "Modify"]
                 resource_id = res_change["LogicalResourceId"]
-
                 # TODO: do resolve_refs_recursively once here
                 try:
                     if is_add_or_modify:
@@ -1373,12 +1364,14 @@ class TemplateDeployer:
         )
 
         # TODO: verify event
+        stack_action = get_action_name_for_resource_change(action)
+        stack.set_resource_status(resource_id, f"{stack_action}_IN_PROGRESS")
+
         executor.deploy_loop(resource_provider_payload)  # noqa
 
         # TODO: update resource state with returned state from progress event
 
         # update resource status and physical resource id
-        stack_action = get_action_name_for_resource_change(action)
         self.update_resource_details(resource_id, stack=stack, action=stack_action)
 
     def create_resource_provider_executor(self) -> ResourceProviderExecutor:
