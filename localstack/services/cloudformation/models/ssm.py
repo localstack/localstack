@@ -120,12 +120,10 @@ class SSMMaintenanceWindow(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _delete_window(resource_id, resources, resource_type, func, stack_name):
-            connect_to().ssm.delete_maintenance_window(
-                WindowId=resources[resource_id]["PhysicalResourceId"]
-            )
+        def _delete_window(logical_resource_id, resource, stack_name):
+            connect_to().ssm.delete_maintenance_window(WindowId=resource["PhysicalResourceId"])
 
-        def _store_window_id(result, resource_id, resources, resource_type):
+        def _handle_result(result, resource_id, resources, resource_type):
             resources[resource_id]["PhysicalResourceId"] = result["WindowId"]
 
         return {
@@ -144,7 +142,7 @@ class SSMMaintenanceWindow(GenericBaseModel):
                     "Description",
                     "Tags",
                 ),
-                "result_handler": _store_window_id,
+                "result_handler": _handle_result,
             },
             "delete": {"function": _delete_window},
         }
@@ -166,13 +164,13 @@ class SSMMaintenanceWindowTarget(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _delete_window_target(resource_id, resources, resource_type, func, stack_name):
+        def _delete_window_target(logical_resource_id, resource, stack_name):
             connect_to().ssm.deregister_target_from_maintenance_window(
-                WindowId=resources[resource_id]["Properties"]["WindowId"],
-                WindowTargetId=resources[resource_id]["PhysicalResourceId"],
+                WindowId=resource["Properties"]["WindowId"],
+                WindowTargetId=resource["PhysicalResourceId"],
             )
 
-        def _store_window_target_id(result, resource_id, resources, resource_type):
+        def _handle_result(result, resource_id, resources, resource_type):
             resources[resource_id]["PhysicalResourceId"] = result["WindowTargetId"]
 
         return {
@@ -186,7 +184,7 @@ class SSMMaintenanceWindowTarget(GenericBaseModel):
                     "Targets",
                     "WindowId",
                 ),
-                "result_handler": _store_window_target_id,
+                "result_handler": _handle_result,
             },
             "delete": {"function": _delete_window_target},
         }
@@ -204,13 +202,13 @@ class SSMMaintenanceTask(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _delete_window_task(resource_id, resources, resource_type, func, stack_name):
+        def _delete_window_task(logical_resource_id, resource, stack_name):
             connect_to().ssm.deregister_task_from_maintenance_window(
-                WindowId=resources[resource_id]["Properties"]["WindowId"],
-                WindowTaskId=resources[resource_id]["PhysicalResourceId"],
+                WindowId=resource["Properties"]["WindowId"],
+                WindowTaskId=resource["PhysicalResourceId"],
             )
 
-        def _store_window_task_id(result, resource_id, resources, resource_type):
+        def _handle_result(result, resource_id, resources, resource_type):
             resources[resource_id]["PhysicalResourceId"] = result["WindowTaskId"]
 
         def _params(properties, logical_resource_id, resource_def, stack_name):
@@ -244,7 +242,7 @@ class SSMMaintenanceTask(GenericBaseModel):
             "create": {
                 "function": "register_task_with_maintenance_window",
                 "parameters": _params,
-                "result_handler": _store_window_task_id,
+                "result_handler": _handle_result,
             },
             "delete": {"function": _delete_window_task},
         }
@@ -262,12 +260,10 @@ class SSMPatchBaseline(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _delete_patch_baseline(resource_id, resources, resource_type, func, stack_name):
-            connect_to().ssm.delete_patch_baseline(
-                BaselineId=resources[resource_id]["PhysicalResourceId"]
-            )
+        def _delete_patch_baseline(logical_resource_id, resource, stack_name):
+            connect_to().ssm.delete_patch_baseline(BaselineId=resource["PhysicalResourceId"])
 
-        def _store_patch_baseline_id(result, resource_id, resources, resource_type):
+        def _handle_result(result, resource_id, resources, resource_type):
             resources[resource_id]["PhysicalResourceId"] = result["BaselineId"]
 
         return {
@@ -288,7 +284,7 @@ class SSMPatchBaseline(GenericBaseModel):
                     "ClientToken",
                     "Tags",
                 ),
-                "result_handler": _store_patch_baseline_id,
+                "result_handler": _handle_result,
             },
             "delete": {"function": _delete_patch_baseline},
         }
