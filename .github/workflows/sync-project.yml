@@ -31,6 +31,7 @@ jobs:
                 "status: accepted": "status: backlog 🗃",
                 "status: stale": "status: stale 😴",
                 "status: response required": "status: response required 🗨",
+                "status: in progress": "status: in progress 🧑‍💻",
                 "status: resolved/stale": "status: stale 😴",
                 "status: resolved/fixed": "status: closed ✔",
                 "status: resolved/workaround": "status: closed ✔"
