@@ -7522,5 +7522,26 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_headers": {
+    "recorded-date": "06-07-2023, 12:43:29",
+    "recorded-content": {
+      "if_none_match_err_1": {
+        "Code": "304",
+        "Message": "Not Modified"
+      },
+      "if_none_match_err_2": {
+        "Code": "304",
+        "Message": "Not Modified"
+      },
+      "if_none_match_1": 200,
+      "if_match_1": 200,
+      "if_match_2": 200,
+      "if_match_err_1": {
+        "Code": "PreconditionFailed",
+        "Condition": "If-Match",
+        "Message": "At least one of the pre-conditions you specified did not hold"
+      }
+    }
   }
 }

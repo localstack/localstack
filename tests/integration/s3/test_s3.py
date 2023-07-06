@@ -4752,6 +4752,38 @@ class TestS3:
         response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=bucket)
         snapshot.match("list_bucket_intelligent_tiering_configurations_3", response)
 
+    @pytest.mark.aws_validated
+    def test_s3_get_object_headers(self, aws_client, s3_create_bucket, snapshot):
+        bucket = s3_create_bucket()
+        key = "en-gb.wav"
+        file_path = os.path.join(os.path.dirname(__file__), f"../files/{key}")
+
+        aws_client.s3.upload_file(file_path, bucket, key)
+        objects = aws_client.s3.list_objects(Bucket=bucket)
+        etag = objects["Contents"][0]["ETag"]
+
+        # TODO: some of the headers missing in the get object response
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=bucket, Key=key, IfNoneMatch=etag)
+        snapshot.match("if_none_match_err_1", e.value.response["Error"])
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=bucket, Key=key, IfNoneMatch=etag.strip('"'))
+        snapshot.match("if_none_match_err_2", e.value.response["Error"])
+
+        response = aws_client.s3.get_object(Bucket=bucket, Key=key, IfNoneMatch="etag")
+        snapshot.match("if_none_match_1", response["ResponseMetadata"]["HTTPStatusCode"])
+
+        response = aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch=etag)
+        snapshot.match("if_match_1", response["ResponseMetadata"]["HTTPStatusCode"])
+
+        response = aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch=etag.strip('"'))
+        snapshot.match("if_match_2", response["ResponseMetadata"]["HTTPStatusCode"])
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch="etag")
+        snapshot.match("if_match_err_1", e.value.response["Error"])
+
 
 class TestS3MultiAccounts:
     @pytest.fixture
