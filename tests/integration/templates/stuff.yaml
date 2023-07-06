@@ -1,0 +1,73 @@
+Parameters:
+  SubnetMode:
+    Description: Whether the subnets created will be public or private
+    Type: String
+    AllowedValues: [public, private, privatenat]
+    Default: public
+  Application:
+    Description: For naming resources (in case of future applications in the same account)
+    Type: String
+    Default: ignite
+  SetIdentifier:
+    Description: For naming resources (in case of future deployments in the same region)
+    Type: String
+    Default: default
+  SingleTable:
+    Description: If true, creates a single route table. Multiple tables are used for NAT gateways
+    Type: String
+    Default: true
+    AllowedValues: [true, false]
+Conditions:
+  SingleRouteTable: !Equals [true, !Ref SingleTable]
+  MultipleRouteTable: !Equals [false, !Ref SingleTable]
+
+Resources:
+  SubnetRouteTableAssociationA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !If
+        - SingleRouteTable
+        - !Ref RouteTable
+#        - staticvalue
+        - !Ref RouteTableA
+      SubnetId: !Ref SubnetA
+
+  SubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Sub ${AWS::Region}a
+      CidrBlock: 10.1.1.0/24
+
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.1.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${Application}-${AWS::Region}-${SetIdentifier}-${SubnetMode}
+        - Key: Application
+          Value: !Ref Application
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  RouteTableA:
+    Type: AWS::EC2::RouteTable
+    Condition: MultipleRouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${Application}-${AWS::Region}-${SetIdentifier}-${SubnetMode}
+        - Key: Application
+          Value: !Ref Application
+        - Key: Region
+          Value: !Ref AWS::Region
