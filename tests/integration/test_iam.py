@@ -488,8 +488,6 @@ class TestIAMIntegrations:
     @pytest.mark.aws_validated
     def test_update_assume_role_policy(self, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.resource_name("role_name"))
-        snapshot.add_transformer(snapshot.transform.key_value("RoleId", "role_id"))
 
         policy = {
             "Version": "2012-10-17",
@@ -516,3 +514,74 @@ class TestIAMIntegrations:
             snapshot.match("updated_policy", result)
         finally:
             aws_client.iam.delete_role(RoleName=role_name)
+
+    @pytest.mark.aws_validated
+    def test_create_describe_role(self, snapshot, aws_client, create_role, cleanups):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+        path_prefix = f"/{short_uid()}/"
+        snapshot.add_transformer(snapshot.transform.regex(path_prefix, "/<path-prefix>/"))
+
+        trust_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "ec2.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+
+        role_name = f"role-{short_uid()}"
+        create_role_result = create_role(
+            RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Path=path_prefix
+        )
+        snapshot.match("create_role_result", create_role_result)
+        get_role_result = aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("get_role_result", get_role_result)
+
+        list_roles_result = aws_client.iam.list_roles(PathPrefix=path_prefix)
+        snapshot.match("list_roles_result", list_roles_result)
+
+    @pytest.mark.aws_validated
+    def test_list_roles_with_permission_boundary(
+        self, snapshot, aws_client, create_role, create_policy, cleanups
+    ):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+        path_prefix = f"/{short_uid()}/"
+        snapshot.add_transformer(snapshot.transform.regex(path_prefix, "/<path-prefix>/"))
+
+        trust_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "ec2.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+        permission_boundary = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {"Effect": "Allow", "Action": ["lambda:ListFunctions"], "Resource": ["*"]}
+            ],
+        }
+
+        role_name = f"role-{short_uid()}"
+        policy_name = f"policy-{short_uid()}"
+        result = create_role(
+            RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Path=path_prefix
+        )
+        snapshot.match("created_role", result)
+        policy_arn = create_policy(
+            PolicyName=policy_name, PolicyDocument=json.dumps(permission_boundary)
+        )["Policy"]["Arn"]
+
+        aws_client.iam.put_role_permissions_boundary(
+            RoleName=role_name, PermissionsBoundary=policy_arn
+        )
+        cleanups.append(lambda: aws_client.iam.delete_role_permissions_boundary(RoleName=role_name))
+
+        list_roles_result = aws_client.iam.list_roles(PathPrefix=path_prefix)
+        snapshot.match("list_roles_result", list_roles_result)

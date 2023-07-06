@@ -109,9 +109,6 @@ class IamProvider(IamApi):
         result = call_moto(context)
 
         if not request.get("MaxSessionDuration") and result["Role"].get("MaxSessionDuration"):
-            backend = get_iam_backend(context)
-            role = backend.get_role(request["RoleName"])
-            role.max_session_duration = None
             result["Role"].pop("MaxSessionDuration")
 
         if "RoleLastUsed" in result["Role"] and not result["Role"]["RoleLastUsed"]:
@@ -230,6 +227,8 @@ class IamProvider(IamApi):
         response_roles = []
         for moto_role in moto_roles:
             response_role = self.moto_role_to_role_type(moto_role)
+            # Permission boundary should not be a part of the response
+            response_role.pop("PermissionsBoundary", None)
             response_roles.append(response_role)
             if (
                 path_prefix
