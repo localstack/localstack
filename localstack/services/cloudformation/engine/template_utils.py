@@ -12,7 +12,10 @@ AWS_URL_SUFFIX = "localhost.localstack.cloud"
 def get_deps_for_resource(resource: dict, evaluated_conditions: dict[str, bool]) -> set[str]:
     deps = set()
     deps = deps.union(resolve_dependencies(resource.get("Properties", {}), evaluated_conditions))
-    deps = deps.union(resource.get("DependsOn", []))
+    explicit_dependencies = resource.get("DependsOn", [])
+    if not isinstance(explicit_dependencies, list):
+        explicit_dependencies = [explicit_dependencies]
+    deps = deps.union(explicit_dependencies)
     return deps
 
 

@@ -170,7 +170,7 @@ class ResourceProvider(Generic[Properties]):
 def get_resource_type(resource: dict) -> str:
     """this is currently overwritten in PRO to add support for custom resources"""
     if isinstance(resource, str):
-        raise Exception("whaa")
+        raise ValueError(f"Invalid argument: {resource}")
     resource_type: str = resource["Type"]
     if resource_type.startswith("Custom::"):
         return "AWS::CloudFormation::CustomResource"

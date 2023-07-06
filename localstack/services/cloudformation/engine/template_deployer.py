@@ -952,8 +952,8 @@ class TemplateDeployer:
 
     def get_unsatisfied_dependencies(self, resource):
         res_deps = self.get_resource_dependencies(resource)
-        res_deps = {v: self.stack.resources.get(v) for k, v in res_deps.items()}
-        return self.get_unsatisfied_dependencies_for_resources(res_deps, resource)
+        res_deps_mapped = {v: self.stack.resources.get(v) for k, v in res_deps.items()}
+        return self.get_unsatisfied_dependencies_for_resources(res_deps_mapped, resource)
 
     def get_unsatisfied_dependencies_for_resources(
         self, resources, depending_resource=None, return_first=True
