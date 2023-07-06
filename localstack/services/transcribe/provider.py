@@ -104,6 +104,13 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
         store = transcribe_stores[context.account_id][context.region]
 
         if job := store.transcription_jobs.get(transcription_job_name):
+            # fetch output key and output bucket
+            output_bucket, output_key = get_bucket_and_key_from_presign_url(job["Transcript"]["TranscriptFileUri"])
+            job["Transcript"]["TranscriptFileUri"] = connect_to().s3.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": output_bucket, "Key": output_key},
+                ExpiresIn=60 * 15,
+            )
             return GetTranscriptionJobResponse(TranscriptionJob=job)
 
         raise NotFoundException(
