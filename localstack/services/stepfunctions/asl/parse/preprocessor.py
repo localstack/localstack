@@ -87,6 +87,10 @@ from localstack.services.stepfunctions.asl.component.common.retry.max_attempts_d
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_decl import RetrierDecl
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_props import RetrierProps
 from localstack.services.stepfunctions.asl.component.common.retry.retry_decl import RetryDecl
+from localstack.services.stepfunctions.asl.component.common.timeouts.heartbeat import (
+    HeartbeatSeconds,
+    HeartbeatSecondsPath,
+)
 from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import (
     TimeoutSeconds,
     TimeoutSecondsPath,
@@ -275,6 +279,18 @@ class Preprocessor(ASLParserVisitor):
     ) -> TimeoutSecondsPath:
         path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
         return TimeoutSecondsPath(path=path)
+
+    def visitHeartbeat_seconds_decl(
+        self, ctx: ASLParser.Heartbeat_seconds_declContext
+    ) -> HeartbeatSeconds:
+        seconds = int(ctx.INT().getText())
+        return HeartbeatSeconds(heartbeat_seconds=seconds)
+
+    def visitHeartbeat_seconds_path_decl(
+        self, ctx: ASLParser.Heartbeat_seconds_path_declContext
+    ) -> HeartbeatSecondsPath:
+        path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
+        return HeartbeatSecondsPath(path=path)
 
     def visitResult_selector_decl(
         self, ctx: ASLParser.Result_selector_declContext

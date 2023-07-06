@@ -47,6 +47,8 @@ state_stmt
     | max_concurrency_decl
     | timeout_seconds_decl
     | timeout_seconds_path_decl
+    | heartbeat_seconds_decl
+    | heartbeat_seconds_path_decl
     | branches_decl
     | parameters_decl
     | retry_decl
@@ -159,6 +161,13 @@ timeout_seconds_path_decl
     : TIMEOUTSECONDSPATH COLON STRINGPATH
     ;
 
+heartbeat_seconds_decl
+    : HEARTBEATSECONDS COLON INT
+    ;
+
+heartbeat_seconds_path_decl
+    : HEARTBEATSECONDSPATH COLON STRINGPATH
+    ;
 
 payload_tmpl_decl
     : LBRACE payload_binding (COMMA payload_binding)* RBRACE

@@ -33,6 +33,10 @@ class CallbackOutcomeFailure(CallbackOutcome):
         self.cause = cause
 
 
+class CallbackTimeoutError(TimeoutError):
+    pass
+
+
 class CallbackConsumerError(abc.ABC):
     ...
 
@@ -45,11 +49,32 @@ class CallbackConsumerLeft(CallbackConsumerError):
     pass
 
 
+class HeartbeatEndpoint:
+    _next_heartbeat_event: Final[Event]
+    _heartbeat_seconds: Final[int]
+
+    def __init__(self, heartbeat_seconds: int):
+        self._next_heartbeat_event = Event()
+        self._heartbeat_seconds = heartbeat_seconds
+
+    def clear_and_wait(self) -> bool:
+        self._next_heartbeat_event.clear()
+        return self._next_heartbeat_event.wait(timeout=self._heartbeat_seconds)
+
+    def notify(self):
+        self._next_heartbeat_event.set()
+
+
+class HeartbeatTimeoutError(TimeoutError):
+    pass
+
+
 class CallbackEndpoint:
     callback_id: Final[CallbackId]
     _notify_event: Final[Event]
     _outcome: Optional[CallbackOutcome]
     consumer_error: Optional[CallbackConsumerError]
+    _heartbeat_endpoint: Optional[HeartbeatEndpoint]
 
     def __init__(self, callback_id: CallbackId):
         self.callback_id = callback_id
@@ -57,12 +82,27 @@ class CallbackEndpoint:
         self._outcome = None
         self.consumer_error = None
 
+    def setup_heartbeat_endpoint(self, heartbeat_seconds: int) -> HeartbeatEndpoint:
+        self._heartbeat_endpoint = HeartbeatEndpoint(heartbeat_seconds=heartbeat_seconds)
+        return self._heartbeat_endpoint
+
     def notify(self, outcome: CallbackOutcome):
         self._outcome = outcome
         self._notify_event.set()
+        if self._heartbeat_endpoint:
+            self._heartbeat_endpoint.notify()
+
+    def notify_heartbeat(self) -> bool:
+        if not self._heartbeat_endpoint:
+            return False
+        self._heartbeat_endpoint.notify()
+        return True
 
     def wait(self, timeout: Optional[float] = None) -> Optional[CallbackOutcome]:
         self._notify_event.wait(timeout=timeout)
+        return self._outcome
+
+    def get_outcome(self) -> Optional[CallbackOutcome]:
         return self._outcome
 
     def report(self, consumer_error: CallbackConsumerError) -> None:
@@ -103,7 +143,7 @@ class CallbackPoolManager:
         return self.add(long_uid())
 
     def notify(self, callback_id: CallbackId, outcome: CallbackOutcome) -> bool:
-        callback_endpoint = self._pool.pop(callback_id, None)
+        callback_endpoint = self._pool.get(callback_id, None)
         if callback_endpoint is None:
             return False
 
@@ -113,3 +153,14 @@ class CallbackPoolManager:
 
         callback_endpoint.notify(outcome=outcome)
         return True
+
+    def heartbeat(self, callback_id: CallbackId) -> bool:
+        callback_endpoint = self._pool.get(callback_id, None)
+        if callback_endpoint is None:
+            return False
+
+        consumer_error: Optional[CallbackConsumerError] = callback_endpoint.consumer_error
+        if consumer_error is not None:
+            raise CallbackNotifyConsumerError(callback_consumer_error=consumer_error)
+
+        return callback_endpoint.notify_heartbeat()

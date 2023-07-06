@@ -25,7 +25,7 @@ class WaitFunction(EvalComponent, abc.ABC):
             return
         elif isinstance(env.program_state(), ProgramRunning):
             # Unrelated interrupt: continue waiting.
-            LOG.info(
+            LOG.warning(
                 f"Wait function '{self}' successfully reentered waiting for "
                 f"another '{max_seconds - tot_sec_waited}' seconds."
             )

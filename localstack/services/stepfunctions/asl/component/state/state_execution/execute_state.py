@@ -28,7 +28,12 @@ from localstack.services.stepfunctions.asl.component.common.path.result_path imp
 from localstack.services.stepfunctions.asl.component.common.result_selector import ResultSelector
 from localstack.services.stepfunctions.asl.component.common.retry.retry_decl import RetryDecl
 from localstack.services.stepfunctions.asl.component.common.retry.retry_outcome import RetryOutcome
+from localstack.services.stepfunctions.asl.component.common.timeouts.heartbeat import (
+    Heartbeat,
+    HeartbeatSeconds,
+)
 from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import (
+    EvalTimeoutError,
     Timeout,
     TimeoutSeconds,
 )
@@ -77,10 +82,23 @@ class ExecutionState(CommonStateField, abc.ABC):
         # TimeoutSecondsPath (Optional)
         # If you want to provide a timeout value dynamically from the state input using a reference path, use
         # TimeoutSecondsPath. When resolved, the reference path must select fields whose values are positive integers.
+        # A Task state cannot include both TimeoutSeconds and TimeoutSecondsPath
         # TimeoutSeconds and TimeoutSecondsPath fields are encoded by the timeout type.
         self.timeout: Timeout = TimeoutSeconds(
             timeout_seconds=TimeoutSeconds.DEFAULT_TIMEOUT_SECONDS
         )
+
+        # HeartbeatSeconds (Optional)
+        # If more time than the specified seconds elapses between heartbeats from the task, this state fails with a
+        # States.Timeout error name. Must be a positive, non-zero integer less than the number of seconds specified in
+        # the TimeoutSeconds field. If not provided, the default value is 99999999. For Activities, the count begins
+        # when GetActivityTask receives a token and ActivityStarted is logged in the Execution event history.
+        # HeartbeatSecondsPath (Optional)
+        # If you want to provide a heartbeat value dynamically from the state input using a reference path, use
+        # HeartbeatSecondsPath. When resolved, the reference path must select fields whose values are positive integers.
+        # A Task state cannot include both HeartbeatSeconds and HeartbeatSecondsPath
+        # HeartbeatSeconds and HeartbeatSecondsPath fields are encoded by the Heartbeat type.
+        self.heartbeat: Optional[Heartbeat] = None
 
     def from_state_props(self, state_props: StateProps) -> None:
         super().from_state_props(state_props=state_props)
@@ -89,9 +107,23 @@ class ExecutionState(CommonStateField, abc.ABC):
         self.retry = state_props.get(RetryDecl)
         self.catch = state_props.get(CatchDecl)
 
+        # If provided, the "HeartbeatSeconds" interval MUST be smaller than the "TimeoutSeconds" value.
+        # If not provided, the default value of "TimeoutSeconds" is 60.
         timeout = state_props.get(Timeout)
+        heartbeat = state_props.get(Heartbeat)
+        if isinstance(timeout, TimeoutSeconds) and isinstance(heartbeat, HeartbeatSeconds):
+            if timeout.timeout_seconds <= heartbeat.heartbeat_seconds:
+                raise RuntimeError(
+                    f"'HeartbeatSeconds' interval MUST be smaller than the 'TimeoutSeconds' value, "
+                    f"got '{timeout.timeout_seconds}' and '{heartbeat.heartbeat_seconds}' respectively."
+                )
+        if heartbeat is not None and timeout is None:
+            timeout = TimeoutSeconds(timeout_seconds=60, is_default=True)
+
         if timeout is not None:
             self.timeout = timeout
+        if heartbeat is not None:
+            self.heartbeat = heartbeat
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         LOG.warning("State Task executed generic failure event reporting logic.")
@@ -186,7 +218,7 @@ class ExecutionState(CommonStateField, abc.ABC):
             raise execution_exception
 
         if not finished_on_time:
-            raise TimeoutError()
+            raise EvalTimeoutError()
 
         execution_output = execution_outputs.pop()
         env.stack.append(execution_output)

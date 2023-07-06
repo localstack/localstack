@@ -4,9 +4,6 @@ import pytest
 
 from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
-from tests.integration.stepfunctions.templates.callbacks.callback_templates import (
-    CallbackTemplates as CT,
-)
 from tests.integration.stepfunctions.templates.timeouts.timeout_templates import (
     TimeoutTemplates as TT,
 )
@@ -26,93 +23,15 @@ pytestmark = pytest.mark.skipif(
         "$..SdkResponseMetadata",
     ]
 )
-class TestCallback:
+class TestHeartbeats:
     @pytest.mark.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
-    def test_sqs_wait_for_task_token(
+    def test_heartbeat_timeout(
         self,
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         sqs_create_queue,
         sqs_send_task_success_state_machine,
-        sfn_snapshot,
-    ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
-        sfn_snapshot.add_transformer(
-            JsonpathTransformer(
-                jsonpath="$..TaskToken",
-                replacement="<task_token>",
-                replace_reference=True,
-            )
-        )
-
-        queue_name = f"queue-{short_uid()}"
-        queue_url = sqs_create_queue(QueueName=queue_name)
-        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
-        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
-
-        sqs_send_task_success_state_machine(queue_url)
-
-        template = CT.load_sfn_template(CT.SQS_WAIT_FOR_TASK_TOKEN)
-        definition = json.dumps(template)
-
-        message_txt = "test_message_txt"
-        exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
-        create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
-            create_state_machine,
-            sfn_snapshot,
-            definition,
-            exec_input,
-        )
-
-    @pytest.mark.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
-    def test_sqs_wait_for_task_token_timeout(
-        self,
-        aws_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        sqs_create_queue,
-        sqs_send_task_success_state_machine,
-        sfn_snapshot,
-    ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
-        sfn_snapshot.add_transformer(
-            JsonpathTransformer(
-                jsonpath="$..TaskToken",
-                replacement="<task_token>",
-                replace_reference=True,
-            )
-        )
-
-        queue_name = f"queue-{short_uid()}"
-        queue_url = sqs_create_queue(QueueName=queue_name)
-        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
-        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
-
-        template = CT.load_sfn_template(CT.SQS_WAIT_FOR_TASK_TOKEN_WITH_TIMEOUT)
-        definition = json.dumps(template)
-
-        message_txt = "test_message_txt"
-        exec_input = json.dumps({"QueueUrl": queue_url, "Message": message_txt})
-        create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
-            create_state_machine,
-            sfn_snapshot,
-            definition,
-            exec_input,
-        )
-
-    @pytest.mark.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
-    def test_sqs_failure_in_wait_for_task_token(
-        self,
-        aws_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        sqs_create_queue,
-        sqs_send_task_failure_state_machine,
         sfn_snapshot,
     ):
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
@@ -129,9 +48,7 @@ class TestCallback:
         sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
         sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
 
-        sqs_send_task_failure_state_machine(queue_url)
-
-        template = CT.load_sfn_template(CT.SQS_WAIT_FOR_TASK_TOKEN)
+        template = TT.load_sfn_template(TT.SERVICE_SQS_SEND_AND_WAIT_FOR_TASK_TOKEN_WITH_HEARTBEAT)
         definition = json.dumps(template)
 
         message_txt = "test_message_txt"
@@ -146,20 +63,20 @@ class TestCallback:
         )
 
     @pytest.mark.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
-    def test_sqs_wait_for_task_tok_with_heartbeat(
+    def test_heartbeat_path_timeout(
         self,
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         sqs_create_queue,
-        sqs_send_heartbeat_and_task_success_state_machine,
+        sqs_send_task_success_state_machine,
         sfn_snapshot,
     ):
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",
-                replacement="<task_token>",
+                replacement="task_token",
                 replace_reference=True,
             )
         )
@@ -169,10 +86,50 @@ class TestCallback:
         sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
         sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
 
-        sqs_send_heartbeat_and_task_success_state_machine(queue_url)
+        template = TT.load_sfn_template(
+            TT.SERVICE_SQS_SEND_AND_WAIT_FOR_TASK_TOKEN_WITH_HEARTBEAT_PATH
+        )
+        definition = json.dumps(template)
 
-        template = CT.load_sfn_template(TT.SERVICE_SQS_SEND_AND_WAIT_FOR_TASK_TOKEN_WITH_HEARTBEAT)
-        template["States"]["SendMessageWithWait"]["HeartbeatSeconds"] = 60
+        message_txt = "test_message_txt"
+        exec_input = json.dumps(
+            {"QueueUrl": queue_url, "Message": message_txt, "HeartbeatSecondsPath": 1}
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @pytest.mark.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
+    def test_heartbeat_no_timeout(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sqs_create_queue,
+        sqs_send_task_success_state_machine,
+        sfn_snapshot,
+    ):
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..TaskToken",
+                replacement="task_token",
+                replace_reference=True,
+            )
+        )
+
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
+
+        template = TT.load_sfn_template(TT.SERVICE_SQS_SEND_AND_WAIT_FOR_TASK_TOKEN_WITH_HEARTBEAT)
+        del template["States"]["SendMessageWithWait"]["TimeoutSeconds"]
         definition = json.dumps(template)
 
         message_txt = "test_message_txt"
