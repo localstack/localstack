@@ -66,7 +66,7 @@ class RequestValidator:
             return True
 
         # check if there is validator for the resource
-        resource = resource_methods.get(self.context.method, {}) or resource_methods.get("ANY", {})
+        resource = resource_methods.get(self.context.method, resource_methods.get("ANY", {}))
         if not (resource.get("requestValidatorId") or "").strip():
             return True
 

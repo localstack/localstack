@@ -457,8 +457,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> Method:
         response: Method = call_moto(context)
         remove_empty_attributes_from_method(response)
-        method_integration = response.get("methodIntegration")
-        if method_integration:
+        if method_integration := response.get("methodIntegration"):
             remove_empty_attributes_from_integration(method_integration)
             # moto will not return `responseParameters` field if it's not truthy, but AWS will return an empty dict
             # if it was set to an empty dict
