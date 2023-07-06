@@ -774,6 +774,9 @@ class TestSES:
                 "test_invalid_value_len" * 100,
                 id="test_priority_name_value",
             ),
+            ("", ""),
+            ("", "test"),
+            ("test", ""),
         ],
     )
     def test_invalid_tags_send_email(self, tag_name, tag_value, snapshot, aws_client):
