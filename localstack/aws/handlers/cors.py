@@ -115,7 +115,10 @@ def _get_allowed_cors_origins() -> List[str]:
             result.append(f"{protocol}://{LOCALHOST_HOSTNAME}:{port}")
 
     if config.EXTRA_CORS_ALLOWED_ORIGINS:
-        result += config.EXTRA_CORS_ALLOWED_ORIGINS.split(",")
+        origins = config.EXTRA_CORS_ALLOWED_ORIGINS.split(",")
+        origins = [origin.strip() for origin in origins]
+        origins = [origin for origin in origins if origin != ""]
+        result += origins
 
     return result
 
