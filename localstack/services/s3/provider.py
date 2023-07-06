@@ -70,6 +70,7 @@ from localstack.aws.api.s3 import (
     InvalidPartOrder,
     InvalidStorageClass,
     InvalidTargetBucketForLogging,
+    LifecycleConfiguration,
     ListBucketAnalyticsConfigurationsOutput,
     ListBucketIntelligentTieringConfigurationsOutput,
     ListMultipartUploadsOutput,
@@ -1565,6 +1566,22 @@ def validate_acl_acp(acp: AccessControlPolicy) -> None:
         ):
             ex = _create_invalid_argument_exc("Invalid id", "CanonicalUser/ID", grantee_id)
             raise ex
+
+
+def validate_lifecycle_configuration(lifecycle_conf: LifecycleConfiguration) -> None:
+    """
+    Validate the Lifecycle configuration following AWS docs
+    See https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html
+    https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycleConfiguration.html
+    :param lifecycle_conf:
+    :raises
+    :return: None
+    """
+    # we only add the `Expiration` header, we don't delete objects yet
+    # We don't really expire or transition objects
+    # TODO: transition not supported
+
+    pass
 
 
 def validate_website_configuration(website_config: WebsiteConfiguration) -> None:

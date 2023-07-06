@@ -2394,6 +2394,9 @@ class TestS3:
             aws_client.s3.get_bucket_lifecycle_configuration(Bucket=bucket_name)
         snapshot.match("get-bucket-lifecycle-exc", e.value.response)
 
+    def test_put_bucket_lifecycle_conf_exc(self, s3_bucket, snapshot, aws_client):
+        pass
+
     @pytest.mark.aws_validated
     @pytest.mark.xfail(
         reason="Bucket lifecycle doesn't affect object expiration in both providers for now"
@@ -2432,6 +2435,10 @@ class TestS3:
         response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
         snapshot.match("get-object-expiry", response)
 
+        expiration = response["Expiration"]
+        print(response["LastModified"])
+        print(expiration)
+
     @pytest.mark.aws_validated
     @pytest.mark.xfail(
         reason="Bucket lifecycle doesn't affect object expiration in both providers for now"
@@ -2451,10 +2458,10 @@ class TestS3:
         lfc = {
             "Rules": [
                 {
-                    "Expiration": {"Days": 7},
-                    "ID": "wholebucket",
-                    "Filter": {"Prefix": ""},
+                    "ID": "My Rule ID",
                     "Status": "Enabled",
+                    "Expiration": {"Days": 3},
+                    "NoncurrentVersionExpiration": {"NoncurrentDays": 1},
                 }
             ]
         }
@@ -2465,12 +2472,26 @@ class TestS3:
         snapshot.match("get-bucket-lifecycle-conf", result)
 
         key = "test-object-expiry"
-        aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+        put_object_1 = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+        version_id_1 = put_object_1["VersionId"]
 
         response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
         snapshot.match("head-object-expiry", response)
         response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
         snapshot.match("get-object-expiry", response)
+        # TODO: parse value
+
+        key = "test-object-expiry"
+        put_object_2 = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+        version_id_2 = put_object_2["VersionId"]
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key, VersionId=version_id_1)
+        snapshot.match("head-object-expiry-noncurrent", response)
+        # TODO: parse value
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key, VersionId=version_id_2)
+        snapshot.match("head-object-expiry-current", response)
+        # TODO: parse value
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
