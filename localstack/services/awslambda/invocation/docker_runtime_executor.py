@@ -21,7 +21,7 @@ from localstack.services.awslambda.invocation.runtime_executor import (
 )
 from localstack.services.awslambda.lambda_utils import (
     HINT_LOG,
-    get_container_network_for_lambda,
+    get_all_container_networks_for_lambda,
     get_main_endpoint_from_container,
 )
 from localstack.services.awslambda.packages import awslambda_runtime_package
@@ -265,12 +265,12 @@ class DockerRuntimeExecutor(RuntimeExecutor):
 
     def start(self, env_vars: dict[str, str]) -> None:
         self.executor_endpoint.start()
-        network = self._get_network_for_executor()
+        main_network, *additional_networks = self._get_networks_for_executor()
         container_config = LambdaContainerConfiguration(
             image_name=None,
             name=self.container_name,
             env_vars=env_vars,
-            network=network,
+            network=main_network,
             entrypoint=RAPID_ENTRYPOINT,
             platform=docker_platform(self.function_version.config.architectures[0]),
             dns=config.LAMBDA_DOCKER_DNS,
@@ -337,9 +337,16 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             for source, target in container_config.copy_folders:
                 CONTAINER_CLIENT.copy_into_container(self.container_name, source, target)
 
+        if additional_networks:
+            for additional_network in additional_networks:
+                CONTAINER_CLIENT.connect_container_to_network(
+                    additional_network, self.container_name
+                )
+
         CONTAINER_CLIENT.start_container(self.container_name)
+        # still using main network as main entrypoint
         self.ip = CONTAINER_CLIENT.get_container_ipv4_for_network(
-            container_name_or_id=self.container_name, container_network=network
+            container_name_or_id=self.container_name, container_network=main_network
         )
         if config.LAMBDA_DEV_PORT_EXPOSE:
             self.ip = "127.0.0.1"
@@ -366,8 +373,8 @@ class DockerRuntimeExecutor(RuntimeExecutor):
     def get_endpoint_from_executor(self) -> str:
         return get_main_endpoint_from_container()
 
-    def _get_network_for_executor(self) -> str:
-        return get_container_network_for_lambda()
+    def _get_networks_for_executor(self) -> list[str]:
+        return get_all_container_networks_for_lambda()
 
     def invoke(self, payload: Dict[str, str]):
         LOG.debug(
