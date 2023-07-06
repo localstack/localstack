@@ -4762,6 +4762,7 @@ class TestS3:
         objects = aws_client.s3.list_objects(Bucket=bucket)
         etag = objects["Contents"][0]["ETag"]
 
+        # TODO: some of the headers missing in the get object response
         with pytest.raises(ClientError) as e:
             aws_client.s3.get_object(Bucket=bucket, Key=key, IfNoneMatch=etag)
         snapshot.match("if_none_match_err_1", e.value.response["Error"])
