@@ -16,11 +16,13 @@ from localstack.aws.api import CommonServiceException, RequestContext, ServiceEx
 from localstack.aws.api.s3 import (
     BucketName,
     ChecksumAlgorithm,
+    Expiration,
     InvalidArgument,
     MethodNotAllowed,
     NoSuchBucket,
     NoSuchKey,
     ObjectKey,
+    Rules,
 )
 from localstack.services.s3.constants import (
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
@@ -327,3 +329,9 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket) -> None:
                 code="KMS.NotFoundException", message=e.response["Error"]["Message"]
             )
         raise
+
+
+def get_lifecycle_expiration_from_object(
+    lifecycle_conf_rules: Rules, moto_object: FakeKey
+) -> Expiration:
+    pass

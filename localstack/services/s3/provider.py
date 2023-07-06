@@ -139,6 +139,7 @@ from localstack.services.s3.utils import (
     get_bucket_from_moto,
     get_header_name,
     get_key_from_moto_bucket,
+    get_lifecycle_expiration_from_object,
     get_object_checksum_for_algorithm,
     is_bucket_name_valid,
     is_canned_acl_bucket_valid,
@@ -382,6 +383,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> HeadObjectOutput:
         response: HeadObjectOutput = call_moto(context)
         response["AcceptRanges"] = "bytes"
+
+        key = request["Key"]
+        bucket = request["Bucket"]
+        version_id = request.get("VersionId")
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
+        key_object = get_key_from_moto_bucket(moto_bucket, key=key, version_id=version_id)
+        if hasattr(key_object, "expiration"):
+            response["Expiration"] = key_object.expiration
+
         return response
 
     @handler("GetObject", expand=False)
@@ -417,6 +428,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if request.get("ChecksumMode") == "ENABLED" and checksum_algorithm:
             response[f"Checksum{checksum_algorithm.upper()}"] = key_object.checksum_value  # noqa
+
+        if hasattr(key_object, "expiration"):
+            # TODO: check if a newly created rule applies to existing object instantly, if so, we need to check
+            #  everytime we get/head the object
+            response["Expiration"] = key_object.expiration
 
         response["AcceptRanges"] = "bytes"
         return response
@@ -476,6 +492,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ChecksumAlgorithm.CRC32C,
                 key_object.value,
             )
+
+        bucket_lifecycle_configations = self.get_store(context).bucket_lifecycle_configuration
+        if (bucket_lifecycle_config := bucket_lifecycle_configations.get(request["Bucket"])) and (
+            rules := bucket_lifecycle_config.get("Rules")
+        ):
+            if expiration_header := get_lifecycle_expiration_from_object(rules, key_object):
+                # we directly set it to the object
+                key_object.expiration = expiration_header
+                response["Expiration"] = expiration_header
 
         self._notify(context)
         return response
