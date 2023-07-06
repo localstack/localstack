@@ -348,6 +348,16 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         for tag in tags:
             tag_name = tag.get("Name", "")
             tag_value = tag.get("Value", "")
+            if tag_name == "":
+                raise CommonServiceException(
+                    "InvalidParameterValue",
+                    "The tag name must be specified."
+                )
+            if tag_value == "":
+                raise CommonServiceException(
+                    "InvalidParameterValue",
+                    "The tag value must be specified."
+                )
             if len(tag_name) > 255:
                 raise CommonServiceException(
                     "InvalidParameterValue", "Tag name cannot exceed 255 characters."
