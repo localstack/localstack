@@ -175,7 +175,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> PutRuleResponse:
         store = self.get_store(context)
 
-        # only setup a scheduled job if the rule has a schedule expression
+        # only set up a scheduled job if the rule has a schedule expression
         if schedule_expression:
             self.put_rule_job_scheduler(
                 store, name, state, schedule_expression, event_bus_name_or_arn=event_bus_name
@@ -444,12 +444,14 @@ def filter_event_based_on_event_format(
                     if key_a == "ip":
                         # TODO add IP-Address check here
                         continue
-                    if isinstance(value.get(key_a), (int, str)):
-                        if value_a != value.get(key_a):
-                            return False
-                    if isinstance(value.get(key_a), list) and value_a not in value.get(key_a):
-                        if not handle_prefix_filtering(value.get(key_a), value_a):
-                            return False
+                    if isinstance(value.get(key_a), (int, str)) and value_a != value.get(key_a):
+                        return False
+                    if (
+                        isinstance(value.get(key_a), list)
+                        and value_a not in value.get(key_a)
+                        and not handle_prefix_filtering(value.get(key_a), value_a)
+                    ):
+                        return False
 
             # 2. check if the pattern is a list and event values are not contained in it
             if isinstance(value, list):
@@ -578,7 +580,7 @@ def events_handler_put_events(self):
 
     content = {
         "FailedEntryCount": 0,  # TODO: dynamically set proper value when refactoring
-        "Entries": list(map(lambda event: {"EventId": event["uuid"]}, events)),
+        "Entries": list(map(lambda evt: {"EventId": evt["uuid"]}, events)),
     }
 
     self.response_headers.update(
