@@ -451,6 +451,7 @@ def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_clie
         "$.get-resources.items..resourceMethods.GET",
         "$.get-resources.items..resourceMethods.OPTIONS",
         "$..methodIntegration.cacheNamespace",
+        "$.get-authorizers.items..authorizerResultTtlInSeconds",
     ]
 )
 def test_rest_api_serverless_ref_resolving(
@@ -512,6 +513,7 @@ def test_rest_api_serverless_ref_resolving(
             snapshot.transform.resource_name(),
             snapshot.transform.key_value("cacheNamespace"),
             snapshot.transform.key_value("uri"),
+            snapshot.transform.key_value("authorizerUri"),
         ]
     )
     create_parameter(Name="/test-stack/testssm/random-value", Value="x-test-header", Type="String")

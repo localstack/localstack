@@ -460,7 +460,7 @@
         "items": [
           {
             "authType": "custom",
-            "authorizerUri": "arn:aws:apigateway:<region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<region>:111111111111:function:test-f3402475/invocations",
+            "authorizerUri": "<authorizer-uri:1>",
             "id": "<id:2>",
             "identitySource": "method.request.header.Authorization",
             "name": "<name:1>",
