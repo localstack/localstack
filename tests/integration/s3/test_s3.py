@@ -1032,7 +1032,7 @@ class TestS3:
         object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=key)
         snapshot.match("created-object-tags", object_tags)
 
-        tag_set = {"TagSet": [{"Key": "tag1", "Value": "tag1"}]}
+        tag_set = {"TagSet": [{"Key": "tag1", "Value": "tag1"}, {"Key": "tag2", "Value": ""}]}
         aws_client.s3.put_object_tagging(Bucket=s3_bucket, Key=key, Tagging=tag_set)
 
         object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=key)

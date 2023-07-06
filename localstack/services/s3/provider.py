@@ -1675,6 +1675,8 @@ def apply_moto_patches():
         """
         try:
             tags: Dict[str, str] = fn(*args, **kwargs)
+            for key in tags:
+                tags[key] = tags[key] if tags[key] else ""
         except TypeError:
             tags = {}
         return tags
