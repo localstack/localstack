@@ -9,7 +9,14 @@ from localstack.utils.aws import aws_stack
 AWS_URL_SUFFIX = "localhost.localstack.cloud"
 
 
-def get_deps_for_resource(d: dict, evaluated_conditions: dict[str, bool]) -> set[str]:
+def get_deps_for_resource(resource: dict, evaluated_conditions: dict[str, bool]) -> set[str]:
+    deps = set()
+    deps = deps.union(resolve_dependencies(resource.get("Properties", {}), evaluated_conditions))
+    deps = deps.union(resource.get("DependsOn", []))
+    return deps
+
+
+def resolve_dependencies(d: dict, evaluated_conditions: dict[str, bool]) -> set[str]:
     # TODO: depends on
     items = set()
 
@@ -20,11 +27,9 @@ def get_deps_for_resource(d: dict, evaluated_conditions: dict[str, bool]) -> set
                 condition_name, true_value, false_value = v
                 try:
                     if evaluated_conditions[condition_name]:
-                        items = items.union(get_deps_for_resource(true_value, evaluated_conditions))
+                        items = items.union(resolve_dependencies(true_value, evaluated_conditions))
                     else:
-                        items = items.union(
-                            get_deps_for_resource(false_value, evaluated_conditions)
-                        )
+                        items = items.union(resolve_dependencies(false_value, evaluated_conditions))
                 except Exception as e:
                     # TODO: remove try/except block
                     print(e)
@@ -52,11 +57,11 @@ def get_deps_for_resource(d: dict, evaluated_conditions: dict[str, bool]) -> set
                 else:
                     raise Exception(f"Invalid template structure in Fn::Sub: {v}")
             elif isinstance(v, dict):
-                items = items.union(get_deps_for_resource(v, evaluated_conditions))
+                items = items.union(resolve_dependencies(v, evaluated_conditions))
             elif isinstance(v, list):
                 for item in v:
                     # TODO: assumption that every element is a dict might not be true
-                    items = items.union(get_deps_for_resource(item, evaluated_conditions))
+                    items = items.union(resolve_dependencies(item, evaluated_conditions))
             else:
                 pass
 

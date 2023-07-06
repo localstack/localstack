@@ -982,9 +982,7 @@ class TemplateDeployer:
         # Note: using the original, unmodified template here to preserve Ref's ...
         raw_resources = self.stack.template_original["Resources"]
         raw_resource = raw_resources[resource["LogicalResourceId"]]
-        deps = get_deps_for_resource(
-            raw_resource.get("Properties", {}), self.stack.resolved_conditions
-        )
+        deps = get_deps_for_resource(raw_resource, self.stack.resolved_conditions)
         # deps = get_deps_for_resource(resource['Properties'])
         for dep in deps:
             result[resource["LogicalResourceId"]] = dep
