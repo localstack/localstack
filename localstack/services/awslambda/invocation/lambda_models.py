@@ -64,6 +64,9 @@ IMAGE_MAPPING = {
 SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11, Runtime.java17]
 
 
+BUCKET_ACCOUNT = "949334387222"
+
+
 # TODO: maybe we should make this more "transient" by always initializing to Pending and *not* persisting it?
 @dataclasses.dataclass(frozen=True)
 class VersionState:
@@ -169,7 +172,7 @@ class S3Code(ArchiveCode):
         """
         s3_client = connect_to(
             region_name=AWS_REGION_US_EAST_1,
-            aws_access_key_id=self.account_id,
+            aws_access_key_id=BUCKET_ACCOUNT,
         ).s3
         extra_args = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
         s3_client.download_fileobj(
@@ -183,7 +186,7 @@ class S3Code(ArchiveCode):
         """
         s3_client = connect_to(
             region_name=AWS_REGION_US_EAST_1,
-            aws_access_key_id=self.account_id,
+            aws_access_key_id=BUCKET_ACCOUNT,
             endpoint_url=endpoint_url,
         ).s3
         params = {"Bucket": self.s3_bucket, "Key": self.s3_key}
@@ -245,7 +248,7 @@ class S3Code(ArchiveCode):
         self.destroy_cached()
         s3_client = connect_to(
             region_name=AWS_REGION_US_EAST_1,
-            aws_access_key_id=self.account_id,
+            aws_access_key_id=BUCKET_ACCOUNT,
         ).s3
         kwargs = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
         try:
