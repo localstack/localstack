@@ -1246,10 +1246,12 @@ def create_lambda_function(aws_client, wait_until_lambda_ready, lambda_su_role):
     log_groups = []
     lambda_client = aws_client.awslambda
     logs_client = aws_client.logs
+    s3_client = aws_client.s3
 
     def _create_lambda_function(*args, **kwargs):
         client = kwargs.get("client") or lambda_client
         kwargs["client"] = client
+        kwargs["s3_client"] = s3_client
         func_name = kwargs.get("func_name")
         assert func_name
         del kwargs["func_name"]

@@ -8,19 +8,74 @@ from moto.ssm.models import SimpleSystemManagerBackend, ssm_backends
 
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.ssm import (
+    AlarmConfiguration,
+    BaselineDescription,
+    BaselineId,
+    BaselineName,
     Boolean,
+    ClientToken,
+    CreateMaintenanceWindowResult,
+    CreatePatchBaselineResult,
+    DeleteMaintenanceWindowResult,
     DeleteParameterResult,
+    DeletePatchBaselineResult,
+    DeregisterTargetFromMaintenanceWindowResult,
+    DeregisterTaskFromMaintenanceWindowResult,
+    DescribeMaintenanceWindowsResult,
+    DescribeMaintenanceWindowTargetsResult,
+    DescribeMaintenanceWindowTasksResult,
+    DescribePatchBaselinesResult,
     GetParameterResult,
     GetParametersResult,
     LabelParameterVersionResult,
+    LoggingInfo,
+    MaintenanceWindowAllowUnassociatedTargets,
+    MaintenanceWindowCutoff,
+    MaintenanceWindowDescription,
+    MaintenanceWindowDurationHours,
+    MaintenanceWindowFilterList,
+    MaintenanceWindowId,
+    MaintenanceWindowMaxResults,
+    MaintenanceWindowName,
+    MaintenanceWindowOffset,
+    MaintenanceWindowResourceType,
+    MaintenanceWindowSchedule,
+    MaintenanceWindowStringDateTime,
+    MaintenanceWindowTargetId,
+    MaintenanceWindowTaskArn,
+    MaintenanceWindowTaskCutoffBehavior,
+    MaintenanceWindowTaskId,
+    MaintenanceWindowTaskInvocationParameters,
+    MaintenanceWindowTaskParameters,
+    MaintenanceWindowTaskPriority,
+    MaintenanceWindowTaskType,
+    MaintenanceWindowTimezone,
+    MaxConcurrency,
+    MaxErrors,
+    NextToken,
+    OperatingSystem,
+    OwnerInformation,
     ParameterLabelList,
     ParameterName,
     ParameterNameList,
+    PatchAction,
+    PatchBaselineMaxResults,
+    PatchComplianceLevel,
+    PatchFilterGroup,
+    PatchIdList,
+    PatchOrchestratorFilterList,
+    PatchRuleGroup,
+    PatchSourceList,
     PSParameterName,
     PSParameterVersion,
     PutParameterRequest,
     PutParameterResult,
+    RegisterTargetWithMaintenanceWindowResult,
+    RegisterTaskWithMaintenanceWindowResult,
+    ServiceRole,
     SsmApi,
+    TagList,
+    Targets,
 )
 from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.utils.aws import aws_stack
@@ -131,6 +186,145 @@ class SsmProvider(SsmApi, ABC):
     ) -> LabelParameterVersionResult:
         SsmProvider._notify_event_subscribers(name, "LabelParameterVersion")
         return LabelParameterVersionResult(**call_moto(context))
+
+    def create_patch_baseline(
+        self,
+        context: RequestContext,
+        name: BaselineName,
+        operating_system: OperatingSystem = None,
+        global_filters: PatchFilterGroup = None,
+        approval_rules: PatchRuleGroup = None,
+        approved_patches: PatchIdList = None,
+        approved_patches_compliance_level: PatchComplianceLevel = None,
+        approved_patches_enable_non_security: Boolean = None,
+        rejected_patches: PatchIdList = None,
+        rejected_patches_action: PatchAction = None,
+        description: BaselineDescription = None,
+        sources: PatchSourceList = None,
+        client_token: ClientToken = None,
+        tags: TagList = None,
+    ) -> CreatePatchBaselineResult:
+        return CreatePatchBaselineResult(**call_moto(context))
+
+    def delete_patch_baseline(
+        self,
+        context: RequestContext,
+        baseline_id: BaselineId,
+    ) -> DeletePatchBaselineResult:
+        return DeletePatchBaselineResult(**call_moto(context))
+
+    def describe_patch_baselines(
+        self,
+        context: RequestContext,
+        filters: PatchOrchestratorFilterList = None,
+        max_results: PatchBaselineMaxResults = None,
+        next_token: NextToken = None,
+    ) -> DescribePatchBaselinesResult:
+        return DescribePatchBaselinesResult(**call_moto(context))
+
+    def register_target_with_maintenance_window(
+        self,
+        context: RequestContext,
+        window_id: MaintenanceWindowId,
+        resource_type: MaintenanceWindowResourceType,
+        targets: Targets,
+        owner_information: OwnerInformation = None,
+        name: MaintenanceWindowName = None,
+        description: MaintenanceWindowDescription = None,
+        client_token: ClientToken = None,
+    ) -> RegisterTargetWithMaintenanceWindowResult:
+        return RegisterTargetWithMaintenanceWindowResult(**call_moto(context))
+
+    def deregister_target_from_maintenance_window(
+        self,
+        context: RequestContext,
+        window_id: MaintenanceWindowId,
+        window_target_id: MaintenanceWindowTargetId,
+        safe: Boolean = None,
+    ) -> DeregisterTargetFromMaintenanceWindowResult:
+        return DeregisterTargetFromMaintenanceWindowResult(**call_moto(context))
+
+    def describe_maintenance_window_targets(
+        self,
+        context: RequestContext,
+        window_id: MaintenanceWindowId,
+        filters: MaintenanceWindowFilterList = None,
+        max_results: MaintenanceWindowMaxResults = None,
+        next_token: NextToken = None,
+    ) -> DescribeMaintenanceWindowTargetsResult:
+        return DescribeMaintenanceWindowTargetsResult(**call_moto(context))
+
+    def create_maintenance_window(
+        self,
+        context: RequestContext,
+        name: MaintenanceWindowName,
+        schedule: MaintenanceWindowSchedule,
+        duration: MaintenanceWindowDurationHours,
+        cutoff: MaintenanceWindowCutoff,
+        allow_unassociated_targets: MaintenanceWindowAllowUnassociatedTargets,
+        description: MaintenanceWindowDescription = None,
+        start_date: MaintenanceWindowStringDateTime = None,
+        end_date: MaintenanceWindowStringDateTime = None,
+        schedule_timezone: MaintenanceWindowTimezone = None,
+        schedule_offset: MaintenanceWindowOffset = None,
+        client_token: ClientToken = None,
+        tags: TagList = None,
+    ) -> CreateMaintenanceWindowResult:
+        return CreateMaintenanceWindowResult(**call_moto(context))
+
+    def delete_maintenance_window(
+        self, context: RequestContext, window_id: MaintenanceWindowId
+    ) -> DeleteMaintenanceWindowResult:
+        return DeleteMaintenanceWindowResult(**call_moto(context))
+
+    def describe_maintenance_windows(
+        self,
+        context: RequestContext,
+        filters: MaintenanceWindowFilterList = None,
+        max_results: MaintenanceWindowMaxResults = None,
+        next_token: NextToken = None,
+    ) -> DescribeMaintenanceWindowsResult:
+        return DescribeMaintenanceWindowsResult(**call_moto(context))
+
+    def register_task_with_maintenance_window(
+        self,
+        context: RequestContext,
+        window_id: MaintenanceWindowId,
+        task_arn: MaintenanceWindowTaskArn,
+        task_type: MaintenanceWindowTaskType,
+        targets: Targets = None,
+        service_role_arn: ServiceRole = None,
+        task_parameters: MaintenanceWindowTaskParameters = None,
+        task_invocation_parameters: MaintenanceWindowTaskInvocationParameters = None,
+        priority: MaintenanceWindowTaskPriority = None,
+        max_concurrency: MaxConcurrency = None,
+        max_errors: MaxErrors = None,
+        logging_info: LoggingInfo = None,
+        name: MaintenanceWindowName = None,
+        description: MaintenanceWindowDescription = None,
+        client_token: ClientToken = None,
+        cutoff_behavior: MaintenanceWindowTaskCutoffBehavior = None,
+        alarm_configuration: AlarmConfiguration = None,
+    ) -> RegisterTaskWithMaintenanceWindowResult:
+        return RegisterTaskWithMaintenanceWindowResult(**call_moto(context))
+
+    def deregister_task_from_maintenance_window(
+        self,
+        context: RequestContext,
+        window_id: MaintenanceWindowId,
+        window_task_id: MaintenanceWindowTaskId,
+    ) -> DeregisterTaskFromMaintenanceWindowResult:
+        return DeregisterTaskFromMaintenanceWindowResult(**call_moto(context))
+
+    def describe_maintenance_window_tasks(
+        self,
+        context: RequestContext,
+        window_id: MaintenanceWindowId,
+        filters: MaintenanceWindowFilterList = None,
+        max_results: MaintenanceWindowMaxResults = None,
+        next_token: NextToken = None,
+    ) -> DescribeMaintenanceWindowTasksResult:
+        return DescribeMaintenanceWindowTasksResult(**call_moto(context))
 
     # utility methods below
 
