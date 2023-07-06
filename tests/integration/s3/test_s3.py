@@ -4756,19 +4756,19 @@ class TestS3:
     def test_s3_get_object_headers(self, aws_client, s3_create_bucket, snapshot):
         bucket = s3_create_bucket()
         key = "en-gb.wav"
-        file_path = os.path.join(f"../files/{key}")
+        file_path = os.path.join(os.path.dirname(__file__), f"../files/{key}")
+
         aws_client.s3.upload_file(file_path, bucket, key)
         objects = aws_client.s3.list_objects(Bucket=bucket)
         etag = objects["Contents"][0]["ETag"]
 
-        try:
+        with pytest.raises(ClientError) as e:
             aws_client.s3.get_object(Bucket=bucket, Key=key, IfNoneMatch=etag)
-        except ClientError as e:
-            snapshot.match("if_none_match_err_1", e.response)
-        try:
+        snapshot.match("if_none_match_err_1", e.value.response["Error"])
+
+        with pytest.raises(ClientError) as e:
             aws_client.s3.get_object(Bucket=bucket, Key=key, IfNoneMatch=etag.strip('"'))
-        except ClientError as e:
-            snapshot.match("if_none_match_err_2", e.response)
+        snapshot.match("if_none_match_err_2", e.value.response["Error"])
 
         response = aws_client.s3.get_object(Bucket=bucket, Key=key, IfNoneMatch="etag")
         snapshot.match("if_none_match_1", response["ResponseMetadata"]["HTTPStatusCode"])
@@ -4779,10 +4779,9 @@ class TestS3:
         response = aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch=etag.strip('"'))
         snapshot.match("if_match_2", response["ResponseMetadata"]["HTTPStatusCode"])
 
-        try:
+        with pytest.raises(ClientError) as e:
             aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch="etag")
-        except ClientError as e:
-            snapshot.match("if_match_err_1", e.response)
+        snapshot.match("if_match_err_1", e.value.response["Error"])
 
 
 class TestS3MultiAccounts:

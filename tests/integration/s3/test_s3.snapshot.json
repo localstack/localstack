@@ -7524,41 +7524,23 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_headers": {
-    "recorded-date": "06-07-2023, 00:35:25",
+    "recorded-date": "06-07-2023, 12:43:29",
     "recorded-content": {
       "if_none_match_err_1": {
-        "Error": {
-          "Code": "304",
-          "Message": "Not Modified"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 304
-        }
+        "Code": "304",
+        "Message": "Not Modified"
       },
       "if_none_match_err_2": {
-        "Error": {
-          "Code": "304",
-          "Message": "Not Modified"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 304
-        }
+        "Code": "304",
+        "Message": "Not Modified"
       },
       "if_none_match_1": 200,
       "if_match_1": 200,
       "if_match_2": 200,
       "if_match_err_1": {
-        "Error": {
-          "Code": "PreconditionFailed",
-          "Condition": "If-Match",
-          "Message": "At least one of the pre-conditions you specified did not hold"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 412
-        }
+        "Code": "PreconditionFailed",
+        "Condition": "If-Match",
+        "Message": "At least one of the pre-conditions you specified did not hold"
       }
     }
   }
