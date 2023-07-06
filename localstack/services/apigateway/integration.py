@@ -912,7 +912,12 @@ class EventBridgeIntegration(BackendIntegration):
             or ""
         )
         region_name = uri.split(":")[3]
-        headers = aws_stack.mock_aws_request_headers(service="events", region_name=region_name)
+        headers = get_internal_mocked_headers(
+            service_name="events",
+            region_name=region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+            source_arn=get_source_arn(invocation_context),
+        )
         headers.update({"X-Amz-Target": invocation_context.headers.get("X-Amz-Target")})
         response = make_http_request(
             config.service_url("events"), method="POST", headers=headers, data=payload
