@@ -252,9 +252,9 @@ class TestS3Utils:
         for bucket_name, expected_result in bucket_names:
             assert s3_utils.validate_bucket_name(bucket_name) == expected_result
 
-    def test_bucket_and_key_presign_url(self):
-        # array description : 'presign_url', 'expected_output_bucket', 'expected_output_key'
-        presign_urls = [
+    @pytest.mark.parametrize(
+        "presign_url, expected_output_bucket, expected_output_key",
+        [
             (
                 "http://s3.localhost.localstack.cloud:4566/test-output-bucket-2/test-transcribe-job-e1895bdf.json?AWSAccessKeyId=000000000000&Signature=2Yc%2BvwhXx8UzmH8imzySfLOW6OI%3D&Expires=1688561914",
                 "test-output-bucket-2",
@@ -270,11 +270,14 @@ class TestS3Utils:
                 "test-output-bucket-2",
                 "",
             ),
-        ]
-        for url, expected_output_bucket, expected_output_key in presign_urls:
-            bucket, key = s3_utils_asf.get_bucket_and_key_from_presign_url(url)
-            assert bucket == expected_output_bucket
-            assert key == expected_output_key
+        ],
+    )
+    def test_bucket_and_key_presign_url(
+        self, presign_url, expected_output_bucket, expected_output_key
+    ):
+        bucket, key = s3_utils_asf.get_bucket_and_key_from_presign_url(presign_url)
+        assert bucket == expected_output_bucket
+        assert key == expected_output_key
 
     def test_is_expired(self):
         offset = datetime.timedelta(seconds=5)
