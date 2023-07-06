@@ -904,7 +904,7 @@ class EventBridgeIntegration(BackendIntegration):
         try:
             payload = self.request_templates.render(invocation_context)
         except Exception as e:
-            LOG.warning("Failed to apply template for EventBridge integration", e)
+            LOG.warning("Failed to apply template for EventBridge integration: %s", e)
             raise
         uri = (
             invocation_context.integration.get("uri")
