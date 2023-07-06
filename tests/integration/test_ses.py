@@ -767,9 +767,13 @@ class TestSES:
             ("test_invalid_name:123", "test"),
             ("test", "test_invalid_value:123"),
             ("test_invalid_name:123", "test_invalid_value:123"),
-            ("test_invalid_name_len" * 100, "test"),
-            ("test", "test_invalid_value_len" * 100),
-            ("test_invalid_name@123", "test_invalid_value_len" * 100),
+            pytest.param("test_invalid_name_len" * 100, "test", id="test_invalid_name_len"),
+            pytest.param("test", "test_invalid_value_len" * 100, id="test_invalid_value_len"),
+            pytest.param(
+                "test_invalid_name@123",
+                "test_invalid_value_len" * 100,
+                id="test_priority_name_value",
+            ),
         ],
     )
     def test_invalid_tags_send_email(self, tag_name, tag_value, snapshot, aws_client):
