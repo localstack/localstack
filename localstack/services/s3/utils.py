@@ -200,7 +200,7 @@ def get_bucket_and_key_from_s3_uri(s3_uri: str) -> Tuple[str, Optional[str]]:
     return output_bucket, output_key
 
 
-def get_bucket_and_key_from_presign_url(presign_url: str) -> Tuple[str, Optional[str]]:
+def get_bucket_and_key_from_presign_url(presign_url: str) -> Tuple[str, str]:
     """
     Extracts the bucket name and key from s3 presign url
     """
