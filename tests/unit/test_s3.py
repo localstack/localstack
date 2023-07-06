@@ -255,20 +255,23 @@ class TestS3Utils:
     @pytest.mark.parametrize(
         "presign_url, expected_output_bucket, expected_output_key",
         [
-            (
+            pytest.param(
                 "http://s3.localhost.localstack.cloud:4566/test-output-bucket-2/test-transcribe-job-e1895bdf.json?AWSAccessKeyId=000000000000&Signature=2Yc%2BvwhXx8UzmH8imzySfLOW6OI%3D&Expires=1688561914",
                 "test-output-bucket-2",
                 "test-transcribe-job-e1895bdf.json",
+                id="output key as a single file",
             ),
-            (
+            pytest.param(
                 "http://s3.localhost.localstack.cloud:4566/test-output-bucket-5/test-files/test-output.json?AWSAccessKeyId=000000000000&Signature=F6bwF1M2N%2BLzEXTZnUtjE23S%2Bb0%3D&Expires=1688561920",
                 "test-output-bucket-5",
                 "test-files/test-output.json",
+                id="output key with subdirectories",
             ),
-            (
+            pytest.param(
                 "http://s3.localhost.localstack.cloud:4566/test-output-bucket-2?AWSAccessKeyId=000000000000&Signature=2Yc%2BvwhXx8UzmH8imzySfLOW6OI%3D&Expires=1688561914",
                 "test-output-bucket-2",
                 "",
+                id="output key as None",
             ),
         ],
     )
