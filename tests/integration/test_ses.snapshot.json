@@ -600,5 +600,101 @@
         }
       }
     }
+  },
+  "tests/integration/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test]": {
+    "recorded-date": "06-07-2023, 17:11:56",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Invalid tag name <test_invalid_name:123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_invalid_tags_send_email[test-test_invalid_value:123]": {
+    "recorded-date": "06-07-2023, 17:11:58",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Invalid tag value <test_invalid_value:123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test_invalid_value:123]": {
+    "recorded-date": "06-07-2023, 17:11:59",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Invalid tag name <test_invalid_name:123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_lentest_invalid_name_len-test]": {
+    "recorded-date": "06-07-2023, 17:12:00",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Tag name cannot exceed 255 characters.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_invalid_tags_send_email[test-test_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_len]": {
+    "recorded-date": "06-07-2023, 17:12:02",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Tag value cannot exceed 255 characters.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name@123-test_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_lentest_invalid_value_len]": {
+    "recorded-date": "06-07-2023, 17:12:03",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Invalid tag name <test_invalid_name@123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
