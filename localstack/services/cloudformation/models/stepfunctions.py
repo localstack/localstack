@@ -2,9 +2,9 @@ import logging
 import re
 from typing import Dict
 
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
 
 LOG = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class SFNActivity(GenericBaseModel):
         activity_arn = self.physical_resource_id
         if not activity_arn:
             return None
-        client = aws_stack.connect_to_service("stepfunctions")
+        client = connect_to().stepfunctions
         result = client.describe_activity(activityArn=activity_arn)
         return result
 
@@ -56,7 +56,7 @@ class SFNStateMachine(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         sm_name = self.props.get("StateMachineName") or self.logical_resource_id
-        sfn_client = aws_stack.connect_to_service("stepfunctions")
+        sfn_client = connect_to().stepfunctions
         state_machines = sfn_client.list_state_machines()["stateMachines"]
         sm_arn = [m["stateMachineArn"] for m in state_machines if m["name"] == sm_name]
         if not sm_arn:
@@ -66,7 +66,7 @@ class SFNStateMachine(GenericBaseModel):
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
-        client = aws_stack.connect_to_service("stepfunctions")
+        client = connect_to().stepfunctions
         sm_arn = self.props.get("stateMachineArn")
         if not sm_arn:
             self.state = self.fetch_state(stack_name=stack_name, resources=resources)
@@ -100,7 +100,7 @@ class SFNStateMachine(GenericBaseModel):
                 s3_location = properties.get("DefinitionS3Location")
                 if not definition_str and s3_location:
                     # TODO: currently not covered by tests - add a test to mimick the behavior of "sam deploy ..."
-                    s3_client = aws_stack.connect_to_service("s3")
+                    s3_client = connect_to().s3
                     LOG.debug("Fetching state machine definition from S3: %s", s3_location)
                     result = s3_client.get_object(
                         Bucket=s3_location["Bucket"], Key=s3_location["Key"]

@@ -35,11 +35,12 @@ from localstack.aws.api.logs import (
     TagList,
     Tags,
 )
+from localstack.aws.connect import connect_to
 from localstack.services import moto
 from localstack.services.logs.models import get_moto_logs_backend, logs_stores
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.common import is_number
 from localstack.utils.patch import patch
@@ -50,7 +51,7 @@ LOG = logging.getLogger(__name__)
 class LogsProvider(LogsApi, ServiceLifecycleHook):
     def __init__(self):
         super().__init__()
-        self.cw_client = aws_stack.connect_to_service("cloudwatch")
+        self.cw_client = connect_to().cloudwatch
 
     def put_log_events(
         self,
@@ -251,9 +252,7 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
         raise ResourceNotFoundException("The specified log group does not exist.")
 
     if ":lambda:" in destination_arn:
-        client = aws_stack.connect_to_service(
-            "lambda", region_name=extract_region_from_arn(destination_arn)
-        )
+        client = connect_to(region_name=extract_region_from_arn(destination_arn)).awslambda
         lambda_name = arns.lambda_function_name(destination_arn)
         try:
             client.get_function(FunctionName=lambda_name)
@@ -263,7 +262,7 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
             )
 
     elif ":kinesis:" in destination_arn:
-        client = aws_stack.connect_to_service("kinesis")
+        client = connect_to().kinesis
         stream_name = arns.kinesis_stream_name(destination_arn)
         try:
             client.describe_stream(StreamName=stream_name)
@@ -274,7 +273,7 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
             )
 
     elif ":firehose:" in destination_arn:
-        client = aws_stack.connect_to_service("firehose")
+        client = connect_to().firehose
         firehose_name = arns.firehose_name(destination_arn)
         try:
             client.describe_delivery_stream(DeliveryStreamName=firehose_name)
@@ -342,13 +341,11 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
         event = {"awslogs": {"data": base64.b64encode(output.getvalue()).decode("utf-8")}}
 
         if ":lambda:" in self.destination_arn:
-            client = aws_stack.connect_to_service(
-                "lambda", region_name=extract_region_from_arn(self.destination_arn)
-            )
+            client = connect_to(region_name=extract_region_from_arn(self.destination_arn)).awslambda
             lambda_name = arns.lambda_function_name(self.destination_arn)
             client.invoke(FunctionName=lambda_name, Payload=json.dumps(event))
         if ":kinesis:" in self.destination_arn:
-            client = aws_stack.connect_to_service("kinesis")
+            client = connect_to().kinesis
             stream_name = arns.kinesis_stream_name(self.destination_arn)
             client.put_record(
                 StreamName=stream_name,
@@ -356,7 +353,7 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
                 PartitionKey=log_group_name,
             )
         if ":firehose:" in self.destination_arn:
-            client = aws_stack.connect_to_service("firehose")
+            client = connect_to().firehose
             firehose_name = arns.firehose_name(self.destination_arn)
             client.put_record(
                 DeliveryStreamName=firehose_name,

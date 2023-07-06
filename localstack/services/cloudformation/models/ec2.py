@@ -16,7 +16,7 @@ class EC2RouteTable(GenericBaseModel):
         return "AWS::EC2::RouteTable"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to().ec2
         if not self.physical_resource_id:
             return None
         result = client.describe_route_tables(RouteTableIds=[self.physical_resource_id])
@@ -49,7 +49,7 @@ class EC2Route(GenericBaseModel):
         return "AWS::EC2::Route"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to().ec2
         props = self.props
         dst_cidr = props.get("DestinationCidrBlock")
         dst_cidr6 = props.get("DestinationIpv6CidrBlock")
@@ -98,7 +98,7 @@ class EC2InternetGateway(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         if not self.physical_resource_id:
             return None
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to().ec2
         gateways = client.describe_internet_gateways(
             InternetGatewayIds=[self.physical_resource_id]
         )["InternetGateways"]
@@ -132,7 +132,7 @@ class EC2SubnetRouteTableAssociation(GenericBaseModel):
         return "AWS::EC2::SubnetRouteTableAssociation"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to().ec2
         props = self.props
         table_id = props.get("RouteTableId")
         gw_id = props.get("GatewayId")
@@ -174,7 +174,7 @@ class EC2VPCGatewayAttachment(GenericBaseModel):
         return "AWS::EC2::VPCGatewayAttachment"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to().ec2
         props = self.props
         igw_id = props.get("InternetGatewayId")
         vpngw_id = props.get("VpnGatewayId")
@@ -194,7 +194,7 @@ class EC2VPCGatewayAttachment(GenericBaseModel):
     @classmethod
     def get_deploy_templates(cls):
         def _attach_gateway(logical_resource_id: str, resource: dict, stack_name: str):
-            client = aws_stack.connect_to_service("ec2")
+            client = connect_to().ec2
             resource_provider = cls(resource)
             props = resource_provider.props
             igw_id = props.get("InternetGatewayId")
@@ -275,7 +275,7 @@ class EC2Subnet(GenericBaseModel):
     def fetch_state(self, stack_name, resources) -> dict:
         if not self.physical_resource_id:
             return None
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to().ec2
         props = self.props
         filters = [
             {"Name": "cidr-block", "Values": [props["CidrBlock"]]},
@@ -292,7 +292,7 @@ class EC2Subnet(GenericBaseModel):
     @classmethod
     def get_deploy_templates(cls):
         def _post_create(logical_resource_id: str, resource: dict, stack_name: str):
-            client = aws_stack.connect_to_service("ec2")
+            client = connect_to().ec2
             resource_provider = cls(resource)
             props = resource_provider.props
 
@@ -360,14 +360,14 @@ class EC2VPC(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         if self.physical_resource_id:
-            client = aws_stack.connect_to_service("ec2")
+            client = connect_to().ec2
             resp = client.describe_vpcs(
                 Filters=[{"Name": "vpc-id", "Values": [self.physical_resource_id]}]
             )
             return (resp["Vpcs"] or [None])[0]
 
     def get_cfn_attribute(self, attribute_name):
-        ec2_client = aws_stack.connect_to_service("ec2")
+        ec2_client = connect_to().ec2
         vpc_id = self.props["VpcId"]
 
         if attribute_name == "DefaultSecurityGroup":
@@ -401,7 +401,7 @@ class EC2VPC(GenericBaseModel):
             res = cls(resource)
             vpc_id = res.state.get("VpcId")
             if vpc_id:
-                ec2_client = aws_stack.connect_to_service("ec2")
+                ec2_client = connect_to().ec2
                 resp = ec2_client.describe_route_tables(
                     Filters=[
                         {"Name": "vpc-id", "Values": [vpc_id]},
@@ -448,7 +448,7 @@ class EC2NatGateway(GenericBaseModel):
         return "AWS::EC2::NatGateway"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to().ec2
         props = self.props
         subnet_id = props.get("SubnetId")
         assoc_id = props.get("AllocationId")
@@ -501,7 +501,7 @@ class EC2Instance(GenericBaseModel):
         props = new_resource["Properties"]
         groups = props.get("SecurityGroups", props.get("SecurityGroupIds"))
 
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to().ec2
         kwargs = {}
         if groups:
             kwargs["Groups"] = groups
@@ -514,7 +514,7 @@ class EC2Instance(GenericBaseModel):
 
     def _get_state(self, client=None):
         instance_id = self.physical_resource_id
-        client = client or aws_stack.connect_to_service("ec2")
+        client = client or connect_to().ec2
         resp = client.describe_instances(InstanceIds=[instance_id])
         reservation = (resp.get("Reservations") or [{}])[0]
         result = (reservation.get("Instances") or [None])[0]

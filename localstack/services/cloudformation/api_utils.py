@@ -5,8 +5,8 @@ from urllib.parse import urlparse
 from requests.structures import CaseInsensitiveDict
 
 from localstack import config, constants
+from localstack.aws.connect import connect_to
 from localstack.services.s3 import s3_listener, s3_utils
-from localstack.utils.aws import aws_stack
 from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests
 from localstack.utils.strings import to_str
@@ -45,7 +45,7 @@ def get_template_body(req_data: dict) -> str:
             if is_local_service_url(url):
                 parsed_path = urlparse(url).path.lstrip("/")
                 parts = parsed_path.partition("/")
-                client = aws_stack.connect_to_service("s3")
+                client = connect_to().s3
                 LOG.debug(
                     "Download CloudFormation template content from local S3: %s - %s",
                     parts[0],

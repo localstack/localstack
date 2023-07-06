@@ -3,8 +3,8 @@ import requests
 import xmltodict
 from botocore.exceptions import ClientError
 
+from localstack.aws.connect import connect_to
 from localstack.services.sqs.utils import parse_queue_url
-from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
 
 
@@ -61,9 +61,7 @@ class TestSqsDeveloperEdpoints:
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-2")
 
         # use the developer endpoint as boto client URL
-        client = aws_stack.connect_to_service(
-            "sqs", endpoint_url="http://localhost:4566/_aws/sqs/messages"
-        )
+        client = connect_to(endpoint_url="http://localhost:4566/_aws/sqs/messages").sqs
         # max messages is ignored
         response = client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
 
@@ -89,9 +87,7 @@ class TestSqsDeveloperEdpoints:
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-3", MessageGroupId="2")
 
         # use the developer endpoint as boto client URL
-        client = aws_stack.connect_to_service(
-            "sqs", endpoint_url="http://localhost:4566/_aws/sqs/messages"
-        )
+        client = connect_to(endpoint_url="http://localhost:4566/_aws/sqs/messages").sqs
         # max messages is ignored
         response = client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
 
@@ -111,9 +107,7 @@ class TestSqsDeveloperEdpoints:
     def test_list_messages_with_invalid_action_raises_error(self, sqs_create_queue):
         queue_url = sqs_create_queue()
 
-        client = aws_stack.connect_to_service(
-            "sqs", endpoint_url="http://localhost:4566/_aws/sqs/messages"
-        )
+        client = connect_to(endpoint_url="http://localhost:4566/_aws/sqs/messages").sqs
 
         with pytest.raises(ClientError) as e:
             client.send_message(QueueUrl=queue_url, MessageBody="foobar")

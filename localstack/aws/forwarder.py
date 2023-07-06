@@ -18,11 +18,11 @@ from localstack.aws.api.core import (
     ServiceResponse,
 )
 from localstack.aws.client import parse_response, raise_service_exception
+from localstack.aws.connect import connect_to
 from localstack.aws.skeleton import DispatchTable, create_dispatch_table
 from localstack.aws.spec import load_service
 from localstack.http import Response
 from localstack.http.proxy import forward
-from localstack.utils.aws import aws_stack
 from localstack.utils.strings import to_str
 
 
@@ -160,12 +160,11 @@ def create_aws_request_context(
     # we re-use botocore internals here to serialize the HTTP request,
     # but deactivate validation (validation errors should be handled by the backend)
     # and don't send it yet
-    client = aws_stack.connect_to_service(
-        service_name,
+    client = connect_to(
         endpoint_url=endpoint_url,
         region_name=region,
         config=_non_validating_boto_config,
-    )
+    ).__getattr__(service_name)
     request_context = {
         "client_region": region,
         "has_streaming_input": operation.has_streaming_input,

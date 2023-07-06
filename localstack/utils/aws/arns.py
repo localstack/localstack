@@ -6,8 +6,8 @@ from typing import Optional, TypedDict
 from botocore.utils import ArnParser, InvalidArnException
 
 from localstack.aws.accounts import DEFAULT_AWS_ACCOUNT_ID, get_aws_account_id
-from localstack.constants import INTERNAL_AWS_ACCESS_KEY_ID, INTERNAL_AWS_SECRET_ACCESS_KEY
-from localstack.utils.aws.aws_stack import connect_to_service, get_region, get_valid_regions
+from localstack.aws.connect import connect_to
+from localstack.utils.aws.aws_stack import get_region, get_valid_regions
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -35,12 +35,7 @@ def sqs_queue_url_for_arn(queue_arn: str) -> str:
         region_name = None
         queue_name = queue_arn
 
-    sqs_client = connect_to_service(
-        "sqs",
-        region_name=region_name,
-        aws_access_key_id=INTERNAL_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
-    )
+    sqs_client = connect_to(region_name=region_name).sqs
     result = sqs_client.get_queue_url(QueueName=queue_name, QueueOwnerAWSAccountId=account_id)[
         "QueueUrl"
     ]
@@ -198,7 +193,7 @@ def lambda_function_or_layer_arn(
     if re.match(pattern, entity_name):
         return entity_name
     if ":" in entity_name:
-        client = connect_to_service("lambda")
+        client = connect_to().awslambda
         entity_name, _, alias = entity_name.rpartition(":")
         try:
             alias_response = client.get_alias(FunctionName=entity_name, Name=alias)

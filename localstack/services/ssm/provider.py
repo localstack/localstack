@@ -77,8 +77,8 @@ from localstack.aws.api.ssm import (
     TagList,
     Targets,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.moto import call_moto, call_moto_with_request
-from localstack.utils.aws import aws_stack
 from localstack.utils.collections import remove_attributes
 from localstack.utils.objects import keys_to_lower
 from localstack.utils.patch import patch
@@ -356,7 +356,7 @@ class SsmProvider(SsmApi, ABC):
     def _get_secrets_information(
         name: ParameterName, resource_name: str
     ) -> Optional[GetParameterResult]:
-        client = aws_stack.connect_to_service("secretsmanager")
+        client = connect_to().secretsmanager
         try:
             secret_info = client.get_secret_value(SecretId=resource_name)
             secret_info.pop("ResponseMetadata", None)
@@ -381,7 +381,7 @@ class SsmProvider(SsmApi, ABC):
 
     @staticmethod
     def _get_params_and_secrets(names: ParameterNameList) -> GetParametersResult:
-        ssm_client = aws_stack.connect_to_service("ssm")
+        ssm_client = connect_to().ssm
         result = {"Parameters": [], "InvalidParameters": []}
 
         for name in names:
@@ -409,7 +409,7 @@ class SsmProvider(SsmApi, ABC):
     @staticmethod
     def _notify_event_subscribers(name: ParameterName, operation: str):
         """Publish an EventBridge event to notify subscribers of changes."""
-        events = aws_stack.connect_to_service("events")
+        events = connect_to().events
         detail = {"name": name, "operation": operation}
         event = {
             "Source": "aws.ssm",
@@ -422,7 +422,7 @@ class SsmProvider(SsmApi, ABC):
 @patch(SimpleSystemManagerBackend.get_maintenance_window)
 def get_maintenance_window(fn, self, window_id):
     """Get a maintenance window by ID."""
-    store = ssm_backends[aws_stack.get_aws_account_id()][aws_stack.get_region()]
+    store = ssm_backends[self.account_id][self.region_name]
     if not store.windows.get(window_id):
         raise DoesNotExistException(window_id)
     return fn(self, window_id)
@@ -431,7 +431,7 @@ def get_maintenance_window(fn, self, window_id):
 @patch(SimpleSystemManagerBackend.delete_maintenance_window)
 def delete_maintenance_window(fn, self, window_id):
     """Delete a maintenance window by ID."""
-    store = ssm_backends[aws_stack.get_aws_account_id()][aws_stack.get_region()]
+    store = ssm_backends[self.account_id][self.region_name]
     if not store.windows.get(window_id):
         raise DoesNotExistException(window_id)
     return fn(self, window_id)

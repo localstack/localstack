@@ -12,6 +12,7 @@ from localstack.aws.api.dynamodb import (
     ContinuousBackupsUnavailableException,
     PointInTimeRecoverySpecification,
 )
+from localstack.aws.connect import connect_to
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
@@ -1570,7 +1571,7 @@ class TestDynamoDB:
         table = aws_client.dynamodb.describe_table(TableName=table_name)
         assert table.get("Table")
         # describe table for "localhost" region
-        client = aws_stack.connect_to_service("dynamodb", region_name="localhost")
+        client = connect_to(region_name="localhost").dynamodb
         table = client.describe_table(TableName=table_name)
         assert table.get("Table")
 

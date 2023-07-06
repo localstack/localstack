@@ -1,6 +1,6 @@
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import params_list_to_dict
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
 
 
 class ResourceGroupsGroup(GenericBaseModel):
@@ -9,7 +9,7 @@ class ResourceGroupsGroup(GenericBaseModel):
         return "AWS::ResourceGroups::Group"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("resource-groups")
+        client = connect_to().resource_groups
         result = client.list_groups().get("Groups", [])
         result = [g for g in result if g["Name"] == self.props["Name"]]
         return (result or [None])[0]

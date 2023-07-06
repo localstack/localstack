@@ -3,12 +3,13 @@ import logging
 from moto.awslambda import models as moto_awslambda_models
 
 from localstack import config
+from localstack.aws.connect import connect_to
 from localstack.services.awslambda.lambda_api import handle_lambda_url_invocation
 from localstack.services.awslambda.lambda_utils import get_default_executor_mode
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.analytics import log
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.aws.request_context import AWS_REGION_REGEX
 from localstack.utils.patch import patch
 from localstack.utils.platform import is_linux
@@ -77,7 +78,6 @@ def check_lambda(expect_shutdown=False, print_error=False):
     out = None
     try:
         from localstack.services.infra import PROXY_LISTENERS
-        from localstack.utils.aws import aws_stack
         from localstack.utils.common import wait_for_port_open
 
         # wait for port to be opened
@@ -86,9 +86,7 @@ def check_lambda(expect_shutdown=False, print_error=False):
         wait_for_port_open(port, sleep_time=0.5, retries=20)
 
         endpoint_url = f"http://127.0.0.1:{port}"
-        out = aws_stack.connect_to_service(
-            service_name="lambda", endpoint_url=endpoint_url
-        ).list_functions()
+        out = connect_to(endpoint_url=endpoint_url).awslambda.list_functions()
     except Exception:
         if print_error:
             LOG.exception("Lambda health check failed")
@@ -104,7 +102,7 @@ def get_function(fn, self, *args, **kwargs):
     if result:
         return result
 
-    client = aws_stack.connect_to_service("lambda")
+    client = connect_to().awslambda
     lambda_name = arns.lambda_function_name(args[0])
     response = client.get_function(FunctionName=lambda_name)
 
@@ -119,5 +117,5 @@ def get_function(fn, self, *args, **kwargs):
 @patch(moto_awslambda_models.LambdaFunction.invoke)
 def invoke(fn, self, *args, **kwargs):
     payload = to_bytes(args[0])
-    client = aws_stack.connect_to_service("lambda")
+    client = connect_to().awslambda
     return client.invoke(FunctionName=self.function_name, Payload=payload)

@@ -11,6 +11,7 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
+from localstack.aws.connect import connect_to
 from localstack.constants import (
     DEFAULT_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
@@ -88,12 +89,11 @@ class TestSqsProvider:
 
         # attempt to connect through a different host and make sure the URL contains that host
         host = f"http://127.0.0.1:{config.EDGE_PORT}"
-        client = aws_stack.connect_to_service(
-            "sqs",
+        client = connect_to(
             endpoint_url=host,
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-        )
+        ).sqs
         queue_url = client.get_queue_url(QueueName=queue_name)["QueueUrl"]
         assert queue_url == f"{host}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
 

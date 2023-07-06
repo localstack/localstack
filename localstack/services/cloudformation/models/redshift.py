@@ -1,6 +1,6 @@
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
 
 
 class RedshiftCluster(GenericBaseModel):
@@ -9,7 +9,7 @@ class RedshiftCluster(GenericBaseModel):
         return "AWS::Redshift::Cluster"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("redshift")
+        client = connect_to().redshift
         cluster_id = self.props.get("ClusterIdentifier")
         result = client.describe_clusters(ClusterIdentifier=cluster_id)["Clusters"]
         return (result or [None])[0]

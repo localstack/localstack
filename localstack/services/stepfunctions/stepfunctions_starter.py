@@ -3,6 +3,7 @@ import subprocess
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.connect import connect_to
 from localstack.services.infra import do_run, log_startup_message
 from localstack.services.stepfunctions.packages import stepfunctions_local_package
 from localstack.utils.aws import aws_stack
@@ -113,9 +114,7 @@ def check_stepfunctions(expect_shutdown: bool = False, print_error: bool = False
     try:
         wait_for_port_open(config.LOCAL_PORT_STEPFUNCTIONS, sleep_time=2)
         endpoint_url = f"http://127.0.0.1:{config.LOCAL_PORT_STEPFUNCTIONS}"
-        out = aws_stack.connect_to_service(
-            service_name="stepfunctions", endpoint_url=endpoint_url
-        ).list_state_machines()
+        out = connect_to(endpoint_url=endpoint_url).stepfunctions.list_state_machines()
     except Exception:
         if print_error:
             LOG.exception("StepFunctions health check failed")
