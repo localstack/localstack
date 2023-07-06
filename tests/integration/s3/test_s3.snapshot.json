@@ -451,7 +451,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_put_object_tagging_empty_list": {
-    "recorded-date": "21-09-2022, 13:35:15",
+    "recorded-date": "06-07-2023, 16:54:34",
     "recorded-content": {
       "created-object-tags": {
         "TagSet": [],
@@ -465,6 +465,10 @@
           {
             "Key": "tag1",
             "Value": "tag1"
+          },
+          {
+            "Key": "tag2",
+            "Value": ""
           }
         ],
         "ResponseMetadata": {
