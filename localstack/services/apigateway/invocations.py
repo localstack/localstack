@@ -63,11 +63,11 @@ class RequestValidator:
             return True
 
         resource_methods = self.context.resource["resourceMethods"]
-        if self.context.method not in resource_methods:
+        if self.context.method not in resource_methods and "ANY" not in resource_methods:
             return True
 
         # check if there is validator for the resource
-        resource = resource_methods[self.context.method]
+        resource = resource_methods.get(self.context.method, resource_methods.get("ANY", {}))
         if not (resource.get("requestValidatorId") or "").strip():
             return True
 

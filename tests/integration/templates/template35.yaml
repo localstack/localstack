@@ -37,7 +37,7 @@ Resources:
       - CreateAccount
     Properties:
       RestApiId: !Ref Gateway
-  GatewayEmptyModel:
+  DefaultModel:
     Type: AWS::ApiGateway::Model
     Properties:
       ContentType: 'application/json'
@@ -62,7 +62,7 @@ Resources:
         title: AccountCreate
         type: object
         properties:
-          name:
+          field:
             type: string
           email:
             type: string
@@ -93,10 +93,10 @@ Resources:
         TimeoutInMillis: 29000
       MethodResponses:
         - ResponseModels:
-            application/json: !Ref GatewayEmptyModel
+            application/json: !Ref DefaultModel
           StatusCode: '202'
         - ResponseModels:
-            application/json: !Ref GatewayEmptyModel
+            application/json: !Ref DefaultModel
           StatusCode: '500'
       OperationName: 'create_account'
       ResourceId: !Ref CreateAccountResource
