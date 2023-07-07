@@ -61,7 +61,7 @@ def transform_template(
                 sender_fault=True,
             )
         elif transformation["Name"] == SERVERLESS_TRANSFORM:
-            result = apply_serverless_transformation(result)
+            result = apply_serverless_transformation(result, parameters)
         elif transformation["Name"] == EXTENSIONS_TRANSFORM:
             continue
         elif transformation["Name"] == SECRETSMANAGER_TRANSFORM:
@@ -132,15 +132,22 @@ def execute_macro(parsed_template: dict, macro: dict, stack_parameters: list) ->
     return result.get("fragment")
 
 
-def apply_serverless_transformation(parsed_template: dict):
+def apply_serverless_transformation(parsed_template: dict, parameters: list):
     """only returns string when parsing SAM template, otherwise None"""
     region_before = os.environ.get("AWS_DEFAULT_REGION")
     if boto3.session.Session().region_name is None:
         os.environ["AWS_DEFAULT_REGION"] = aws_stack.get_region()
     loader = create_policy_loader()
 
+    formatted_stack_parameters = {}
+    for param in parameters:
+        if "ResolvedValue" in param:
+            formatted_stack_parameters[param["ParameterKey"]] = param["ResolvedValue"]
+        else:
+            formatted_stack_parameters[param["ParameterKey"]] = param["ParameterValue"]
+
     try:
-        transformed = transform_sam(parsed_template, {}, loader)
+        transformed = transform_sam(parsed_template, formatted_stack_parameters, loader)
         return transformed
     except Exception as e:
         raise FailedTransformationException(transformation=SERVERLESS_TRANSFORM, message=str(e))

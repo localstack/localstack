@@ -266,6 +266,7 @@ class TestApiGatewayImportRestApi:
             "$.resources.items..resourceMethods.GET",  # TODO: this is really weird, after importing, AWS returns them empty?
             "$.resources.items..resourceMethods.OPTIONS",
             "$.resources.items..resourceMethods.POST",
+            "$.get-authorizers.items[1].authorizerResultTtlInSeconds",
         ]
     )
     def test_import_swagger_api(

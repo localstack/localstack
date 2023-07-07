@@ -847,61 +847,57 @@ def import_api_from_openapi_spec(
                         return True
         return False
 
-    def create_authorizer(path_payload: dict) -> Optional[Authorizer]:
+    def create_authorizers(security_schemes: dict) -> None:
+
+        for security_scheme_name, security_config in security_schemes.items():
+            aws_apigateway_authorizer = security_config.get(OpenAPIExt.AUTHORIZER, {})
+            if not aws_apigateway_authorizer:
+                continue
+
+            if security_scheme_name in authorizers:
+                continue
+
+            authorizer_type = aws_apigateway_authorizer.get("type", "").upper()
+            # TODO: do we need validation of resources here?
+            authorizer = Authorizer(
+                id=create_resource_id(),
+                name=security_scheme_name,
+                type=authorizer_type,
+                authorizerResultTtlInSeconds=aws_apigateway_authorizer.get(
+                    "authorizerResultTtlInSeconds", 300
+                ),
+            )
+            if provider_arns := aws_apigateway_authorizer.get("providerARNs"):
+                authorizer["providerARNs"] = provider_arns
+            if auth_type := security_config.get(OpenAPIExt.AUTHTYPE):
+                authorizer["authType"] = auth_type
+            if authorizer_uri := aws_apigateway_authorizer.get("authorizerUri"):
+                authorizer["authorizerUri"] = authorizer_uri
+            if authorizer_credentials := aws_apigateway_authorizer.get("authorizerCredentials"):
+                authorizer["authorizerCredentials"] = authorizer_credentials
+            if authorizer_type == "TOKEN":
+                header_name = security_config.get("name")
+                authorizer["identitySource"] = f"method.request.header.{header_name}"
+            elif identity_source := aws_apigateway_authorizer.get("identitySource"):
+                # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-swagger-extensions-authorizer.html
+                # Applicable for the authorizer of the request and jwt type only
+                authorizer["identitySource"] = identity_source
+            if identity_validation_expression := aws_apigateway_authorizer.get(
+                "identityValidationExpression"
+            ):
+                authorizer["identityValidationExpression"] = identity_validation_expression
+
+            rest_api_container.authorizers[authorizer["id"]] = authorizer
+
+            authorizers[security_scheme_name] = authorizer
+
+    def get_authorizer(path_payload: dict) -> Optional[Authorizer]:
         if not (security_schemes := path_payload.get("security")):
             return None
 
         for security_scheme in security_schemes:
             for security_scheme_name in security_scheme.keys():
-                # $.securityDefinitions is Swagger 2.0
-                # $.components.SecuritySchemes is OpenAPI 3.0
-                security_definitions = resolved_schema.get(
-                    "securityDefinitions"
-                ) or resolved_schema.get("components", {}).get("securitySchemes", {})
-                if security_scheme_name in security_definitions:
-                    security_config = security_definitions.get(security_scheme_name)
-                    aws_apigateway_authorizer = security_config.get(OpenAPIExt.AUTHORIZER, {})
-                    if not aws_apigateway_authorizer:
-                        continue
-
-                    if authorizer := authorizers.get(security_scheme_name):
-                        return authorizer
-
-                    authorizer_type = aws_apigateway_authorizer.get("type", "").upper()
-                    # TODO: do we need validation of resources here?
-                    authorizer = Authorizer(
-                        id=create_resource_id(),
-                        name=security_scheme_name,
-                        type=authorizer_type,
-                        authorizerResultTtlInSeconds=aws_apigateway_authorizer.get(
-                            "authorizerResultTtlInSeconds", 300
-                        ),
-                    )
-                    if provider_arns := aws_apigateway_authorizer.get("providerARNs"):
-                        authorizer["providerARNs"] = provider_arns
-                    if auth_type := security_config.get(OpenAPIExt.AUTHTYPE):
-                        authorizer["authType"] = auth_type
-                    if authorizer_uri := aws_apigateway_authorizer.get("authorizerUri"):
-                        authorizer["authorizerUri"] = authorizer_uri
-                    if authorizer_credentials := aws_apigateway_authorizer.get(
-                        "authorizerCredentials"
-                    ):
-                        authorizer["authorizerCredentials"] = authorizer_credentials
-                    if authorizer_type == "TOKEN":
-                        header_name = security_config.get("name")
-                        authorizer["identitySource"] = f"method.request.header.{header_name}"
-                    elif identity_source := aws_apigateway_authorizer.get("identitySource"):
-                        # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-swagger-extensions-authorizer.html
-                        # Applicable for the authorizer of the request and jwt type only
-                        authorizer["identitySource"] = identity_source
-                    if identity_validation_expression := aws_apigateway_authorizer.get(
-                        "identityValidationExpression"
-                    ):
-                        authorizer["identityValidationExpression"] = identity_validation_expression
-
-                    rest_api_container.authorizers[authorizer["id"]] = authorizer
-
-                    authorizers[security_scheme_name] = authorizer
+                if authorizer := authorizers.get(security_scheme_name):
                     return authorizer
 
     def get_or_create_path(abs_path: str, base_path: str):
@@ -1142,7 +1138,7 @@ def import_api_from_openapi_spec(
         api_key_required = is_api_key_required(method_schema)
         kwargs = {}
 
-        if authorizer := create_authorizer(method_schema) or default_authorizer:
+        if authorizer := get_authorizer(method_schema) or default_authorizer:
             method_authorizer = authorizer or default_authorizer
             # override the authorizer_type if it's a TOKEN or REQUEST to CUSTOM
             if (authorizer_type := method_authorizer["type"]) in ("TOKEN", "REQUEST"):
@@ -1193,8 +1189,17 @@ def import_api_from_openapi_spec(
     # get default requestValidator if present
     default_req_validator_name = resolved_schema.get(OpenAPIExt.REQUEST_VALIDATOR)
 
+    # $.securityDefinitions is Swagger 2.0
+    # $.components.SecuritySchemes is OpenAPI 3.0
+    security_data = resolved_schema.get("securityDefinitions") or resolved_schema.get(
+        "components", {}
+    ).get("securitySchemes", {})
+    # create the defined authorizers, even if they're not used by any routes
+    if security_data:
+        create_authorizers(security_data)
+
     # create default authorizer if present
-    default_authorizer = create_authorizer(resolved_schema)
+    default_authorizer = get_authorizer(resolved_schema)
 
     # determine base path
     # default basepath mode is "ignore"

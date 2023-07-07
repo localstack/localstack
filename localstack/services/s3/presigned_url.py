@@ -28,28 +28,18 @@ from localstack.aws.api.s3 import (
 from localstack.aws.chain import HandlerChain
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Request, Response
+from localstack.services.s3.constants import SIGNATURE_V2_PARAMS, SIGNATURE_V4_PARAMS
 from localstack.services.s3.utils import (
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
     _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
     forwarded_from_virtual_host_addressed_request,
     is_bucket_name_valid,
+    is_presigned_url_request,
 )
 from localstack.utils.strings import to_bytes
 
 LOG = logging.getLogger(__name__)
-
-# params are required in presigned url
-SIGNATURE_V2_PARAMS = ["Signature", "Expires", "AWSAccessKeyId"]
-
-SIGNATURE_V4_PARAMS = [
-    "X-Amz-Algorithm",
-    "X-Amz-Credential",
-    "X-Amz-Date",
-    "X-Amz-Expires",
-    "X-Amz-SignedHeaders",
-    "X-Amz-Signature",
-]
 
 
 SIGNATURE_V2_POST_FIELDS = [
@@ -254,19 +244,6 @@ def is_expired(expiry_datetime: datetime.datetime):
     return now_datetime > expiry_datetime
 
 
-def is_presigned_url_request(context: RequestContext) -> bool:
-    """
-    Detects pre-signed URL from query string parameters
-    Return True if any kind of presigned URL query string parameter is encountered
-    :param context: the request context from the handler chain
-    """
-    # Detecting pre-sign url and checking signature
-    query_parameters = context.request.args
-    return any(p in query_parameters for p in SIGNATURE_V2_PARAMS) or any(
-        p in query_parameters for p in SIGNATURE_V4_PARAMS
-    )
-
-
 def is_valid_sig_v2(query_args: set) -> bool:
     """
     :param query_args: a Set representing the query parameters from the presign URL request
@@ -412,6 +389,7 @@ def _create_new_request(request: Request, headers: Dict[str, str], query_string:
     """
     Create a new request from an existent one, with new headers and query string
     It is easier to create a new one as the existing request has a lot of cached properties based on query_string
+    We are not using the request body to generate the signature, so do not pass it to the new request
     :param request: the incoming pre-signed request
     :param headers: new headers used for signature calculation
     :param query_string: new query string for signature calculation
@@ -422,7 +400,6 @@ def _create_new_request(request: Request, headers: Dict[str, str], query_string:
         headers=headers,
         path=request.path,
         query_string=query_string,
-        body=request.data,
         scheme=request.scheme,
         root_path=request.root_path,
         server=request.server,

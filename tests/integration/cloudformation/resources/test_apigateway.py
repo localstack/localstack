@@ -6,11 +6,15 @@ import pytest
 import requests
 
 from localstack import constants
+from localstack.aws.api.lambda_ import Runtime
 from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
 from tests.integration.apigateway.apigateway_fixtures import api_invoke_url
+
+PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "awslambda/functions/lambda_echo.py")
 
 TEST_TEMPLATE_1 = """
 AWSTemplateFormatVersion: '2010-09-09'
@@ -153,7 +157,16 @@ def test_url_output(tmp_http_server, deploy_cfn_template):
     assert f"https://{api_id}.execute-api.{constants.LOCALHOST_HOSTNAME}:4566" in api_url
 
 
-def test_cfn_with_apigateway_resources(deploy_cfn_template, aws_client):
+@pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$.get-method-post.methodIntegration.connectionType",  # TODO: maybe because this is a MOCK integration
+    ]
+)
+def test_cfn_with_apigateway_resources(deploy_cfn_template, aws_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.apigateway_api())
+    snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+
     stack = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "../../templates/template35.yaml")
     )
@@ -173,17 +186,19 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, aws_client):
 
     assert len(resources) == 1
 
-    # assert request parameter is present in resource method
-    assert resources[0]["resourceMethods"]["POST"]["requestParameters"] == {
-        "method.request.path.account": True
-    }
-    models = [
-        model
-        for model in aws_client.apigateway.get_models(restApiId=api_id)["items"]
-        if stack.stack_name in model["name"]
-    ]
+    resp = aws_client.apigateway.get_method(
+        restApiId=api_id, resourceId=resources[0]["id"], httpMethod="POST"
+    )
+    snapshot.match("get-method-post", resp)
 
-    assert len(models) == 2
+    models = aws_client.apigateway.get_models(restApiId=api_id)
+    models["items"].sort(key=itemgetter("name"))
+    snapshot.match("get-models", models)
+
+    schemas = [model["schema"] for model in models["items"]]
+    for schema in schemas:
+        # assert that we can JSON load the schema, and that the schema is a valid JSON
+        assert isinstance(json.loads(schema), dict)
 
     stack.destroy()
 
@@ -193,6 +208,57 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, aws_client):
         if api["name"] == "celeste-Gateway-local"
     ]
     assert not apis
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(
+    paths=["$.get-resources.items..resourceMethods.ANY"]  # TODO: empty in AWS
+)
+def test_cfn_deploy_apigateway_models(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformer(snapshot.transform.apigateway_api())
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/apigateway_models.json"
+        )
+    )
+
+    api_id = stack.outputs["RestApiId"]
+
+    resources = aws_client.apigateway.get_resources(restApiId=api_id)
+    resources["items"].sort(key=itemgetter("path"))
+    snapshot.match("get-resources", resources)
+
+    models = aws_client.apigateway.get_models(restApiId=api_id)
+    models["items"].sort(key=itemgetter("name"))
+    snapshot.match("get-models", models)
+
+    request_validators = aws_client.apigateway.get_request_validators(restApiId=api_id)
+    snapshot.match("get-request-validators", request_validators)
+
+    for resource in resources["items"]:
+        if resource["path"] == "/validated":
+            resp = aws_client.apigateway.get_method(
+                restApiId=api_id, resourceId=resource["id"], httpMethod="ANY"
+            )
+            snapshot.match("get-method-any", resp)
+
+    # construct API endpoint URL
+    url = api_invoke_url(api_id, stage="local", path="/validated")
+
+    # invoke API endpoint, assert results
+    valid_data = {"string_field": "string", "integer_field": 123456789}
+
+    result = requests.post(url, json=valid_data)
+    assert result.ok
+
+    # invoke API endpoint, assert results
+    invalid_data = {"string_field": "string"}
+
+    result = requests.post(url, json=invalid_data)
+    assert result.status_code == 400
+
+    result = requests.get(url)
+    assert result.status_code == 400
 
 
 @pytest.mark.aws_validated
@@ -376,3 +442,65 @@ def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_clie
     rest_api["policy"] = json.loads(policy)
 
     snapshot.match("rest-api", rest_api)
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$.put-ssm-param.Tier",
+        "$.get-resources.items..resourceMethods.GET",
+        "$.get-resources.items..resourceMethods.OPTIONS",
+        "$..methodIntegration.cacheNamespace",
+        "$.get-authorizers.items..authorizerResultTtlInSeconds",
+    ]
+)
+def test_rest_api_serverless_ref_resolving(
+    deploy_cfn_template, snapshot, aws_client, create_parameter, create_lambda_function
+):
+    snapshot.add_transformer(snapshot.transform.apigateway_api())
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.resource_name(),
+            snapshot.transform.key_value("cacheNamespace"),
+            snapshot.transform.key_value("uri"),
+            snapshot.transform.key_value("authorizerUri"),
+        ]
+    )
+    create_parameter(Name="/test-stack/testssm/random-value", Value="x-test-header", Type="String")
+
+    fn_name = f"test-{short_uid()}"
+    lambda_authorizer = create_lambda_function(
+        func_name=fn_name,
+        handler_file=TEST_LAMBDA_PYTHON_ECHO,
+        runtime=Runtime.python3_9,
+    )
+
+    create_parameter(
+        Name="/test-stack/testssm/lambda-arn",
+        Value=lambda_authorizer["CreateFunctionResponse"]["FunctionArn"],
+        Type="String",
+    )
+
+    stack = deploy_cfn_template(
+        template=load_file(
+            os.path.join(
+                os.path.dirname(__file__), "../../templates/apigateway_serverless_api_resolving.yml"
+            )
+        ),
+        parameters={"AllowedOrigin": "http://localhost:8000"},
+    )
+    rest_api_id = stack.outputs.get("ApiGatewayApiId")
+
+    resources = aws_client.apigateway.get_resources(restApiId=rest_api_id)
+    snapshot.match("get-resources", resources)
+
+    authorizers = aws_client.apigateway.get_authorizers(restApiId=rest_api_id)
+    snapshot.match("get-authorizers", authorizers)
+
+    root_resource = resources["items"][0]
+
+    for http_method in root_resource["resourceMethods"]:
+        method = aws_client.apigateway.get_method(
+            restApiId=rest_api_id, resourceId=root_resource["id"], httpMethod=http_method
+        )
+        snapshot.match(f"get-method-{http_method}", method)

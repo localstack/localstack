@@ -152,5 +152,24 @@
         }
       }
     }
+  },
+  "tests/integration/test_events.py::TestEvents::test_test_event_pattern": {
+    "recorded-date": "05-07-2023, 19:41:16",
+    "recorded-content": {
+      "eventbridge-test-event-pattern-response": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "eventbridge-test-event-pattern-response-no-match": {
+        "Result": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
