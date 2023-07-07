@@ -436,5 +436,106 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/resources/test_apigateway.py::test_rest_api_serverless_ref_resolving": {
+    "recorded-date": "06-07-2023, 21:01:08",
+    "recorded-content": {
+      "get-resources": {
+        "items": [
+          {
+            "id": "<id:1>",
+            "path": "/",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-authorizers": {
+        "items": [
+          {
+            "authType": "custom",
+            "authorizerUri": "<authorizer-uri:1>",
+            "id": "<id:2>",
+            "identitySource": "method.request.header.Authorization",
+            "name": "<name:1>",
+            "type": "TOKEN"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-method-GET": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "httpMethod": "POST",
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "timeoutInMillis": 29000,
+          "type": "AWS_PROXY",
+          "uri": "<uri:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-method-OPTIONS": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "OPTIONS",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Credentials": "'true'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,x-test-header'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET,PUT'",
+                "method.response.header.Access-Control-Allow-Origin": "'http://localhost:8000'"
+              },
+              "responseTemplates": {
+                "application/json": {}
+              },
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Credentials": false,
+              "method.response.header.Access-Control-Allow-Headers": false,
+              "method.response.header.Access-Control-Allow-Methods": false,
+              "method.response.header.Access-Control-Allow-Origin": false
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

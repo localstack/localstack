@@ -341,6 +341,18 @@
         "identityValidationExpression": "^x-[a-z]+",
         "authorizerResultTtlInSeconds": 60
       }
+    },
+    "test-authorizer-not-used": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "x-amazon-apigateway-authtype": "oauth2",
+      "x-amazon-apigateway-authorizer": {
+        "type": "token",
+        "authorizerUri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:account-id:function:function-name/invocations",
+        "authorizerCredentials": "arn:aws:iam::account-id:role",
+        "identityValidationExpression": "^x-[a-z]+"
+      }
     }
   },
   "definitions": {
