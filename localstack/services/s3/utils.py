@@ -200,6 +200,16 @@ def get_bucket_and_key_from_s3_uri(s3_uri: str) -> Tuple[str, Optional[str]]:
     return output_bucket, output_key
 
 
+def get_bucket_and_key_from_presign_url(presign_url: str) -> Tuple[str, str]:
+    """
+    Extracts the bucket name and key from s3 presign url
+    """
+    parsed_url = urlparser.urlparse(presign_url)
+    bucket = parsed_url.path.split("/")[1]
+    key = "/".join(parsed_url.path.split("/")[2:]).split("?")[0]
+    return bucket, key
+
+
 def _create_invalid_argument_exc(
     message: Union[str, None], name: str, value: str, host_id: str = None
 ) -> InvalidArgument:
