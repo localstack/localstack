@@ -27,6 +27,7 @@ class LocalstackAwsGateway(Gateway):
         self.request_handlers.extend(
             [
                 handlers.push_request_context,
+                handlers.reset_thread_local_storage,
                 metric_collector.create_metric_handler_item,
                 handlers.preprocess_request,
                 handlers.parse_service_name,  # enforce_cors and content_decoder depend on the service name

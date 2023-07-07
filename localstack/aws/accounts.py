@@ -32,6 +32,13 @@ def set_aws_access_key_id(access_key_id: str):
     REQUEST_CTX_TLS.access_key_id = access_key_id
 
 
+def reset_aws_access_key_id() -> None:
+    try:
+        del REQUEST_CTX_TLS.access_key_id
+    except AttributeError:
+        pass
+
+
 #
 # Account IDs
 #
@@ -51,6 +58,13 @@ def get_aws_account_id() -> str:
 
 def set_aws_account_id(account_id: str) -> None:
     REQUEST_CTX_TLS.account_id = account_id
+
+
+def reset_aws_account_id() -> None:
+    try:
+        del REQUEST_CTX_TLS.account_id
+    except AttributeError:
+        pass
 
 
 def extract_account_id_from_access_key_id(access_key_id: str) -> str:

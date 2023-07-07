@@ -2,6 +2,8 @@ import logging
 
 from localstack.aws.accounts import (
     get_account_id_from_access_key_id,
+    reset_aws_access_key_id,
+    reset_aws_account_id,
     set_aws_access_key_id,
     set_aws_account_id,
 )
@@ -54,3 +56,14 @@ class AccountIdEnricher(Handler):
 
         # Make Moto use the same Account ID as LocalStack
         context.request.headers.add("x-moto-account-id", context.account_id)
+
+
+class ThreadLocalResetHandler(Handler):
+    """
+    A handler that sets the AWS account of the request in the RequestContext.
+    """
+
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        # Obtain the access key ID and save it in the thread context
+        reset_aws_access_key_id()
+        reset_aws_account_id()
