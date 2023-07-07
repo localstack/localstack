@@ -64,6 +64,9 @@ IMAGE_MAPPING = {
 SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11, Runtime.java17]
 
 
+# this account will be used to store all the internal lambda function archives at
+# it should not be modified by the user, or visible to him, except as through a presigned url with the
+# get-function call.
 BUCKET_ACCOUNT = "949334387222"
 
 
