@@ -457,56 +457,6 @@ def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_clie
 def test_rest_api_serverless_ref_resolving(
     deploy_cfn_template, snapshot, aws_client, create_parameter, create_lambda_function
 ):
-    template = """
-    AWSTemplateFormatVersion: '2010-09-09'
-    Transform: AWS::Serverless-2016-10-31
-    Description: AWS SAM template with a simple API definition
-    Parameters:
-      AllowedOrigin:
-        Type: 'String'
-      TestSSMParameter:
-        Type: 'AWS::SSM::Parameter::Value<String>'
-        Default: '/test-stack/testssm/random-value'
-      TestSSMParameterLambdaArn:
-        Type: 'AWS::SSM::Parameter::Value<String>'
-        Default: '/test-stack/testssm/lambda-arn'
-
-    Resources:
-      ApiGatewayApi:
-        Type: AWS::Serverless::Api
-        Properties:
-          StageName: local
-          OpenApiVersion: '2.0'
-          Cors:
-            AllowMethods: "'OPTIONS,POST,GET,PUT'"
-            AllowHeaders: !Sub "'Content-Type,Authorization,${TestSSMParameter}'"
-            AllowCredentials: true
-            AllowOrigin: !Sub "'${AllowedOrigin}'"
-          Auth:
-            Authorizers:
-              LambdaTokenAuthorizer:
-                FunctionArn: !Ref TestSSMParameterLambdaArn
-
-      ApiFunction: # Adds a GET api endpoint at "/" to the ApiGatewayApi via an Api event
-        Type: AWS::Serverless::Function
-        Properties:
-          Events:
-            ApiEvent:
-              Type: Api
-              Properties:
-                Path: /
-                Method: get
-                RestApiId:
-                  Ref: ApiGatewayApi
-          Runtime: python3.7
-          Handler: index.handler
-          InlineCode: |
-            def handler(event, context):
-                return {'body': 'Hello World!', 'statusCode': 200}
-    Outputs:
-      ApiGatewayApiId:
-        Value: !Ref ApiGatewayApi
-    """
     snapshot.add_transformer(snapshot.transform.apigateway_api())
     snapshot.add_transformers_list(
         [
@@ -532,7 +482,11 @@ def test_rest_api_serverless_ref_resolving(
     )
 
     stack = deploy_cfn_template(
-        template=template,
+        template=load_file(
+            os.path.join(
+                os.path.dirname(__file__), "../../templates/apigateway_serverless_api_resolving.yml"
+            )
+        ),
         parameters={"AllowedOrigin": "http://localhost:8000"},
     )
     rest_api_id = stack.outputs.get("ApiGatewayApiId")
