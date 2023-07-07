@@ -758,3 +758,45 @@ class TestSES:
                 EventDestinationName=event_destination_name,
             )
         snapshot.match("delete-error", e_info.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Type"])
+    @pytest.mark.parametrize(
+        "tag_name,tag_value",
+        [
+            ("test_invalid_name:123", "test"),
+            ("test", "test_invalid_value:123"),
+            ("test_invalid_name:123", "test_invalid_value:123"),
+            pytest.param("test_invalid_name_len" * 100, "test", id="test_invalid_name_len"),
+            pytest.param("test", "test_invalid_value_len" * 100, id="test_invalid_value_len"),
+            pytest.param(
+                "test_invalid_name@123",
+                "test_invalid_value_len" * 100,
+                id="test_priority_name_value",
+            ),
+            ("", ""),
+            ("", "test"),
+            ("test", ""),
+        ],
+    )
+    def test_invalid_tags_send_email(self, tag_name, tag_value, snapshot, aws_client):
+        source = f"user-{short_uid()}@example.com"
+        destination = "success@example.com"
+        aws_client.ses.verify_email_address(EmailAddress=source)
+        aws_client.ses.verify_email_address(EmailAddress=destination)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.ses.send_email(
+                Source=source,
+                Tags=[
+                    {
+                        "Name": tag_name,
+                        "Value": tag_value,
+                    }
+                ],
+                Message=SAMPLE_SIMPLE_EMAIL,
+                Destination={
+                    "ToAddresses": [destination],
+                },
+            )
+        snapshot.match("response", e.value.response)
