@@ -1,6 +1,7 @@
 """
 This module provides tools to call moto using moto and botocore internals without going through the moto HTTP server.
 """
+import copy
 import sys
 from functools import lru_cache
 from typing import Callable, Optional, Union
@@ -56,6 +57,7 @@ def call_moto_with_request(
 
     :param context: the original request context
     :param service_request: the dictionary containing the service request parameters
+    :param override_headers: whether to override headers that are also request parameters
     :return: an ASF ServiceResponse (same as a service provider would return)
     """
     local_context = create_aws_request_context(
@@ -64,8 +66,10 @@ def call_moto_with_request(
         parameters=service_request,
         region=context.region,
     )
-
-    local_context.request.headers.update(context.request.headers)
+    # we keep the headers from the original request, but override them with the ones created from the `service_request`
+    headers = copy.deepcopy(context.request.headers)
+    headers.update(local_context.request.headers)
+    local_context.request.headers = headers
 
     return call_moto(local_context)
 

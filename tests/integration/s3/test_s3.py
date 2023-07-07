@@ -29,7 +29,7 @@ from botocore.exceptions import ClientError
 
 from localstack import config, constants
 from localstack.aws.api.s3 import StorageClass
-from localstack.config import LEGACY_S3_PROVIDER
+from localstack.config import LEGACY_S3_PROVIDER, STREAM_S3_PROVIDER
 from localstack.constants import (
     LOCALHOST_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
@@ -2362,6 +2362,22 @@ class TestS3:
         snapshot.match("get-object", resp)
 
     @pytest.mark.aws_validated
+    def test_download_fileobj_multiple_range_requests(self, s3_bucket, aws_client):
+        object_key = "test-download_fileobj"
+
+        body = os.urandom(70_000 * 100 * 5)
+        aws_client.s3.upload_fileobj(BytesIO(body), s3_bucket, object_key)
+
+        # get object and compare results
+        downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        assert downloaded_object["Body"].read() == body
+
+        # use download_fileobj to verify multithreaded range requests work
+        test_fileobj = BytesIO()
+        aws_client.s3.download_fileobj(Bucket=s3_bucket, Key=object_key, Fileobj=test_fileobj)
+        assert body == test_fileobj.getvalue()
+
+    @pytest.mark.aws_validated
     def test_get_range_object_headers(self, s3_bucket, aws_client):
         object_key = "sample.bin"
         chunk_size = 1024
@@ -2413,6 +2429,53 @@ class TestS3:
         download_file_object = to_str(downloaded_object["Body"].read())
         assert len(body) == len(str(download_file_object))
         assert body == str(download_file_object)
+
+    @pytest.mark.only_localstack
+    @pytest.mark.xfail(
+        reason="Not implemented in other providers than stream",
+        condition=not STREAM_S3_PROVIDER,
+    )
+    def test_put_object_chunked_newlines_with_checksum(self, s3_bucket, aws_client):
+        # Boto still does not support chunk encoding, which means we can't test with the client nor
+        # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
+        # Test for https://github.com/localstack/localstack/issues/6659
+        object_key = "data"
+        body = "Hello Blob"
+        valid_checksum = hash_sha256(body)
+        headers = {
+            "Authorization": aws_stack.mock_aws_request_headers("s3")["Authorization"],
+            "Content-Type": "audio/mpeg",
+            "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER",
+            "X-Amz-Date": "20190918T051509Z",
+            "X-Amz-Decoded-Content-Length": str(len(body)),
+            "x-amz-sdk-checksum-algorithm": "SHA256",
+            "x-amz-trailer": "x-amz-checksum-sha256",
+        }
+
+        def get_data(content: str, checksum_value: str) -> str:
+            return (
+                "a;chunk-signature=b5311ac60a88890e740a41e74f3d3b03179fd058b1e24bb3ab224042377c4ec9\r\n"
+                f"{content}\r\n"
+                "0;chunk-signature=78fae1c533e34dbaf2b83ad64ff02e4b64b7bc681ea76b6acf84acf1c48a83cb\r\n"
+                f"x-amz-checksum-sha256:{checksum_value}\r\n"
+                "x-amz-trailer-signature:712fb67227583c88ac32f468fc30a249cf9ceeb0d0e947ea5e5209a10b99181c\r\n\r\n"
+            )
+
+        # put object
+        url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}"
+        valid_data = get_data(body, valid_checksum)
+        requests.put(url, valid_data, headers=headers, verify=False)
+        # get object and assert content length
+        downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        download_file_object = to_str(downloaded_object["Body"].read())
+        assert len(body) == len(str(download_file_object))
+        assert body == str(download_file_object)
+
+        # test with wrong checksum
+        wrong_data = get_data(body, "wrongchecksum")
+        request = requests.put(url, wrong_data, headers=headers, verify=False)
+        assert request.status_code == 400
+        assert "Value for x-amz-checksum-sha256 header is invalid." in request.text
 
     @pytest.mark.only_localstack
     def test_virtual_host_proxy_does_not_decode_gzip(self, aws_client, s3_bucket):
@@ -3826,6 +3889,7 @@ class TestS3:
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
     )
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_complete_multipart_parts_order(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -3857,6 +3921,16 @@ class TestS3:
                 UploadId=upload_id,
             )
             multipart_upload_parts.append({"ETag": response["ETag"], "PartNumber": part_number})
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=BytesIO(b""),
+                PartNumber=-1,
+                UploadId=upload_id,
+            )
+        snapshot.match("upload-part-negative-part-number", e.value.response)
 
         # testing completing the multipart with an unordered sequence of parts
         with pytest.raises(ClientError) as e:

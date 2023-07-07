@@ -61,6 +61,7 @@ from localstack.aws.api.s3 import (
     IntelligentTieringConfiguration,
     IntelligentTieringConfigurationList,
     IntelligentTieringId,
+    InvalidArgument,
     InvalidBucketName,
     InvalidPartOrder,
     InvalidStorageClass,
@@ -470,7 +471,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         self._notify(context)
-
         return response
 
     @handler("CopyObject", expand=False)
@@ -650,6 +650,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise NoSuchUpload(
                 "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
+            )
+        elif (part_number := request.get("PartNumber", 0)) < 1:
+            raise InvalidArgument(
+                "Part number must be an integer between 1 and 10000, inclusive",
+                ArgumentName="partNumber",
+                ArgumentValue=part_number,
             )
 
         response: UploadPartOutput = call_moto(context)

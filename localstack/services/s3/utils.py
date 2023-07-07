@@ -1,5 +1,7 @@
 import datetime
+import hashlib
 import re
+import zlib
 from typing import Dict, Literal, Optional, Tuple, Union
 from urllib import parse as urlparser
 
@@ -10,7 +12,7 @@ from moto.s3.exceptions import MissingBucket
 from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 from moto.s3.utils import clean_key_name
 
-from localstack.aws.api import CommonServiceException, ServiceException
+from localstack.aws.api import CommonServiceException, RequestContext, ServiceException
 from localstack.aws.api.s3 import (
     BucketName,
     ChecksumAlgorithm,
@@ -22,6 +24,8 @@ from localstack.aws.api.s3 import (
 )
 from localstack.services.s3.constants import (
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
+    SIGNATURE_V2_PARAMS,
+    SIGNATURE_V4_PARAMS,
     VALID_CANNED_ACLS_BUCKET,
 )
 from localstack.utils.aws import arns, aws_stack
@@ -67,6 +71,44 @@ def extract_bucket_key_version_id_from_copy_source(
     return src_bucket, src_key, src_version_id
 
 
+def get_s3_checksum(algorithm):
+    match algorithm:
+        case ChecksumAlgorithm.CRC32:
+            return S3CRC32Checksum()
+
+        case ChecksumAlgorithm.CRC32C:
+            from botocore.httpchecksum import CrtCrc32cChecksum
+
+            return CrtCrc32cChecksum()
+
+        case ChecksumAlgorithm.SHA1:
+            return hashlib.sha1(usedforsecurity=False)
+
+        case ChecksumAlgorithm.SHA256:
+            return hashlib.sha256(usedforsecurity=False)
+
+        case _:
+            # TODO: check proper error? for now validated client side, need to check server response
+            raise InvalidRequest("The value specified in the x-amz-trailer header is not supported")
+
+
+class S3CRC32Checksum:
+    __slots__ = ["checksum"]
+
+    def __init__(self):
+        self.checksum = None
+
+    def update(self, value: bytes):
+        if self.checksum is None:
+            self.checksum = zlib.crc32(value)
+            return
+
+        self.checksum = zlib.crc32(value, self.checksum)
+
+    def digest(self) -> bytes:
+        return self.checksum.to_bytes(4, "big")
+
+
 def get_object_checksum_for_algorithm(checksum_algorithm: str, data: bytes):
     match checksum_algorithm:
         case ChecksumAlgorithm.CRC32:
@@ -99,6 +141,19 @@ def verify_checksum(checksum_algorithm: str, data: bytes, request: Dict):
         raise InvalidRequest(
             f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
         )
+
+
+def is_presigned_url_request(context: RequestContext) -> bool:
+    """
+    Detects pre-signed URL from query string parameters
+    Return True if any kind of presigned URL query string parameter is encountered
+    :param context: the request context from the handler chain
+    """
+    # Detecting pre-sign url and checking signature
+    query_parameters = context.request.args
+    return any(p in query_parameters for p in SIGNATURE_V2_PARAMS) or any(
+        p in query_parameters for p in SIGNATURE_V4_PARAMS
+    )
 
 
 def is_key_expired(key_object: Union[FakeKey, FakeDeleteMarker]) -> bool:
