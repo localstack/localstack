@@ -252,36 +252,6 @@ class TestS3Utils:
         for bucket_name, expected_result in bucket_names:
             assert s3_utils.validate_bucket_name(bucket_name) == expected_result
 
-    @pytest.mark.parametrize(
-        "presign_url, expected_output_bucket, expected_output_key",
-        [
-            pytest.param(
-                "http://s3.localhost.localstack.cloud:4566/test-output-bucket-2/test-transcribe-job-e1895bdf.json?AWSAccessKeyId=000000000000&Signature=2Yc%2BvwhXx8UzmH8imzySfLOW6OI%3D&Expires=1688561914",
-                "test-output-bucket-2",
-                "test-transcribe-job-e1895bdf.json",
-                id="output key as a single file",
-            ),
-            pytest.param(
-                "http://s3.localhost.localstack.cloud:4566/test-output-bucket-5/test-files/test-output.json?AWSAccessKeyId=000000000000&Signature=F6bwF1M2N%2BLzEXTZnUtjE23S%2Bb0%3D&Expires=1688561920",
-                "test-output-bucket-5",
-                "test-files/test-output.json",
-                id="output key with subdirectories",
-            ),
-            pytest.param(
-                "http://s3.localhost.localstack.cloud:4566/test-output-bucket-2?AWSAccessKeyId=000000000000&Signature=2Yc%2BvwhXx8UzmH8imzySfLOW6OI%3D&Expires=1688561914",
-                "test-output-bucket-2",
-                "",
-                id="output key as None",
-            ),
-        ],
-    )
-    def test_bucket_and_key_presign_url(
-        self, presign_url, expected_output_bucket, expected_output_key
-    ):
-        bucket, key = s3_utils_asf.get_bucket_and_key_from_presign_url(presign_url)
-        assert bucket == expected_output_bucket
-        assert key == expected_output_key
-
     def test_is_expired(self):
         offset = datetime.timedelta(seconds=5)
         assert s3_utils.is_expired(datetime.datetime.now() - offset)
@@ -651,6 +621,71 @@ class TestS3UtilsAsf:
         for checksum_algorithm, data, request in invalid_checksums:
             with pytest.raises(Exception):
                 s3_utils_asf.verify_checksum(checksum_algorithm, data, request)
+
+    @pytest.mark.parametrize(
+        "presign_url, expected_output_bucket, expected_output_key",
+        [
+            pytest.param(
+                "http://s3.localhost.localstack.cloud:4566/test-output-bucket-2/test-transcribe-job-e1895bdf.json?AWSAccessKeyId=000000000000&Signature=2Yc%2BvwhXx8UzmH8imzySfLOW6OI%3D&Expires=1688561914",
+                "test-output-bucket-2",
+                "test-transcribe-job-e1895bdf.json",
+                id="output key as a single file",
+            ),
+            pytest.param(
+                "http://s3.localhost.localstack.cloud:4566/test-output-bucket-5/test-files/test-output.json?AWSAccessKeyId=000000000000&Signature=F6bwF1M2N%2BLzEXTZnUtjE23S%2Bb0%3D&Expires=1688561920",
+                "test-output-bucket-5",
+                "test-files/test-output.json",
+                id="output key with subdirectories",
+            ),
+            pytest.param(
+                "http://s3.localhost.localstack.cloud:4566/test-output-bucket-2?AWSAccessKeyId=000000000000&Signature=2Yc%2BvwhXx8UzmH8imzySfLOW6OI%3D&Expires=1688561914",
+                "test-output-bucket-2",
+                "",
+                id="output key as None",
+            ),
+        ],
+    )
+    def test_bucket_and_key_presign_url(
+        self, presign_url, expected_output_bucket, expected_output_key
+    ):
+        bucket, key = s3_utils_asf.get_bucket_and_key_from_presign_url(presign_url)
+        assert bucket == expected_output_bucket
+        assert key == expected_output_key
+
+    @pytest.mark.parametrize(
+        "header, dateobj, rule_id",
+        [
+            (
+                'expiry-date="Sat, 15 Jul 2023 00:00:00 GMT", rule-id="rule1"',
+                datetime.datetime(day=15, month=7, year=2023, tzinfo=None),
+                "rule1",
+            ),
+            (
+                'expiry-date="Mon, 29 Dec 2030 00:00:00 GMT", rule-id="rule2"',
+                datetime.datetime(day=29, month=12, year=2030, tzinfo=None),
+                "rule2",
+            ),
+            (
+                'expiry-date="Tes, 32 Jul 2023 00:00:00 GMT", rule-id="rule3"',
+                None,
+                None,
+            ),
+            (
+                'expiry="Sat, 15 Jul 2023 00:00:00 GMT", rule-id="rule4"',
+                None,
+                None,
+            ),
+            (
+                'expiry-date="Sat, 15 Jul 2023 00:00:00 GMT"',
+                None,
+                None,
+            ),
+        ],
+    )
+    def test_parse_expiration_header(self, header, dateobj, rule_id):
+        parsed_dateobj, parsed_rule_id = s3_utils_asf.parse_expiration_header(header)
+        assert parsed_dateobj == dateobj
+        assert parsed_rule_id == rule_id
 
 
 class TestS3PresignedUrlAsf:
