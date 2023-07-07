@@ -952,7 +952,7 @@ class TemplateDeployer:
 
     def get_unsatisfied_dependencies(self, resource):
         res_deps = self.get_resource_dependencies(resource)
-        res_deps_mapped = {v: self.stack.resources.get(v) for k, v in res_deps.items()}
+        res_deps_mapped = {v: self.stack.resources.get(v) for v in res_deps}
         return self.get_unsatisfied_dependencies_for_resources(res_deps_mapped, resource)
 
     def get_unsatisfied_dependencies_for_resources(
@@ -973,20 +973,14 @@ class TemplateDeployer:
                         break
         return result
 
-    def get_resource_dependencies(self, resource: dict) -> dict[str, str]:
+    def get_resource_dependencies(self, resource: dict) -> set[str]:
         """
         Takes a resource and returns its dependencies on other resources via a str -> str mapping
         """
-        result = {}
-        # TODO: conditions can also have refs I guess
         # Note: using the original, unmodified template here to preserve Ref's ...
         raw_resources = self.stack.template_original["Resources"]
         raw_resource = raw_resources[resource["LogicalResourceId"]]
-        deps = get_deps_for_resource(raw_resource, self.stack.resolved_conditions)
-        # deps = get_deps_for_resource(resource['Properties'])
-        for dep in deps:
-            result[resource["LogicalResourceId"]] = dep
-        return result
+        return get_deps_for_resource(raw_resource, self.stack.resolved_conditions)
 
     # -----------------
     # DEPLOYMENT UTILS
