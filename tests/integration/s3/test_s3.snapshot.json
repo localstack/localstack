@@ -8192,5 +8192,69 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_object_expiry_after_bucket_lifecycle_configuration": {
+    "recorded-date": "07-07-2023, 21:38:39",
+    "recorded-content": {
+      "put-object-before": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-lifecycle-conf": {
+        "Rules": [
+          {
+            "Expiration": "<expiration>",
+            "Filter": {},
+            "ID": "rule3",
+            "Status": "Enabled"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-expiry-before": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-after": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-expiry-after": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

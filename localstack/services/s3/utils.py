@@ -341,7 +341,7 @@ def rfc_1123_datetime(src: datetime.datetime) -> str:
 
 
 def str_to_rfc_1123_datetime(value: str) -> datetime.datetime:
-    return datetime.datetime.strptime(value, RFC1123).astimezone(tz=ZoneInfo("GMT"))
+    return datetime.datetime.strptime(value, RFC1123).replace(tzinfo=ZoneInfo("GMT"))
 
 
 def serialize_expiration_header(

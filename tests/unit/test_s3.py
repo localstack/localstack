@@ -657,12 +657,12 @@ class TestS3UtilsAsf:
         [
             (
                 'expiry-date="Sat, 15 Jul 2023 00:00:00 GMT", rule-id="rule1"',
-                datetime.datetime(day=15, month=7, year=2023, tzinfo=None),
+                datetime.datetime(day=15, month=7, year=2023, tzinfo=zoneinfo.ZoneInfo(key="GMT")),
                 "rule1",
             ),
             (
                 'expiry-date="Mon, 29 Dec 2030 00:00:00 GMT", rule-id="rule2"',
-                datetime.datetime(day=29, month=12, year=2030, tzinfo=None),
+                datetime.datetime(day=29, month=12, year=2030, tzinfo=zoneinfo.ZoneInfo(key="GMT")),
                 "rule2",
             ),
             (
