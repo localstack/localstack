@@ -1832,10 +1832,7 @@ class TestS3:
         snapshot.match("head-object", head_obj)
 
         # wait for the condition to pass
-        if is_aws_cloud():
-            time.sleep(3)
-        else:
-            time.sleep(1)
+        time.sleep(3)
 
         # we're testing the order of validation at the same time by validating all of them at once, by elimination
         now = datetime.datetime.now().astimezone(tz=ZoneInfo("GMT"))

@@ -546,7 +546,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 or checksum_algorithm == ChecksumAlgorithm.CRC32C
             ):
                 dest_key_object.checksum_value = get_object_checksum_for_algorithm(
-                    checksum_algorithm, source_key_object.value
+                    checksum_algorithm, dest_key_object.value
                 )
             else:
                 dest_key_object.checksum_value = source_key_object.checksum_value
