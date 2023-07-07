@@ -1902,6 +1902,18 @@ class TestS3:
             )
         snapshot.match("copy-etag-missing-quotes", e.value.response)
 
+        # Positive tests with all conditions checked
+        copy_obj_all_positive = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=dest_key,
+            CopySourceIfMatch=put_object["ETag"].strip('"'),
+            CopySourceIfNoneMatch="etag123",
+            CopySourceIfModifiedSince=now - datetime.timedelta(days=1),
+            CopySourceIfUnmodifiedSince=now,
+        )
+        snapshot.match("copy-success", copy_obj_all_positive)
+
     @pytest.mark.aws_validated
     # behaviour is wrong in Legacy, we inherit Bucket ACL
     @pytest.mark.skip_snapshot_verify(
