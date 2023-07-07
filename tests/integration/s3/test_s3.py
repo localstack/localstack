@@ -4864,6 +4864,60 @@ class TestS3:
             aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch="etag")
         snapshot.match("if_match_err_1", e.value.response["Error"])
 
+    def test_s3_object_hold(self, aws_client, s3_create_bucket, snapshot):
+        bucket_name = f"bucket-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        key = "test.txt"
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body="test")
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.get_object_retention(Bucket=bucket_name, Key=key)
+        snapshot.match("get_object_retention_1", exc.value.response["Error"])
+
+        # non-existing bucket
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.put_object_retention(
+                Bucket="non-existing-bucket",
+                Key=key,
+                Retention={"Mode": "COMPLIANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+            )
+        snapshot.match("put_object_retention_1", exc.value.response["Error"])
+
+        # non-existing key
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.put_object_retention(
+                Bucket=bucket_name,
+                Key="non-existing-key",
+                Retention={"Mode": "COMPLIANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+            )
+        snapshot.match("put_object_retention_2", exc.value.response["Error"])
+
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.get_object_retention(Bucket=bucket_name, Key=key)
+        snapshot.match("put_object_retention_3", exc.value.response["Error"])
+
+        response = aws_client.s3.put_object_retention(
+            Bucket=bucket_name,
+            Key=key,
+            Retention={"Mode": "COMPLIANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+        )
+        snapshot.match("put_object_retention_4", response["ResponseMetadata"]["HTTPStatusCode"])
+
+        response = aws_client.s3.get_object_retention(Bucket=bucket_name, Key=key)
+        snapshot.match("get_object_retention_2", response)
+
+        bucket_name_without_lock = f"bucket-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_name_without_lock, ObjectLockEnabledForBucket=False)
+
+        aws_client.s3.put_object(Bucket=bucket_name_without_lock, Key=key, Body="test")
+
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.put_object_retention(
+                Bucket=bucket_name_without_lock,
+                Key=key,
+                Retention={"Mode": "COMPLIANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+            )
+        snapshot.match("put_object_retention_5", exc.value.response["Error"])
+
     @pytest.mark.aws_validated
     def test_put_bucket_logging(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(

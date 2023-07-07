@@ -1120,6 +1120,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         key = get_key_from_moto_bucket(
             get_bucket_from_moto(moto_backend, bucket=bucket), key=key, version_id=version_id
         )
+        if not key.lock_mode or not key.lock_until:
+            raise CommonServiceException(
+                "NoSuchObjectLockConfiguration",
+                "The specified object does not have a ObjectLock configuration",
+            )
         return GetObjectRetentionOutput(
             Retention=ObjectLockRetention(
                 Mode=key.lock_mode,
@@ -1143,22 +1148,24 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> PutObjectRetentionOutput:
         moto_backend = get_moto_s3_backend(context)
         moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
-        try:
-            key = get_key_from_moto_bucket(moto_bucket, key=key, version_id=version_id)
-        except NoSuchKey:
-            key = None
 
-        if not key and version_id:
+        try:
+            moto_key = get_key_from_moto_bucket(moto_bucket, key=key, version_id=version_id)
+        except NoSuchKey:
+            moto_key = None
+
+        if not moto_key and version_id:
             raise InvalidArgument("Invalid version id specified")
         if not moto_bucket.object_lock_enabled:
             raise InvalidRequest("Bucket is missing Object Lock Configuration")
-        if not key and not version_id:
-            raise NoSuchKey("The specified key does not exist.")
+        if not moto_key and not version_id:
+            raise NoSuchKey("The specified key does not exist.", Key=key)
 
-        key.lock_mode = retention.get("Mode")
+        moto_key.lock_mode = retention.get("Mode")
+        # TODO: add past date validation
         retention_date = retention.get("RetainUntilDate")
         retention_date = retention_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-        key.lock_until = retention_date
+        moto_key.lock_until = retention_date
 
     @handler("PutBucketAcl", expand=False)
     def put_bucket_acl(
