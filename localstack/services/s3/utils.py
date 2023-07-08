@@ -353,7 +353,7 @@ def serialize_expiration_header(
         exp_date = last_modified.replace(
             hour=0, minute=0, second=0, microsecond=0
         ) + datetime.timedelta(days=exp_days + 1)
-    return f'expiry-date="{rfc_1123_datetime(exp_date)}", rule-id={rule_id}'
+    return f'expiry-date="{rfc_1123_datetime(exp_date)}", rule-id="{rule_id}"'
 
 
 def get_lifecycle_rule_from_object(

@@ -687,6 +687,48 @@ class TestS3UtilsAsf:
         assert parsed_dateobj == dateobj
         assert parsed_rule_id == rule_id
 
+    @pytest.mark.parametrize(
+        "rule_id, lifecycle_exp, last_modified, header",
+        [
+            (
+                "rule1",
+                {
+                    "Date": datetime.datetime(
+                        day=15, month=7, year=2023, tzinfo=zoneinfo.ZoneInfo(key="GMT")
+                    )
+                },
+                datetime.datetime(
+                    day=15,
+                    month=9,
+                    year=2024,
+                    hour=0,
+                    minute=0,
+                    second=0,
+                    microsecond=0,
+                    tzinfo=None,
+                ),
+                'expiry-date="Sat, 15 Jul 2023 00:00:00 GMT", rule-id="rule1"',
+            ),
+            (
+                "rule2",
+                {"Days": 5},
+                datetime.datetime(day=15, month=7, year=2023, tzinfo=None),
+                'expiry-date="Fri, 21 Jul 2023 00:00:00 GMT", rule-id="rule2"',
+            ),
+            (
+                "rule3",
+                {"Days": 3},
+                datetime.datetime(day=31, month=12, year=2030, microsecond=1, tzinfo=None),
+                'expiry-date="Sat, 04 Jan 2031 00:00:00 GMT", rule-id="rule3"',
+            ),
+        ],
+    )
+    def test_serialize_expiration_header(self, rule_id, lifecycle_exp, last_modified, header):
+        serialized_header = s3_utils_asf.serialize_expiration_header(
+            rule_id, lifecycle_exp, last_modified
+        )
+        assert serialized_header == header
+
 
 class TestS3PresignedUrlAsf:
     """
