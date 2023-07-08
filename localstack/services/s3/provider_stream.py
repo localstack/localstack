@@ -2,6 +2,7 @@ import base64
 import bisect
 import codecs
 import copy
+import datetime
 import hashlib
 import itertools
 import logging
@@ -11,6 +12,7 @@ from collections.abc import Iterator
 from io import BytesIO, RawIOBase
 from tempfile import SpooledTemporaryFile
 from typing import IO, Any, Optional, Tuple
+from zoneinfo import ZoneInfo
 
 from moto.core.common_types import TYPE_RESPONSE
 from moto.core.utils import unix_time_millis
@@ -30,6 +32,7 @@ from localstack.aws.api.s3 import (
     InvalidArgument,
     InvalidStorageClass,
     NoSuchUpload,
+    PreconditionFailed,
     PutObjectOutput,
     PutObjectRequest,
     UploadPartOutput,
@@ -171,9 +174,6 @@ class S3ProviderStream(S3Provider):
         if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
             validate_kms_key_id(sse_kms_key_id, dest_moto_bucket)
 
-        response: CopyObjectOutput = call_moto(context)
-
-        # moto does not copy all attributes of the key
         src_bucket, src_key, src_version_id = extract_bucket_key_version_id_from_copy_source(
             request["CopySource"]
         )
@@ -181,6 +181,43 @@ class S3ProviderStream(S3Provider):
         source_key_object = get_key_from_moto_bucket(
             src_moto_bucket, key=src_key, version_id=src_version_id
         )
+
+        # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html
+        condition = None
+        source_object_last_modified = source_key_object.last_modified.replace(
+            tzinfo=ZoneInfo("GMT")
+        )
+        if (cs_if_match := request.get("CopySourceIfMatch")) and source_key_object.etag.strip(
+            '"'
+        ) != cs_if_match.strip('"'):
+            condition = "x-amz-copy-source-If-Match"
+
+        elif (
+            cs_id_unmodified_since := request.get("CopySourceIfUnmodifiedSince")
+        ) and source_object_last_modified > cs_id_unmodified_since:
+            condition = "x-amz-copy-source-If-Unmodified-Since"
+
+        elif (
+            cs_if_none_match := request.get("CopySourceIfNoneMatch")
+        ) and source_key_object.etag.strip('"') == cs_if_none_match.strip('"'):
+            condition = "x-amz-copy-source-If-None-Match"
+
+        elif (
+            cs_id_modified_since := request.get("CopySourceIfModifiedSince")
+        ) and source_object_last_modified < cs_id_modified_since < datetime.datetime.now(
+            tz=ZoneInfo("GMT")
+        ):
+            condition = "x-amz-copy-source-If-Modified-Since"
+
+        if condition:
+            raise PreconditionFailed(
+                "At least one of the pre-conditions you specified did not hold",
+                Condition=condition,
+            )
+
+        response: CopyObjectOutput = call_moto(context)
+
+        # moto does not copy all attributes of the key
 
         checksum_algorithm = (
             request.get("ChecksumAlgorithm") or source_key_object.checksum_algorithm

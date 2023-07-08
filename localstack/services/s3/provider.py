@@ -3,6 +3,7 @@ import logging
 import os
 from typing import IO, Dict, List, Optional
 from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
+from zoneinfo import ZoneInfo
 
 import moto.s3.responses as moto_s3_responses
 
@@ -91,6 +92,7 @@ from localstack.aws.api.s3 import (
     ObjectLockToken,
     ObjectVersionId,
     PostResponse,
+    PreconditionFailed,
     PutBucketAclRequest,
     PutBucketLifecycleConfigurationRequest,
     PutBucketLifecycleRequest,
@@ -488,8 +490,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
             validate_kms_key_id(sse_kms_key_id, dest_moto_bucket)
 
-        response: CopyObjectOutput = call_moto(context)
-
         src_bucket, src_key, src_version_id = extract_bucket_key_version_id_from_copy_source(
             request["CopySource"]
         )
@@ -497,6 +497,41 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         source_key_object = get_key_from_moto_bucket(
             src_moto_bucket, key=src_key, version_id=src_version_id
         )
+
+        # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html
+        condition = None
+        source_object_last_modified = source_key_object.last_modified.replace(
+            tzinfo=ZoneInfo("GMT")
+        )
+        if (cs_if_match := request.get("CopySourceIfMatch")) and source_key_object.etag.strip(
+            '"'
+        ) != cs_if_match.strip('"'):
+            condition = "x-amz-copy-source-If-Match"
+
+        elif (
+            cs_id_unmodified_since := request.get("CopySourceIfUnmodifiedSince")
+        ) and source_object_last_modified > cs_id_unmodified_since:
+            condition = "x-amz-copy-source-If-Unmodified-Since"
+
+        elif (
+            cs_if_none_match := request.get("CopySourceIfNoneMatch")
+        ) and source_key_object.etag.strip('"') == cs_if_none_match.strip('"'):
+            condition = "x-amz-copy-source-If-None-Match"
+
+        elif (
+            cs_id_modified_since := request.get("CopySourceIfModifiedSince")
+        ) and source_object_last_modified < cs_id_modified_since < datetime.datetime.now(
+            tz=ZoneInfo("GMT")
+        ):
+            condition = "x-amz-copy-source-If-Modified-Since"
+
+        if condition:
+            raise PreconditionFailed(
+                "At least one of the pre-conditions you specified did not hold",
+                Condition=condition,
+            )
+
+        response: CopyObjectOutput = call_moto(context)
 
         # we properly calculate the Checksum for the destination Key
         checksum_algorithm = (
@@ -511,7 +546,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 or checksum_algorithm == ChecksumAlgorithm.CRC32C
             ):
                 dest_key_object.checksum_value = get_object_checksum_for_algorithm(
-                    checksum_algorithm, source_key_object.value
+                    checksum_algorithm, dest_key_object.value
                 )
             else:
                 dest_key_object.checksum_value = source_key_object.checksum_value
