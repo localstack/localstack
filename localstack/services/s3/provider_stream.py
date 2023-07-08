@@ -160,6 +160,14 @@ class S3ProviderStream(S3Provider):
         if key_object.checksum_algorithm:
             response[f"Checksum{key_object.checksum_algorithm.upper()}"] = key_object.checksum_value
 
+        bucket_lifecycle_configurations = self.get_store(context).bucket_lifecycle_configuration
+        if (bucket_lifecycle_config := bucket_lifecycle_configurations.get(request["Bucket"])) and (
+            rules := bucket_lifecycle_config.get("Rules")
+        ):
+            object_tags = moto_backend.tagger.get_tag_dict_for_resource(key_object.arn)
+            if expiration_header := self._get_expiration_header(rules, key_object, object_tags):
+                response["Expiration"] = expiration_header
+
         self._notify(context)
         return response
 
