@@ -1831,7 +1831,9 @@ class TestS3:
         head_obj = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("head-object", head_obj)
 
-        # wait for the condition to pass
+        # wait a bit for the `unmodified_since` value so that it's unvalid.
+        # S3 compares it the last-modified field, but you can't set the value in the future otherwise it ignores it
+        # It needs to be now or less, but the object needs to be a bit more recent than that.
         time.sleep(3)
 
         # we're testing the order of validation at the same time by validating all of them at once, by elimination
