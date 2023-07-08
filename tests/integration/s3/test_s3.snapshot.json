@@ -7563,22 +7563,22 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_put_bucket_logging": {
-    "recorded-date": "08-07-2023, 00:58:18",
+    "recorded-date": "08-07-2023, 02:00:56",
     "recorded-content": {
       "get-bucket-default-acl": {
         "Grants": [
           {
             "Grantee": {
-              "DisplayName": "aws-sandbox-benjamin-simon-001",
-              "ID": "c32ee542628cfb38f348c508a38f7e82a38b79b25f728d7e262c1d90441b608a",
+              "DisplayName": "display-name",
+              "ID": "owner-id",
               "Type": "CanonicalUser"
             },
             "Permission": "FULL_CONTROL"
           }
         ],
         "Owner": {
-          "DisplayName": "aws-sandbox-benjamin-simon-001",
-          "ID": "c32ee542628cfb38f348c508a38f7e82a38b79b25f728d7e262c1d90441b608a"
+          "DisplayName": "display-name",
+          "ID": "owner-id"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

@@ -46,6 +46,7 @@ from localstack.aws.api.s3 import (
     GetBucketLifecycleConfigurationOutput,
     GetBucketLifecycleOutput,
     GetBucketLocationOutput,
+    GetBucketLoggingOutput,
     GetBucketReplicationOutput,
     GetBucketRequestPaymentOutput,
     GetBucketRequestPaymentRequest,
@@ -1393,10 +1394,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not (logging_config := bucket_logging_status.get("LoggingEnabled")):
             moto_bucket.logging = {}
 
-        # TODO: validate the TargetGrants format, not done in moto either
-
         # the target bucket must be in the same account
-        target_bucket_name = logging_config.get("TargetBucket")
+        if not (target_bucket_name := logging_config.get("TargetBucket")):
+            raise MalformedXML()
+
+        if not logging_config.get("TargetPrefix"):
+            logging_config["TargetPrefix"] = ""
+
+        # TODO: validate Grants
+
         if not (target_bucket := moto_backend.buckets.get(target_bucket_name)):
             raise InvalidTargetBucketForLogging(
                 "The target bucket for logging does not exist",
@@ -1410,6 +1416,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         moto_bucket.logging = logging_config
+
+    def get_bucket_logging(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketLoggingOutput:
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket)
+        if not moto_bucket.logging:
+            return GetBucketLoggingOutput()
+
+        return GetBucketLoggingOutput(LoggingEnabled=moto_bucket.logging)
 
 
 def validate_bucket_analytics_configuration(

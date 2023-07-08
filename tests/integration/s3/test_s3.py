@@ -4860,7 +4860,15 @@ class TestS3:
 
     @pytest.mark.aws_validated
     def test_put_bucket_logging(self, aws_client, s3_create_bucket, snapshot):
-        snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("TargetBucket"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value(
+                    "ID", value_replacement="owner-id", reference_replacement=False
+                ),
+            ]
+        )
 
         bucket_name = s3_create_bucket()
         target_bucket = s3_create_bucket()
