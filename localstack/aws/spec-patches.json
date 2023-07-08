@@ -816,6 +816,40 @@
         "shape":"ObjectList",
         "documentation":"<p>Metadata about each object returned.</p>"
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/CrossLocationLoggingProhibitted",
+      "value": {
+        "type": "structure",
+        "members": {
+          "TargetBucketLocation": {
+            "shape": "BucketRegion"
+          }
+        },
+        "error": {
+          "httpStatusCode": 403
+        },
+        "documentation": "<p>Cross S3 location logging not allowed. </p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidTargetBucketForLogging",
+      "value": {
+        "type": "structure",
+        "members": {
+          "TargetBucket": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 400
+        },
+        "documentation": "<p>The target bucket for logging does not exist</p>",
+        "exception": true
+      }
     }
   ]
 }

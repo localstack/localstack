@@ -17,6 +17,7 @@ from localstack.aws.api.s3 import (
     AnalyticsConfigurationList,
     AnalyticsId,
     Body,
+    BucketLoggingStatus,
     BucketName,
     BypassGovernanceRetention,
     ChecksumAlgorithm,
@@ -30,6 +31,7 @@ from localstack.aws.api.s3 import (
     CreateBucketRequest,
     CreateMultipartUploadOutput,
     CreateMultipartUploadRequest,
+    CrossLocationLoggingProhibitted,
     Delete,
     DeleteObjectOutput,
     DeleteObjectRequest,
@@ -44,6 +46,7 @@ from localstack.aws.api.s3 import (
     GetBucketLifecycleConfigurationOutput,
     GetBucketLifecycleOutput,
     GetBucketLocationOutput,
+    GetBucketLoggingOutput,
     GetBucketReplicationOutput,
     GetBucketRequestPaymentOutput,
     GetBucketRequestPaymentRequest,
@@ -65,6 +68,7 @@ from localstack.aws.api.s3 import (
     InvalidBucketName,
     InvalidPartOrder,
     InvalidStorageClass,
+    InvalidTargetBucketForLogging,
     ListBucketAnalyticsConfigurationsOutput,
     ListBucketIntelligentTieringConfigurationsOutput,
     ListMultipartUploadsOutput,
@@ -1374,6 +1378,54 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             IsTruncated=False,
             IntelligentTieringConfigurationList=bucket_intelligent_tiering_configurations,
         )
+
+    def put_bucket_logging(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        bucket_logging_status: BucketLoggingStatus,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket)
+
+        if not (logging_config := bucket_logging_status.get("LoggingEnabled")):
+            moto_bucket.logging = {}
+
+        # the target bucket must be in the same account
+        if not (target_bucket_name := logging_config.get("TargetBucket")):
+            raise MalformedXML()
+
+        if not logging_config.get("TargetPrefix"):
+            logging_config["TargetPrefix"] = ""
+
+        # TODO: validate Grants
+
+        if not (target_bucket := moto_backend.buckets.get(target_bucket_name)):
+            raise InvalidTargetBucketForLogging(
+                "The target bucket for logging does not exist",
+                TargetBucket=target_bucket_name,
+            )
+
+        if target_bucket.region_name != moto_bucket.region_name:
+            raise CrossLocationLoggingProhibitted(
+                "Cross S3 location logging not allowed. ",
+                TargetBucketLocation=target_bucket.region_name,
+            )
+
+        moto_bucket.logging = logging_config
+
+    def get_bucket_logging(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketLoggingOutput:
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket)
+        if not moto_bucket.logging:
+            return GetBucketLoggingOutput()
+
+        return GetBucketLoggingOutput(LoggingEnabled=moto_bucket.logging)
 
 
 def validate_bucket_analytics_configuration(

@@ -4858,6 +4858,116 @@ class TestS3:
             aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch="etag")
         snapshot.match("if_match_err_1", e.value.response["Error"])
 
+    @pytest.mark.aws_validated
+    def test_put_bucket_logging(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("TargetBucket"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value(
+                    "ID", value_replacement="owner-id", reference_replacement=False
+                ),
+            ]
+        )
+
+        bucket_name = s3_create_bucket()
+        target_bucket = s3_create_bucket()
+        bucket_logging_status = {
+            "LoggingEnabled": {
+                "TargetBucket": target_bucket,
+                "TargetPrefix": "log",
+            },
+        }
+        resp = aws_client.s3.get_bucket_acl(Bucket=target_bucket)
+        snapshot.match("get-bucket-default-acl", resp)
+
+        # this might have been failing in the past, as the target bucket does not give access to LogDelivery to
+        # write/read_acp. however, AWS accepts it, because you can also set it with Permissions
+        resp = aws_client.s3.put_bucket_logging(
+            Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
+        )
+        snapshot.match("put-bucket-logging", resp)
+
+        resp = aws_client.s3.get_bucket_logging(Bucket=bucket_name)
+        snapshot.match("get-bucket-logging", resp)
+
+    @pytest.mark.aws_validated
+    def test_put_bucket_logging_accept_wrong_grants(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
+
+        bucket_name = s3_create_bucket()
+
+        target_bucket = s3_create_bucket()
+        # We need to delete the ObjectOwnership from the bucket, because you otherwise can't set TargetGrants on it
+        # TODO: have the same default as AWS and have ObjectOwnership set
+        aws_client.s3.delete_bucket_ownership_controls(Bucket=target_bucket)
+
+        bucket_logging_status = {
+            "LoggingEnabled": {
+                "TargetBucket": target_bucket,
+                "TargetPrefix": "log",
+                "TargetGrants": [
+                    {
+                        "Grantee": {
+                            "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                            "Type": "Group",
+                        },
+                        "Permission": "WRITE",
+                    },
+                    {
+                        "Grantee": {
+                            "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                            "Type": "Group",
+                        },
+                        "Permission": "READ_ACP",
+                    },
+                ],
+            },
+        }
+
+        # from the documentation, only WRITE | READ | FULL_CONTROL are allowed, but AWS let READ_ACP pass
+        resp = aws_client.s3.put_bucket_logging(
+            Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
+        )
+        snapshot.match("put-bucket-logging", resp)
+
+        resp = aws_client.s3.get_bucket_logging(Bucket=bucket_name)
+        snapshot.match("get-bucket-logging", resp)
+
+    @pytest.mark.aws_validated
+    def test_put_bucket_logging_wrong_target(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
+        bucket_name = s3_create_bucket()
+        target_bucket = s3_create_bucket(
+            CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
+        )
+
+        with pytest.raises(ClientError) as e:
+            bucket_logging_status = {
+                "LoggingEnabled": {
+                    "TargetBucket": target_bucket,
+                    "TargetPrefix": "log",
+                },
+            }
+            aws_client.s3.put_bucket_logging(
+                Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
+            )
+        snapshot.match("put-bucket-logging-different-regions", e.value.response)
+
+        nonexistent_target_bucket = f"target-bucket-{short_uid()}-{short_uid()}"
+        with pytest.raises(ClientError) as e:
+            bucket_logging_status = {
+                "LoggingEnabled": {
+                    "TargetBucket": nonexistent_target_bucket,
+                    "TargetPrefix": "log",
+                },
+            }
+            aws_client.s3.put_bucket_logging(
+                Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
+            )
+        snapshot.match("put-bucket-logging-non-existent-bucket", e.value.response)
+        assert e.value.response["Error"]["TargetBucket"] == nonexistent_target_bucket
+
 
 class TestS3MultiAccounts:
     @pytest.fixture

@@ -7561,5 +7561,110 @@
         "Message": "At least one of the pre-conditions you specified did not hold"
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_bucket_logging": {
+    "recorded-date": "08-07-2023, 02:00:56",
+    "recorded-content": {
+      "get-bucket-default-acl": {
+        "Grants": [
+          {
+            "Grantee": {
+              "DisplayName": "display-name",
+              "ID": "owner-id",
+              "Type": "CanonicalUser"
+            },
+            "Permission": "FULL_CONTROL"
+          }
+        ],
+        "Owner": {
+          "DisplayName": "display-name",
+          "ID": "owner-id"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-bucket-logging": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-logging": {
+        "LoggingEnabled": {
+          "TargetBucket": "<target-bucket:1>",
+          "TargetPrefix": "log"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_bucket_logging_accept_wrong_grants": {
+    "recorded-date": "08-07-2023, 01:15:17",
+    "recorded-content": {
+      "put-bucket-logging": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-logging": {
+        "LoggingEnabled": {
+          "TargetBucket": "<target-bucket:1>",
+          "TargetGrants": [
+            {
+              "Grantee": {
+                "Type": "Group",
+                "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery"
+              },
+              "Permission": "WRITE"
+            },
+            {
+              "Grantee": {
+                "Type": "Group",
+                "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery"
+              },
+              "Permission": "READ_ACP"
+            }
+          ],
+          "TargetPrefix": "log"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_bucket_logging_wrong_target": {
+    "recorded-date": "08-07-2023, 01:27:18",
+    "recorded-content": {
+      "put-bucket-logging-different-regions": {
+        "Error": {
+          "Code": "CrossLocationLoggingProhibitted",
+          "Message": "Cross S3 location logging not allowed. ",
+          "TargetBucketLocation": "us-west-2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "put-bucket-logging-non-existent-bucket": {
+        "Error": {
+          "Code": "InvalidTargetBucketForLogging",
+          "Message": "The target bucket for logging does not exist",
+          "TargetBucket": "<target-bucket:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
