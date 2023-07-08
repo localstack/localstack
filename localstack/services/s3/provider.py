@@ -1657,8 +1657,10 @@ def validate_lifecycle_configuration(lifecycle_conf: BucketLifecycleConfiguratio
     Validate the Lifecycle configuration following AWS docs
     See https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html
     https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycleConfiguration.html
-    :param lifecycle_conf:
-    :raises
+    :param lifecycle_conf: the bucket lifecycle configuration given by the client
+    :raises MalformedXML: when the file doesn't follow the basic structure/required fields
+    :raises InvalidArgument: if the `Date` passed for the Expiration is not at Midnight GMT
+    :raises InvalidRequest: if there are duplicate tags keys in `Tags` field
     :return: None
     """
     # we only add the `Expiration` header, we don't delete objects yet
