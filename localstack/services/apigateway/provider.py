@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import IO, Any
 
 from moto.apigateway import models as apigw_models
-from moto.apigateway.models import Resource as MotoResource
+from moto.apigateway.models import Resource as MotoResource, DomainName
 from moto.apigateway.models import RestAPI as MotoRestAPI
 from moto.core.utils import camelcase_to_underscores
 
@@ -65,7 +65,7 @@ from localstack.aws.api.apigateway import (
     TestInvokeMethodRequest,
     TestInvokeMethodResponse,
     VpcLink,
-    VpcLinks,
+    VpcLinks, DomainNames,
 )
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError, create_aws_request_context
 from localstack.constants import APPLICATION_JSON
@@ -84,7 +84,7 @@ from localstack.services.apigateway.helpers import (
     resolve_references,
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
-from localstack.services.apigateway.models import RestApiContainer
+from localstack.services.apigateway.models import RestApiContainer, ApiGatewayStore
 from localstack.services.apigateway.patches import apply_patches
 from localstack.services.apigateway.router_asf import ApigatewayRouter, to_invocation_context
 from localstack.services.edge import ROUTER
@@ -292,6 +292,22 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response = to_rest_api_response_json(response)
         response.setdefault("tags", {})
         return response
+
+    @handler("GetDomainName")
+    def get_domain_name(self, context: RequestContext, domain_name: String) -> DomainName:
+        store: ApiGatewayStore = get_apigateway_store(context.account_id, context.region)
+        if domain := store.domain_names.get(domain_name):
+            return domain
+        raise NotFoundException("Invalid domain name identifier specified")
+
+    @handler("GetDomainNames")
+    def get_domain_names(
+            self, context: RequestContext, position: String = None, limit: NullableInteger = None
+    ) -> DomainNames:
+        store = get_apigateway_store(context.account_id, context.region)
+        domain_names = store.domain_names.values()
+        return DomainNames(items=list(domain_names), position=position)
+
 
     def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
         try:

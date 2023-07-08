@@ -8,7 +8,7 @@ from localstack.aws.api.apigateway import (
     GatewayResponse,
     Model,
     RequestValidator,
-    RestApi,
+    RestApi, DomainName,
 )
 from localstack.services.stores import (
     AccountRegionBundle,
@@ -67,6 +67,8 @@ class ApiGatewayStore(BaseStore):
 
     # maps resource ARN to tags
     TAGS: Dict[str, Dict[str, str]] = CrossRegionAttribute(default=dict)
+
+    domain_names: Dict[str, DomainName] = LocalAttribute(default=dict)
 
     def __init__(self):
         super().__init__()
