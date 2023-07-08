@@ -4,6 +4,7 @@ import re
 import zlib
 from typing import Dict, Literal, Optional, Tuple, Union
 from urllib import parse as urlparser
+from zoneinfo import ZoneInfo
 
 import moto.s3.models as moto_s3_models
 from botocore.exceptions import ClientError
@@ -17,6 +18,9 @@ from localstack.aws.api.s3 import (
     BucketName,
     ChecksumAlgorithm,
     InvalidArgument,
+    LifecycleExpiration,
+    LifecycleRule,
+    LifecycleRules,
     MethodNotAllowed,
     NoSuchBucket,
     NoSuchKey,
@@ -54,6 +58,9 @@ S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expr
 PATTERN_UUID = re.compile(
     r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
 )
+
+
+RFC1123 = "%a, %d %b %Y %H:%M:%S GMT"
 
 
 class InvalidRequest(ServiceException):
@@ -327,3 +334,79 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket) -> None:
                 code="KMS.NotFoundException", message=e.response["Error"]["Message"]
             )
         raise
+
+
+def rfc_1123_datetime(src: datetime.datetime) -> str:
+    return src.strftime(RFC1123)
+
+
+def str_to_rfc_1123_datetime(value: str) -> datetime.datetime:
+    return datetime.datetime.strptime(value, RFC1123).replace(tzinfo=ZoneInfo("GMT"))
+
+
+def serialize_expiration_header(
+    rule_id: str, lifecycle_exp: LifecycleExpiration, last_modified: datetime.datetime
+):
+    if not (exp_date := lifecycle_exp.get("Date")):
+        exp_days = lifecycle_exp.get("Days")
+        # AWS round to the next day at midnight UTC
+        exp_date = last_modified.replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ) + datetime.timedelta(days=exp_days + 1)
+    return f'expiry-date="{rfc_1123_datetime(exp_date)}", rule-id="{rule_id}"'
+
+
+def get_lifecycle_rule_from_object(
+    lifecycle_conf_rules: LifecycleRules, moto_object: FakeKey, object_tags: dict[str, str]
+) -> LifecycleRule:
+    for rule in lifecycle_conf_rules:
+        if "Expiration" not in rule:
+            continue
+
+        if not (rule_filter := rule.get("Filter")):
+            return rule
+
+        if and_rules := rule_filter.get("And"):
+            if all(
+                _match_lifecycle_filter(key, value, moto_object, object_tags)
+                for key, value in and_rules.items()
+            ):
+                return rule
+
+        if any(
+            _match_lifecycle_filter(key, value, moto_object, object_tags)
+            for key, value in rule_filter.items()
+        ):
+            # after validation, we can only one of `Prefix`, `Tag`, `ObjectSizeGreaterThan` or `ObjectSizeLessThan` in
+            # the dict. Instead of manually checking, we can iterate of the only key and try to match it
+            return rule
+
+
+def _match_lifecycle_filter(
+    filter_key: str, filter_value, moto_object: FakeKey, object_tags: dict[str, str]
+):
+    match filter_key:
+        case "Prefix":
+            return moto_object.name.startswith(filter_value)
+        case "Tag":
+            return object_tags.get(filter_value.get("Key")) == filter_value.get("Value")
+        case "ObjectSizeGreaterThan":
+            return moto_object.size > filter_value
+        case "ObjectSizeLessThan":
+            return moto_object.size < filter_value
+        case "Tags":  # this is inside the `And` field
+            return all(object_tags.get(tag.get("Key")) == tag.get("Value") for tag in filter_value)
+
+
+def parse_expiration_header(
+    expiration_header: str,
+) -> tuple[Optional[datetime.datetime], Optional[str]]:
+    try:
+        header_values = dict(
+            (p.strip('"') for p in v.split("=")) for v in expiration_header.split('", ')
+        )
+        expiration_date = str_to_rfc_1123_datetime(header_values["expiry-date"])
+        return expiration_date, header_values["rule-id"]
+
+    except (IndexError, ValueError, KeyError):
+        return None, None

@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+from collections import defaultdict
 from typing import IO, Dict, List, Optional
 from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 from zoneinfo import ZoneInfo
@@ -18,6 +19,7 @@ from localstack.aws.api.s3 import (
     AnalyticsConfigurationList,
     AnalyticsId,
     Body,
+    BucketLifecycleConfiguration,
     BucketLoggingStatus,
     BucketName,
     BypassGovernanceRetention,
@@ -40,6 +42,7 @@ from localstack.aws.api.s3 import (
     DeleteObjectTaggingOutput,
     DeleteObjectTaggingRequest,
     ETag,
+    Expiration,
     GetBucketAclOutput,
     GetBucketAnalyticsConfigurationOutput,
     GetBucketCorsOutput,
@@ -70,6 +73,7 @@ from localstack.aws.api.s3 import (
     InvalidPartOrder,
     InvalidStorageClass,
     InvalidTargetBucketForLogging,
+    LifecycleRules,
     ListBucketAnalyticsConfigurationsOutput,
     ListBucketIntelligentTieringConfigurationsOutput,
     ListMultipartUploadsOutput,
@@ -138,11 +142,13 @@ from localstack.services.s3.utils import (
     get_bucket_from_moto,
     get_header_name,
     get_key_from_moto_bucket,
+    get_lifecycle_rule_from_object,
     get_object_checksum_for_algorithm,
     is_bucket_name_valid,
     is_canned_acl_bucket_valid,
     is_key_expired,
     is_valid_canonical_id,
+    serialize_expiration_header,
     validate_kms_key_id,
     verify_checksum,
 )
@@ -219,6 +225,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store.bucket_notification_configs.pop(bucket, None)
         store.bucket_replication.pop(bucket, None)
         store.bucket_website_configuration.pop(bucket, None)
+        store.bucket_analytics_configuration.pop(bucket, None)
+        store.bucket_intelligent_tiering_configuration.pop(bucket, None)
+        self._expiration_cache.pop(bucket, None)
 
     def on_after_init(self):
         apply_moto_patches()
@@ -232,6 +241,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         super().__init__()
         self._notification_dispatcher = NotificationDispatcher()
         self._cors_handler = S3CorsHandler()
+        # runtime cache of Lifecycle Expiration headers, as they need to be calculated everytime we fetch an object
+        # in case the rules have changed
+        self._expiration_cache: dict[BucketName, dict[ObjectKey, Expiration]] = defaultdict(dict)
 
     def on_before_stop(self):
         self._notification_dispatcher.shutdown()
@@ -263,6 +275,34 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._notification_dispatcher.verify_configuration(
             notification_configuration, skip_destination_validation, context, bucket_name
         )
+
+    def _get_expiration_header(
+        self, lifecycle_rules: LifecycleRules, moto_object, object_tags
+    ) -> Expiration:
+        """
+        This method will check if the key matches a Lifecycle filter, and return the serializer header if that's
+        the case. We're caching it because it can change depending on the set rules on the bucket.
+        We can't use `lru_cache` as the parameters needs to be hashable
+        :param lifecycle_rules: the bucket LifecycleRules
+        :param moto_object: FakeKey from moto
+        :param object_tags: the object tags
+        :return: the Expiration header if there's a rule matching
+        """
+        if cached_exp := self._expiration_cache.get(moto_object.bucket_name, {}).get(
+            moto_object.name
+        ):
+            return cached_exp
+
+        if lifecycle_rule := get_lifecycle_rule_from_object(
+            lifecycle_rules, moto_object, object_tags
+        ):
+            expiration_header = serialize_expiration_header(
+                lifecycle_rule["ID"],
+                lifecycle_rule["Expiration"],
+                moto_object.last_modified,
+            )
+            self._expiration_cache[moto_object.bucket_name][moto_object.name] = expiration_header
+            return expiration_header
 
     @handler("CreateBucket", expand=False)
     def create_bucket(
@@ -381,6 +421,25 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> HeadObjectOutput:
         response: HeadObjectOutput = call_moto(context)
         response["AcceptRanges"] = "bytes"
+
+        if not request.get("VersionId"):
+            key = request["Key"]
+            bucket = request["Bucket"]
+            moto_backend = get_moto_s3_backend(context)
+            moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
+            key_object = get_key_from_moto_bucket(moto_bucket, key=key)
+            store = self.get_store(context)
+            if (
+                bucket_lifecycle_config := store.bucket_lifecycle_configuration.get(
+                    request["Bucket"]
+                )
+            ) and (rules := bucket_lifecycle_config.get("Rules")):
+                object_tags = moto_backend.tagger.get_tag_dict_for_resource(key_object.arn)
+                if expiration_header := self._get_expiration_header(rules, key_object, object_tags):
+                    # TODO: we either apply the lifecycle to existing objects when we set the new rules, or we need to
+                    #  apply them everytime we get/head an object
+                    response["Expiration"] = expiration_header
+
         return response
 
     @handler("GetObject", expand=False)
@@ -395,8 +454,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise NoSuchKey("The specified key does not exist.", Key=key)
 
         response: GetObjectOutput = call_moto(context)
+        store = self.get_store(context)
         # check for the presence in the response, was fixed by moto but incompletely
-        if bucket in self.get_store().bucket_versioning_status and "VersionId" not in response:
+        if bucket in store.bucket_versioning_status and "VersionId" not in response:
             response["VersionId"] = "null"
 
         for request_param, response_param in s3_constants.ALLOWED_HEADER_OVERRIDES.items():
@@ -416,6 +476,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if request.get("ChecksumMode") == "ENABLED" and checksum_algorithm:
             response[f"Checksum{checksum_algorithm.upper()}"] = key_object.checksum_value  # noqa
+
+        if not version_id and (
+            (bucket_lifecycle_config := store.bucket_lifecycle_configuration.get(request["Bucket"]))
+            and (rules := bucket_lifecycle_config.get("Rules"))
+        ):
+            object_tags = moto_backend.tagger.get_tag_dict_for_resource(key_object.arn)
+            if expiration_header := self._get_expiration_header(rules, key_object, object_tags):
+                # TODO: we either apply the lifecycle to existing objects when we set the new rules, or we need to
+                #  apply them everytime we get/head an object
+                response["Expiration"] = expiration_header
 
         response["AcceptRanges"] = "bytes"
         return response
@@ -476,7 +546,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 key_object.value,
             )
 
+        bucket_lifecycle_configurations = self.get_store(context).bucket_lifecycle_configuration
+        if (bucket_lifecycle_config := bucket_lifecycle_configurations.get(request["Bucket"])) and (
+            rules := bucket_lifecycle_config.get("Rules")
+        ):
+            object_tags = moto_backend.tagger.get_tag_dict_for_resource(key_object.arn)
+            if expiration_header := self._get_expiration_header(rules, key_object, object_tags):
+                response["Expiration"] = expiration_header
+
         self._notify(context)
+
         return response
 
     @handler("CopyObject", expand=False)
@@ -914,9 +993,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket = request["Bucket"]
         moto_backend = get_moto_s3_backend(context)
         get_bucket_from_moto(moto_backend, bucket=bucket)
+        lifecycle_conf = request.get("LifecycleConfiguration")
+        validate_lifecycle_configuration(lifecycle_conf)
+        # TODO: we either apply the lifecycle to existing objects when we set the new rules, or we need to apply them
+        #  everytime we get/head an object
+        # for now, we keep a cache and get it everytime we fetch an object
         store = self.get_store()
-        # TODO: add validation on the BucketLifecycleConfiguration
-        store.bucket_lifecycle_configuration[bucket] = request.get("LifecycleConfiguration")
+        store.bucket_lifecycle_configuration[bucket] = lifecycle_conf
+        self._expiration_cache[bucket].clear()
 
     def delete_bucket_lifecycle(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
@@ -927,6 +1011,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         store = self.get_store()
         store.bucket_lifecycle_configuration.pop(bucket, None)
+        self._expiration_cache[bucket].clear()
 
     def put_bucket_cors(
         self,
@@ -1565,6 +1650,55 @@ def validate_acl_acp(acp: AccessControlPolicy) -> None:
         ):
             ex = _create_invalid_argument_exc("Invalid id", "CanonicalUser/ID", grantee_id)
             raise ex
+
+
+def validate_lifecycle_configuration(lifecycle_conf: BucketLifecycleConfiguration) -> None:
+    """
+    Validate the Lifecycle configuration following AWS docs
+    See https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html
+    https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycleConfiguration.html
+    :param lifecycle_conf: the bucket lifecycle configuration given by the client
+    :raises MalformedXML: when the file doesn't follow the basic structure/required fields
+    :raises InvalidArgument: if the `Date` passed for the Expiration is not at Midnight GMT
+    :raises InvalidRequest: if there are duplicate tags keys in `Tags` field
+    :return: None
+    """
+    # we only add the `Expiration` header, we don't delete objects yet
+    # We don't really expire or transition objects
+    # TODO: transition not supported not validated, as we don't use it yet
+    if not lifecycle_conf:
+        return
+
+    for rule in lifecycle_conf.get("Rules", []):
+        if any(req_key not in rule for req_key in ("ID", "Filter", "Status")):
+            raise MalformedXML()
+        if (non_current_exp := rule.get("NoncurrentVersionExpiration")) is not None:
+            if all(
+                req_key not in non_current_exp
+                for req_key in ("NewerNoncurrentVersions", "NoncurrentDays")
+            ):
+                raise MalformedXML()
+
+        if rule_filter := rule.get("Filter"):
+            if len(rule_filter) > 1:
+                raise MalformedXML()
+
+        if exp_date := (rule.get("Expiration", {}).get("Date")):
+            if exp_date.timetz() != datetime.time(
+                hour=0, minute=0, second=0, microsecond=0, tzinfo=ZoneInfo("GMT")
+            ):
+                raise InvalidArgument(
+                    "'Date' must be at midnight GMT",
+                    ArgumentName="Date",
+                    ArgumentValue=exp_date.astimezone(),  # use the locale timezone, that's what AWS does (returns PST?)
+                )
+
+        if tags := (rule_filter.get("And", {}).get("Tags")):
+            tag_keys = set()
+            for tag in tags:
+                if (tag_key := tag.get("Key")) in tag_keys:
+                    raise InvalidRequest("Duplicate Tag Keys are not allowed.")
+                tag_keys.add(tag_key)
 
 
 def validate_website_configuration(website_config: WebsiteConfiguration) -> None:

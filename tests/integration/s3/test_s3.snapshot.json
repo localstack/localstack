@@ -1185,7 +1185,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_delete_bucket_lifecycle_configuration": {
+  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_delete_bucket_lifecycle_configuration": {
     "recorded-date": "21-09-2022, 13:36:09",
     "recorded-content": {
       "get-bucket-lifecycle-exc-1": {
@@ -1236,7 +1236,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_delete_lifecycle_configuration_on_bucket_deletion": {
+  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_delete_lifecycle_configuration_on_bucket_deletion": {
     "recorded-date": "21-09-2022, 13:36:12",
     "recorded-content": {
       "get-bucket-lifecycle-conf": {
@@ -1270,8 +1270,8 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_bucket_lifecycle_configuration_object_expiry": {
-    "recorded-date": "21-09-2022, 13:36:14",
+  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_configuration_object_expiry": {
+    "recorded-date": "07-07-2023, 15:33:21",
     "recorded-content": {
       "get-bucket-lifecycle-conf": {
         "Rules": [
@@ -1280,7 +1280,7 @@
             "Filter": {
               "Prefix": ""
             },
-            "ID": "wholebucket",
+            "ID": "rule_number_one",
             "Status": "Enabled"
           }
         ],
@@ -1297,6 +1297,7 @@
         "Expiration": "<expiration>",
         "LastModified": "datetime",
         "Metadata": {},
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1311,6 +1312,7 @@
         "Expiration": "<expiration>",
         "LastModified": "datetime",
         "Metadata": {},
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -7758,6 +7760,499 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_configuration_object_expiry_versioned": {
+    "recorded-date": "07-07-2023, 19:44:39",
+    "recorded-content": {
+      "get-bucket-lifecycle-conf": {
+        "Rules": [
+          {
+            "Expiration": "<expiration>",
+            "Filter": {},
+            "ID": "rule2",
+            "NoncurrentVersionExpiration": {
+              "NoncurrentDays": 1
+            },
+            "Status": "Enabled"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-expiry": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-expiry-noncurrent": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-expiry-current-with-version-id": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-expiry-current-without-version-id": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_object_expiry_after_bucket_lifecycle_configuration": {
+    "recorded-date": "07-07-2023, 15:52:37",
+    "recorded-content": {
+      "put-object-before": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-lifecycle-conf": {
+        "Rules": [
+          {
+            "Expiration": "<expiration>",
+            "Filter": {},
+            "ID": "rule3",
+            "Status": "Enabled"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-expiry-before": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-after": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-expiry-after": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_multiple_rules": {
+    "recorded-date": "07-07-2023, 16:43:56",
+    "recorded-content": {
+      "get-bucket-lifecycle-conf": {
+        "Rules": [
+          {
+            "Expiration": "<expiration>",
+            "Filter": {
+              "Prefix": "testobject"
+            },
+            "ID": "rule_one",
+            "Status": "Enabled"
+          },
+          {
+            "Expiration": "<expiration>",
+            "Filter": {
+              "Prefix": "test"
+            },
+            "ID": "rule_two",
+            "Status": "Enabled"
+          },
+          {
+            "Expiration": "<expiration>",
+            "Filter": {
+              "Prefix": "t"
+            },
+            "ID": "rule_three",
+            "Status": "Enabled"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-match-both-rules": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-match-rule-2": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-no-match": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_put_bucket_lifecycle_conf_exc": {
+    "recorded-date": "07-07-2023, 20:42:44",
+    "recorded-content": {
+      "missing-id": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "missing-filter": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "missing-noncurrent-version-expiration-data": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-filter-and-plus-prefix": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-filter-and-and-object-size": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-data-no-midnight": {
+        "Error": {
+          "ArgumentName": "Date",
+          "ArgumentValue": "<datetime:1>",
+          "Code": "InvalidArgument",
+          "Message": "'Date' must be at midnight GMT"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "duplicate-tag-keys": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Duplicate Tag Keys are not allowed."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_configuration_date": {
+    "recorded-date": "07-07-2023, 18:47:29",
+    "recorded-content": {
+      "get-bucket-lifecycle-conf": {
+        "Rules": [
+          {
+            "Expiration": {
+              "Date": "datetime"
+            },
+            "Filter": {},
+            "ID": "rule_number_one",
+            "Status": "Enabled"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_object_size_rules": {
+    "recorded-date": "07-07-2023, 20:26:53",
+    "recorded-content": {
+      "get-bucket-lifecycle-conf": {
+        "Rules": [
+          {
+            "Expiration": "<expiration>",
+            "Filter": {
+              "ObjectSizeGreaterThan": 20
+            },
+            "ID": "rule_one",
+            "Status": "Enabled"
+          },
+          {
+            "Expiration": "<expiration>",
+            "Filter": {
+              "ObjectSizeLessThan": 10
+            },
+            "ID": "rule_two",
+            "Status": "Enabled"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-match-rule-1": {
+        "ETag": "\"ff49cfac3968dbce26ebe7d4823e58bd\"",
+        "Expiration": "<expiration>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-match-rule-2": {
+        "ETag": "\"594f803b380a41396ed63dca39503542\"",
+        "Expiration": "<expiration>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-no-match": {
+        "ETag": "\"12f9cf6998d52dbe773b06f848bb3608\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_tag_rules": {
+    "recorded-date": "07-07-2023, 20:53:27",
+    "recorded-content": {
+      "get-bucket-lifecycle-conf": {
+        "Rules": [
+          {
+            "Expiration": "<expiration>",
+            "Filter": {
+              "Tag": {
+                "Key": "testlifecycle",
+                "Value": "positive"
+              }
+            },
+            "ID": "rule_one",
+            "Status": "Enabled"
+          },
+          {
+            "Expiration": "<expiration>",
+            "Filter": {
+              "And": {
+                "Tags": [
+                  {
+                    "Key": "testlifecycle",
+                    "Value": "positive"
+                  },
+                  {
+                    "Key": "testlifecycletwo",
+                    "Value": "positive-two"
+                  }
+                ]
+              }
+            },
+            "ID": "rule_two",
+            "Status": "Enabled"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-match-both-rules": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-match-rule-1": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-no-match": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_object_expiry_after_bucket_lifecycle_configuration": {
+    "recorded-date": "07-07-2023, 21:38:39",
+    "recorded-content": {
+      "put-object-before": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-lifecycle-conf": {
+        "Rules": [
+          {
+            "Expiration": "<expiration>",
+            "Filter": {},
+            "ID": "rule3",
+            "Status": "Enabled"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-expiry-before": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-after": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-expiry-after": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "Expiration": "<expiration>",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

@@ -44,6 +44,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON39,
 )
 from localstack.services.s3 import constants as s3_constants
+from localstack.services.s3.utils import parse_expiration_header
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
@@ -2331,106 +2332,6 @@ class TestS3:
         aws_client.s3.put_object(Body=b"test", Bucket=bucket, Key=key_by_path)
         result = aws_client.s3.get_object(Bucket=bucket, Key=key_by_path)
         snapshot.match("get_object", result)
-
-    @pytest.mark.aws_validated
-    def test_delete_bucket_lifecycle_configuration(self, s3_bucket, snapshot, aws_client):
-        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
-        snapshot.match("get-bucket-lifecycle-exc-1", e.value.response)
-
-        resp = aws_client.s3.delete_bucket_lifecycle(Bucket=s3_bucket)
-        snapshot.match("delete-bucket-lifecycle-no-bucket", resp)
-
-        lfc = {
-            "Rules": [
-                {
-                    "Expiration": {"Days": 7},
-                    "ID": "wholebucket",
-                    "Filter": {"Prefix": ""},
-                    "Status": "Enabled",
-                }
-            ]
-        }
-        aws_client.s3.put_bucket_lifecycle_configuration(
-            Bucket=s3_bucket, LifecycleConfiguration=lfc
-        )
-        result = retry(
-            aws_client.s3.get_bucket_lifecycle_configuration, retries=3, sleep=1, Bucket=s3_bucket
-        )
-        snapshot.match("get-bucket-lifecycle-conf", result)
-        aws_client.s3.delete_bucket_lifecycle(Bucket=s3_bucket)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
-        snapshot.match("get-bucket-lifecycle-exc-2", e.value.response)
-
-    @pytest.mark.aws_validated
-    def test_delete_lifecycle_configuration_on_bucket_deletion(
-        self, s3_create_bucket, snapshot, aws_client
-    ):
-        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
-        bucket_name = f"test-bucket-{short_uid()}"  # keep the same name for both bucket
-        s3_create_bucket(Bucket=bucket_name)
-        lfc = {
-            "Rules": [
-                {
-                    "Expiration": {"Days": 7},
-                    "ID": "wholebucket",
-                    "Filter": {"Prefix": ""},
-                    "Status": "Enabled",
-                }
-            ]
-        }
-        aws_client.s3.put_bucket_lifecycle_configuration(
-            Bucket=bucket_name, LifecycleConfiguration=lfc
-        )
-        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=bucket_name)
-        snapshot.match("get-bucket-lifecycle-conf", result)
-        aws_client.s3.delete_bucket(Bucket=bucket_name)
-        s3_create_bucket(Bucket=bucket_name)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.get_bucket_lifecycle_configuration(Bucket=bucket_name)
-        snapshot.match("get-bucket-lifecycle-exc", e.value.response)
-
-    @pytest.mark.aws_validated
-    @pytest.mark.xfail(
-        reason="Bucket lifecycle doesn't affect object expiration in both providers for now"
-    )
-    def test_bucket_lifecycle_configuration_object_expiry(self, s3_bucket, snapshot, aws_client):
-        snapshot.add_transformer(
-            [
-                snapshot.transform.key_value("BucketName"),
-                snapshot.transform.key_value(
-                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
-                ),
-            ]
-        )
-
-        lfc = {
-            "Rules": [
-                {
-                    "Expiration": {"Days": 7},
-                    "ID": "wholebucket",
-                    "Filter": {"Prefix": ""},
-                    "Status": "Enabled",
-                }
-            ]
-        }
-        aws_client.s3.put_bucket_lifecycle_configuration(
-            Bucket=s3_bucket, LifecycleConfiguration=lfc
-        )
-        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
-        snapshot.match("get-bucket-lifecycle-conf", result)
-
-        key = "test-object-expiry"
-        aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
-
-        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
-        snapshot.match("head-object-expiry", response)
-        response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
-        snapshot.match("get-object-expiry", response)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -7881,6 +7782,607 @@ class TestS3BucketPolicies:
             aws_client.s3.get_object(Bucket=s3_bucket, Key="test/123")
         assert exc.value.response["Error"]["Code"] == "403"
         assert exc.value.response["Error"]["Message"] == "Forbidden"
+
+
+class TestS3BucketLifecycle:
+    @pytest.mark.aws_validated
+    def test_delete_bucket_lifecycle_configuration(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-exc-1", e.value.response)
+
+        resp = aws_client.s3.delete_bucket_lifecycle(Bucket=s3_bucket)
+        snapshot.match("delete-bucket-lifecycle-no-bucket", resp)
+
+        lfc = {
+            "Rules": [
+                {
+                    "Expiration": {"Days": 7},
+                    "ID": "wholebucket",
+                    "Filter": {"Prefix": ""},
+                    "Status": "Enabled",
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = retry(
+            aws_client.s3.get_bucket_lifecycle_configuration, retries=3, sleep=1, Bucket=s3_bucket
+        )
+        snapshot.match("get-bucket-lifecycle-conf", result)
+        aws_client.s3.delete_bucket_lifecycle(Bucket=s3_bucket)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-exc-2", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_delete_lifecycle_configuration_on_bucket_deletion(
+        self, s3_create_bucket, snapshot, aws_client
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        bucket_name = f"test-bucket-{short_uid()}"  # keep the same name for both bucket
+        s3_create_bucket(Bucket=bucket_name)
+        lfc = {
+            "Rules": [
+                {
+                    "Expiration": {"Days": 7},
+                    "ID": "wholebucket",
+                    "Filter": {"Prefix": ""},
+                    "Status": "Enabled",
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=bucket_name, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+        aws_client.s3.delete_bucket(Bucket=bucket_name)
+        s3_create_bucket(Bucket=bucket_name)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        snapshot.match("get-bucket-lifecycle-exc", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_put_bucket_lifecycle_conf_exc(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("ArgumentValue", value_replacement="datetime")
+        )
+        lfc = {"Rules": []}
+        with pytest.raises(ClientError) as e:
+            lfc["Rules"] = [
+                {
+                    "Expiration": {"Days": 7},
+                    "Status": "Enabled",
+                }
+            ]
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket, LifecycleConfiguration=lfc
+            )
+        snapshot.match("missing-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            lfc["Rules"] = [
+                {
+                    "Expiration": {"Days": 7},
+                    "ID": "wholebucket",
+                    "Status": "Enabled",
+                }
+            ]
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket, LifecycleConfiguration=lfc
+            )
+        snapshot.match("missing-filter", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            lfc["Rules"] = [
+                {
+                    "Expiration": {"Days": 7},
+                    "Filter": {},
+                    "ID": "wholebucket",
+                    "Status": "Enabled",
+                    "NoncurrentVersionExpiration": {},  # No NewerNoncurrentVersions or NoncurrentDays
+                }
+            ]
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket, LifecycleConfiguration=lfc
+            )
+        snapshot.match("missing-noncurrent-version-expiration-data", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            lfc["Rules"] = [
+                {
+                    "Expiration": {"Days": 7},
+                    "Filter": {
+                        "And": {
+                            "Prefix": "test",
+                        },
+                        "Prefix": "",
+                    },
+                    "ID": "wholebucket",
+                    "Status": "Enabled",
+                }
+            ]
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket, LifecycleConfiguration=lfc
+            )
+        snapshot.match("wrong-filter-and-plus-prefix", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            lfc["Rules"] = [
+                {
+                    "Expiration": {"Days": 7},
+                    "Filter": {
+                        "ObjectSizeGreaterThan": 500,
+                        "Prefix": "",
+                    },
+                    "ID": "wholebucket",
+                    "Status": "Enabled",
+                }
+            ]
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket, LifecycleConfiguration=lfc
+            )
+        snapshot.match("wrong-filter-and-and-object-size", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            lfc["Rules"] = [
+                {
+                    "Expiration": {
+                        "Date": datetime.datetime(year=2023, month=1, day=1, hour=2, minute=2)
+                    },
+                    "ID": "wrong-data",
+                    "Filter": {},
+                    "Status": "Enabled",
+                }
+            ]
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket, LifecycleConfiguration=lfc
+            )
+        snapshot.match("wrong-data-no-midnight", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            lfc["Rules"] = [
+                {
+                    "ID": "duplicate-tag-keys",
+                    "Filter": {
+                        "And": {
+                            "Tags": [
+                                {
+                                    "Key": "testlifecycle",
+                                    "Value": "positive",
+                                },
+                                {
+                                    "Key": "testlifecycle",
+                                    "Value": "positive-two",
+                                },
+                            ],
+                        },
+                    },
+                    "Status": "Enabled",
+                    "Expiration": {"Days": 1},
+                }
+            ]
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket, LifecycleConfiguration=lfc
+            )
+
+        snapshot.match("duplicate-tag-keys", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_bucket_lifecycle_configuration_date(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+            ]
+        )
+        rule_id = "rule_number_one"
+
+        lfc = {
+            "Rules": [
+                {
+                    "Expiration": {
+                        "Date": datetime.datetime(year=2023, month=1, day=1, tzinfo=ZoneInfo("GMT"))
+                    },
+                    "ID": rule_id,
+                    "Filter": {},
+                    "Status": "Enabled",
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_bucket_lifecycle_configuration_object_expiry(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value(
+                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
+                ),
+            ]
+        )
+        rule_id = "rule_number_one"
+
+        lfc = {
+            "Rules": [
+                {
+                    "Expiration": {"Days": 7},
+                    "ID": rule_id,
+                    "Filter": {"Prefix": ""},
+                    "Status": "Enabled",
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+        key = "test-object-expiry"
+        aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("head-object-expiry", response)
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("get-object-expiry", response)
+
+        expiration = response["Expiration"]
+
+        parsed_exp_date, parsed_exp_rule = parse_expiration_header(expiration)
+        assert parsed_exp_rule == rule_id
+        last_modified = response["LastModified"]
+
+        # use a bit of margin for the 7 days expiration, as it can depend on the time of day, but at least we validate
+        assert 6 <= (parsed_exp_date - last_modified).days <= 8
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_bucket_lifecycle_configuration_object_expiry_versioned(
+        self, s3_bucket, snapshot, aws_client
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"), priority=-1)
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value(
+                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
+                ),
+            ]
+        )
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        rule_id = "rule2"
+        current_exp_days = 3
+        non_current_exp_days = 1
+        lfc = {
+            "Rules": [
+                {
+                    "ID": rule_id,
+                    "Status": "Enabled",
+                    "Filter": {},
+                    "Expiration": {"Days": current_exp_days},
+                    "NoncurrentVersionExpiration": {"NoncurrentDays": non_current_exp_days},
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+        key = "test-object-expiry"
+        put_object_1 = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+        version_id_1 = put_object_1["VersionId"]
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("head-object-expiry", response)
+
+        parsed_exp_date, parsed_exp_rule = parse_expiration_header(response["Expiration"])
+        assert parsed_exp_rule == rule_id
+        # use a bit of margin for the days expiration, as it can depend on the time of day, but at least we validate
+        assert (
+            current_exp_days - 1
+            <= (parsed_exp_date - response["LastModified"]).days
+            <= current_exp_days + 1
+        )
+
+        key = "test-object-expiry"
+        put_object_2 = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+        version_id_2 = put_object_2["VersionId"]
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key, VersionId=version_id_1)
+        snapshot.match("head-object-expiry-noncurrent", response)
+
+        # This is not in the documentation anymore, but it still seems to be the case
+        # See https://stackoverflow.com/questions/33096697/object-expiration-of-non-current-version
+        # Note that for versioning-enabled buckets, this header applies only to current versions; Amazon S3 does not
+        # provide a header to infer when a noncurrent version will be eligible for permanent deletion.
+        assert "Expiration" not in response
+
+        # if you specify the VersionId, AWS won't return the Expiration header, even if that's the current version
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key, VersionId=version_id_2)
+        snapshot.match("head-object-expiry-current-with-version-id", response)
+        assert "Expiration" not in response
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("head-object-expiry-current-without-version-id", response)
+        # assert that the previous version id which didn't return the Expiration header is the same object
+        assert response["VersionId"] == version_id_2
+
+        parsed_exp_date, parsed_exp_rule = parse_expiration_header(response["Expiration"])
+        assert parsed_exp_rule == rule_id
+        # use a bit of margin for the days expiration, as it can depend on the time of day, but at least we validate
+        assert (
+            current_exp_days - 1
+            <= (parsed_exp_date - response["LastModified"]).days
+            <= current_exp_days + 1
+        )
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_object_expiry_after_bucket_lifecycle_configuration(
+        self, s3_bucket, snapshot, aws_client
+    ):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value(
+                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
+                ),
+            ]
+        )
+        key = "test-object-expiry"
+        put_object = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+        snapshot.match("put-object-before", put_object)
+
+        rule_id = "rule3"
+        current_exp_days = 7
+        lfc = {
+            "Rules": [
+                {
+                    "Expiration": {"Days": current_exp_days},
+                    "ID": rule_id,
+                    "Filter": {},
+                    "Status": "Enabled",
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("head-object-expiry-before", response)
+
+        put_object = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+        snapshot.match("put-object-after", put_object)
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("head-object-expiry-after", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_bucket_lifecycle_multiple_rules(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value(
+                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
+                ),
+            ]
+        )
+
+        rule_id_1 = "rule_one"
+        rule_id_2 = "rule_two"
+        rule_id_3 = "rule_three"
+        current_exp_days = 7
+        lfc = {
+            "Rules": [
+                {
+                    "ID": rule_id_1,
+                    "Filter": {"Prefix": "testobject"},
+                    "Status": "Enabled",
+                    "Expiration": {"Days": current_exp_days},
+                },
+                {
+                    "ID": rule_id_2,
+                    "Filter": {"Prefix": "test"},
+                    "Status": "Enabled",
+                    "Expiration": {"Days": current_exp_days},
+                },
+                {
+                    "ID": rule_id_3,
+                    "Filter": {"Prefix": "t"},
+                    "Status": "Enabled",
+                    "Expiration": {"Days": current_exp_days},
+                },
+            ]
+        }
+
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+        key_match_1 = "testobject-expiry"
+        put_object = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key_match_1)
+        snapshot.match("put-object-match-both-rules", put_object)
+
+        _, parsed_exp_rule = parse_expiration_header(put_object["Expiration"])
+        assert parsed_exp_rule == rule_id_1
+
+        key_match_2 = "test-one-rule"
+        put_object_2 = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key_match_2)
+        snapshot.match("put-object-match-rule-2", put_object_2)
+
+        _, parsed_exp_rule = parse_expiration_header(put_object_2["Expiration"])
+        assert parsed_exp_rule == rule_id_2
+
+        key_no_match = "no-rules"
+        put_object_3 = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key_no_match)
+        snapshot.match("put-object-no-match", put_object_3)
+        assert "Expiration" not in put_object_3
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_bucket_lifecycle_object_size_rules(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value(
+                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
+                ),
+            ]
+        )
+
+        rule_id_1 = "rule_one"
+        rule_id_2 = "rule_two"
+        current_exp_days = 7
+        lfc = {
+            "Rules": [
+                {
+                    "ID": rule_id_1,
+                    "Filter": {
+                        "ObjectSizeGreaterThan": 20,
+                    },
+                    "Status": "Enabled",
+                    "Expiration": {"Days": current_exp_days},
+                },
+                {
+                    "ID": rule_id_2,
+                    "Filter": {
+                        "ObjectSizeLessThan": 10,
+                    },
+                    "Status": "Enabled",
+                    "Expiration": {"Days": current_exp_days},
+                },
+            ]
+        }
+
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+        key_match_1 = "testobject-expiry"
+        put_object = aws_client.s3.put_object(Body=b"a" * 22, Bucket=s3_bucket, Key=key_match_1)
+        snapshot.match("put-object-match-rule-1", put_object)
+
+        _, parsed_exp_rule = parse_expiration_header(put_object["Expiration"])
+        assert parsed_exp_rule == rule_id_1
+
+        key_match_2 = "test-one-rule"
+        put_object_2 = aws_client.s3.put_object(Body=b"a" * 5, Bucket=s3_bucket, Key=key_match_2)
+        snapshot.match("put-object-match-rule-2", put_object_2)
+
+        _, parsed_exp_rule = parse_expiration_header(put_object_2["Expiration"])
+        assert parsed_exp_rule == rule_id_2
+
+        key_no_match = "no-rules"
+        put_object_3 = aws_client.s3.put_object(Body=b"a" * 15, Bucket=s3_bucket, Key=key_no_match)
+        snapshot.match("put-object-no-match", put_object_3)
+        assert "Expiration" not in put_object_3
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_bucket_lifecycle_tag_rules(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value(
+                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
+                ),
+            ]
+        )
+
+        rule_id_1 = "rule_one"
+        rule_id_2 = "rule_two"
+        current_exp_days = 7
+        lfc = {
+            "Rules": [
+                {
+                    "ID": rule_id_1,
+                    "Filter": {
+                        "Tag": {
+                            "Key": "testlifecycle",
+                            "Value": "positive",
+                        },
+                    },
+                    "Status": "Enabled",
+                    "Expiration": {"Days": current_exp_days},
+                },
+                {
+                    "ID": rule_id_2,
+                    "Filter": {
+                        "And": {
+                            "Tags": [
+                                {
+                                    "Key": "testlifecycle",
+                                    "Value": "positive",
+                                },
+                                {
+                                    "Key": "testlifecycletwo",
+                                    "Value": "positive-two",
+                                },
+                            ],
+                        },
+                    },
+                    "Status": "Enabled",
+                    "Expiration": {"Days": current_exp_days},
+                },
+            ]
+        }
+
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+        key_match_1 = "testobject-expiry"
+        tag_set_match = "testlifecycle=positive&testlifecycletwo=positivetwo"
+        put_object = aws_client.s3.put_object(
+            Body=b"test", Bucket=s3_bucket, Key=key_match_1, Tagging=tag_set_match
+        )
+        snapshot.match("put-object-match-both-rules", put_object)
+
+        _, parsed_exp_rule = parse_expiration_header(put_object["Expiration"])
+        assert parsed_exp_rule == rule_id_1
+
+        key_match_2 = "test-one-rule"
+        tag_set_match_one = "testlifecycle=positive"
+        put_object_2 = aws_client.s3.put_object(
+            Body=b"test", Bucket=s3_bucket, Key=key_match_2, Tagging=tag_set_match_one
+        )
+        snapshot.match("put-object-match-rule-1", put_object_2)
+
+        _, parsed_exp_rule = parse_expiration_header(put_object_2["Expiration"])
+        assert parsed_exp_rule == rule_id_1
+
+        key_no_match = "no-rules"
+        tag_set_no_match = "testlifecycle2=positivetwo"
+        put_object_3 = aws_client.s3.put_object(
+            Body=b"test", Bucket=s3_bucket, Key=key_no_match, Tagging=tag_set_no_match
+        )
+        snapshot.match("put-object-no-match", put_object_3)
+        assert "Expiration" not in put_object_3
 
 
 def _anon_client(service: str):
