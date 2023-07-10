@@ -327,23 +327,6 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
             raise ex
 
 
-def _get_aws_request_headers(werkzeug_headers: Headers) -> HTTPHeaders:
-    """
-    Converts Werkzeug headers into HTTPHeaders() needed to form an AWSRequest
-    :param werkzeug_headers: Werkzeug request headers
-    :return: headers in HTTPHeaders format
-    """
-    # Werkzeug Headers can have multiple values for the same key
-    # HTTPHeaders will append automatically the values when we set it to the same key multiple times
-    # see https://docs.python.org/3/library/http.client.html#httpmessage-objects
-    # see https://docs.python.org/3/library/email.compat32-message.html#email.message.Message.__setitem__
-    headers = HTTPHeaders()
-    for key, value in werkzeug_headers.items():
-        headers[key] = value
-
-    return headers
-
-
 def _reverse_inject_signature_hmac_v1_query(
     request: Request,
 ) -> tuple[urlparse.SplitResult, HTTPHeaders]:
