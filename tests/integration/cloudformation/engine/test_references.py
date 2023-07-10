@@ -27,3 +27,22 @@ class TestDependsOn:
                 TemplateBody=load_file(template_path),
             )
         snapshot.match("depends_on_nonexisting_exception", e.value.response)
+
+
+class TestFnSub:
+    # TODO: add test for list sub without a second argument (i.e. the list)
+    #   => Template error: One or more Fn::Sub intrinsic functions don't specify expected arguments. Specify a string as first argument, and an optional second argument to specify a mapping of values to replace in the string
+
+    def test_fn_sub_cases(self, deploy_cfn_template, aws_client, snapshot):
+        ssm_parameter_name = f"test-param-{short_uid()}"
+        snapshot.add_transformer(
+            snapshot.transform.regex(ssm_parameter_name, "<ssm-parameter-name>")
+        )
+        deployment = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/engine/cfn_fn_sub.yaml"
+            ),
+            parameters={"ParameterName": ssm_parameter_name},
+        )
+
+        snapshot.match("outputs", deployment.outputs)

@@ -10,17 +10,21 @@ AWS_URL_SUFFIX = "localhost.localstack.cloud"
 
 
 def get_deps_for_resource(resource: dict, evaluated_conditions: dict[str, bool]) -> set[str]:
-    deps = set()
-    deps = deps.union(resolve_dependencies(resource.get("Properties", {}), evaluated_conditions))
+    """
+    :param resource: the resource definition to be checked for dependencies
+    :param evaluated_conditions:
+    :return: a set of logical resource IDs which this resource depends on
+    """
+    property_dependencies = resolve_dependencies(
+        resource.get("Properties", {}), evaluated_conditions
+    )
     explicit_dependencies = resource.get("DependsOn", [])
     if not isinstance(explicit_dependencies, list):
         explicit_dependencies = [explicit_dependencies]
-    deps = deps.union(explicit_dependencies)
-    return deps
+    return property_dependencies.union(explicit_dependencies)
 
 
 def resolve_dependencies(d: dict, evaluated_conditions: dict[str, bool]) -> set[str]:
-    # TODO: depends on
     items = set()
 
     if isinstance(d, dict):
@@ -28,14 +32,10 @@ def resolve_dependencies(d: dict, evaluated_conditions: dict[str, bool]) -> set[
             if k == "Fn::If":
                 # check the condition and only traverse down the correct path
                 condition_name, true_value, false_value = v
-                try:
-                    if evaluated_conditions[condition_name]:
-                        items = items.union(resolve_dependencies(true_value, evaluated_conditions))
-                    else:
-                        items = items.union(resolve_dependencies(false_value, evaluated_conditions))
-                except Exception as e:
-                    # TODO: remove try/except block
-                    print(e)
+                if evaluated_conditions[condition_name]:
+                    items = items.union(resolve_dependencies(true_value, evaluated_conditions))
+                else:
+                    items = items.union(resolve_dependencies(false_value, evaluated_conditions))
             elif k == "Ref":
                 items.add(v)
             elif k == "Fn::GetAtt":
@@ -43,19 +43,29 @@ def resolve_dependencies(d: dict, evaluated_conditions: dict[str, bool]) -> set[
             elif k == "Fn::Sub":
                 # we can assume anything in there is a ref
                 if isinstance(v, str):
+                    # { "Fn::Sub" : "Hello ${Name}" }
                     variables_found = re.findall("\\${([^}]+)}", v)
                     for var in variables_found:
                         if "." in var:
                             var = var.split(".")[0]
                         items.add(var)
                 elif isinstance(v, list):
+                    # { "Fn::Sub" : [ "Hello ${Name}", { "Name": "SomeName" } ] }
                     variables_found = re.findall("\\${([^}]+)}", v[0])
                     for var in variables_found:
+
                         if "." in var:
                             var = var.split(".")[0]
                         elif var in v[1]:
-                            # don't add if its included in the mapping
-                            continue
+                            # don't add variable if it is included in the mapping
+                            if isinstance(v[1][var], dict):
+                                # e.g. { "Fn::Sub" : [ "Hello ${Name}", { "Name": {"Ref": "NameParam"} } ] }
+                                #   the values can have references, so we need to go deeper
+                                items = items.union(
+                                    resolve_dependencies(v[1][var], evaluated_conditions)
+                                )
+                            else:
+                                continue
                         items.add(var)
                 else:
                     raise Exception(f"Invalid template structure in Fn::Sub: {v}")
