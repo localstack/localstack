@@ -22,6 +22,10 @@ from localstack.services.cloudformation.deployment_utils import (
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet
+from localstack.services.cloudformation.engine.template_utils import (
+    fn_equals_type_conversion,
+    get_deps_for_resource,
+)
 from localstack.services.cloudformation.engine.types import DeployTemplates, FuncDetails
 from localstack.services.cloudformation.resource_provider import (
     Credentials,
@@ -37,7 +41,7 @@ from localstack.services.cloudformation.service_models import (
 from localstack.services.cloudformation.stores import exports_map
 from localstack.utils.aws import aws_stack
 from localstack.utils.functions import prevent_stack_overflow
-from localstack.utils.json import clone_safe, json_safe
+from localstack.utils.json import clone_safe
 from localstack.utils.objects import get_all_subclasses
 from localstack.utils.strings import first_char_to_lower, to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
@@ -548,7 +552,8 @@ def _resolve_refs_recursively(
             operand1, operand2 = value[keys_list[0]]
             operand1 = resolve_refs_recursively(stack_name, resources, mappings, operand1)
             operand2 = resolve_refs_recursively(stack_name, resources, mappings, operand2)
-            return str(operand1) == str(operand2)
+            # TODO: investigate type coercion here
+            return fn_equals_type_conversion(operand1) == fn_equals_type_conversion(operand2)
 
         if stripped_fn_lower == "select":
             index, values = value[keys_list[0]]
@@ -823,8 +828,10 @@ class TemplateDeployer:
             else "CREATE"
         )
         change_set.stack.set_stack_status(f"{action}_IN_PROGRESS")
-        # update parameters
+        # update parameters on parent stack
         change_set.stack.set_resolved_parameters(change_set.resolved_parameters)
+        # update conditions on parent stack
+        change_set.stack.set_resolved_stack_conditions(change_set.resolved_conditions)
 
         # update attributes that the stack inherits from the changeset
         change_set.stack.metadata["Capabilities"] = change_set.metadata.get("Capabilities")
@@ -926,6 +933,7 @@ class TemplateDeployer:
         return bool(entry and entry.get(ACTION_CREATE))
 
     def is_deployed(self, resource):
+        # TODO: make this a check on the actual resource status instead(!)
         resource_status = {}
         resource_id = resource["LogicalResourceId"]
         details = retrieve_resource_details(
@@ -948,7 +956,8 @@ class TemplateDeployer:
 
     def get_unsatisfied_dependencies(self, resource):
         res_deps = self.get_resource_dependencies(resource)
-        return self.get_unsatisfied_dependencies_for_resources(res_deps, resource)
+        res_deps_mapped = {v: self.stack.resources.get(v) for v in res_deps}
+        return self.get_unsatisfied_dependencies_for_resources(res_deps_mapped, resource)
 
     def get_unsatisfied_dependencies_for_resources(
         self, resources, depending_resource=None, return_first=True
@@ -968,22 +977,14 @@ class TemplateDeployer:
                         break
         return result
 
-    def get_resource_dependencies(self, resource):
-        result = {}
+    def get_resource_dependencies(self, resource: dict) -> set[str]:
+        """
+        Takes a resource and returns its dependencies on other resources via a str -> str mapping
+        """
         # Note: using the original, unmodified template here to preserve Ref's ...
         raw_resources = self.stack.template_original["Resources"]
         raw_resource = raw_resources[resource["LogicalResourceId"]]
-        dumped = json.dumps(json_safe(raw_resource))
-        for other_id, other in raw_resources.items():
-            if resource != other:
-                # TODO: traverse dict instead of doing string search!
-                search1 = '{"Ref": "%s"}' % other_id
-                search2 = '{"Fn::GetAtt": ["%s", ' % other_id
-                if search1 in dumped or search2 in dumped:
-                    result[other_id] = other
-                if other_id in resource.get("DependsOn", []):
-                    result[other_id] = other
-        return result
+        return get_deps_for_resource(raw_resource, self.stack.resolved_conditions)
 
     # -----------------
     # DEPLOYMENT UTILS

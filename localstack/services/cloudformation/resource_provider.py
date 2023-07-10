@@ -169,10 +169,16 @@ class ResourceProvider(Generic[Properties]):
 # legacy helpers
 def get_resource_type(resource: dict) -> str:
     """this is currently overwritten in PRO to add support for custom resources"""
-    resource_type: str = resource["Type"]
-    if resource_type.startswith("Custom::"):
-        return "AWS::CloudFormation::CustomResource"
-    return resource_type
+    if isinstance(resource, str):
+        raise ValueError(f"Invalid argument: {resource}")
+    try:
+        resource_type: str = resource["Type"]
+
+        if resource_type.startswith("Custom::"):
+            return "AWS::CloudFormation::CustomResource"
+        return resource_type
+    except Exception as e:
+        print(e)
 
 
 def check_not_found_exception(e, resource_type, resource, resource_status=None):

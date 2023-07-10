@@ -325,3 +325,28 @@ class TestCloudFormationConditions:
 
     # def test_condition_with_unsupported_intrinsic_functions(self):
     # ...
+
+    @pytest.mark.parametrize(
+        ["should_use_fallback", "match_value"],
+        [
+            (None, "FallbackParamValue"),
+            ("true", "FallbackParamValue"),
+            ("false", "DefaultParamValue"),
+        ],
+    )
+    @pytest.mark.aws_validated
+    def test_dependency_in_non_evaluated_if_branch(
+        self, deploy_cfn_template, aws_client, should_use_fallback, match_value
+    ):
+        parameters = (
+            {"ShouldUseFallbackParameter": should_use_fallback} if should_use_fallback else {}
+        )
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../../templates/engine/cfn_if_conditional_reference.yaml",
+            ),
+            parameters=parameters,
+        )
+        param = aws_client.ssm.get_parameter(Name=stack.outputs["ParameterName"])
+        assert param["Parameter"]["Value"] == match_value
