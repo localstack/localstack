@@ -93,6 +93,7 @@ class GatewayServer(HypercornServer):
         """
         # build server config
         config = Config()
+        config.h11_pass_raw_headers = True
         setup_hypercorn_logger(config)
 
         bind_address = ensure_list(bind_address)
