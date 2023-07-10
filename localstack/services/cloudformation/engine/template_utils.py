@@ -54,19 +54,19 @@ def resolve_dependencies(d: dict, evaluated_conditions: dict[str, bool]) -> set[
                     variables_found = re.findall("\\${([^}]+)}", v[0])
                     for var in variables_found:
 
-                        if "." in var:
-                            var = var.split(".")[0]
-                        elif var in v[1]:
-                            # don't add variable if it is included in the mapping
+                        if var in v[1]:
+                            # variable is included in provided mapping and can either be a static value or another reference
                             if isinstance(v[1][var], dict):
                                 # e.g. { "Fn::Sub" : [ "Hello ${Name}", { "Name": {"Ref": "NameParam"} } ] }
                                 #   the values can have references, so we need to go deeper
                                 items = items.union(
                                     resolve_dependencies(v[1][var], evaluated_conditions)
                                 )
-                            else:
-                                continue
-                        items.add(var)
+                        else:
+                            # it's now either a GetAtt call or a direct reference
+                            if "." in var:
+                                var = var.split(".")[0]
+                            items.add(var)
                 else:
                     raise Exception(f"Invalid template structure in Fn::Sub: {v}")
             elif isinstance(v, dict):
