@@ -1,0 +1,29 @@
+import os
+
+import pytest
+
+from localstack.utils.files import load_file
+from localstack.utils.strings import short_uid
+
+
+class TestDependsOn:
+    @pytest.mark.skip(reason="not supported yet")
+    @pytest.mark.aws_validated
+    def test_depends_on_with_missing_reference(
+        self, deploy_cfn_template, aws_client, cleanups, snapshot
+    ):
+        stack_name = f"test-stack-{short_uid()}"
+        template_path = os.path.join(
+            os.path.dirname(__file__),
+            "../../templates/engine/cfn_dependson_nonexisting_resource.yaml",
+        )
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+
+        with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
+            aws_client.cloudformation.create_change_set(
+                StackName=stack_name,
+                ChangeSetName="init",
+                ChangeSetType="CREATE",
+                TemplateBody=load_file(template_path),
+            )
+        snapshot.match("depends_on_nonexisting_exception", e.value.response)

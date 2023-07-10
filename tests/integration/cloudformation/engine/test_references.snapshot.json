@@ -1,0 +1,18 @@
+{
+  "tests/integration/cloudformation/engine/test_references.py::TestDependsOn::test_depends_on_with_missing_reference": {
+    "recorded-date": "10-07-2023, 15:22:26",
+    "recorded-content": {
+      "depends_on_nonexisting_exception": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Unresolved resource dependencies [NonExistingResource] in the Resources block of the template",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}
