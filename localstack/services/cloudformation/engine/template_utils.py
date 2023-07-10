@@ -181,9 +181,9 @@ def resolve_condition(condition, conditions, parameters, mappings, stack_name):
                         v[0], conditions, parameters, mappings, stack_name
                     ) or resolve_condition(v[1], conditions, parameters, mappings, stack_name)
                 case "Fn::Equals":
-                    return resolve_condition(
-                        v[0], conditions, parameters, mappings, stack_name
-                    ) == resolve_condition(v[1], conditions, parameters, mappings, stack_name)
+                    left = resolve_condition(v[0], conditions, parameters, mappings, stack_name)
+                    right = resolve_condition(v[1], conditions, parameters, mappings, stack_name)
+                    return fn_equals_type_conversion(left) == fn_equals_type_conversion(right)
     else:
         return condition
 
