@@ -23,6 +23,7 @@ DestinationArn = str
 DestinationName = str
 DimensionsKey = str
 DimensionsValue = str
+EncryptionKey = str
 EventId = str
 EventMessage = str
 EventsLimit = int
@@ -60,6 +61,7 @@ QueryDefinitionString = str
 QueryId = str
 QueryListMaxResults = int
 QueryString = str
+ResourceIdentifier = str
 RoleArn = str
 SequenceToken = str
 StartFromHead = bool
@@ -254,8 +256,9 @@ AccountPolicies = List[AccountPolicy]
 
 
 class AssociateKmsKeyRequest(ServiceRequest):
-    logGroupName: LogGroupName
+    logGroupName: Optional[LogGroupName]
     kmsKeyId: KmsKeyId
+    resourceIdentifier: Optional[ResourceIdentifier]
 
 
 class CancelExportTaskRequest(ServiceRequest):
@@ -611,7 +614,8 @@ class DescribeSubscriptionFiltersResponse(TypedDict, total=False):
 
 
 class DisassociateKmsKeyRequest(ServiceRequest):
-    logGroupName: LogGroupName
+    logGroupName: Optional[LogGroupName]
+    resourceIdentifier: Optional[ResourceIdentifier]
 
 
 EventNumber = int
@@ -748,6 +752,7 @@ class GetQueryResultsResponse(TypedDict, total=False):
     results: Optional[QueryResults]
     statistics: Optional[QueryStatistics]
     status: Optional[QueryStatus]
+    encryptionKey: Optional[EncryptionKey]
 
 
 class InputLogEvent(TypedDict, total=False):
@@ -949,7 +954,11 @@ class LogsApi:
 
     @handler("AssociateKmsKey")
     def associate_kms_key(
-        self, context: RequestContext, log_group_name: LogGroupName, kms_key_id: KmsKeyId
+        self,
+        context: RequestContext,
+        kms_key_id: KmsKeyId,
+        log_group_name: LogGroupName = None,
+        resource_identifier: ResourceIdentifier = None,
     ) -> None:
         raise NotImplementedError
 
@@ -1147,7 +1156,12 @@ class LogsApi:
         raise NotImplementedError
 
     @handler("DisassociateKmsKey")
-    def disassociate_kms_key(self, context: RequestContext, log_group_name: LogGroupName) -> None:
+    def disassociate_kms_key(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName = None,
+        resource_identifier: ResourceIdentifier = None,
+    ) -> None:
         raise NotImplementedError
 
     @handler("FilterLogEvents")

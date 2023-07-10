@@ -314,6 +314,12 @@ class DisabledException(ServiceException):
     status_code: int = 400
 
 
+class DryRunOperationException(ServiceException):
+    code: str = "DryRunOperationException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class ExpiredImportTokenException(ServiceException):
     code: str = "ExpiredImportTokenException"
     sender_fault: bool = False
@@ -599,6 +605,7 @@ class CreateGrantRequest(ServiceRequest):
     Constraints: Optional[GrantConstraints]
     GrantTokens: Optional[GrantTokenList]
     Name: Optional[GrantNameType]
+    DryRun: Optional[NullableBooleanType]
 
 
 class CreateGrantResponse(TypedDict, total=False):
@@ -719,6 +726,7 @@ class DecryptRequest(ServiceRequest):
     KeyId: Optional[KeyIdType]
     EncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
     Recipient: Optional[RecipientInfo]
+    DryRun: Optional[NullableBooleanType]
 
 
 PlaintextType = bytes
@@ -799,6 +807,7 @@ class EncryptRequest(ServiceRequest):
     EncryptionContext: Optional[EncryptionContextType]
     GrantTokens: Optional[GrantTokenList]
     EncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
+    DryRun: Optional[NullableBooleanType]
 
 
 class EncryptResponse(TypedDict, total=False):
@@ -813,6 +822,7 @@ class GenerateDataKeyPairRequest(ServiceRequest):
     KeyPairSpec: DataKeyPairSpec
     GrantTokens: Optional[GrantTokenList]
     Recipient: Optional[RecipientInfo]
+    DryRun: Optional[NullableBooleanType]
 
 
 PublicKeyType = bytes
@@ -832,6 +842,7 @@ class GenerateDataKeyPairWithoutPlaintextRequest(ServiceRequest):
     KeyId: KeyIdType
     KeyPairSpec: DataKeyPairSpec
     GrantTokens: Optional[GrantTokenList]
+    DryRun: Optional[NullableBooleanType]
 
 
 class GenerateDataKeyPairWithoutPlaintextResponse(TypedDict, total=False):
@@ -848,6 +859,7 @@ class GenerateDataKeyRequest(ServiceRequest):
     KeySpec: Optional[DataKeySpec]
     GrantTokens: Optional[GrantTokenList]
     Recipient: Optional[RecipientInfo]
+    DryRun: Optional[NullableBooleanType]
 
 
 class GenerateDataKeyResponse(TypedDict, total=False):
@@ -863,6 +875,7 @@ class GenerateDataKeyWithoutPlaintextRequest(ServiceRequest):
     KeySpec: Optional[DataKeySpec]
     NumberOfBytes: Optional[NumberOfBytesType]
     GrantTokens: Optional[GrantTokenList]
+    DryRun: Optional[NullableBooleanType]
 
 
 class GenerateDataKeyWithoutPlaintextResponse(TypedDict, total=False):
@@ -875,6 +888,7 @@ class GenerateMacRequest(ServiceRequest):
     KeyId: KeyIdType
     MacAlgorithm: MacAlgorithmSpec
     GrantTokens: Optional[GrantTokenList]
+    DryRun: Optional[NullableBooleanType]
 
 
 class GenerateMacResponse(TypedDict, total=False):
@@ -1060,6 +1074,7 @@ class ReEncryptRequest(ServiceRequest):
     SourceEncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
     DestinationEncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
     GrantTokens: Optional[GrantTokenList]
+    DryRun: Optional[NullableBooleanType]
 
 
 class ReEncryptResponse(TypedDict, total=False):
@@ -1089,11 +1104,13 @@ class RetireGrantRequest(ServiceRequest):
     GrantToken: Optional[GrantTokenType]
     KeyId: Optional[KeyIdType]
     GrantId: Optional[GrantIdType]
+    DryRun: Optional[NullableBooleanType]
 
 
 class RevokeGrantRequest(ServiceRequest):
     KeyId: KeyIdType
     GrantId: GrantIdType
+    DryRun: Optional[NullableBooleanType]
 
 
 class ScheduleKeyDeletionRequest(ServiceRequest):
@@ -1114,6 +1131,7 @@ class SignRequest(ServiceRequest):
     MessageType: Optional[MessageType]
     GrantTokens: Optional[GrantTokenList]
     SigningAlgorithm: SigningAlgorithmSpec
+    DryRun: Optional[NullableBooleanType]
 
 
 class SignResponse(TypedDict, total=False):
@@ -1172,6 +1190,7 @@ class VerifyMacRequest(ServiceRequest):
     MacAlgorithm: MacAlgorithmSpec
     Mac: CiphertextType
     GrantTokens: Optional[GrantTokenList]
+    DryRun: Optional[NullableBooleanType]
 
 
 class VerifyMacResponse(TypedDict, total=False):
@@ -1187,6 +1206,7 @@ class VerifyRequest(ServiceRequest):
     Signature: CiphertextType
     SigningAlgorithm: SigningAlgorithmSpec
     GrantTokens: Optional[GrantTokenList]
+    DryRun: Optional[NullableBooleanType]
 
 
 class VerifyResponse(TypedDict, total=False):
@@ -1246,6 +1266,7 @@ class KmsApi:
         constraints: GrantConstraints = None,
         grant_tokens: GrantTokenList = None,
         name: GrantNameType = None,
+        dry_run: NullableBooleanType = None,
     ) -> CreateGrantResponse:
         raise NotImplementedError
 
@@ -1277,6 +1298,7 @@ class KmsApi:
         key_id: KeyIdType = None,
         encryption_algorithm: EncryptionAlgorithmSpec = None,
         recipient: RecipientInfo = None,
+        dry_run: NullableBooleanType = None,
     ) -> DecryptResponse:
         raise NotImplementedError
 
@@ -1342,6 +1364,7 @@ class KmsApi:
         encryption_context: EncryptionContextType = None,
         grant_tokens: GrantTokenList = None,
         encryption_algorithm: EncryptionAlgorithmSpec = None,
+        dry_run: NullableBooleanType = None,
     ) -> EncryptResponse:
         raise NotImplementedError
 
@@ -1355,6 +1378,7 @@ class KmsApi:
         key_spec: DataKeySpec = None,
         grant_tokens: GrantTokenList = None,
         recipient: RecipientInfo = None,
+        dry_run: NullableBooleanType = None,
     ) -> GenerateDataKeyResponse:
         raise NotImplementedError
 
@@ -1367,6 +1391,7 @@ class KmsApi:
         encryption_context: EncryptionContextType = None,
         grant_tokens: GrantTokenList = None,
         recipient: RecipientInfo = None,
+        dry_run: NullableBooleanType = None,
     ) -> GenerateDataKeyPairResponse:
         raise NotImplementedError
 
@@ -1378,6 +1403,7 @@ class KmsApi:
         key_pair_spec: DataKeyPairSpec,
         encryption_context: EncryptionContextType = None,
         grant_tokens: GrantTokenList = None,
+        dry_run: NullableBooleanType = None,
     ) -> GenerateDataKeyPairWithoutPlaintextResponse:
         raise NotImplementedError
 
@@ -1390,6 +1416,7 @@ class KmsApi:
         key_spec: DataKeySpec = None,
         number_of_bytes: NumberOfBytesType = None,
         grant_tokens: GrantTokenList = None,
+        dry_run: NullableBooleanType = None,
     ) -> GenerateDataKeyWithoutPlaintextResponse:
         raise NotImplementedError
 
@@ -1401,6 +1428,7 @@ class KmsApi:
         key_id: KeyIdType,
         mac_algorithm: MacAlgorithmSpec,
         grant_tokens: GrantTokenList = None,
+        dry_run: NullableBooleanType = None,
     ) -> GenerateMacResponse:
         raise NotImplementedError
 
@@ -1535,6 +1563,7 @@ class KmsApi:
         source_encryption_algorithm: EncryptionAlgorithmSpec = None,
         destination_encryption_algorithm: EncryptionAlgorithmSpec = None,
         grant_tokens: GrantTokenList = None,
+        dry_run: NullableBooleanType = None,
     ) -> ReEncryptResponse:
         raise NotImplementedError
 
@@ -1558,12 +1587,17 @@ class KmsApi:
         grant_token: GrantTokenType = None,
         key_id: KeyIdType = None,
         grant_id: GrantIdType = None,
+        dry_run: NullableBooleanType = None,
     ) -> None:
         raise NotImplementedError
 
     @handler("RevokeGrant")
     def revoke_grant(
-        self, context: RequestContext, key_id: KeyIdType, grant_id: GrantIdType
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        grant_id: GrantIdType,
+        dry_run: NullableBooleanType = None,
     ) -> None:
         raise NotImplementedError
 
@@ -1585,6 +1619,7 @@ class KmsApi:
         signing_algorithm: SigningAlgorithmSpec,
         message_type: MessageType = None,
         grant_tokens: GrantTokenList = None,
+        dry_run: NullableBooleanType = None,
     ) -> SignResponse:
         raise NotImplementedError
 
@@ -1642,6 +1677,7 @@ class KmsApi:
         signing_algorithm: SigningAlgorithmSpec,
         message_type: MessageType = None,
         grant_tokens: GrantTokenList = None,
+        dry_run: NullableBooleanType = None,
     ) -> VerifyResponse:
         raise NotImplementedError
 
@@ -1654,5 +1690,6 @@ class KmsApi:
         mac_algorithm: MacAlgorithmSpec,
         mac: CiphertextType,
         grant_tokens: GrantTokenList = None,
+        dry_run: NullableBooleanType = None,
     ) -> VerifyMacResponse:
         raise NotImplementedError
