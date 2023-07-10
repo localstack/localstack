@@ -33,6 +33,7 @@ class TestFnSub:
     # TODO: add test for list sub without a second argument (i.e. the list)
     #   => Template error: One or more Fn::Sub intrinsic functions don't specify expected arguments. Specify a string as first argument, and an optional second argument to specify a mapping of values to replace in the string
 
+    @pytest.mark.aws_validated
     def test_fn_sub_cases(self, deploy_cfn_template, aws_client, snapshot):
         ssm_parameter_name = f"test-param-{short_uid()}"
         snapshot.add_transformer(
