@@ -176,3 +176,12 @@ def resolve_condition(condition, conditions, parameters, mappings, stack_name):
                     ) == resolve_condition(v[1], conditions, parameters, mappings, stack_name)
     else:
         return condition
+
+
+def fn_equals_type_conversion(value) -> str:
+    if isinstance(value, str):
+        return value
+    elif isinstance(value, bool):
+        return "true" if value else "false"
+    else:
+        return str(value)  # TODO: investigate correct behavior

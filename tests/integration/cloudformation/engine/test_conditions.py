@@ -329,9 +329,9 @@ class TestCloudFormationConditions:
     @pytest.mark.parametrize(
         ["should_use_fallback", "match_value"],
         [
-            # (None, "FallbackParamValue"),
+            (None, "FallbackParamValue"),
             ("true", "FallbackParamValue"),
-            # ("false", "DefaultParamValue"),
+            ("false", "DefaultParamValue"),
         ],
     )
     @pytest.mark.aws_validated

@@ -22,7 +22,10 @@ from localstack.services.cloudformation.deployment_utils import (
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet
-from localstack.services.cloudformation.engine.template_utils import get_deps_for_resource
+from localstack.services.cloudformation.engine.template_utils import (
+    fn_equals_type_conversion,
+    get_deps_for_resource,
+)
 from localstack.services.cloudformation.engine.types import DeployTemplates, FuncDetails
 from localstack.services.cloudformation.resource_provider import (
     Credentials,
@@ -549,7 +552,8 @@ def _resolve_refs_recursively(
             operand1, operand2 = value[keys_list[0]]
             operand1 = resolve_refs_recursively(stack_name, resources, mappings, operand1)
             operand2 = resolve_refs_recursively(stack_name, resources, mappings, operand2)
-            return str(operand1) == str(operand2)
+            # TODO: investigate type coercion here
+            return fn_equals_type_conversion(operand1) == fn_equals_type_conversion(operand2)
 
         if stripped_fn_lower == "select":
             index, values = value[keys_list[0]]
