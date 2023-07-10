@@ -194,14 +194,17 @@ def get_boto3_region() -> str:
     return boto3.session.Session().region_name
 
 
-def is_internal_call_context(headers):
+def is_internal_call_context(headers) -> bool:
     """Return whether we are executing in the context of an internal API call, i.e.,
     the case where one API uses a boto3 client to call another API internally."""
     if HEADER_LOCALSTACK_ACCOUNT_ID in headers.keys():
         # TODO: Used by the old client, marked for removal
         return True
-    if INTERNAL_AWS_ACCESS_KEY_ID in headers.get("Authorization"):
+
+    if INTERNAL_AWS_ACCESS_KEY_ID in headers.get("Authorization", ""):
         return True
+
+    return False
 
 
 def get_local_service_url(service_name_or_port: Union[str, int]) -> str:
