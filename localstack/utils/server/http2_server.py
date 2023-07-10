@@ -242,6 +242,7 @@ def run_server(
             kwargs["keyfile"] = key_file_name
             config.keyfile = key_file_name
         setup_quart_logging()
+        config.h11_pass_raw_headers = True
         config.bind = [f"{bind_address}:{port}" for bind_address in bind_addresses]
         config.workers = len(bind_addresses)
         loop = loop or ensure_event_loop()
