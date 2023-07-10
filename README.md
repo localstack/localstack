@@ -74,7 +74,7 @@ You can directly install the LocalStack CLI in your Python environment using `pi
 
 #### Installation
 ```
-python3 -m pip install localstack
+python3 -m pip install localstack awscli-local
 ```
 
 > **Important**: Do not use `sudo` or run as `root` user. LocalStack must be installed and started entirely under a local non-root user. If you have problems with permissions in macOS High Sierra, install with `pip install --user localstack`
