@@ -787,7 +787,7 @@ class TemplateDeployer:
             self.provider_config = json.loads(config.CFN_RESOURCE_PROVIDER_OVERRIDES)
         except json.JSONDecodeError:
             LOG.warning(
-                "Failed to parse CFN_RESOURCE_PROVIDERS_OVERRIDE config. Not a valid JSON document.",
+                "Failed to parse CFN_RESOURCE_PROVIDER_OVERRIDES config. Not a valid JSON document.",
                 exc_info=True,
             )
             raise
