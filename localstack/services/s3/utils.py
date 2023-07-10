@@ -1,7 +1,10 @@
 import datetime
+import hashlib
 import re
+import zlib
 from typing import Dict, Literal, Optional, Tuple, Union
 from urllib import parse as urlparser
+from zoneinfo import ZoneInfo
 
 import moto.s3.models as moto_s3_models
 from botocore.exceptions import ClientError
@@ -10,11 +13,14 @@ from moto.s3.exceptions import MissingBucket
 from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 from moto.s3.utils import clean_key_name
 
-from localstack.aws.api import CommonServiceException, ServiceException
+from localstack.aws.api import CommonServiceException, RequestContext, ServiceException
 from localstack.aws.api.s3 import (
     BucketName,
     ChecksumAlgorithm,
     InvalidArgument,
+    LifecycleExpiration,
+    LifecycleRule,
+    LifecycleRules,
     MethodNotAllowed,
     NoSuchBucket,
     NoSuchKey,
@@ -23,6 +29,8 @@ from localstack.aws.api.s3 import (
 from localstack.aws.connect import connect_to
 from localstack.services.s3.constants import (
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
+    SIGNATURE_V2_PARAMS,
+    SIGNATURE_V4_PARAMS,
     VALID_CANNED_ACLS_BUCKET,
 )
 from localstack.utils.aws import arns
@@ -53,6 +61,9 @@ PATTERN_UUID = re.compile(
 )
 
 
+RFC1123 = "%a, %d %b %Y %H:%M:%S GMT"
+
+
 class InvalidRequest(ServiceException):
     code: str = "InvalidRequest"
     sender_fault: bool = False
@@ -66,6 +77,44 @@ def extract_bucket_key_version_id_from_copy_source(
     src_bucket, src_key = urlparser.unquote(copy_source_parsed.path).lstrip("/").split("/", 1)
     src_version_id = urlparser.parse_qs(copy_source_parsed.query).get("versionId", [None])[0]
     return src_bucket, src_key, src_version_id
+
+
+def get_s3_checksum(algorithm):
+    match algorithm:
+        case ChecksumAlgorithm.CRC32:
+            return S3CRC32Checksum()
+
+        case ChecksumAlgorithm.CRC32C:
+            from botocore.httpchecksum import CrtCrc32cChecksum
+
+            return CrtCrc32cChecksum()
+
+        case ChecksumAlgorithm.SHA1:
+            return hashlib.sha1(usedforsecurity=False)
+
+        case ChecksumAlgorithm.SHA256:
+            return hashlib.sha256(usedforsecurity=False)
+
+        case _:
+            # TODO: check proper error? for now validated client side, need to check server response
+            raise InvalidRequest("The value specified in the x-amz-trailer header is not supported")
+
+
+class S3CRC32Checksum:
+    __slots__ = ["checksum"]
+
+    def __init__(self):
+        self.checksum = None
+
+    def update(self, value: bytes):
+        if self.checksum is None:
+            self.checksum = zlib.crc32(value)
+            return
+
+        self.checksum = zlib.crc32(value, self.checksum)
+
+    def digest(self) -> bytes:
+        return self.checksum.to_bytes(4, "big")
 
 
 def get_object_checksum_for_algorithm(checksum_algorithm: str, data: bytes):
@@ -100,6 +149,19 @@ def verify_checksum(checksum_algorithm: str, data: bytes, request: Dict):
         raise InvalidRequest(
             f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
         )
+
+
+def is_presigned_url_request(context: RequestContext) -> bool:
+    """
+    Detects pre-signed URL from query string parameters
+    Return True if any kind of presigned URL query string parameter is encountered
+    :param context: the request context from the handler chain
+    """
+    # Detecting pre-sign url and checking signature
+    query_parameters = context.request.args
+    return any(p in query_parameters for p in SIGNATURE_V2_PARAMS) or any(
+        p in query_parameters for p in SIGNATURE_V4_PARAMS
+    )
 
 
 def is_key_expired(key_object: Union[FakeKey, FakeDeleteMarker]) -> bool:
@@ -201,6 +263,16 @@ def get_bucket_and_key_from_s3_uri(s3_uri: str) -> Tuple[str, Optional[str]]:
     return output_bucket, output_key
 
 
+def get_bucket_and_key_from_presign_url(presign_url: str) -> Tuple[str, str]:
+    """
+    Extracts the bucket name and key from s3 presign url
+    """
+    parsed_url = urlparser.urlparse(presign_url)
+    bucket = parsed_url.path.split("/")[1]
+    key = "/".join(parsed_url.path.split("/")[2:]).split("?")[0]
+    return bucket, key
+
+
 def _create_invalid_argument_exc(
     message: Union[str, None], name: str, value: str, host_id: str = None
 ) -> InvalidArgument:
@@ -263,3 +335,79 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket) -> None:
                 code="KMS.NotFoundException", message=e.response["Error"]["Message"]
             )
         raise
+
+
+def rfc_1123_datetime(src: datetime.datetime) -> str:
+    return src.strftime(RFC1123)
+
+
+def str_to_rfc_1123_datetime(value: str) -> datetime.datetime:
+    return datetime.datetime.strptime(value, RFC1123).replace(tzinfo=ZoneInfo("GMT"))
+
+
+def serialize_expiration_header(
+    rule_id: str, lifecycle_exp: LifecycleExpiration, last_modified: datetime.datetime
+):
+    if not (exp_date := lifecycle_exp.get("Date")):
+        exp_days = lifecycle_exp.get("Days")
+        # AWS round to the next day at midnight UTC
+        exp_date = last_modified.replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ) + datetime.timedelta(days=exp_days + 1)
+    return f'expiry-date="{rfc_1123_datetime(exp_date)}", rule-id="{rule_id}"'
+
+
+def get_lifecycle_rule_from_object(
+    lifecycle_conf_rules: LifecycleRules, moto_object: FakeKey, object_tags: dict[str, str]
+) -> LifecycleRule:
+    for rule in lifecycle_conf_rules:
+        if "Expiration" not in rule:
+            continue
+
+        if not (rule_filter := rule.get("Filter")):
+            return rule
+
+        if and_rules := rule_filter.get("And"):
+            if all(
+                _match_lifecycle_filter(key, value, moto_object, object_tags)
+                for key, value in and_rules.items()
+            ):
+                return rule
+
+        if any(
+            _match_lifecycle_filter(key, value, moto_object, object_tags)
+            for key, value in rule_filter.items()
+        ):
+            # after validation, we can only one of `Prefix`, `Tag`, `ObjectSizeGreaterThan` or `ObjectSizeLessThan` in
+            # the dict. Instead of manually checking, we can iterate of the only key and try to match it
+            return rule
+
+
+def _match_lifecycle_filter(
+    filter_key: str, filter_value, moto_object: FakeKey, object_tags: dict[str, str]
+):
+    match filter_key:
+        case "Prefix":
+            return moto_object.name.startswith(filter_value)
+        case "Tag":
+            return object_tags.get(filter_value.get("Key")) == filter_value.get("Value")
+        case "ObjectSizeGreaterThan":
+            return moto_object.size > filter_value
+        case "ObjectSizeLessThan":
+            return moto_object.size < filter_value
+        case "Tags":  # this is inside the `And` field
+            return all(object_tags.get(tag.get("Key")) == tag.get("Value") for tag in filter_value)
+
+
+def parse_expiration_header(
+    expiration_header: str,
+) -> tuple[Optional[datetime.datetime], Optional[str]]:
+    try:
+        header_values = dict(
+            (p.strip('"') for p in v.split("=")) for v in expiration_header.split('", ')
+        )
+        expiration_date = str_to_rfc_1123_datetime(header_values["expiry-date"])
+        return expiration_date, header_values["rule-id"]
+
+    except (IndexError, ValueError, KeyError):
+        return None, None

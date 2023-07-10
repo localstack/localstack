@@ -25,7 +25,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_swagger_api": {
-    "recorded-date": "07-06-2023, 03:24:26",
+    "recorded-date": "06-07-2023, 22:05:59",
     "recorded-content": {
       "import-swagger": {
         "apiKeySource": "HEADER",
@@ -56,6 +56,16 @@
             "identitySource": "method.request.header.Authorization",
             "identityValidationExpression": "^x-[a-z]+",
             "name": "test-authorizer",
+            "type": "TOKEN"
+          },
+          {
+            "authType": "oauth2",
+            "authorizerCredentials": "<authorizer-credentials:1>",
+            "authorizerUri": "<authorizer-uri:1>",
+            "id": "<authorizer-id:2>",
+            "identitySource": "method.request.header.Authorization",
+            "identityValidationExpression": "^x-[a-z]+",
+            "name": "test-authorizer-not-used",
             "type": "TOKEN"
           }
         ],

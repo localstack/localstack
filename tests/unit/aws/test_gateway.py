@@ -20,6 +20,7 @@ def serve_gateway_hypercorn():
 
     def _create(gateway: Gateway) -> HypercornServer:
         config = Config()
+        config.h11_pass_raw_headers = True
         config.bind = f"localhost:{net.get_free_tcp_port()}"
         loop = asyncio.new_event_loop()
         srv = HypercornServer(AsgiGateway(gateway, event_loop=loop), config, loop=loop)

@@ -196,7 +196,7 @@ class LambdaProxyIntegration(BackendIntegration):
         parsed_result = {} if parsed_result is None else parsed_result
 
         keys = parsed_result.keys()
-        if not ("statusCode" in keys and "body" in keys):
+        if "statusCode" not in keys or "body" not in keys:
             LOG.warning(
                 'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}'
             )
@@ -896,3 +896,36 @@ def apply_request_parameters(
                 query_params.pop(key)
 
     return add_query_params_to_url(uri, query_params)
+
+
+class EventBridgeIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        invocation_context.context = get_event_request_context(invocation_context)
+        try:
+            payload = self.request_templates.render(invocation_context)
+        except Exception as e:
+            LOG.warning("Failed to apply template for EventBridge integration: %s", e)
+            raise
+        uri = (
+            invocation_context.integration.get("uri")
+            or invocation_context.integration.get("integrationUri")
+            or ""
+        )
+        region_name = uri.split(":")[3]
+        headers = get_internal_mocked_headers(
+            service_name="events",
+            region_name=region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+            source_arn=get_source_arn(invocation_context),
+        )
+        headers.update({"X-Amz-Target": invocation_context.headers.get("X-Amz-Target")})
+        response = make_http_request(
+            config.service_url("events"), method="POST", headers=headers, data=payload
+        )
+
+        invocation_context.response = response
+
+        response_templates = ResponseTemplates()
+        response_templates.render(invocation_context)
+        invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
+        return invocation_context.response

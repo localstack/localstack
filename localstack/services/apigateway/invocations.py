@@ -23,6 +23,7 @@ from localstack.services.apigateway.helpers import (
 from localstack.services.apigateway.integration import (
     ApiGatewayIntegrationError,
     DynamoDBIntegration,
+    EventBridgeIntegration,
     HTTPIntegration,
     KinesisIntegration,
     LambdaIntegration,
@@ -62,11 +63,11 @@ class RequestValidator:
             return True
 
         resource_methods = self.context.resource["resourceMethods"]
-        if self.context.method not in resource_methods:
+        if self.context.method not in resource_methods and "ANY" not in resource_methods:
             return True
 
         # check if there is validator for the resource
-        resource = resource_methods[self.context.method]
+        resource = resource_methods.get(self.context.method, resource_methods.get("ANY", {}))
         if not (resource.get("requestValidatorId") or "").strip():
             return True
 
@@ -365,6 +366,13 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
 
         if method == "POST" and ":sns:path" in uri:
             return SNSIntegration().invoke(invocation_context)
+
+        if (
+            method == "POST"
+            and uri.startswith("arn:aws:apigateway:")
+            and "events:action/PutEvents" in uri
+        ):
+            return EventBridgeIntegration().invoke(invocation_context)
 
     elif integration_type in ["HTTP_PROXY", "HTTP"]:
         return HTTPIntegration().invoke(invocation_context)

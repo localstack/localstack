@@ -154,6 +154,16 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#heartbeat_seconds_decl.
+    def visitHeartbeat_seconds_decl(self, ctx:ASLParser.Heartbeat_seconds_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#heartbeat_seconds_path_decl.
+    def visitHeartbeat_seconds_path_decl(self, ctx:ASLParser.Heartbeat_seconds_path_declContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#payload_tmpl_decl.
     def visitPayload_tmpl_decl(self, ctx:ASLParser.Payload_tmpl_declContext):
         return self.visitChildren(ctx)
