@@ -6496,6 +6496,31 @@ class TestS3PresignedUrl:
         request_content = xmltodict.parse(req.content)
         assert "GET\n//test-bucket" in request_content["Error"]["CanonicalRequest"]
 
+    @pytest.mark.parametrize(
+        "signature_version",
+        ["s3", "s3v4"],
+    )
+    def test_s3_presign_url_encoding(
+        self, aws_client, s3_bucket, signature_version, patch_s3_skip_signature_validation_false
+    ):
+        object_key = "table1-partitioned/date=2023-06-28/test.csv"
+        aws_client.s3.put_object(Key=object_key, Bucket=s3_bucket, Body="123")
+
+        s3_endpoint_path_style = _endpoint_url()
+        client = _s3_client_custom_config(
+            Config(signature_version=signature_version, s3={}),
+            endpoint_url=s3_endpoint_path_style,
+        )
+
+        url = client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": s3_bucket, "Key": object_key},
+        )
+
+        req = requests.get(url)
+        assert req.ok
+        assert req.content == b"123"
+
     @staticmethod
     def _get_presigned_snapshot_transformers(snapshot):
         return [
