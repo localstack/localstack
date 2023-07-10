@@ -2195,6 +2195,11 @@ class NetworkInterfaceType(str):
     aws_codestar_connections_managed = "aws_codestar_connections_managed"
 
 
+class NitroEnclavesSupport(str):
+    unsupported = "unsupported"
+    supported = "supported"
+
+
 class OfferingClassType(str):
     standard = "standard"
     convertible = "convertible"
@@ -10894,6 +10899,7 @@ class InstanceTypeInfo(TypedDict, total=False):
     DedicatedHostsSupported: Optional[DedicatedHostFlag]
     AutoRecoverySupported: Optional[AutoRecoveryFlag]
     SupportedBootModes: Optional[BootModeTypeList]
+    NitroEnclavesSupport: Optional[NitroEnclavesSupport]
 
 
 InstanceTypeInfoList = List[InstanceTypeInfo]
@@ -17197,7 +17203,7 @@ class StopInstancesResult(TypedDict, total=False):
 
 class TerminateClientVpnConnectionsRequest(ServiceRequest):
     ClientVpnEndpointId: ClientVpnEndpointId
-    ConnectionId: Optional[VpnConnectionId]
+    ConnectionId: Optional[String]
     Username: Optional[String]
     DryRun: Optional[Boolean]
 
@@ -23823,7 +23829,7 @@ class Ec2Api:
         self,
         context: RequestContext,
         client_vpn_endpoint_id: ClientVpnEndpointId,
-        connection_id: VpnConnectionId = None,
+        connection_id: String = None,
         username: String = None,
         dry_run: Boolean = None,
     ) -> TerminateClientVpnConnectionsResult:
