@@ -91,7 +91,7 @@ ADDITIONAL_MANAGED_POLICIES = {
     }
 }
 
-POLICY_ARN_REGEX = re.compile(r"arn:[^:]+:iam::\d{12}:policy/.*")
+POLICY_ARN_REGEX = re.compile(r"arn:[^:]+:iam::(?:\d{12}|aws):policy/.*")
 
 
 def get_iam_backend(context: RequestContext) -> IAMBackend:
