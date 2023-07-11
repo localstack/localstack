@@ -154,6 +154,8 @@ def resolve_condition(condition, conditions, parameters, mappings, stack_name):
                         "ParameterValue"
                     ]  # TODO: extend this logic, e.g. what about lists, other types, ... why is string interpreted as a boolean?
                     # return parameters[v]
+                case "Condition":
+                    return resolve_condition(conditions[v], conditions, parameters, mappings, stack_name)
                 case "Fn::FindInMap":
                     map_name, top_level_key, second_level_key = v
                     return mappings[map_name][top_level_key][second_level_key]
@@ -184,6 +186,14 @@ def resolve_condition(condition, conditions, parameters, mappings, stack_name):
                     left = resolve_condition(v[0], conditions, parameters, mappings, stack_name)
                     right = resolve_condition(v[1], conditions, parameters, mappings, stack_name)
                     return fn_equals_type_conversion(left) == fn_equals_type_conversion(right)
+                case "Fn::Join":
+                    # TODO: why is this valid :(
+                    if isinstance(v[1], dict):
+                        joinlist = resolve_condition(v[1], conditions, parameters, mappings, stack_name)
+                    result = v[0].join([resolve_condition(x, conditions, parameters, mappings, stack_name) for x in joinlist])
+                    return result
+                case _:
+                    raise Exception(f"Invalid condition structure encountered: {condition=}")
     else:
         return condition
 

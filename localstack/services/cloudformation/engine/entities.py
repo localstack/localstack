@@ -244,7 +244,6 @@ class Stack:
     def stack_id(self):
         return self.metadata["StackId"]
 
-    # TODO: potential performance issues due to many stack_parameters calls (cache or limit actual invocations)
     @property
     def resources(self):  # TODO: not actually resources, split apart
         """Return dict of resources, parameters, conditions, and other stack metadata."""
@@ -253,15 +252,6 @@ class Stack:
         result.update(
             {k: map_to_legacy_structure(k, v) for k, v in self.resolved_parameters.items()}
         )
-
-        # TODO: conditions don't really belong here and should be handled separately
-        for name, value in self.conditions.items():
-            if name not in result:
-                result[name] = {
-                    "Type": "Parameter",
-                    "LogicalResourceId": name,
-                    "Properties": {"Value": value},
-                }
 
         return result
 
