@@ -201,8 +201,8 @@ def download(
             raise Exception("Failed to download %s, response code %s" % (url, r.status_code))
 
         total_size = 0
-        if content_length := r.headers.get("Content-Length"):
-            total_size = int(content_length)
+        if r.headers.get("Content-Length"):
+            total_size = int(r.headers.get("Content-Length"))
 
         total_written = 0
         if not os.path.exists(os.path.dirname(path)):
