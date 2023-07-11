@@ -40,6 +40,14 @@ Properties = TypeVar("Properties")
 
 PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 
+# by default we use the GenericBaseModel (the legacy model), unless the resource is listed below
+# add your new provider here when you want it to be the default
+PROVIDER_DEFAULTS = {
+    # "AWS::IAM::User": "GenericBaseModel",
+    # "AWS::SSM::Parameter": "GenericBaseModel",
+    # "AWS::OpenSearchService::Domain": "GenericBaseModel",
+}
+
 
 class OperationStatus(Enum):
     PENDING = auto()
@@ -569,12 +577,14 @@ class ResourceProviderExecutor:
         *,
         stack_name: str,
         stack_id: str,
+        provider_config: dict[str, str],
         # FIXME: legacy
         resources: dict[str, dict],
         legacy_base_models: dict[str, Type[GenericBaseModel]],
     ):
         self.stack_name = stack_name
         self.stack_id = stack_id
+        self.provider_config = provider_config
         self.resources = resources
         self.legacy_base_models = legacy_base_models
 
@@ -645,22 +655,29 @@ class ResourceProviderExecutor:
             case _:
                 raise NotImplementedError(change_type)
 
-    def load_resource_provider(self, resource_type: str) -> Optional[ResourceProvider]:
-        # TODO: unify behavior here in regards to raising NoResourceProvider
-        if not config.CFN_RESOURCE_PROVIDERS_V2:
+    def should_use_legacy_provider(self, resource_type: str) -> bool:
+        # any config overwrites take precedence over the default list
+        PROVIDER_CONFIG = {**PROVIDER_DEFAULTS, **self.provider_config}
+        if resource_type in PROVIDER_CONFIG:
+            return PROVIDER_CONFIG[resource_type] == "GenericBaseModel"
+
+        return True
+
+    def load_resource_provider(self, resource_type: str) -> ResourceProvider:
+        # by default look up GenericBaseModel
+        if self.should_use_legacy_provider(resource_type):
             return self._load_legacy_resource_provider(resource_type)
 
-        # attempt to use the new ResourceProvider implementation, if that fails fall back to the old GenericBaseModel
         try:
             plugin = plugin_manager.load(resource_type)
             return plugin.factory()
         except Exception:
             LOG.warning(
-                "Failed to load resource type as a ResourceProvider. Falling back to looking up a GenericBaseModel for %s",
+                "Failed to load resource type as a ResourceProvider.",
                 resource_type,
                 exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
-            return self._load_legacy_resource_provider(resource_type)
+            raise NoResourceProvider
 
     def _load_legacy_resource_provider(self, resource_type: str) -> LegacyResourceProvider:
         if resource_type in self.legacy_base_models:
