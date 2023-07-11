@@ -422,12 +422,20 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         response: HeadObjectOutput = call_moto(context)
         response["AcceptRanges"] = "bytes"
 
+        key = request["Key"]
+        bucket = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
+        key_object = get_key_from_moto_bucket(moto_bucket, key=key)
+
+        if checksum_algorithm := key_object.checksum_algorithm:
+            # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
+            response["ContentEncoding"] = ""
+
+        if request.get("ChecksumMode") == "ENABLED" and checksum_algorithm:
+            response[f"Checksum{checksum_algorithm.upper()}"] = key_object.checksum_value  # noqa
+
         if not request.get("VersionId"):
-            key = request["Key"]
-            bucket = request["Bucket"]
-            moto_backend = get_moto_s3_backend(context)
-            moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
-            key_object = get_key_from_moto_bucket(moto_bucket, key=key)
             store = self.get_store(context)
             if (
                 bucket_lifecycle_config := store.bucket_lifecycle_configuration.get(

@@ -1132,7 +1132,7 @@ class TestS3:
         response = aws_client.s3.put_object(**params)
         snapshot.match("put-object-generated", response)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        if is_aws_cloud() or is_asf_provider():
+        if is_aws_cloud() or not is_old_provider():
             # get_object_attributes is not implemented in moto
             object_attrs = aws_client.s3.get_object_attributes(
                 Bucket=bucket,
@@ -1179,6 +1179,11 @@ class TestS3:
             Bucket=s3_bucket, Key=key, ChecksumMode="ENABLED"
         )
         snapshot.match("get-object-with-checksum", get_object_with_checksum)
+
+        head_object_with_checksum = aws_client.s3.get_object(
+            Bucket=s3_bucket, Key=key, ChecksumMode="ENABLED"
+        )
+        snapshot.match("head-object-with-checksum", head_object_with_checksum)
 
         object_attrs = aws_client.s3.get_object_attributes(
             Bucket=s3_bucket,
