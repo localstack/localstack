@@ -184,8 +184,11 @@ def create_aws_request_context(
     if auth_path := request_dict.get("auth_path"):
         # botocore >= 1.28 might modify the url path of the request dict (specifically for S3).
         # It will then set the original url path as "auth_path". If the auth_path is set, we reset the url_path.
+        # Since botocore 1.31.2, botocore will strip the query from the `authPart`
+        # We need to add it back from `requestUri` field
         # Afterwards the request needs to be prepared again.
-        request_dict["url_path"] = auth_path
+        path, sep, query = request_dict["url_path"].partition("?")
+        request_dict["url_path"] = f"{auth_path}{sep}{query}"
         prepare_request_dict(
             request_dict,
             endpoint_url=endpoint_url,
