@@ -39,10 +39,14 @@ class _HttpOperation(NamedTuple):
     @staticmethod
     def from_operation(op: OperationModel) -> "_HttpOperation":
         # botocore >= 1.28 might modify the internal model (specifically for S3).
-        # It will modify the request URI and set the original value at "authPath".
+        # It will modify the request URI to strip the bucket name from the path and set the original value at
+        # "authPath".
+        # Since botocore 1.31.2, botocore will strip the query from the `authPart`
+        # We need to add it back from `requestUri` field
         # Use authPath if set, otherwise use the regular requestUri.
         if auth_path := op.http.get("authPath"):
-            uri = auth_path.rstrip("/")
+            path, sep, query = op.http.get("requestUri", "").partition("?")
+            uri = f"{auth_path.rstrip('/')}{sep}{query}"
         else:
             uri = op.http.get("requestUri")
 
