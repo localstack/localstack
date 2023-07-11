@@ -45,7 +45,8 @@ class _HttpOperation(NamedTuple):
         # We need to add it back from `requestUri` field
         # Use authPath if set, otherwise use the regular requestUri.
         if auth_path := op.http.get("authPath"):
-            uri = auth_path.rstrip("/") + op.http.get("requestUri", "").split("?")[-1]
+            query = op.http.get("requestUri", "").partition("?")
+            uri = auth_path.rstrip("/") + query[2]
         else:
             uri = op.http.get("requestUri")
 
