@@ -381,9 +381,9 @@ class TestKMS:
     @pytest.mark.parametrize("number_of_bytes", [None, 0, 1025])
     @pytest.mark.aws_validated
     def test_generate_random_invalid_number_of_bytes(
-        self, create_boto_client, snapshot, number_of_bytes
+        self, aws_client_factory, snapshot, number_of_bytes
     ):
-        kms_client = create_boto_client("kms", additional_config=Config(parameter_validation=False))
+        kms_client = aws_client_factory(config=Config(parameter_validation=False)).kms
 
         with pytest.raises(ClientError) as e:
             kms_client.generate_random(NumberOfBytes=number_of_bytes)

@@ -890,15 +890,15 @@ class TestDynamoDB:
 
     @pytest.mark.only_localstack
     def test_global_tables_version_2019(
-        self, create_boto_client, cleanups, dynamodb_wait_for_table_active
+        self, aws_client, aws_client_factory, cleanups, dynamodb_wait_for_table_active
     ):
         # Following https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/V2globaltables.tutorial.html
 
         # Create clients
-        dynamodb_us_east_1 = create_boto_client("dynamodb", region_name="us-east-1")
-        dynamodb_eu_west_1 = create_boto_client("dynamodb", region_name="eu-west-1")
-        dynamodb_ap_south_1 = create_boto_client("dynamodb", region_name="ap-south-1")
-        dynamodb_sa_east_1 = create_boto_client("dynamodb", region_name="sa-east-1")
+        dynamodb_us_east_1 = aws_client_factory(region_name="us-east-1").dynamodb
+        dynamodb_eu_west_1 = aws_client_factory(region_name="eu-west-1").dynamodb
+        dynamodb_ap_south_1 = aws_client_factory(region_name="ap-south-1").dynamodb
+        dynamodb_sa_east_1 = aws_client_factory(region_name="sa-east-1").dynamodb
 
         # Create table in AP
         table_name = f"table-{short_uid()}"
