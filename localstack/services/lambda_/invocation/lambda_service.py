@@ -176,8 +176,10 @@ class LambdaService:
                 function_version=function_version,
                 lambda_service=self,
                 function=fn,
-                # TODO: inject specific view
-                counting_service=CountingService(),
+                counting_service=CountingService.get(),
+                # counting_service=CountingService.get_view(
+                #     account=function_version.id.account, region=function_version.id.region
+                # ),
                 assignment_service=self.assignment_service,
             )
             self.lambda_starting_versions[qualified_arn] = version_manager
