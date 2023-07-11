@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from localstack import config
@@ -10,4 +12,8 @@ def use_new_providers(monkeypatch):
 
     This fixture is applied to all tests.
     """
-    monkeypatch.setattr(config, "CFN_RESOURCE_PROVIDERS_V2", True)
+    monkeypatch.setattr(
+        config,
+        "CFN_RESOURCE_PROVIDER_OVERRIDES",
+        json.dumps({"AWS::SSM::Parameter": "ResourceProvider"}),
+    )

@@ -120,12 +120,13 @@ def test_cfn_handle_secretsmanager_secret(deploy_cfn_template, aws_client):
 
 
 @pytest.mark.aws_validated
-@pytest.mark.skip_snapshot_verify(paths=["$..SecretId", "$..SecretPolicyArn"])
 def test_cfn_secret_policy(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(template=TEST_TEMPLATE_SECRET_POLICY)
     secret_id = stack.outputs["SecretId"]
 
     snapshot.match("outputs", stack.outputs)
+    secret_name = stack.outputs["SecretId"].split(":")[-1]
+    snapshot.add_transformer(snapshot.transform.regex(secret_name, "<secret-name>"))
 
     # TODO: moto does not implement the `ResourcePolicy` key
     # res = aws_client.secretsmanager.get_resource_policy(SecretId=secret_id)

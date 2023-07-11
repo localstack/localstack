@@ -90,6 +90,8 @@ TYPE_MAP = {
     "string": "str",
     "boolean": "bool",
     "integer": "int",
+    "number": "float",
+    "object": "dict",
 }
 
 
@@ -161,6 +163,8 @@ class PropertyTypeScaffolding:
                     resolved_type = "bool"
                 case "integer":
                     resolved_type = "int"
+                case "number":
+                    resolved_type = "float"
                 # complex objects
                 case "object":
                     resolved_type = "dict"  # TODO: any cases where we need to continue here?
@@ -168,7 +172,15 @@ class PropertyTypeScaffolding:
                     item_type = self.resolve_type_of_property(property_def["items"])
                     resolved_type = f"list[{item_type}]"
                 case _:
-                    raise Exception(f"TODO: {property_type}")
+                    # TODO: allOf, anyOf, patternProperties (?)
+                    # AWS::ApiGateway::RestApi passes a ["object", "string"] here for the "Body" property
+                    # it probably makes sense to assume this behaves the same as a "oneOf"
+                    if one_of := property_def.get("oneOf"):
+                        resolved_type = "|".join([self.resolve_type_of_property(o) for o in one_of])
+                    elif isinstance(property_type, list):
+                        resolved_type = "|".join([TYPE_MAP[pt] for pt in property_type])
+                    else:
+                        raise Exception(f"Unknown property type: {property_type}")
         return resolved_type
 
     def property_to_item(self, property_name: str, property_def: dict, required: bool) -> Item:
