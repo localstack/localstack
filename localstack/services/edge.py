@@ -481,7 +481,7 @@ def start_edge(listen_str: str, use_ssl: bool = True, asynchronous: bool = False
             do_start_tcp_proxy(address, asynchronous=asynchronous)
         else:
             # escalate to root
-            run_module_as_root(
+            run_module_as_sudo(
                 module="localstack.services.edge",
                 arguments=["proxy", "--gateway-listen", str(address)],
                 asynchronous=True,
@@ -491,7 +491,9 @@ def start_edge(listen_str: str, use_ssl: bool = True, asynchronous: bool = False
         edge_thread.join()
 
 
-def run_module_as_root(
+# TODO: rename to better represent what is going on, e.g. run_module_as_root
+# but this will break `ext`
+def run_module_as_sudo(
     module: str, arguments: Optional[List[str]] = None, asynchronous=False, env_vars=None
 ):
     # prepare environment
