@@ -3,7 +3,7 @@ import os
 import threading
 
 from localstack import config
-from localstack.aws.connect import connect_to
+from localstack.aws.connect import connect_externally_to
 from localstack.config import is_env_true
 from localstack.services.dynamodb.packages import dynamodblocal_package
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
@@ -166,7 +166,7 @@ class DynamodbServer(Server):
 
         try:
             self.wait_is_up()
-            out = connect_to(endpoint_url=self.url).dynamodb.list_tables()
+            out = connect_externally_to(endpoint_url=self.url).dynamodb.list_tables()
         except Exception:
             if print_error:
                 LOG.exception("DynamoDB health check failed")
