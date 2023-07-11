@@ -170,6 +170,7 @@ def create_api_gateway_integrations(
             uri=integration["uri"],
             requestTemplates=req_templates,
             requestParameters=request_parameters,
+            payloadFormatVersion=integration.get("payloadFormatVersion") or "1.0",
         )
         response_configs = [
             {"pattern": "^2.*", "code": success_code, "res_templates": res_templates},
