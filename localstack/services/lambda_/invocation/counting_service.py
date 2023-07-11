@@ -17,7 +17,8 @@ class ConcurrencyTracker:
 
     lock: RLock
 
-    # function unqualified ARN => number of currently running invocations
+    # Concurrency tracker for provisioned concurrency can have a lock per function-version, rather than per function
+    # function ARN (unqualified or qualified) => number of currently running invocations
     function_concurrency: dict[str, int]
 
     def __init__(self):
@@ -74,11 +75,17 @@ class CountingService:
                 if not scoped_tracker:
                     scoped_tracker = self.concurrency_trackers[scope_tuple] = ConcurrencyTracker()
         unqualified_function_arn = function.latest().id.unqualified_arn()
+
+        # Daniel: async event handling. How do we know whether we can re-schedule the event?
+        # Events can stay in the queue for hours.
+        # TODO: write a test with reserved concurrency=0 (or unavailble) and an async invoke
+
+        # TODO: fix locking => currently locks during yield !!!
         with scoped_tracker.lock:
             # Tracker:
             # * per function version for provisioned concurrency
             # * per function for on-demand
-            # => we can derive unreserved_concurrent_executions
+            # => we can derive unreserved_concurrent_executions but could also consider a dedicated (redundant) counter
 
             # 1) TODO: Check for free provisioned concurrency
             # if available_provisioned_concurrency:
