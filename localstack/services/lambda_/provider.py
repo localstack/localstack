@@ -1258,6 +1258,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 request_id=context.request_id,
                 payload=payload.read() if payload else None,
             )
+        except ServiceException:
+            raise
         except Exception as e:
             LOG.error("Error while invoking lambda", exc_info=e)
             # TODO map to correct exception
