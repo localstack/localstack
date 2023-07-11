@@ -23,6 +23,7 @@ class LambdaEventManager:
 
     def __init__(self, version_manager: LambdaVersionManager):
         self.version_manager = version_manager
+        # event threads perform the synchronous invocation
         self.event_threads = ThreadPoolExecutor()
 
     def process_event_destinations(
@@ -185,17 +186,52 @@ class LambdaEventManager:
             except Exception as e:
                 LOG.warning("Error sending invocation result to %s: %s", target_arn, e)
 
+    def process_success_destination(self):
+        pass
+
+    def process_failure_destination(
+        self, invocation: Invocation, invocation_result: InvocationResult
+    ):
+        try:
+            dead_letter_queue._send_to_dead_letter_queue(
+                source_arn=self.version_manager.function_arn,
+                dlq_arn=self.version_manager.function_version.config.dead_letter_arn,
+                event=json.loads(to_str(invocation.payload)),
+                error=InvocationException(
+                    message="hi", result=to_str(invocation_result.payload)
+                ),  # TODO: check message
+                role=self.version_manager.function_version.config.role,
+            )
+        except Exception as e:
+            LOG.warning(
+                "Error sending to DLQ %s: %s",
+                self.version_manager.function_version.config.dead_letter_arn,
+                e,
+            )
+
     def invoke(self, invocation: Invocation):
+        # TODO: decouple this
+        # TODO: this can block for quite a long time if there's no available capacity
         for retry in range(3):
+            # TODO: check max event age before invocation
             invocation_result = self.version_manager.invoke(invocation=invocation)
+
             # TODO destinations
             if not invocation_result.is_error:
+                # TODO: success destination
+                # success_destination(invocation_result)
                 return
-            if retry != 2:
-                time.sleep((retry + 1) * 60)
+
+            if retry < 2:
+                time.sleep((retry + 1) * config.LAMBDA_RETRY_BASE_DELAY_SECONDS)
+            else:
+                # TODO: failure destination
+                self.process_failure_destination(invocation, invocation_result)
+                return
 
     def enqueue_event(self, invocation: Invocation) -> None:
         self.event_threads.submit(self.invoke, invocation)
 
     def stop(self) -> None:
+        # TODO: shut down event threads
         pass

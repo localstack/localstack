@@ -43,7 +43,11 @@ class TestLambdaDLQ:
         lambda_su_role,
         snapshot,
         aws_client,
+        monkeypatch
     ):
+        if not is_aws_cloud():
+            monkeypatch.setattr(config, "LAMBDA_RETRY_BASE_DELAY_SECONDS", 5)
+
         """Creates a lambda with a defined dead letter queue, and check failed lambda invocation leads to a message"""
         # create DLQ and Lambda function
         snapshot.add_transformer(snapshot.transform.lambda_api())

@@ -126,8 +126,7 @@ class LambdaVersionManager:
         )
         self.shutdown_event.set()
         self.log_handler.stop()
-        # TODO: implement
-        # self.assignment_service.stop_version()
+        self.assignment_service.stop_environments_for_version(self.function_version)
         get_runtime_executor().cleanup_version(self.function_version)  # TODO: make pluggable?
 
     # TODO: move
@@ -206,6 +205,8 @@ class LambdaVersionManager:
 
     def invoke(self, *, invocation: Invocation) -> InvocationResult:
         """
+        synchronous invoke entrypoint
+
         0. check counter, get lease
         1. try to get an inactive (no active invoke) environment
         2.(allgood) send invoke to environment
@@ -219,6 +220,7 @@ class LambdaVersionManager:
         # TODO: try/catch handle case when no lease available
         with self.counting_service.get_invocation_lease() as provisioning_type:  # TODO: do we need to pass more here?
             # potential race condition when changing provisioned concurrency
+            # get_environment blocks and potentially creates a new execution environment for this invocation
             with self.get_environment(provisioning_type) as execution_env:
                 invocation_result = execution_env.invoke(invocation)
                 invocation_result.executed_version = self.function_version.id.qualifier

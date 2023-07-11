@@ -87,7 +87,9 @@ class AssignmentService(OtherServiceEndpoint):
     #     return self.count_environment_by_status(
     #         [RuntimeStatus.READY, RuntimeStatus.STARTING, RuntimeStatus.RUNNING]
     #     )
-
+    def stop_environments_for_version(self, function_version: FunctionVersion):
+        for env in self.environments.get(function_version.qualified_arn, []):
+            self.stop_environment(env)
 
 # class PlacementService:
 #
