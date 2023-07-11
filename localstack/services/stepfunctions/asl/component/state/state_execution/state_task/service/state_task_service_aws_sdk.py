@@ -27,6 +27,7 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
     _SFN_TO_BOTO_PARAM_NORMALISERS = {
         "stepfunctions": {
             "send_task_success": {"Output": "output", "TaskToken": "taskToken"},
+            "send_task_heartbeat": {"TaskToken": "taskToken"},
             "send_task_failure": {"TaskToken": "taskToken", "Error": "error", "Cause": "cause"},
         }
     }

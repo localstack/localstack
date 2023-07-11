@@ -110,7 +110,10 @@ class TestTranscribe:
                 transcription_status["TranscriptionJob"]["Transcript"]["TranscriptFileUri"],
                 allow_fragments=False,
             )
-            data = aws_client.s3.get_object(Bucket=s3_uri.netloc, Key=s3_uri.path.removeprefix("/"))
+            data = aws_client.s3.get_object(
+                Bucket=s3_uri.path.split("/")[1],
+                Key="/".join(s3_uri.path.split("/")[2:]).split("?")[0],
+            )
             content = to_str(data["Body"].read())
             assert "hello my name is" in content
 

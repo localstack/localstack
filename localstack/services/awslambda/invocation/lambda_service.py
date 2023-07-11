@@ -31,6 +31,7 @@ from localstack.services.awslambda.api_utils import (
     qualifier_is_alias,
 )
 from localstack.services.awslambda.invocation.lambda_models import (
+    BUCKET_ACCOUNT,
     ArchiveCode,
     Function,
     FunctionVersion,
@@ -564,7 +565,7 @@ def store_lambda_archive(
             Type="User",
         )
     # store all buckets in us-east-1 for now
-    s3_client: "S3Client" = connect_to(region_name=AWS_REGION_US_EAST_1).s3
+    s3_client = connect_to(region_name=AWS_REGION_US_EAST_1, aws_access_key_id=BUCKET_ACCOUNT).s3
     bucket_name = f"awslambda-{region_name}-tasks"
     # s3 create bucket is idempotent
     s3_client.create_bucket(Bucket=bucket_name)

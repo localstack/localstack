@@ -31,7 +31,7 @@ except ImportError:
 
 # increase when any major changes are done to the scaffolding,
 # so that we can reason better about previously scaffolded resources in the future
-SCAFFOLDING_VERSION = 1
+SCAFFOLDING_VERSION = 2
 
 # Some services require their names to be re-written as we know them by different names
 SERVICE_NAME_MAP = {
@@ -85,12 +85,16 @@ class ResourceName:
     namespace: str
     service: str
     resource: str
+    python_compatible_service_name: str
 
     def provider_name(self) -> str:
         return f"{self.service}{self.resource}"
 
     def schema_filename(self) -> str:
         return f"{self.namespace.lower()}-{self.service.lower()}-{self.resource.lower()}.json"
+
+    def path_compatible_full_name(self) -> str:
+        return f"{self.namespace.lower()}_{self.service.lower()}_{self.resource.lower()}"
 
     @classmethod
     def from_name(cls, name: str) -> ResourceName:
@@ -104,7 +108,8 @@ class ResourceName:
         return ResourceName(
             full_name=name,
             namespace=parts[0],
-            service=renamed_service,
+            service=raw_service_name,
+            python_compatible_service_name=renamed_service,
             resource=parts[2].strip(),
         )
 
@@ -170,12 +175,12 @@ def template_path(
             raise ValueError(f"File type {file_type} is not a template")
 
     output_path = TESTS_ROOT_DIR.joinpath(
-        f"{resource_name.service.lower()}/templates/{resource_name.resource.lower()}_{stub}"
+        f"{resource_name.python_compatible_service_name.lower()}/{resource_name.path_compatible_full_name()}/templates/{stub}"
     ).resolve()
 
     if root:
         test_path = LOCALSTACK_ROOT_DIR.joinpath(
-            f"tests/integration/cloudformation/resource_providers/{resource_name.service.lower()}"
+            f"tests/integration/cloudformation/resource_providers/{resource_name.python_compatible_service_name.lower()}/{resource_name.path_compatible_full_name()}"
         ).resolve()
 
         common_root = os.path.relpath(output_path, test_path)
@@ -187,6 +192,9 @@ def template_path(
 class FileType(Enum):
     # service code
     provider = auto()
+
+    # meta test files
+    conftest = auto()
 
     # test files
     integration_test = auto()
@@ -234,6 +242,7 @@ class TemplateRenderer:
             FileType.integration_test: "test_integration_template.py.j2",
             # FileType.cloudcontrol_test: "test_cloudcontrol_template.py.j2",
             FileType.parity_test: "test_parity_template.py.j2",
+            FileType.conftest: "conftest.py.j2",
         }
         kwargs = dict(
             name=resource_name.full_name,  # AWS::SNS::Topic
@@ -244,7 +253,7 @@ class TemplateRenderer:
         # e.g. .../resource_providers/aws_iam_role/test_X.py vs. .../resource_providers/iam/test_X.py
         # add extra parameters
         tests_output_path = LOCALSTACK_ROOT_DIR.joinpath(
-            f"tests/integration/cloudformation/resource_providers/{resource_name.service.lower()}"
+            f"tests/integration/cloudformation/resource_providers/{resource_name.python_compatible_service_name.lower()}/{resource_name.full_name.lower()}"
         )
         match file_type:
             case FileType.getatt_test:
@@ -296,9 +305,9 @@ class TemplateRenderer:
                 )
             # case FileType.cloudcontrol_test:
             case FileType.parity_test:
-                kwargs[
-                    "parity_test_filename"
-                ] = f"test_{resource_name.service.lower()}_{resource_name.resource.lower()}_parity.py"
+                kwargs["parity_test_filename"] = "test_parity.py"
+            case FileType.conftest:
+                pass
             case _:
                 raise NotImplementedError(f"Rendering template of type {file_type}")
 
@@ -471,32 +480,40 @@ class FileWriter:
             FileType.provider: LOCALSTACK_ROOT_DIR.joinpath(
                 "localstack",
                 "services",
-                self.resource_name.service.lower(),
+                self.resource_name.python_compatible_service_name.lower(),
                 "resource_providers",
                 f"{self.resource_name.namespace.lower()}_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.py",
             ),
             FileType.schema: LOCALSTACK_ROOT_DIR.joinpath(
                 "localstack",
                 "services",
-                self.resource_name.service.lower(),
+                self.resource_name.python_compatible_service_name.lower(),
                 "resource_providers",
                 f"aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}.schema.json",
             ),
             FileType.integration_test: TESTS_ROOT_DIR.joinpath(
-                self.resource_name.service.lower(),
-                f"test_aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_basic.py",
+                self.resource_name.python_compatible_service_name.lower(),
+                self.resource_name.path_compatible_full_name(),
+                "test_basic.py",
             ),
             FileType.getatt_test: TESTS_ROOT_DIR.joinpath(
-                self.resource_name.service.lower(),
-                f"test_aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_exploration.py",
+                self.resource_name.python_compatible_service_name.lower(),
+                self.resource_name.path_compatible_full_name(),
+                "test_exploration.py",
             ),
             # FileType.cloudcontrol_test: TESTS_ROOT_DIR.joinpath(
-            #     self.resource_name.service.lower(),
+            #     self.resource_name.python_compatible_service_name.lower(),
             #     f"test_aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_cloudcontrol.py",
             # ),
             FileType.parity_test: TESTS_ROOT_DIR.joinpath(
-                self.resource_name.service.lower(),
-                f"test_aws_{self.resource_name.service.lower()}_{self.resource_name.resource.lower()}_parity.py",
+                self.resource_name.python_compatible_service_name.lower(),
+                self.resource_name.path_compatible_full_name(),
+                "test_parity.py",
+            ),
+            FileType.conftest: TESTS_ROOT_DIR.joinpath(
+                self.resource_name.python_compatible_service_name.lower(),
+                self.resource_name.path_compatible_full_name(),
+                "conftest.py",
             ),
         }
 
@@ -521,6 +538,12 @@ class FileWriter:
                 self.ensure_python_init_files(destination_path)
                 self.write_text(contents, file_destination)
                 self.console.print(f"Written provider to {file_destination}")
+
+            # tests meta
+            case FileType.conftest:
+                self.ensure_python_init_files(destination_path)
+                self.write_text(contents, file_destination)
+                self.console.print(f"Written pytest conftest to {file_destination}")
 
             # tests
             case FileType.integration_test:
@@ -713,6 +736,7 @@ def generate(resource_type: str, write: bool):
         "Resource types: https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/resource-types.html"
     )
     console.print(
+        # awslambda should become lambda (re-use the same list we use for generating the models)
         f"Resource reference: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-{resource_name.service.lower()}-{resource_name.resource.lower()}.html\n"
     )
     console.print("Wondering where to get started?")

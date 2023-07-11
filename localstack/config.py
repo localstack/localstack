@@ -385,6 +385,9 @@ SNAPSHOT_LOAD_STRATEGY = os.environ.get("SNAPSHOT_LOAD_STRATEGY", "").upper()
 # the strategy saving snapshots to disk when `PERSISTENCE=1` is used (on_shutdown, on_request, scheduled, manual)
 SNAPSHOT_SAVE_STRATEGY = os.environ.get("SNAPSHOT_SAVE_STRATEGY", "").upper()
 
+# the flush interval (in seconds) for persistence when the snapshot save strategy is set to "scheduled"
+SNAPSHOT_FLUSH_INTERVAL = int(os.environ.get("SNAPSHOT_FLUSH_INTERVAL") or 15)
+
 # whether to clear config.dirs.tmp on startup and shutdown
 CLEAR_TMP_FOLDER = is_env_not_false("CLEAR_TMP_FOLDER")
 
@@ -423,6 +426,9 @@ LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 
 # whether legacy s3 is enabled
 LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "legacy"
+
+# whether the S3 streaming provider is enabled (beware, it breaks persistence for now)
+STREAM_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "stream"
 
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
@@ -1031,8 +1037,9 @@ PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 # Show exceptions for CloudFormation deploy errors
 CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
 
-# Use new CloudFormation resource providers
-CFN_RESOURCE_PROVIDERS_V2 = is_env_true("CFN_RESOURCE_PROVIDERS_V2")
+# Selectively enable/disable new resource providers
+# e.g. CFN_RESOURCE_PROVIDER_OVERRIDES='{"AWS::Lambda::Version": "GenericBaseModel","AWS::Lambda::Function": "ResourceProvider"}'
+CFN_RESOURCE_PROVIDER_OVERRIDES = os.environ.get("CFN_RESOURCE_PROVIDER_OVERRIDES", "{}")
 
 # HINT: Please add deprecated environment variables to deprecations.py
 
@@ -1043,7 +1050,7 @@ CONFIG_ENV_VARS = [
     "ALLOW_NONSTANDARD_REGIONS",
     "BUCKET_MARKER_LOCAL",
     "CFN_VERBOSE_ERRORS",
-    "CFN_RESOURCE_PROVIDERS_V2",
+    "CFN_RESOURCE_PROVIDER_OVERRIDES",
     "CI",
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
@@ -1144,6 +1151,7 @@ CONFIG_ENV_VARS = [
     "SKIP_SSL_CERT_DOWNLOAD",
     "SNAPSHOT_LOAD_STRATEGY",
     "SNAPSHOT_SAVE_STRATEGY",
+    "SNAPSHOT_FLUSH_INTERVAL",
     "SQS_DELAY_PURGE_RETRY",
     "SQS_DELAY_RECENTLY_DELETED",
     "SQS_ENDPOINT_STRATEGY",

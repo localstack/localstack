@@ -21,6 +21,13 @@ class TimeoutTemplates(TemplateLoader):
     SERVICE_LAMBDA_MAP_FUNCTION_INVOKE_WITH_TIMEOUT_SECONDS_PATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/service_lambda_wait_with_timeout_seconds_path.json5"
     )
+    SERVICE_SQS_SEND_AND_WAIT_FOR_TASK_TOKEN_WITH_HEARTBEAT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/service_sqs_send_and_wait_for_task_token_with_heartbeat.json5"
+    )
+    SERVICE_SQS_SEND_AND_WAIT_FOR_TASK_TOKEN_WITH_HEARTBEAT_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER,
+        "statemachines/service_sqs_send_and_wait_for_task_token_with_heartbeat_path.json5",
+    )
 
     # Lambda Functions.
     LAMBDA_WAIT_60_SECONDS: Final[str] = os.path.join(

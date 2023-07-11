@@ -24,7 +24,7 @@ from localstack.runtime.hooks import hook_spec
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
     LAMBDA_RUNTIME_PROVIDED,
-    get_container_network_for_lambda,
+    get_main_container_network_for_lambda,
     get_main_endpoint_from_container,
     is_java_lambda,
     is_nodejs_runtime,
@@ -1024,7 +1024,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         env_vars.pop("AWS_LAMBDA_EVENT_BODY", None)
         container_config.env_vars = env_vars
 
-        container_config.network = get_container_network_for_lambda()
+        container_config.network = get_main_container_network_for_lambda()
         container_config.additional_flags = docker_flags
 
         container_config.dns = config.LAMBDA_DOCKER_DNS
@@ -1242,7 +1242,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
             inv_context.lambda_command = inv_context.handler
 
         # add Docker Lambda env vars
-        container_config.network = get_container_network_for_lambda()
+        container_config.network = get_main_container_network_for_lambda()
         if container_config.network == "host":
             port = get_free_tcp_port()
             container_config.env_vars["DOCKER_LAMBDA_API_PORT"] = port

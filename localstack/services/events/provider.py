@@ -31,8 +31,10 @@ from localstack.aws.api.events import (
     RuleName,
     RuleState,
     ScheduleExpression,
+    String,
     TagList,
     TargetList,
+    TestEventPatternResponse,
 )
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.services.events.models import EventsStore, events_stores
@@ -70,6 +72,21 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     @staticmethod
     def get_store(context: RequestContext) -> EventsStore:
         return events_stores[context.account_id][context.region]
+
+    def test_event_pattern(
+        self, context: RequestContext, event_pattern: EventPattern, event: String
+    ) -> TestEventPatternResponse:
+
+        # https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html
+        # Test event pattern uses event pattern to match against event.
+        # So event pattern keys must be in the event keys and values must match.
+        # If event pattern has a key that event does not have, it is not a match.
+        evt_pattern = json.loads(str(event_pattern))
+        evt = json.loads(str(event))
+
+        if any(key not in evt or evt[key] not in values for key, values in evt_pattern.items()):
+            return TestEventPatternResponse(Result=False)
+        return TestEventPatternResponse(Result=True)
 
     @staticmethod
     def get_scheduled_rule_func(

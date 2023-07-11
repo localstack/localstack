@@ -95,6 +95,9 @@ class GenericBaseModel:
 
     # TODO: remove
     def fetch_and_update_state(self, *args, **kwargs):
+        if self.physical_resource_id is None:
+            return None
+
         from localstack.services.cloudformation.engine import template_deployer
 
         try:

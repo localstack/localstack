@@ -129,6 +129,31 @@ jobs:
       - store_test_results:
           path: target/reports/
 
+  itest-s3-stream-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Test S3 Streaming provider
+          environment:
+            PROVIDER_OVERRIDE_S3: "stream"
+            TEST_PATH: "tests/integration/s3/"
+            PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/s3_stream.xml -o junit_suite_name='s3_stream'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
   docker-build:
     parameters:
       platform:
@@ -363,6 +388,9 @@ workflows:
           requires:
             - preflight
       - itest-sfn-v2-provider:
+          requires:
+            - preflight
+      - itest-s3-stream-provider:
           requires:
             - preflight
       - unit-tests:
