@@ -138,11 +138,6 @@ def s3_presigned_client(aws_client_factory):
     ).s3
 
 
-@pytest.fixture(scope="class")
-def s3_resource():
-    return _resource("s3")
-
-
 @pytest.fixture
 def dynamodb_wait_for_table_active(aws_client):
     def wait_for_table_active(table_name: str, client=None):
@@ -210,7 +205,7 @@ def dynamodb_create_table(dynamodb_wait_for_table_active, aws_client):
 
 
 @pytest.fixture
-def s3_create_bucket(s3_resource, aws_client):
+def s3_create_bucket(s3_empty_bucket, aws_client):
     buckets = []
 
     def factory(**kwargs) -> str:
@@ -234,10 +229,8 @@ def s3_create_bucket(s3_resource, aws_client):
     # cleanup
     for bucket in buckets:
         try:
-            bucket = s3_resource.Bucket(bucket)
-            bucket.objects.all().delete()
-            bucket.object_versions.all().delete()
-            bucket.delete()
+            s3_empty_bucket(bucket)
+            aws_client.s3.delete_bucket(Bucket=bucket)
         except Exception as e:
             LOG.debug("error cleaning up bucket %s: %s", bucket, e)
 
@@ -249,6 +242,27 @@ def s3_bucket(s3_create_bucket, aws_client) -> str:
     if region != "us-east-1":
         kwargs["CreateBucketConfiguration"] = {"LocationConstraint": region}
     return s3_create_bucket(**kwargs)
+
+
+@pytest.fixture
+def s3_empty_bucket(aws_client):
+    """
+    Returns a factory that given a bucket name, deletes all objects and deletes all object versions
+    """
+    # Boto resource would make this a straightforward task, but our internal client does not support Boto resource
+    # FIXME: this won't work when bucket has more than 1000 objects
+    def factory(bucket_name: str):
+        response = aws_client.s3.list_objects_v2(Bucket=bucket_name)
+        objects = [{"Key": obj["Key"]} for obj in response["Contents"]]
+        aws_client.s3.delete_objects(Bucket=bucket_name, Delete={"Objects": objects})
+
+        response = aws_client.s3.list_object_versions(Bucket=bucket_name)
+        object_versions = [
+            {"Key": obj["Key"], "VersionId": obj["VersionId"]} for obj in response["Versions"]
+        ]
+        aws_client.s3.delete_objects(Bucket=bucket_name, Delete={"Objects": object_versions})
+
+    yield factory
 
 
 @pytest.fixture
