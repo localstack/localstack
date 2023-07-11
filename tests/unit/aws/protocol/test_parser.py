@@ -305,8 +305,11 @@ def _botocore_parser_integration_test(
 
     # botocore >= 1.28 might modify the url path of the request dict (specifically for S3).
     # It will then set the original url path as "auth_path". If the auth_path is set, we reset the url_path.
+    # Since botocore 1.31.2, botocore will strip the query from the `authPart`
+    # We need to add it back from `requestUri` field
     if auth_path := serialized_request.get("auth_path"):
-        serialized_request["url_path"] = auth_path
+        path, sep, query = serialized_request["url_path"].partition("?")
+        serialized_request["url_path"] = f"{auth_path}{sep}{query}"
 
     prepare_request_dict(serialized_request, "")
     split_url = urlsplit(serialized_request.get("url"))
