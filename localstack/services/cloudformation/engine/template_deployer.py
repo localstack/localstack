@@ -11,8 +11,6 @@ import botocore
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.connect import connect_to
-from localstack.services.cloudformation import usage
-from localstack.constants import FALSE_STRINGS
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     dump_resource_as_json,
@@ -202,7 +200,16 @@ def get_attr_from_model_instance(
             return
         try:
             inst = model_class(resource_name=resource_id, resource_json=resource)
-            return inst.get_cfn_attribute(attribute)
+
+            if hasattr(inst, "get_cfn_attribute"):
+                try:
+                    return inst.get_cfn_attribute(attribute)
+                except Exception:
+                    if config.CFN_VERBOSE_ERRORS:
+                        LOG.exception("could not fetch cfn attribute {attribute} from resource")
+            raise Exception(
+                f'Unable to extract attribute "{attribute}" from "{resource_type}" model class {type(inst)}'
+            )
         except Exception:
             log_method = getattr(LOG, "debug")
             if config.CFN_VERBOSE_ERRORS:
@@ -807,35 +814,6 @@ def invoke_function(
 
 # TODO: this shouldn't be called for stack parameters
 # TODO: refactor / remove (should just be a lookup on the resource state)
-def determine_resource_physical_id(
-    resource_id: str, resources: dict, stack_name: str
-) -> Optional[str]:
-    assert resource_id and isinstance(resource_id, str)
-
-    resource = resources.get(resource_id)
-    if not resource:
-        return
-    resource_type = get_resource_type(resource)
-
-    # determine result from resource class
-    resource_class = RESOURCE_MODELS.get(resource_type)
-    if resource_class:
-        resource_inst = resource_class(resource)
-        resource_inst.fetch_state_if_missing(stack_name=stack_name, resources=resources)
-        result = resource_inst.physical_resource_id
-        if result:
-            return result
-
-    # TODO: should be able to remove this as well and unify with the one above
-    res_id = resource.get("PhysicalResourceId")
-    if res_id:
-        return res_id
-    LOG.info(
-        'Unable to determine PhysicalResourceId for "%s" resource, ID "%s"',
-        resource_type,
-        resource_id,
-    )
-
 
 # -----------------------
 # MAIN TEMPLATE DEPLOYER
@@ -1021,7 +999,9 @@ class TemplateDeployer:
         return resource_type != "Parameter"
 
     def is_deployed(self, resource):
-        return self.stack.resource_states.get("ResourceStatus") == "CREATE_COMPLETE"
+        return self.stack.resource_states.get(resource["LogicalResourceId"], {}).get(
+            "ResourceStatus"
+        ) in ["CREATE_COMPLETE", "UPDATE_COMPLETE"]
 
     def is_updateable(self, resource):
         """Return whether the given resource can be updated or not."""
@@ -1061,6 +1041,8 @@ class TemplateDeployer:
                     result[resource_id] = resource
                     if return_first:
                         break
+            else:
+                raise Exception(":(")
         return result
 
     def get_resource_dependencies(self, resource: dict) -> set[str]:
@@ -1442,7 +1424,7 @@ class TemplateDeployer:
         )
 
         # TODO: verify event
-        executor.deploy_loop(resource_provider_payload)  # noqa
+        progress_event = executor.deploy_loop(resource_provider_payload)  # noqa
 
         # TODO: update resource state with returned state from progress event
 
@@ -1469,6 +1451,7 @@ class TemplateDeployer:
             "sessionToken": "",
         }
         resource = self.resources[logical_resource_id]
+
         resource_provider_payload: ResourceProviderPayload = {
             "awsAccountId": "000000000000",
             "callbackContext": {},
@@ -1483,7 +1466,7 @@ class TemplateDeployer:
             "requestData": {
                 "logicalResourceId": logical_resource_id,
                 "resourceProperties": resource["Properties"],
-                "previousResourceProperties": None,
+                "previousResourceProperties": None,  # TODO
                 "callerCredentials": creds,
                 "providerCredentials": creds,
                 "systemTags": {},

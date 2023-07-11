@@ -111,17 +111,10 @@ class GenericBaseModel:
                 LOG.debug("Unable to fetch state for resource %s: %s", self, e)
 
     # TODO: remove
-    def fetch_state_if_missing(self, *args, **kwargs):
-        if not self.state:
-            self.fetch_and_update_state(*args, **kwargs)
-        return self.state
-
-    # TODO: remove
     def update_state(self, details):
         """Update the deployment state of this resource (existing attributes will be overwritten)."""
         details = details or {}
         self.state.update(details)
-        return self.props
 
     @property
     def physical_resource_id(self) -> str | None:

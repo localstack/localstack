@@ -72,7 +72,7 @@ class TestBasicCRD:
         stack = deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__),
-                "templates/user_tmp.yaml",
+                "templates/user_getatt.yaml",
             ),
             parameters={"CustomUserName": user_name},
         )

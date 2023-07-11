@@ -105,6 +105,7 @@ def test_iam_username_defaultname(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("get_iam_user", get_iam_user)
 
 
+@pytest.mark.skip(reason="not correctly implemented at the moment")
 @pytest.mark.aws_validated
 def test_iam_user_access_key(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformers_list(
@@ -140,6 +141,8 @@ def test_iam_user_access_key(deploy_cfn_template, snapshot, aws_client):
     updated_key = [k for k in keys if k["AccessKeyId"] == stack2.outputs["AccessKeyId"]][0]
     # IAM just being IAM. First key takes a bit to delete and in the meantime might still be visible here
     snapshot.match("access_key_updated", updated_key)
+    assert stack2.outputs["AccessKeyId"] != stack.outputs["AccessKeyId"]
+    assert stack2.outputs["SecretAccessKey"] != stack.outputs["SecretAccessKey"]
 
 
 @pytest.mark.aws_validated

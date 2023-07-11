@@ -43,7 +43,7 @@ PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 # by default we use the GenericBaseModel (the legacy model), unless the resource is listed below
 # add your new provider here when you want it to be the default
 PROVIDER_DEFAULTS = {
-    # "AWS::IAM::User": "GenericBaseModel",
+    "AWS::IAM::User": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
 }
@@ -400,6 +400,7 @@ class LegacyResourceProvider(ResourceProvider):
             resource_json={
                 "Type": self.resource_type,
                 "Properties": request.desired_state,
+                "_state_": request.previous_state,
                 "PhysicalResourceId": physical_resource_id,
                 "LogicalResourceId": request.logical_resource_id,
             },
@@ -424,12 +425,21 @@ class LegacyResourceProvider(ResourceProvider):
             stack_name=request.stack_name,
             resources=self.all_resources,
         )
+
+        # incredibly hacky :|
+        resource_provider.resource_json["PhysicalResourceId"] = self.all_resources[
+            request.logical_resource_id
+        ]["PhysicalResourceId"]
         resource_provider.fetch_and_update_state(
             stack_name=request.stack_name, resources=self.all_resources
         )
+        self.all_resources[request.logical_resource_id][
+            "_state_"
+        ] = resource_provider.resource_json["_state_"]
+
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
-            resource_model=self.all_resources[request.logical_resource_id]["Properties"],
+            resource_model=resource_provider.props,
         )
 
     def delete(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
@@ -545,12 +555,20 @@ class LegacyResourceProvider(ResourceProvider):
                         result, request.logical_resource_id, self.all_resources, self.resource_type
                     )
 
-        if request.action.lower() == "create":
+        if request.action.lower() == "add":
+            resource_provider.resource_json["PhysicalResourceId"] = self.all_resources[
+                request.logical_resource_id
+            ]["PhysicalResourceId"]
+
+            # incredibly hacky :|
             resource_provider.fetch_and_update_state(
                 stack_name=request.stack_name, resources=self.all_resources
             )
+            self.all_resources[request.logical_resource_id][
+                "_state_"
+            ] = resource_provider.resource_json["_state_"]
 
-        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=resource["Properties"])
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=resource_provider.props)
 
 
 class NoResourceProvider(Exception):

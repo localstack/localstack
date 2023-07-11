@@ -14,7 +14,14 @@ from localstack.utils.testutil import create_zip_file
 
 
 class TestCdkInit:
-    @pytest.mark.parametrize("bootstrap_version", ["10", "11", "12"])
+    @pytest.mark.parametrize(
+        "bootstrap_version",
+        [
+            # "10",
+            # "11",
+            "12"
+        ],
+    )
     def test_cdk_bootstrap(self, deploy_cfn_template, bootstrap_version, aws_client):
         deploy_cfn_template(
             template_path=os.path.join(

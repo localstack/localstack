@@ -178,6 +178,7 @@ class IAMAccessKey(GenericBaseModel):
             return [key for key in keys if key["AccessKeyId"] == access_key_id][0]
 
     def update_resource(self, new_resource, stack_name, resources):
+        # TODO: Fix this behavior by migrating to a new resource provider
         access_key_id = self.physical_resource_id
         new_props = new_resource["Properties"]
         user_name = new_props.get("UserName")
@@ -240,7 +241,6 @@ class IAMRole(GenericBaseModel):
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
-        # _states contains the old state of the resource
         _states = new_resource.get("_state_", None)
         client = connect_to().iam
         if _states:
