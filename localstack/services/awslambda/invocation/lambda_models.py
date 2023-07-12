@@ -334,6 +334,7 @@ class ImageConfig:
 
 @dataclasses.dataclass
 class VpcConfig:
+    vpc_id: str
     security_group_ids: list[str] = dataclasses.field(default_factory=list)
     subnet_ids: list[str] = dataclasses.field(default_factory=list)
 
@@ -605,7 +606,7 @@ class VersionFunctionConfiguration:
 
     # kms_key_arn: str
     # file_system_configs: FileSystemConfig
-    # vpc_config: VpcConfig
+    vpc_config: Optional[VpcConfig] = None
 
 
 @dataclasses.dataclass(frozen=True)

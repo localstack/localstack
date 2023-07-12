@@ -23,6 +23,7 @@ from localstack.aws.api.lambda_ import (
     ResourceNotFoundException,
     Runtime,
     TracingConfig,
+    VpcConfigResponse,
 )
 from localstack.utils.collections import merge_recursive
 
@@ -438,6 +439,13 @@ def map_config_out(
     if version.config.dead_letter_arn:
         optional_kwargs["DeadLetterConfig"] = DeadLetterConfig(
             TargetArn=version.config.dead_letter_arn
+        )
+
+    if version.config.vpc_config:
+        optional_kwargs["VpcConfig"] = VpcConfigResponse(
+            VpcId=version.config.vpc_config.vpc_id,
+            SubnetIds=version.config.vpc_config.subnet_ids,
+            SecurityGroupIds=version.config.vpc_config.security_group_ids,
         )
 
     if version.config.environment is not None:
