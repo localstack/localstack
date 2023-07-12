@@ -160,11 +160,11 @@ def create_aws_request_context(
     # we re-use botocore internals here to serialize the HTTP request,
     # but deactivate validation (validation errors should be handled by the backend)
     # and don't send it yet
-    client = connect_to(
+    client = connect_to.get_client(
         endpoint_url=endpoint_url,
         region_name=region,
         config=_non_validating_boto_config,
-    ).__getattr__(service_name)
+    )
     request_context = {
         "client_region": region,
         "has_streaming_input": operation.has_streaming_input,
