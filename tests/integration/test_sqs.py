@@ -11,7 +11,6 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.aws.connect import connect_to
 from localstack.constants import (
     DEFAULT_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
@@ -74,7 +73,9 @@ def sqs_snapshot_transformer(snapshot):
 
 class TestSqsProvider:
     @pytest.mark.only_localstack
-    def test_get_queue_url_contains_request_host(self, sqs_create_queue, monkeypatch, aws_client):
+    def test_get_queue_url_contains_request_host(
+        self, sqs_create_queue, monkeypatch, aws_client, aws_client_factory
+    ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
 
         queue_name = "test-queue-" + short_uid()
@@ -89,11 +90,7 @@ class TestSqsProvider:
 
         # attempt to connect through a different host and make sure the URL contains that host
         host = f"http://127.0.0.1:{config.EDGE_PORT}"
-        client = connect_to(
-            endpoint_url=host,
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-        ).sqs
+        client = aws_client_factory(endpoint_url=host).sqs
         queue_url = client.get_queue_url(QueueName=queue_name)["QueueUrl"]
         assert queue_url == f"{host}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
 
