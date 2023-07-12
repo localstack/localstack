@@ -8,7 +8,6 @@ import socket
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-import boto3
 import botocore.auth
 import botocore.config
 import botocore.credentials
@@ -34,7 +33,6 @@ from localstack.services.stores import (
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
 from localstack.testing.aws.util import get_lambda_logs, is_aws_cloud
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.collections import ensure_list
@@ -50,21 +48,6 @@ LOG = logging.getLogger(__name__)
 
 # URL of public HTTP echo server, used primarily for AWS parity/snapshot testing
 PUBLIC_HTTP_ECHO_SERVER_URL = "http://httpbin.org"
-
-
-# TODO@viren
-def _resource(service):
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        return boto3.resource(service)
-    # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
-    config = (
-        botocore.config.Config(
-            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
-        )
-        if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
-        else None
-    )
-    return aws_stack.connect_to_resource_external(service, config=config)
 
 
 @pytest.fixture(scope="class")
@@ -118,11 +101,6 @@ def aws_http_client_factory(aws_session):
         return SigningHttpClient(signer_factory(creds, service, region), endpoint_url=endpoint_url)
 
     return factory
-
-
-@pytest.fixture(scope="class")
-def dynamodb_resource():
-    return _resource("dynamodb")
 
 
 @pytest.fixture(scope="class")
