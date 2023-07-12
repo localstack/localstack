@@ -112,12 +112,15 @@ from localstack.aws.api.s3 import (
     ReplicationConfigurationNotFoundError,
     RequestPayer,
     S3Api,
+    SelectObjectContentOutput,
+    SelectObjectContentRequest,
     SkipValidation,
     StorageClass,
     Token,
 )
 from localstack.aws.api.s3 import Type as GranteeType
 from localstack.aws.api.s3 import UploadPartOutput, UploadPartRequest, WebsiteConfiguration
+from localstack.aws.forwarder import NotImplementedAvoidFallbackError
 from localstack.aws.handlers import (
     modify_service_response,
     preprocess_request,
@@ -1554,6 +1557,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             return GetBucketLoggingOutput()
 
         return GetBucketLoggingOutput(LoggingEnabled=moto_bucket.logging)
+
+    @handler("SelectObjectContent", expand=False)
+    def select_object_content(
+        self,
+        context: RequestContext,
+        request: SelectObjectContentRequest,
+    ) -> SelectObjectContentOutput:
+        # this operation is currently implemented by moto, but raises a 500 error because of the format necessary,
+        # and streaming capability.
+        # avoid a fallback to moto and return the 501 to the client directly instead.
+        raise NotImplementedAvoidFallbackError
 
 
 def validate_bucket_analytics_configuration(
