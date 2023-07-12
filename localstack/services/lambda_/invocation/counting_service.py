@@ -88,8 +88,11 @@ class CountingService:
             # => we can derive unreserved_concurrent_executions but could also consider a dedicated (redundant) counter
 
             # 1) TODO: Check for free provisioned concurrency
+            # NOTE: potential challenge if an update happens in between reserving the lease here and actually assigning
             # if available_provisioned_concurrency:
+            #     scoped_tracker.provisioned_concurrency_tracker[function_version] += 1
             #     yield "provisioned-concurrency"
+            #     scoped_tracker.provisioned_concurrency_tracker[function_version] -= 1
 
             # 2) reserved concurrency set => reserved concurrent executions only limited by local function limit
             if function.reserved_concurrent_executions is not None:
