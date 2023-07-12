@@ -168,6 +168,12 @@ RUN --mount=type=cache,target=/root/.cache \
 RUN echo /var/lib/localstack/lib/extensions/python_venv/lib/python3.10/site-packages > localstack-extensions-venv.pth && \
     mv localstack-extensions-venv.pth .venv/lib/python*/site-packages/
 
+# link the python package installer virtual environments into the localstack venv
+RUN echo /var/lib/localstack/lib/python-packages/lib/python3.10/site-packages > localstack-var-python-packages-venv.pth && \
+    mv localstack-var-python-packages-venv.pth .venv/lib/python*/site-packages/
+RUN echo /usr/lib/localstack/python-packages/lib/python3.10/site-packages > localstack-static-python-packages-venv.pth && \
+    mv localstack-static-python-packages-venv.pth .venv/lib/python*/site-packages/
+
 # Install the latest version of the LocalStack Persistence Plugin
 RUN --mount=type=cache,target=/root/.cache \
     (. .venv/bin/activate && pip3 install --upgrade localstack-plugin-persistence)
