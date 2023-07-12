@@ -1,9 +1,10 @@
+import base64
+import dataclasses
 import json
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from math import ceil
 from typing import Optional
 
 from localstack import config
@@ -16,6 +17,17 @@ from localstack.utils.strings import to_str
 from localstack.utils.time import timestamp_millis
 
 LOG = logging.getLogger(__name__)
+
+
+class EnhancedJSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if dataclasses.is_dataclass(o):
+            return dataclasses.asdict(o)
+        if isinstance(o, datetime):
+            return o.isoformat()
+        if isinstance(o, bytes):
+            return base64.b64encode(o)
+        return super().default(o)
 
 
 class LambdaEventManager:
@@ -230,6 +242,18 @@ class LambdaEventManager:
                 return
 
     def enqueue_event(self, invocation: Invocation) -> None:
+        # TODO: enque into SQS queue
+        # message = json.dumps(invocation, cls=EnhancedJSONEncoder)
+        message = {
+            "payload": base64.b64encode(invocation.payload),
+            "invoked_arn": invocation.invoked_arn,
+            "client_context": invocation.client_context,
+            "invocation_type": invocation.invocation_type,
+            "invoke_time": invocation.invoke_time.isoformat(),
+            # = invocation_id
+            "request_id": invocation.request_id,
+        }
+        print(message)
         self.event_threads.submit(self.invoke, invocation)
 
     def stop(self) -> None:
