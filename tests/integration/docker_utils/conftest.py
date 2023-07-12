@@ -17,10 +17,15 @@ def _check_skip(client: ContainerClient):
 
 
 @pytest.fixture(
-    params=[CmdDockerClient(), SdkDockerClient()], ids=["CmdDockerClient", "SdkDockerClient"]
+    params=[CmdDockerClient, SdkDockerClient], ids=["CmdDockerClient", "SdkDockerClient"]
 )
-def docker_client(request):
-    client = request.param
+def docker_client_class(request):
+    yield request.param
+
+
+@pytest.fixture
+def docker_client(docker_client_class):
+    client = docker_client_class()
     _check_skip(
         client
     )  # this is a hack to get a global skip for all tests that require the docker client

@@ -1,3 +1,4 @@
+import functools
 import itertools
 import json
 import logging
@@ -15,6 +16,7 @@ from localstack.utils.container_utils.container_client import (
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
+    DockerNotAvailable,
     DockerPlatform,
     NoSuchContainer,
     NoSuchImage,
@@ -27,7 +29,7 @@ from localstack.utils.container_utils.container_client import (
     Util,
     VolumeBind,
 )
-from localstack.utils.run import run
+from localstack.utils.run import is_command_available, run
 from localstack.utils.strings import first_char_to_upper, to_str
 
 LOG = logging.getLogger(__name__)
@@ -66,7 +68,18 @@ class CmdDockerClient(ContainerClient):
 
     def _docker_cmd(self) -> List[str]:
         """Return the string to be used for running Docker commands."""
+        self._assert_docker_cmd_available(config.DOCKER_CMD)
         return config.DOCKER_CMD.split()
+
+    def _assert_docker_cmd_available(self, docker_cmd: str) -> None:
+        """Raises a DockerNotAvailable exception if the given Docker CMD is not available on the system."""
+        if not self._is_docker_cmd_available(docker_cmd):
+            raise DockerNotAvailable()
+
+    @functools.lru_cache(maxsize=None)
+    def _is_docker_cmd_available(self, docker_cmd: str) -> bool:
+        """Checks if the given Docker command is available on the system (cached, only checked once)."""
+        return is_command_available(docker_cmd)
 
     def get_system_info(self) -> dict:
         cmd = [
