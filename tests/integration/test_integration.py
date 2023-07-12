@@ -634,7 +634,6 @@ class TestLambdaOutgoingSdkCalls:
         create_lambda_function,
         dynamodb_create_table,
         runtime,
-        dynamodb_resource,
         lambda_su_role,
         aws_client,
     ):
@@ -669,7 +668,7 @@ class TestLambdaOutgoingSdkCalls:
 
         aws_client.awslambda.invoke(FunctionName=function_name, Payload=json.dumps(event))
 
-        rs = dynamodb_resource.Table(table_name).scan()
+        rs = aws_client.dynamodb.scan(TableName=table_name)
 
         items = rs["Items"]
 

@@ -28,7 +28,6 @@ class TestS3NotificationsToLambda:
         create_lambda_function,
         create_role,
         dynamodb_create_table,
-        dynamodb_resource,
         snapshot,
         aws_client,
     ):
@@ -95,10 +94,8 @@ class TestS3NotificationsToLambda:
         # put an object
         aws_client.s3.put_object(Bucket=bucket_name, Key=table_name, Body="something..")
 
-        table = dynamodb_resource.Table(table_name)
-
         def check_table():
-            rs = table.scan()
+            rs = aws_client.dynamodb.scan(TableName=table_name)
             assert len(rs["Items"]) == 1
             event = rs["Items"][0]["data"]
             snapshot.match("table_content", event)
@@ -122,7 +119,6 @@ class TestS3NotificationsToLambda:
         s3_create_bucket,
         create_lambda_function,
         dynamodb_create_table,
-        dynamodb_resource,
         create_role,
         snapshot,
         aws_client,
@@ -199,10 +195,8 @@ class TestS3NotificationsToLambda:
             files={"file": b"by post method 1"},
         )
 
-        table = dynamodb_resource.Table(table_name)
-
         def check_table():
-            rs = table.scan()
+            rs = aws_client.dynamodb.scan(TableName=table_name)
             assert len(rs["Items"]) == 2
             rs["Items"] = sorted(rs["Items"], key=lambda x: x["data"]["eventName"])
             snapshot.match("items", rs["Items"])
