@@ -29,7 +29,7 @@ from localstack.utils.container_utils.container_client import (
     Util,
     VolumeBind,
 )
-from localstack.utils.run import is_command_available, run
+from localstack.utils.run import run
 from localstack.utils.strings import first_char_to_upper, to_str
 
 LOG = logging.getLogger(__name__)
@@ -67,19 +67,14 @@ class CmdDockerClient(ContainerClient):
     default_run_outfile: Optional[str] = None
 
     def _docker_cmd(self) -> List[str]:
-        """Return the string to be used for running Docker commands."""
-        self._assert_docker_cmd_available(config.DOCKER_CMD)
-        return config.DOCKER_CMD.split()
-
-    def _assert_docker_cmd_available(self, docker_cmd: str) -> None:
-        """Raises a DockerNotAvailable exception if the given Docker CMD is not available on the system."""
-        if not self._is_docker_cmd_available(docker_cmd):
+        """
+        Get the configured, tested Docker CMD.
+        :return: string to be used for running Docker commands
+        :raises: DockerNotAvailable exception if the Docker command or the socker is not available
+        """
+        if not self.has_docker():
             raise DockerNotAvailable()
-
-    @functools.lru_cache(maxsize=None)
-    def _is_docker_cmd_available(self, docker_cmd: str) -> bool:
-        """Checks if the given Docker command is available on the system (cached, only checked once)."""
-        return is_command_available(docker_cmd)
+        return shlex.split(config.DOCKER_CMD)
 
     def get_system_info(self) -> dict:
         cmd = [
@@ -576,9 +571,11 @@ class CmdDockerClient(ContainerClient):
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             ) from e
 
+    @functools.lru_cache(maxsize=None)
     def has_docker(self) -> bool:
         try:
-            run(self._docker_cmd() + ["ps"])
+            # do not use self._docker_cmd here (would result in a loop)
+            run(shlex.split(config.DOCKER_CMD) + ["ps"])
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
             return False
