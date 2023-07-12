@@ -8,12 +8,17 @@ from datetime import datetime
 from typing import Optional
 
 from localstack import config
-from localstack.services.lambda_.invocation.lambda_models import Invocation, InvocationResult
+from localstack.aws.connect import connect_to
+from localstack.services.lambda_.invocation.lambda_models import (
+    BUCKET_ACCOUNT,
+    Invocation,
+    InvocationResult,
+)
 from localstack.services.lambda_.invocation.version_manager import LambdaVersionManager
 from localstack.services.lambda_.lambda_executors import InvocationException
 from localstack.utils.aws import dead_letter_queue
 from localstack.utils.aws.message_forwarding import send_event_to_target
-from localstack.utils.strings import to_str
+from localstack.utils.strings import md5, to_str
 from localstack.utils.time import timestamp_millis
 
 LOG = logging.getLogger(__name__)
@@ -32,11 +37,13 @@ class EnhancedJSONEncoder(json.JSONEncoder):
 
 class LambdaEventManager:
     version_manager: LambdaVersionManager
+    event_queue_url: str | None
 
     def __init__(self, version_manager: LambdaVersionManager):
         self.version_manager = version_manager
         # event threads perform the synchronous invocation
         self.event_threads = ThreadPoolExecutor()
+        self.event_queue_url = None
 
     def process_event_destinations(
         self,
@@ -199,6 +206,7 @@ class LambdaEventManager:
                 LOG.warning("Error sending invocation result to %s: %s", target_arn, e)
 
     def process_success_destination(self):
+        # TODO: implement this (i.e., logic from process_event_destinations)
         pass
 
     def process_failure_destination(
@@ -222,7 +230,7 @@ class LambdaEventManager:
             )
 
     def invoke(self, invocation: Invocation):
-        # TODO: decouple this
+        # TODO: decouple this => will be replaced with queue-based architecture
         # TODO: this can block for quite a long time if there's no available capacity
         for retry in range(3):
             # TODO: check max event age before invocation
@@ -242,7 +250,7 @@ class LambdaEventManager:
                 return
 
     def enqueue_event(self, invocation: Invocation) -> None:
-        # TODO: enque into SQS queue
+        # NOTE: something goes wrong with the custom encoder; infinite loop?
         # message = json.dumps(invocation, cls=EnhancedJSONEncoder)
         message = {
             "payload": base64.b64encode(invocation.payload),
@@ -253,9 +261,22 @@ class LambdaEventManager:
             # = invocation_id
             "request_id": invocation.request_id,
         }
-        print(message)
+        sqs_client = connect_to(aws_access_key_id=BUCKET_ACCOUNT).sqs
+        sqs_client.send_message(QueueUrl=self.event_queue_url, MessageBody=json.dumps(message))
+        # TODO: remove old threads impl.
         self.event_threads.submit(self.invoke, invocation)
 
+    def start(self) -> None:
+        sqs_client = connect_to(aws_access_key_id=BUCKET_ACCOUNT).sqs
+        fn_version_id = self.version_manager.function_version.id
+        # Truncate function name to ensure queue name limit of max 80 characters
+        function_name_short = fn_version_id.function_name[:47]
+        queue_name = f"{function_name_short}-{md5(fn_version_id.qualified_arn())}"
+        create_queue_response = sqs_client.create_queue(QueueName=queue_name)
+        self.event_queue_url = create_queue_response["QueueUrl"]
+
+        # TODO: start poller thread + implement poller
+
     def stop(self) -> None:
-        # TODO: shut down event threads
+        # TODO: shut down event threads + delete queue
         pass
