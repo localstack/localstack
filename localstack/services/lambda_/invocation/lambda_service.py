@@ -379,6 +379,7 @@ class LambdaService:
                 self.event_managers[function_arn] = LambdaEventManager(
                     version_manager=new_version_manager
                 )
+                self.event_managers[function_arn].start()
                 update_status = UpdateStatus(status=LastUpdateStatus.Successful)
             elif new_state.state == State.Failed:
                 update_status = UpdateStatus(status=LastUpdateStatus.Failed)
