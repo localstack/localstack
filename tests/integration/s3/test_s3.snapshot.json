@@ -4544,7 +4544,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA256]": {
-    "recorded-date": "10-05-2023, 12:34:01",
+    "recorded-date": "11-07-2023, 16:50:49",
     "recorded-content": {
       "put-object": {
         "ChecksumSHA256": "1YQo81vx2VFUl0q5ccWISq8AkSBQQ0WO80S82TmfdIQ=",
@@ -4571,6 +4571,22 @@
         }
       },
       "get-object-with-checksum": {
+        "AcceptRanges": "bytes",
+        "Body": "test-checksum",
+        "ChecksumSHA256": "1YQo81vx2VFUl0q5ccWISq8AkSBQQ0WO80S82TmfdIQ=",
+        "ContentEncoding": "",
+        "ContentLength": 13,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-with-checksum": {
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
         "ChecksumSHA256": "1YQo81vx2VFUl0q5ccWISq8AkSBQQ0WO80S82TmfdIQ=",
@@ -4599,7 +4615,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[None]": {
-    "recorded-date": "10-05-2023, 12:34:06",
+    "recorded-date": "11-07-2023, 16:50:53",
     "recorded-content": {
       "put-object": {
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -4624,6 +4640,20 @@
         }
       },
       "get-object-with-checksum": {
+        "AcceptRanges": "bytes",
+        "Body": "test-checksum",
+        "ContentLength": 13,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-with-checksum": {
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
         "ContentLength": 13,
@@ -6598,7 +6628,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32]": {
-    "recorded-date": "10-05-2023, 12:33:43",
+    "recorded-date": "11-07-2023, 16:50:37",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "lVk/nw==",
@@ -6625,6 +6655,22 @@
         }
       },
       "get-object-with-checksum": {
+        "AcceptRanges": "bytes",
+        "Body": "test-checksum",
+        "ChecksumCRC32": "lVk/nw==",
+        "ContentEncoding": "",
+        "ContentLength": 13,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-with-checksum": {
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
         "ChecksumCRC32": "lVk/nw==",
@@ -6653,7 +6699,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32C]": {
-    "recorded-date": "10-05-2023, 12:33:49",
+    "recorded-date": "11-07-2023, 16:50:41",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32C": "Fz3epA==",
@@ -6680,6 +6726,22 @@
         }
       },
       "get-object-with-checksum": {
+        "AcceptRanges": "bytes",
+        "Body": "test-checksum",
+        "ChecksumCRC32C": "Fz3epA==",
+        "ContentEncoding": "",
+        "ContentLength": 13,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-with-checksum": {
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
         "ChecksumCRC32C": "Fz3epA==",
@@ -6708,7 +6770,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA1]": {
-    "recorded-date": "10-05-2023, 12:33:55",
+    "recorded-date": "11-07-2023, 16:50:45",
     "recorded-content": {
       "put-object": {
         "ChecksumSHA1": "jbXkHAsXUrubtL3dqDQ4w+7WXc0=",
@@ -6735,6 +6797,22 @@
         }
       },
       "get-object-with-checksum": {
+        "AcceptRanges": "bytes",
+        "Body": "test-checksum",
+        "ChecksumSHA1": "jbXkHAsXUrubtL3dqDQ4w+7WXc0=",
+        "ContentEncoding": "",
+        "ContentLength": 13,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-with-checksum": {
         "AcceptRanges": "bytes",
         "Body": "test-checksum",
         "ChecksumSHA1": "jbXkHAsXUrubtL3dqDQ4w+7WXc0=",
