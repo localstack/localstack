@@ -124,8 +124,9 @@ def create_lambda_archive(
         return result
 
 
-def delete_lambda_function(name, region_name: str = None):  # TODO: remove all occurrences
-    client = connect_to(region_name=region_name).awslambda
+# TODO: remove all occurrences
+def delete_lambda_function(name, region_name: str = None):
+    client = connect_externally_to(region_name=region_name).awslambda
     client.delete_function(FunctionName=name)
 
 
