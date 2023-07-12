@@ -32,7 +32,7 @@ from localstack.http import Router
 from localstack.http.adapters import create_request_from_parts
 from localstack.http.dispatcher import Handler, handler_dispatcher
 from localstack.runtime import events
-from localstack.services.generic_proxy import ProxyListener, modify_and_forward, start_proxy_server
+from localstack.services.generic_proxy import ProxyListener, modify_and_forward
 from localstack.services.infra import PROXY_LISTENERS
 from localstack.services.plugins import SERVICE_PLUGINS
 from localstack.utils.aws import aws_stack
@@ -338,8 +338,6 @@ def get_service_port_for_account(service, headers):
     return config.service_port(service)
 
 
-PROXY_LISTENER_EDGE = ProxyListenerEdge()
-
 ROUTER: Router[Handler] = Router(dispatcher=handler_dispatcher())
 """This special Router is part of the edge proxy. Use the router to inject custom handlers that are handled before
 the actual AWS service call is made."""
@@ -357,31 +355,6 @@ def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
     from localstack.aws.serving.edge import serve_gateway
 
     return serve_gateway(bind_address, port, use_ssl, asynchronous)
-
-
-def do_start_edge_proxy(bind_address, port, use_ssl, asynchronous=False):
-    from localstack.http.adapters import RouterListener
-    from localstack.services.internal import LocalstackResourceHandler
-
-    listeners = [
-        LocalstackResourceHandler(),  # handle internal resources first
-        RouterListener(ROUTER),  # then custom routes
-        PROXY_LISTENER_EDGE,  # then call the edge proxy listener
-    ]
-
-    # get port and start Edge
-    print("Starting edge router (http%s port %s)..." % ("s" if use_ssl else "", port))
-    # use use_ssl=True here because our proxy allows both, HTTP and HTTPS traffic
-    proxy = start_proxy_server(
-        port,
-        bind_address=bind_address,
-        use_ssl=use_ssl,
-        update_listener=listeners,
-        check_port=False,
-    )
-    if not asynchronous:
-        proxy.join()
-    return proxy
 
 
 def can_use_sudo():

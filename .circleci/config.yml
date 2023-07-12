@@ -78,32 +78,6 @@ jobs:
           paths:
             - repo/target/coverage/
 
-  itest-lambda-legacy-local:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - run:
-          name: Test 'local' Lambda executor
-          environment:
-            LAMBDA_EXECUTOR: "local"
-            PROVIDER_OVERRIDE_LAMBDA: "legacy"
-            TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py tests/integration/apigateway/test_apigateway_basic.py tests/integration/cloudformation/resources/test_lambda.py"
-            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='legacy-lambda-local'"
-            COVERAGE_ARGS: "-p"
-          command: make test-coverage
-      - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
   itest-sfn-v2-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -384,9 +358,6 @@ workflows:
       - preflight:
           requires:
             - install
-      - itest-lambda-legacy-local:
-          requires:
-            - preflight
       - itest-sfn-v2-provider:
           requires:
             - preflight
@@ -432,7 +403,6 @@ workflows:
             - docker-build-amd64
       - report:
           requires:
-            - itest-lambda-legacy-local
             - itest-sfn-v2-provider
             - docker-test-amd64
             - docker-test-arm64
@@ -443,7 +413,6 @@ workflows:
             branches:
               only: master
           requires:
-            - itest-lambda-legacy-local
             - itest-sfn-v2-provider
             - docker-test-amd64
             - docker-test-arm64

@@ -10,7 +10,8 @@ from typing import Callable, Dict, List, Optional, Protocol, Tuple
 from plugin import Plugin, PluginLifecycleListener, PluginManager, PluginSpec
 
 from localstack import config
-from localstack.aws.skeleton import DispatchTable
+from localstack.aws.skeleton import DispatchTable, Skeleton
+from localstack.aws.spec import load_service
 from localstack.config import ServiceProviderConfig
 from localstack.state import StateLifecycleHook, StateVisitable, StateVisitor
 from localstack.utils.bootstrap import get_enabled_apis, log_duration
@@ -76,14 +77,14 @@ class Service:
         name,
         start=_default,
         check=_default,
-        listener=None,
+        skeleton=None,
         active=False,
         stop=None,
         lifecycle_hook: ServiceLifecycleHook = None,
     ):
         self.plugin_name = name
         self.start_function = start
-        self.listener = listener
+        self.skeleton = skeleton
         self.check_function = check if check is not _default else local_api_checker(name)
         self.default_active = active
         self.stop_function = stop
@@ -98,18 +99,11 @@ class Service:
             return
 
         if self.start_function is _default:
-            # fallback start method that simply adds the listener function to the list of proxy listeners if it exists
-            if not self.listener:
-                return
-
-            from localstack.services.infra import add_service_proxy_listener
-
-            add_service_proxy_listener(self.plugin_name, self.listener)
             return
 
         kwargs = {"asynchronous": asynchronous}
-        if self.listener:
-            kwargs["update_listener"] = self.listener
+        if self.skeleton:
+            kwargs["update_listener"] = self.skeleton
         return self.start_function(**kwargs)
 
     def stop(self):
@@ -160,19 +154,17 @@ class Service:
         :param service_lifecycle_hook: if left empty, the factory checks whether the provider is a ServiceLifecycleHook.
         :return: a service instance
         """
-        from localstack.aws.proxy import AwsApiListener
-
         # determine the service_lifecycle_hook
         if service_lifecycle_hook is None:
             if isinstance(provider, ServiceLifecycleHook):
                 service_lifecycle_hook = provider
 
-        # determine the delegate for injecting into the AwsApiListener
+        # determine the delegate for injecting into the skeleton
         delegate = dispatch_table_factory(provider) if dispatch_table_factory else provider
 
         service = Service(
             name=provider.service,
-            listener=AwsApiListener(provider.service, delegate=delegate),
+            skeleton=Skeleton(load_service(provider.service), delegate),
             lifecycle_hook=service_lifecycle_hook,
         )
         service._provider = provider
