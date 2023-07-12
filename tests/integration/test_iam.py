@@ -585,3 +585,105 @@ class TestIAMIntegrations:
 
         list_roles_result = aws_client.iam.list_roles(PathPrefix=path_prefix)
         snapshot.match("list_roles_result", list_roles_result)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Policy.IsAttachable",
+            "$..Policy.PermissionsBoundaryUsageCount",
+            "$..Policy.Tags",
+        ]
+    )
+    def test_role_attach_policy(self, snapshot, aws_client, create_role, create_policy):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+
+        trust_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "ec2.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+        policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {"Effect": "Allow", "Action": ["lambda:ListFunctions"], "Resource": ["*"]}
+            ],
+        }
+
+        role_name = f"test-role-{short_uid()}"
+        policy_name = f"test-policy-{short_uid()}"
+        create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy))
+        create_policy_response = create_policy(
+            PolicyName=policy_name, PolicyDocument=json.dumps(policy_document)
+        )
+        snapshot.match("create_policy_response", create_policy_response)
+        policy_arn = create_policy_response["Policy"]["Arn"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.attach_role_policy(
+                RoleName=role_name, PolicyArn="longpolicynamebutnoarn"
+            )
+        snapshot.match("non_existent_malformed_policy_arn", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_name)
+        snapshot.match("existing_policy_name_provided", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=f"{policy_arn}123")
+        snapshot.match("valid_arn_not_existent", e.value.response)
+
+        attach_policy_response = aws_client.iam.attach_role_policy(
+            RoleName=role_name, PolicyArn=policy_arn
+        )
+        snapshot.match("valid_policy_arn", attach_policy_response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Policy.IsAttachable",
+            "$..Policy.PermissionsBoundaryUsageCount",
+            "$..Policy.Tags",
+        ]
+    )
+    def test_user_attach_policy(self, snapshot, aws_client, create_user, create_policy):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+
+        policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {"Effect": "Allow", "Action": ["lambda:ListFunctions"], "Resource": ["*"]}
+            ],
+        }
+
+        user_name = f"test-role-{short_uid()}"
+        policy_name = f"test-policy-{short_uid()}"
+        create_user(UserName=user_name)
+        create_policy_response = create_policy(
+            PolicyName=policy_name, PolicyDocument=json.dumps(policy_document)
+        )
+        snapshot.match("create_policy_response", create_policy_response)
+        policy_arn = create_policy_response["Policy"]["Arn"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.attach_user_policy(
+                UserName=user_name, PolicyArn="longpolicynamebutnoarn"
+            )
+        snapshot.match("non_existent_malformed_policy_arn", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.attach_user_policy(UserName=user_name, PolicyArn=policy_name)
+        snapshot.match("existing_policy_name_provided", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.attach_user_policy(UserName=user_name, PolicyArn=f"{policy_arn}123")
+        snapshot.match("valid_arn_not_existent", e.value.response)
+
+        attach_policy_response = aws_client.iam.attach_user_policy(
+            UserName=user_name, PolicyArn=policy_arn
+        )
+        snapshot.match("valid_policy_arn", attach_policy_response)
