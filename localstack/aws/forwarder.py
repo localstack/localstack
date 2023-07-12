@@ -161,6 +161,7 @@ def create_aws_request_context(
     # but deactivate validation (validation errors should be handled by the backend)
     # and don't send it yet
     client = connect_to.get_client(
+        service_name,
         endpoint_url=endpoint_url,
         region_name=region,
         config=_non_validating_boto_config,
