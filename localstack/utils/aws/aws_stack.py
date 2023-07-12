@@ -194,6 +194,7 @@ def get_boto3_region() -> str:
     return boto3.session.Session().region_name
 
 
+# TODO: remove this and use the `is_internal_call` property of RequestContext
 def is_internal_call_context(headers) -> bool:
     """Return whether we are executing in the context of an internal API call, i.e.,
     the case where one API uses a boto3 client to call another API internally."""
