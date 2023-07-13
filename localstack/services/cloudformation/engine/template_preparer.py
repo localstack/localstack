@@ -47,13 +47,14 @@ def transform_template(
     resources: dict,
     mappings: dict,
     conditions: dict[str, bool],
+    resolved_parameters: dict,
 ) -> dict:
     result = dict(template)
 
     # apply 'Fn::Transform' intrinsic functions (note: needs to be applied before global
     #  transforms below, as some utils - incl samtransformer - expect them to be resolved already)
     result = apply_transform_intrinsic_functions(
-        result, stack_name, resources, mappings, conditions
+        result, stack_name, resources, mappings, conditions, resolved_parameters
     )
 
     # apply global transforms

@@ -210,6 +210,8 @@ class CloudformationProvider(CloudformationApi):
                 stack.stack_name,
                 stack.resources,
                 stack.mappings,
+                {},  # TODO
+                resolved_parameters,
             )
         except FailedTransformationException as e:
             stack.add_stack_event(
@@ -313,6 +315,7 @@ class CloudformationProvider(CloudformationApi):
                 stack.resources,
                 stack.mappings,
                 resolved_stack_conditions,
+                resolved_parameters,
             )
         except FailedTransformationException as e:
             stack.add_stack_event(
@@ -567,6 +570,7 @@ class CloudformationProvider(CloudformationApi):
             resources=temp_stack.resources,
             mappings=temp_stack.mappings,
             conditions={},  # TODO: we don't have any resolved conditions yet at this point but we need the conditions because of the samtranslator...
+            resolved_parameters=resolved_parameters,
         )
 
         # create change set for the stack and apply changes
