@@ -714,25 +714,41 @@ def resolve_placeholders_in_string(
             if not isinstance(resolved, str):
                 resolved = str(resolved)
             return resolved
-        if len(parts) == 1 and parts[0] in resources:
-            # Logical resource ID or parameter name specified => Use Ref for lookup
-            result = resolve_ref(
-                stack_name, resources, mappings, conditions, parameters, parts[0], "Ref"
-            )
+        if len(parts) == 1:
+            if parts[0] in resources:
+                # Logical resource ID or parameter name specified => Use Ref for lookup
+                result = resolve_ref(
+                    stack_name, resources, mappings, conditions, parameters, parts[0], "Ref"
+                )
 
-            if result is None:
+                if result is None:
+                    raise DependencyNotYetSatisfied(
+                        resource_ids=parts[0],
+                        message=f"Unable to resolve attribute ref {ref_expression}",
+                    )
+                # TODO: is this valid?
+                # make sure we resolve any functions/placeholders in the extracted string
+                result = resolve_refs_recursively(
+                    stack_name, resources, mappings, conditions, parameters, result
+                )
+                # make sure we convert the result to string
+                # TODO: do this more systematically
+                result = "" if result is None else str(result)
+                return result
+            elif parts[0] in parameters:
+                parameter = parameters[parts[0]]
+                parameter_type: str = parameter["ParameterType"]
+                parameter_value = parameter.get("ResolvedValue") or parameter.get("ParameterValue")
+
+                if parameter_type in ["CommaDelimitedList"] or parameter_type.startswith("List<"):
+                    return [p.strip() for p in parameter_value.split(",")]
+                else:
+                    return parameter_value
+            else:
                 raise DependencyNotYetSatisfied(
                     resource_ids=parts[0],
                     message=f"Unable to resolve attribute ref {ref_expression}",
                 )
-            # TODO: is this valid?
-            # make sure we resolve any functions/placeholders in the extracted string
-            result = resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, result
-            )
-            # make sure we convert the result to string
-            result = "" if result is None else str(result)
-            return result
         # TODO raise exception here?
         return match.group(0)
 

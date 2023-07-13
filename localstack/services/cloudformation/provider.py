@@ -301,9 +301,9 @@ class CloudformationProvider(CloudformationApi):
         )
 
         resolved_stack_conditions = resolve_stack_conditions(
-            conditions=template.get("Conditions"),
+            conditions=template.get("Conditions", {}),
             parameters=resolved_parameters,
-            mappings=template.get("Mappings"),
+            mappings=template.get("Mappings", {}),
             stack_name=stack_name,
         )
 
