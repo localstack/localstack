@@ -729,6 +729,44 @@ class TestS3UtilsAsf:
         )
         assert serialized_header == header
 
+    @pytest.mark.parametrize(
+        "data, required, optional, result",
+        [
+            (
+                {"field1": "", "field2": "", "field3": ""},
+                {"field1"},
+                {"field2", "field3"},
+                True,
+            ),
+            (
+                {"field1": ""},
+                {"field1"},
+                {"field2", "field3"},
+                True,
+            ),
+            (
+                {"field1": "", "field2": "", "field3": ""},  # field3 is not a field
+                {"field1"},
+                {"field2"},
+                False,
+            ),
+            (
+                {"field2": ""},  # missing field1
+                {"field1"},
+                {"field2"},
+                False,
+            ),
+            (
+                {"field3": ""},  # missing field1 and field3 is not a field
+                {"field1"},
+                {"field2"},
+                False,
+            ),
+        ],
+    )
+    def test_validate_dict_fields(self, data, required, optional, result):
+        assert s3_utils_asf.validate_dict_fields(data, required, optional) == result
+
 
 class TestS3PresignedUrlAsf:
     """

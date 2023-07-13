@@ -411,3 +411,19 @@ def parse_expiration_header(
 
     except (IndexError, ValueError, KeyError):
         return None, None
+
+
+def validate_dict_fields(data: dict, required_fields: set, optional_fields: set):
+    """
+    Validate whether the `data` dict contains at least the required fields and not more than the union of the required
+    and optional fields
+    TODO: we could pass the TypedDict to also use its required/optional properties, but it could be sensitive to
+     mistake/changes in the specs and not always right
+    :param data: the dict we want to validate
+    :param required_fields: a set containing the required fields
+    :param optional_fields: a set containing the optional fields
+    :return: bool, whether the dict is valid or not
+    """
+    return (set_fields := set(data)) >= required_fields and set_fields <= (
+        required_fields | optional_fields
+    )

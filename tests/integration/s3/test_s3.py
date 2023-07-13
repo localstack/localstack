@@ -5001,13 +5001,13 @@ class TestS3:
             "Id": "test-inventory",
             "Destination": {
                 "S3BucketDestination": {
-                    # "AccountId": "test",  # TODO
                     "Bucket": f"arn:aws:s3:::{dest_bucket}",
                     "Format": "CSV",
                 }
             },
             "IsEnabled": True,
             "IncludedObjectVersions": "All",
+            "OptionalFields": ["Size", "ETag"],
             "Schedule": {"Frequency": "Daily"},
         }
 
@@ -5045,10 +5045,75 @@ class TestS3:
             )
         snapshot.match("get-nonexistent-inv-config", e.value.response)
 
-    # TODO
+    @pytest.mark.aws_validated
     def test_s3_put_inventory_report_exceptions(self, aws_client, s3_create_bucket, snapshot):
-        # INVALID ARN FOR DEST BUCKET
-        pass
+        snapshot.add_transformer(snapshot.transform.resource_name())
+        src_bucket = s3_create_bucket()
+        dest_bucket = s3_create_bucket()
+        config_id = "test-inventory"
+
+        def _get_config():
+            return {
+                "Id": config_id,
+                "Destination": {
+                    "S3BucketDestination": {
+                        "Bucket": f"arn:aws:s3:::{dest_bucket}",
+                        "Format": "CSV",
+                    }
+                },
+                "IsEnabled": True,
+                "IncludedObjectVersions": "All",
+                "Schedule": {"Frequency": "Daily"},
+            }
+
+        def _put_bucket_inventory_configuration(inventory_configuration):
+            aws_client.s3.put_bucket_inventory_configuration(
+                Bucket=src_bucket,
+                Id=config_id,
+                InventoryConfiguration=inventory_configuration,
+            )
+
+        # put an inventory config with a wrong ID
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["Id"] = config_id + "wrong"
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-id", e.value.response)
+
+        # set the Destination Bucket only as the name and not the ARN
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["Destination"]["S3BucketDestination"]["Bucket"] = dest_bucket
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-destination-arn", e.value.response)
+
+        # set the wrong Destination Format (should be CSV/ORC/Parquet)
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["Destination"]["S3BucketDestination"]["Format"] = "WRONG-FORMAT"
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-destination-format", e.value.response)
+
+        # set the wrong Schedule Frequency (should be Daily/Weekly)
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["Schedule"]["Frequency"] = "Hourly"
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-schedule-frequency", e.value.response)
+
+        # set the wrong IncludedObjectVersions (should be All/Current)
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["IncludedObjectVersions"] = "Wrong"
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-object-versions", e.value.response)
+
+        # set wrong OptionalFields
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["OptionalFields"] = ["TestField"]
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-optional-field", e.value.response)
 
 
 class TestS3MultiAccounts:

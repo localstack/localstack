@@ -8348,7 +8348,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_inventory_report_crud": {
-    "recorded-date": "13-07-2023, 18:24:52",
+    "recorded-date": "14-07-2023, 00:15:43",
     "recorded-content": {
       "put-inventory-config": {
         "ResponseMetadata": {
@@ -8368,6 +8368,10 @@
             "Id": "test-inventory",
             "IncludedObjectVersions": "All",
             "IsEnabled": true,
+            "OptionalFields": [
+              "Size",
+              "ETag"
+            ],
             "Schedule": {
               "Frequency": "Daily"
             }
@@ -8390,6 +8394,10 @@
           "Id": "test-inventory",
           "IncludedObjectVersions": "All",
           "IsEnabled": true,
+          "OptionalFields": [
+            "Size",
+            "ETag"
+          ],
           "Schedule": {
             "Frequency": "Daily"
           }
@@ -8420,6 +8428,71 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_put_inventory_report_exceptions": {
+    "recorded-date": "13-07-2023, 23:26:28",
+    "recorded-content": {
+      "wrong-id": {
+        "Error": {
+          "Code": "IdMismatch",
+          "Message": "Document ID does not match the specified configuration ID."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-destination-arn": {
+        "Error": {
+          "Code": "InvalidS3DestinationBucket",
+          "Message": "Invalid bucket ARN."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-destination-format": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-schedule-frequency": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-object-versions": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-optional-field": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
