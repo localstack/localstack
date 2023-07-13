@@ -1,3 +1,4 @@
+import functools
 import itertools
 import json
 import logging
@@ -15,6 +16,7 @@ from localstack.utils.container_utils.container_client import (
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
+    DockerNotAvailable,
     DockerPlatform,
     NoSuchContainer,
     NoSuchImage,
@@ -65,8 +67,14 @@ class CmdDockerClient(ContainerClient):
     default_run_outfile: Optional[str] = None
 
     def _docker_cmd(self) -> List[str]:
-        """Return the string to be used for running Docker commands."""
-        return config.DOCKER_CMD.split()
+        """
+        Get the configured, tested Docker CMD.
+        :return: string to be used for running Docker commands
+        :raises: DockerNotAvailable exception if the Docker command or the socker is not available
+        """
+        if not self.has_docker():
+            raise DockerNotAvailable()
+        return shlex.split(config.DOCKER_CMD)
 
     def get_system_info(self) -> dict:
         cmd = [
@@ -563,9 +571,11 @@ class CmdDockerClient(ContainerClient):
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             ) from e
 
+    @functools.lru_cache(maxsize=None)
     def has_docker(self) -> bool:
         try:
-            run(self._docker_cmd() + ["ps"])
+            # do not use self._docker_cmd here (would result in a loop)
+            run(shlex.split(config.DOCKER_CMD) + ["ps"])
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
             return False

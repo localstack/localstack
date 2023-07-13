@@ -771,6 +771,20 @@ class MethodNotAllowed(ServiceException):
     ResourceType: Optional[ResourceType]
 
 
+class CrossLocationLoggingProhibitted(ServiceException):
+    code: str = "CrossLocationLoggingProhibitted"
+    sender_fault: bool = False
+    status_code: int = 403
+    TargetBucketLocation: Optional[BucketRegion]
+
+
+class InvalidTargetBucketForLogging(ServiceException):
+    code: str = "InvalidTargetBucketForLogging"
+    sender_fault: bool = False
+    status_code: int = 400
+    TargetBucket: Optional[BucketName]
+
+
 AbortDate = datetime
 
 

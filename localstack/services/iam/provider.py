@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime
 from typing import Dict, List, Optional
 from urllib.parse import quote
@@ -26,6 +27,7 @@ from localstack.aws.api.iam import (
     GetServiceLinkedRoleDeletionStatusResponse,
     GetUserResponse,
     IamApi,
+    InvalidInputException,
     ListInstanceProfileTagsResponse,
     ListRolesResponse,
     MalformedPolicyDocumentException,
@@ -88,6 +90,8 @@ ADDITIONAL_MANAGED_POLICIES = {
         "UpdateDate": "2019-05-20T18:22:18+00:00",
     }
 }
+
+POLICY_ARN_REGEX = re.compile(r"arn:[^:]+:iam::(?:\d{12}|aws):policy/.*")
 
 
 def get_iam_backend(context: RequestContext) -> IAMBackend:
@@ -415,6 +419,20 @@ class IamProvider(IamApi):
             )
 
         return response
+
+    def attach_role_policy(
+        self, context: RequestContext, role_name: roleNameType, policy_arn: arnType
+    ) -> None:
+        if not POLICY_ARN_REGEX.match(policy_arn):
+            raise InvalidInputException(f"ARN {policy_arn} is not valid.")
+        return call_moto(context=context)
+
+    def attach_user_policy(
+        self, context: RequestContext, user_name: userNameType, policy_arn: arnType
+    ) -> None:
+        if not POLICY_ARN_REGEX.match(policy_arn):
+            raise InvalidInputException(f"ARN {policy_arn} is not valid.")
+        return call_moto(context=context)
 
     # def get_user(
     #     self, context: RequestContext, user_name: existingUserNameType = None

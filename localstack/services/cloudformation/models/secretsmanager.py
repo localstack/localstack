@@ -5,7 +5,7 @@ import string
 
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import select_attributes
 
 LOG = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class SecretsManagerSecret(GenericBaseModel):
     def get_cfn_attribute(self, attribute_name: str):
         match attribute_name:
             case "Id":
-                return self.properties["Name"]
+                return self.props.get("ARN")
 
         return super(SecretsManagerSecret, self).get_cfn_attribute(attribute_name)
 
@@ -71,6 +71,8 @@ class SecretsManagerSecret(GenericBaseModel):
     def add_defaults(resource, stack_name: str):
         name = resource.get("Properties", {}).get("Name")
         if not name:
+            # not actually correct. Given the LogicalResourceId "MySecret",
+            # an example for the generated name would be "MySecret-krxoxgcznYdq-sQNsqO"
             resource["Properties"]["Name"] = generate_default_name(
                 stack_name, resource["LogicalResourceId"]
             )
@@ -112,6 +114,7 @@ class SecretsManagerSecret(GenericBaseModel):
             return result
 
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["Properties"]["ARN"] = result["ARN"]
             resource["PhysicalResourceId"] = result["ARN"]
 
         return {
@@ -162,15 +165,13 @@ class SecretsManagerResourcePolicy(GenericBaseModel):
             properties: dict, logical_resource_id: str, resource: dict, stack_name: str
         ) -> dict:
             return {
-                "SecretId": properties["SecretId"].split(":")[-1],
+                "SecretId": properties["SecretId"],
                 "ResourcePolicy": json.dumps(properties["ResourcePolicy"]),
                 "BlockPublicPolicy": properties.get("BlockPublicPolicy"),
             }
 
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
-            resource["PhysicalResourceId"] = arns.secretsmanager_secret_arn(
-                resource["Properties"]["Name"]
-            )
+            resource["PhysicalResourceId"] = result["ARN"]
 
         return {
             "create": {

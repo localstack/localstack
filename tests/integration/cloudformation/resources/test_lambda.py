@@ -1,17 +1,19 @@
 import base64
 import json
 import os
+from io import BytesIO
 
 import pytest
 
-from localstack.aws.api.lambda_ import InvocationType, State
+from localstack.aws.api.lambda_ import InvocationType, Runtime, State
 from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.common import short_uid
+from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
 from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
-from localstack.utils.testutil import get_lambda_log_events
+from localstack.utils.testutil import create_lambda_archive, get_lambda_log_events
 
 pytestmark = pytest.mark.skip_snapshot_verify(
     condition=is_old_provider,
@@ -1024,3 +1026,35 @@ class TestCfnLambdaDestinations:
             # return len(events) >= 6  # note: each invoke comes with at least 3 events even without printing
 
         wait_until(wait_for_logs)
+
+
+@pytest.mark.aws_validated
+def test_python_lambda_code_deployed_via_s3(deploy_cfn_template, aws_client, s3_bucket):
+    bucket_key = "handler.zip"
+    zip_file = create_lambda_archive(
+        load_file(
+            os.path.join(os.path.dirname(__file__), "../../awslambda/functions/lambda_echo.py")
+        ),
+        get_content=True,
+        runtime=Runtime.python3_10,
+    )
+    aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
+
+    deployment = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_lambda_s3_code.yaml"
+        ),
+        parameters={
+            "LambdaCodeBucket": s3_bucket,
+            "LambdaRuntime": "python3.10",
+            "LambdaHandler": "handler.handler",
+        },
+    )
+
+    function_name = deployment.outputs["LambdaName"]
+    invocation_result = aws_client.awslambda.invoke(
+        FunctionName=function_name, Payload=json.dumps({"hello": "world"})
+    )
+    payload = json.loads(to_str(invocation_result["Payload"].read()))
+    assert payload == {"hello": "world"}
+    assert invocation_result["StatusCode"] == 200

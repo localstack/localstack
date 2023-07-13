@@ -72,6 +72,7 @@ class Stack:
 
         self.resolved_outputs = list()  # TODO
         self.resolved_parameters: dict[str, StackParameter] = {}
+        self.resolved_conditions: dict[str, bool] = {}
 
         self.metadata = metadata or {}
         self.template = template or {}
@@ -112,6 +113,9 @@ class Stack:
         self.resolved_parameters = resolved_parameters
         if resolved_parameters:
             self.metadata["Parameters"] = list(resolved_parameters.values())
+
+    def set_resolved_stack_conditions(self, resolved_conditions: dict[str, bool]):
+        self.resolved_conditions = resolved_conditions
 
     def describe_details(self):
         attrs = [

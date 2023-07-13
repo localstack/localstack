@@ -85,6 +85,7 @@ from localstack.services.cloudformation.engine.template_deployer import NoStackU
 from localstack.services.cloudformation.engine.template_preparer import (
     FailedTransformationException,
 )
+from localstack.services.cloudformation.engine.template_utils import resolve_stack_conditions
 from localstack.services.cloudformation.stores import (
     find_change_set,
     find_stack,
@@ -222,6 +223,17 @@ class CloudformationProvider(CloudformationApi):
             return CreateStackOutput(StackId=stack.stack_id)
 
         stack = Stack(request, template)
+
+        # resolve conditions
+        raw_conditions = template.get("Conditions", {})
+        resolved_stack_conditions = resolve_stack_conditions(
+            conditions=raw_conditions,
+            parameters=resolved_parameters,
+            mappings=stack.mappings,
+            stack_name=stack_name,
+        )
+        stack.set_resolved_stack_conditions(resolved_stack_conditions)
+
         stack.set_resolved_parameters(resolved_parameters)
         stack.template_body = json.dumps(template)
         state.stacks[stack.stack_id] = stack
@@ -553,7 +565,14 @@ class CloudformationProvider(CloudformationApi):
         change_set.set_resolved_parameters(resolved_parameters)
 
         # TODO: evaluate conditions
-        # change_set.set_resolved_conditions(resolved_conditions)
+        raw_conditions = transformed_template.get("Conditions", {})
+        resolved_stack_conditions = resolve_stack_conditions(
+            conditions=raw_conditions,
+            parameters=resolved_parameters,
+            mappings=temp_stack.mappings,
+            stack_name=stack_name,
+        )
+        change_set.set_resolved_stack_conditions(resolved_stack_conditions)
 
         deployer = template_deployer.TemplateDeployer(change_set)
         changes = deployer.construct_changes(
