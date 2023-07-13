@@ -449,7 +449,6 @@ class TestDynamoDB:
         item1b = {PARTITION_KEY: {"S": "id1"}, "data": {"S": "barfoo"}}
         item2 = {PARTITION_KEY: {"S": "id1"}, "data": {"S": "foobar"}}
 
-        # TODO@viren update snapshots
         # there is no data present in the table already so even if return values
         # is set to 'ALL_OLD' as there is no data it will not return any data.
         response = aws_client.dynamodb.put_item(
