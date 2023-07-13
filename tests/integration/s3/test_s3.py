@@ -4547,6 +4547,7 @@ class TestS3:
         response = aws_client.s3.get_object(Bucket=bucket_1, Key=key_name)
         snapshot.match("get-obj-default-kms-s3-key-from-bucket", response)
 
+    @pytest.mark.aws_validated
     def test_s3_analytics_configurations(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(
             [
@@ -4604,11 +4605,13 @@ class TestS3:
         snapshot.match("delete_config_with_storage_analysis_err", err_delete.value.response)
 
         # put storage analysis
-        aws_client.s3.put_bucket_analytics_configuration(
+        response = aws_client.s3.put_bucket_analytics_configuration(
             Bucket=bucket,
             Id=storage_analysis["Id"],
             AnalyticsConfiguration=storage_analysis,
         )
+        snapshot.match("put_config_with_storage_analysis_1", response)
+
         response = aws_client.s3.get_bucket_analytics_configuration(
             Bucket=bucket,
             Id=storage_analysis["Id"],
@@ -4760,11 +4763,12 @@ class TestS3:
         )
 
         # put tiering config
-        aws_client.s3.put_bucket_intelligent_tiering_configuration(
+        response = aws_client.s3.put_bucket_intelligent_tiering_configuration(
             Bucket=bucket,
             Id=intelligent_tier_configuration["Id"],
             IntelligentTieringConfiguration=intelligent_tier_configuration,
         )
+        snapshot.match("put_bucket_intelligent_tiering_configuration_1", response)
 
         # get tiering config and snapshot match
         response = aws_client.s3.get_bucket_intelligent_tiering_configuration(
@@ -4969,6 +4973,82 @@ class TestS3:
             )
         snapshot.match("put-bucket-logging-non-existent-bucket", e.value.response)
         assert e.value.response["Error"]["TargetBucket"] == nonexistent_target_bucket
+
+    @pytest.mark.aws_validated
+    def test_s3_inventory_report_crud(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.resource_name())
+        src_bucket = s3_create_bucket()
+        dest_bucket = s3_create_bucket()
+
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "InventoryPolicy",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "s3.amazonaws.com"},
+                    "Action": "s3:PutObject",
+                    "Resource": [f"arn:aws:s3:::{dest_bucket}/*"],
+                    "Condition": {
+                        "ArnLike": {"aws:SourceArn": f"arn:aws:s3:::{src_bucket}"},
+                    },
+                },
+            ],
+        }
+
+        aws_client.s3.put_bucket_policy(Bucket=dest_bucket, Policy=json.dumps(policy))
+        inventory_config = {
+            "Id": "test-inventory",
+            "Destination": {
+                "S3BucketDestination": {
+                    # "AccountId": "test",  # TODO
+                    "Bucket": f"arn:aws:s3:::{dest_bucket}",
+                    "Format": "CSV",
+                }
+            },
+            "IsEnabled": True,
+            "IncludedObjectVersions": "All",
+            "Schedule": {"Frequency": "Daily"},
+        }
+
+        put_inv_config = aws_client.s3.put_bucket_inventory_configuration(
+            Bucket=src_bucket,
+            Id=inventory_config["Id"],
+            InventoryConfiguration=inventory_config,
+        )
+        snapshot.match("put-inventory-config", put_inv_config)
+
+        list_inv_configs = aws_client.s3.list_bucket_inventory_configurations(Bucket=src_bucket)
+        snapshot.match("list-inventory-config", list_inv_configs)
+
+        get_inv_config = aws_client.s3.get_bucket_inventory_configuration(
+            Bucket=src_bucket,
+            Id=inventory_config["Id"],
+        )
+        snapshot.match("get-inventory-config", get_inv_config)
+
+        del_inv_config = aws_client.s3.delete_bucket_inventory_configuration(
+            Bucket=src_bucket,
+            Id=inventory_config["Id"],
+        )
+        snapshot.match("del-inventory-config", del_inv_config)
+
+        list_inv_configs_after_del = aws_client.s3.list_bucket_inventory_configurations(
+            Bucket=src_bucket
+        )
+        snapshot.match("list-inventory-config-after-del", list_inv_configs_after_del)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_inventory_configuration(
+                Bucket=src_bucket,
+                Id=inventory_config["Id"],
+            )
+        snapshot.match("get-nonexistent-inv-config", e.value.response)
+
+    # TODO
+    def test_s3_put_inventory_report_exceptions(self, aws_client, s3_create_bucket, snapshot):
+        # INVALID ARN FOR DEST BUCKET
+        pass
 
 
 class TestS3MultiAccounts:

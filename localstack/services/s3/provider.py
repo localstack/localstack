@@ -49,6 +49,7 @@ from localstack.aws.api.s3 import (
     GetBucketAnalyticsConfigurationOutput,
     GetBucketCorsOutput,
     GetBucketIntelligentTieringConfigurationOutput,
+    GetBucketInventoryConfigurationOutput,
     GetBucketLifecycleConfigurationOutput,
     GetBucketLifecycleOutput,
     GetBucketLocationOutput,
@@ -76,9 +77,12 @@ from localstack.aws.api.s3 import (
     InvalidPartOrder,
     InvalidStorageClass,
     InvalidTargetBucketForLogging,
+    InventoryConfiguration,
+    InventoryId,
     LifecycleRules,
     ListBucketAnalyticsConfigurationsOutput,
     ListBucketIntelligentTieringConfigurationsOutput,
+    ListBucketInventoryConfigurationsOutput,
     ListMultipartUploadsOutput,
     ListMultipartUploadsRequest,
     ListObjectsOutput,
@@ -271,7 +275,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             s3_notif_ctx = S3EventNotificationContext.from_request_context(
                 context, key_name=key_name
             )
-        if notification_config := self.get_store().bucket_notification_configs.get(
+        if notification_config := self.get_store(context).bucket_notification_configs.get(
             s3_notif_ctx.bucket_name
         ):
             self._notification_dispatcher.send_notifications(s3_notif_ctx, notification_config)
@@ -671,7 +675,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request: DeleteObjectRequest,
     ) -> DeleteObjectOutput:
         # TODO: implement DeleteMarker response
-        if request["Bucket"] not in self.get_store().bucket_notification_configs:
+        if request["Bucket"] not in self.get_store(context).bucket_notification_configs:
             return call_moto(context)
 
         # TODO: we do not differentiate between deleting a key and creating a DeleteMarker in a versioned bucket
@@ -880,7 +884,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # we can't add the VersionId for now
         if (
             "VersionId" in response
-            and request["Bucket"] not in self.get_store().bucket_versioning_status
+            and request["Bucket"] not in self.get_store(context).bucket_versioning_status
         ):
             response.pop("VersionId")
         return response
@@ -948,7 +952,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if "ID" not in rule:
                 rule["ID"] = short_uid()
 
-        store = self.get_store()
+        store = self.get_store(context)
         for rule in replication_configuration.get("Rules", []):
             dst = rule.get("Destination", {}).get("Bucket")
             dst_bucket_name = s3_bucket_name(dst)
@@ -971,7 +975,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         get_bucket_from_moto(moto_backend, bucket=bucket)
 
-        store = self.get_store()
+        store = self.get_store(context)
         replication = store.bucket_replication.get(bucket, None)
         if not replication:
             ex = ReplicationConfigurationNotFoundError(
@@ -996,7 +1000,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         get_bucket_from_moto(moto_backend, bucket=bucket)
 
-        store = self.get_store()
+        store = self.get_store(context)
         bucket_lifecycle = store.bucket_lifecycle_configuration.get(bucket)
         if not bucket_lifecycle:
             ex = NoSuchLifecycleConfiguration("The lifecycle configuration does not exist")
@@ -1035,7 +1039,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO: we either apply the lifecycle to existing objects when we set the new rules, or we need to apply them
         #  everytime we get/head an object
         # for now, we keep a cache and get it everytime we fetch an object
-        store = self.get_store()
+        store = self.get_store(context)
         store.bucket_lifecycle_configuration[bucket] = lifecycle_conf
         self._expiration_cache[bucket].clear()
 
@@ -1046,7 +1050,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         get_bucket_from_moto(moto_backend, bucket=bucket)
 
-        store = self.get_store()
+        store = self.get_store(context)
         store.bucket_lifecycle_configuration.pop(bucket, None)
         self._expiration_cache[bucket].clear()
 
@@ -1212,7 +1216,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # set it in the store, so we can keep the state if it was ever enabled
         if versioning_status := request.get("VersioningConfiguration", {}).get("Status"):
             bucket_name = request["Bucket"]
-            store = self.get_store()
+            store = self.get_store(context)
             store.bucket_versioning_status[bucket_name] = versioning_status == "Enabled"
 
     def put_bucket_notification_configuration(
@@ -1231,7 +1235,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._verify_notification_configuration(
             notification_configuration, skip_destination_validation, context, bucket
         )
-        self.get_store().bucket_notification_configs[bucket] = notification_configuration
+        self.get_store(context).bucket_notification_configs[bucket] = notification_configuration
 
     def get_bucket_notification_configuration(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
@@ -1239,7 +1243,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO how to verify expected_bucket_owner
         # check if the bucket exists
         get_bucket_from_moto(get_moto_s3_backend(context), bucket=bucket)
-        return self.get_store().bucket_notification_configs.get(bucket, NotificationConfiguration())
+        return self.get_store(context).bucket_notification_configs.get(
+            bucket, NotificationConfiguration()
+        )
 
     def get_bucket_website(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
@@ -1249,7 +1255,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         get_bucket_from_moto(moto_backend, bucket)
 
-        if not (website_configuration := self.get_store().bucket_website_configuration.get(bucket)):
+        if not (
+            website_configuration := self.get_store(context).bucket_website_configuration.get(
+                bucket
+            )
+        ):
             ex = NoSuchWebsiteConfiguration(
                 "The specified bucket does not have a website configuration"
             )
@@ -1273,7 +1283,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         get_bucket_from_moto(moto_backend, bucket)
 
         validate_website_configuration(website_configuration)
-        store = self.get_store()
+        store = self.get_store(context)
         store.bucket_website_configuration[bucket] = website_configuration
 
     def delete_bucket_website(
@@ -1284,7 +1294,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         get_bucket_from_moto(moto_backend, bucket)
         # does not raise error if the bucket did not have a config, will simply return
-        self.get_store().bucket_website_configuration.pop(bucket, None)
+        self.get_store(context).bucket_website_configuration.pop(bucket, None)
 
     def post_object(
         self, context: RequestContext, bucket: BucketName, body: IO[Body] = None
@@ -1336,7 +1346,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             "LocationHeader", f"{get_full_default_bucket_location(bucket)}{key_name}"
         )
 
-        if bucket in self.get_store().bucket_versioning_status:
+        if bucket in self.get_store(context).bucket_versioning_status:
             response["VersionId"] = key.version_id
 
         self._notify(context, key_name=key_name)
@@ -1383,7 +1393,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         response["LastModified"] = key.last_modified
 
-        if bucket_name in self.get_store().bucket_versioning_status:
+        if bucket_name in self.get_store(context).bucket_versioning_status:
             response["VersionId"] = key.version_id
 
         if key.multipart:
@@ -1404,7 +1414,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         get_bucket_from_moto(moto_backend, bucket)
 
-        store = self.get_store()
+        store = self.get_store(context)
 
         validate_bucket_analytics_configuration(
             id=id, analytics_configuration=analytics_configuration
@@ -1425,7 +1435,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         get_bucket_from_moto(moto_backend, bucket)
 
-        store = self.get_store()
+        store = self.get_store(context)
 
         analytics_configuration: AnalyticsConfiguration = store.bucket_analytics_configuration.get(
             bucket, {}
@@ -1444,7 +1454,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         get_bucket_from_moto(moto_backend, bucket)
 
-        store = self.get_store()
+        store = self.get_store(context)
         analytics_configurations: Dict[
             AnalyticsId, AnalyticsConfiguration
         ] = store.bucket_analytics_configuration.get(bucket, {})
@@ -1465,7 +1475,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         get_bucket_from_moto(moto_backend, bucket)
 
-        store = self.get_store()
+        store = self.get_store(context)
         analytics_configurations = store.bucket_analytics_configuration.get(bucket, {})
         if not analytics_configurations.pop(id, None):
             raise NoSuchConfiguration("The specified configuration does not exist.")
@@ -1482,7 +1492,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         validate_bucket_intelligent_tiering_configuration(id, intelligent_tiering_configuration)
 
-        store = self.get_store()
+        store = self.get_store(context)
         bucket_intelligent_tiering_configurations = (
             store.bucket_intelligent_tiering_configuration.setdefault(bucket, {})
         )
@@ -1494,7 +1504,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         get_bucket_from_moto(moto_backend, bucket)
 
-        store = self.get_store()
+        store = self.get_store(context)
         intelligent_tiering_configuration: IntelligentTieringConfiguration = (
             store.bucket_intelligent_tiering_configuration.get(bucket, {}).get(id)
         )
@@ -1510,7 +1520,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         get_bucket_from_moto(moto_backend, bucket)
 
-        store = self.get_store()
+        store = self.get_store(context)
         bucket_intelligent_tiering_configurations = (
             store.bucket_intelligent_tiering_configuration.get(bucket, {})
         )
@@ -1523,7 +1533,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         get_bucket_from_moto(moto_backend, bucket)
 
-        store = self.get_store()
+        store = self.get_store(context)
         bucket_intelligent_tiering_configurations: Dict[
             IntelligentTieringId, IntelligentTieringConfiguration
         ] = store.bucket_intelligent_tiering_configuration.get(bucket, {})
@@ -1604,6 +1614,79 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # and streaming capability.
         # avoid a fallback to moto and return the 501 to the client directly instead.
         raise NotImplementedAvoidFallbackError
+
+    def put_bucket_inventory_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: InventoryId,
+        inventory_configuration: InventoryConfiguration,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        validate_inventory_configuration(
+            config_id=id, inventory_configuration=inventory_configuration
+        )
+
+        store = self.get_store(context)
+        inventory_configurations = store.bucket_inventory_configurations.setdefault(bucket, {})
+        inventory_configurations[id] = inventory_configuration
+
+    def get_bucket_inventory_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: InventoryId,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketInventoryConfigurationOutput:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        store = self.get_store(context)
+        inventory_configuration = store.bucket_inventory_configurations.get(bucket, {}).get(id)
+        if not inventory_configuration:
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+        return GetBucketInventoryConfigurationOutput(InventoryConfiguration=inventory_configuration)
+
+    def list_bucket_inventory_configurations(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        continuation_token: Token = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> ListBucketInventoryConfigurationsOutput:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        store = self.get_store(context)
+        bucket_inventory_configurations = store.bucket_inventory_configurations.get(bucket, {})
+
+        # bucket_inventory_configurations = sorted(
+        #     bucket_inventory_configurations.values(), key=lambda x: x["Id"]
+        # )
+        # TODO: verify the sorting?
+
+        return ListBucketInventoryConfigurationsOutput(
+            IsTruncated=False,
+            InventoryConfigurationList=list(bucket_inventory_configurations.values()),
+        )
+
+    def delete_bucket_inventory_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: InventoryId,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        store = self.get_store(context)
+        bucket_inventory_configurations = store.bucket_inventory_configurations.get(bucket, {})
+        if not bucket_inventory_configurations.pop(id, None):
+            raise NoSuchConfiguration("The specified configuration does not exist.")
 
 
 def validate_bucket_analytics_configuration(
@@ -1832,6 +1915,12 @@ def validate_website_configuration(website_config: WebsiteConfiguration) -> None
                 raise InvalidRequest(
                     "Invalid protocol, protocol can be http or https. If not defined the protocol will be selected automatically."
                 )
+
+
+def validate_inventory_configuration(
+    config_id: InventoryId, inventory_configuration: InventoryConfiguration
+):
+    pass
 
 
 def is_object_expired(

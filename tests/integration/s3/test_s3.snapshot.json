@@ -6934,7 +6934,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_analytics_configurations": {
-    "recorded-date": "26-05-2023, 12:15:26",
+    "recorded-date": "13-07-2023, 18:45:37",
     "recorded-content": {
       "put_config_with_storage_analysis_err": {
         "Error": {
@@ -6964,6 +6964,12 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "put_config_with_storage_analysis_1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
         }
       },
       "get_config_with_storage_analysis_1": {
@@ -7113,7 +7119,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_intelligent_tier_config": {
-    "recorded-date": "26-05-2023, 19:17:48",
+    "recorded-date": "13-07-2023, 18:44:40",
     "recorded-content": {
       "put_bucket_intelligent_tiering_configuration_err_1`": {
         "Error": {
@@ -7123,6 +7129,12 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      },
+      "put_bucket_intelligent_tiering_configuration_1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
         }
       },
       "get_bucket_intelligent_tiering_configuration_1": {
@@ -8331,6 +8343,83 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_inventory_report_crud": {
+    "recorded-date": "13-07-2023, 18:24:52",
+    "recorded-content": {
+      "put-inventory-config": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list-inventory-config": {
+        "InventoryConfigurationList": [
+          {
+            "Destination": {
+              "S3BucketDestination": {
+                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Format": "CSV"
+              }
+            },
+            "Id": "test-inventory",
+            "IncludedObjectVersions": "All",
+            "IsEnabled": true,
+            "Schedule": {
+              "Frequency": "Daily"
+            }
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-inventory-config": {
+        "InventoryConfiguration": {
+          "Destination": {
+            "S3BucketDestination": {
+              "Bucket": "arn:aws:s3:::<resource:1>",
+              "Format": "CSV"
+            }
+          },
+          "Id": "test-inventory",
+          "IncludedObjectVersions": "All",
+          "IsEnabled": true,
+          "Schedule": {
+            "Frequency": "Daily"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "del-inventory-config": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list-inventory-config-after-del": {
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-nonexistent-inv-config": {
+        "Error": {
+          "Code": "NoSuchConfiguration",
+          "Message": "The specified configuration does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
     }
