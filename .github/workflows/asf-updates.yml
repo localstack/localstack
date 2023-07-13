@@ -17,7 +17,7 @@ jobs:
       - name: Set up system wide dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install libsasl2-dev jq
+          sudo apt-get install jq
 
       - name: Set up Python 3.11
         id: setup-python
