@@ -3670,7 +3670,7 @@ class TestS3:
             Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
         )
         # create key in a different region than the bucket
-        kms_key = kms_create_key(region="us-east-1")
+        kms_key = kms_create_key(region_name="us-east-1")
         # snapshot the KMS key to save the UUID for replacement in Error message.
         snapshot.match("create-kms-key", kms_key)
 

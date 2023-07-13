@@ -98,6 +98,7 @@ class TestS3NotificationsToLambda:
             rs = aws_client.dynamodb.scan(TableName=table_name)
             assert len(rs["Items"]) == 1
             event = rs["Items"][0]["data"]
+            # TODO@viren update snapshots
             snapshot.match("table_content", event)
 
         retry(check_table, retries=5, sleep=1)
@@ -198,7 +199,8 @@ class TestS3NotificationsToLambda:
         def check_table():
             rs = aws_client.dynamodb.scan(TableName=table_name)
             assert len(rs["Items"]) == 2
-            rs["Items"] = sorted(rs["Items"], key=lambda x: x["data"]["eventName"])
+            rs["Items"] = sorted(rs["Items"], key=lambda x: x["data"]["eventName"]["S"])
+            # TODO@viren update snapshots
             snapshot.match("items", rs["Items"])
 
         retry(check_table, retries=20, sleep=2)

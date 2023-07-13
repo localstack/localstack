@@ -236,9 +236,11 @@ def s3_empty_bucket(aws_client):
 
         response = aws_client.s3.list_object_versions(Bucket=bucket_name)
         object_versions = [
-            {"Key": obj["Key"], "VersionId": obj["VersionId"]} for obj in response["Versions"]
+            {"Key": obj["Key"], "VersionId": obj["VersionId"]}
+            for obj in response.get("Versions", [])
         ]
-        aws_client.s3.delete_objects(Bucket=bucket_name, Delete={"Objects": object_versions})
+        if object_versions:
+            aws_client.s3.delete_objects(Bucket=bucket_name, Delete={"Objects": object_versions})
 
     yield factory
 

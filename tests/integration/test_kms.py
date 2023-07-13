@@ -116,6 +116,7 @@ class TestKMS:
         with pytest.raises(ClientError) as e:
             us_east_1_kms_client.describe_key(KeyId=key_id)
 
+        # TODO@viren update snapshots
         snapshot.match("describe-key-diff-region-with-id", e.value.response)
 
         with pytest.raises(ClientError) as e:
@@ -688,6 +689,7 @@ class TestKMS:
             us_west_1_kms_client.describe_key(KeyId=key_id)
         snapshot.match("describe-key-from-different-region", e.value.response)
 
+        # TODO@viren update snapshots
         response = kms_replicate_key(
             region_from=region_to_replicate_from, KeyId=key_id, ReplicaRegion=region_to_replicate_to
         )

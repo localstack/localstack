@@ -513,7 +513,7 @@ def test_create_execute_api_vpc_endpoint(
     # insert items
     item_ids = ("test", "test2", "test 3")
     for item_id in item_ids:
-        aws_client.dynamodb.put_item(TableName=table_name, Item={"id": item_id})
+        aws_client.dynamodb.put_item(TableName=table_name, Item={"id": {"S": item_id}})
 
     # construct request mapping template
     request_templates = {APPLICATION_JSON: json.dumps({"TableName": table_name})}

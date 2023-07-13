@@ -46,7 +46,7 @@ def test_rest_api_to_dynamodb_integration(
     # insert items
     item_ids = ("test", "test2", "test 3")
     for item_id in item_ids:
-        aws_client.dynamodb.put_item(TableName=table_name, Item={"id": item_id})
+        aws_client.dynamodb.put_item(TableName=table_name, Item={"id": {"S": item_id}})
 
     # construct request mapping template
     if ddb_action == "PutItem":
