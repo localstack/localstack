@@ -1301,6 +1301,20 @@ class TestDockerClient:
         )
         assert "TEST_CONTENT" == file_path.read().strip()
 
+    def test_get_container_ip_non_existing_container(self, docker_client: ContainerClient):
+        with pytest.raises(NoSuchContainer):
+            docker_client.get_container_ip(f"hopefully_non_existent_container_{short_uid()}")
+
+    # TODO: getting container IP not yet working against Podman
+    @skip_for_podman
+    def test_get_container_ip(self, docker_client: ContainerClient, dummy_container):
+        docker_client.start_container(dummy_container.container_id)
+        ip = docker_client.get_container_ip(dummy_container.container_id)
+        assert is_ipv4_address(ip)
+        assert "127.0.0.1" != ip
+
+
+class TestRunWithAdditionalArgs:
     def test_run_with_additional_arguments(self, docker_client: ContainerClient):
         env_variable = "TEST_FLAG=test_str"
         stdout, _ = docker_client.run_container(
@@ -1330,17 +1344,19 @@ class TestDockerClient:
         assert "127.0.0.1" in stdout
         assert "sometest.localstack.cloud" in stdout
 
-    def test_get_container_ip_non_existing_container(self, docker_client: ContainerClient):
-        with pytest.raises(NoSuchContainer):
-            docker_client.get_container_ip(f"hopefully_non_existent_container_{short_uid()}")
-
-    # TODO: getting container IP not yet working against Podman
-    @skip_for_podman
-    def test_get_container_ip(self, docker_client: ContainerClient, dummy_container):
-        docker_client.start_container(dummy_container.container_id)
-        ip = docker_client.get_container_ip(dummy_container.container_id)
-        assert is_ipv4_address(ip)
-        assert "127.0.0.1" != ip
+    def test_run_with_additional_arguments_add_dns(self, docker_client: ContainerClient):
+        additional_flags = "--dns 1.2.3.4 --dns 5.6.7.8"
+        container_name = f"c-{short_uid()}"
+        stdout, _ = docker_client.run_container(
+            "alpine",
+            name=container_name,
+            remove=True,
+            command=["sleep", "3"],
+            additional_flags=additional_flags,
+            detach=True,
+        )
+        result = docker_client.inspect_container(container_name)
+        assert result["HostConfig"]["Dns"] == ["1.2.3.4", "5.6.7.8"]
 
 
 class TestDockerImages:
