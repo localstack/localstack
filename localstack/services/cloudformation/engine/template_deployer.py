@@ -1032,8 +1032,12 @@ class TemplateDeployer:
         return not unsatisfied
 
     def get_unsatisfied_dependencies(self, resource):
-        res_deps = self.get_resource_dependencies(resource)
-        res_deps_mapped = {v: self.stack.resources.get(v) for v in res_deps}
+        res_deps = self.get_resource_dependencies(
+            resource
+        )  # the output here is currently a set of merged IDs from both resources and parameters
+        parameter_deps = {d for d in res_deps if d in self.stack.resolved_parameters}
+        resource_deps = res_deps.difference(parameter_deps)
+        res_deps_mapped = {v: self.stack.resources.get(v) for v in resource_deps}
         return self.get_unsatisfied_dependencies_for_resources(res_deps_mapped, resource)
 
     def get_unsatisfied_dependencies_for_resources(
