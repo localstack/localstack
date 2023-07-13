@@ -448,7 +448,7 @@ class DockerRunFlags:
     ports: Optional[PortMappings]
     ulimits: Optional[List[Ulimit]]
     user: Optional[str]
-    dns: Optional[str]
+    dns: Optional[List[str]]
 
 
 # TODO: remove Docker/Podman compatibility switches (in particular strip_wellknown_repo_prefixes=...)
@@ -1185,9 +1185,11 @@ class Util:
                     LOG.info("Volume options like :ro or :rw are currently ignored.")
                 mounts.append((host_path, container_path))
 
+        dns = ensure_list(dns or [])
         if args.dns:
-            dns = ensure_list(dns or [])
-            LOG.info("Extending Docker container DNS servers %s with new value %s", dns, args.dns)
+            LOG.info(
+                "Extending Docker container DNS servers %s with additional values %s", dns, args.dns
+            )
             dns.extend(args.dns)
 
         return DockerRunFlags(
