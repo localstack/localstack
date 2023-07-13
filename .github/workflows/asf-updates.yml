@@ -19,11 +19,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install libsasl2-dev jq
 
-      - name: Set up Python 3.8
+      - name: Set up Python 3.11
         id: setup-python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Cache LocalStack community dependencies (venv)
         uses: actions/cache@v3
