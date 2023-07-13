@@ -1447,13 +1447,13 @@ class TestDynamoDB:
 
         table = aws_client.dynamodb.describe_table(TableName=table_name)
 
-        response = ddbstreams.describe_stream(StreamArn=table["LatestStreamArn"])
+        response = ddbstreams.describe_stream(StreamArn=table["Table"]["LatestStreamArn"])
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert len(response["StreamDescription"]["Shards"]) == 1
         shard_id = response["StreamDescription"]["Shards"][0]["ShardId"]
 
         response = ddbstreams.describe_stream(
-            StreamArn=table["LatestStreamArn"], ExclusiveStartShardId=shard_id
+            StreamArn=table["Table"]["LatestStreamArn"], ExclusiveStartShardId=shard_id
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert len(response["StreamDescription"]["Shards"]) == 0

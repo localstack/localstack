@@ -674,7 +674,7 @@ class TestLambdaOutgoingSdkCalls:
 
         assert len(items) == len(data.keys())
         for item in items:
-            assert data[item["id"]] == item["data"]
+            assert data[item["id"]["S"]] == item["data"]
 
     @parametrize_python_runtimes
     def test_lambda_start_stepfunctions_execution(

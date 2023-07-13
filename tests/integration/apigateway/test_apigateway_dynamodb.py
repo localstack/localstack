@@ -96,7 +96,7 @@ def test_rest_api_to_dynamodb_integration(
         result = _invoke_with_retries("test-new")
         snapshot.match("result-put-item", result)
         result = aws_client.dynamodb.scan(TableName=table_name)
-        result["Items"] = sorted(result["Items"], key=lambda x: x["id"])
+        result["Items"] = sorted(result["Items"], key=lambda x: x["id"]["S"])
         snapshot.match("result-scan", result)
 
     elif ddb_action == "Query":

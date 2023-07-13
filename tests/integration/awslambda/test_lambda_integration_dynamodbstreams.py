@@ -173,8 +173,8 @@ class TestDynamoDBEventSourceMapping:
         function_name = f"lambda_func-{short_uid()}"
         ddb_table = f"ddb_table-{short_uid()}"
         items = [
-            {"id": short_uid(), "data": "data1"},
-            {"id": short_uid(), "data": "data2"},
+            {"id": {"S": short_uid()}, "data": {"S": "data1"}},
+            {"id": {"S": short_uid()}, "data": {"S": "data2"}},
         ]
         create_lambda_function(
             func_name=function_name,
