@@ -41,13 +41,21 @@ def template_to_json(template: str) -> str:
 
 # TODO: consider moving to transformers.py as well
 def transform_template(
-    template: dict, parameters: list, stack_name: str, resources: dict, mappings: dict
+    template: dict,
+    parameters: list,
+    stack_name: str,
+    resources: dict,
+    mappings: dict,
+    conditions: dict[str, bool],
+    resolved_parameters: dict,
 ) -> dict:
     result = dict(template)
 
     # apply 'Fn::Transform' intrinsic functions (note: needs to be applied before global
     #  transforms below, as some utils - incl samtransformer - expect them to be resolved already)
-    result = apply_transform_intrinsic_functions(result, stack_name, resources, mappings)
+    result = apply_transform_intrinsic_functions(
+        result, stack_name, resources, mappings, conditions, resolved_parameters
+    )
 
     # apply global transforms
     transformations = format_transforms(result.get("Transform", []))

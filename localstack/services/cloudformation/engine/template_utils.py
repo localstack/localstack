@@ -150,10 +150,20 @@ def resolve_condition(condition, conditions, parameters, mappings, stack_name):
                     # TODO: how are conditions references written here? as {"Condition": "ConditionA"} or via Ref?
                     # TODO: test for a boolean parameter?
                     param = parameters[v]
-                    return param[
-                        "ParameterValue"
-                    ]  # TODO: extend this logic, e.g. what about lists, other types, ... why is string interpreted as a boolean?
-                    # return parameters[v]
+                    parameter_type: str = param["ParameterType"]
+                    parameter_value = param.get("ResolvedValue") or param.get("ParameterValue")
+
+                    if parameter_type in ["CommaDelimitedList"] or parameter_type.startswith(
+                        "List<"
+                    ):
+                        return [p.strip() for p in parameter_value.split(",")]
+                    else:
+                        return parameter_value
+
+                case "Condition":
+                    return resolve_condition(
+                        conditions[v], conditions, parameters, mappings, stack_name
+                    )
                 case "Fn::FindInMap":
                     map_name, top_level_key, second_level_key = v
                     return mappings[map_name][top_level_key][second_level_key]
@@ -184,6 +194,21 @@ def resolve_condition(condition, conditions, parameters, mappings, stack_name):
                     left = resolve_condition(v[0], conditions, parameters, mappings, stack_name)
                     right = resolve_condition(v[1], conditions, parameters, mappings, stack_name)
                     return fn_equals_type_conversion(left) == fn_equals_type_conversion(right)
+                case "Fn::Join":
+                    join_list = v[1]
+                    if isinstance(v[1], dict):
+                        join_list = resolve_condition(
+                            v[1], conditions, parameters, mappings, stack_name
+                        )
+                    result = v[0].join(
+                        [
+                            resolve_condition(x, conditions, parameters, mappings, stack_name)
+                            for x in join_list
+                        ]
+                    )
+                    return result
+                case _:
+                    raise Exception(f"Invalid condition structure encountered: {condition=}")
     else:
         return condition
 

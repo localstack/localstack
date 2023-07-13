@@ -10,18 +10,17 @@ import botocore
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import FALSE_STRINGS
 from localstack.services.cloudformation import usage
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     dump_resource_as_json,
     fix_boto_parameters_based_on_report,
     get_action_name_for_resource_change,
-    is_none_or_empty_value,
     log_not_available_message,
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet
+from localstack.services.cloudformation.engine.parameters import StackParameter
 from localstack.services.cloudformation.engine.template_utils import (
     fn_equals_type_conversion,
     get_deps_for_resource,
@@ -109,10 +108,6 @@ def retrieve_resource_details(
             state = instance.fetch_and_update_state(stack_name=stack_name, resources=resources)
             return state
 
-        # special case for stack parameters
-        if resource_type == "Parameter":
-            return resource_props
-
         message = (
             f"Unexpected resource type {resource_type} when resolving "
             f"references of resource {resource_id}: {dump_resource_as_json(resource)}"
@@ -143,7 +138,6 @@ def extract_resource_attribute(
 ):
     LOG.debug("Extract resource attribute: %s %s", resource_type, attribute)
     is_ref_attribute = attribute in ["PhysicalResourceId", "Ref"]
-    is_ref_attr_or_arn = is_ref_attribute or attribute == "Arn"
     resource = resource or {}
     if not resource and resources:
         resource = resources[resource_id]
@@ -171,19 +165,6 @@ def extract_resource_attribute(
     # TODO: remove the code below - move into resource model classes!
 
     resource_props = resource.get("Properties", {})
-    if resource_type == "Parameter":
-        result = None
-        param_value = resource_props.get(
-            "Value",
-            resource.get("Value", resource_props.get("Properties", {}).get("Value")),
-        )
-        if is_ref_attr_or_arn:
-            result = param_value
-        elif isinstance(param_value, dict):
-            result = param_value.get(attribute)
-        if result is not None:
-            return result
-        return ""
     attribute_lower = first_char_to_lower(attribute)
     result = resource_state.get(attribute) or resource_state.get(attribute_lower)
     if result is None and isinstance(resource, dict):
@@ -209,9 +190,7 @@ def get_attr_from_model_instance(
 ):
     model_class = RESOURCE_MODELS.get(resource_type)
     if not model_class:
-        if resource_type not in ["AWS::Parameter", "Parameter"]:
-            LOG.debug('Unable to find model class for resource type "%s"', resource_type)
-        return
+        LOG.debug('Unable to find model class for resource type "%s"', resource_type)
     try:
         inst = model_class(resource_name=resource_id, resource_json=resource)
         return inst.get_cfn_attribute(attribute)
@@ -232,7 +211,15 @@ def get_ref_from_model(resources: dict, logical_resource_id: str) -> Optional[st
     LOG.error("Unsupported resource type: %s", resource_type)
 
 
-def resolve_ref(stack_name: str, resources: dict, mappings: dict, ref: str, attribute: str):
+def resolve_ref(
+    stack_name: str,
+    resources: dict,
+    mappings: dict,
+    conditions: dict[str, bool],
+    parameters: dict[str, StackParameter],
+    ref: str,
+    attribute: str,
+):
     # pseudo parameters
     if ref == "AWS::Region":
         return aws_stack.get_region()
@@ -260,41 +247,30 @@ def resolve_ref(stack_name: str, resources: dict, mappings: dict, ref: str, attr
         # 2. a pseudo-parameter (e.g. AWS::Region)
         # 3. the "value" of a resource
 
+        if parameter := parameters.get(ref):
+            parameter_type: str = parameter["ParameterType"]
+            parameter_value = parameter.get("ResolvedValue") or parameter.get("ParameterValue")
+
+            if parameter_type in ["CommaDelimitedList"] or parameter_type.startswith("List<"):
+                return [p.strip() for p in parameter_value.split(",")]
+            else:
+                return parameter_value
+
         resource = resources.get(ref)
         if not resource:
-            raise Exception("Should be detected earlier")
+            raise Exception("Should be detected earlier.")
 
-        # TODO: remove after refactoring parameter resolution
-        # TODO: split this apart in parameter resource types and stack parameter handling
-        if resource["Type"] == "Parameter":
-            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html
-            # TODO: extract this into a util function and extend type support
-            parameter_type = resource.get("Properties", {}).get("ParameterType")
-            if not parameter_type:
-                # assuming this is an actual resource type now
-                return resource["Properties"]["Value"]
-            else:
-                parameter_type: str = resource["Properties"]["ParameterType"]
-                if parameter_type in ["CommaDelimitedList"] or parameter_type.startswith("List<"):
-                    return [p.strip() for p in resource["Properties"]["Value"].split(",")]
-                else:
-                    return resource["Properties"]["Value"]
-        else:
-            # TODO: this shouldn't be needed when dependency graph and deployment status is honored
-            resolve_refs_recursively(stack_name, resources, mappings, resources.get(ref))
-            return get_ref_from_model(resources, ref)
-
-    # TODO: remove if tests pass
-    is_ref_attribute = attribute in ["Arn"]
-    if is_ref_attribute:
-        raise Exception("invalid")
+        # TODO: this shouldn't be needed when dependency graph and deployment status is honored
+        resolve_refs_recursively(
+            stack_name, resources, mappings, conditions, parameters, resources.get(ref)
+        )
+        return get_ref_from_model(resources, ref)
 
     if resources.get(ref):
         if isinstance(resources[ref].get(attribute), (str, int, float, bool, dict)):
             return resources[ref][attribute]
 
     # TODO: when do we go into the branch below?
-
     # TODO(ds): remove all below next
     # fetch resource details
     resource_new = retrieve_resource_details(ref, {}, resources, stack_name)
@@ -330,8 +306,17 @@ def resolve_ref(stack_name: str, resources: dict, mappings: dict, ref: str, attr
 # in case we load stack exports that have circular dependencies (see issue 3438)
 # TODO: Potentially think about a better approach in the future
 @prevent_stack_overflow(match_parameters=True)
-def resolve_refs_recursively(stack_name: str, resources: dict, mappings: dict, value):
-    result = _resolve_refs_recursively(stack_name, resources, mappings, value)
+def resolve_refs_recursively(
+    stack_name: str,
+    resources: dict,
+    mappings: dict,
+    conditions: dict[str, bool],
+    parameters: dict,
+    value,
+):
+    result = _resolve_refs_recursively(
+        stack_name, resources, mappings, conditions, parameters, value
+    )
 
     # localstack specific patches
     if isinstance(result, str):
@@ -406,7 +391,12 @@ def resolve_refs_recursively(stack_name: str, resources: dict, mappings: dict, v
 
 @prevent_stack_overflow(match_parameters=True)
 def _resolve_refs_recursively(
-    stack_name: str, resources: dict, mappings: dict, value: dict | list | str | bytes | None
+    stack_name: str,
+    resources: dict,
+    mappings: dict,
+    conditions: dict,
+    parameters: dict,
+    value: dict | list | str | bytes | None,
 ):
     if isinstance(value, dict):
         keys_list = list(value.keys())
@@ -414,12 +404,22 @@ def _resolve_refs_recursively(
 
         # process special operators
         if keys_list == ["Ref"]:
-            ref = resolve_ref(stack_name, resources, mappings, value["Ref"], attribute="Ref")
+            ref = resolve_ref(
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                value["Ref"],
+                attribute="Ref",
+            )
             if ref is None:
                 msg = 'Unable to resolve Ref for resource "%s" (yet)' % value["Ref"]
                 LOG.debug("%s - %s", msg, resources.get(value["Ref"]) or set(resources.keys()))
                 raise DependencyNotYetSatisfied(resource_ids=value["Ref"], message=msg)
-            ref = resolve_refs_recursively(stack_name, resources, mappings, ref)
+            ref = resolve_refs_recursively(
+                stack_name, resources, mappings, conditions, parameters, ref
+            )
             return ref
 
         if stripped_fn_lower == "getatt":
@@ -430,7 +430,7 @@ def _resolve_refs_recursively(
 
             # the attribute name can be a Ref
             attribute_name = resolve_refs_recursively(
-                stack_name, resources, mappings, attribute_name
+                stack_name, resources, mappings, conditions, parameters, attribute_name
             )
             resource = resources.get(resource_logical_id)
 
@@ -447,10 +447,13 @@ def _resolve_refs_recursively(
 
             # this can actually be another ref that produces a list as output
             if isinstance(join_values, dict):
-                join_values = resolve_refs_recursively(stack_name, resources, mappings, join_values)
+                join_values = resolve_refs_recursively(
+                    stack_name, resources, mappings, conditions, parameters, join_values
+                )
 
             join_values = [
-                resolve_refs_recursively(stack_name, resources, mappings, v) for v in join_values
+                resolve_refs_recursively(stack_name, resources, mappings, conditions, parameters, v)
+                for v in join_values
             ]
 
             none_values = [v for v in join_values if v is None]
@@ -470,11 +473,15 @@ def _resolve_refs_recursively(
             item_to_sub[1].update(attr_refs)
 
             for key, val in item_to_sub[1].items():
-                val = resolve_refs_recursively(stack_name, resources, mappings, val)
+                val = resolve_refs_recursively(
+                    stack_name, resources, mappings, conditions, parameters, val
+                )
                 result = result.replace("${%s}" % key, val)
 
             # resolve placeholders
-            result = resolve_placeholders_in_string(result, stack_name, resources, mappings)
+            result = resolve_placeholders_in_string(
+                result, stack_name, resources, mappings, conditions, parameters
+            )
             return result
 
         if stripped_fn_lower == "findinmap":
@@ -483,7 +490,15 @@ def _resolve_refs_recursively(
 
             if isinstance(mapping_id, dict) and "Ref" in mapping_id:
                 # TODO: ??
-                mapping_id = resolve_ref(stack_name, resources, mappings, mapping_id["Ref"], "Ref")
+                mapping_id = resolve_ref(
+                    stack_name,
+                    resources,
+                    mappings,
+                    conditions,
+                    parameters,
+                    mapping_id["Ref"],
+                    "Ref",
+                )
 
             selected_map = mappings.get(mapping_id)
             if not selected_map:
@@ -493,20 +508,20 @@ def _resolve_refs_recursively(
 
             first_level_attribute = value[keys_list[0]][1]
             first_level_attribute = resolve_refs_recursively(
-                stack_name, resources, mappings, first_level_attribute
+                stack_name, resources, mappings, conditions, parameters, first_level_attribute
             )
 
             second_level_attribute = value[keys_list[0]][2]
             if not isinstance(second_level_attribute, str):
                 second_level_attribute = resolve_refs_recursively(
-                    stack_name, resources, mappings, second_level_attribute
+                    stack_name, resources, mappings, conditions, parameters, second_level_attribute
                 )
 
             return selected_map.get(first_level_attribute).get(second_level_attribute)
 
         if stripped_fn_lower == "importvalue":
             import_value_key = resolve_refs_recursively(
-                stack_name, resources, mappings, value[keys_list[0]]
+                stack_name, resources, mappings, conditions, parameters, value[keys_list[0]]
             )
             exports = exports_map()
             stack_export = exports.get(import_value_key) or {}
@@ -522,27 +537,35 @@ def _resolve_refs_recursively(
 
         if stripped_fn_lower == "if":
             condition, option1, option2 = value[keys_list[0]]
-            condition = evaluate_condition(stack_name, resources, mappings, condition)
+            condition = conditions[condition]
             result = resolve_refs_recursively(
-                stack_name, resources, mappings, option1 if condition else option2
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+                option1 if condition else option2,
             )
             return result
 
         if stripped_fn_lower == "condition":
             # FIXME: this should only allow strings, no evaluation should be performed here
             #   see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-condition.html
-            result = evaluate_condition(stack_name, resources, mappings, value[keys_list[0]])
-            return result
+            return conditions[value[keys_list[0]]]
 
         if stripped_fn_lower == "not":
             condition = value[keys_list[0]][0]
-            condition = resolve_refs_recursively(stack_name, resources, mappings, condition)
+            condition = resolve_refs_recursively(
+                stack_name, resources, mappings, conditions, parameters, condition
+            )
             return not condition
 
         if stripped_fn_lower in ["and", "or"]:
             conditions = value[keys_list[0]]
             results = [
-                resolve_refs_recursively(stack_name, resources, mappings, cond)
+                resolve_refs_recursively(
+                    stack_name, resources, mappings, conditions, parameters, cond
+                )
                 for cond in conditions
             ]
             result = all(results) if stripped_fn_lower == "and" else any(results)
@@ -550,15 +573,23 @@ def _resolve_refs_recursively(
 
         if stripped_fn_lower == "equals":
             operand1, operand2 = value[keys_list[0]]
-            operand1 = resolve_refs_recursively(stack_name, resources, mappings, operand1)
-            operand2 = resolve_refs_recursively(stack_name, resources, mappings, operand2)
+            operand1 = resolve_refs_recursively(
+                stack_name, resources, mappings, conditions, parameters, operand1
+            )
+            operand2 = resolve_refs_recursively(
+                stack_name, resources, mappings, conditions, parameters, operand2
+            )
             # TODO: investigate type coercion here
             return fn_equals_type_conversion(operand1) == fn_equals_type_conversion(operand2)
 
         if stripped_fn_lower == "select":
             index, values = value[keys_list[0]]
-            index = resolve_refs_recursively(stack_name, resources, mappings, index)
-            values = resolve_refs_recursively(stack_name, resources, mappings, values)
+            index = resolve_refs_recursively(
+                stack_name, resources, mappings, conditions, parameters, index
+            )
+            values = resolve_refs_recursively(
+                stack_name, resources, mappings, conditions, parameters, values
+            )
             try:
                 return values[index]
             except TypeError:
@@ -566,13 +597,19 @@ def _resolve_refs_recursively(
 
         if stripped_fn_lower == "split":
             delimiter, string = value[keys_list[0]]
-            delimiter = resolve_refs_recursively(stack_name, resources, mappings, delimiter)
-            string = resolve_refs_recursively(stack_name, resources, mappings, string)
+            delimiter = resolve_refs_recursively(
+                stack_name, resources, mappings, conditions, parameters, delimiter
+            )
+            string = resolve_refs_recursively(
+                stack_name, resources, mappings, conditions, parameters, string
+            )
             return string.split(delimiter)
 
         if stripped_fn_lower == "getazs":
             region = (
-                resolve_refs_recursively(stack_name, resources, mappings, value["Fn::GetAZs"])
+                resolve_refs_recursively(
+                    stack_name, resources, mappings, conditions, parameters, value["Fn::GetAZs"]
+                )
                 or aws_stack.get_region()
             )
             azs = []
@@ -584,12 +621,14 @@ def _resolve_refs_recursively(
         if stripped_fn_lower == "base64":
             value_to_encode = value[keys_list[0]]
             value_to_encode = resolve_refs_recursively(
-                stack_name, resources, mappings, value_to_encode
+                stack_name, resources, mappings, conditions, parameters, value_to_encode
             )
             return to_str(base64.b64encode(to_bytes(value_to_encode)))
 
         for key, val in dict(value).items():
-            value[key] = resolve_refs_recursively(stack_name, resources, mappings, val)
+            value[key] = resolve_refs_recursively(
+                stack_name, resources, mappings, conditions, parameters, val
+            )
 
     if isinstance(value, list):
         # in some cases, intrinsic functions are passed in as, e.g., `[['Fn::Sub', '${MyRef}']]`
@@ -597,16 +636,30 @@ def _resolve_refs_recursively(
             inner_list = value[0]
             if str(inner_list[0]).lower().startswith("fn::"):
                 return resolve_refs_recursively(
-                    stack_name, resources, mappings, {inner_list[0]: inner_list[1]}
+                    stack_name,
+                    resources,
+                    mappings,
+                    conditions,
+                    parameters,
+                    {inner_list[0]: inner_list[1]},
                 )
 
         for i in range(len(value)):
-            value[i] = resolve_refs_recursively(stack_name, resources, mappings, value[i])
+            value[i] = resolve_refs_recursively(
+                stack_name, resources, mappings, conditions, parameters, value[i]
+            )
 
     return value
 
 
-def resolve_placeholders_in_string(result, stack_name: str, resources: dict, mappings: dict):
+def resolve_placeholders_in_string(
+    result,
+    stack_name: str,
+    resources: dict,
+    mappings: dict,
+    conditions: dict[str, bool],
+    parameters: dict,
+):
     """
     Resolve individual Fn::Sub variable replacements
 
@@ -633,21 +686,41 @@ def resolve_placeholders_in_string(result, stack_name: str, resources: dict, map
             if not isinstance(resolved, str):
                 resolved = str(resolved)
             return resolved
-        if len(parts) == 1 and parts[0] in resources:
-            # Logical resource ID or parameter name specified => Use Ref for lookup
-            result = resolve_ref(stack_name, resources, mappings, parts[0], "Ref")
+        if len(parts) == 1:
+            if parts[0] in resources:
+                # Logical resource ID or parameter name specified => Use Ref for lookup
+                result = resolve_ref(
+                    stack_name, resources, mappings, conditions, parameters, parts[0], "Ref"
+                )
 
-            if result is None:
+                if result is None:
+                    raise DependencyNotYetSatisfied(
+                        resource_ids=parts[0],
+                        message=f"Unable to resolve attribute ref {ref_expression}",
+                    )
+                # TODO: is this valid?
+                # make sure we resolve any functions/placeholders in the extracted string
+                result = resolve_refs_recursively(
+                    stack_name, resources, mappings, conditions, parameters, result
+                )
+                # make sure we convert the result to string
+                # TODO: do this more systematically
+                result = "" if result is None else str(result)
+                return result
+            elif parts[0] in parameters:
+                parameter = parameters[parts[0]]
+                parameter_type: str = parameter["ParameterType"]
+                parameter_value = parameter.get("ResolvedValue") or parameter.get("ParameterValue")
+
+                if parameter_type in ["CommaDelimitedList"] or parameter_type.startswith("List<"):
+                    return [p.strip() for p in parameter_value.split(",")]
+                else:
+                    return parameter_value
+            else:
                 raise DependencyNotYetSatisfied(
                     resource_ids=parts[0],
                     message=f"Unable to resolve attribute ref {ref_expression}",
                 )
-            # TODO: is this valid?
-            # make sure we resolve any functions/placeholders in the extracted string
-            result = resolve_refs_recursively(stack_name, resources, mappings, result)
-            # make sure we convert the result to string
-            result = "" if result is None else str(result)
-            return result
         # TODO raise exception here?
         return match.group(0)
 
@@ -656,21 +729,12 @@ def resolve_placeholders_in_string(result, stack_name: str, resources: dict, map
     return result
 
 
-def evaluate_condition(stack_name: str, resources: dict, mappings: dict, condition: str) -> bool:
-    condition = resolve_refs_recursively(stack_name, resources, mappings, condition)
-    condition = resolve_ref(stack_name, resources, mappings, condition, attribute="Ref")
-    condition = resolve_refs_recursively(stack_name, resources, mappings, condition)
-    return condition
-
-
 def evaluate_resource_condition(
-    stack_name: str, resources: dict, mappings: dict, resource: dict
+    stack_name: str, resources: dict, mappings: dict, conditions: dict[str, bool], resource: dict
 ) -> bool:
     condition = resource.get("Condition")
     if condition:
-        condition = evaluate_condition(stack_name, resources, mappings, condition)
-        if condition is False or condition in FALSE_STRINGS or is_none_or_empty_value(condition):
-            return False
+        return conditions.get(condition, True)
     return True
 
 
@@ -900,7 +964,11 @@ class TemplateDeployer:
                 try:
                     # TODO: cache condition value in resource details on deployment and use cached value here
                     if evaluate_resource_condition(
-                        self.stack_name, self.resources, self.mappings, resource
+                        self.stack_name,
+                        self.resources,
+                        self.mappings,
+                        self.stack.resolved_conditions,
+                        resource,
                     ):
                         executor = self.create_resource_provider_executor()
                         resource_provider_payload = self.create_resource_provider_payload(
@@ -936,7 +1004,7 @@ class TemplateDeployer:
     def is_deployable_resource(self, resource):
         resource_type = get_resource_type(resource)
         entry = get_deployment_config(resource_type)
-        if entry is None and resource_type not in ["Parameter", None]:
+        if entry is None:
             resource_str = dump_resource_as_json(resource)
             LOG.warning(f'Unable to deploy resource type "{resource_type}": {resource_str}')
         return bool(entry and entry.get(ACTION_CREATE))
@@ -964,8 +1032,12 @@ class TemplateDeployer:
         return not unsatisfied
 
     def get_unsatisfied_dependencies(self, resource):
-        res_deps = self.get_resource_dependencies(resource)
-        res_deps_mapped = {v: self.stack.resources.get(v) for v in res_deps}
+        res_deps = self.get_resource_dependencies(
+            resource
+        )  # the output here is currently a set of merged IDs from both resources and parameters
+        parameter_deps = {d for d in res_deps if d in self.stack.resolved_parameters}
+        resource_deps = res_deps.difference(parameter_deps)
+        res_deps_mapped = {v: self.stack.resources.get(v) for v in resource_deps}
         return self.get_unsatisfied_dependencies_for_resources(res_deps_mapped, resource)
 
     def get_unsatisfied_dependencies_for_resources(
@@ -1322,7 +1394,7 @@ class TemplateDeployer:
         # TODO: this needs to happen much earlier
         # check resource condition, if present
         if not evaluate_resource_condition(
-            stack.stack_name, stack.resources, stack.mappings, resource
+            stack.stack_name, stack.resources, stack.mappings, stack.resolved_conditions, resource
         ):
             LOG.debug(
                 'Skipping deployment of "%s", as resource condition evaluates to false', resource_id
@@ -1330,7 +1402,14 @@ class TemplateDeployer:
             return
 
         # resolve refs in resource details
-        resolve_refs_recursively(stack.stack_name, stack.resources, stack.mappings, resource)
+        resolve_refs_recursively(
+            stack.stack_name,
+            stack.resources,
+            stack.mappings,
+            stack.resolved_conditions,
+            stack.resolved_parameters,
+            resource,
+        )
 
         if action in ["Add", "Modify"]:
             if action == "Add" and not self.is_deployable_resource(resource):
@@ -1369,7 +1448,9 @@ class TemplateDeployer:
 
         # TODO: this should not be needed as resources are filtered out if the
         # condition evaluates to False.
-        if not evaluate_resource_condition(stack.stack_name, resources, stack.mappings, resource):
+        if not evaluate_resource_condition(
+            stack.stack_name, resources, stack.mappings, stack.resolved_conditions, resource
+        ):
             return
 
         # remove AWS::NoValue entries
@@ -1442,7 +1523,14 @@ def resolve_outputs(stack) -> list[dict]:
     for k, details in stack.outputs.items():
         value = None
         try:
-            resolve_refs_recursively(stack.stack_name, stack.resources, stack.mappings, details)
+            resolve_refs_recursively(
+                stack.stack_name,
+                stack.resources,
+                stack.mappings,
+                stack.resolved_conditions,
+                stack.resolved_parameters,
+                details,
+            )
             value = details["Value"]
         except Exception as e:
             log_method = getattr(LOG, "debug")
@@ -1451,7 +1539,14 @@ def resolve_outputs(stack) -> list[dict]:
             log_method("Unable to resolve references in stack outputs: %s - %s", details, e)
         exports = details.get("Export") or {}
         export = exports.get("Name")
-        export = resolve_refs_recursively(stack.stack_name, stack.resources, stack.mappings, export)
+        export = resolve_refs_recursively(
+            stack.stack_name,
+            stack.resources,
+            stack.mappings,
+            stack.resolved_conditions,
+            stack.resolved_parameters,
+            export,
+        )
         description = details.get("Description")
         entry = {
             "OutputKey": k,
