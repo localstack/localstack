@@ -65,9 +65,7 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
                 parameters["MessageBody"] = to_json_str(message_body)
 
         api_action = camel_to_snake_case(self.resource.api_action)
-        sqs_client = aws_stack.create_external_boto_client(
-            "sqs", config=Config(parameter_validation=False)
-        )
+        sqs_client = aws_stack.connect_to_service("sqs", config=Config(parameter_validation=False))
         response = getattr(sqs_client, api_action)(**parameters)
         response.pop("ResponseMetadata", None)
         env.stack.append(response)
