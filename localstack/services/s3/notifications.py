@@ -140,9 +140,13 @@ class S3EventNotificationContext:
         if isinstance(key, FakeDeleteMarker):
             etag = ""
             key_size = 0
+            key_expiry = None
+            storage_class = ""
         else:
             etag = key.etag.strip('"')
             key_size = key.contentsize
+            key_expiry = key._expiry
+            storage_class = key.storage_class
 
         return cls(
             request_id=request_context.request_id,
@@ -154,8 +158,8 @@ class S3EventNotificationContext:
             key_name=quote(key.name),
             key_etag=etag,
             key_size=key_size,
-            key_expiry=key._expiry,
-            key_storage_class=key.storage_class,
+            key_expiry=key_expiry,
+            key_storage_class=storage_class,
             key_version_id=key.version_id if bucket.is_versioned else None,  # todo: check this?
             xray=request_context.request.headers.get(HEADER_AMZN_XRAY),
         )
