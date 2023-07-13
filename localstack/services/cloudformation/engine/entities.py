@@ -245,7 +245,7 @@ class Stack:
 
     @property
     def resources(self):
-        """Return dict of resources, parameters, conditions, and other stack metadata."""
+        """Return dict of resources"""
         return dict(self.template_resources)
 
     @property

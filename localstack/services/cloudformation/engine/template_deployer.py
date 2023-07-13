@@ -108,10 +108,6 @@ def retrieve_resource_details(
             state = instance.fetch_and_update_state(stack_name=stack_name, resources=resources)
             return state
 
-        # special case for stack parameters
-        if resource_type == "Parameter":
-            raise Exception("Invalid (is_deployable_resource)")
-
         message = (
             f"Unexpected resource type {resource_type} when resolving "
             f"references of resource {resource_id}: {dump_resource_as_json(resource)}"
@@ -142,7 +138,6 @@ def extract_resource_attribute(
 ):
     LOG.debug("Extract resource attribute: %s %s", resource_type, attribute)
     is_ref_attribute = attribute in ["PhysicalResourceId", "Ref"]
-    is_ref_attr_or_arn = is_ref_attribute or attribute == "Arn"
     resource = resource or {}
     if not resource and resources:
         resource = resources[resource_id]
@@ -170,20 +165,6 @@ def extract_resource_attribute(
     # TODO: remove the code below - move into resource model classes!
 
     resource_props = resource.get("Properties", {})
-    if resource_type == "Parameter":
-        raise Exception("Invalid (is_deployable_resource)")
-        result = None
-        param_value = resource_props.get(
-            "Value",
-            resource.get("Value", resource_props.get("Properties", {}).get("Value")),
-        )
-        if is_ref_attr_or_arn:
-            result = param_value
-        elif isinstance(param_value, dict):
-            result = param_value.get(attribute)
-        if result is not None:
-            return result
-        return ""
     attribute_lower = first_char_to_lower(attribute)
     result = resource_state.get(attribute) or resource_state.get(attribute_lower)
     if result is None and isinstance(resource, dict):
@@ -209,11 +190,7 @@ def get_attr_from_model_instance(
 ):
     model_class = RESOURCE_MODELS.get(resource_type)
     if not model_class:
-        if resource_type not in ["AWS::Parameter", "Parameter"]:
-            LOG.debug('Unable to find model class for resource type "%s"', resource_type)
-        else:
-            raise Exception("Invalid (is_deployable_resource)")
-        return
+        LOG.debug('Unable to find model class for resource type "%s"', resource_type)
     try:
         inst = model_class(resource_name=resource_id, resource_json=resource)
         return inst.get_cfn_attribute(attribute)
@@ -281,18 +258,13 @@ def resolve_ref(
 
         resource = resources.get(ref)
         if not resource:
-            raise Exception("Should be detected earlier")
+            raise Exception("Should be detected earlier.")
 
-        # TODO: remove after refactoring parameter resolution
-        # TODO: split this apart in parameter resource types and stack parameter handling
-        if resource["Type"] == "Parameter":
-            raise Exception("Invalid (is_deployable_resource)")
-        else:
-            # TODO: this shouldn't be needed when dependency graph and deployment status is honored
-            resolve_refs_recursively(
-                stack_name, resources, mappings, conditions, parameters, resources.get(ref)
-            )
-            return get_ref_from_model(resources, ref)
+        # TODO: this shouldn't be needed when dependency graph and deployment status is honored
+        resolve_refs_recursively(
+            stack_name, resources, mappings, conditions, parameters, resources.get(ref)
+        )
+        return get_ref_from_model(resources, ref)
 
     if resources.get(ref):
         if isinstance(resources[ref].get(attribute), (str, int, float, bool, dict)):
@@ -1032,9 +1004,7 @@ class TemplateDeployer:
     def is_deployable_resource(self, resource):
         resource_type = get_resource_type(resource)
         entry = get_deployment_config(resource_type)
-        if resource_type == "Parameter":
-            raise Exception("Invalid (is_deployable_resource)")
-        if entry is None and resource_type not in ["Parameter", None]:
+        if entry is None:
             resource_str = dump_resource_as_json(resource)
             LOG.warning(f'Unable to deploy resource type "{resource_type}": {resource_str}')
         return bool(entry and entry.get(ACTION_CREATE))
