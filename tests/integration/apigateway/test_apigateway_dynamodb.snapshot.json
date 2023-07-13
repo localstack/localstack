@@ -68,8 +68,15 @@
     "recorded-content": {
       "result-test": {
         "content": {
-          "__type": "com.amazon.coral.service#UnrecognizedClientException",
-          "message": "The security token included in the request is invalid."
+          "Count": 1,
+          "Items": [
+            {
+              "id": {
+                "S": "test"
+              }
+            }
+          ],
+          "ScannedCount": 1
         },
         "headers": {
           "connection": "keep-alive",

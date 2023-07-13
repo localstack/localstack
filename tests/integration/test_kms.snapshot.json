@@ -193,9 +193,9 @@
       "describe-key-diff-region-with-id": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Key 'arn:aws:kms:us-east-1:111111111111:key/<key-id:1>' does not exist"
+          "Message": "Key 'arn:aws:kms:<region>:111111111111:key/<key-id:1>' does not exist"
         },
-        "message": "Key 'arn:aws:kms:us-east-1:111111111111:key/<key-id:1>' does not exist",
+        "message": "Key 'arn:aws:kms:<region>:111111111111:key/<key-id:1>' does not exist",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -372,8 +372,8 @@
           "MultiRegionConfiguration": {
             "MultiRegionKeyType": "REPLICA",
             "PrimaryKey": {
-              "Arn": "arn:aws:kms:us-east-1:111111111111:key/<key-id:1>",
-              "Region": "us-east-1"
+              "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+              "Region": "<region>"
             },
             "ReplicaKeys": [
               {
@@ -407,7 +407,7 @@
       "describe-key-from-region": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:us-east-1:111111111111:key/<key-id:1>",
+          "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "test replicated key",
@@ -424,8 +424,8 @@
           "MultiRegionConfiguration": {
             "MultiRegionKeyType": "PRIMARY",
             "PrimaryKey": {
-              "Arn": "arn:aws:kms:us-east-1:111111111111:key/<key-id:1>",
-              "Region": "us-east-1"
+              "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+              "Region": "<region>"
             },
             "ReplicaKeys": [
               {
@@ -461,8 +461,8 @@
           "MultiRegionConfiguration": {
             "MultiRegionKeyType": "REPLICA",
             "PrimaryKey": {
-              "Arn": "arn:aws:kms:us-east-1:111111111111:key/<key-id:1>",
-              "Region": "us-east-1"
+              "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+              "Region": "<region>"
             },
             "ReplicaKeys": [
               {

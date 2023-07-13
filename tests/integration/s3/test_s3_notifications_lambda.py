@@ -31,32 +31,7 @@ class TestS3NotificationsToLambda:
         snapshot,
         aws_client,
     ):
-        snapshot.add_transformer(
-            [
-                snapshot.transform.jsonpath(
-                    "$..M.requestParameters.M.sourceIPAddress.S", "ip-address"
-                ),
-                snapshot.transform.jsonpath(
-                    "$..M.responseElements.M.x-amz-id-2.S", "amz-id", reference_replacement=False
-                ),
-                snapshot.transform.jsonpath(
-                    "$..M.responseElements.M.x-amz-request-id.S",
-                    "amz-request-id",
-                    reference_replacement=False,
-                ),
-                snapshot.transform.jsonpath("$..M.s3.M.bucket.M.name.S", "bucket-name"),
-                snapshot.transform.jsonpath("$..M.s3.M.bucket.M.arn.S", "bucket-arn"),
-                snapshot.transform.jsonpath(
-                    "$..M.s3.M.bucket.M.ownerIdentity.M.principalId.S", "principal-id"
-                ),
-                snapshot.transform.jsonpath("$..M.s3.M.configurationId.S", "config-id"),
-                snapshot.transform.jsonpath("$..M.s3.M.object.M.key.S", "object-key"),
-                snapshot.transform.jsonpath(
-                    "$..M.s3.M.object.M.sequencer.S", "sequencer", reference_replacement=False
-                ),
-                snapshot.transform.jsonpath("$..M.userIdentity.M.principalId.S", "principal-id"),
-            ]
-        )
+        snapshot.add_transformer(snapshot.transform.s3_dynamodb_notifications())
 
         bucket_name = s3_create_bucket()
         function_name = f"func-{short_uid()}"
@@ -133,7 +108,6 @@ class TestS3NotificationsToLambda:
             "$..data.s3.object.size",
         ],  # TODO presigned-post sporadic failures in CI Pipeline
     )
-    # TODO@viren update snapshots
     def test_create_object_by_presigned_request_via_dynamodb(
         self,
         s3_create_bucket,
@@ -143,14 +117,8 @@ class TestS3NotificationsToLambda:
         snapshot,
         aws_client,
     ):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformer(
-            [
-                snapshot.transform.jsonpath("$..s3.bucket.name", "bucket-name"),
-                snapshot.transform.jsonpath("$..s3.object.key", "object-key"),
-                snapshot.transform.key_value("uuid", "<uuid>", reference_replacement=False),
-            ]
-        )
+        snapshot.add_transformer(snapshot.transform.s3_dynamodb_notifications())
+
         bucket_name = s3_create_bucket()
         function_name = "func-%s" % short_uid()
         table_name = "table-%s" % short_uid()
@@ -205,8 +173,7 @@ class TestS3NotificationsToLambda:
         put_url = aws_client.s3.generate_presigned_url(
             ClientMethod="put_object", Params={"Bucket": bucket_name, "Key": table_name}
         )
-        response = requests.put(put_url, data="by_presigned_put")
-        assert response.ok
+        requests.put(put_url, data="by_presigned_put")
 
         presigned_post = aws_client.s3.generate_presigned_post(Bucket=bucket_name, Key=table_name)
         # method 1
@@ -218,9 +185,9 @@ class TestS3NotificationsToLambda:
 
         def check_table():
             rs = aws_client.dynamodb.scan(TableName=table_name)
+            items = sorted(rs["Items"], key=lambda x: x["data"]["M"]["eventName"]["S"])
             assert len(rs["Items"]) == 2
-            rs["Items"] = sorted(rs["Items"], key=lambda x: x["data"]["eventName"]["S"])
-            snapshot.match("items", rs["Items"])
+            snapshot.match("items", items)
 
         retry(check_table, retries=20, sleep=2)
 

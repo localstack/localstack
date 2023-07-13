@@ -91,8 +91,193 @@
     }
   },
   "tests/integration/s3/test_s3_notifications_lambda.py::TestS3NotificationsToLambda::test_create_object_by_presigned_request_via_dynamodb": {
-    "recorded-date": "13-07-2023, 17:38:47",
-    "recorded-content": {}
+    "recorded-date": "13-07-2023, 19:19:13",
+    "recorded-content": {
+      "items": [
+        {
+          "uuid": {
+            "S": "<uuid:1>"
+          },
+          "data": {
+            "M": {
+              "s3": {
+                "M": {
+                  "bucket": {
+                    "M": {
+                      "name": {
+                        "S": "<bucket-name:1>"
+                      },
+                      "arn": {
+                        "S": "arn:aws:s3:::<bucket-name:1>"
+                      },
+                      "ownerIdentity": {
+                        "M": {
+                          "principalId": {
+                            "S": "<principal-id:1>"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "configurationId": {
+                    "S": "<config-id:1>"
+                  },
+                  "s3SchemaVersion": {
+                    "S": "1.0"
+                  },
+                  "object": {
+                    "M": {
+                      "eTag": {
+                        "S": "232d7472010db416df31c55fdc0490a5"
+                      },
+                      "size": {
+                        "N": "16"
+                      },
+                      "key": {
+                        "S": "<object-key:1>"
+                      },
+                      "sequencer": {
+                        "S": "sequencer"
+                      }
+                    }
+                  }
+                }
+              },
+              "awsRegion": {
+                "S": "<region>"
+              },
+              "eventVersion": {
+                "S": "2.1"
+              },
+              "responseElements": {
+                "M": {
+                  "x-amz-id-2": {
+                    "S": "amz-id"
+                  },
+                  "x-amz-request-id": {
+                    "S": "amz-request-id"
+                  }
+                }
+              },
+              "eventSource": {
+                "S": "aws:s3"
+              },
+              "eventTime": {
+                "S": "date"
+              },
+              "requestParameters": {
+                "M": {
+                  "sourceIPAddress": {
+                    "S": "<ip-address:1>"
+                  }
+                }
+              },
+              "eventName": {
+                "S": "ObjectCreated:Post"
+              },
+              "userIdentity": {
+                "M": {
+                  "principalId": {
+                    "S": "<principal-id:2>"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "uuid": {
+            "S": "<uuid:2>"
+          },
+          "data": {
+            "M": {
+              "s3": {
+                "M": {
+                  "bucket": {
+                    "M": {
+                      "name": {
+                        "S": "<bucket-name:1>"
+                      },
+                      "arn": {
+                        "S": "arn:aws:s3:::<bucket-name:1>"
+                      },
+                      "ownerIdentity": {
+                        "M": {
+                          "principalId": {
+                            "S": "<principal-id:1>"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "configurationId": {
+                    "S": "<config-id:1>"
+                  },
+                  "s3SchemaVersion": {
+                    "S": "1.0"
+                  },
+                  "object": {
+                    "M": {
+                      "eTag": {
+                        "S": "b0d833b208acd18be70a25c9323f210d"
+                      },
+                      "size": {
+                        "N": "16"
+                      },
+                      "key": {
+                        "S": "<object-key:1>"
+                      },
+                      "sequencer": {
+                        "S": "sequencer"
+                      }
+                    }
+                  }
+                }
+              },
+              "awsRegion": {
+                "S": "<region>"
+              },
+              "eventVersion": {
+                "S": "2.1"
+              },
+              "responseElements": {
+                "M": {
+                  "x-amz-id-2": {
+                    "S": "amz-id"
+                  },
+                  "x-amz-request-id": {
+                    "S": "amz-request-id"
+                  }
+                }
+              },
+              "eventSource": {
+                "S": "aws:s3"
+              },
+              "eventTime": {
+                "S": "date"
+              },
+              "requestParameters": {
+                "M": {
+                  "sourceIPAddress": {
+                    "S": "<ip-address:1>"
+                  }
+                }
+              },
+              "eventName": {
+                "S": "ObjectCreated:Put"
+              },
+              "userIdentity": {
+                "M": {
+                  "principalId": {
+                    "S": "<principal-id:2>"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
   },
   "tests/integration/s3/test_s3_notifications_lambda.py::TestS3NotificationsToLambda::test_invalid_lambda_arn": {
     "recorded-date": "05-05-2023, 16:10:00",
