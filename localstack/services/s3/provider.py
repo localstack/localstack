@@ -1,3 +1,4 @@
+import copy
 import datetime
 import logging
 import os
@@ -125,6 +126,8 @@ from localstack.aws.api.s3 import (
     ReplicationConfigurationNotFoundError,
     RequestPayer,
     RequestProgress,
+    RestoreObjectOutput,
+    RestoreObjectRequest,
     S3Api,
     ScanRange,
     SelectObjectContentOutput,
@@ -1677,6 +1680,26 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # and streaming capability.
         # avoid a fallback to moto and return the 501 to the client directly instead.
         raise NotImplementedAvoidFallbackError
+
+    @handler("RestoreObject", expand=False)
+    def restore_object(
+        self,
+        context: RequestContext,
+        request: RestoreObjectRequest,
+    ) -> RestoreObjectOutput:
+        response: RestoreObjectOutput = call_moto(context)
+        # We first create a context when we initiated the Restore process
+        s3_notif_ctx_initiated = S3EventNotificationContext.from_request_context(context)
+        self._notify(context, s3_notif_ctx_initiated)
+        # But because it's instant in LocalStack, we can directly send the Completed notification as well
+        # We just need to copy the context so that we don't mutate the first context while it could be sent
+        # And modify its event type from `ObjectRestore:Post` to `ObjectRestore:Completed`
+        s3_notif_ctx_completed = copy.copy(s3_notif_ctx_initiated)
+        s3_notif_ctx_completed.event_type = s3_notif_ctx_completed.event_type.replace(
+            "Post", "Completed"
+        )
+        self._notify(context, s3_notif_ctx_completed)
+        return response
 
     def put_bucket_inventory_configuration(
         self,

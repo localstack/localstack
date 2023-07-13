@@ -176,3 +176,60 @@ class TestS3NotificationsToEventBridge:
         retry(_receive_messages, retries=retries, sleep=0.1)
         messages.sort(key=lambda x: x["time"])
         snapshot.match("messages", {"messages": messages})
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
+    def test_restore_object(self, basic_event_bridge_rule_to_sqs_queue, snapshot, aws_client):
+        # setup fixture
+        bucket_name, queue_url = basic_event_bridge_rule_to_sqs_queue
+        key_name = "my_key_restore"
+
+        # We set the StorageClass to Glacier Flexible Retrieval (formerly Glacier) as it's the only one allowing
+        # Expedited retrieval Tier (with the Intelligent Access Archive tier)
+        aws_client.s3.put_object(
+            Bucket=bucket_name, Key=key_name, Body="something", StorageClass="GLACIER"
+        )
+
+        aws_client.s3.restore_object(
+            Bucket=bucket_name,
+            Key=key_name,
+            RestoreRequest={
+                "Days": 1,
+                "GlacierJobParameters": {
+                    "Tier": "Expedited",  # Set it as Expedited, it should be done within 1-5min
+                },
+            },
+        )
+
+        def _is_object_restored():
+            resp = aws_client.s3.head_object(Bucket=bucket_name, Key=key_name)
+            assert 'ongoing-request="false"' in resp["Restore"]
+
+        if is_aws_cloud():
+            retries = 12
+            sleep = 30
+        else:
+            retries = 3
+            sleep = 1
+
+        retry(_is_object_restored, retries=retries, sleep=sleep)
+
+        messages = []
+
+        def _receive_messages():
+            received = aws_client.sqs.receive_message(QueueUrl=queue_url).get("Messages", [])
+            for msg in received:
+                event_message = json.loads(msg["Body"])
+                # skip PutObject
+                if event_message["detail-type"] != "Object Created":
+                    messages.append(event_message)
+                aws_client.sqs.delete_message(
+                    QueueUrl=queue_url, ReceiptHandle=msg["ReceiptHandle"]
+                )
+
+            assert len(messages) == 2
+
+        retries = 10 if is_aws_cloud() else 5
+        retry(_receive_messages, retries=retries, sleep=0.1)
+        messages.sort(key=lambda x: x["time"])
+        snapshot.match("messages", {"messages": messages})
