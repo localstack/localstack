@@ -1180,8 +1180,9 @@ class TestS3:
         )
         snapshot.match("get-object-with-checksum", get_object_with_checksum)
 
+        # test that the casing of ChecksumMode is not important, the spec indicate only ENABLED
         head_object_with_checksum = aws_client.s3.get_object(
-            Bucket=s3_bucket, Key=key, ChecksumMode="ENABLED"
+            Bucket=s3_bucket, Key=key, ChecksumMode="enabled"
         )
         snapshot.match("head-object-with-checksum", head_object_with_checksum)
 

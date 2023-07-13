@@ -435,7 +435,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
             response["ContentEncoding"] = ""
 
-        if request.get("ChecksumMode") == "ENABLED" and checksum_algorithm:
+        if request.get("ChecksumMode", "").upper() == "ENABLED" and checksum_algorithm:
             response[f"Checksum{checksum_algorithm.upper()}"] = key_object.checksum_value  # noqa
 
         if not request.get("VersionId"):
@@ -485,7 +485,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
             response["ContentEncoding"] = ""
 
-        if request.get("ChecksumMode") == "ENABLED" and checksum_algorithm:
+        if request.get("ChecksumMode", "").upper() == "ENABLED" and checksum_algorithm:
             response[f"Checksum{checksum_algorithm.upper()}"] = key_object.checksum_value  # noqa
 
         if not version_id and (
