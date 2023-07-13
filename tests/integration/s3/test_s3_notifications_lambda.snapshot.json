@@ -1,6 +1,6 @@
 {
   "tests/integration/s3/test_s3_notifications_lambda.py::TestS3NotificationsToLambda::test_create_object_put_via_dynamodb": {
-    "recorded-date": "13-07-2023, 11:45:29",
+    "recorded-date": "13-07-2023, 18:06:28",
     "recorded-content": {
       "table_content": {
         "M": {
@@ -22,17 +22,17 @@
           "requestParameters": {
             "M": {
               "sourceIPAddress": {
-                "S": "103.142.120.216"
+                "S": "<ip-address:1>"
               }
             }
           },
           "responseElements": {
             "M": {
               "x-amz-id-2": {
-                "S": "PgaZ7sVzwqn/W6AIjK3IkX1QChWRRUmMT2U6Fi18bmvYWxpuh+A4J7mKB2qFxi03k0cQfNkhD/3qwhdD7A3Gxwhv9LtMpkIB"
+                "S": "amz-id"
               },
               "x-amz-request-id": {
-                "S": "ETH59YQA8BN6Y6Q7"
+                "S": "amz-request-id"
               }
             }
           },
@@ -41,22 +41,22 @@
               "bucket": {
                 "M": {
                   "arn": {
-                    "S": "arn:aws:s3:::test-bucket-16ea14b8"
+                    "S": "arn:aws:s3:::<bucket-name:1>"
                   },
                   "name": {
-                    "S": "test-bucket-16ea14b8"
+                    "S": "<bucket-name:1>"
                   },
                   "ownerIdentity": {
                     "M": {
                       "principalId": {
-                        "S": "A1G5FCC4YA8UOY"
+                        "S": "<principal-id:1>"
                       }
                     }
                   }
                 }
               },
               "configurationId": {
-                "S": "MWRlZDRjMGItZWIzNS00NTIzLTg0OGQtMTEyNmVjNmM1MmI5"
+                "S": "<config-id:1>"
               },
               "object": {
                 "M": {
@@ -64,10 +64,10 @@
                     "S": "e9fb1ed1d5eaa36781088aae37acffbd"
                   },
                   "key": {
-                    "S": "table-79a1cb25"
+                    "S": "<object-key:1>"
                   },
                   "sequencer": {
-                    "S": "0064AF967BEA9880BF"
+                    "S": "sequencer"
                   },
                   "size": {
                     "N": "11"
@@ -82,7 +82,7 @@
           "userIdentity": {
             "M": {
               "principalId": {
-                "S": "AWS:AIDAZCRR4CRRZYPN5AXG5"
+                "S": "<principal-id:2>"
               }
             }
           }
@@ -91,7 +91,7 @@
     }
   },
   "tests/integration/s3/test_s3_notifications_lambda.py::TestS3NotificationsToLambda::test_create_object_by_presigned_request_via_dynamodb": {
-    "recorded-date": "13-07-2023, 11:50:34",
+    "recorded-date": "13-07-2023, 17:38:47",
     "recorded-content": {}
   },
   "tests/integration/s3/test_s3_notifications_lambda.py::TestS3NotificationsToLambda::test_invalid_lambda_arn": {

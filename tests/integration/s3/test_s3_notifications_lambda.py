@@ -31,11 +31,30 @@ class TestS3NotificationsToLambda:
         snapshot,
         aws_client,
     ):
-        snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(
             [
-                snapshot.transform.jsonpath("$..s3.bucket.name", "bucket-name"),
-                snapshot.transform.jsonpath("$..s3.object.key", "object-key"),
+                snapshot.transform.jsonpath(
+                    "$..M.requestParameters.M.sourceIPAddress.S", "ip-address"
+                ),
+                snapshot.transform.jsonpath(
+                    "$..M.responseElements.M.x-amz-id-2.S", "amz-id", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..M.responseElements.M.x-amz-request-id.S",
+                    "amz-request-id",
+                    reference_replacement=False,
+                ),
+                snapshot.transform.jsonpath("$..M.s3.M.bucket.M.name.S", "bucket-name"),
+                snapshot.transform.jsonpath("$..M.s3.M.bucket.M.arn.S", "bucket-arn"),
+                snapshot.transform.jsonpath(
+                    "$..M.s3.M.bucket.M.ownerIdentity.M.principalId.S", "principal-id"
+                ),
+                snapshot.transform.jsonpath("$..M.s3.M.configurationId.S", "config-id"),
+                snapshot.transform.jsonpath("$..M.s3.M.object.M.key.S", "object-key"),
+                snapshot.transform.jsonpath(
+                    "$..M.s3.M.object.M.sequencer.S", "sequencer", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath("$..M.userIdentity.M.principalId.S", "principal-id"),
             ]
         )
 
@@ -186,7 +205,8 @@ class TestS3NotificationsToLambda:
         put_url = aws_client.s3.generate_presigned_url(
             ClientMethod="put_object", Params={"Bucket": bucket_name, "Key": table_name}
         )
-        requests.put(put_url, data="by_presigned_put")
+        response = requests.put(put_url, data="by_presigned_put")
+        assert response.ok
 
         presigned_post = aws_client.s3.generate_presigned_post(Bucket=bucket_name, Key=table_name)
         # method 1
