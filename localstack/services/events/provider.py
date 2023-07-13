@@ -150,9 +150,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             if "minute" in unit:
                 return "*/%s * * * *" % value
             if "hour" in unit:
-                return "* */%s * * *" % value
+                return "0 */%s * * *" % value
             if "day" in unit:
-                return "* * */%s * *" % value
+                return "0 0 */%s * *" % value
             raise Exception("Unable to parse events schedule expression: %s" % schedule)
         return schedule
 
