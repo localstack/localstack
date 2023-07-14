@@ -97,68 +97,6 @@ class TestSqsProvider:
         queue_url = client.get_queue_url(QueueName=queue_name)["QueueUrl"]
         assert queue_url == f"{host}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
 
-    @pytest.mark.parametrize("strategy", ["domain", "path"])
-    def test_cross_account_access(
-        self, monkeypatch, sqs_create_queue, aws_client_factory, strategy
-    ):
-        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
-        queue_url = sqs_create_queue()
-
-        # Ensure SQS operations work across accounts
-        client = aws_client_factory.get_client(
-            "sqs",
-            "ap-south-1",
-            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-        )
-
-        assert client.get_queue_attributes(QueueUrl=queue_url)
-        assert client.send_message(QueueUrl=queue_url, MessageBody="foo")["MessageId"]
-        response = client.receive_message(QueueUrl=queue_url)
-        assert len(response["Messages"]) == 1
-        assert client.delete_message(
-            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
-        )
-        assert client.purge_queue(QueueUrl=queue_url)
-
-        # On production AWS, cross-account access is not applicable for following operations,
-        # but this is not enforced in LocalStack
-        # - AddPermission
-        # - CreateQueue
-        # - DeleteQueue
-        # - ListQueues
-        # - ListQueueTags
-        # - RemovePermission
-        # - SetQueueAttributes
-        # - TagQueue
-        # - UntagQueue
-
-    @pytest.mark.parametrize("strategy", ["domain", "path"])
-    def test_cross_account_get_queue_url(
-        self, monkeypatch, sqs_create_queue, aws_client_factory, strategy
-    ):
-        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
-        queue_name = f"test-queue-cross-account-{short_uid()}"
-        queue_url = sqs_create_queue(QueueName=queue_name)
-        account_id, region_name, queue_name_from_url = parse_queue_url(queue_url)
-        assert account_id == DEFAULT_AWS_ACCOUNT_ID
-        assert region_name == TEST_AWS_REGION_NAME
-        assert queue_name_from_url == queue_name
-
-        # Get another client in the same region
-        client = aws_client_factory.get_client(
-            "sqs",
-            TEST_AWS_REGION_NAME,
-            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-        )
-
-        # test that you can get the queue url from another account, if you set the owner
-        queue_url_2 = client.get_queue_url(QueueName=queue_name, QueueOwnerAWSAccountId=account_id)[
-            "QueueUrl"
-        ]
-        assert queue_url == queue_url_2
-
     @pytest.mark.aws_validated
     def test_list_queues(self, sqs_create_queue, aws_client):
         queue_names = [
@@ -3771,64 +3709,6 @@ class TestSqsQueryApi:
 
         assert poll_condition(lambda: not sqs_queue_exists(queue_url), timeout=5)
 
-    @pytest.mark.only_localstack
-    def test_delete_queue_multi_account(
-        self, aws_client_factory, aws_http_client_factory, cleanups
-    ):
-        # set up regular boto clients for creating the queues
-        client1 = aws_client_factory.get_client(
-            service_name="sqs",
-            region_name=TEST_AWS_REGION_NAME,
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-        )
-        client2 = aws_client_factory.get_client(
-            service_name="sqs",
-            region_name=TEST_AWS_REGION_NAME,
-            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-        )
-
-        # set up the queues in the two accounts
-        prefix = f"test-{short_uid()}-"
-        queue1_name = f"{prefix}-queue-{short_uid()}"
-        queue2_name = f"{prefix}-queue-{short_uid()}"
-        response = client1.create_queue(QueueName=queue1_name)
-        queue1_url = response["QueueUrl"]
-        assert parse_queue_url(queue1_url)[0] == TEST_AWS_ACCOUNT_ID
-
-        response = client2.create_queue(QueueName=queue2_name)
-        queue2_url = response["QueueUrl"]
-        assert parse_queue_url(queue2_url)[0] == SECONDARY_TEST_AWS_ACCOUNT_ID
-
-        # now prepare the query api clients
-        client1_http = aws_http_client_factory(
-            service="sqs",
-            region=TEST_AWS_REGION_NAME,
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-        )
-
-        client2_http = aws_http_client_factory(
-            service="sqs",
-            region=TEST_AWS_REGION_NAME,
-            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-        )
-
-        # try and delete the queue from one account using the query API and make sure a) it works, and b) it's not deleting the queue from the other account
-        assert len(client1.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])) == 1
-        assert len(client2.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])) == 1
-        response = client1_http.post(queue1_url, params={"Action": "DeleteQueue"})
-        assert response.ok
-        assert len(client1.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])) == 0
-        assert queue2_url in client2.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])
-
-        # now delete the second one
-        client2_http.post(queue2_url, params={"Action": "DeleteQueue"})
-        assert response.ok
-        assert len(client2.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])) == 0
-
     @pytest.mark.aws_validated
     def test_get_send_and_receive_messages(self, sqs_create_queue, sqs_http_client):
         queue1_url = sqs_create_queue()
@@ -4116,3 +3996,107 @@ class TestSqsQueryApi:
 
     # TODO: write tests for making POST requests (not clear how signing would work without custom code)
     #  https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-making-api-requests.html#structure-post-request
+
+
+class TestSQSMultiAccounts:
+    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    def test_cross_account_access(
+        self, monkeypatch, sqs_create_queue, secondary_aws_client, strategy
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
+        # Create a queue using primary test credentials
+        queue_url = sqs_create_queue()
+
+        # Create a client configured with secondary test credentials
+        client = secondary_aws_client.sqs
+
+        assert client.get_queue_attributes(QueueUrl=queue_url)
+        assert client.send_message(QueueUrl=queue_url, MessageBody="foo")["MessageId"]
+        response = client.receive_message(QueueUrl=queue_url)
+        assert len(response["Messages"]) == 1
+        assert client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+        assert client.purge_queue(QueueUrl=queue_url)
+
+        # On production AWS, cross-account access is not applicable for following operations,
+        # but this is not enforced in LocalStack
+        # - AddPermission
+        # - CreateQueue
+        # - DeleteQueue
+        # - ListQueues
+        # - ListQueueTags
+        # - RemovePermission
+        # - SetQueueAttributes
+        # - TagQueue
+        # - UntagQueue
+
+    @pytest.mark.parametrize("strategy", ["domain", "path"])
+    def test_cross_account_get_queue_url(
+        self, monkeypatch, sqs_create_queue, secondary_aws_client, strategy
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+        queue_name = f"test-queue-cross-account-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        account_id, region_name, queue_name_from_url = parse_queue_url(queue_url)
+        assert account_id == DEFAULT_AWS_ACCOUNT_ID
+        assert region_name == TEST_AWS_REGION_NAME
+        assert queue_name_from_url == queue_name
+
+        # Get another client in the same region
+        client = secondary_aws_client.sqs
+
+        # test that you can get the queue url from another account, if you set the owner
+        queue_url_2 = client.get_queue_url(QueueName=queue_name, QueueOwnerAWSAccountId=account_id)[
+            "QueueUrl"
+        ]
+        assert queue_url == queue_url_2
+
+    @pytest.mark.only_localstack
+    def test_delete_queue_multi_account(
+        self, aws_client, secondary_aws_client, aws_http_client_factory, cleanups
+    ):
+        # set up regular boto clients for creating the queues
+        client1 = aws_client.sqs
+        client2 = secondary_aws_client.sqs
+
+        # set up the queues in the two accounts
+        prefix = f"test-{short_uid()}-"
+        queue1_name = f"{prefix}-queue-{short_uid()}"
+        queue2_name = f"{prefix}-queue-{short_uid()}"
+        response = client1.create_queue(QueueName=queue1_name)
+        queue1_url = response["QueueUrl"]
+        assert parse_queue_url(queue1_url)[0] == TEST_AWS_ACCOUNT_ID
+
+        response = client2.create_queue(QueueName=queue2_name)
+        queue2_url = response["QueueUrl"]
+        assert parse_queue_url(queue2_url)[0] == SECONDARY_TEST_AWS_ACCOUNT_ID
+
+        # now prepare the query api clients
+        client1_http = aws_http_client_factory(
+            service="sqs",
+            region=TEST_AWS_REGION_NAME,
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        )
+
+        client2_http = aws_http_client_factory(
+            service="sqs",
+            region=TEST_AWS_REGION_NAME,  # Use the same region for both clients
+            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+        )
+
+        # try and delete the queue from one account using the query API and make sure a) it works, and b) it's not deleting the queue from the other account
+        assert len(client1.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])) == 1
+        assert len(client2.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])) == 1
+        response = client1_http.post(queue1_url, params={"Action": "DeleteQueue"})
+        assert response.ok
+        assert len(client1.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])) == 0
+        assert queue2_url in client2.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])
+
+        # now delete the second one
+        client2_http.post(queue2_url, params={"Action": "DeleteQueue"})
+        assert response.ok
+        assert len(client2.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])) == 0
