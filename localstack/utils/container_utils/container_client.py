@@ -21,7 +21,7 @@ else:
     from typing_extensions import Protocol, get_args, Literal
 
 from localstack import config
-from localstack.utils.collections import HashableList
+from localstack.utils.collections import HashableList, ensure_list
 from localstack.utils.files import TMP_FILES, rm_rf, save_file
 from localstack.utils.strings import short_uid
 
@@ -448,6 +448,7 @@ class DockerRunFlags:
     ports: Optional[PortMappings]
     ulimits: Optional[List[Ulimit]]
     user: Optional[str]
+    dns: Optional[List[str]]
 
 
 # TODO: remove Docker/Podman compatibility switches (in particular strip_wellknown_repo_prefixes=...)
@@ -810,7 +811,7 @@ class ContainerClient(metaclass=ABCMeta):
         cap_drop: Optional[List[str]] = None,
         security_opt: Optional[List[str]] = None,
         network: Optional[str] = None,
-        dns: Optional[str] = None,
+        dns: Optional[Union[str, List[str]]] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
@@ -1009,6 +1010,7 @@ class Util:
         privileged: Optional[bool] = None,
         user: Optional[str] = None,
         ulimits: Optional[List[Ulimit]] = None,
+        dns: Optional[Union[str, List[str]]] = None,
     ) -> DockerRunFlags:
         """Parses additional CLI-formatted Docker flags, which could overwrite provided defaults.
         :param additional_flags: String which contains the flag definitions inspired by the Docker CLI reference:
@@ -1022,6 +1024,7 @@ class Util:
         :param privileged: Run the container in privileged mode. Warning will be printed if overwritten in flags.
         :param ulimits: ulimit options in the format <type>=<soft limit>[:<hard limit>]
         :param user: User to run first process. Warning will be printed if user is overwritten in flags.
+        :param dns: List of DNS servers to configure the container with.
         :return: A DockerRunFlags object that will return new objects if respective parameters were None and
                 additional flags contained a flag for that object or the same which are passed otherwise.
         """
@@ -1067,6 +1070,7 @@ class Util:
         parser.add_argument(
             "--volume", "-v", help="Bind mount a volume", dest="volumes", action="append"
         )
+        parser.add_argument("--dns", help="Set custom DNS servers", dest="dns", action="append")
 
         # Parse
         flags = shlex.split(additional_flags)
@@ -1112,7 +1116,9 @@ class Util:
 
         if args.privileged:
             LOG.warning(
-                f"Overwriting Docker container privileged flag {privileged} with new value {args.privileged}"
+                "Overwriting Docker container privileged flag %s with new value %s",
+                privileged,
+                args.privileged,
             )
             privileged = args.privileged
 
@@ -1179,6 +1185,13 @@ class Util:
                     LOG.info("Volume options like :ro or :rw are currently ignored.")
                 mounts.append((host_path, container_path))
 
+        dns = ensure_list(dns or [])
+        if args.dns:
+            LOG.info(
+                "Extending Docker container DNS servers %s with additional values %s", dns, args.dns
+            )
+            dns.extend(args.dns)
+
         return DockerRunFlags(
             env_vars=env_vars,
             extra_hosts=extra_hosts,
@@ -1190,6 +1203,7 @@ class Util:
             privileged=privileged,
             ulimits=ulimits,
             user=user,
+            dns=dns,
         )
 
     @staticmethod

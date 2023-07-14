@@ -717,7 +717,7 @@ class CmdDockerClient(ContainerClient):
         cap_drop: Optional[List[str]] = None,
         security_opt: Optional[List[str]] = None,
         network: Optional[str] = None,
-        dns: Optional[str] = None,
+        dns: Optional[Union[str, List[str]]] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
@@ -765,7 +765,8 @@ class CmdDockerClient(ContainerClient):
         if network:
             cmd += ["--network", network]
         if dns:
-            cmd += ["--dns", dns]
+            for dns_server in ensure_list(dns):
+                cmd += ["--dns", dns_server]
         if workdir:
             cmd += ["--workdir", workdir]
         if labels:

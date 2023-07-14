@@ -77,6 +77,7 @@ class TestArgumentParsing:
         test_port_string_many_to_one = "-p 9230-9231:9230"
         test_ulimit_string = "--ulimit nofile=768:1024 --ulimit nproc=3"
         test_user_string = "-u sbx_user1051"
+        test_dns_string = "--dns 1.2.3.4 --dns 5.6.7.8"
         argument_string = " ".join(
             [
                 test_env_string,
@@ -89,6 +90,7 @@ class TestArgumentParsing:
                 test_privileged_string,
                 test_ulimit_string,
                 test_user_string,
+                test_dns_string,
             ]
         )
         env_vars = {}
@@ -121,6 +123,7 @@ class TestArgumentParsing:
             Ulimit(name="nofile", soft_limit=768, hard_limit=1024),
         ]
         assert flags.user == "sbx_user1051"
+        assert flags.dns == ["1.2.3.4", "5.6.7.8"]
 
         argument_string = (
             "--add-host host.docker.internal:host-gateway --add-host arbitrary.host:127.0.0.1"
@@ -199,6 +202,19 @@ class TestArgumentParsing:
         argument_string = r"-u nobody"
         flags = Util.parse_additional_flags(argument_string)
         assert flags.user == "nobody"
+
+    def test_dns(self):
+        argument_string = "--dns 1.2.3.4"
+        flags = Util.parse_additional_flags(argument_string)
+        assert flags.dns == ["1.2.3.4"]
+
+        argument_string = "--dns 1.2.3.4 --dns 5.6.7.8"
+        flags = Util.parse_additional_flags(argument_string)
+        assert flags.dns == ["1.2.3.4", "5.6.7.8"]
+
+        argument_string = ""
+        flags = Util.parse_additional_flags(argument_string)
+        assert flags.dns == []
 
     def test_windows_paths(self):
         argument_string = r'-v "C:\Users\SomeUser\SomePath:/var/task"'
