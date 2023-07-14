@@ -12,7 +12,7 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.packages import cloudformation_package
 from localstack.services.cloudformation.service_models import LOG, GenericBaseModel
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.common import (
     cp_r,
     is_base64,
@@ -39,7 +39,7 @@ class LambdaFunction(GenericBaseModel):
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
-        client = aws_stack.connect_to_service("lambda")
+        client = connect_to().awslambda
         config_keys = [
             "Description",
             "Environment",
@@ -237,7 +237,7 @@ class LambdaEventSourceMapping(GenericBaseModel):
                 or m.get("SelfManagedEventSource") == self_managed_src
             )
 
-        client = aws_stack.connect_to_service("lambda")
+        client = connect_to().awslambda
         lambda_arn = client.get_function(FunctionName=function_name)["Configuration"]["FunctionArn"]
         kwargs = {"EventSourceArn": source_arn} if source_arn else {}
         mappings = client.list_event_source_mappings(FunctionName=function_name, **kwargs)
@@ -272,7 +272,7 @@ class LambdaPermission(GenericBaseModel):
 
         props = self.props
         func_name = props.get("FunctionName")
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = connect_to().awslambda
         policy = lambda_client.get_policy(FunctionName=func_name)
         if not policy:
             return None
@@ -290,7 +290,7 @@ class LambdaPermission(GenericBaseModel):
         parameters_to_select = ["FunctionName", "Action", "Principal", "SourceArn"]
         update_config_props = select_attributes(props, parameters_to_select)
 
-        client = aws_stack.connect_to_service("lambda")
+        client = connect_to().awslambda
         client.remove_permission(
             FunctionName=update_config_props["FunctionName"], StatementId=self.physical_resource_id
         )
@@ -341,7 +341,7 @@ class LambdaEventInvokeConfig(GenericBaseModel):
         return "AWS::Lambda::EventInvokeConfig"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("lambda")
+        client = connect_to().awslambda
         props = self.props
         result = client.get_function_event_invoke_config(
             FunctionName=props.get("FunctionName"),
@@ -378,7 +378,7 @@ class LambdaUrl(GenericBaseModel):
         return "AWS::Lambda::Url"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("lambda")
+        client = connect_to().awslambda
 
         kwargs = {"FunctionName": self.props.get("TargetFunctionArn")}
         qualifier = self.props.get("Qualifier")
@@ -428,7 +428,7 @@ class LambdaAlias(GenericBaseModel):
         return "AWS::Lambda::Alias"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("lambda")
+        client = connect_to().awslambda
         props = self.props
         result = client.get_alias(FunctionName=props.get("FunctionName"), Name=props.get("Name"))
         return result
@@ -459,7 +459,7 @@ class LambdaCodeSigningConfig(GenericBaseModel):
         if not self.physical_resource_id:
             return None
 
-        client = aws_stack.connect_to_service("lambda")
+        client = connect_to().awslambda
         result = client.get_code_signing_config(CodeSigningConfigArn=self.physical_resource_id)[
             "CodeSigningConfig"
         ]
@@ -493,7 +493,7 @@ class LambdaLayerVersion(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         layer_name = self.props.get("LayerName")
         # TODO extract region name if layer_name is an ARN
-        client = aws_stack.connect_to_service("lambda")
+        client = connect_to().awslambda
         layers = client.list_layer_versions(LayerName=layer_name).get("LayerVersions", [])
         return layers[-1] if layers else None
 

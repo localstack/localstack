@@ -33,7 +33,6 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
     table_name_from_stream_arn,
 )
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws import aws_stack
 from localstack.utils.collections import select_from_typed_dict
 
 LOG = logging.getLogger(__name__)
@@ -55,11 +54,11 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         exclusive_start_shard_id: ShardId = None,
     ) -> DescribeStreamOutput:
         store = get_dynamodbstreams_store(context.account_id, context.region)
-        kinesis = aws_stack.connect_to_service("kinesis")
+        kinesis = connect_to().kinesis
         for stream in store.ddb_streams.values():
             if stream["StreamArn"] == stream_arn:
                 # get stream details
-                dynamodb = aws_stack.connect_to_service("dynamodb")
+                dynamodb = connect_to().dynamodb
                 table_name = table_name_from_stream_arn(stream["StreamArn"])
                 stream_name = get_kinesis_stream_name(table_name)
                 stream_details = kinesis.describe_stream(StreamName=stream_name)

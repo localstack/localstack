@@ -7,6 +7,7 @@ from samtranslator.translator.transform import transform as transform_sam
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.engine import yaml_parser
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
 from localstack.services.cloudformation.engine.transformers import (
@@ -111,7 +112,7 @@ def execute_macro(parsed_template: dict, macro: dict, stack_parameters: list) ->
         "templateParameterValues": formatted_stack_parameters,
     }
 
-    client = aws_stack.connect_to_service("lambda")
+    client = connect_to().awslambda
     invocation = client.invoke(
         FunctionName=macro_definition["FunctionName"], Payload=json.dumps(event)
     )

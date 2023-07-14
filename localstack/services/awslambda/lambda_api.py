@@ -25,6 +25,7 @@ from flask_cors import CORS
 
 from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.connect import connect_to
 from localstack.constants import APPLICATION_JSON
 from localstack.http import Request
 from localstack.http import Response as HttpResponse
@@ -432,7 +433,7 @@ def run_lambda(
     # (e.g., persistence) have been executed when the run_lambda(..) function gets called (e.g., from API GW).
     LOG.debug("Running lambda %s", func_arn)
     if not hasattr(run_lambda, "_provider_initialized"):
-        aws_stack.connect_to_service("lambda").list_functions()
+        connect_to().awslambda.list_functions()
         run_lambda._provider_initialized = True
 
     store = get_awslambda_store_for_arn(func_arn)
@@ -909,7 +910,7 @@ def forward_to_fallback_url(func_arn, data):
     lambda_name = arns.lambda_function_name(func_arn)
     if config.LAMBDA_FALLBACK_URL.startswith("dynamodb://"):
         table_name = urlparse(config.LAMBDA_FALLBACK_URL.replace("dynamodb://", "http://")).netloc
-        dynamodb = aws_stack.connect_to_service("dynamodb")
+        dynamodb = connect_to().dynamodb
         item = {
             "id": {"S": short_uid()},
             "timestamp": {"N": str(now_utc())},
@@ -938,7 +939,7 @@ def forward_to_fallback_url(func_arn, data):
 
 
 def get_lambda_policy(function, qualifier=None):
-    iam_client = aws_stack.connect_to_service("iam")
+    iam_client = connect_to().iam
     policies = iam_client.list_policies(Scope="Local", MaxItems=500)["Policies"]
     docs = []
     for p in policies:
@@ -1631,7 +1632,7 @@ def add_permission_policy_statement(
 ):
     store = get_awslambda_store_for_arn(resource_arn)
     data = json.loads(to_str(request.data))
-    iam_client = aws_stack.connect_to_service("iam")
+    iam_client = connect_to().iam
     sid = data.get("StatementId")
     action = data.get("Action")
     principal = data.get("Principal")
@@ -1690,7 +1691,7 @@ def add_permission_policy_statement(
 @app.route("%s/functions/<function>/policy/<statement>" % API_PATH_ROOT, methods=["DELETE"])
 def remove_permission(function, statement):
     qualifier = request.args.get("Qualifier")
-    iam_client = aws_stack.connect_to_service("iam")
+    iam_client = connect_to().iam
     policy = get_lambda_policy(function, qualifier=qualifier)
     if not policy:
         return not_found_error('Unable to find policy for Lambda function "%s"' % function)
@@ -1842,7 +1843,7 @@ def invoke_function(function):
             ),
             mode="rb",
         )
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = connect_to().awslambda
         lambda_client.create_function(
             FunctionName="localstack-internal-awssdk",
             Runtime=LAMBDA_RUNTIME_NODEJS14X,

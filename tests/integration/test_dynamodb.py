@@ -1562,7 +1562,9 @@ class TestDynamoDB:
         assert "retries" not in str(ctx)
 
     @pytest.mark.only_localstack
-    def test_nosql_workbench_localhost_region(self, dynamodb_create_table, aws_client):
+    def test_nosql_workbench_localhost_region(
+        self, dynamodb_create_table, aws_client, aws_client_factory
+    ):
         """Test for AWS NoSQL Workbench, which sends "localhost" as region in header"""
         table_name = f"t-{short_uid()}"
         dynamodb_create_table(table_name=table_name, partition_key=PARTITION_KEY)
@@ -1570,7 +1572,7 @@ class TestDynamoDB:
         table = aws_client.dynamodb.describe_table(TableName=table_name)
         assert table.get("Table")
         # describe table for "localhost" region
-        client = aws_stack.connect_to_service("dynamodb", region_name="localhost")
+        client = aws_client_factory(region_name="localhost").dynamodb
         table = client.describe_table(TableName=table_name)
         assert table.get("Table")
 

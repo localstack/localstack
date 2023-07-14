@@ -10,10 +10,10 @@ from moto.s3.responses import S3_ALL_MULTIPARTS, MalformedXML, minidom
 from moto.s3.utils import undo_clean_key_name
 
 from localstack import config
+from localstack.aws.connect import connect_to
 from localstack.services.infra import start_moto_server
 from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3 import s3_listener, s3_utils
-from localstack.utils.aws import aws_stack
 from localstack.utils.collections import get_safe
 from localstack.utils.common import get_free_tcp_port, wait_for_port_open
 from localstack.utils.patch import patch
@@ -39,9 +39,7 @@ def check_s3(expect_shutdown=False, print_error=False):
         wait_for_port_open(s3_listener.PORT_S3_BACKEND)
         # check S3
         endpoint_url = f"http://127.0.0.1:{s3_listener.PORT_S3_BACKEND}"
-        out = aws_stack.connect_to_service(
-            service_name="s3", endpoint_url=endpoint_url
-        ).list_buckets()
+        out = connect_to(endpoint_url=endpoint_url).s3.list_buckets()
     except Exception:
         if print_error:
             LOG.exception("S3 health check failed")

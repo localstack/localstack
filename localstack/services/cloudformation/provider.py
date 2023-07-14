@@ -71,6 +71,7 @@ from localstack.aws.api.cloudformation import (
     ValidateTemplateInput,
     ValidateTemplateOutput,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import parameters as param_resolver
 from localstack.services.cloudformation.engine import template_deployer, template_preparer
@@ -91,7 +92,6 @@ from localstack.services.cloudformation.stores import (
     find_stack,
     get_cloudformation_store,
 )
-from localstack.utils.aws import aws_stack
 from localstack.utils.collections import (
     remove_attributes,
     select_attributes,
@@ -965,7 +965,7 @@ class CloudformationProvider(CloudformationApi):
             for region in regions:
                 # deploy new stack
                 LOG.debug('Deploying instance for stack set "%s" in region "%s"', set_name, region)
-                cf_client = aws_stack.connect_to_service("cloudformation", region_name=region)
+                cf_client = connect_to(region_name=region).cloudformation
                 kwargs = select_attributes(sset_meta, ["TemplateBody"]) or select_attributes(
                     sset_meta, ["TemplateURL"]
                 )
@@ -992,7 +992,7 @@ class CloudformationProvider(CloudformationApi):
 
         # wait for completion of stack
         for stack in stacks_to_await:
-            client = aws_stack.connect_to_service("cloudformation", region_name=stack[1])
+            client = connect_to(region_name=stack[1]).cloudformation
             client.get_waiter("stack_create_complete").wait(StackName=stack[0])
 
         # record operation

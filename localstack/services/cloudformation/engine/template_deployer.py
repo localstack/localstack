@@ -10,6 +10,7 @@ import botocore
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import usage
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
@@ -340,10 +341,10 @@ def resolve_refs_recursively(
 
             # only these 3 services are supported for dynamic references right now
             if service_name == "ssm":
-                ssm_client = aws_stack.connect_to_service("ssm")
+                ssm_client = connect_to().ssm
                 return ssm_client.get_parameter(Name=reference_key)["Parameter"]["Value"]
             elif service_name == "ssm-secure":
-                ssm_client = aws_stack.connect_to_service("ssm")
+                ssm_client = connect_to().ssm
                 return ssm_client.get_parameter(Name=reference_key, WithDecryption=True)[
                     "Parameter"
                 ]["Value"]
@@ -369,7 +370,7 @@ def resolve_refs_recursively(
                 if version_stage:
                     kwargs["VersionStage"] = version_stage
 
-                secretsmanager_client = aws_stack.connect_to_service("secretsmanager")
+                secretsmanager_client = connect_to().secretsmanager
                 secret_value = secretsmanager_client.get_secret_value(SecretId=secret_id, **kwargs)[
                     "SecretString"
                 ]

@@ -8,6 +8,7 @@ from bson.json_util import dumps
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.dynamodbstreams import StreamStatus, StreamViewType
+from localstack.aws.connect import connect_to
 from localstack.services.dynamodbstreams.models import DynamoDbStreamsStore, dynamodbstreams_stores
 from localstack.utils.aws import arns, aws_stack, resources
 from localstack.utils.common import now_utc
@@ -70,7 +71,7 @@ def get_stream_for_table(table_arn: str) -> dict:
 
 
 def forward_events(records: dict) -> None:
-    kinesis = aws_stack.connect_to_service("kinesis")
+    kinesis = connect_to().kinesis
     for record in records:
         table_arn = record.pop("eventSourceARN", "")
         if stream := get_stream_for_table(table_arn):
@@ -89,7 +90,7 @@ def delete_streams(table_arn: str) -> None:
     if store.ddb_streams.pop(table_name, None):
         stream_name = get_kinesis_stream_name(table_name)
         with contextlib.suppress(Exception):
-            aws_stack.connect_to_service("kinesis").delete_stream(StreamName=stream_name)
+            connect_to().kinesis.delete_stream(StreamName=stream_name)
             # sleep a bit, as stream deletion can take some time ...
             time.sleep(1)
 
