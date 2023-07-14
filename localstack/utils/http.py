@@ -200,24 +200,38 @@ def download(
         if not r.ok:
             raise Exception("Failed to download %s, response code %s" % (url, r.status_code))
 
-        total = 0
+        total_size = 0
+        if r.headers.get("Content-Length"):
+            total_size = int(r.headers.get("Content-Length"))
+
+        total_written = 0
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
-        LOG.debug(
-            "Starting download from %s to %s (%s bytes)", url, path, r.headers.get("Content-Length")
-        )
+        LOG.debug("Starting download from %s to %s", url, path)
         with open(path, "wb") as f:
             iter_length = 0
             iter_limit = 1000000  # print a log line for every 1MB chunk
             for chunk in r.iter_content(DOWNLOAD_CHUNK_SIZE):
-                total += len(chunk)
+                total_written += len(chunk)
                 iter_length += len(chunk)
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
                 else:
-                    LOG.debug("Empty chunk %s (total %s) from %s", chunk, total, url)
+                    LOG.debug(
+                        "Empty chunk %s (total %dK of %dK) from %s",
+                        chunk,
+                        total_written / 1024,
+                        total_size / 1024,
+                        url,
+                    )
                 if iter_length >= iter_limit:
-                    LOG.debug("Written %s bytes (total %s) to %s", iter_length, total, path)
+                    LOG.debug(
+                        "Written %dK (total %dK of %dK) to %s",
+                        iter_length / 1024,
+                        total_written / 1024,
+                        total_size / 1024,
+                        path,
+                    )
                     iter_length = 0
             f.flush()
             os.fsync(f)
@@ -226,7 +240,10 @@ def download(
             download(url, path, verify_ssl)
             return
         LOG.debug(
-            "Done downloading %s, response code %s, total bytes %d", url, r.status_code, total
+            "Done downloading %s, response code %s, total %dK",
+            url,
+            r.status_code,
+            total_written / 1024,
         )
     except requests.exceptions.ReadTimeout as e:
         raise TimeoutError(f"Timeout ({timeout}) reached on download: {url} - {e}")

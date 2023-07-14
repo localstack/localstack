@@ -43,6 +43,8 @@ from localstack.aws.api.s3 import (
     DeleteObjectTaggingRequest,
     ETag,
     Expiration,
+    Expression,
+    ExpressionType,
     GetBucketAclOutput,
     GetBucketAnalyticsConfigurationOutput,
     GetBucketCorsOutput,
@@ -65,6 +67,7 @@ from localstack.aws.api.s3 import (
     GetObjectTaggingRequest,
     HeadObjectOutput,
     HeadObjectRequest,
+    InputSerialization,
     IntelligentTieringConfiguration,
     IntelligentTieringConfigurationList,
     IntelligentTieringId,
@@ -95,6 +98,7 @@ from localstack.aws.api.s3 import (
     ObjectKey,
     ObjectLockToken,
     ObjectVersionId,
+    OutputSerialization,
     PostResponse,
     PreconditionFailed,
     PutBucketAclRequest,
@@ -111,13 +115,20 @@ from localstack.aws.api.s3 import (
     ReplicationConfiguration,
     ReplicationConfigurationNotFoundError,
     RequestPayer,
+    RequestProgress,
     S3Api,
+    ScanRange,
+    SelectObjectContentOutput,
     SkipValidation,
+    SSECustomerAlgorithm,
+    SSECustomerKey,
+    SSECustomerKeyMD5,
     StorageClass,
     Token,
 )
 from localstack.aws.api.s3 import Type as GranteeType
 from localstack.aws.api.s3 import UploadPartOutput, UploadPartRequest, WebsiteConfiguration
+from localstack.aws.forwarder import NotImplementedAvoidFallbackError
 from localstack.aws.handlers import (
     modify_service_response,
     preprocess_request,
@@ -422,12 +433,20 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         response: HeadObjectOutput = call_moto(context)
         response["AcceptRanges"] = "bytes"
 
+        key = request["Key"]
+        bucket = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
+        key_object = get_key_from_moto_bucket(moto_bucket, key=key)
+
+        if checksum_algorithm := key_object.checksum_algorithm:
+            # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
+            response["ContentEncoding"] = ""
+
+        if (request.get("ChecksumMode") or "").upper() == "ENABLED" and checksum_algorithm:
+            response[f"Checksum{checksum_algorithm.upper()}"] = key_object.checksum_value  # noqa
+
         if not request.get("VersionId"):
-            key = request["Key"]
-            bucket = request["Bucket"]
-            moto_backend = get_moto_s3_backend(context)
-            moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
-            key_object = get_key_from_moto_bucket(moto_bucket, key=key)
             store = self.get_store(context)
             if (
                 bucket_lifecycle_config := store.bucket_lifecycle_configuration.get(
@@ -474,7 +493,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
             response["ContentEncoding"] = ""
 
-        if request.get("ChecksumMode") == "ENABLED" and checksum_algorithm:
+        if (request.get("ChecksumMode") or "").upper() == "ENABLED" and checksum_algorithm:
             response[f"Checksum{checksum_algorithm.upper()}"] = key_object.checksum_value  # noqa
 
         if not version_id and (
@@ -1546,6 +1565,27 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             return GetBucketLoggingOutput()
 
         return GetBucketLoggingOutput(LoggingEnabled=moto_bucket.logging)
+
+    def select_object_content(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        expression: Expression,
+        expression_type: ExpressionType,
+        input_serialization: InputSerialization,
+        output_serialization: OutputSerialization,
+        sse_customer_algorithm: SSECustomerAlgorithm = None,
+        sse_customer_key: SSECustomerKey = None,
+        sse_customer_key_md5: SSECustomerKeyMD5 = None,
+        request_progress: RequestProgress = None,
+        scan_range: ScanRange = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> SelectObjectContentOutput:
+        # this operation is currently implemented by moto, but raises a 500 error because of the format necessary,
+        # and streaming capability.
+        # avoid a fallback to moto and return the 501 to the client directly instead.
+        raise NotImplementedAvoidFallbackError
 
 
 def validate_bucket_analytics_configuration(

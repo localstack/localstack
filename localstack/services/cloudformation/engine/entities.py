@@ -5,7 +5,6 @@ from localstack.aws.api.cloudformation import Capability, ChangeSetType, Paramet
 from localstack.services.cloudformation.engine.parameters import (
     StackParameter,
     convert_stack_parameters_to_list,
-    map_to_legacy_structure,
     strip_parameter_type,
 )
 from localstack.utils.aws import arns
@@ -244,26 +243,10 @@ class Stack:
     def stack_id(self):
         return self.metadata["StackId"]
 
-    # TODO: potential performance issues due to many stack_parameters calls (cache or limit actual invocations)
     @property
-    def resources(self):  # TODO: not actually resources, split apart
-        """Return dict of resources, parameters, conditions, and other stack metadata."""
-        result = dict(self.template_resources)
-
-        result.update(
-            {k: map_to_legacy_structure(k, v) for k, v in self.resolved_parameters.items()}
-        )
-
-        # TODO: conditions don't really belong here and should be handled separately
-        for name, value in self.conditions.items():
-            if name not in result:
-                result[name] = {
-                    "Type": "Parameter",
-                    "LogicalResourceId": name,
-                    "Properties": {"Value": value},
-                }
-
-        return result
+    def resources(self):
+        """Return dict of resources"""
+        return dict(self.template_resources)
 
     @property
     def template_resources(self):

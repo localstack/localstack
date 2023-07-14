@@ -4,7 +4,7 @@ import logging
 import os
 import re
 import time
-from typing import NamedTuple
+from typing import NamedTuple, Type
 
 import pytest
 from docker.models.containers import Container
@@ -18,6 +18,7 @@ from localstack.utils.container_utils.container_client import (
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
+    DockerNotAvailable,
     NoSuchContainer,
     NoSuchImage,
     NoSuchNetwork,
@@ -330,6 +331,15 @@ class TestDockerClient:
     def test_start_non_existing_container(self, docker_client: ContainerClient):
         with pytest.raises(NoSuchContainer):
             docker_client.start_container("this_container_does_not_exist")
+
+    def test_docker_not_available(self, docker_client_class: Type[ContainerClient], monkeypatch):
+        monkeypatch.setattr(config, "DOCKER_CMD", "non-existing-binary")
+        monkeypatch.setenv("DOCKER_HOST", "/var/run/docker.sock1")
+        # initialize the client after mocking the environment
+        docker_client = docker_client_class()
+        with pytest.raises(DockerNotAvailable):
+            # perform a command to trigger the exception
+            docker_client.list_containers()
 
     # TODO: currently failing under Podman in CI (works locally under MacOS)
     @pytest.mark.xfail(

@@ -210,6 +210,8 @@ class CloudformationProvider(CloudformationApi):
                 stack.stack_name,
                 stack.resources,
                 stack.mappings,
+                {},  # TODO
+                resolved_parameters,
             )
         except FailedTransformationException as e:
             stack.add_stack_event(
@@ -298,6 +300,13 @@ class CloudformationProvider(CloudformationApi):
             old_parameters=stack.resolved_parameters,
         )
 
+        resolved_stack_conditions = resolve_stack_conditions(
+            conditions=template.get("Conditions", {}),
+            parameters=resolved_parameters,
+            mappings=template.get("Mappings", {}),
+            stack_name=stack_name,
+        )
+
         try:
             template = template_preparer.transform_template(
                 template,
@@ -305,6 +314,8 @@ class CloudformationProvider(CloudformationApi):
                 stack.stack_name,
                 stack.resources,
                 stack.mappings,
+                resolved_stack_conditions,
+                resolved_parameters,
             )
         except FailedTransformationException as e:
             stack.add_stack_event(
@@ -321,6 +332,7 @@ class CloudformationProvider(CloudformationApi):
         new_stack = Stack(request, template)
         new_stack.set_resolved_parameters(resolved_parameters)
         stack.set_resolved_parameters(resolved_parameters)
+        stack.set_resolved_stack_conditions(resolved_stack_conditions)
         try:
             deployer.update_stack(new_stack)
         except Exception as e:
@@ -557,6 +569,8 @@ class CloudformationProvider(CloudformationApi):
             stack_name=temp_stack.stack_name,
             resources=temp_stack.resources,
             mappings=temp_stack.mappings,
+            conditions={},  # TODO: we don't have any resolved conditions yet at this point but we need the conditions because of the samtranslator...
+            resolved_parameters=resolved_parameters,
         )
 
         # create change set for the stack and apply changes

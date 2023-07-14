@@ -1761,8 +1761,12 @@ def cleanups(aws_client):
 
 @pytest.fixture(scope="session")
 def account_id(aws_client):
-    sts_client = aws_client.sts
-    return sts_client.get_caller_identity()["Account"]
+    return aws_client.sts.get_caller_identity()["Account"]
+
+
+@pytest.fixture(scope="session")
+def secondary_account_id(secondary_aws_client):
+    return secondary_aws_client.sts.get_caller_identity()["Account"]
 
 
 @pytest.hookimpl

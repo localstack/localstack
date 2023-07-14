@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import contextlib
 import json
 import logging
@@ -18,12 +17,7 @@ from werkzeug import Response
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
-from localstack.constants import (
-    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-    TEST_AWS_ACCOUNT_ID,
-    TEST_AWS_REGION_NAME,
-)
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.sns.constants import PLATFORM_ENDPOINT_MSGS_ENDPOINT
 from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
@@ -3688,15 +3682,16 @@ class TestSNSMultiAccounts:
         return aws_client.sns
 
     @pytest.fixture
-    def sns_secondary_client(self, aws_client_factory):
-        """
-        Create a boto client with secondary test credentials and region.
-        """
-        return aws_client_factory.get_client(
-            "sns",
-            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-        )
+    def sns_secondary_client(self, secondary_aws_client):
+        return secondary_aws_client.sns
+
+    @pytest.fixture
+    def sqs_primary_client(self, aws_client):
+        return aws_client.sqs
+
+    @pytest.fixture
+    def sqs_secondary_client(self, secondary_aws_client):
+        return secondary_aws_client.sqs
 
     def test_cross_account_access(self, sns_primary_client, sns_secondary_client):
         # Cross-account access is supported for below operations.
@@ -3745,8 +3740,8 @@ class TestSNSMultiAccounts:
         self,
         sns_primary_client,
         sns_secondary_client,
-        aws_client,
-        aws_client_factory,
+        sqs_primary_client,
+        sqs_secondary_client,
         sqs_queue_arn,
     ):
         """
@@ -3756,14 +3751,6 @@ class TestSNSMultiAccounts:
         Note: we are not setting Queue policies here as it's only in localstack and IAM is not enforced, for the sake
         of simplicity
         """
-
-        # create the 2 SQS clients needed for testing
-        sqs_primary_client = aws_client.sqs
-        sqs_secondary_client = aws_client_factory.get_client(
-            "sqs",
-            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-        )
 
         topic_name = "sample_topic"
         topic_1 = sns_primary_client.create_topic(Name=topic_name)
