@@ -795,10 +795,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentValue=part_number,
             )
 
-        if body := request.get("Body"):
-            part = body.read()
-        else:
-            part = b""
+        part = body.read() if (body := request.get("Body")) else b""
 
         # we are directly using moto backend and not calling moto because to get the response, moto calls
         # key.response_dict, which in turns tries to access the tags of part, indirectly creating a BackendDict
