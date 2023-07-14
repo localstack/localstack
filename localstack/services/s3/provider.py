@@ -1,4 +1,5 @@
 import datetime
+import io
 import logging
 import os
 from collections import defaultdict
@@ -155,6 +156,7 @@ from localstack.services.s3.presigned_url import (
 from localstack.services.s3.utils import (
     _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
+    decode_aws_chunked_object,
     extract_bucket_key_version_id_from_copy_source,
     get_bucket_from_moto,
     get_header_name,
@@ -802,7 +804,28 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentValue=part_number,
             )
 
-        part = body.read() if (body := request.get("Body")) else b""
+        body = request.get("Body")
+        headers = context.request.headers
+        if body and (
+            (content_sha_256 := headers.get("x-amz-content-sha256") or "")
+            and content_sha_256.startswith("STREAMING-")
+        ):
+            # this is a chunked request, we need to properly decode it while setting the key value
+            decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
+            checksum_algorithm = request.get("ChecksumAlgorithm") or ""
+            buffer = io.BytesIO()
+            # this will decode the original stream and set it in `part`
+            decode_aws_chunked_object(
+                stream=body,
+                buffer=buffer,
+                content_length=decoded_content_length,
+                checksum_algorithm=checksum_algorithm,
+                checksum_value=request.get(f"Checksum{checksum_algorithm.upper()}"),
+            )
+            buffer.seek(0)
+            part = buffer.getvalue()
+        else:
+            part = body.read() if body else b""
 
         # we are directly using moto backend and not calling moto because to get the response, moto calls
         # key.response_dict, which in turns tries to access the tags of part, indirectly creating a BackendDict

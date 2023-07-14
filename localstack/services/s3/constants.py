@@ -66,3 +66,5 @@ SIGNATURE_V4_PARAMS = [
     "X-Amz-SignedHeaders",
     "X-Amz-Signature",
 ]
+
+S3_CHUNK_SIZE = 1024 * 16 * 4

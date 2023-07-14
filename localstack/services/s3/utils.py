@@ -1,8 +1,10 @@
+import base64
 import datetime
 import hashlib
+import logging
 import re
 import zlib
-from typing import Dict, Literal, Optional, Tuple, Union
+from typing import IO, Dict, Literal, Optional, Tuple, Union
 from urllib import parse as urlparser
 from zoneinfo import ZoneInfo
 
@@ -28,6 +30,7 @@ from localstack.aws.api.s3 import (
 )
 from localstack.aws.connect import connect_to
 from localstack.services.s3.constants import (
+    S3_CHUNK_SIZE,
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
     SIGNATURE_V2_PARAMS,
     SIGNATURE_V4_PARAMS,
@@ -36,6 +39,8 @@ from localstack.services.s3.constants import (
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import checksum_crc32, checksum_crc32c, hash_sha1, hash_sha256
+
+LOG = logging.getLogger(__name__)
 
 checksum_keys = ["ChecksumSHA1", "ChecksumSHA256", "ChecksumCRC32", "ChecksumCRC32C"]
 
@@ -149,6 +154,92 @@ def verify_checksum(checksum_algorithm: str, data: bytes, request: Dict):
         raise InvalidRequest(
             f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
         )
+
+
+def decode_aws_chunked_object(
+    stream: IO[bytes],
+    buffer: IO[bytes],
+    content_length: int,
+    checksum_algorithm: str = None,
+    checksum_value: str = None,
+) -> tuple[str, str]:
+    """
+
+    :param stream: the original stream to read
+    :param buffer: the stream where we set the decoded data
+    :param content_length: the total length of the original stream
+    :param checksum_algorithm:
+    :param checksum_value:
+    :return:
+    """
+    buffer.seek(0)
+    buffer.truncate()
+    # We have 2 cases:
+    # The client gave a checksum value, we will need to compute the value and validate it against
+    # or the client have an algorithm value only, and we need to compute the checksum
+    checksum = None
+    calculated_checksum = None
+    if checksum_algorithm:
+        checksum = get_s3_checksum(checksum_algorithm)
+    etag = hashlib.md5(usedforsecurity=False)
+
+    written = 0
+    while written < content_length:
+        line = stream.readline()
+        chunk_length = int(line.split(b";")[0], 16)
+
+        while chunk_length > 0:
+            amount = min(chunk_length, S3_CHUNK_SIZE)
+            data = stream.read(amount)
+            buffer.write(data)
+
+            real_amount = len(data)
+            chunk_length -= real_amount
+            written += real_amount
+
+            if checksum_algorithm:
+                checksum.update(data)
+            etag.update(data)
+
+        # remove trailing \r\n
+        stream.read(2)
+
+    trailing_headers = []
+    next_line = stream.readline()
+
+    if next_line:
+        try:
+            chunk_length = int(next_line.split(b";")[0], 16)
+            if chunk_length != 0:
+                LOG.warning("The S3 object body didn't conform to the aws-chunk format")
+        except ValueError:
+            trailing_headers.append(next_line.strip())
+
+        # try for trailing headers after
+        while line := stream.readline():
+            trailing_header = line.strip()
+            if trailing_header:
+                trailing_headers.append(trailing_header)
+
+    # look for the checksum header in the trailing headers
+    # TODO: we could get the header key from x-amz-trailer as well
+    for trailing_header in trailing_headers:
+        try:
+            header_key, header_value = trailing_header.decode("utf-8").split(":", maxsplit=1)
+            if header_key.lower() == f"x-amz-checksum-{checksum_algorithm}".lower():
+                checksum_value = header_value
+        except (IndexError, ValueError, AttributeError):
+            continue
+
+    if checksum_algorithm:
+        calculated_checksum = base64.b64encode(checksum.digest()).decode()
+
+    if checksum_value and checksum_value != calculated_checksum:
+        raise InvalidRequest(
+            f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
+        )
+
+    return calculated_checksum, etag.hexdigest()
 
 
 def is_presigned_url_request(context: RequestContext) -> bool:
