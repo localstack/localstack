@@ -1,6 +1,6 @@
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import select_parameters
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
 
 
 class FirehoseDeliveryStream(GenericBaseModel):
@@ -10,9 +10,7 @@ class FirehoseDeliveryStream(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         stream_name = self.props.get("DeliveryStreamName") or self.logical_resource_id
-        return aws_stack.connect_to_service("firehose").describe_delivery_stream(
-            DeliveryStreamName=stream_name
-        )
+        return connect_to().firehose.describe_delivery_stream(DeliveryStreamName=stream_name)
 
     @staticmethod
     def get_deploy_templates():

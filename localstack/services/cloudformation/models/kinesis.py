@@ -1,6 +1,6 @@
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
 
 
 class KinesisStreamConsumer(GenericBaseModel):
@@ -11,7 +11,7 @@ class KinesisStreamConsumer(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         props = self.props
         stream_arn = props["StreamARN"]
-        result = aws_stack.connect_to_service("kinesis").list_stream_consumers(StreamARN=stream_arn)
+        result = connect_to().kinesis.list_stream_consumers(StreamARN=stream_arn)
         result = [r for r in result["Consumers"] if r["ConsumerName"] == props["ConsumerName"]]
         return (result or [None])[0]
 
@@ -39,7 +39,7 @@ class KinesisStream(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         stream_name = self.props["Name"]
-        result = aws_stack.connect_to_service("kinesis").describe_stream(StreamName=stream_name)
+        result = connect_to().kinesis.describe_stream(StreamName=stream_name)
         return result
 
     @staticmethod
@@ -61,7 +61,7 @@ class KinesisStream(GenericBaseModel):
             return {"StreamName": properties["Name"], "EnforceConsumerDeletion": True}
 
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
-            client = aws_stack.connect_to_service("kinesis")
+            client = connect_to().kinesis
             stream_name = resource["Properties"]["Name"]
 
             description = client.describe_stream(StreamName=stream_name)

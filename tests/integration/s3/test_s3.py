@@ -33,9 +33,7 @@ from localstack.config import LEGACY_S3_PROVIDER, STREAM_S3_PROVIDER
 from localstack.constants import (
     LOCALHOST_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
-    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_REGION_NAME,
-    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
@@ -1180,8 +1178,9 @@ class TestS3:
         )
         snapshot.match("get-object-with-checksum", get_object_with_checksum)
 
+        # test that the casing of ChecksumMode is not important, the spec indicate only ENABLED
         head_object_with_checksum = aws_client.s3.get_object(
-            Bucket=s3_bucket, Key=key, ChecksumMode="ENABLED"
+            Bucket=s3_bucket, Key=key, ChecksumMode="enabled"
         )
         snapshot.match("head-object-with-checksum", head_object_with_checksum)
 
@@ -4978,16 +4977,11 @@ class TestS3MultiAccounts:
         return aws_client.s3
 
     @pytest.fixture
-    def secondary_client(self, aws_client_factory):
+    def secondary_client(self, secondary_aws_client):
         """
         Create a boto client with secondary test credentials and region.
         """
-        return aws_client_factory.get_client(
-            "s3",
-            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-            region_name=SECONDARY_TEST_AWS_REGION_NAME,
-        )
+        return secondary_aws_client.s3
 
     def test_shared_bucket_namespace(self, primary_client, secondary_client):
         # Ensure that the bucket name space is shared by all accounts and regions
@@ -5987,8 +5981,8 @@ class TestS3PresignedUrl:
         if not is_aws_cloud():
             # moto does not respect credentials passed, and will always set hard coded values from a template here
             # until this can be used, we are hardcoding the AccessKeyId and SecretAccessKey
-            response["Credentials"]["AccessKeyId"] = "test"
-            response["Credentials"]["SecretAccessKey"] = "test"
+            response["Credentials"]["AccessKeyId"] = TEST_AWS_ACCESS_KEY_ID
+            response["Credentials"]["SecretAccessKey"] = TEST_AWS_SECRET_ACCESS_KEY
 
         client = boto3.client(
             "s3",

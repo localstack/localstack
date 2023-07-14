@@ -19,6 +19,7 @@ from multiprocessing import Process, Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from localstack import config
+from localstack.aws.connect import connect_to
 from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY
 from localstack.runtime.hooks import hook_spec
 from localstack.services.awslambda.lambda_utils import (
@@ -878,7 +879,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
     ) -> InvocationResult:
         full_url = self._get_lambda_stay_open_url(lambda_docker_ip)
 
-        client = aws_stack.connect_to_service("lambda", endpoint_url=full_url)
+        client = connect_to(endpoint_url=full_url).awslambda
         event = inv_context.event or "{}"
 
         LOG.debug(f"Calling {full_url} to run invocation in docker-reuse Lambda container")

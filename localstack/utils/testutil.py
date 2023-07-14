@@ -10,7 +10,7 @@ import time
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from localstack.aws.connect import connect_externally_to
+from localstack.aws.connect import connect_externally_to, connect_to
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns
 from localstack.utils.aws import resources as resource_utils
@@ -124,8 +124,9 @@ def create_lambda_archive(
         return result
 
 
-def delete_lambda_function(name, region_name: str = None):  # TODO: remove all occurrences
-    client = aws_stack.connect_to_service("lambda", region_name=region_name)
+# TODO: remove all occurrences
+def delete_lambda_function(name, region_name: str = None):
+    client = connect_externally_to(region_name=region_name).awslambda
     client.delete_function(FunctionName=name)
 
 
@@ -210,7 +211,7 @@ def create_lambda_function(
 
     starting_position = starting_position or LAMBDA_DEFAULT_STARTING_POSITION
     runtime = runtime or LAMBDA_DEFAULT_RUNTIME
-    client = client or aws_stack.connect_to_service("lambda", region_name=region_name)
+    client = client or connect_to(region_name=region_name).awslambda
 
     # load zip file content if handler_file is specified
     if not zip_file and handler_file:
@@ -435,7 +436,7 @@ def list_all_s3_objects():
 
 
 def delete_all_s3_objects(buckets):
-    s3_client = aws_stack.connect_to_service("s3")
+    s3_client = connect_to().s3
     buckets = ensure_list(buckets)
     for bucket in buckets:
         keys = all_s3_object_keys(bucket)
@@ -546,7 +547,7 @@ def check_expected_lambda_log_events_length(
 
 
 def list_all_log_events(log_group_name: str, logs_client=None) -> List[Dict]:
-    logs = logs_client or aws_stack.connect_to_service("logs")
+    logs = logs_client or connect_to().logs
     return list_all_resources(
         lambda kwargs: logs.filter_log_events(logGroupName=log_group_name, **kwargs),
         last_token_attr_name="nextToken",

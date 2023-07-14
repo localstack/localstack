@@ -4544,7 +4544,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA256]": {
-    "recorded-date": "11-07-2023, 16:50:49",
+    "recorded-date": "13-07-2023, 15:46:58",
     "recorded-content": {
       "put-object": {
         "ChecksumSHA256": "1YQo81vx2VFUl0q5ccWISq8AkSBQQ0WO80S82TmfdIQ=",
@@ -4615,7 +4615,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[None]": {
-    "recorded-date": "11-07-2023, 16:50:53",
+    "recorded-date": "13-07-2023, 15:47:02",
     "recorded-content": {
       "put-object": {
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -6628,7 +6628,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32]": {
-    "recorded-date": "11-07-2023, 16:50:37",
+    "recorded-date": "13-07-2023, 15:46:47",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "lVk/nw==",
@@ -6699,7 +6699,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32C]": {
-    "recorded-date": "11-07-2023, 16:50:41",
+    "recorded-date": "13-07-2023, 15:46:50",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32C": "Fz3epA==",
@@ -6770,7 +6770,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA1]": {
-    "recorded-date": "11-07-2023, 16:50:45",
+    "recorded-date": "13-07-2023, 15:46:54",
     "recorded-content": {
       "put-object": {
         "ChecksumSHA1": "jbXkHAsXUrubtL3dqDQ4w+7WXc0=",

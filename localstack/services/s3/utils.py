@@ -26,13 +26,14 @@ from localstack.aws.api.s3 import (
     NoSuchKey,
     ObjectKey,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.s3.constants import (
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
     SIGNATURE_V2_PARAMS,
     SIGNATURE_V4_PARAMS,
     VALID_CANNED_ACLS_BUCKET,
 )
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import checksum_crc32, checksum_crc32c, hash_sha1, hash_sha256
 
@@ -315,7 +316,7 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket) -> None:
         )
 
     # the KMS key should be in the same region as the bucket, create the client in the bucket region
-    kms_client = aws_stack.connect_to_service("kms", region_name=bucket.region_name)
+    kms_client = connect_to(region_name=bucket.region_name).kms
     try:
         key = kms_client.describe_key(KeyId=kms_key)
         if not key["KeyMetadata"]["Enabled"]:

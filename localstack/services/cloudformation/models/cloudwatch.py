@@ -1,6 +1,6 @@
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
 
 
 class CloudWatchAlarm(GenericBaseModel):
@@ -21,7 +21,7 @@ class CloudWatchAlarm(GenericBaseModel):
         return "put_metric_alarm"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("cloudwatch")
+        client = connect_to().cloudwatch
         alarm_name = self.props["AlarmName"]
         result = client.describe_alarms(AlarmNames=[alarm_name]).get(self._response_name(), [])
         return (result or [None])[0]

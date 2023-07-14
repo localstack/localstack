@@ -57,9 +57,9 @@ from localstack.aws.api.iam import (
     tagListType,
     userNameType,
 )
+from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.moto import call_moto
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.common import short_uid
 from localstack.utils.patch import patch
@@ -390,11 +390,10 @@ class IamProvider(IamApi):
         # if the user does not exist or is no user
         if not moto_user and not user_name:
             access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
-            sts_client = aws_stack.connect_to_service(
-                "sts",
+            sts_client = connect_to(
                 aws_access_key_id=access_key_id,
                 aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
-            )
+            ).sts
             caller_identity = sts_client.get_caller_identity()
             caller_arn = caller_identity["Arn"]
             if caller_arn.endswith(":root"):

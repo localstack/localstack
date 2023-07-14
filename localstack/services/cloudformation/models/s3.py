@@ -2,6 +2,7 @@ import re
 
 from botocore.exceptions import ClientError
 
+from localstack.aws.connect import connect_to
 from localstack.config import get_edge_port_http
 from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
 from localstack.services.cloudformation.cfn_utils import rename_params
@@ -23,7 +24,7 @@ class S3BucketPolicy(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         bucket_name = self.props.get("Bucket") or self.logical_resource_id
-        return aws_stack.connect_to_service("s3").get_bucket_policy(Bucket=bucket_name)
+        return connect_to().s3.get_bucket_policy(Bucket=bucket_name)
 
     @staticmethod
     def get_deploy_templates():
@@ -169,7 +170,7 @@ class S3Bucket(GenericBaseModel):
             resource["PhysicalResourceId"] = resource["Properties"]["BucketName"]
 
         def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
-            s3 = aws_stack.connect_to_service("s3")
+            s3 = connect_to().s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             try:
@@ -185,7 +186,7 @@ class S3Bucket(GenericBaseModel):
                     raise
 
         def _add_bucket_tags(logical_resource_id: str, resource: dict, stack_name: str):
-            s3 = aws_stack.connect_to_service("s3")
+            s3 = connect_to().s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             tags = props.get("Tags", [])
@@ -193,7 +194,7 @@ class S3Bucket(GenericBaseModel):
                 s3.put_bucket_tagging(Bucket=bucket_name, Tagging={"TagSet": tags})
 
         def _put_bucket_versioning(logical_resource_id: str, resource: dict, stack_name: str):
-            s3_client = aws_stack.connect_to_service("s3")
+            s3_client = connect_to().s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             versioning_config = props.get("VersioningConfiguration")
@@ -208,7 +209,7 @@ class S3Bucket(GenericBaseModel):
         def _put_bucket_cors_configuration(
             logical_resource_id: str, resource: dict, stack_name: str
         ):
-            s3_client = aws_stack.connect_to_service("s3")
+            s3_client = connect_to().s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             cors_configuration = transform_cfn_cors(props.get("CorsConfiguration"))
@@ -221,7 +222,7 @@ class S3Bucket(GenericBaseModel):
         def _put_bucket_website_configuration(
             logical_resource_id: str, resource: dict, stack_name: str
         ):
-            s3_client = aws_stack.connect_to_service("s3")
+            s3_client = connect_to().s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             website_config = transform_website_configuration(props.get("WebsiteConfiguration"))
@@ -232,7 +233,7 @@ class S3Bucket(GenericBaseModel):
                 )
 
         def _create_bucket(logical_resource_id: str, resource: dict, stack_name: str):
-            s3_client = aws_stack.connect_to_service("s3")
+            s3_client = connect_to().s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             try:
@@ -276,7 +277,7 @@ class S3Bucket(GenericBaseModel):
         props = self.props
         bucket_name = self._get_bucket_name()
         bucket_name = self.normalize_bucket_name(bucket_name)
-        s3_client = aws_stack.connect_to_service("s3")
+        s3_client = connect_to().s3
         response = s3_client.get_bucket_location(Bucket=bucket_name)
         notifs = props.get("NotificationConfiguration")
         if not response or not notifs:

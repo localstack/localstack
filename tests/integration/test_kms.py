@@ -11,11 +11,6 @@ from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import (
-    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-    TEST_AWS_REGION_NAME,
-)
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.utils.strings import short_uid, to_str
 
@@ -28,6 +23,11 @@ def kms_client_for_region(aws_client_factory):
         return aws_client_factory(region_name=region_name).kms
 
     return _kms_client
+
+
+@pytest.fixture(scope="class")
+def user_arn(aws_client):
+    return aws_client.sts.get_caller_identity()["Arn"]
 
 
 def _get_all_key_ids(kms_client):
@@ -64,10 +64,6 @@ class TestKMS:
     @pytest.fixture(autouse=True)
     def kms_api_snapshot_transformer(self, snapshot):
         snapshot.add_transformer(snapshot.transform.kms_api())
-
-    @pytest.fixture(scope="class")
-    def user_arn(self, aws_client):
-        return aws_client.sts.get_caller_identity()["Arn"]
 
     @pytest.mark.aws_validated
     def test_create_alias(self, kms_create_alias, kms_create_key, snapshot):
@@ -1075,19 +1071,51 @@ class TestKMS:
             aws_client.kms.encrypt(KeyId=key_id, Plaintext=base64.b64encode(message * 100))
         snapshot.match("invalid-plaintext-size-encrypt", e.value.response)
 
-    def test_cross_accounts_access(self, aws_client, aws_client_factory, kms_create_key, user_arn):
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..message"])
+    def test_encrypt_decrypt_encryption_context(self, kms_create_key, snapshot, aws_client):
+        key_id = kms_create_key()["KeyId"]
+        message = b"test message 123 !%$@ 1234567890"
+        encryption_context = {"context-key": "context-value"}
+        algo = "SYMMETRIC_DEFAULT"
+
+        encrypt_response = aws_client.kms.encrypt(
+            KeyId=key_id,
+            Plaintext=base64.b64encode(message),
+            EncryptionAlgorithm=algo,
+            EncryptionContext=encryption_context,
+        )
+        snapshot.match("encrypt_response", encrypt_response)
+        ciphertext = encrypt_response["CiphertextBlob"]
+
+        decrypt_response = aws_client.kms.decrypt(
+            KeyId=key_id,
+            CiphertextBlob=ciphertext,
+            EncryptionAlgorithm=algo,
+            EncryptionContext=encryption_context,
+        )
+        snapshot.match("decrypt_response_with_encryption_context", decrypt_response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(
+                KeyId=key_id,
+                CiphertextBlob=ciphertext,
+                EncryptionAlgorithm=algo,
+            )
+        snapshot.match("decrypt_response_without_encryption_context", e.value.response)
+
+
+class TestKMSMultiAccounts:
+    def test_cross_accounts_access(
+        self, aws_client, secondary_aws_client, kms_create_key, user_arn
+    ):
         # Create the keys in the primary AWS account. They will only be referred to by their ARNs hereon
         key_arn_1 = kms_create_key()["Arn"]
         key_arn_2 = kms_create_key(KeyUsage="SIGN_VERIFY", KeySpec="RSA_4096")["Arn"]
         key_arn_3 = kms_create_key(KeyUsage="GENERATE_VERIFY_MAC", KeySpec="HMAC_512")["Arn"]
 
         # Create client in secondary account and attempt to run operations with the above keys
-        client = aws_client_factory.get_client(
-            "kms",
-            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-            region_name=TEST_AWS_REGION_NAME,
-        )
+        client = secondary_aws_client.kms
 
         # Cross-account access is supported for following operations in KMS:
         # - CreateGrant
@@ -1175,39 +1203,6 @@ class TestKMS:
         assert client.verify_mac(
             KeyId=key_arn_3, Message=message, MacAlgorithm="HMAC_SHA_512", Mac=mac
         )["MacValid"]
-
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..message"])
-    def test_encrypt_decrypt_encryption_context(self, kms_create_key, snapshot, aws_client):
-        key_id = kms_create_key()["KeyId"]
-        message = b"test message 123 !%$@ 1234567890"
-        encryption_context = {"context-key": "context-value"}
-        algo = "SYMMETRIC_DEFAULT"
-
-        encrypt_response = aws_client.kms.encrypt(
-            KeyId=key_id,
-            Plaintext=base64.b64encode(message),
-            EncryptionAlgorithm=algo,
-            EncryptionContext=encryption_context,
-        )
-        snapshot.match("encrypt_response", encrypt_response)
-        ciphertext = encrypt_response["CiphertextBlob"]
-
-        decrypt_response = aws_client.kms.decrypt(
-            KeyId=key_id,
-            CiphertextBlob=ciphertext,
-            EncryptionAlgorithm=algo,
-            EncryptionContext=encryption_context,
-        )
-        snapshot.match("decrypt_response_with_encryption_context", decrypt_response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.kms.decrypt(
-                KeyId=key_id,
-                CiphertextBlob=ciphertext,
-                EncryptionAlgorithm=algo,
-            )
-        snapshot.match("decrypt_response_without_encryption_context", e.value.response)
 
 
 class TestKMSGenerateKeys:

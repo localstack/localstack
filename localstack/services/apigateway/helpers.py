@@ -28,6 +28,7 @@ from localstack.aws.api.apigateway import (
     Model,
     RequestValidator,
 )
+from localstack.aws.connect import connect_to
 from localstack.constants import (
     APPLICATION_JSON,
     HEADER_LOCALSTACK_EDGE_URL,
@@ -528,7 +529,7 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
         return {}
 
     _, region_name = get_api_account_id_and_region(context.api_id)
-    api_gateway_client = aws_stack.connect_to_service("apigateway", region_name=region_name)
+    api_gateway_client = connect_to(region_name=region_name).apigateway
     try:
         response = api_gateway_client.get_stage(restApiId=context.api_id, stageName=context.stage)
         return response.get("variables")
@@ -617,7 +618,7 @@ def get_cors_response(headers):
 
 
 def get_rest_api_paths(rest_api_id, region_name=None):
-    apigateway = aws_stack.connect_to_service(service_name="apigateway", region_name=region_name)
+    apigateway = connect_to(region_name=region_name).apigateway
     resources = apigateway.get_resources(restApiId=rest_api_id, limit=100)
     resource_map = {}
     for resource in resources["items"]:
@@ -1467,7 +1468,7 @@ class OpenApiExporter:
         """
         https://github.com/OAI/OpenAPI-Specification/blob/main/versions/2.0.md
         """
-        apigateway_client = aws_stack.connect_to_service("apigateway")
+        apigateway_client = connect_to().apigateway
 
         rest_api = apigateway_client.get_rest_api(restApiId=api_id)
         resources = apigateway_client.get_resources(restApiId=api_id)
@@ -1488,7 +1489,7 @@ class OpenApiExporter:
         """
         https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md
         """
-        apigateway_client = aws_stack.connect_to_service("apigateway")
+        apigateway_client = connect_to().apigateway
 
         rest_api = apigateway_client.get_rest_api(restApiId=api_id)
         resources = apigateway_client.get_resources(restApiId=api_id)
