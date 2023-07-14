@@ -204,13 +204,17 @@ class TestArgumentParsing:
         assert flags.user == "nobody"
 
     def test_dns(self):
-        argument_string = r"--dns 1.2.3.4"
+        argument_string = "--dns 1.2.3.4"
         flags = Util.parse_additional_flags(argument_string)
         assert flags.dns == ["1.2.3.4"]
 
-        argument_string = r"--dns 1.2.3.4 --dns 5.6.7.8"
+        argument_string = "--dns 1.2.3.4 --dns 5.6.7.8"
         flags = Util.parse_additional_flags(argument_string)
         assert flags.dns == ["1.2.3.4", "5.6.7.8"]
+
+        argument_string = ""
+        flags = Util.parse_additional_flags(argument_string)
+        assert flags.dns == []
 
     def test_windows_paths(self):
         argument_string = r'-v "C:\Users\SomeUser\SomePath:/var/task"'

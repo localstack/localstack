@@ -1344,8 +1344,17 @@ class TestRunWithAdditionalArgs:
         assert "127.0.0.1" in stdout
         assert "sometest.localstack.cloud" in stdout
 
-    def test_run_with_additional_arguments_add_dns(self, docker_client: ContainerClient):
-        additional_flags = "--dns 1.2.3.4 --dns 5.6.7.8"
+    @pytest.mark.parametrize("pass_dns_in_run_container", [True, False])
+    def test_run_with_additional_arguments_add_dns(
+        self, docker_client: ContainerClient, pass_dns_in_run_container
+    ):
+        kwargs = {}
+        additional_flags = "--dns 1.2.3.4"
+        if pass_dns_in_run_container:
+            kwargs["dns"] = "5.6.7.8"
+        else:
+            additional_flags += " --dns 5.6.7.8"
+
         container_name = f"c-{short_uid()}"
         stdout, _ = docker_client.run_container(
             "alpine",
@@ -1354,9 +1363,10 @@ class TestRunWithAdditionalArgs:
             command=["sleep", "3"],
             additional_flags=additional_flags,
             detach=True,
+            **kwargs,
         )
         result = docker_client.inspect_container(container_name)
-        assert result["HostConfig"]["Dns"] == ["1.2.3.4", "5.6.7.8"]
+        assert set(result["HostConfig"]["Dns"]) == {"1.2.3.4", "5.6.7.8"}
 
 
 class TestDockerImages:
