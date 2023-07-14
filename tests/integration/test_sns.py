@@ -18,7 +18,7 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
-from localstack.services.sns.constants import PLATFORM_ENDPOINT_MSGS_ENDPOINT
+from localstack.services.sns.constants import PLATFORM_ENDPOINT_MSGS_ENDPOINT, SMS_MSGS_ENDPOINT
 from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils import testutil
