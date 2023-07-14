@@ -4865,56 +4865,102 @@ class TestS3:
         snapshot.match("if_match_err_1", e.value.response["Error"])
 
     def test_s3_object_hold(self, aws_client, s3_create_bucket, snapshot):
-        bucket_name = f"bucket-{short_uid()}"
-        s3_create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
-        key = "test.txt"
-        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body="test")
-        with pytest.raises(ClientError) as exc:
-            aws_client.s3.get_object_retention(Bucket=bucket_name, Key=key)
-        snapshot.match("get_object_retention_1", exc.value.response["Error"])
+        bucket_name_with_lock = f"bucket-with-lock-{short_uid()}"
+        bucket_name_without_lock = f"bucket-without-lock-{short_uid()}"
+        key_1 = "test1.txt"
+        key_2 = "test2.txt"
+
+        s3_create_bucket(Bucket=bucket_name_with_lock, ObjectLockEnabledForBucket=True)
+        aws_client.s3.put_object(Bucket=bucket_name_with_lock, Key=key_1, Body="test")
+        key_1_version_id = aws_client.s3.get_object(Bucket=bucket_name_with_lock, Key=key_1)[
+            "VersionId"
+        ]
+        key_2_version_id = aws_client.s3.put_object(Bucket=bucket_name_with_lock, Key=key_2)[
+            "VersionId"
+        ]
+
+        s3_create_bucket(Bucket=bucket_name_without_lock, ObjectLockEnabledForBucket=False)
+        aws_client.s3.put_object(Bucket=bucket_name_without_lock, Key=key_1, Body="test")
 
         # non-existing bucket
         with pytest.raises(ClientError) as exc:
             aws_client.s3.put_object_retention(
                 Bucket="non-existing-bucket",
-                Key=key,
-                Retention={"Mode": "COMPLIANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+                Key=key_1,
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
             )
         snapshot.match("put_object_retention_1", exc.value.response["Error"])
 
         # non-existing key
         with pytest.raises(ClientError) as exc:
             aws_client.s3.put_object_retention(
-                Bucket=bucket_name,
+                Bucket=bucket_name_with_lock,
                 Key="non-existing-key",
-                Retention={"Mode": "COMPLIANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
             )
         snapshot.match("put_object_retention_2", exc.value.response["Error"])
 
+        # no lock on bucket
         with pytest.raises(ClientError) as exc:
-            aws_client.s3.get_object_retention(Bucket=bucket_name, Key=key)
-        snapshot.match("put_object_retention_3", exc.value.response["Error"])
+            aws_client.s3.get_object_retention(Bucket=bucket_name_without_lock, Key=key_1)
+        snapshot.match("get_object_retention_1", exc.value.response["Error"])
 
         response = aws_client.s3.put_object_retention(
-            Bucket=bucket_name,
-            Key=key,
-            Retention={"Mode": "COMPLIANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+            Bucket=bucket_name_with_lock,
+            Key=key_1,
+            Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
         )
         snapshot.match("put_object_retention_4", response["ResponseMetadata"]["HTTPStatusCode"])
 
-        response = aws_client.s3.get_object_retention(Bucket=bucket_name, Key=key)
+        response = aws_client.s3.get_object_retention(Bucket=bucket_name_with_lock, Key=key_1)
         snapshot.match("get_object_retention_2", response)
 
-        bucket_name_without_lock = f"bucket-{short_uid()}"
-        s3_create_bucket(Bucket=bucket_name_without_lock, ObjectLockEnabledForBucket=False)
+        # delete object with lock without bypass
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.delete_object(
+                Bucket=bucket_name_with_lock, Key=key_1, VersionId=key_1_version_id
+            )
+        snapshot.match("delete_object_1", exc.value.response["Error"])
 
-        aws_client.s3.put_object(Bucket=bucket_name_without_lock, Key=key, Body="test")
+        # delete object with lock with bypass
+        response = aws_client.s3.delete_object(
+            Bucket=bucket_name_with_lock,
+            Key=key_1,
+            VersionId=key_1_version_id,
+            BypassGovernanceRetention=True,
+        )
+        snapshot.match("delete_object_2", response["ResponseMetadata"]["HTTPStatusCode"])
 
+        # add object retention to key_2 with 5 seconds retention
+        aws_client.s3.put_object_retention(
+            Bucket=bucket_name_with_lock,
+            Key=key_2,
+            Retention={
+                "Mode": "GOVERNANCE",
+                "RetainUntilDate": datetime.datetime.utcnow() + datetime.timedelta(seconds=5),
+            },
+        )
+
+        # delete object with lock without bypass before 5 seconds
+        with pytest.raises(ClientError):
+            aws_client.s3.delete_object(
+                Bucket=bucket_name_with_lock, Key=key_2, VersionId=key_2_version_id
+            )
+
+        # delete object with lock without bypass after 5 seconds
+        time.sleep(6)
+        aws_client.s3.delete_object(
+            Bucket=bucket_name_with_lock,
+            Key=key_2,
+            VersionId=key_2_version_id,
+        )
+
+        # put object retention on bucket without lock configured
         with pytest.raises(ClientError) as exc:
             aws_client.s3.put_object_retention(
                 Bucket=bucket_name_without_lock,
-                Key=key,
-                Retention={"Mode": "COMPLIANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+                Key=key_1,
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
             )
         snapshot.match("put_object_retention_5", exc.value.response["Error"])
 

@@ -8597,12 +8597,8 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_object_hold": {
-    "recorded-date": "07-07-2023, 14:25:48",
+    "recorded-date": "08-07-2023, 00:52:18",
     "recorded-content": {
-      "get_object_retention_1": {
-        "Code": "NoSuchObjectLockConfiguration",
-        "Message": "The specified object does not have a ObjectLock configuration"
-      },
       "put_object_retention_1": {
         "BucketName": "non-existing-bucket",
         "Code": "NoSuchBucket",
@@ -8613,14 +8609,14 @@
         "Key": "non-existing-key",
         "Message": "The specified key does not exist."
       },
-      "put_object_retention_3": {
-        "Code": "NoSuchObjectLockConfiguration",
-        "Message": "The specified object does not have a ObjectLock configuration"
+      "get_object_retention_1": {
+        "Code": "InvalidRequest",
+        "Message": "Bucket is missing Object Lock Configuration"
       },
       "put_object_retention_4": 200,
       "get_object_retention_2": {
         "Retention": {
-          "Mode": "COMPLIANCE",
+          "Mode": "GOVERNANCE",
           "RetainUntilDate": "datetime"
         },
         "ResponseMetadata": {
@@ -8628,6 +8624,11 @@
           "HTTPStatusCode": 200
         }
       },
+      "delete_object_1": {
+        "Code": "AccessDenied",
+        "Message": "Access Denied"
+      },
+      "delete_object_2": 204,
       "put_object_retention_5": {
         "Code": "InvalidRequest",
         "Message": "Bucket is missing Object Lock Configuration"

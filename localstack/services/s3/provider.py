@@ -179,6 +179,7 @@ from localstack.utils.aws.arns import s3_bucket_name
 from localstack.utils.collections import get_safe
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
+from localstack.utils.time import parse_timestamp
 from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
@@ -1120,15 +1121,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         key = get_key_from_moto_bucket(
             get_bucket_from_moto(moto_backend, bucket=bucket), key=key, version_id=version_id
         )
-        if not key.lock_mode or not key.lock_until:
-            raise CommonServiceException(
-                "NoSuchObjectLockConfiguration",
-                "The specified object does not have a ObjectLock configuration",
-            )
+        if not key.lock_mode and not key.lock_until:
+            raise InvalidRequest("Bucket is missing Object Lock Configuration")
         return GetObjectRetentionOutput(
             Retention=ObjectLockRetention(
                 Mode=key.lock_mode,
-                RetainUntilDate=key.lock_until,
+                RetainUntilDate=parse_timestamp(key.lock_until),
             )
         )
 
@@ -1162,7 +1160,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise NoSuchKey("The specified key does not exist.", Key=key)
 
         moto_key.lock_mode = retention.get("Mode")
-        # TODO: add past date validation
         retention_date = retention.get("RetainUntilDate")
         retention_date = retention_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         moto_key.lock_until = retention_date
@@ -2239,6 +2236,23 @@ def apply_moto_patches():
             return PermissionResult.PERMITTED
 
         return fn(self, *args, **kwargs)
+
+    def key_is_locked(self):
+        """
+        Apply a patch to disable/enable enforcement of S3 bucket policies
+        """
+        if self.lock_legal_status == "ON":
+            return True
+
+        if self.lock_mode in ["GOVERNANCE", "COMPLIANCE"]:
+            now = datetime.datetime.utcnow()
+            until = parse_timestamp(self.lock_until)
+            if until > now:
+                return True
+
+        return False
+
+    setattr(moto_s3_models.FakeKey, "is_locked", property(key_is_locked))
 
 
 def register_custom_handlers():
