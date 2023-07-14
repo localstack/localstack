@@ -2,7 +2,7 @@ import json
 
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 
 
 class KMSKey(GenericBaseModel):
@@ -43,7 +43,7 @@ class KMSKey(GenericBaseModel):
     @classmethod
     def get_deploy_templates(cls):
         def _create(logical_resource_id: str, resource: dict, stack_name: str):
-            kms_client = aws_stack.connect_to_service("kms")
+            kms_client = connect_to().kms
             resource_provider = cls(resource)
             props = resource_provider.props
             params = {}

@@ -97,6 +97,7 @@ from localstack.aws.api.dynamodb import (
     UpdateTableOutput,
     UpdateTimeToLiveOutput,
 )
+from localstack.aws.connect import connect_to
 from localstack.aws.forwarder import get_request_forwarder_http
 from localstack.constants import AUTH_CREDENTIAL_REGEX, LOCALHOST, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Response
@@ -152,7 +153,7 @@ MANAGED_KMS_KEYS = {}
 
 
 def dynamodb_table_exists(table_name, client=None):
-    client = client or aws_stack.connect_to_service("dynamodb")
+    client = client or connect_to().dynamodb
     paginator = client.get_paginator("list_tables")
     pages = paginator.paginate(PaginationConfig={"PageSize": 100})
     for page in pages:
@@ -206,12 +207,11 @@ class EventForwarder:
 
             stream_account_id = extract_account_id_from_arn(stream_arn)
             stream_region_name = extract_region_from_arn(stream_arn)
-            kinesis = aws_stack.connect_to_service(
-                "kinesis",
+            kinesis = connect_to(
                 aws_access_key_id=stream_account_id,
                 aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
                 region_name=stream_region_name,
-            )
+            ).kinesis
             kinesis.put_record(
                 StreamName=stream_name,
                 Data=json.dumps(record, cls=BytesEncoder),
@@ -246,12 +246,11 @@ class EventForwarder:
         account_id = extract_account_id_from_arn(stream_arn)
         region_name = extract_region_from_arn(stream_arn)
 
-        kinesis = aws_stack.connect_to_service(
-            "kinesis",
+        kinesis = connect_to(
             aws_access_key_id=account_id,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
             region_name=region_name,
-        )
+        ).kinesis
         stream_name_from_arn = stream_arn.split("/", 1)[1]
         # check if the stream exists in kinesis for the user
         filtered = list(
@@ -273,12 +272,11 @@ class SSEUtils:
         existing_key = MANAGED_KMS_KEYS.get(region_name)
         if existing_key:
             return existing_key
-        kms_client = aws_stack.connect_to_service(
-            "kms",
+        kms_client = connect_to(
             aws_access_key_id=account_id,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
             region_name=region_name,
-        )
+        ).kms
         key_data = kms_client.create_key(
             Description="Default key that protects my DynamoDB data when no other key is defined"
         )
@@ -1320,12 +1318,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def table_exists(account_id: str, region_name: str, table_name: str) -> bool:
         region_name = DynamoDBProvider.ddb_region_name(region_name)
 
-        client = aws_stack.connect_to_service(
-            "dynamodb",
+        client = connect_to(
             aws_access_key_id=account_id,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
             region_name=region_name,
-        )
+        ).dynamodb
         return dynamodb_table_exists(table_name, client)
 
     @staticmethod
@@ -1658,7 +1655,7 @@ def has_event_sources_or_streams_enabled(table_name: str, cache: Dict = None):
     cached = cache.get(table_arn)
     if isinstance(cached, bool):
         return cached
-    lambda_client = aws_stack.connect_to_service("lambda")
+    lambda_client = connect_to().awslambda
     sources = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)[
         "EventSourceMappings"
     ]

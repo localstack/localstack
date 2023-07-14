@@ -16,7 +16,6 @@ from localstack.utils.aws.arns import (
     firehose_name,
     get_sqs_queue_url,
 )
-from localstack.utils.aws.aws_stack import connect_to_service
 from localstack.utils.http import add_path_parameters_to_url, add_query_params_to_url
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.strings import to_bytes, to_str
@@ -75,7 +74,7 @@ def send_event_to_target(
         sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), **kwargs)
 
     elif ":states:" in target_arn:
-        stepfunctions_client = connect_to_service("stepfunctions", region_name=region)
+        stepfunctions_client = connect_to(region_name=region).stepfunctions
         stepfunctions_client.start_execution(stateMachineArn=target_arn, input=json.dumps(event))
 
     elif ":firehose:" in target_arn:
@@ -212,7 +211,7 @@ def send_event_to_api_destination(target_arn, event, http_parameters: Optional[D
     # ARN format: ...:api-destination/{name}/{uuid}
     region = extract_region_from_arn(target_arn)
     api_destination_name = target_arn.split(":")[-1].split("/")[1]
-    events_client = connect_to_service("events", region_name=region)
+    events_client = connect_to(region_name=region).events
     destination = events_client.describe_api_destination(Name=api_destination_name)
 
     # get destination endpoint details

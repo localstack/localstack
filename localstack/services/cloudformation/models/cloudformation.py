@@ -5,7 +5,7 @@ from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.services.cloudformation.stores import get_cloudformation_store
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 
 LOG = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ class CloudFormationStack(GenericBaseModel):
         return "AWS::CloudFormation::Stack"
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service("cloudformation")
+        client = connect_to().cloudformation
         child_stack_name = self.props["StackName"]
         result = client.describe_stacks(StackName=child_stack_name)
         result = (result.get("Stacks") or [None])[0]

@@ -25,7 +25,6 @@ from localstack.services.sns.models import (
     SnsStore,
     SnsSubscription,
 )
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import (
     extract_region_from_arn,
     extract_resource_from_arn,
@@ -705,7 +704,7 @@ def get_attributes_for_application_endpoint(endpoint_arn: str) -> Tuple[Dict, Di
     :param endpoint_arn:
     :return:
     """
-    sns_client = aws_stack.connect_to_service("sns")
+    sns_client = connect_to().sns
     # TODO: we should access this from the moto store directly
     endpoint_attributes = sns_client.get_endpoint_attributes(EndpointArn=endpoint_arn)
 

@@ -7,7 +7,6 @@ from flask import Response
 
 from localstack import config
 from localstack.aws.connect import connect_to
-from localstack.utils.aws import aws_stack
 from localstack.utils.strings import to_str
 from localstack.utils.time import now_utc
 
@@ -57,7 +56,7 @@ def publish_sqs_metric(
     :param value The value of the metric data, default: 1
     :param unit The unit of the metric data, default: "Count"
     """
-    cw_client = aws_stack.connect_to_service("cloudwatch", region_name=region)
+    cw_client = connect_to(region_name=region).cloudwatch
     try:
         cw_client.put_metric_data(
             Namespace="AWS/SQS",
@@ -100,7 +99,7 @@ def store_cloudwatch_logs(
     logs_client=None,
 ):
     start_time = start_time or int(time.time() * 1000)
-    logs_client = logs_client or aws_stack.connect_to_service("logs")
+    logs_client = logs_client or connect_to().logs
     log_output = to_str(log_output)
 
     if auto_create_group:

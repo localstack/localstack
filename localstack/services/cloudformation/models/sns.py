@@ -2,12 +2,12 @@ import json
 
 from botocore.exceptions import ClientError
 
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     is_none_or_empty_value,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import canonicalize_bool_to_str
 
 
@@ -18,7 +18,7 @@ class SNSTopic(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         topic_name = self.props["TopicName"]
-        topics = aws_stack.connect_to_service("sns").list_topics()
+        topics = connect_to().sns.list_topics()
         result = list(
             filter(
                 lambda item: item["TopicArn"].split(":")[-1] == topic_name,
@@ -77,7 +77,7 @@ class SNSTopic(GenericBaseModel):
             return topics
 
         def _add_topics(logical_resource_id: str, resource: str, stack_name: str):
-            sns_client = aws_stack.connect_to_service("sns")
+            sns_client = connect_to().sns
             topics = _list_all_topics(sns_client)
             topics_by_name = {t["TopicArn"].split(":")[-1]: t for t in topics}
 
@@ -124,7 +124,7 @@ class SNSSubscription(GenericBaseModel):
         topic_arn = props.get("TopicArn")
         if topic_arn is None:
             return
-        subs = aws_stack.connect_to_service("sns").list_subscriptions_by_topic(TopicArn=topic_arn)
+        subs = connect_to().sns.list_subscriptions_by_topic(TopicArn=topic_arn)
         result = [
             sub
             for sub in subs["Subscriptions"]
@@ -182,7 +182,7 @@ class SNSTopicPolicy(GenericBaseModel):
         return "AWS::SNS::TopicPolicy"
 
     def fetch_state(self, stack_name, resources):
-        sns_client = aws_stack.connect_to_service("sns")
+        sns_client = connect_to().sns
         result = {}
         props = self.props
         for topic_arn in props["Topics"]:
@@ -203,7 +203,7 @@ class SNSTopicPolicy(GenericBaseModel):
     @classmethod
     def get_deploy_templates(cls):
         def _create(logical_resource_id: str, resource: dict, stack_name: str):
-            sns_client = aws_stack.connect_to_service("sns")
+            sns_client = connect_to().sns
             provider = cls(resource)
             props = provider.props
 
@@ -216,7 +216,7 @@ class SNSTopicPolicy(GenericBaseModel):
                 )
 
         def _delete(logical_resource_id: str, resource: dict, stack_name: str):
-            sns_client = aws_stack.connect_to_service("sns")
+            sns_client = connect_to().sns
             provider = cls(resource)
             props = provider.props
 

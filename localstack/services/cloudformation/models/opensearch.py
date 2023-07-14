@@ -3,9 +3,10 @@ from localstack.aws.api.opensearch import (
     OpenSearchPartitionInstanceType,
     OpenSearchWarmPartitionInstanceType,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import remove_none_values
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.collections import convert_to_typed_dict
 
 
@@ -27,7 +28,7 @@ class OpenSearchDomain(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         domain_name = self._domain_name()
-        return aws_stack.connect_to_service("opensearch").describe_domain(DomainName=domain_name)
+        return connect_to().opensearch.describe_domain(DomainName=domain_name)
 
     def _domain_name(self):
         return self.props.get("DomainName") or self.logical_resource_id

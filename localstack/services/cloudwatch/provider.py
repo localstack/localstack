@@ -26,6 +26,7 @@ from localstack.aws.api.cloudwatch import (
     TagResourceOutput,
     UntagResourceOutput,
 )
+from localstack.aws.connect import connect_to
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.deprecations import deprecated_endpoint
 from localstack.http import Request
@@ -70,7 +71,7 @@ def update_state(target, self, reason, reason_data, state_value):
         data = arns.parse_arn(action)
         # test for sns - can this be done in a more generic way?
         if data["service"] == "sns":
-            service = aws_stack.connect_to_service(data["service"])
+            service = connect_to.get_client(data["service"])
             subject = f"""{self.state_value}: "{self.name}" in {self.region_name}"""
             message = create_message_response_update_state(self, old_state)
             service.publish(TopicArn=action, Subject=subject, Message=message)

@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime
 from typing import Dict, List, Optional
 from urllib.parse import quote
@@ -26,6 +27,7 @@ from localstack.aws.api.iam import (
     GetServiceLinkedRoleDeletionStatusResponse,
     GetUserResponse,
     IamApi,
+    InvalidInputException,
     ListInstanceProfileTagsResponse,
     ListRolesResponse,
     MalformedPolicyDocumentException,
@@ -55,9 +57,9 @@ from localstack.aws.api.iam import (
     tagListType,
     userNameType,
 )
+from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.moto import call_moto
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.common import short_uid
 from localstack.utils.patch import patch
@@ -88,6 +90,8 @@ ADDITIONAL_MANAGED_POLICIES = {
         "UpdateDate": "2019-05-20T18:22:18+00:00",
     }
 }
+
+POLICY_ARN_REGEX = re.compile(r"arn:[^:]+:iam::(?:\d{12}|aws):policy/.*")
 
 
 def get_iam_backend(context: RequestContext) -> IAMBackend:
@@ -386,11 +390,10 @@ class IamProvider(IamApi):
         # if the user does not exist or is no user
         if not moto_user and not user_name:
             access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
-            sts_client = aws_stack.connect_to_service(
-                "sts",
+            sts_client = connect_to(
                 aws_access_key_id=access_key_id,
                 aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
-            )
+            ).sts
             caller_identity = sts_client.get_caller_identity()
             caller_arn = caller_identity["Arn"]
             if caller_arn.endswith(":root"):
@@ -415,6 +418,20 @@ class IamProvider(IamApi):
             )
 
         return response
+
+    def attach_role_policy(
+        self, context: RequestContext, role_name: roleNameType, policy_arn: arnType
+    ) -> None:
+        if not POLICY_ARN_REGEX.match(policy_arn):
+            raise InvalidInputException(f"ARN {policy_arn} is not valid.")
+        return call_moto(context=context)
+
+    def attach_user_policy(
+        self, context: RequestContext, user_name: userNameType, policy_arn: arnType
+    ) -> None:
+        if not POLICY_ARN_REGEX.match(policy_arn):
+            raise InvalidInputException(f"ARN {policy_arn} is not valid.")
+        return call_moto(context=context)
 
     # def get_user(
     #     self, context: RequestContext, user_name: existingUserNameType = None

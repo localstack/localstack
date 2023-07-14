@@ -3,9 +3,9 @@ import logging
 import random
 import string
 
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import select_attributes
 
 LOG = logging.getLogger(__name__)
@@ -25,9 +25,7 @@ class SecretsManagerSecret(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         secret_name = self.props.get("Name") or self.logical_resource_id
-        result = aws_stack.connect_to_service("secretsmanager").describe_secret(
-            SecretId=secret_name
-        )
+        result = connect_to().secretsmanager.describe_secret(SecretId=secret_name)
         return result
 
     @staticmethod
@@ -154,9 +152,7 @@ class SecretsManagerResourcePolicy(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         secret_id = self.props.get("SecretId")
-        result = aws_stack.connect_to_service("secretsmanager").get_resource_policy(
-            SecretId=secret_id
-        )
+        result = connect_to().secretsmanager.get_resource_policy(SecretId=secret_id)
         return result
 
     @staticmethod

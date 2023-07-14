@@ -36,7 +36,6 @@ from localstack.services.s3.utils import (
     get_bucket_and_key_from_s3_uri,
 )
 from localstack.services.transcribe.models import TranscribeStore, transcribe_stores
-from localstack.utils.aws import aws_stack
 from localstack.utils.files import new_tmp_file
 from localstack.utils.http import download
 from localstack.utils.run import run
@@ -263,7 +262,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
 
             # Get file from S3
             file_path = new_tmp_file()
-            s3_client = aws_stack.connect_to_service("s3")
+            s3_client = connect_to().s3
             s3_path = job["Media"]["MediaFileUri"]
             bucket, _, key = s3_path.removeprefix("s3://").partition("/")
             s3_client.download_file(Bucket=bucket, Key=key, Filename=file_path)

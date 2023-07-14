@@ -143,9 +143,7 @@ def get_opensearch_endpoint(domain_arn: str) -> str:
     region_name = extract_region_from_arn(domain_arn)
     if region_name is None:
         raise ValueError("unable to parse region from opensearch domain ARN")
-    opensearch_client = aws_stack.connect_to_service(
-        service_name="opensearch", region_name=region_name
-    )
+    opensearch_client = connect_to(region_name=region_name).opensearch
     domain_name = opensearch_domain_name(domain_arn)
     info = opensearch_client.describe_domain(DomainName=domain_name)
     base_domain = info["DomainStatus"]["Endpoint"]
@@ -683,9 +681,7 @@ class FirehoseProvider(FirehoseApi):
                     record["Data"] = to_str(record["Data"])
             event = {"records": records}
             event = to_bytes(json.dumps(event))
-            client = aws_stack.connect_to_service(
-                "lambda", region_name=extract_region_from_arn(lambda_arn)
-            )
+            client = connect_to(region_name=extract_region_from_arn(lambda_arn)).awslambda
             response = client.invoke(FunctionName=lambda_arn, Payload=event)
             result = response.get("Payload").read()
             result = json.loads(to_str(result))

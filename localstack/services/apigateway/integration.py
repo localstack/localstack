@@ -573,7 +573,7 @@ class S3Integration(BackendIntegration):
         relative_path, query_string_params = extract_query_string_params(path=invocation_path)
         uri = integration.get("uri") or integration.get("integrationUri") or ""
 
-        s3 = aws_stack.connect_to_service("s3")
+        s3 = connect_to().s3
         uri = apply_request_parameters(
             uri,
             integration=integration,
@@ -619,7 +619,7 @@ class HTTPIntegration(BackendIntegration):
 
         if ":servicediscovery:" in uri:
             # check if this is a servicediscovery integration URI
-            client = aws_stack.connect_to_service("servicediscovery")
+            client = connect_to().servicediscovery
             service_id = uri.split("/")[-1]
             instances = client.list_instances(ServiceId=service_id)["Instances"]
             instance = (instances or [None])[0]
@@ -752,7 +752,7 @@ class StepFunctionIntegration(BackendIntegration):
         else:
             payload = json.loads(invocation_context.data)
 
-        client = aws_stack.connect_to_service("stepfunctions")
+        client = connect_to().stepfunctions
         if isinstance(payload.get("input"), dict):
             payload["input"] = json.dumps(payload["input"])
 

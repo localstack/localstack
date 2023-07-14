@@ -1,10 +1,10 @@
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     generate_default_name,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils import common
-from localstack.utils.aws import aws_stack
 
 
 def get_ddb_provisioned_throughput(
@@ -88,7 +88,7 @@ class DynamoDBTable(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         table_name = self.props.get("TableName") or self.logical_resource_id
-        return aws_stack.connect_to_service("dynamodb").describe_table(TableName=table_name)
+        return connect_to().dynamodb.describe_table(TableName=table_name)
 
     @staticmethod
     def add_defaults(resource, stack_name: str):

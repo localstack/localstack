@@ -1,5 +1,5 @@
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import select_attributes
 
 
@@ -9,7 +9,7 @@ class Route53RecordSet(GenericBaseModel):
         return "AWS::Route53::RecordSet"
 
     def fetch_state(self, stack_name, resources):
-        route53 = aws_stack.connect_to_service("route53")
+        route53 = connect_to().route53
         props = self.props
         result = route53.list_resource_record_sets(HostedZoneId=props["HostedZoneId"])[
             "ResourceRecordSets"
@@ -53,7 +53,7 @@ class Route53RecordSet(GenericBaseModel):
         def hosted_zone_id_change_batch(
             properties: dict, logical_resource_id: str, resource: dict, stack_name: str
         ):
-            route53 = aws_stack.connect_to_service("route53")
+            route53 = connect_to().route53
             hosted_zone_id = properties.get("HostedZoneId")
             if not hosted_zone_id:
                 hosted_zone_name = properties.get("HostedZoneName")
