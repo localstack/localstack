@@ -125,7 +125,7 @@ class SnsStore(BaseStore):
     # cache of topic ARN to platform endpoint messages (used primarily for testing)
     platform_endpoint_messages: Dict[str, List[Dict]] = LocalAttribute(default=dict)
 
-    # list of sent SMS messages - TODO: expose via internal API
+    # list of sent SMS messages
     sms_messages: List[Dict] = LocalAttribute(default=list)
 
     # filter policy are stored as JSON string in subscriptions, store the decoded result Dict

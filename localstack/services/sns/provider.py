@@ -869,28 +869,22 @@ def get_region_from_subscription_token(token: str) -> str:
 
 
 def register_sns_api_resource(router: Router):
-    """Register the platform endpointmessages retrospection endpoint as an internal LocalStack endpoint."""
+    """Register the retrospection endpoints as internal LocalStack endpoints."""
     router.add(SNSServicePlatformEndpointMessagesApiResource())
+    router.add(SNSServiceSMSMessagesApiResource())
 
 
-def _format_platform_endpoint_messages(sent_messages: List[Dict[str, str]]):
+def _format_messages(sent_messages: List[Dict[str, str]], validated_keys: List[str]):
     """
     This method format the messages to be more readable and undo the format change that was needed for Moto
     Should be removed once we refactor SNS.
     """
-    validated_keys = [
-        "TargetArn",
-        "TopicArn",
-        "Message",
-        "MessageAttributes",
-        "MessageStructure",
-        "Subject",
-        "MessageId",
-    ]
     formatted_messages = []
     for sent_message in sent_messages:
         msg = {
-            key: value if key != "Message" else json.dumps(value)
+            key: json.dumps(value)
+            if key == "Message" and sent_message.get("MessageStructure") == "json"
+            else value
             for key, value in sent_message.items()
             if key in validated_keys
         }
@@ -913,6 +907,16 @@ class SNSServicePlatformEndpointMessagesApiResource:
     - DELETE param `endpointArn`: will delete saved messages for `endpointArn`
     """
 
+    _PAYLOAD_FIELDS = [
+        "TargetArn",
+        "TopicArn",
+        "Message",
+        "MessageAttributes",
+        "MessageStructure",
+        "Subject",
+        "MessageId",
+    ]
+
     @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["GET"])
     def on_get(self, request: Request):
         account_id = request.args.get("accountId", get_aws_account_id())
@@ -921,14 +925,14 @@ class SNSServicePlatformEndpointMessagesApiResource:
         store: SnsStore = sns_stores[account_id][region]
         if filter_endpoint_arn:
             messages = store.platform_endpoint_messages.get(filter_endpoint_arn, [])
-            messages = _format_platform_endpoint_messages(messages)
+            messages = _format_messages(messages, self._PAYLOAD_FIELDS)
             return {
                 "platform_endpoint_messages": {filter_endpoint_arn: messages},
                 "region": region,
             }
 
         platform_endpoint_messages = {
-            endpoint_arn: _format_platform_endpoint_messages(messages)
+            endpoint_arn: _format_messages(messages, self._PAYLOAD_FIELDS)
             for endpoint_arn, messages in store.platform_endpoint_messages.items()
         }
         return {
@@ -946,5 +950,69 @@ class SNSServicePlatformEndpointMessagesApiResource:
             store.platform_endpoint_messages.pop(filter_endpoint_arn, None)
             return Response("", status=204)
 
-        store.platform_endpoint_messages = {}
+        store.platform_endpoint_messages.clear()
+        return Response("", status=204)
+
+
+class SNSServiceSMSMessagesApiResource:
+    """Provides a REST API for retrospective access to SMS messages sent via SNS.
+
+    This is registered as a LocalStack internal HTTP resource.
+
+    This endpoint accepts:
+    - GET param `accountId`: selector for AWS account. If not specified, return fallback `000000000000` test ID
+    - GET param `region`: selector for AWS `region`. If not specified, return default "us-east-1"
+    - GET param `phoneNumber`: filter for `phoneNumber` resource in SNS
+    """
+
+    _PAYLOAD_FIELDS = [
+        "PhoneNumber",
+        "TopicArn",
+        "SubscriptionArn",
+        "MessageId",
+        "Message",
+        "MessageAttributes",
+        "MessageStructure",
+        "Subject",
+    ]
+
+    @route(sns_constants.SMS_MSGS_ENDPOINT, methods=["GET"])
+    def on_get(self, request: Request):
+        account_id = request.args.get("accountId", get_aws_account_id())
+        region = request.args.get("region", "us-east-1")
+        filter_phone_number = request.args.get("phoneNumber")
+        store: SnsStore = sns_stores[account_id][region]
+        if filter_phone_number:
+            messages = [
+                m for m in store.sms_messages if m.get("PhoneNumber") == filter_phone_number
+            ]
+            messages = _format_messages(messages, self._PAYLOAD_FIELDS)
+            return {
+                "sms_messages": {filter_phone_number: messages},
+                "region": region,
+            }
+
+        sms_messages = {}
+
+        for m in _format_messages(store.sms_messages, self._PAYLOAD_FIELDS):
+            sms_messages.setdefault(m.get("PhoneNumber"), []).append(m)
+
+        return {
+            "sms_messages": sms_messages,
+            "region": region,
+        }
+
+    @route(sns_constants.SMS_MSGS_ENDPOINT, methods=["DELETE"])
+    def on_delete(self, request: Request) -> Response:
+        account_id = request.args.get("accountId", get_aws_account_id())
+        region = request.args.get("region", "us-east-1")
+        filter_phone_number = request.args.get("phoneNumber")
+        store: SnsStore = sns_stores[account_id][region]
+        if filter_phone_number:
+            store.sms_messages = [
+                m for m in store.sms_messages if m.get("PhoneNumber") != filter_phone_number
+            ]
+            return Response("", status=204)
+
+        store.sms_messages.clear()
         return Response("", status=204)
