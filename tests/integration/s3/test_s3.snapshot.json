@@ -8496,5 +8496,104 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_bucket_inventory_config_order": {
+    "recorded-date": "14-07-2023, 17:13:52",
+    "recorded-content": {
+      "list-inventory-config": {
+        "InventoryConfigurationList": [
+          {
+            "Destination": {
+              "S3BucketDestination": {
+                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Format": "CSV"
+              }
+            },
+            "Id": "a-test",
+            "IncludedObjectVersions": "All",
+            "IsEnabled": true,
+            "Schedule": {
+              "Frequency": "Daily"
+            }
+          },
+          {
+            "Destination": {
+              "S3BucketDestination": {
+                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Format": "CSV"
+              }
+            },
+            "Id": "test-1",
+            "IncludedObjectVersions": "All",
+            "IsEnabled": true,
+            "Schedule": {
+              "Frequency": "Daily"
+            }
+          },
+          {
+            "Destination": {
+              "S3BucketDestination": {
+                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Format": "CSV"
+              }
+            },
+            "Id": "z-test",
+            "IncludedObjectVersions": "All",
+            "IsEnabled": true,
+            "Schedule": {
+              "Frequency": "Daily"
+            }
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "del-inventory-config": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list-inventory-config-after-del": {
+        "InventoryConfigurationList": [
+          {
+            "Destination": {
+              "S3BucketDestination": {
+                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Format": "CSV"
+              }
+            },
+            "Id": "a-test",
+            "IncludedObjectVersions": "All",
+            "IsEnabled": true,
+            "Schedule": {
+              "Frequency": "Daily"
+            }
+          },
+          {
+            "Destination": {
+              "S3BucketDestination": {
+                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Format": "CSV"
+              }
+            },
+            "Id": "test-1",
+            "IncludedObjectVersions": "All",
+            "IsEnabled": true,
+            "Schedule": {
+              "Frequency": "Daily"
+            }
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

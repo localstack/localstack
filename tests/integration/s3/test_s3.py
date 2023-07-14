@@ -5115,6 +5115,46 @@ class TestS3:
             _put_bucket_inventory_configuration(inv_config)
         snapshot.match("wrong-optional-field", e.value.response)
 
+    @pytest.mark.aws_validated
+    def test_put_bucket_inventory_config_order(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.resource_name())
+        src_bucket = s3_create_bucket()
+        dest_bucket = s3_create_bucket()
+
+        def _put_bucket_inventory_configuration(config_id: str):
+            inventory_configuration = {
+                "Id": config_id,
+                "Destination": {
+                    "S3BucketDestination": {
+                        "Bucket": f"arn:aws:s3:::{dest_bucket}",
+                        "Format": "CSV",
+                    }
+                },
+                "IsEnabled": True,
+                "IncludedObjectVersions": "All",
+                "Schedule": {"Frequency": "Daily"},
+            }
+            aws_client.s3.put_bucket_inventory_configuration(
+                Bucket=src_bucket,
+                Id=config_id,
+                InventoryConfiguration=inventory_configuration,
+            )
+
+        for inv_config_id in ("test-1", "z-test", "a-test"):
+            _put_bucket_inventory_configuration(inv_config_id)
+
+        list_inv_configs = aws_client.s3.list_bucket_inventory_configurations(Bucket=src_bucket)
+        snapshot.match("list-inventory-config", list_inv_configs)
+
+        del_inv_config = aws_client.s3.delete_bucket_inventory_configuration(
+            Bucket=src_bucket,
+            Id="z-test",
+        )
+        snapshot.match("del-inventory-config", del_inv_config)
+
+        list_inv_configs = aws_client.s3.list_bucket_inventory_configurations(Bucket=src_bucket)
+        snapshot.match("list-inventory-config-after-del", list_inv_configs)
+
 
 class TestS3MultiAccounts:
     @pytest.fixture

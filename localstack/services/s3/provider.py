@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 from collections import defaultdict
+from operator import itemgetter
 from typing import IO, Dict, List, Optional
 from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 from zoneinfo import ZoneInfo
@@ -1665,14 +1666,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store = self.get_store(context)
         bucket_inventory_configurations = store.bucket_inventory_configurations.get(bucket, {})
 
-        # bucket_inventory_configurations = sorted(
-        #     bucket_inventory_configurations.values(), key=lambda x: x["Id"]
-        # )
-        # TODO: verify the sorting?
-
         return ListBucketInventoryConfigurationsOutput(
             IsTruncated=False,
-            InventoryConfigurationList=list(bucket_inventory_configurations.values()),
+            InventoryConfigurationList=sorted(
+                bucket_inventory_configurations.values(), key=itemgetter("Id")
+            ),
         )
 
     def delete_bucket_inventory_configuration(
