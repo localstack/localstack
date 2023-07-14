@@ -6934,7 +6934,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_analytics_configurations": {
-    "recorded-date": "26-05-2023, 12:15:26",
+    "recorded-date": "13-07-2023, 18:45:37",
     "recorded-content": {
       "put_config_with_storage_analysis_err": {
         "Error": {
@@ -6964,6 +6964,12 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "put_config_with_storage_analysis_1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
         }
       },
       "get_config_with_storage_analysis_1": {
@@ -7113,7 +7119,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_intelligent_tier_config": {
-    "recorded-date": "26-05-2023, 19:17:48",
+    "recorded-date": "13-07-2023, 18:44:40",
     "recorded-content": {
       "put_bucket_intelligent_tiering_configuration_err_1`": {
         "Error": {
@@ -7123,6 +7129,12 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      },
+      "put_bucket_intelligent_tiering_configuration_1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
         }
       },
       "get_bucket_intelligent_tiering_configuration_1": {
@@ -8328,6 +8340,255 @@
         "LastModified": "datetime",
         "Metadata": {},
         "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_inventory_report_crud": {
+    "recorded-date": "14-07-2023, 00:15:43",
+    "recorded-content": {
+      "put-inventory-config": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list-inventory-config": {
+        "InventoryConfigurationList": [
+          {
+            "Destination": {
+              "S3BucketDestination": {
+                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Format": "CSV"
+              }
+            },
+            "Id": "test-inventory",
+            "IncludedObjectVersions": "All",
+            "IsEnabled": true,
+            "OptionalFields": [
+              "Size",
+              "ETag"
+            ],
+            "Schedule": {
+              "Frequency": "Daily"
+            }
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-inventory-config": {
+        "InventoryConfiguration": {
+          "Destination": {
+            "S3BucketDestination": {
+              "Bucket": "arn:aws:s3:::<resource:1>",
+              "Format": "CSV"
+            }
+          },
+          "Id": "test-inventory",
+          "IncludedObjectVersions": "All",
+          "IsEnabled": true,
+          "OptionalFields": [
+            "Size",
+            "ETag"
+          ],
+          "Schedule": {
+            "Frequency": "Daily"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "del-inventory-config": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list-inventory-config-after-del": {
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-nonexistent-inv-config": {
+        "Error": {
+          "Code": "NoSuchConfiguration",
+          "Message": "The specified configuration does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_put_inventory_report_exceptions": {
+    "recorded-date": "13-07-2023, 23:26:28",
+    "recorded-content": {
+      "wrong-id": {
+        "Error": {
+          "Code": "IdMismatch",
+          "Message": "Document ID does not match the specified configuration ID."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-destination-arn": {
+        "Error": {
+          "Code": "InvalidS3DestinationBucket",
+          "Message": "Invalid bucket ARN."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-destination-format": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-schedule-frequency": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-object-versions": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-optional-field": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_bucket_inventory_config_order": {
+    "recorded-date": "14-07-2023, 17:13:52",
+    "recorded-content": {
+      "list-inventory-config": {
+        "InventoryConfigurationList": [
+          {
+            "Destination": {
+              "S3BucketDestination": {
+                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Format": "CSV"
+              }
+            },
+            "Id": "a-test",
+            "IncludedObjectVersions": "All",
+            "IsEnabled": true,
+            "Schedule": {
+              "Frequency": "Daily"
+            }
+          },
+          {
+            "Destination": {
+              "S3BucketDestination": {
+                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Format": "CSV"
+              }
+            },
+            "Id": "test-1",
+            "IncludedObjectVersions": "All",
+            "IsEnabled": true,
+            "Schedule": {
+              "Frequency": "Daily"
+            }
+          },
+          {
+            "Destination": {
+              "S3BucketDestination": {
+                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Format": "CSV"
+              }
+            },
+            "Id": "z-test",
+            "IncludedObjectVersions": "All",
+            "IsEnabled": true,
+            "Schedule": {
+              "Frequency": "Daily"
+            }
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "del-inventory-config": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list-inventory-config-after-del": {
+        "InventoryConfigurationList": [
+          {
+            "Destination": {
+              "S3BucketDestination": {
+                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Format": "CSV"
+              }
+            },
+            "Id": "a-test",
+            "IncludedObjectVersions": "All",
+            "IsEnabled": true,
+            "Schedule": {
+              "Frequency": "Daily"
+            }
+          },
+          {
+            "Destination": {
+              "S3BucketDestination": {
+                "Bucket": "arn:aws:s3:::<resource:1>",
+                "Format": "CSV"
+              }
+            },
+            "Id": "test-1",
+            "IncludedObjectVersions": "All",
+            "IsEnabled": true,
+            "Schedule": {
+              "Frequency": "Daily"
+            }
+          }
+        ],
+        "IsTruncated": false,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
