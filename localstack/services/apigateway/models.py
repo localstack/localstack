@@ -5,10 +5,11 @@ from requests.structures import CaseInsensitiveDict
 from localstack.aws.api.apigateway import (
     Authorizer,
     DocumentationPart,
+    DomainName,
     GatewayResponse,
     Model,
     RequestValidator,
-    RestApi, DomainName,
+    RestApi,
 )
 from localstack.services.stores import (
     AccountRegionBundle,
