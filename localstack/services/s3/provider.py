@@ -788,14 +788,32 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
             )
-        elif (part_number := request.get("PartNumber", 0)) < 1:
+        elif (part_number := request.get("PartNumber", 0)) < 1 or part_number >= 10000:
             raise InvalidArgument(
                 "Part number must be an integer between 1 and 10000, inclusive",
                 ArgumentName="partNumber",
                 ArgumentValue=part_number,
             )
 
-        response: UploadPartOutput = call_moto(context)
+        part = body.read() if (body := request.get("Body")) else b""
+
+        # we are directly using moto backend and not calling moto because to get the response, moto calls
+        # key.response_dict, which in turns tries to access the tags of part, indirectly creating a BackendDict
+        # with an account_id set to None (because moto does not set an account_id to the FakeKey representing a Part)
+        key = moto_backend.upload_part(bucket_name, upload_id, part_number, part)
+        response = UploadPartOutput(ETag=key.etag)
+
+        if key.checksum_algorithm is not None:
+            response[f"Checksum{key.checksum_algorithm.upper()}"] = key.checksum_value
+
+        if key.encryption is not None:
+            response["ServerSideEncryption"] = key.encryption
+            if key.encryption == "aws:kms" and key.kms_key_id is not None:
+                response["SSEKMSKeyId"] = key.encryption
+
+        if key.encryption == "aws:kms" and key.bucket_key_enabled is not None:
+            response["BucketKeyEnabled"] = key.bucket_key_enabled
+
         return response
 
     @handler("ListMultipartUploads", expand=False)
