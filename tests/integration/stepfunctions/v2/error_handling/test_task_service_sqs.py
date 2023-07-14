@@ -87,6 +87,7 @@ class TestTaskServiceSqs:
             exec_input,
         )
 
+    @pytest.mark.skip("SQS does not raise error on empty body.")
     def test_send_message_empty_body(
         self,
         aws_client,

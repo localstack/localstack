@@ -22,6 +22,9 @@ class ServicesTemplates(TemplateLoader):
     LAMBDA_LIST_FUNCTIONS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/lambda_list_functions.json5"
     )
+    SFN_START_EXECUTION: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/sfn_start_execution.json5"
+    )
 
     # Lambda Functions.
     LAMBDA_ID_FUNCTION: Final[str] = os.path.join(_THIS_FOLDER, "lambdafunctions/id_function.py")

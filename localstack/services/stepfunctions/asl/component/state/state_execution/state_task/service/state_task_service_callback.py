@@ -86,6 +86,11 @@ class StateTaskServiceCallback(StateTaskService):
         else:
             raise NotImplementedError(f"Unsupported CallbackOutcome type '{type(outcome)}'.")
 
+    def _sync(self, env: Environment) -> None:
+        raise RuntimeError(
+            f"Unsupported .sync callback procedure in resource {self.resource.resource_arn}"
+        )
+
     def _is_condition(self):
         return self.resource.condition is not None
 
@@ -104,6 +109,11 @@ class StateTaskServiceCallback(StateTaskService):
                 )
             ),
         )
+
+    def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        if isinstance(ex, CallbackOutcomeFailureError):
+            return self._get_callback_outcome_failure_event(ex=ex)
+        return super()._from_error(env=env, ex=ex)
 
     def _eval_execution(self, env: Environment) -> None:
         parameters = self._eval_parameters(env=env)
@@ -137,10 +147,11 @@ class StateTaskServiceCallback(StateTaskService):
             ),
         )
 
-        self._eval_service_task(env=env, parameters=parameters)
+        normalised_parameters = self._normalised_parameters_bindings(parameters)
+        self._eval_service_task(env=env, parameters=normalised_parameters)
 
         if self._is_condition():
-            output = env.stack.pop()
+            output = env.stack[-1]
             env.event_history.add_event(
                 hist_type_event=HistoryEventType.TaskSubmitted,
                 event_detail=EventDetails(
@@ -155,6 +166,8 @@ class StateTaskServiceCallback(StateTaskService):
             match self.resource.condition:
                 case ResourceCondition.WaitForTaskToken:
                     self._wait_for_task_token(env=env)
+                case ResourceCondition.Sync:
+                    self._sync(env=env)
                 case unsupported:
                     raise NotImplementedError(f"Unsupported callback type '{unsupported}'.")
 

@@ -250,7 +250,7 @@ class StepFunctionsProvider(StepfunctionsApi):
             except Exception as ex:
                 raise InvalidExecutionInput(str(ex))  # TODO: report parsing error like AWS.
 
-        exec_name = long_uid()
+        exec_name = name or long_uid()  # TODO: validate name format
         arn_data: ArnData = parse_arn(state_machine_arn)
         exec_arn = ":".join(
             [

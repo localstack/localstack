@@ -1,5 +1,6 @@
 from typing import Final, Optional
 
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
@@ -12,7 +13,6 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
-from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackOutcomeFailureError
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
@@ -39,11 +39,6 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
         return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        if isinstance(ex, CallbackOutcomeFailureError):
-            return self._get_callback_outcome_failure_event(ex=ex)
-        if isinstance(ex, TimeoutError):
-            return self._get_timed_out_failure_event()
-
         if isinstance(ex, ClientError):
             return FailureEvent(
                 error_name=CustomErrorName(self._ERROR_NAME_CLIENT),
@@ -59,19 +54,7 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
                     )
                 ),
             )
-        else:
-            return FailureEvent(
-                error_name=CustomErrorName(self._ERROR_NAME_AWS),
-                event_type=HistoryEventType.TaskFailed,
-                event_details=EventDetails(
-                    taskFailedEventDetails=TaskFailedEventDetails(
-                        error=self._ERROR_NAME_AWS,
-                        cause=str(ex),  # TODO: update to report expected cause.
-                        resource=self._get_sfn_resource(),
-                        resourceType=self._get_sfn_resource_type(),
-                    )
-                ),
-            )
+        return super()._from_error(env=env, ex=ex)
 
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
         # TODO: Stepfunctions automatically dumps to json MessageBody's definitions.
@@ -82,7 +65,7 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
                 parameters["MessageBody"] = to_json_str(message_body)
 
         api_action = camel_to_snake_case(self.resource.api_action)
-        sqs_client = aws_stack.create_external_boto_client("sqs")
+        sqs_client = aws_stack.connect_to_service("sqs", config=Config(parameter_validation=False))
         response = getattr(sqs_client, api_action)(**parameters)
         response.pop("ResponseMetadata", None)
         env.stack.append(response)

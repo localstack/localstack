@@ -1,3 +1,4 @@
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
@@ -15,7 +16,6 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     StateTaskServiceCallback,
 )
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
-from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackOutcomeFailureError
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.utils.aws import aws_stack
@@ -75,14 +75,10 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
         )
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        if isinstance(ex, CallbackOutcomeFailureError):
-            return self._get_callback_outcome_failure_event(ex=ex)
-        if isinstance(ex, TimeoutError):
-            return self._get_timed_out_failure_event()
-
-        norm_service_name: str = self._normalise_service_name(self.resource.api_name)
-        error: str = self._normalise_exception_name(norm_service_name, ex)
         if isinstance(ex, ClientError):
+            norm_service_name: str = self._normalise_service_name(self.resource.api_name)
+            error: str = self._normalise_exception_name(norm_service_name, ex)
+
             error_message: str = ex.response["Error"]["Message"]
             cause_details = [
                 f"Service: {norm_service_name}",
@@ -97,14 +93,12 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
             cause: str = f"{error_message} ({', '.join(cause_details)})"
             failure_event = self._get_task_failure_event(error=error, cause=cause)
             return failure_event
-
-        failure_event = self._get_task_failure_event(
-            error=error, cause=str(ex)  # TODO: update cause decoration.
-        )
-        return failure_event
+        return super()._from_error(env=env, ex=ex)
 
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
-        api_client = aws_stack.create_external_boto_client(service_name=self._normalised_api_name)
+        api_client = aws_stack.create_external_boto_client(
+            service_name=self._normalised_api_name, config=Config(parameter_validation=False)
+        )
         response = getattr(api_client, self._normalised_api_action)(**parameters) or dict()
         if response:
             response.pop("ResponseMetadata", None)

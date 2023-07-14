@@ -9,19 +9,12 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
-    StatesErrorName,
-)
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
-    StatesErrorNameType,
-)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task import (
     lambda_eval_utils,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
     StateTaskServiceCallback,
 )
-from localstack.services.stepfunctions.asl.eval.callback.callback import CallbackOutcomeFailureError
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 
@@ -60,11 +53,6 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
         return error, cause
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        if isinstance(ex, CallbackOutcomeFailureError):
-            return self._get_callback_outcome_failure_event(ex=ex)
-        if isinstance(ex, TimeoutError):
-            return self._get_timed_out_failure_event()
-
         if isinstance(ex, lambda_eval_utils.LambdaFunctionErrorException):
             error = "Exception"
             error_name = CustomErrorName(error)
@@ -73,10 +61,7 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
             error, cause = self._error_cause_from_client_error(ex)
             error_name = CustomErrorName(error)
         else:
-            error = "Exception"
-            error_name = StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed)
-            cause = str(ex)
-
+            return super()._from_error(env=env, ex=ex)
         return FailureEvent(
             error_name=error_name,
             event_type=HistoryEventType.TaskFailed,
