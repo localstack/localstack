@@ -2239,7 +2239,7 @@ def apply_moto_patches():
 
     def key_is_locked(self):
         """
-        Apply a patch to disable/enable enforcement of S3 bucket policies
+        Apply a patch to check if a key is locked
         """
         if self.lock_legal_status == "ON":
             return True

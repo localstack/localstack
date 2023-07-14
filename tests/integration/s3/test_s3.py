@@ -4864,6 +4864,7 @@ class TestS3:
             aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch="etag")
         snapshot.match("if_match_err_1", e.value.response["Error"])
 
+    @pytest.mark.aws_validated
     def test_s3_object_hold(self, aws_client, s3_create_bucket, snapshot):
         bucket_name_with_lock = f"bucket-with-lock-{short_uid()}"
         bucket_name_without_lock = f"bucket-without-lock-{short_uid()}"
