@@ -410,7 +410,7 @@ class StreamedFakeKey(s3_models.FakeKey):
             self._value_buffer.seek(0)
             self._value_buffer.truncate()
 
-            _, checksum_value, etag = decode_aws_chunked_object(
+            checksum_value, etag = decode_aws_chunked_object(
                 stream=new_value,
                 buffer=self._value_buffer,
                 content_length=content_length,
