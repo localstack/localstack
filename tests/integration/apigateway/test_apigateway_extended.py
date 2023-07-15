@@ -69,7 +69,7 @@ def test_export_oas30_openapi(aws_client):
 
 
 def test_create_domain_names(aws_client):
-    domain_name = "testDomain"
+    domain_name = f"{short_uid()}-testDomain"
     test_certificate_name = "test.certificate"
     test_certificate_private_key = "testPrivateKey"
     # success case with valid params
@@ -109,7 +109,7 @@ def test_get_domain_names(aws_client):
 
 
 def test_get_domain_name(aws_client):
-    domain_name = "testDomain"
+    domain_name = f"{short_uid()}-testDomain"
     # adding a domain name
     aws_client.apigateway.create_domain_name(domainName=domain_name)
     # retrieving the data of added domain name.
