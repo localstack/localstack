@@ -42,6 +42,7 @@ from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.services.s3.models import get_moto_s3_backend
 from localstack.services.s3.provider import S3Provider
 from localstack.services.s3.utils import (
+    InvalidRequest,
     decode_aws_chunked_object,
     extract_bucket_key_version_id_from_copy_source,
     get_bucket_from_moto,
@@ -277,7 +278,18 @@ class S3ProviderStream(S3Provider):
                 ArgumentValue=part_number,
             )
 
-        key = moto_backend.upload_part(bucket_name, upload_id, part_number, request.get("Body"))
+        body = request.get("Body") or BytesIO()
+        decoded_content_length = None
+        headers = context.request.headers
+        if (
+            content_sha_256 := headers.get("x-amz-content-sha256") or ""
+        ) and content_sha_256.startswith("STREAMING-"):
+            # this is a chunked request, we need to properly decode it while setting the key value
+            decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
+
+        key = moto_backend.upload_part(
+            bucket_name, upload_id, part_number, body, decoded_content_length
+        )
         response = UploadPartOutput(ETag=key.etag)
 
         if key.checksum_algorithm is not None:
@@ -292,16 +304,6 @@ class S3ProviderStream(S3Provider):
             response["BucketKeyEnabled"] = key.bucket_key_enabled
 
         return response
-
-
-class ChecksumInvalid(s3_exceptions.S3ClientError):
-    code = 400
-
-    def __init__(self, algorithm: str):
-        super().__init__(
-            "InvalidRequest",
-            f"Value for x-amz-checksum-{algorithm.lower()} header is invalid.",
-        )
 
 
 class PartialStream(RawIOBase):
@@ -396,7 +398,9 @@ class StreamedFakeKey(s3_models.FakeKey):
 
                 if self.checksum_value and self.checksum_value != calculated_checksum:
                     self.dispose()
-                    raise ChecksumInvalid(self.checksum_algorithm)
+                    raise InvalidRequest(
+                        f"Value for x-amz-checksum-{self.checksum_algorithm.lower()} header is invalid."
+                    )
 
             if etag_empty:
                 self._etag = etag.hexdigest()
@@ -479,13 +483,22 @@ class StreamedFakeMultipart(s3_models.FakeMultipart):
 
         return total, f"{full_etag.hexdigest()}-{count}"
 
-    def set_part(self, part_id: int, value: IO[bytes]) -> StreamedFakeKey:
+    def set_part(
+        self, part_id: int, value: IO[bytes], decoded_content_length: int = None
+    ) -> StreamedFakeKey:
         if part_id < 1:
             raise s3_exceptions.NoSuchUpload(upload_id=part_id)
 
+        # if the request is not aws-chunked, just use the value setter with the stream
+        # else use an empty body as we will use set_value_from_chunked_payload later
+        key_value = value if decoded_content_length is None else BytesIO()
         key = StreamedFakeKey(
-            part_id, value, encryption=self.sse_encryption, kms_key_id=self.kms_key_id
+            part_id, key_value, encryption=self.sse_encryption, kms_key_id=self.kms_key_id
         )
+        # as the request is chunked, we then set the chunked payload
+        if decoded_content_length:
+            key.set_value_from_chunked_payload(value, decoded_content_length)
+
         if part_id in self.parts:
             # We're overwriting the current part - dispose of it first
             self.parts[part_id].dispose()
@@ -535,11 +548,16 @@ def apply_stream_patches():
 
     @patch(s3_models.S3Backend.upload_part, pass_target=False)
     def upload_part(
-        self, bucket_name: str, multipart_id: str, part_id: int, value: IO[bytes]
+        self,
+        bucket_name: str,
+        multipart_id: str,
+        part_id: int,
+        value: IO[bytes],
+        decoded_content_length: int = None,
     ) -> StreamedFakeKey:
         bucket = self.get_bucket(bucket_name)
         multipart = bucket.multiparts[multipart_id]
-        return multipart.set_part(part_id, value)
+        return multipart.set_part(part_id, value, decoded_content_length)
 
     @patch(s3_models.S3Backend.copy_part, pass_target=False)
     def copy_part(
