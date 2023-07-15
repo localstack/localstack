@@ -319,6 +319,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         mutual_tls_authentication: MutualTlsAuthenticationInput = None,
         ownership_verification_certificate_arn: String = None,
     ) -> DomainName:
+        if not domain_name:
+            raise BadRequestException("No Domain Name specified")
+
         store: ApiGatewayStore = get_apigateway_store(context.account_id, context.region)
         if store.domain_names.get(domain_name):
             raise ConflictException(f"Domain name with ID {domain_name} already exists")
