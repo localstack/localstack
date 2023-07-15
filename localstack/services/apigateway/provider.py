@@ -297,6 +297,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     @handler("GetDomainName")
     def get_domain_name(self, context: RequestContext, domain_name: String) -> DomainName:
+        if domain_name := call_moto(context):
+            return domain_name
+
         store: ApiGatewayStore = get_apigateway_store(context.account_id, context.region)
         if domain := store.domain_names.get(domain_name):
             return domain
@@ -306,6 +309,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def get_domain_names(
         self, context: RequestContext, position: String = None, limit: NullableInteger = None
     ) -> DomainNames:
+        if domain_names := call_moto(context):
+            return domain_names
+
         store = get_apigateway_store(context.account_id, context.region)
         domain_names = store.domain_names.values()
         return DomainNames(items=list(domain_names), position=position)
