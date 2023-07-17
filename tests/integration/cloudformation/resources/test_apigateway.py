@@ -400,6 +400,11 @@ def test_update_usage_plan(deploy_cfn_template, aws_client):
 
     assert 7000 == usage_plan["quota"]["limit"]
 
+    aws_client.apigateway.delete_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
+
+    usage_plans = aws_client.apigateway.get_usage_plans()
+    assert len(usage_plans["items"]) == 0
+
 
 def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_client):
     template = """

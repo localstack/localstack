@@ -1,6 +1,5 @@
 import json
 import logging
-from typing import Dict
 
 from jsonschema import ValidationError, validate
 from requests.models import Response
@@ -35,7 +34,6 @@ from localstack.services.apigateway.integration import (
     StepFunctionIntegration,
 )
 from localstack.services.apigateway.models import ApiGatewayStore
-from localstack.utils.aws import aws_stack
 
 LOG = logging.getLogger(__name__)
 
@@ -142,21 +140,6 @@ class RequestValidator:
 # ------------
 
 
-def run_authorizer(invocation_context: ApiInvocationContext, authorizer: Dict):
-    # TODO implement authorizers
-    pass
-
-
-def authorize_invocation(invocation_context: ApiInvocationContext):
-    region_name = invocation_context.region_name or aws_stack.get_region()
-    client = connect_to(region_name=region_name).apigateway
-    authorizers = client.get_authorizers(restApiId=invocation_context.api_id, limit=100).get(
-        "items", []
-    )
-    for authorizer in authorizers:
-        run_authorizer(invocation_context, authorizer)
-
-
 def validate_api_key(api_key: str, invocation_context: ApiInvocationContext):
 
     usage_plan_ids = []
@@ -167,13 +150,14 @@ def validate_api_key(api_key: str, invocation_context: ApiInvocationContext):
     usage_plans = client.get_usage_plans()
     for item in usage_plans.get("items", []):
         api_stages = item.get("apiStages", [])
-        for api_stage in api_stages:
+        usage_plan_ids.extend(
+            item.get("id")
+            for api_stage in api_stages
             if (
                 api_stage.get("stage") == invocation_context.stage
                 and api_stage.get("apiId") == invocation_context.api_id
-            ):
-                usage_plan_ids.append(item.get("id"))
-
+            )
+        )
     for usage_plan_id in usage_plan_ids:
         usage_plan_keys = client.get_usage_plan_keys(usagePlanId=usage_plan_id)
         for key in usage_plan_keys.get("items", []):
@@ -192,18 +176,19 @@ def is_api_key_valid(invocation_context: ApiInvocationContext) -> bool:
     ).apigateway
     rest_api = client.get_rest_api(restApiId=invocation_context.api_id)
 
-    if rest_api.get("apiKeySource") != "HEADER":
-        # When the apiKeySource is set to AUTHORIZER, the authorizer is supposed to return the API key as a field
-        # `usageIdentifierKey`
-        # see https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-lambda-authorizer-output.html
-        # Authorizers are only mocked, so we can't validate the key. Return True in that case
-        return True
+    # The source of the API key for metering requests according to a usage plan.
+    # Valid values are:
+    # - HEADER to read the API key from the X-API-Key header of a request.
+    # - AUTHORIZER to read the API key from the UsageIdentifierKey from a custom authorizer.
 
-    api_key = invocation_context.headers.get("X-API-Key")
-    if not api_key:
-        return False
-
-    return validate_api_key(api_key, invocation_context)
+    api_key_source = rest_api.get("apiKeySource")
+    match api_key_source:
+        case "HEADER":
+            api_key = invocation_context.headers.get("X-API-Key")
+            return validate_api_key(api_key, invocation_context) if api_key else False
+        case "AUTHORIZER":
+            api_key = invocation_context.auth_identity.get("apiKey")
+            return validate_api_key(api_key, invocation_context) if api_key else False
 
 
 def update_content_length(response: Response):
@@ -254,9 +239,6 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
     method = invocation_context.method
     headers = invocation_context.headers
 
-    # run gateway authorizers for this request
-    authorize_invocation(invocation_context)
-
     extracted_path, resource = helpers.get_target_resource_details(invocation_context)
     if not resource:
         return make_error_response("Unable to find path %s" % invocation_context.path, 404)
@@ -268,7 +250,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
 
     api_key_required = resource.get("resourceMethods", {}).get(method, {}).get("apiKeyRequired")
     if api_key_required and not is_api_key_valid(invocation_context):
-        return make_error_response("Access denied - invalid API key", 403)
+        return make_error_response("Forbidden", 403)
 
     resource_methods = resource.get("resourceMethods", {})
     resource_method = resource_methods.get(method, {})
