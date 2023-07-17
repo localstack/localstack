@@ -4,9 +4,7 @@ import logging
 import re
 import traceback
 import uuid
-from typing import Any, Callable, Literal, Optional, Type, TypedDict
-
-import botocore
+from typing import Literal, Optional, Type, TypedDict
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
@@ -14,7 +12,6 @@ from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     dump_resource_as_json,
-    fix_boto_parameters_based_on_report,
     get_action_name_for_resource_change,
     log_not_available_message,
     remove_none_values,
@@ -25,7 +22,6 @@ from localstack.services.cloudformation.engine.template_utils import (
     fn_equals_type_conversion,
     get_deps_for_resource,
 )
-from localstack.services.cloudformation.engine.types import FuncDetails
 from localstack.services.cloudformation.resource_provider import (
     PROVIDER_DEFAULTS,
     Credentials,
@@ -768,48 +764,6 @@ def get_resource_model_instance(resource_id: str, resources) -> Optional[Generic
         return None
     instance = resource_class(resource)
     return instance
-
-
-def invoke_function(
-    function: Callable,
-    params: dict,
-    resource_type: str,
-    func_details: FuncDetails,
-    action_name: str,
-    resource: Any,
-) -> Any:
-    try:
-        LOG.debug(
-            'Request for resource type "%s" in region %s: %s %s',
-            resource_type,
-            aws_stack.get_region(),
-            func_details["function"],
-            params,
-        )
-        try:
-            result = function(**params)
-        except botocore.exceptions.ParamValidationError as e:
-            # alternatively we could also use the ParamValidator directly
-            report = e.kwargs.get("report")
-            if not report:
-                raise
-
-            LOG.debug("Converting parameters to allowed types")
-            converted_params = fix_boto_parameters_based_on_report(params, report)
-            LOG.debug("Original parameters:  %s", params)
-            LOG.debug("Converted parameters: %s", converted_params)
-
-            result = function(**converted_params)
-    except Exception as e:
-        if action_name == "delete" and check_not_found_exception(e, resource_type, resource):
-            return
-        log_method = getattr(LOG, "warning")
-        if config.CFN_VERBOSE_ERRORS:
-            log_method = getattr(LOG, "exception")
-        log_method("Error calling %s with params: %s for resource: %s", function, params, resource)
-        raise e
-
-    return result
 
 
 # TODO: this shouldn't be called for stack parameters
