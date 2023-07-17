@@ -117,7 +117,7 @@ def get_account_id_from_access_key_id(access_key_id: str) -> str:
         if not config.PARITY_AWS_ACCESS_KEY_ID:
             # If AWS_ACCESS_KEY_ID has production AWS credentials, ignore them
             if access_key_id.startswith("ASIA") or access_key_id.startswith("AKIA"):
-                LOG.warning(
+                LOG.debug(
                     "Ignoring production AWS credentials provided to LocalStack. Falling back to default account ID."
                 )
 
