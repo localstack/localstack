@@ -748,8 +748,7 @@ def resolve_placeholders_in_string(
 def evaluate_resource_condition(
     stack_name: str, resources: dict, mappings: dict, conditions: dict[str, bool], resource: dict
 ) -> bool:
-    condition = resource.get("Condition")
-    if condition:
+    if condition := resource.get("Condition"):
         return conditions.get(condition, True)
     return True
 
@@ -946,12 +945,6 @@ class TemplateDeployer:
     # DEPENDENCY RESOLUTION UTILS
     # ----------------------------
 
-    # TODO: remove
-    def is_deployable_resource(self, resource: dict) -> bool:
-        resource_type = get_resource_type(resource)
-        # TODO: we still need to be able to skip
-        return resource_type != "Parameter"
-
     def is_deployed(self, resource):
         return self.stack.resource_states.get(resource["LogicalResourceId"], {}).get(
             "ResourceStatus"
@@ -959,7 +952,7 @@ class TemplateDeployer:
 
     def is_updateable(self, resource):
         """Return whether the given resource can be updated or not."""
-        if not self.is_deployable_resource(resource) or not self.is_deployed(resource):  # TODO(RM)
+        if not self.is_deployed(resource):  # TODO(RM)
             return False
         resource_instance = get_resource_model_instance(
             resource["LogicalResourceId"], self.stack.resources
@@ -984,19 +977,16 @@ class TemplateDeployer:
     ):
         result = {}
         for resource_id, resource in resources.items():
-            if self.is_deployable_resource(resource):  # TODO(RM)
-                if not self.is_deployed(resource):
-                    LOG.debug(
-                        "Dependency for resource %s not yet deployed: %s %s",
-                        depending_resource,
-                        resource_id,
-                        resource,
-                    )
-                    result[resource_id] = resource
-                    if return_first:
-                        break
-            else:
-                raise Exception(":(")
+            if not self.is_deployed(resource):
+                LOG.debug(
+                    "Dependency for resource %s not yet deployed: %s %s",
+                    depending_resource,
+                    resource_id,
+                    resource,
+                )
+                result[resource_id] = resource
+                if return_first:
+                    break
         return result
 
     def get_resource_dependencies(self, resource: dict) -> set[str]:
@@ -1017,11 +1007,6 @@ class TemplateDeployer:
         stack = stack or self.stack
         for resource_id, resource in resources.items():
             stack.set_resource_status(resource_id, f"{action}_IN_PROGRESS")
-
-    # Stack is needed here
-    def update_resource_details(self, resource_id, stack=None, action="CREATE"):
-        stack = stack or self.stack  # TODO: remove
-        stack.set_resource_status(resource_id, f"{action}_COMPLETE")
 
     def get_change_config(
         self, action: str, resource: dict, change_set_id: Optional[str] = None
@@ -1326,8 +1311,6 @@ class TemplateDeployer:
         )
 
         if action in ["Add", "Modify"]:
-            if action == "Add" and not self.is_deployable_resource(resource):  # TODO(RM)
-                return False
             is_deployed = self.is_deployed(resource)
             # TODO: Attaching the cached _deployed info here, as we should not change the "Add"/"Modify" attribute
             #  here, which is used further down the line to determine the resource action CREATE/UPDATE. This is a
@@ -1344,12 +1327,7 @@ class TemplateDeployer:
                 )
                 return False
         elif action == "Remove":
-            should_remove = self.is_deployable_resource(resource)  # TODO(RM)
-            if not should_remove:
-                LOG.debug(
-                    f"Action 'remove' not yet implemented for CF resource type {resource.get('Type')}"
-                )
-            return should_remove
+            return True
         return True
 
     # Stack is needed here
@@ -1384,7 +1362,7 @@ class TemplateDeployer:
 
         # update resource status and physical resource id
         stack_action = get_action_name_for_resource_change(action)
-        self.update_resource_details(resource_id, stack=stack, action=stack_action)
+        stack.set_resource_status(resource_id, f"{stack_action}_COMPLETE")
 
     def create_resource_provider_executor(self) -> ResourceProviderExecutor:
         return ResourceProviderExecutor(
