@@ -1,8 +1,9 @@
 import datetime
 import hashlib
+import logging
 import re
 import zlib
-from typing import Dict, Literal, Optional, Tuple, Union
+from typing import IO, Dict, Literal, Optional, Tuple, Union
 from urllib import parse as urlparser
 from zoneinfo import ZoneInfo
 
@@ -28,6 +29,7 @@ from localstack.aws.api.s3 import (
 )
 from localstack.aws.connect import connect_to
 from localstack.services.s3.constants import (
+    S3_CHUNK_SIZE,
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
     SIGNATURE_V2_PARAMS,
     SIGNATURE_V4_PARAMS,
@@ -36,6 +38,8 @@ from localstack.services.s3.constants import (
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import checksum_crc32, checksum_crc32c, hash_sha1, hash_sha256
+
+LOG = logging.getLogger(__name__)
 
 checksum_keys = ["ChecksumSHA1", "ChecksumSHA256", "ChecksumCRC32", "ChecksumCRC32C"]
 
@@ -149,6 +153,40 @@ def verify_checksum(checksum_algorithm: str, data: bytes, request: Dict):
         raise InvalidRequest(
             f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
         )
+
+
+def decode_aws_chunked_object(
+    stream: IO[bytes],
+    buffer: IO[bytes],
+    content_length: int,
+) -> IO[bytes]:
+    """
+    Decode the incoming stream encoded in `aws-chunked` format into the provided buffer
+    :param stream: the original stream to read, encoded in the `aws-chunked` format
+    :param buffer: the buffer where we set the decoded data
+    :param content_length: the total maximum length of the original stream, we stop decoding after that
+    :return: the provided buffer
+    """
+    buffer.seek(0)
+    buffer.truncate()
+    written = 0
+    while written < content_length:
+        line = stream.readline()
+        chunk_length = int(line.split(b";")[0], 16)
+
+        while chunk_length > 0:
+            amount = min(chunk_length, S3_CHUNK_SIZE)
+            data = stream.read(amount)
+            buffer.write(data)
+
+            real_amount = len(data)
+            chunk_length -= real_amount
+            written += real_amount
+
+        # remove trailing \r\n
+        stream.read(2)
+
+    return buffer
 
 
 def is_presigned_url_request(context: RequestContext) -> bool:

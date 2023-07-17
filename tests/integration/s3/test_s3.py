@@ -2418,6 +2418,7 @@ class TestS3:
             "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD",
             "X-Amz-Date": "20190918T051509Z",
             "X-Amz-Decoded-Content-Length": str(len(body)),
+            "Content-Encoding": "aws-chunked",
         }
         data = (
             "d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
@@ -2452,6 +2453,7 @@ class TestS3:
             "X-Amz-Decoded-Content-Length": str(len(body)),
             "x-amz-sdk-checksum-algorithm": "SHA256",
             "x-amz-trailer": "x-amz-checksum-sha256",
+            "Content-Encoding": "aws-chunked",
         }
 
         def get_data(content: str, checksum_value: str) -> str:
@@ -2478,6 +2480,64 @@ class TestS3:
         request = requests.put(url, wrong_data, headers=headers, verify=False)
         assert request.status_code == 400
         assert "Value for x-amz-checksum-sha256 header is invalid." in request.text
+
+    @pytest.mark.only_localstack
+    def test_upload_part_chunked_newlines_valid_etag(self, s3_bucket, aws_client):
+        # Boto still does not support chunk encoding, which means we can't test with the client nor
+        # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
+        # Test for https://github.com/localstack/localstack/issues/8703
+        object_key = "data"
+        body = "Hello Blob"
+        precalculated_etag = hashlib.md5(body.encode()).hexdigest()
+        headers = {
+            "Authorization": aws_stack.mock_aws_request_headers("s3")["Authorization"],
+            "Content-Type": "audio/mpeg",
+            "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER",
+            "X-Amz-Date": "20190918T051509Z",
+            "X-Amz-Decoded-Content-Length": str(len(body)),
+            "Content-Encoding": "aws-chunked",
+        }
+
+        data = (
+            "a;chunk-signature=b5311ac60a88890e740a41e74f3d3b03179fd058b1e24bb3ab224042377c4ec9\r\n"
+            f"{body}\r\n"
+            "0;chunk-signature=78fae1c533e34dbaf2b83ad64ff02e4b64b7bc681ea76b6acf84acf1c48a83cb\r\n"
+        )
+
+        key_name = "test-multipart-chunked"
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+        )
+        upload_id = response["UploadId"]
+
+        # # upload the part 1
+        url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}?partNumber={1}&uploadId={upload_id}"
+        response = requests.put(url, data, headers=headers, verify=False)
+        assert response.ok
+        part_etag = response.headers.get("ETag")
+        xml_response = xmltodict.parse(response.content)
+        assert "UploadPartOutput" in xml_response
+
+        # validate that the object etag is the same as the pre-calculated one
+        assert part_etag.strip('"') == precalculated_etag
+
+        multipart_upload_parts = [
+            {
+                "ETag": part_etag,
+                "PartNumber": 1,
+            }
+        ]
+
+        aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+
+        completed_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+        assert completed_object["Body"].read() == to_bytes(body)
 
     @pytest.mark.only_localstack
     def test_virtual_host_proxy_does_not_decode_gzip(self, aws_client, s3_bucket):

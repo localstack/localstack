@@ -1,5 +1,6 @@
 import copy
 import datetime
+import io
 import logging
 import os
 from collections import defaultdict
@@ -161,6 +162,7 @@ from localstack.services.s3.presigned_url import (
 from localstack.services.s3.utils import (
     _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
+    decode_aws_chunked_object,
     extract_bucket_key_version_id_from_copy_source,
     get_bucket_from_moto,
     get_header_name,
@@ -809,16 +811,29 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentValue=part_number,
             )
 
-        part = body.read() if (body := request.get("Body")) else b""
+        body = request.get("Body")
+        headers = context.request.headers
+        if body and "aws-chunked" in (headers.get("Content-Encoding") or "").lower():
+            # this is a chunked request, we need to properly decode it while setting the key value
+            decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
+            buffer = io.BytesIO()
+            # this will decode the original stream into `buffer`
+            decode_aws_chunked_object(
+                stream=body,
+                buffer=buffer,
+                content_length=decoded_content_length,
+            )
+            buffer.seek(0)
+            # read the buffer value now that's decoded
+            part = buffer.getvalue()
+        else:
+            part = body.read() if body else b""
 
         # we are directly using moto backend and not calling moto because to get the response, moto calls
         # key.response_dict, which in turns tries to access the tags of part, indirectly creating a BackendDict
         # with an account_id set to None (because moto does not set an account_id to the FakeKey representing a Part)
         key = moto_backend.upload_part(bucket_name, upload_id, part_number, part)
         response = UploadPartOutput(ETag=key.etag)
-
-        if key.checksum_algorithm is not None:
-            response[f"Checksum{key.checksum_algorithm.upper()}"] = key.checksum_value
 
         if key.encryption is not None:
             response["ServerSideEncryption"] = key.encryption
