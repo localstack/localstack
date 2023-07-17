@@ -66,6 +66,7 @@ from localstack.aws.api.s3 import (
     GetObjectAttributesRequest,
     GetObjectOutput,
     GetObjectRequest,
+    GetObjectRetentionOutput,
     GetObjectTaggingOutput,
     GetObjectTaggingRequest,
     HeadObjectOutput,
@@ -102,6 +103,7 @@ from localstack.aws.api.s3 import (
     NotificationConfiguration,
     ObjectIdentifier,
     ObjectKey,
+    ObjectLockRetention,
     ObjectLockToken,
     ObjectVersionId,
     OutputSerialization,
@@ -116,6 +118,7 @@ from localstack.aws.api.s3 import (
     PutObjectAclRequest,
     PutObjectOutput,
     PutObjectRequest,
+    PutObjectRetentionOutput,
     PutObjectTaggingOutput,
     PutObjectTaggingRequest,
     ReplicationConfiguration,
@@ -176,6 +179,7 @@ from localstack.utils.aws.arns import s3_bucket_name
 from localstack.utils.collections import get_safe
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
+from localstack.utils.time import parse_timestamp
 from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
@@ -1103,6 +1107,62 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 grantee["DisplayName"] = "webfile"
 
         return response
+
+    def get_object_retention(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        version_id: ObjectVersionId = None,
+        request_payer: RequestPayer = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetObjectRetentionOutput:
+        moto_backend = get_moto_s3_backend(context)
+        key = get_key_from_moto_bucket(
+            get_bucket_from_moto(moto_backend, bucket=bucket), key=key, version_id=version_id
+        )
+        if not key.lock_mode and not key.lock_until:
+            raise InvalidRequest("Bucket is missing Object Lock Configuration")
+        return GetObjectRetentionOutput(
+            Retention=ObjectLockRetention(
+                Mode=key.lock_mode,
+                RetainUntilDate=parse_timestamp(key.lock_until),
+            )
+        )
+
+    @handler("PutObjectRetention")
+    def put_object_retention(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        retention: ObjectLockRetention = None,
+        request_payer: RequestPayer = None,
+        version_id: ObjectVersionId = None,
+        bypass_governance_retention: BypassGovernanceRetention = None,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> PutObjectRetentionOutput:
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
+
+        try:
+            moto_key = get_key_from_moto_bucket(moto_bucket, key=key, version_id=version_id)
+        except NoSuchKey:
+            moto_key = None
+
+        if not moto_key and version_id:
+            raise InvalidArgument("Invalid version id specified")
+        if not moto_bucket.object_lock_enabled:
+            raise InvalidRequest("Bucket is missing Object Lock Configuration")
+        if not moto_key and not version_id:
+            raise NoSuchKey("The specified key does not exist.", Key=key)
+
+        moto_key.lock_mode = retention.get("Mode")
+        retention_date = retention.get("RetainUntilDate")
+        retention_date = retention_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        moto_key.lock_until = retention_date
 
     @handler("PutBucketAcl", expand=False)
     def put_bucket_acl(
@@ -2176,6 +2236,23 @@ def apply_moto_patches():
             return PermissionResult.PERMITTED
 
         return fn(self, *args, **kwargs)
+
+    def key_is_locked(self):
+        """
+        Apply a patch to check if a key is locked
+        """
+        if self.lock_legal_status == "ON":
+            return True
+
+        if self.lock_mode in ["GOVERNANCE", "COMPLIANCE"]:
+            now = datetime.datetime.utcnow()
+            until = parse_timestamp(self.lock_until)
+            if until > now:
+                return True
+
+        return False
+
+    setattr(moto_s3_models.FakeKey, "is_locked", property(key_is_locked))
 
 
 def register_custom_handlers():
