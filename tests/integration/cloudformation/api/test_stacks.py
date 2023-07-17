@@ -591,25 +591,17 @@ def test_events_resource_types(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("resource_types", resource_types)
 
 
-# TODO: rewrite this for proper compatibility with AWS by using a different resource (that doesn't need a deployed VPC)
-# technically this is validated, but you'll need to replace the two parameters SubnetParam and SecurityGroupId with valid values
-# @pytest.mark.aws_validated
-@pytest.mark.only_localstack
+@pytest.mark.aws_validated
 def test_list_parameter_type(aws_client, deploy_cfn_template, cleanups, lambda_su_role):
     stack_name = f"test-stack-{short_uid()}"
     cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
-    deploy_cfn_template(
+    stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/cfn_parameter_list_type.yaml"
         ),
         parameters={
-            "SubnetParam": "subnet-1,subnet-2",
-            "SecurityGroupId": "sg-1",
-            "FunctionRole": lambda_su_role,
+            "ParamsList": "foo,bar",
         },
     )
 
-    # TODO: the lambda provider doesn't currently support the vpc config (even as CRUD-only)
-    # vpc_config = aws_client.awslambda.get_function_configuration(FunctionName=stack.outputs["LambdaName"])['VpcConfig']
-    # assert vpc_config['SecurityGroupIds'] == ["sg-1"]
-    # assert vpc_config['SubnetIds'] == ["subnet-1", "subnet-2"]
+    assert stack.outputs["ParamValue"] == "foo|bar"

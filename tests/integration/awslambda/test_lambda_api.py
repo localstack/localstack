@@ -80,6 +80,7 @@ class TestLambdaFunction:
             MemorySize=256,
             Timeout=5,
         )
+
         snapshot.match("create_response", create_response)
         aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=function_name)
 
@@ -572,6 +573,111 @@ class TestLambdaFunction:
 
         snapshot.match("list_all", list_all)
         snapshot.match("list_default", list_default)
+
+    @pytest.mark.aws_validated
+    def test_vpc_config(
+        self, create_lambda_function, lambda_su_role, snapshot, aws_client, cleanups
+    ):
+        """
+        Test "VpcConfig" Property on the Lambda Function
+
+        Note: on AWS this takes quite a while since creating a function with VPC usually takes at least 4 minutes
+        FIXME: Unfortunately the cleanup in this test doesn't work properly on AWS and the last subnet/security group + vpc are leaking.
+        TODO: test a few more edge cases (e.g. multiple subnets / security groups, invalid vpc ids, etc.)
+        """
+
+        # VPC setup
+        security_group_name_1 = f"test-security-group-{short_uid()}"
+        security_group_name_2 = f"test-security-group-{short_uid()}"
+        vpc_id = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")["Vpc"]["VpcId"]
+        cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc_id))
+        aws_client.ec2.get_waiter("vpc_available").wait(VpcIds=[vpc_id])
+        security_group_id_1 = aws_client.ec2.create_security_group(
+            VpcId=vpc_id, GroupName=security_group_name_1, Description="Test security group 1"
+        )["GroupId"]
+        cleanups.append(lambda: aws_client.ec2.delete_security_group(GroupId=security_group_id_1))
+        security_group_id_2 = aws_client.ec2.create_security_group(
+            VpcId=vpc_id, GroupName=security_group_name_2, Description="Test security group 2"
+        )["GroupId"]
+        cleanups.append(lambda: aws_client.ec2.delete_security_group(GroupId=security_group_id_2))
+        subnet_id_1 = aws_client.ec2.create_subnet(VpcId=vpc_id, CidrBlock="10.0.0.0/24")["Subnet"][
+            "SubnetId"
+        ]
+        cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=subnet_id_1))
+        subnet_id_2 = aws_client.ec2.create_subnet(VpcId=vpc_id, CidrBlock="10.0.1.0/24")["Subnet"][
+            "SubnetId"
+        ]
+        cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=subnet_id_2))
+        snapshot.add_transformer(snapshot.transform.regex(vpc_id, "<vpc_id>"))
+        snapshot.add_transformer(snapshot.transform.regex(subnet_id_1, "<subnet_id_1>"))
+        snapshot.add_transformer(snapshot.transform.regex(subnet_id_2, "<subnet_id_2>"))
+        snapshot.add_transformer(
+            snapshot.transform.regex(security_group_id_1, "<security_group_id_1>")
+        )
+        snapshot.add_transformer(
+            snapshot.transform.regex(security_group_id_2, "<security_group_id_2>")
+        )
+
+        cleanups.append(
+            lambda: aws_client.awslambda.delete_function(FunctionName=function_name)
+        )  # needed because otherwise VPC is still linked to function and deletion is blocked
+
+        # Lambda creation
+        function_name = f"fn-{short_uid()}"
+        create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+            role=lambda_su_role,
+            MemorySize=256,
+            Timeout=5,
+            VpcConfig={
+                "SubnetIds": [subnet_id_1],
+                "SecurityGroupIds": [security_group_id_1],
+            },
+        )
+
+        snapshot.match("create_response", create_response)
+        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=function_name)
+
+        get_function_response = aws_client.awslambda.get_function(FunctionName=function_name)
+        snapshot.match("get_function_response", get_function_response)
+
+        # update VPC config
+        update_vpcconfig_update_response = aws_client.awslambda.update_function_configuration(
+            FunctionName=function_name,
+            VpcConfig={
+                "SubnetIds": [subnet_id_2],
+                "SecurityGroupIds": [security_group_id_2],
+            },
+        )
+        snapshot.match("update_vpcconfig_update_response", update_vpcconfig_update_response)
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        update_vpcconfig_get_function_response = aws_client.awslambda.get_function(
+            FunctionName=function_name
+        )
+        snapshot.match(
+            "update_vpcconfig_get_function_response", update_vpcconfig_get_function_response
+        )
+
+        # update VPC config (delete VPC => should detach VPC)
+        delete_vpcconfig_update_response = aws_client.awslambda.update_function_configuration(
+            FunctionName=function_name,
+            VpcConfig={
+                "SubnetIds": [],
+                "SecurityGroupIds": [],
+            },
+        )
+        snapshot.match("delete_vpcconfig_update_response", delete_vpcconfig_update_response)
+        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        delete_vpcconfig_get_function_response = aws_client.awslambda.get_function(
+            FunctionName=function_name
+        )
+        snapshot.match(
+            "delete_vpcconfig_get_function_response", delete_vpcconfig_get_function_response
+        )
 
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")

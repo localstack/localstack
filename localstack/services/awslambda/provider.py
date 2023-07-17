@@ -169,6 +169,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     VersionFunctionConfiguration,
     VersionIdentifier,
     VersionState,
+    VpcConfig,
 )
 from localstack.services.awslambda.invocation.lambda_service import (
     LambdaService,
@@ -350,6 +351,26 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # Assumes that a non-alias is a version
         else:
             return resolved_fn.versions[resolved_qualifier].config.revision_id
+
+    def _resolve_vpc_id(self, subnet_id: str) -> str:
+        return connect_to().ec2.describe_subnets(SubnetIds=[subnet_id])["Subnets"][0]["VpcId"]
+
+    def _build_vpc_config(
+        self,
+        vpc_config: Optional[dict] = None,
+    ) -> VpcConfig | None:
+        if not vpc_config:
+            return None
+
+        subnet_ids = vpc_config.get("SubnetIds", [])
+        if subnet_ids is not None and len(subnet_ids) == 0:
+            return VpcConfig(vpc_id="", security_group_ids=[], subnet_ids=[])
+
+        return VpcConfig(
+            vpc_id=self._resolve_vpc_id(subnet_ids[0]),
+            security_group_ids=vpc_config.get("SecurityGroupIds", []),
+            subnet_ids=subnet_ids,
+        )
 
     def _create_version_model(
         self,
@@ -771,6 +792,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     ),
                     runtime_version_config=runtime_version_config,
                     dead_letter_arn=request.get("DeadLetterConfig", {}).get("TargetArn"),
+                    vpc_config=self._build_vpc_config(request.get("VpcConfig")),
                     state=VersionState(
                         state=State.Pending,
                         code=StateReasonCode.Creating,
@@ -861,6 +883,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if "DeadLetterConfig" in request:
             replace_kwargs["dead_letter_arn"] = request.get("DeadLetterConfig", {}).get("TargetArn")
+
+        if vpc_config := request.get("VpcConfig"):
+            replace_kwargs["vpc_config"] = self._build_vpc_config(vpc_config)
 
         if "Runtime" in request:
             if request["Runtime"] not in IMAGE_MAPPING:
