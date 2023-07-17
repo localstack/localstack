@@ -1808,6 +1808,17 @@ class InstanceType(str):
     i4g_4xlarge = "i4g.4xlarge"
     i4g_8xlarge = "i4g.8xlarge"
     i4g_16xlarge = "i4g.16xlarge"
+    hpc7g_4xlarge = "hpc7g.4xlarge"
+    hpc7g_8xlarge = "hpc7g.8xlarge"
+    hpc7g_16xlarge = "hpc7g.16xlarge"
+    c7gn_medium = "c7gn.medium"
+    c7gn_large = "c7gn.large"
+    c7gn_xlarge = "c7gn.xlarge"
+    c7gn_2xlarge = "c7gn.2xlarge"
+    c7gn_4xlarge = "c7gn.4xlarge"
+    c7gn_8xlarge = "c7gn.8xlarge"
+    c7gn_12xlarge = "c7gn.12xlarge"
+    c7gn_16xlarge = "c7gn.16xlarge"
 
 
 class InstanceTypeHypervisor(str):
