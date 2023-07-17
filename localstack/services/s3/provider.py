@@ -806,23 +806,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         body = request.get("Body")
         headers = context.request.headers
-        if body and (
-            (content_sha_256 := headers.get("x-amz-content-sha256") or "")
-            and content_sha_256.startswith("STREAMING-")
-        ):
+        if body and "aws-chunked" in (headers.get("Content-Encoding") or "").lower():
             # this is a chunked request, we need to properly decode it while setting the key value
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
-            checksum_algorithm = request.get("ChecksumAlgorithm") or ""
             buffer = io.BytesIO()
-            # this will decode the original stream and set it in `part`
+            # this will decode the original stream into `buffer`
             decode_aws_chunked_object(
                 stream=body,
                 buffer=buffer,
                 content_length=decoded_content_length,
-                checksum_algorithm=checksum_algorithm,
-                checksum_value=request.get(f"Checksum{checksum_algorithm.upper()}"),
             )
             buffer.seek(0)
+            # read the buffer value now that's decoded
             part = buffer.getvalue()
         else:
             part = body.read() if body else b""
@@ -832,9 +827,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # with an account_id set to None (because moto does not set an account_id to the FakeKey representing a Part)
         key = moto_backend.upload_part(bucket_name, upload_id, part_number, part)
         response = UploadPartOutput(ETag=key.etag)
-
-        if key.checksum_algorithm is not None:
-            response[f"Checksum{key.checksum_algorithm.upper()}"] = key.checksum_value
 
         if key.encryption is not None:
             response["ServerSideEncryption"] = key.encryption

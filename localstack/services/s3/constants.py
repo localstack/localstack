@@ -67,4 +67,6 @@ SIGNATURE_V4_PARAMS = [
     "X-Amz-Signature",
 ]
 
-S3_CHUNK_SIZE = 1024 * 16 * 4
+# The chunk size to use when iterating over and writing to S3 streams.
+# chosen as middle ground between memory usage and amount of iterations over the S3 object body
+S3_CHUNK_SIZE = 65536

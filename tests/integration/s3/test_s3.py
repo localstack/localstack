@@ -2418,6 +2418,7 @@ class TestS3:
             "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD",
             "X-Amz-Date": "20190918T051509Z",
             "X-Amz-Decoded-Content-Length": str(len(body)),
+            "Content-Encoding": "aws-chunked",
         }
         data = (
             "d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
@@ -2452,6 +2453,7 @@ class TestS3:
             "X-Amz-Decoded-Content-Length": str(len(body)),
             "x-amz-sdk-checksum-algorithm": "SHA256",
             "x-amz-trailer": "x-amz-checksum-sha256",
+            "Content-Encoding": "aws-chunked",
         }
 
         def get_data(content: str, checksum_value: str) -> str:
@@ -2493,6 +2495,7 @@ class TestS3:
             "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER",
             "X-Amz-Date": "20190918T051509Z",
             "X-Amz-Decoded-Content-Length": str(len(body)),
+            "Content-Encoding": "aws-chunked",
         }
 
         data = (

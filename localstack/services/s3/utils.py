@@ -1,4 +1,3 @@
-import base64
 import datetime
 import hashlib
 import logging
@@ -160,29 +159,16 @@ def decode_aws_chunked_object(
     stream: IO[bytes],
     buffer: IO[bytes],
     content_length: int,
-    checksum_algorithm: str = None,
-    checksum_value: str = None,
-) -> tuple[str, str]:
+) -> IO[bytes]:
     """
-
-    :param stream: the original stream to read
-    :param buffer: the stream where we set the decoded data
-    :param content_length: the total length of the original stream
-    :param checksum_algorithm:
-    :param checksum_value:
-    :return:
+    Decode the incoming stream encoded in `aws-chunked` format into the provided buffer
+    :param stream: the original stream to read, encoded in the `aws-chunked` format
+    :param buffer: the buffer where we set the decoded data
+    :param content_length: the total maximum length of the original stream, we stop decoding after that
+    :return: the provided buffer
     """
     buffer.seek(0)
     buffer.truncate()
-    # We have 2 cases:
-    # The client gave a checksum value, we will need to compute the value and validate it against
-    # or the client have an algorithm value only, and we need to compute the checksum
-    checksum = None
-    calculated_checksum = None
-    if checksum_algorithm:
-        checksum = get_s3_checksum(checksum_algorithm)
-    etag = hashlib.md5(usedforsecurity=False)
-
     written = 0
     while written < content_length:
         line = stream.readline()
@@ -197,49 +183,10 @@ def decode_aws_chunked_object(
             chunk_length -= real_amount
             written += real_amount
 
-            if checksum_algorithm:
-                checksum.update(data)
-            etag.update(data)
-
         # remove trailing \r\n
         stream.read(2)
 
-    trailing_headers = []
-    next_line = stream.readline()
-
-    if next_line:
-        try:
-            chunk_length = int(next_line.split(b";")[0], 16)
-            if chunk_length != 0:
-                LOG.warning("The S3 object body didn't conform to the aws-chunk format")
-        except ValueError:
-            trailing_headers.append(next_line.strip())
-
-        # try for trailing headers after
-        while line := stream.readline():
-            trailing_header = line.strip()
-            if trailing_header:
-                trailing_headers.append(trailing_header)
-
-    # look for the checksum header in the trailing headers
-    # TODO: we could get the header key from x-amz-trailer as well
-    for trailing_header in trailing_headers:
-        try:
-            header_key, header_value = trailing_header.decode("utf-8").split(":", maxsplit=1)
-            if header_key.lower() == f"x-amz-checksum-{checksum_algorithm}".lower():
-                checksum_value = header_value
-        except (IndexError, ValueError, AttributeError):
-            continue
-
-    if checksum_algorithm:
-        calculated_checksum = base64.b64encode(checksum.digest()).decode()
-
-    if checksum_value and checksum_value != calculated_checksum:
-        raise InvalidRequest(
-            f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
-        )
-
-    return calculated_checksum, etag.hexdigest()
+    return buffer
 
 
 def is_presigned_url_request(context: RequestContext) -> bool:
