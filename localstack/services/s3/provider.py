@@ -813,7 +813,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         body = request.get("Body")
         headers = context.request.headers
-        if body and "aws-chunked" in (headers.get("Content-Encoding") or "").lower():
+        # AWS specifies that the `Content-Encoding` should be `aws-chunked`, but some SDK don't set it.
+        # Rely on the `x-amz-content-sha256` which is a more reliable indicator that the request is streamed
+        content_sha_256 = (headers.get("x-amz-content-sha256") or "").upper()
+        if body and content_sha_256 and content_sha_256.startswith("STREAMING-"):
             # this is a chunked request, we need to properly decode it while setting the key value
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
             buffer = io.BytesIO()
