@@ -461,6 +461,12 @@ class LegacyResourceProvider(ResourceProvider):
         resource_provider.add_defaults(
             self.all_resources[request.logical_resource_id], request.stack_name
         )
+        # for some reason add_defaults doesn't even change the values in the resource provider...
+        # incredibly hacky again but should take care of the defaults
+        resource_provider.resource_json["Properties"] = self.all_resources[
+            request.logical_resource_id
+        ]["Properties"]
+        resource_provider.properties = self.all_resources[request.logical_resource_id]["Properties"]
 
         func_details = resource_provider.get_deploy_templates()
         # TODO: be less strict about the return value of func_details
