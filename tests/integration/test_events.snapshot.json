@@ -171,5 +171,42 @@
         }
       }
     }
+  },
+  "tests/integration/test_events.py::TestEvents::test_put_events_time": {
+    "recorded-date": "13-07-2023, 02:49:20",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "EventId": "<uuid:1>"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-events": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:1>",
+            "detail-type": "CustomType",
+            "source": "MySource",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "message": "for the default event bus"
+            }
+          }
+        }
+      ]
+    }
   }
 }

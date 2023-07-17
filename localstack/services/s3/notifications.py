@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
@@ -26,6 +27,7 @@ from localstack.aws.api.s3 import (
     ObjectKey,
     QueueArn,
     QueueConfiguration,
+    StorageClass,
     TopicArn,
     TopicConfiguration,
 )
@@ -41,7 +43,7 @@ from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn, s3_bucket_arn
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.strings import short_uid
-from localstack.utils.time import timestamp_millis
+from localstack.utils.time import parse_timestamp, timestamp_millis
 
 LOG = logging.getLogger(__name__)
 
@@ -55,6 +57,7 @@ EVENT_OPERATION_MAP = {
     "DeleteObject": Event.s3_ObjectRemoved_Delete,
     "DeleteObjects": Event.s3_ObjectRemoved_Delete,
     "PutObjectAcl": Event.s3_ObjectAcl_Put,
+    "RestoreObject": Event.s3_ObjectRestore_Post,
 }
 
 HEADER_AMZN_XRAY = "X-Amzn-Trace-Id"
@@ -87,6 +90,7 @@ class Notification(TypedDict):
 class S3EventNotificationContext:
     request_id: str
     event_type: str
+    event_time: datetime.datetime
     region: str
     bucket_name: BucketName
     key_name: ObjectKey
@@ -95,6 +99,8 @@ class S3EventNotificationContext:
     key_size: int
     key_etag: str
     key_version_id: str
+    key_expiry: datetime.datetime
+    key_storage_class: Optional[StorageClass]
 
     @classmethod
     def from_request_context(
@@ -134,19 +140,26 @@ class S3EventNotificationContext:
         if isinstance(key, FakeDeleteMarker):
             etag = ""
             key_size = 0
+            key_expiry = None
+            storage_class = ""
         else:
             etag = key.etag.strip('"')
             key_size = key.contentsize
+            key_expiry = key._expiry
+            storage_class = key.storage_class
 
         return cls(
             request_id=request_context.request_id,
             event_type=EVENT_OPERATION_MAP.get(request_context.operation.wire_name, ""),
+            event_time=datetime.datetime.now(),
             region=request_context.region,
             bucket_name=bucket_name,
             bucket_location=bucket.location,
             key_name=quote(key.name),
             key_etag=etag,
             key_size=key_size,
+            key_expiry=key_expiry,
+            key_storage_class=storage_class,
             key_version_id=key.version_id if bucket.is_versioned else None,  # todo: check this?
             xray=request_context.request.headers.get(HEADER_AMZN_XRAY),
         )
@@ -310,7 +323,7 @@ class BaseNotifier:
             eventVersion="2.1",
             eventSource="aws:s3",
             awsRegion=ctx.region,
-            eventTime=timestamp_millis(),
+            eventTime=timestamp_millis(ctx.event_time),
             eventName=ctx.event_type.removeprefix("s3:"),
             userIdentity={"principalId": "AIDAJDPLRKLG7UEXAMPLE"},
             requestParameters={
@@ -326,7 +339,9 @@ class BaseNotifier:
                 configurationId=config_id,
                 bucket={
                     "name": ctx.bucket_name,
-                    "ownerIdentity": {"principalId": "A3NL1KOZZKExample"},
+                    "ownerIdentity": {
+                        "principalId": "A3NL1KOZZKExample"
+                    },  # TODO: use proper principal?
                     "arn": f"arn:aws:s3:::{ctx.bucket_name}",
                 },
                 object={
@@ -339,13 +354,30 @@ class BaseNotifier:
         if ctx.key_version_id:
             # object version if bucket is versioning-enabled, otherwise null
             record["s3"]["object"]["versionId"] = ctx.key_version_id
-        if "created" in ctx.event_type.lower():
+
+        event_type = ctx.event_type.lower()
+        if any(e in event_type for e in ("created", "restore")):
             record["s3"]["object"]["size"] = ctx.key_size
             record["s3"]["object"]["eTag"] = ctx.key_etag
         if "ObjectTagging" in ctx.event_type or "ObjectAcl" in ctx.event_type:
             record["eventVersion"] = "2.3"
             record["s3"]["object"]["eTag"] = ctx.key_etag
             record["s3"]["object"].pop("sequencer")
+
+        if "objectrestore:completed" in event_type:
+            record["glacierEventData"] = {
+                "restoreEventData": {
+                    "lifecycleRestorationExpiryTime": timestamp_millis(ctx.key_expiry),
+                    "lifecycleRestoreStorageClass": ctx.key_storage_class,
+                }
+            }
+            record["userIdentity"][
+                "principalId"
+            ] = "AmazonCustomer:A3NL1KOZZKExample"  # TODO: use proper principal?
+            # a bit hacky, it is to ensure the eventTime is a bit after the `Post` event, as its instant in LS
+            # the best would be to delay the publishing of the event
+            event_time = parse_timestamp(record["eventTime"]) + datetime.timedelta(milliseconds=500)
+            record["eventTime"] = timestamp_millis(event_time)
 
         return {"Records": [record]}
 
@@ -562,6 +594,7 @@ class EventBridgeNotifier(BaseNotifier):
         entry: PutEventsRequestEntry = {
             "Source": "aws.s3",
             "Resources": [f"arn:aws:s3:::{ctx.bucket_name}"],
+            "Time": ctx.event_time,
         }
 
         if ctx.xray:
@@ -609,6 +642,22 @@ class EventBridgeNotifier(BaseNotifier):
             entry["DetailType"] = "Object ACL Updated"
             event_details["object"].pop("size")
             event_details["object"].pop("sequencer")
+
+        elif "ObjectRestore" in ctx.event_type:
+            entry["DetailType"] = (
+                "Object Restore Initiated"
+                if "Post" in ctx.event_type
+                else "Object Restore Completed"
+            )
+            event_details["source-storage-class"] = ctx.key_storage_class
+            event_details["object"].pop("sequencer", None)
+            if ctx.event_type.endswith("Completed"):
+                event_details["restore-expiry-time"] = timestamp_millis(ctx.key_expiry)
+                event_details.pop("source-ip-address", None)
+                # a bit hacky, it is to ensure the eventTime is a bit after the `Post` event, as its instant in LS
+                # the best would be to delay the publishing of the event. We need at least 1s as it's the precision
+                # of the event
+                entry["Time"] = entry["Time"] + datetime.timedelta(seconds=1)
 
         entry["Detail"] = json.dumps(event_details)
         return entry
