@@ -581,7 +581,7 @@ class TestLambdaFunction:
         Test "VpcConfig" Property on the Lambda Function
 
         Note: on AWS this takes quite a while since creating a function with VPC usually takes at least 4 minutes
-
+        FIXME: Unfortunately the cleanup in this test doesn't work properly on AWS and the last subnet/security group + vpc are leaking.
         TODO: test a few more edge cases (e.g. multiple subnets / security groups, invalid vpc ids, etc.)
         """
 
