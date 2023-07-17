@@ -574,6 +574,7 @@ class TestLambdaFunction:
         snapshot.match("list_all", list_all)
         snapshot.match("list_default", list_default)
 
+    @pytest.mark.aws_validated
     def test_vpc_config(
         self, create_lambda_function, lambda_su_role, snapshot, aws_client, cleanups
     ):
