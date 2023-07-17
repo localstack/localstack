@@ -39,7 +39,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.functions import prevent_stack_overflow
 from localstack.utils.json import clone_safe
 from localstack.utils.objects import get_all_subclasses
-from localstack.utils.strings import first_char_to_lower, to_bytes, to_str
+from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
@@ -114,66 +114,6 @@ def retrieve_resource_details(
     return None
 
 
-# TODO(srw): this becomes a property lookup
-# TODO(ds): remove next
-def extract_resource_attribute(
-    resource_type,
-    resource_state,
-    attribute,
-    resource_id=None,
-    resource=None,
-    resources=None,
-    stack_name=None,
-):
-    LOG.debug("Extract resource attribute: %s %s", resource_type, attribute)
-    is_ref_attribute = attribute in ["PhysicalResourceId", "Ref"]
-    resource = resource or {}
-    if not resource and resources:
-        resource = resources[resource_id]
-
-    if not resource_state:
-        resource_state = retrieve_resource_details(resource_id, {}, resources, stack_name)
-        if not resource_state:
-            raise DependencyNotYetSatisfied(
-                resource_ids=resource_id,
-                message=f'Unable to fetch details for resource "{resource_id}" (attribute "{attribute}")',
-            )
-
-    if isinstance(resource_state, GenericBaseModel):
-        if hasattr(resource_state, "get_cfn_attribute"):
-            try:
-                return resource_state.get_cfn_attribute(attribute)
-            except Exception:
-                if config.CFN_VERBOSE_ERRORS:
-                    LOG.exception("could not fetch cfn attribute {attribute} from resource")
-        raise Exception(
-            f'Unable to extract attribute "{attribute}" from "{resource_type}" model class {type(resource_state)}'
-        )
-
-    # extract resource specific attributes
-    # TODO: remove the code below - move into resource model classes!
-
-    resource_props = resource.get("Properties", {})
-    attribute_lower = first_char_to_lower(attribute)
-    result = resource_state.get(attribute) or resource_state.get(attribute_lower)
-    if result is None and isinstance(resource, dict):
-        result = resource_props.get(attribute) or resource_props.get(attribute_lower)
-        if result is None:
-            result = get_attr_from_model_instance(
-                resource,
-                attribute,
-                resource_type=resource_type,
-                resource_id=resource_id,
-            )
-    if is_ref_attribute:
-        # TODO: remove
-        for attr in ["Id", "PhysicalResourceId", "Ref"]:
-            if result is None:
-                for obj in [resource_state, resource]:
-                    result = result or obj.get(attr)
-    return result
-
-
 def get_attr_from_model_instance(
     resource: dict, attribute: str, resource_type: str, resource_id: Optional[str] = None
 ):
@@ -215,16 +155,6 @@ def get_attr_from_model_instance(
     else:
         # TODO: write code for property GetAtt lookup
         return resource.get("Properties", {}).get(attribute)
-
-
-def get_ref_from_model(resources: dict, logical_resource_id: str) -> Optional[str]:
-    resource = resources[logical_resource_id]
-    resource_type = get_resource_type(resource)
-    model_class = RESOURCE_MODELS.get(resource_type)
-    if model_class:
-        return model_class(resource_name=logical_resource_id, resource_json=resource).get_ref()
-
-    LOG.error("Unsupported resource type: %s", resource_type)
 
 
 def resolve_ref(
@@ -280,42 +210,13 @@ def resolve_ref(
         resolve_refs_recursively(
             stack_name, resources, mappings, conditions, parameters, resources.get(ref)
         )
-        return get_ref_from_model(resources, ref)
+        return resources[ref].get("PhysicalResourceId")
 
-    if resources.get(ref):
-        if isinstance(resources[ref].get(attribute), (str, int, float, bool, dict)):
-            return resources[ref][attribute]
-
-    # TODO: when do we go into the branch below?
-    # TODO(ds): remove all below next
-    # fetch resource details
-    resource_new = retrieve_resource_details(ref, {}, resources, stack_name)
-    if not resource_new:
-        raise DependencyNotYetSatisfied(
-            resource_ids=ref,
-            message='Unable to fetch details for resource "%s" (resolving attribute "%s")'
-            % (ref, attribute),
-        )
-
-    resource = resources.get(ref)
-    resource_type = get_resource_type(resource)
-    result = extract_resource_attribute(
-        resource_type,
-        resource_new,
-        attribute,
-        resource_id=ref,
-        resource=resource,
-        resources=resources,
-        stack_name=stack_name,
-    )
-    if result is None:
-        LOG.warning(
-            'Unable to extract reference attribute "%s" from resource: %s %s',
-            attribute,
-            resource_new,
-            resource,
-        )
-    return result
+    raise Exception("Unexpected in resolve_ref")
+    #
+    # if resources.get(ref):
+    #     if isinstance(resources[ref].get(attribute), (str, int, float, bool, dict)):
+    #         return resources[ref][attribute]
 
 
 # Using a @prevent_stack_overflow decorator here to avoid infinite recursion
