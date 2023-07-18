@@ -71,16 +71,11 @@ class IAMUser(GenericBaseModel):
         return "AWS::IAM::User"
 
     def fetch_state(self, stack_name, resources):
-        raise Exception("fetch_state")
         user_name = self.props.get("UserName")
         return connect_to().iam.get_user(UserName=user_name)["User"]
 
-    def get_cfn_attribute(self, attribute_name):
-        raise Exception("get_cfn_attribute")
-
     @staticmethod
     def add_defaults(resource, stack_name: str):
-        raise Exception("add_defaults")
         role_name = resource["Properties"].get("UserName")
         if not role_name:
             resource["Properties"]["UserName"] = generate_default_name(
@@ -89,8 +84,6 @@ class IAMUser(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        raise Exception("get_deploy_templates")
-
         def _post_create(logical_resource_id: str, resource: dict, stack_name: str):
             client = connect_to().iam
             props = resource["Properties"]

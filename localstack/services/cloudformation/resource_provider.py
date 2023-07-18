@@ -45,7 +45,7 @@ PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 # by default we use the GenericBaseModel (the legacy model), unless the resource is listed below
 # add your new provider here when you want it to be the default
 PROVIDER_DEFAULTS = {
-    "AWS::IAM::User": "ResourceProvider",
+    # "AWS::IAM::User": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
 }
@@ -187,8 +187,12 @@ def get_resource_type(resource: dict) -> str:
         if resource_type.startswith("Custom::"):
             return "AWS::CloudFormation::CustomResource"
         return resource_type
-    except Exception as e:
-        print(e)
+    except Exception:
+        LOG.warning(
+            "Failed to retrieve resource type %s",
+            resource.get("Type"),
+            exc_info=LOG.isEnabledFor(logging.DEBUG),
+        )
 
 
 def invoke_function(
