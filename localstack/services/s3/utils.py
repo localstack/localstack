@@ -247,11 +247,7 @@ def uses_host_addressing(headers: Dict[str, str]) -> bool:
     # try to extract the bucket from the hostname (the "in" check is a minor optimization, as the regex is very greedy)
     return (
         True
-        if ".s3" in host
-        and (
-            (match := _s3_virtual_host_regex.match(S3_VIRTUAL_HOSTNAME_REGEX, host))
-            and match.group(3)
-        )
+        if ".s3" in host and ((match := _s3_virtual_host_regex.match(host)) and match.group(3))
         else False
     )
 
