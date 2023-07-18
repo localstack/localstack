@@ -461,7 +461,7 @@ class TestCloudFormation:
     # TODO: evaluate
     def test_update_conditions(self, deploy_cfn_template, aws_client):
         stack = deploy_cfn_template(template=TEST_TEMPLATE_3)
-        template = yaml.load(TEST_TEMPLATE_3)
+        template = yaml.safe_load(TEST_TEMPLATE_3)
 
         # TODO: avoid changing template here
         # update stack with additional resources and conditions

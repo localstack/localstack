@@ -543,9 +543,9 @@ class SmsTopicPublisher(TopicPublisher):
         context.store.sms_messages.append(event)
         LOG.info(
             "Delivering SMS message to %s: %s from topic: %s",
-            event["endpoint"],
-            event["message_content"],
-            event["topic_arn"],
+            event["PhoneNumber"],
+            event["Message"],
+            event["TopicArn"],
         )
 
         # MOCK DATA
@@ -562,9 +562,14 @@ class SmsTopicPublisher(TopicPublisher):
 
     def prepare_message(self, message_context: SnsMessage, subscriber: SnsSubscription) -> dict:
         return {
-            "topic_arn": subscriber["TopicArn"],
-            "endpoint": subscriber["Endpoint"],
-            "message_content": message_context.message_content(subscriber["Protocol"]),
+            "PhoneNumber": subscriber["Endpoint"],
+            "TopicArn": subscriber["TopicArn"],
+            "SubscriptionArn": subscriber["SubscriptionArn"],
+            "MessageId": message_context.message_id,
+            "Message": message_context.message_content(protocol=subscriber["Protocol"]),
+            "MessageAttributes": message_context.message_attributes,
+            "MessageStructure": message_context.message_structure,
+            "Subject": message_context.subject,
         }
 
 
@@ -615,8 +620,8 @@ class SmsPhoneNumberPublisher(EndpointPublisher):
         context.store.sms_messages.append(event)
         LOG.info(
             "Delivering SMS message to %s: %s",
-            event["endpoint"],
-            event["message_content"],
+            event["PhoneNumber"],
+            event["Message"],
         )
 
         # TODO: check about delivery logs for individual call, need a real AWS test
@@ -624,9 +629,14 @@ class SmsPhoneNumberPublisher(EndpointPublisher):
 
     def prepare_message(self, message_context: SnsMessage, endpoint: str) -> dict:
         return {
-            "topic_arn": None,
-            "endpoint": endpoint,
-            "message_content": message_context.message_content("sms"),
+            "PhoneNumber": endpoint,
+            "TopicArn": None,
+            "SubscriptionArn": None,
+            "MessageId": message_context.message_id,
+            "Message": message_context.message_content(protocol="sms"),
+            "MessageAttributes": message_context.message_attributes,
+            "MessageStructure": message_context.message_structure,
+            "Subject": message_context.subject,
         }
 
 

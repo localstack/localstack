@@ -565,6 +565,18 @@ def events_handler_put_events(self):
         if not matching_rules:
             continue
 
+        event_time = datetime.datetime.utcnow()
+        if event_timestamp := event.get("Time"):
+            try:
+                # if provided, use the time from event
+                event_time = datetime.datetime.utcfromtimestamp(event_timestamp)
+            except ValueError:
+                # if we can't parse it, pass and keep using `utcnow`
+                LOG.debug(
+                    "Could not parse the `Time` parameter, falling back to `utcnow` for the following Event: '%s'",
+                    event,
+                )
+
         # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
         formatted_event = {
             "version": "0",
@@ -572,7 +584,7 @@ def events_handler_put_events(self):
             "detail-type": event.get("DetailType"),
             "source": event.get("Source"),
             "account": get_aws_account_id(),
-            "time": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "time": event_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "region": self.region,
             "resources": event.get("Resources", []),
             "detail": json.loads(event.get("Detail", "{}")),

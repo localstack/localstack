@@ -18,14 +18,38 @@
     }
   },
   "tests/integration/cloudformation/resources/test_ssm.py::test_maintenance_window": {
-    "recorded-date": "05-07-2023, 19:55:30",
+    "recorded-date": "14-07-2023, 14:06:23",
     "recorded-content": {
       "MaintenanceWindow": [
         {
           "StackName": "<stack-name:1>",
           "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
-          "LogicalResourceId": "MaintenanceWindow",
+          "LogicalResourceId": "PatchBaselineAML",
           "PhysicalResourceId": "<physical_resource_id:1>",
+          "ResourceType": "AWS::SSM::PatchBaseline",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+          }
+        },
+        {
+          "StackName": "<stack-name:1>",
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "LogicalResourceId": "PatchBaselineAML2",
+          "PhysicalResourceId": "<physical_resource_id:2>",
+          "ResourceType": "AWS::SSM::PatchBaseline",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+          }
+        },
+        {
+          "StackName": "<stack-name:1>",
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "LogicalResourceId": "PatchServerMaintenanceWindow",
+          "PhysicalResourceId": "<physical_resource_id:3>",
           "ResourceType": "AWS::SSM::MaintenanceWindow",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
@@ -36,8 +60,8 @@
         {
           "StackName": "<stack-name:1>",
           "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
-          "LogicalResourceId": "MaintenanceWindowTarget",
-          "PhysicalResourceId": "<physical_resource_id:2>",
+          "LogicalResourceId": "PatchServerMaintenanceWindowTarget",
+          "PhysicalResourceId": "<physical_resource_id:4>",
           "ResourceType": "AWS::SSM::MaintenanceWindowTarget",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
@@ -48,8 +72,8 @@
         {
           "StackName": "<stack-name:1>",
           "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
-          "LogicalResourceId": "MaintenanceWindowTask",
-          "PhysicalResourceId": "<physical_resource_id:3>",
+          "LogicalResourceId": "PatchServerTask",
+          "PhysicalResourceId": "<physical_resource_id:5>",
           "ResourceType": "AWS::SSM::MaintenanceWindowTask",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",

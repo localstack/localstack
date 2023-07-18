@@ -110,8 +110,6 @@ class SSMMaintenanceWindow(GenericBaseModel):
         return "AWS::SSM::MaintenanceWindow"
 
     def fetch_state(self, stack_name, resources):
-        if not self.physical_resource_id:
-            return None
         maintenance_windows = connect_to().ssm.describe_maintenance_windows()["WindowIdentities"]
         for maintenance_window in maintenance_windows:
             if maintenance_window["WindowId"] == self.physical_resource_id:
@@ -154,7 +152,7 @@ class SSMMaintenanceWindowTarget(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         targets = connect_to().ssm.describe_maintenance_window_targets(
-            WindowTargetId=self.props.get("WindowTargetId")
+            WindowId=self.props.get("WindowId")
         )["Targets"]
         targets = [
             target for target in targets if target["WindowTargetId"] == self.physical_resource_id
@@ -253,9 +251,10 @@ class SSMPatchBaseline(GenericBaseModel):
         return "AWS::SSM::PatchBaseline"
 
     def fetch_state(self, stack_name, resources):
-        return connect_to().ssm.describe_patch_baselines(BaselineId=self.props.get("BaselineId"))[
-            "BaselineId"
-        ]
+        patches = connect_to().ssm.describe_patch_baselines()["BaselineIdentities"]
+        for patch in patches:
+            if patch["BaselineId"] == self.physical_resource_id:
+                return patch
 
     @staticmethod
     def get_deploy_templates():

@@ -9,6 +9,7 @@ from boto3.s3.transfer import KB, TransferConfig
 from botocore.exceptions import ClientError
 
 from localstack.config import LEGACY_S3_PROVIDER
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -1014,5 +1015,67 @@ class TestS3NotificationsToSQS:
 
         assert len(events) == 3, f"unexpected number of events in {events}"
         # order seems not be guaranteed - sort so we can rely on the order
+        events.sort(key=lambda x: x["eventTime"])
+        snapshot.match("receive_messages", {"messages": events})
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..messages[1].requestParameters.sourceIPAddress",  # AWS IP address is different as its internal
+        ],
+    )
+    def test_restore_object(
+        self,
+        s3_create_bucket,
+        sqs_create_queue,
+        s3_create_sqs_bucket_notification,
+        snapshot,
+        aws_client,
+    ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        # setup fixture
+        bucket_name = s3_create_bucket()
+        queue_url = sqs_create_queue()
+        key_name = "my_key_restore"
+        s3_create_sqs_bucket_notification(bucket_name, queue_url, ["s3:ObjectRestore:*"])
+
+        # We set the StorageClass to Glacier Flexible Retrieval (formerly Glacier) as it's the only one allowing
+        # Expedited retrieval Tier (with the Intelligent Access Archive tier)
+        aws_client.s3.put_object(
+            Bucket=bucket_name, Key=key_name, Body="something", StorageClass="GLACIER"
+        )
+
+        aws_client.s3.restore_object(
+            Bucket=bucket_name,
+            Key=key_name,
+            RestoreRequest={
+                "Days": 1,
+                "GlacierJobParameters": {
+                    "Tier": "Expedited",  # Set it as Expedited, it should be done within 1-5min
+                },
+            },
+        )
+
+        def _is_object_restored():
+            resp = aws_client.s3.head_object(Bucket=bucket_name, Key=key_name)
+            assert 'ongoing-request="false"' in resp["Restore"]
+
+        if is_aws_cloud():
+            retries = 12
+            sleep = 30
+        else:
+            retries = 3
+            sleep = 1
+
+        retry(_is_object_restored, retries=retries, sleep=sleep)
+
+        # collect s3 events from SQS queue
+        events = sqs_collect_s3_events(aws_client.sqs, queue_url, min_events=2)
+
+        assert len(events) == 2, f"unexpected number of events in {events}"
+        # order seems not be guaranteed - sort, so we can rely on the order
         events.sort(key=lambda x: x["eventTime"])
         snapshot.match("receive_messages", {"messages": events})

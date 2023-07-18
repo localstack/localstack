@@ -2418,6 +2418,7 @@ class TestS3:
             "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD",
             "X-Amz-Date": "20190918T051509Z",
             "X-Amz-Decoded-Content-Length": str(len(body)),
+            "Content-Encoding": "aws-chunked",
         }
         data = (
             "d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
@@ -2452,6 +2453,7 @@ class TestS3:
             "X-Amz-Decoded-Content-Length": str(len(body)),
             "x-amz-sdk-checksum-algorithm": "SHA256",
             "x-amz-trailer": "x-amz-checksum-sha256",
+            "Content-Encoding": "aws-chunked",
         }
 
         def get_data(content: str, checksum_value: str) -> str:
@@ -2478,6 +2480,64 @@ class TestS3:
         request = requests.put(url, wrong_data, headers=headers, verify=False)
         assert request.status_code == 400
         assert "Value for x-amz-checksum-sha256 header is invalid." in request.text
+
+    @pytest.mark.only_localstack
+    def test_upload_part_chunked_newlines_valid_etag(self, s3_bucket, aws_client):
+        # Boto still does not support chunk encoding, which means we can't test with the client nor
+        # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
+        # Test for https://github.com/localstack/localstack/issues/8703
+        object_key = "data"
+        body = "Hello Blob"
+        precalculated_etag = hashlib.md5(body.encode()).hexdigest()
+        headers = {
+            "Authorization": aws_stack.mock_aws_request_headers("s3")["Authorization"],
+            "Content-Type": "audio/mpeg",
+            "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER",
+            "X-Amz-Date": "20190918T051509Z",
+            "X-Amz-Decoded-Content-Length": str(len(body)),
+            "Content-Encoding": "aws-chunked",
+        }
+
+        data = (
+            "a;chunk-signature=b5311ac60a88890e740a41e74f3d3b03179fd058b1e24bb3ab224042377c4ec9\r\n"
+            f"{body}\r\n"
+            "0;chunk-signature=78fae1c533e34dbaf2b83ad64ff02e4b64b7bc681ea76b6acf84acf1c48a83cb\r\n"
+        )
+
+        key_name = "test-multipart-chunked"
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+        )
+        upload_id = response["UploadId"]
+
+        # # upload the part 1
+        url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}?partNumber={1}&uploadId={upload_id}"
+        response = requests.put(url, data, headers=headers, verify=False)
+        assert response.ok
+        part_etag = response.headers.get("ETag")
+        xml_response = xmltodict.parse(response.content)
+        assert "UploadPartOutput" in xml_response
+
+        # validate that the object etag is the same as the pre-calculated one
+        assert part_etag.strip('"') == precalculated_etag
+
+        multipart_upload_parts = [
+            {
+                "ETag": part_etag,
+                "PartNumber": 1,
+            }
+        ]
+
+        aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+
+        completed_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+        assert completed_object["Body"].read() == to_bytes(body)
 
     @pytest.mark.only_localstack
     def test_virtual_host_proxy_does_not_decode_gzip(self, aws_client, s3_bucket):
@@ -4547,6 +4607,7 @@ class TestS3:
         response = aws_client.s3.get_object(Bucket=bucket_1, Key=key_name)
         snapshot.match("get-obj-default-kms-s3-key-from-bucket", response)
 
+    @pytest.mark.aws_validated
     def test_s3_analytics_configurations(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(
             [
@@ -4604,11 +4665,13 @@ class TestS3:
         snapshot.match("delete_config_with_storage_analysis_err", err_delete.value.response)
 
         # put storage analysis
-        aws_client.s3.put_bucket_analytics_configuration(
+        response = aws_client.s3.put_bucket_analytics_configuration(
             Bucket=bucket,
             Id=storage_analysis["Id"],
             AnalyticsConfiguration=storage_analysis,
         )
+        snapshot.match("put_config_with_storage_analysis_1", response)
+
         response = aws_client.s3.get_bucket_analytics_configuration(
             Bucket=bucket,
             Id=storage_analysis["Id"],
@@ -4760,11 +4823,12 @@ class TestS3:
         )
 
         # put tiering config
-        aws_client.s3.put_bucket_intelligent_tiering_configuration(
+        response = aws_client.s3.put_bucket_intelligent_tiering_configuration(
             Bucket=bucket,
             Id=intelligent_tier_configuration["Id"],
             IntelligentTieringConfiguration=intelligent_tier_configuration,
         )
+        snapshot.match("put_bucket_intelligent_tiering_configuration_1", response)
 
         # get tiering config and snapshot match
         response = aws_client.s3.get_bucket_intelligent_tiering_configuration(
@@ -4859,6 +4923,107 @@ class TestS3:
         with pytest.raises(ClientError) as e:
             aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch="etag")
         snapshot.match("if_match_err_1", e.value.response["Error"])
+
+    @pytest.mark.aws_validated
+    def test_s3_object_hold(self, aws_client, s3_create_bucket, snapshot):
+        bucket_name_with_lock = f"bucket-with-lock-{short_uid()}"
+        bucket_name_without_lock = f"bucket-without-lock-{short_uid()}"
+        key_1 = "test1.txt"
+        key_2 = "test2.txt"
+
+        s3_create_bucket(Bucket=bucket_name_with_lock, ObjectLockEnabledForBucket=True)
+        aws_client.s3.put_object(Bucket=bucket_name_with_lock, Key=key_1, Body="test")
+        key_1_version_id = aws_client.s3.get_object(Bucket=bucket_name_with_lock, Key=key_1)[
+            "VersionId"
+        ]
+        key_2_version_id = aws_client.s3.put_object(Bucket=bucket_name_with_lock, Key=key_2)[
+            "VersionId"
+        ]
+
+        s3_create_bucket(Bucket=bucket_name_without_lock, ObjectLockEnabledForBucket=False)
+        aws_client.s3.put_object(Bucket=bucket_name_without_lock, Key=key_1, Body="test")
+
+        # non-existing bucket
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.put_object_retention(
+                Bucket="non-existing-bucket",
+                Key=key_1,
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+            )
+        snapshot.match("put_object_retention_1", exc.value.response["Error"])
+
+        # non-existing key
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.put_object_retention(
+                Bucket=bucket_name_with_lock,
+                Key="non-existing-key",
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+            )
+        snapshot.match("put_object_retention_2", exc.value.response["Error"])
+
+        # no lock on bucket
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.get_object_retention(Bucket=bucket_name_without_lock, Key=key_1)
+        snapshot.match("get_object_retention_1", exc.value.response["Error"])
+
+        response = aws_client.s3.put_object_retention(
+            Bucket=bucket_name_with_lock,
+            Key=key_1,
+            Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+        )
+        snapshot.match("put_object_retention_4", response["ResponseMetadata"]["HTTPStatusCode"])
+
+        response = aws_client.s3.get_object_retention(Bucket=bucket_name_with_lock, Key=key_1)
+        snapshot.match("get_object_retention_2", response)
+
+        # delete object with lock without bypass
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.delete_object(
+                Bucket=bucket_name_with_lock, Key=key_1, VersionId=key_1_version_id
+            )
+        snapshot.match("delete_object_1", exc.value.response["Error"])
+
+        # delete object with lock with bypass
+        response = aws_client.s3.delete_object(
+            Bucket=bucket_name_with_lock,
+            Key=key_1,
+            VersionId=key_1_version_id,
+            BypassGovernanceRetention=True,
+        )
+        snapshot.match("delete_object_2", response["ResponseMetadata"]["HTTPStatusCode"])
+
+        # add object retention to key_2 with 5 seconds retention
+        aws_client.s3.put_object_retention(
+            Bucket=bucket_name_with_lock,
+            Key=key_2,
+            Retention={
+                "Mode": "GOVERNANCE",
+                "RetainUntilDate": datetime.datetime.utcnow() + datetime.timedelta(seconds=5),
+            },
+        )
+
+        # delete object with lock without bypass before 5 seconds
+        with pytest.raises(ClientError):
+            aws_client.s3.delete_object(
+                Bucket=bucket_name_with_lock, Key=key_2, VersionId=key_2_version_id
+            )
+
+        # delete object with lock without bypass after 5 seconds
+        time.sleep(6)
+        aws_client.s3.delete_object(
+            Bucket=bucket_name_with_lock,
+            Key=key_2,
+            VersionId=key_2_version_id,
+        )
+
+        # put object retention on bucket without lock configured
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.put_object_retention(
+                Bucket=bucket_name_without_lock,
+                Key=key_1,
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+            )
+        snapshot.match("put_object_retention_5", exc.value.response["Error"])
 
     @pytest.mark.aws_validated
     def test_put_bucket_logging(self, aws_client, s3_create_bucket, snapshot):
@@ -4969,6 +5134,187 @@ class TestS3:
             )
         snapshot.match("put-bucket-logging-non-existent-bucket", e.value.response)
         assert e.value.response["Error"]["TargetBucket"] == nonexistent_target_bucket
+
+    @pytest.mark.aws_validated
+    def test_s3_inventory_report_crud(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.resource_name())
+        src_bucket = s3_create_bucket()
+        dest_bucket = s3_create_bucket()
+
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "InventoryPolicy",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "s3.amazonaws.com"},
+                    "Action": "s3:PutObject",
+                    "Resource": [f"arn:aws:s3:::{dest_bucket}/*"],
+                    "Condition": {
+                        "ArnLike": {"aws:SourceArn": f"arn:aws:s3:::{src_bucket}"},
+                    },
+                },
+            ],
+        }
+
+        aws_client.s3.put_bucket_policy(Bucket=dest_bucket, Policy=json.dumps(policy))
+        inventory_config = {
+            "Id": "test-inventory",
+            "Destination": {
+                "S3BucketDestination": {
+                    "Bucket": f"arn:aws:s3:::{dest_bucket}",
+                    "Format": "CSV",
+                }
+            },
+            "IsEnabled": True,
+            "IncludedObjectVersions": "All",
+            "OptionalFields": ["Size", "ETag"],
+            "Schedule": {"Frequency": "Daily"},
+        }
+
+        put_inv_config = aws_client.s3.put_bucket_inventory_configuration(
+            Bucket=src_bucket,
+            Id=inventory_config["Id"],
+            InventoryConfiguration=inventory_config,
+        )
+        snapshot.match("put-inventory-config", put_inv_config)
+
+        list_inv_configs = aws_client.s3.list_bucket_inventory_configurations(Bucket=src_bucket)
+        snapshot.match("list-inventory-config", list_inv_configs)
+
+        get_inv_config = aws_client.s3.get_bucket_inventory_configuration(
+            Bucket=src_bucket,
+            Id=inventory_config["Id"],
+        )
+        snapshot.match("get-inventory-config", get_inv_config)
+
+        del_inv_config = aws_client.s3.delete_bucket_inventory_configuration(
+            Bucket=src_bucket,
+            Id=inventory_config["Id"],
+        )
+        snapshot.match("del-inventory-config", del_inv_config)
+
+        list_inv_configs_after_del = aws_client.s3.list_bucket_inventory_configurations(
+            Bucket=src_bucket
+        )
+        snapshot.match("list-inventory-config-after-del", list_inv_configs_after_del)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_inventory_configuration(
+                Bucket=src_bucket,
+                Id=inventory_config["Id"],
+            )
+        snapshot.match("get-nonexistent-inv-config", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_s3_put_inventory_report_exceptions(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.resource_name())
+        src_bucket = s3_create_bucket()
+        dest_bucket = s3_create_bucket()
+        config_id = "test-inventory"
+
+        def _get_config():
+            return {
+                "Id": config_id,
+                "Destination": {
+                    "S3BucketDestination": {
+                        "Bucket": f"arn:aws:s3:::{dest_bucket}",
+                        "Format": "CSV",
+                    }
+                },
+                "IsEnabled": True,
+                "IncludedObjectVersions": "All",
+                "Schedule": {"Frequency": "Daily"},
+            }
+
+        def _put_bucket_inventory_configuration(inventory_configuration):
+            aws_client.s3.put_bucket_inventory_configuration(
+                Bucket=src_bucket,
+                Id=config_id,
+                InventoryConfiguration=inventory_configuration,
+            )
+
+        # put an inventory config with a wrong ID
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["Id"] = config_id + "wrong"
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-id", e.value.response)
+
+        # set the Destination Bucket only as the name and not the ARN
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["Destination"]["S3BucketDestination"]["Bucket"] = dest_bucket
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-destination-arn", e.value.response)
+
+        # set the wrong Destination Format (should be CSV/ORC/Parquet)
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["Destination"]["S3BucketDestination"]["Format"] = "WRONG-FORMAT"
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-destination-format", e.value.response)
+
+        # set the wrong Schedule Frequency (should be Daily/Weekly)
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["Schedule"]["Frequency"] = "Hourly"
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-schedule-frequency", e.value.response)
+
+        # set the wrong IncludedObjectVersions (should be All/Current)
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["IncludedObjectVersions"] = "Wrong"
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-object-versions", e.value.response)
+
+        # set wrong OptionalFields
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["OptionalFields"] = ["TestField"]
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-optional-field", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_put_bucket_inventory_config_order(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.resource_name())
+        src_bucket = s3_create_bucket()
+        dest_bucket = s3_create_bucket()
+
+        def _put_bucket_inventory_configuration(config_id: str):
+            inventory_configuration = {
+                "Id": config_id,
+                "Destination": {
+                    "S3BucketDestination": {
+                        "Bucket": f"arn:aws:s3:::{dest_bucket}",
+                        "Format": "CSV",
+                    }
+                },
+                "IsEnabled": True,
+                "IncludedObjectVersions": "All",
+                "Schedule": {"Frequency": "Daily"},
+            }
+            aws_client.s3.put_bucket_inventory_configuration(
+                Bucket=src_bucket,
+                Id=config_id,
+                InventoryConfiguration=inventory_configuration,
+            )
+
+        for inv_config_id in ("test-1", "z-test", "a-test"):
+            _put_bucket_inventory_configuration(inv_config_id)
+
+        list_inv_configs = aws_client.s3.list_bucket_inventory_configurations(Bucket=src_bucket)
+        snapshot.match("list-inventory-config", list_inv_configs)
+
+        del_inv_config = aws_client.s3.delete_bucket_inventory_configuration(
+            Bucket=src_bucket,
+            Id="z-test",
+        )
+        snapshot.match("del-inventory-config", del_inv_config)
+
+        list_inv_configs = aws_client.s3.list_bucket_inventory_configurations(Bucket=src_bucket)
+        snapshot.match("list-inventory-config-after-del", list_inv_configs)
 
 
 class TestS3MultiAccounts:
