@@ -1,9 +1,31 @@
+import json
 import os
 
 import pytest
 
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
+
+
+class TestRef:
+    def test_references(self, deploy_cfn_template):
+        template = json.dumps(
+            {
+                "Resources": {
+                    "Topic": {
+                        "Type": "AWS::SNS::Topic",
+                    },
+                    "Parameter": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {"Ref": "Topic"},
+                        },
+                    },
+                },
+            }
+        )
+        deploy_cfn_template(template=template)
 
 
 class TestDependsOn:

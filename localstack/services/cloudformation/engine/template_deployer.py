@@ -4,6 +4,7 @@ import logging
 import re
 import traceback
 import uuid
+from dataclasses import dataclass
 from typing import Any, Callable, Literal, Optional, Type, TypedDict
 
 import botocore
@@ -504,7 +505,8 @@ def _resolve_refs_recursively(
             selected_map = mappings.get(mapping_id)
             if not selected_map:
                 raise Exception(
-                    f"Cannot find Mapping with ID {mapping_id} for Fn::FindInMap: {value[keys_list[0]]} {list(resources.keys())}"  # TODO: verify
+                    f"Cannot find Mapping with ID {mapping_id} for Fn::FindInMap: {value[keys_list[0]]} {list(resources.keys())}"
+                    # TODO: verify
                 )
 
             first_level_attribute = value[keys_list[0]][1]
@@ -846,6 +848,42 @@ class ResourceChange(TypedDict):
 class ChangeConfig(TypedDict):
     Type: str
     ResourceChange: ResourceChange
+
+
+@dataclass
+class Reference:
+    """
+    Destination: the resource that was just deployed
+    Source: the resource that depends on a value from destination
+    """
+
+    source_logical_id: str
+    destination_logical_id: str
+    value_lookup_function: Callable[[dict], str]
+    source_update_function: Callable[[dict, str], None]
+
+
+def build_references(resources: dict) -> list[Reference]:
+    refs = []
+    for resource_id, resource in resources.items():
+        props = resource.get("Properties", {})
+        for prop_name, prop in props.items():
+            if isinstance(prop, dict) and "Ref" in prop:
+
+                def setter(resources: dict, value: str):
+                    resources[resource_id]["Properties"][prop_name] = value
+
+                def getter(resource: dict):
+                    return resource["PhysicalResourceId"]
+
+                ref = Reference(
+                    source_logical_id=resource_id,
+                    destination_logical_id=prop["Ref"],
+                    value_lookup_function=getter,
+                    source_update_function=setter,
+                )
+                refs.append(ref)
+    return refs
 
 
 # TODO: replace
@@ -1223,6 +1261,7 @@ class TemplateDeployer:
         new_resources = new_stack.template["Resources"]
         action = action or "CREATE"
         self.init_resource_status(old_resources, action="UPDATE")
+        self.references: list[Reference] = build_references(new_stack.template_resources)
 
         # apply parameter changes to existing stack
         # self.apply_parameter_changes(existing_stack, new_stack)
@@ -1472,6 +1511,13 @@ class TemplateDeployer:
         # update resource status and physical resource id
         stack_action = get_action_name_for_resource_change(action)
         self.update_resource_details(resource_id, stack=stack, action=stack_action)
+        self.update_references(resource_id)
+
+    def update_references(self, logical_resource_id: str):
+        for ref in self.references:
+            if ref.destination_logical_id == logical_resource_id:
+                value = ref.value_lookup_function(self.resources[logical_resource_id])
+                ref.source_update_function(self.resources, value)
 
     def create_resource_provider_executor(self) -> ResourceProviderExecutor:
         return ResourceProviderExecutor(
