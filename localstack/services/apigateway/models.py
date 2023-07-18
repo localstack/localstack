@@ -66,10 +66,11 @@ class ApiGatewayStore(BaseStore):
     # maps cert ID to client certificate details
     client_certificates: Dict[str, Dict] = LocalAttribute(default=dict)
 
+    # maps domain name to domain name model
+    domain_names: Dict[str, DomainName] = LocalAttribute(default=dict)
+
     # maps resource ARN to tags
     TAGS: Dict[str, Dict[str, str]] = CrossRegionAttribute(default=dict)
-
-    domain_names: Dict[str, DomainName] = LocalAttribute(default=dict)
 
     def __init__(self):
         super().__init__()
