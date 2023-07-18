@@ -13,6 +13,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     Job,
     JobPool,
 )
+from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import Item, Map
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.eval.program_state import (
@@ -20,6 +21,7 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramState,
     ProgramStopped,
 )
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 LOG = logging.getLogger(__name__)
 
@@ -55,6 +57,10 @@ class ItemProcessorWorker:
             )
             try:
                 env_frame.inp = job.job_input
+                env_frame.context_object_manager.context_object["Map"] = Map(
+                    Item=Item(Index=job.job_index, Value=to_json_str(job.job_input))
+                )
+
                 job.job_program.eval(env_frame)
 
                 # Program evaluation suppressed runtime exceptions into an execution exception in the program state.

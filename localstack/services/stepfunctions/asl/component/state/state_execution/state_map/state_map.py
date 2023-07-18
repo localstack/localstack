@@ -27,7 +27,6 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     MaxConcurrency,
 )
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
-from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import Item, Map
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 
@@ -61,13 +60,6 @@ class StateMap(ExecutionState):
 
         if not self.item_processor:
             raise ValueError(f"Missing ItemProcessor definition in props '{state_props}'.")
-
-    def _eval_body(self, env: Environment) -> None:
-        env.context_object_manager.context_object["Map"] = Map(
-            Item=Item(Index=-1, Value="Unsupported")
-        )
-        super(StateMap, self)._eval_body(env=env)
-        env.context_object_manager.context_object["Map"] = None
 
     def _handle_retry(self, ex: Exception, env: Environment) -> None:
         failure_event: FailureEvent = self._from_error(env=env, ex=ex)
