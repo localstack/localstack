@@ -96,4 +96,4 @@ class AwsChunkedDecoder(io.RawIOBase):
         while line := self._stream.readline():
             if trailing_header := line.strip():
                 header_key, header_value = trailing_header.decode("utf-8").split(":", maxsplit=1)
-                self._trailing_headers[header_key] = header_value.strip()
+                self._trailing_headers[header_key.lower()] = header_value.strip().lower()

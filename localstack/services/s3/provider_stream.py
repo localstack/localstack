@@ -39,6 +39,7 @@ from localstack.aws.api.s3 import (
     UploadPartRequest,
 )
 from localstack.services.moto import call_moto, call_moto_with_request
+from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.models import get_moto_s3_backend
 from localstack.services.s3.provider import S3Provider
 from localstack.services.s3.utils import (
@@ -131,11 +132,19 @@ class S3ProviderStream(S3Provider):
         if content_sha_256 and content_sha_256.startswith("STREAMING-"):
             # this is a chunked request, we need to properly decode it while setting the key value
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
-            key_object.set_value_from_chunked_payload(body, decoded_content_length)
+            body = AwsChunkedDecoder(body, decoded_content_length)
 
-        else:
-            # set the stream to be the value of the key
+        try:
             key_object.value = body
+        except Exception:
+            # cleanup the created key in case we can't set the value
+            moto_backend.delete_object(
+                bucket_name=request["Bucket"],
+                key_name=request["Key"],
+                version_id=key_object.version_id,
+                bypass=True,
+            )
+            raise
 
         # the etag is recalculated
         response["ETag"] = key_object.etag
@@ -279,7 +288,6 @@ class S3ProviderStream(S3Provider):
             )
 
         body = request.get("Body") or BytesIO()
-        decoded_content_length = None
         headers = context.request.headers
         # AWS specifies that the `Content-Encoding` should be `aws-chunked`, but some SDK don't set it.
         # Rely on the `x-amz-content-sha256` which is a more reliable indicator that the request is streamed
@@ -287,10 +295,9 @@ class S3ProviderStream(S3Provider):
         if content_sha_256 and content_sha_256.startswith("STREAMING-"):
             # this is a chunked request, we need to properly decode it while setting the key value
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
+            body = AwsChunkedDecoder(body, decoded_content_length)
 
-        key = moto_backend.upload_part(
-            bucket_name, upload_id, part_number, body, decoded_content_length
-        )
+        key = moto_backend.upload_part(bucket_name, upload_id, part_number, body)
         response = UploadPartOutput(ETag=key.etag)
 
         if key.checksum_algorithm is not None:
@@ -379,9 +386,8 @@ class StreamedFakeKey(s3_models.FakeKey):
             self._value_buffer.truncate()
             # We have 2 cases:
             # The client gave a checksum value, we will need to compute the value and validate it against
-            # or the client have an algorithm value only and we need to compute the checksum
+            # or the client have an algorithm value only, and we need to compute the checksum
             checksum = None
-            calculated_checksum = None
             if self.checksum_algorithm:
                 checksum = get_s3_checksum(self.checksum_algorithm)
             if etag_empty:
@@ -394,87 +400,16 @@ class StreamedFakeKey(s3_models.FakeKey):
                 if etag_empty:
                     etag.update(data)
 
-            if self.checksum_algorithm:
-                calculated_checksum = base64.b64encode(checksum.digest()).decode()
-
-                if self.checksum_value and self.checksum_value != calculated_checksum:
-                    self.dispose()
-                    raise InvalidRequest(
-                        f"Value for x-amz-checksum-{self.checksum_algorithm.lower()} header is invalid."
-                    )
-
-            if etag_empty:
-                self._etag = etag.hexdigest()
-
             self.contentsize = self._value_buffer.tell()
             self._value_buffer.seek(0)
 
-    def set_value_from_chunked_payload(self, new_value: IO[bytes], content_length: int):
-        etag_empty = not self._etag or self._etag == "d41d8cd98f00b204e9800998ecf8427e"
-        with self.lock:
-            self._value_buffer.seek(0)
-            self._value_buffer.truncate()
-            # We have 2 cases:
-            # The client gave a checksum value, we will need to compute the value and validate it against
-            # or the client have an algorithm value only and we need to compute the checksum
-            checksum = None
-            calculated_checksum = None
-            if self.checksum_algorithm:
-                checksum = get_s3_checksum(self.checksum_algorithm)
-            etag = hashlib.md5(usedforsecurity=False)
-
-            written = 0
-            while written < content_length:
-                line = new_value.readline()
-                chunk_length = int(line.split(b";")[0], 16)
-
-                while chunk_length > 0:
-                    amount = min(chunk_length, CHUNK_SIZE)
-                    data = new_value.read(amount)
-                    self._value_buffer.write(data)
-
-                    real_amount = len(data)
-                    chunk_length -= real_amount
-                    written += real_amount
-
-                    if self.checksum_algorithm:
-                        checksum.update(data)
-                    etag.update(data)
-
-                # remove trailing \r\n
-                new_value.read(2)
-
-            trailing_headers = []
-            next_line = new_value.readline()
-
-            if next_line:
-                try:
-                    chunk_length = int(next_line.split(b";")[0], 16)
-                    if chunk_length != 0:
-                        LOG.warning("The S3 object body didn't conform to the aws-chunk format")
-                except ValueError:
-                    trailing_headers.append(next_line.strip())
-
-                # try for trailing headers after
-                while line := new_value.readline():
-                    trailing_header = line.strip()
-                    if trailing_header:
-                        trailing_headers.append(trailing_header)
-
-            # look for the checksum header in the trailing headers
-            # TODO: we could get the header key from x-amz-trailer as well
-            for trailing_header in trailing_headers:
-                try:
-                    header_key, header_value = trailing_header.decode("utf-8").split(
-                        ":", maxsplit=1
-                    )
-                    if header_key.lower() == f"x-amz-checksum-{self.checksum_algorithm}".lower():
-                        self.checksum_value = header_value
-                except (IndexError, ValueError, AttributeError):
-                    continue
-
-            if self.checksum_algorithm:
-                calculated_checksum = base64.b64encode(checksum.digest()).decode()
+        if self.checksum_algorithm:
+            calculated_checksum = base64.b64encode(checksum.digest()).decode()
+            # in case the underlying stream is a AwsChunkedDecoder, we will access the
+            if hasattr(new_value, "trailing_headers"):
+                self.checksum_value = new_value.trailing_headers.get(
+                    f"x-amz-checksum-{self.checksum_algorithm}".lower()
+                )
 
             if self.checksum_value and self.checksum_value != calculated_checksum:
                 self.dispose()
@@ -482,11 +417,8 @@ class StreamedFakeKey(s3_models.FakeKey):
                     f"Value for x-amz-checksum-{self.checksum_algorithm.lower()} header is invalid."
                 )
 
-            self._etag = (
-                etag.hexdigest() if etag_empty else self._etag
-            )  # if it's already set, from CompleteMultipart for example
-            self.contentsize = self._value_buffer.tell()
-            self._value_buffer.seek(0)
+        if etag_empty:
+            self._etag = etag.hexdigest()
 
 
 class StreamedFakeMultipart(s3_models.FakeMultipart):
@@ -545,21 +477,16 @@ class StreamedFakeMultipart(s3_models.FakeMultipart):
         return total, f"{full_etag.hexdigest()}-{count}"
 
     def set_part(
-        self, part_id: int, value: IO[bytes], decoded_content_length: int = None
+        self,
+        part_id: int,
+        value: IO[bytes],
     ) -> StreamedFakeKey:
         if part_id < 1:
             raise s3_exceptions.NoSuchUpload(upload_id=part_id)
 
-        # if the request is not aws-chunked, just use the value setter with the stream
-        # else use an empty body as we will use set_value_from_chunked_payload later
-        key_value = value if decoded_content_length is None else BytesIO()
         key = StreamedFakeKey(
-            part_id, key_value, encryption=self.sse_encryption, kms_key_id=self.kms_key_id
+            part_id, value, encryption=self.sse_encryption, kms_key_id=self.kms_key_id
         )
-        # as the request is chunked, we then set the chunked payload
-        if decoded_content_length:
-            key.set_value_from_chunked_payload(value, decoded_content_length)
-
         if part_id in self.parts:
             # We're overwriting the current part - dispose of it first
             self.parts[part_id].dispose()
@@ -614,11 +541,10 @@ def apply_stream_patches():
         multipart_id: str,
         part_id: int,
         value: IO[bytes],
-        decoded_content_length: int = None,
     ) -> StreamedFakeKey:
         bucket = self.get_bucket(bucket_name)
         multipart = bucket.multiparts[multipart_id]
-        return multipart.set_part(part_id, value, decoded_content_length)
+        return multipart.set_part(part_id, value)
 
     @patch(s3_models.S3Backend.copy_part, pass_target=False)
     def copy_part(
