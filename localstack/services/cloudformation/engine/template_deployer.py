@@ -789,15 +789,6 @@ class TemplateDeployer:
             "ResourceStatus"
         ) in ["CREATE_COMPLETE", "UPDATE_COMPLETE"]
 
-    def is_updateable(self, resource):
-        """Return whether the given resource can be updated or not."""
-        if not self.is_deployed(resource):  # TODO(RM)
-            return False
-        resource_instance = get_resource_model_instance(
-            resource["LogicalResourceId"], self.stack.resources
-        )
-        return resource_instance.is_updatable()
-
     def all_resource_dependencies_satisfied(self, resource) -> bool:
         unsatisfied = self.get_unsatisfied_dependencies(resource)
         return not unsatisfied
@@ -1156,12 +1147,6 @@ class TemplateDeployer:
             if not is_deployed:
                 return True
             if action == "Add":
-                return False
-            if action == "Modify" and not self.is_updateable(resource):
-                LOG.debug(
-                    'Action "update" not yet implemented for CF resource type %s',
-                    resource.get("Type"),
-                )
                 return False
         elif action == "Remove":
             return True
