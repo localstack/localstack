@@ -210,7 +210,7 @@ class GatewayRestAPI(GenericBaseModel):
             resources = connect_to().apigateway.get_resources(restApiId=result["id"])["items"]
             for res in resources:
                 if res["path"] == "/" and not res.get("parentId"):
-                    resources[resource_id]["Properties"]["RootResourceId"] = res["id"]
+                    resource["Properties"]["RootResourceId"] = res["id"]
 
         return {
             "create": {"function": _create, "result_handler": _handle_result},
