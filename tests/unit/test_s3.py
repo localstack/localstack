@@ -1,6 +1,8 @@
 import datetime
+import os
 import unittest
 import zoneinfo
+from io import BytesIO
 from urllib.parse import urlparse
 
 import pytest
@@ -18,6 +20,7 @@ from localstack.services.s3 import (
     s3_utils,
 )
 from localstack.services.s3 import utils as s3_utils_asf
+from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.s3_utils import get_key_from_s3_url, get_s3_backend
 from localstack.utils.strings import short_uid
 
@@ -912,3 +915,64 @@ class TestS3PresignedUrlAsf:
             else:
                 with pytest.raises(Exception):
                     presigned_url.is_valid_sig_v4(query_args)
+
+
+class TestS3AwsChunkedDecoder:
+    """See https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-streaming.html"""
+
+    def test_s3_aws_chunked_decoder(self):
+        body = "Hello\r\n\r\n\r\n\r\n"
+        decoded_content_length = len(body)
+        data = (
+            "d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
+            f"{body}\r\n0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
+        )
+
+        stream = AwsChunkedDecoder(BytesIO(data.encode()), decoded_content_length)
+        assert stream.read() == body.encode()
+
+    def test_s3_aws_chunked_decoder_with_trailing_headers(self):
+        body = "Hello Blob"
+        decoded_content_length = len(body)
+
+        data = (
+            "a;chunk-signature=b5311ac60a88890e740a41e74f3d3b03179fd058b1e24bb3ab224042377c4ec9\r\n"
+            f"{body}\r\n"
+            "0;chunk-signature=78fae1c533e34dbaf2b83ad64ff02e4b64b7bc681ea76b6acf84acf1c48a83cb\r\n"
+            f"x-amz-checksum-sha256:abcdef1234\r\n"
+            "x-amz-trailer-signature:712fb67227583c88ac32f468fc30a249cf9ceeb0d0e947ea5e5209a10b99181c\r\n\r\n"
+        )
+
+        stream = AwsChunkedDecoder(BytesIO(data.encode()), decoded_content_length)
+        assert stream.read() == body.encode()
+        assert stream.trailing_headers == {
+            "x-amz-checksum-sha256": "abcdef1234",
+            "x-amz-trailer-signature": "712fb67227583c88ac32f468fc30a249cf9ceeb0d0e947ea5e5209a10b99181c",
+        }
+
+    def test_s3_aws_chunked_decoder_multiple_chunks(self):
+        total_body = os.urandom(66560)
+        decoded_content_length = len(total_body)
+        chunk_size = 8192
+        encoded_data = b""
+
+        for index in range(0, decoded_content_length, chunk_size):
+            chunk = total_body[index : min(index + chunk_size, decoded_content_length)]
+            chunk_size_hex = str(hex(len(chunk)))[2:].encode()
+            info_chunk = (
+                chunk_size_hex
+                + b";chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
+            )
+            encoded_data += info_chunk
+            encoded_data += chunk + b"\r\n"
+
+        encoded_data += b"0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
+
+        stream = AwsChunkedDecoder(BytesIO(encoded_data), decoded_content_length)
+        assert stream.read() == total_body
+
+        stream = AwsChunkedDecoder(BytesIO(encoded_data), decoded_content_length)
+        # assert that even if we read more than a chunk size, we will get max chunk_size
+        assert stream.read(chunk_size + 1000) == total_body[:chunk_size]
+        # assert that even if we read more, when accessing the rest, we're still at the same position
+        assert stream.read(10) == total_body[chunk_size : chunk_size + 10]
