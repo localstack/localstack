@@ -1,6 +1,7 @@
 import logging
 from typing import Optional, TypedDict
 
+from localstack.services.cloudformation.deployment_utils import check_not_found_exception
 from localstack.utils.aws import aws_stack
 
 LOG = logging.getLogger(__name__)
@@ -94,16 +95,12 @@ class GenericBaseModel:
         if self.physical_resource_id is None:
             return None
 
-        from localstack.services.cloudformation.engine import template_deployer
-
         try:
             state = self.fetch_state(*args, **kwargs)
             self.update_state(state)
             return state
         except Exception as e:
-            if not template_deployer.check_not_found_exception(
-                e, self.resource_type, self.properties
-            ):
+            if not check_not_found_exception(e, self.resource_type, self.properties):
                 LOG.debug("Unable to fetch state for resource %s: %s", self, e)
 
     # TODO: remove

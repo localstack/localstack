@@ -18,6 +18,7 @@ from localstack import config
 from localstack.aws.connect import ServiceLevelClientFactory, connect_to
 from localstack.services.cloudformation import usage
 from localstack.services.cloudformation.deployment_utils import (
+    check_not_found_exception,
     convert_data_types,
     fix_account_id_in_arns,
     fix_boto_parameters_based_on_report,
@@ -188,35 +189,6 @@ def get_resource_type(resource: dict) -> str:
         return resource_type
     except Exception as e:
         print(e)
-
-
-def check_not_found_exception(e, resource_type, resource, resource_status=None):
-    # we expect this to be a "not found" exception
-    markers = [
-        "NoSuchBucket",
-        "ResourceNotFound",
-        "NoSuchEntity",
-        "NotFoundException",
-        "404",
-        "not found",
-        "not exist",
-    ]
-
-    markers_hit = [m for m in markers if m in str(e)]
-    if not markers_hit:
-        LOG.warning(
-            "Unexpected error processing resource type %s: Exception: %s - %s - status: %s",
-            resource_type,
-            str(e),
-            resource,
-            resource_status,
-        )
-        if config.CFN_VERBOSE_ERRORS:
-            raise e
-        else:
-            return False
-
-    return True
 
 
 def invoke_function(
