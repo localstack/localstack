@@ -15,20 +15,21 @@ class ProgramWorker:
         self._worker_thread: Optional[threading.Thread] = None
         self.env_frame: Optional[Environment] = None
 
-    def _worker_routine(self, program: Program, latch: CountDownLatch) -> None:
+    def _worker_routine(self, program: Program, latch: Optional[CountDownLatch]) -> None:
         # TODO: exception handling.
         LOG.info(f"[ProgramWorker] [launched] [id: {self._worker_thread.native_id}]")
-        print(f"[ProgramWorker] [launched] [id: {self._worker_thread.native_id}]")
 
         program.eval(self.env_frame)
 
         LOG.info(f"[ProgramWorker] [terminated] [id: {self._worker_thread.native_id}]")
-        print(f"[ProgramWorker] [terminated] [id: {self._worker_thread.native_id}]")
 
         self._worker_thread = None
-        latch.count_down()
+        if latch is not None:
+            latch.count_down()
 
-    def eval(self, program: Program, env_frame: Environment, latch: CountDownLatch):
+    def eval(
+        self, program: Program, env_frame: Environment, latch: Optional[CountDownLatch] = None
+    ):
         if self._worker_thread is not None:
             raise RuntimeError("Call to ProgramWorker.eval whilst another job is running.")
         self.env_frame = env_frame

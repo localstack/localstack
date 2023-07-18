@@ -10,7 +10,7 @@ else:
 
 def serializedATN():
     return [
-        4,1,120,684,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,
+        4,1,120,685,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,
         7,6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,
         13,2,14,7,14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,2,
         20,7,20,2,21,7,21,2,22,7,22,2,23,7,23,2,24,7,24,2,25,7,25,2,26,7,
@@ -65,13 +65,13 @@ def serializedATN():
         1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,
         1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,
         1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,1,71,
-        1,71,3,71,682,8,71,1,71,0,0,72,0,2,4,6,8,10,12,14,16,18,20,22,24,
-        26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,
-        70,72,74,76,78,80,82,84,86,88,90,92,94,96,98,100,102,104,106,108,
-        110,112,114,116,118,120,122,124,126,128,130,132,134,136,138,140,
-        142,0,5,1,0,7,8,1,0,15,22,3,0,28,35,37,46,48,68,3,0,27,27,36,36,
-        47,47,1,0,100,112,740,0,144,1,0,0,0,2,158,1,0,0,0,4,160,1,0,0,0,
-        6,164,1,0,0,0,8,197,1,0,0,0,10,199,1,0,0,0,12,212,1,0,0,0,14,214,
+        1,71,1,71,3,71,683,8,71,1,71,0,0,72,0,2,4,6,8,10,12,14,16,18,20,
+        22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,
+        66,68,70,72,74,76,78,80,82,84,86,88,90,92,94,96,98,100,102,104,106,
+        108,110,112,114,116,118,120,122,124,126,128,130,132,134,136,138,
+        140,142,0,5,1,0,7,8,1,0,15,22,3,0,28,35,37,46,48,68,3,0,27,27,36,
+        36,47,47,1,0,100,112,742,0,144,1,0,0,0,2,158,1,0,0,0,4,160,1,0,0,
+        0,6,164,1,0,0,0,8,197,1,0,0,0,10,199,1,0,0,0,12,212,1,0,0,0,14,214,
         1,0,0,0,16,218,1,0,0,0,18,229,1,0,0,0,20,233,1,0,0,0,22,237,1,0,
         0,0,24,241,1,0,0,0,26,245,1,0,0,0,28,249,1,0,0,0,30,255,1,0,0,0,
         32,259,1,0,0,0,34,263,1,0,0,0,36,267,1,0,0,0,38,271,1,0,0,0,40,275,
@@ -87,7 +87,7 @@ def serializedATN():
         0,0,118,549,1,0,0,0,120,553,1,0,0,0,122,566,1,0,0,0,124,580,1,0,
         0,0,126,582,1,0,0,0,128,584,1,0,0,0,130,586,1,0,0,0,132,590,1,0,
         0,0,134,605,1,0,0,0,136,607,1,0,0,0,138,624,1,0,0,0,140,635,1,0,
-        0,0,142,681,1,0,0,0,144,145,5,5,0,0,145,150,3,2,1,0,146,147,5,1,
+        0,0,142,682,1,0,0,0,144,145,5,5,0,0,145,150,3,2,1,0,146,147,5,1,
         0,0,147,149,3,2,1,0,148,146,1,0,0,0,149,152,1,0,0,0,150,148,1,0,
         0,0,150,151,1,0,0,0,151,153,1,0,0,0,152,150,1,0,0,0,153,154,5,6,
         0,0,154,1,1,0,0,0,155,159,3,6,3,0,156,159,3,4,2,0,157,159,3,10,5,
@@ -234,32 +234,33 @@ def serializedATN():
         0,632,636,3,138,69,0,633,636,3,134,67,0,634,636,3,142,71,0,635,626,
         1,0,0,0,635,627,1,0,0,0,635,628,1,0,0,0,635,629,1,0,0,0,635,630,
         1,0,0,0,635,631,1,0,0,0,635,632,1,0,0,0,635,633,1,0,0,0,635,634,
-        1,0,0,0,636,141,1,0,0,0,637,682,5,117,0,0,638,682,5,114,0,0,639,
-        682,5,116,0,0,640,682,5,115,0,0,641,682,5,10,0,0,642,682,5,11,0,
-        0,643,682,5,12,0,0,644,682,5,13,0,0,645,682,5,14,0,0,646,682,5,15,
-        0,0,647,682,5,16,0,0,648,682,5,23,0,0,649,682,5,17,0,0,650,682,5,
-        20,0,0,651,682,5,21,0,0,652,682,5,22,0,0,653,682,5,18,0,0,654,682,
-        5,24,0,0,655,682,5,82,0,0,656,682,5,87,0,0,657,682,5,91,0,0,658,
-        682,5,92,0,0,659,682,5,93,0,0,660,682,5,25,0,0,661,682,5,85,0,0,
-        662,682,5,78,0,0,663,682,5,77,0,0,664,682,5,79,0,0,665,682,5,84,
-        0,0,666,682,5,86,0,0,667,682,5,83,0,0,668,682,5,69,0,0,669,682,5,
-        70,0,0,670,682,5,71,0,0,671,682,5,72,0,0,672,682,5,94,0,0,673,682,
-        5,95,0,0,674,682,5,96,0,0,675,682,5,97,0,0,676,682,5,98,0,0,677,
-        682,5,99,0,0,678,682,3,92,46,0,679,682,3,128,64,0,680,682,3,130,
-        65,0,681,637,1,0,0,0,681,638,1,0,0,0,681,639,1,0,0,0,681,640,1,0,
-        0,0,681,641,1,0,0,0,681,642,1,0,0,0,681,643,1,0,0,0,681,644,1,0,
-        0,0,681,645,1,0,0,0,681,646,1,0,0,0,681,647,1,0,0,0,681,648,1,0,
-        0,0,681,649,1,0,0,0,681,650,1,0,0,0,681,651,1,0,0,0,681,652,1,0,
-        0,0,681,653,1,0,0,0,681,654,1,0,0,0,681,655,1,0,0,0,681,656,1,0,
-        0,0,681,657,1,0,0,0,681,658,1,0,0,0,681,659,1,0,0,0,681,660,1,0,
-        0,0,681,661,1,0,0,0,681,662,1,0,0,0,681,663,1,0,0,0,681,664,1,0,
-        0,0,681,665,1,0,0,0,681,666,1,0,0,0,681,667,1,0,0,0,681,668,1,0,
-        0,0,681,669,1,0,0,0,681,670,1,0,0,0,681,671,1,0,0,0,681,672,1,0,
-        0,0,681,673,1,0,0,0,681,674,1,0,0,0,681,675,1,0,0,0,681,676,1,0,
-        0,0,681,677,1,0,0,0,681,678,1,0,0,0,681,679,1,0,0,0,681,680,1,0,
-        0,0,682,143,1,0,0,0,39,150,158,197,207,224,253,325,332,347,357,364,
-        370,377,393,404,412,419,423,434,438,456,469,478,485,487,506,517,
-        526,536,561,572,580,590,598,605,617,624,635,681
+        1,0,0,0,636,141,1,0,0,0,637,683,5,117,0,0,638,683,5,114,0,0,639,
+        683,5,116,0,0,640,683,5,115,0,0,641,683,5,10,0,0,642,683,5,11,0,
+        0,643,683,5,12,0,0,644,683,5,13,0,0,645,683,5,14,0,0,646,683,5,19,
+        0,0,647,683,5,15,0,0,648,683,5,16,0,0,649,683,5,23,0,0,650,683,5,
+        17,0,0,651,683,5,20,0,0,652,683,5,21,0,0,653,683,5,22,0,0,654,683,
+        5,18,0,0,655,683,5,24,0,0,656,683,5,82,0,0,657,683,5,87,0,0,658,
+        683,5,91,0,0,659,683,5,92,0,0,660,683,5,93,0,0,661,683,5,25,0,0,
+        662,683,5,85,0,0,663,683,5,78,0,0,664,683,5,77,0,0,665,683,5,79,
+        0,0,666,683,5,84,0,0,667,683,5,86,0,0,668,683,5,83,0,0,669,683,5,
+        69,0,0,670,683,5,70,0,0,671,683,5,71,0,0,672,683,5,72,0,0,673,683,
+        5,94,0,0,674,683,5,95,0,0,675,683,5,96,0,0,676,683,5,97,0,0,677,
+        683,5,98,0,0,678,683,5,99,0,0,679,683,3,92,46,0,680,683,3,128,64,
+        0,681,683,3,130,65,0,682,637,1,0,0,0,682,638,1,0,0,0,682,639,1,0,
+        0,0,682,640,1,0,0,0,682,641,1,0,0,0,682,642,1,0,0,0,682,643,1,0,
+        0,0,682,644,1,0,0,0,682,645,1,0,0,0,682,646,1,0,0,0,682,647,1,0,
+        0,0,682,648,1,0,0,0,682,649,1,0,0,0,682,650,1,0,0,0,682,651,1,0,
+        0,0,682,652,1,0,0,0,682,653,1,0,0,0,682,654,1,0,0,0,682,655,1,0,
+        0,0,682,656,1,0,0,0,682,657,1,0,0,0,682,658,1,0,0,0,682,659,1,0,
+        0,0,682,660,1,0,0,0,682,661,1,0,0,0,682,662,1,0,0,0,682,663,1,0,
+        0,0,682,664,1,0,0,0,682,665,1,0,0,0,682,666,1,0,0,0,682,667,1,0,
+        0,0,682,668,1,0,0,0,682,669,1,0,0,0,682,670,1,0,0,0,682,671,1,0,
+        0,0,682,672,1,0,0,0,682,673,1,0,0,0,682,674,1,0,0,0,682,675,1,0,
+        0,0,682,676,1,0,0,0,682,677,1,0,0,0,682,678,1,0,0,0,682,679,1,0,
+        0,0,682,680,1,0,0,0,682,681,1,0,0,0,683,143,1,0,0,0,39,150,158,197,
+        207,224,253,325,332,347,357,364,370,377,393,404,412,419,423,434,
+        438,456,469,478,485,487,506,517,526,536,561,572,580,590,598,605,
+        617,624,635,682
     ]
 
 class ASLParser ( Parser ):
@@ -1776,7 +1777,7 @@ class ASLParser ( Parser ):
             self.state = 253
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 77, 78, 79, 82, 83, 84, 85, 86, 87, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 114, 115, 116, 117]:
+            if token in [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 77, 78, 79, 82, 83, 84, 85, 86, 87, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 114, 115, 116, 117]:
                 self.state = 251
                 self.keyword_or_string()
                 pass
@@ -3422,7 +3423,7 @@ class ASLParser ( Parser ):
                 self.state = 375
                 self.match(ASLParser.NULL)
                 pass
-            elif token in [10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 77, 78, 79, 82, 83, 84, 85, 86, 87, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 114, 115, 116, 117]:
+            elif token in [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 77, 78, 79, 82, 83, 84, 85, 86, 87, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 114, 115, 116, 117]:
                 localctx = ASLParser.Payload_value_strContext(self, localctx)
                 self.enterOuterAlt(localctx, 5)
                 self.state = 376
@@ -4508,7 +4509,7 @@ class ASLParser ( Parser ):
             self.state = 487
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & -67634176) != 0) or ((((_la - 64)) & ~0x3f) == 0 and ((1 << (_la - 64)) & 17451448438415871) != 0):
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & -67109888) != 0) or ((((_la - 64)) & ~0x3f) == 0 and ((1 << (_la - 64)) & 17451448438415871) != 0):
                 self.state = 485
                 self._errHandler.sync(self)
                 la_ = self._interp.adaptivePredict(self._input,23,self._ctx)
@@ -6198,6 +6199,9 @@ class ASLParser ( Parser ):
         def TYPE(self):
             return self.getToken(ASLParser.TYPE, 0)
 
+        def PASS(self):
+            return self.getToken(ASLParser.PASS, 0)
+
         def TASK(self):
             return self.getToken(ASLParser.TASK, 0)
 
@@ -6331,7 +6335,7 @@ class ASLParser ( Parser ):
         localctx = ASLParser.Keyword_or_stringContext(self, self._ctx, self.state)
         self.enterRule(localctx, 142, self.RULE_keyword_or_string)
         try:
-            self.state = 681
+            self.state = 682
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [117]:
@@ -6379,179 +6383,184 @@ class ASLParser ( Parser ):
                 self.state = 645
                 self.match(ASLParser.TYPE)
                 pass
-            elif token in [15]:
+            elif token in [19]:
                 self.enterOuterAlt(localctx, 10)
                 self.state = 646
+                self.match(ASLParser.PASS)
+                pass
+            elif token in [15]:
+                self.enterOuterAlt(localctx, 11)
+                self.state = 647
                 self.match(ASLParser.TASK)
                 pass
             elif token in [16]:
-                self.enterOuterAlt(localctx, 11)
-                self.state = 647
+                self.enterOuterAlt(localctx, 12)
+                self.state = 648
                 self.match(ASLParser.CHOICE)
                 pass
             elif token in [23]:
-                self.enterOuterAlt(localctx, 12)
-                self.state = 648
+                self.enterOuterAlt(localctx, 13)
+                self.state = 649
                 self.match(ASLParser.CHOICES)
                 pass
             elif token in [17]:
-                self.enterOuterAlt(localctx, 13)
-                self.state = 649
+                self.enterOuterAlt(localctx, 14)
+                self.state = 650
                 self.match(ASLParser.FAIL)
                 pass
             elif token in [20]:
-                self.enterOuterAlt(localctx, 14)
-                self.state = 650
+                self.enterOuterAlt(localctx, 15)
+                self.state = 651
                 self.match(ASLParser.WAIT)
                 pass
             elif token in [21]:
-                self.enterOuterAlt(localctx, 15)
-                self.state = 651
+                self.enterOuterAlt(localctx, 16)
+                self.state = 652
                 self.match(ASLParser.PARALLEL)
                 pass
             elif token in [22]:
-                self.enterOuterAlt(localctx, 16)
-                self.state = 652
+                self.enterOuterAlt(localctx, 17)
+                self.state = 653
                 self.match(ASLParser.MAP)
                 pass
             elif token in [18]:
-                self.enterOuterAlt(localctx, 17)
-                self.state = 653
+                self.enterOuterAlt(localctx, 18)
+                self.state = 654
                 self.match(ASLParser.SUCCEED)
                 pass
             elif token in [24]:
-                self.enterOuterAlt(localctx, 18)
-                self.state = 654
+                self.enterOuterAlt(localctx, 19)
+                self.state = 655
                 self.match(ASLParser.VARIABLE)
                 pass
             elif token in [82]:
-                self.enterOuterAlt(localctx, 19)
-                self.state = 655
+                self.enterOuterAlt(localctx, 20)
+                self.state = 656
                 self.match(ASLParser.RESOURCE)
                 pass
             elif token in [87]:
-                self.enterOuterAlt(localctx, 20)
-                self.state = 656
+                self.enterOuterAlt(localctx, 21)
+                self.state = 657
                 self.match(ASLParser.RESULT)
                 pass
             elif token in [91]:
-                self.enterOuterAlt(localctx, 21)
-                self.state = 657
+                self.enterOuterAlt(localctx, 22)
+                self.state = 658
                 self.match(ASLParser.END)
                 pass
             elif token in [92]:
-                self.enterOuterAlt(localctx, 22)
-                self.state = 658
+                self.enterOuterAlt(localctx, 23)
+                self.state = 659
                 self.match(ASLParser.CAUSE)
                 pass
             elif token in [93]:
-                self.enterOuterAlt(localctx, 23)
-                self.state = 659
+                self.enterOuterAlt(localctx, 24)
+                self.state = 660
                 self.match(ASLParser.ERROR)
                 pass
             elif token in [25]:
-                self.enterOuterAlt(localctx, 24)
-                self.state = 660
+                self.enterOuterAlt(localctx, 25)
+                self.state = 661
                 self.match(ASLParser.DEFAULT)
                 pass
             elif token in [85]:
-                self.enterOuterAlt(localctx, 25)
-                self.state = 661
+                self.enterOuterAlt(localctx, 26)
+                self.state = 662
                 self.match(ASLParser.ITEMSPATH)
                 pass
             elif token in [78]:
-                self.enterOuterAlt(localctx, 26)
-                self.state = 662
+                self.enterOuterAlt(localctx, 27)
+                self.state = 663
                 self.match(ASLParser.MODE)
                 pass
             elif token in [77]:
-                self.enterOuterAlt(localctx, 27)
-                self.state = 663
+                self.enterOuterAlt(localctx, 28)
+                self.state = 664
                 self.match(ASLParser.PROCESSORCONFIG)
                 pass
             elif token in [79]:
-                self.enterOuterAlt(localctx, 28)
-                self.state = 664
+                self.enterOuterAlt(localctx, 29)
+                self.state = 665
                 self.match(ASLParser.INLINE)
                 pass
             elif token in [84]:
-                self.enterOuterAlt(localctx, 29)
-                self.state = 665
+                self.enterOuterAlt(localctx, 30)
+                self.state = 666
                 self.match(ASLParser.OUTPUTPATH)
                 pass
             elif token in [86]:
-                self.enterOuterAlt(localctx, 30)
-                self.state = 666
+                self.enterOuterAlt(localctx, 31)
+                self.state = 667
                 self.match(ASLParser.RESULTPATH)
                 pass
             elif token in [83]:
-                self.enterOuterAlt(localctx, 31)
-                self.state = 667
+                self.enterOuterAlt(localctx, 32)
+                self.state = 668
                 self.match(ASLParser.INPUTPATH)
                 pass
             elif token in [69]:
-                self.enterOuterAlt(localctx, 32)
-                self.state = 668
+                self.enterOuterAlt(localctx, 33)
+                self.state = 669
                 self.match(ASLParser.SECONDSPATH)
                 pass
             elif token in [70]:
-                self.enterOuterAlt(localctx, 33)
-                self.state = 669
+                self.enterOuterAlt(localctx, 34)
+                self.state = 670
                 self.match(ASLParser.SECONDS)
                 pass
             elif token in [71]:
-                self.enterOuterAlt(localctx, 34)
-                self.state = 670
+                self.enterOuterAlt(localctx, 35)
+                self.state = 671
                 self.match(ASLParser.TIMESTAMPPATH)
                 pass
             elif token in [72]:
-                self.enterOuterAlt(localctx, 35)
-                self.state = 671
+                self.enterOuterAlt(localctx, 36)
+                self.state = 672
                 self.match(ASLParser.TIMESTAMP)
                 pass
             elif token in [94]:
-                self.enterOuterAlt(localctx, 36)
-                self.state = 672
+                self.enterOuterAlt(localctx, 37)
+                self.state = 673
                 self.match(ASLParser.RETRY)
                 pass
             elif token in [95]:
-                self.enterOuterAlt(localctx, 37)
-                self.state = 673
+                self.enterOuterAlt(localctx, 38)
+                self.state = 674
                 self.match(ASLParser.ERROREQUALS)
                 pass
             elif token in [96]:
-                self.enterOuterAlt(localctx, 38)
-                self.state = 674
+                self.enterOuterAlt(localctx, 39)
+                self.state = 675
                 self.match(ASLParser.INTERVALSECONDS)
                 pass
             elif token in [97]:
-                self.enterOuterAlt(localctx, 39)
-                self.state = 675
+                self.enterOuterAlt(localctx, 40)
+                self.state = 676
                 self.match(ASLParser.MAXATTEMPTS)
                 pass
             elif token in [98]:
-                self.enterOuterAlt(localctx, 40)
-                self.state = 676
+                self.enterOuterAlt(localctx, 41)
+                self.state = 677
                 self.match(ASLParser.BACKOFFRATE)
                 pass
             elif token in [99]:
-                self.enterOuterAlt(localctx, 41)
-                self.state = 677
+                self.enterOuterAlt(localctx, 42)
+                self.state = 678
                 self.match(ASLParser.CATCH)
                 pass
             elif token in [28, 29, 30, 31, 32, 33, 34, 35, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68]:
-                self.enterOuterAlt(localctx, 42)
-                self.state = 678
+                self.enterOuterAlt(localctx, 43)
+                self.state = 679
                 self.comparison_func()
                 pass
             elif token in [27, 36, 47]:
-                self.enterOuterAlt(localctx, 43)
-                self.state = 679
+                self.enterOuterAlt(localctx, 44)
+                self.state = 680
                 self.choice_operator()
                 pass
             elif token in [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112]:
-                self.enterOuterAlt(localctx, 44)
-                self.state = 680
+                self.enterOuterAlt(localctx, 45)
+                self.state = 681
                 self.states_error_name()
                 pass
             else:

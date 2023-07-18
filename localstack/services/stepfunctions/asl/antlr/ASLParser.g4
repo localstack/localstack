@@ -475,6 +475,7 @@ keyword_or_string // TODO: check keywords can be used as strings.
     | STARTAT
     | NEXTSTATE
     | TYPE
+    | PASS
     | TASK
     | CHOICE
     | CHOICES
