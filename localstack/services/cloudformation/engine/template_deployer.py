@@ -118,8 +118,6 @@ def get_attr_from_model_instance(
 def resolve_ref(
     stack_name: str,
     resources: dict,
-    mappings: dict,
-    conditions: dict[str, bool],
     parameters: dict[str, StackParameter],
     ref: str,
 ):
@@ -270,14 +268,7 @@ def _resolve_refs_recursively(
 
         # process special operators
         if keys_list == ["Ref"]:
-            ref = resolve_ref(
-                stack_name,
-                resources,
-                mappings,
-                conditions,
-                parameters,
-                value["Ref"],
-            )
+            ref = resolve_ref(stack_name, resources, parameters, value["Ref"])
             if ref is None:
                 msg = 'Unable to resolve Ref for resource "%s" (yet)' % value["Ref"]
                 LOG.debug("%s - %s", msg, resources.get(value["Ref"]) or set(resources.keys()))
@@ -355,14 +346,7 @@ def _resolve_refs_recursively(
 
             if isinstance(mapping_id, dict) and "Ref" in mapping_id:
                 # TODO: ??
-                mapping_id = resolve_ref(
-                    stack_name,
-                    resources,
-                    mappings,
-                    conditions,
-                    parameters,
-                    mapping_id["Ref"],
-                )
+                mapping_id = resolve_ref(stack_name, resources, parameters, mapping_id["Ref"])
 
             selected_map = mappings.get(mapping_id)
             if not selected_map:
@@ -553,9 +537,7 @@ def resolve_placeholders_in_string(
         if len(parts) == 1:
             if parts[0] in resources:
                 # Logical resource ID or parameter name specified => Use Ref for lookup
-                result = resolve_ref(
-                    stack_name, resources, mappings, conditions, parameters, parts[0]
-                )
+                result = resolve_ref(stack_name, resources, parameters, parts[0])
 
                 if result is None:
                     raise DependencyNotYetSatisfied(
