@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'product-service
+
+  SAM Template for mock product-service
+
+  '
+Parameters:
+  AllowedOrigin:
+    Type: String
+    Default: http://localhost:8080
+Globals:
+  Function:
+    Timeout: 5
+    Tracing: Active
+    AutoPublishAlias: live
+    Runtime: python3.8
+    MemorySize: 256
+    Environment:
+      Variables:
+        LOG_LEVEL: DEBUG
+        ALLOWED_ORIGIN:
+          Ref: AllowedOrigin
+        POWERTOOLS_SERVICE_NAME: product-mock
+        POWERTOOLS_METRICS_NAMESPACE: ecommerce-app
+  Api:
+    EndpointConfiguration: REGIONAL
+    TracingEnabled: true
+    OpenApiVersion: '2.0'
+    Cors:
+      AllowMethods: '''OPTIONS,POST,GET'''
+      AllowHeaders: '''Content-Type'''
+      AllowOrigin:
+        Fn::Sub: '''${AllowedOrigin}'''
+Resources:
+  GetProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://aws-serverless-shopping-cart-src-000000000000-us-east-1/403bbd994f7d9248a24ce550fb517592
+      Handler: get_product.lambda_handler
+      Events:
+        ListCart:
+          Type: Api
+          Properties:
+            Path: /product/{product_id}
+            Method: get
+    Metadata:
+      SamResourceId: GetProductFunction
+  GetProductsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://aws-serverless-shopping-cart-src-000000000000-us-east-1/403bbd994f7d9248a24ce550fb517592
+      Handler: get_products.lambda_handler
+      Events:
+        ListCart:
+          Type: Api
+          Properties:
+            Path: /product
+            Method: get
+    Metadata:
+      SamResourceId: GetProductsFunction
+  GetProductApiUrl:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: /serverless-shopping-cart-demo/products/products-api-url
+      Value:
+        Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.localhost.localstack.cloud/Prod
+    Metadata:
+      SamResourceId: GetProductApiUrl
+Outputs:
+  ProductApi:
+    Description: API Gateway endpoint URL for Prod stage for Product Mock Service
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.localhost.localstack.cloud/Prod

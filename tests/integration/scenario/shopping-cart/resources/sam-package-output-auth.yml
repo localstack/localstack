@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'auth-resources
+
+  SAM Template for auth resources
+
+  '
+Globals:
+  Function:
+    Timeout: 3
+Resources:
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName:
+        Fn::Sub: ${AWS::StackName}-UserPool
+      AutoVerifiedAttributes:
+      - email
+    Metadata:
+      SamResourceId: CognitoUserPool
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: my-app
+      GenerateSecret: false
+      UserPoolId:
+        Ref: CognitoUserPool
+      ExplicitAuthFlows:
+      - ADMIN_NO_SRP_AUTH
+    Metadata:
+      SamResourceId: UserPoolClient
+  UserPoolSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: /serverless-shopping-cart-demo/auth/user-pool-id
+      Value:
+        Ref: CognitoUserPool
+    Metadata:
+      SamResourceId: UserPoolSSM
+  UserPoolARNSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: /serverless-shopping-cart-demo/auth/user-pool-arn
+      Value:
+        Fn::GetAtt:
+        - CognitoUserPool
+        - Arn
+    Metadata:
+      SamResourceId: UserPoolARNSSM
+  UserPoolAppClientSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: /serverless-shopping-cart-demo/auth/user-pool-client-id
+      Value:
+        Ref: UserPoolClient
+    Metadata:
+      SamResourceId: UserPoolAppClientSSM
+Outputs:
+  CognitoUserPoolId:
+    Description: Cognito User Pool ID
+    Value:
+      Ref: CognitoUserPool
+  CognitoAppClientId:
+    Description: Cognito App Client ID
+    Value:
+      Ref: UserPoolClient

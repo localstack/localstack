@@ -1,0 +1,488 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'shoppingcart-service
+
+  SAM Template for shoppingcart-service
+
+  '
+Parameters:
+  UserPoolArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /serverless-shopping-cart-demo/auth/user-pool-arn
+  UserPoolId:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /serverless-shopping-cart-demo/auth/user-pool-id
+  ProductServiceUrl:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /serverless-shopping-cart-demo/products/products-api-url
+  AllowedOrigin:
+    Type: String
+    Default: http://localhost:8080
+Globals:
+  Function:
+    Timeout: 5
+    MemorySize: 512
+    Tracing: Active
+    AutoPublishAlias: live
+    Runtime: python3.8
+    Layers:
+    - Fn::Sub: arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPython:3
+    Environment:
+      Variables:
+        TABLE_NAME:
+          Ref: DynamoDBShoppingCartTable
+        LOG_LEVEL: INFO
+        ALLOWED_ORIGIN:
+          Ref: AllowedOrigin
+        POWERTOOLS_SERVICE_NAME: shopping-cart
+        POWERTOOLS_METRICS_NAMESPACE: ecommerce-app
+  Api:
+    EndpointConfiguration: REGIONAL
+    TracingEnabled: true
+    OpenApiVersion: '2.0'
+    Cors:
+      AllowMethods: '''OPTIONS,POST,GET,PUT'''
+      AllowHeaders: '''Content-Type,Authorization'''
+      AllowCredentials: true
+      AllowOrigin:
+        Fn::Sub: '''${AllowedOrigin}'''
+Resources:
+  CartApi:
+    Type: AWS::Serverless::Api
+    DependsOn:
+    - ApiGWAccount
+    Properties:
+      StageName: Prod
+      MethodSettings:
+      - DataTraceEnabled: true
+        MetricsEnabled: true
+        ResourcePath: /*
+        HttpMethod: '*'
+        LoggingLevel: INFO
+      Auth:
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn:
+              Ref: UserPoolArn
+            Identity:
+              Header: Authorization
+    Metadata:
+      SamResourceId: CartApi
+  ListCartRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+    Metadata:
+      SamResourceId: ListCartRole
+  AddToCartRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+    Metadata:
+      SamResourceId: AddToCartRole
+  LambdaLoggingPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: LambdaXRayPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource: '*'
+      Roles:
+      - Ref: ListCartRole
+      - Ref: AddToCartRole
+    Metadata:
+      SamResourceId: LambdaLoggingPolicy
+  DynamoDBReadPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: DynamoDBReadPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - dynamodb:GetItem
+          - dynamodb:Scan
+          - dynamodb:Query
+          - dynamodb:BatchGetItem
+          - dynamodb:DescribeTable
+          Resource:
+          - Fn::GetAtt:
+            - DynamoDBShoppingCartTable
+            - Arn
+      Roles:
+      - Ref: ListCartRole
+      - Ref: AddToCartRole
+    Metadata:
+      SamResourceId: DynamoDBReadPolicy
+  DynamoDBWritePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: DynamoDBWritePolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:ConditionCheckItem
+          - dynamodb:DeleteItem
+          - dynamodb:BatchWriteItem
+          Resource:
+            Fn::GetAtt:
+            - DynamoDBShoppingCartTable
+            - Arn
+      Roles:
+      - Ref: AddToCartRole
+    Metadata:
+      SamResourceId: DynamoDBWritePolicy
+  SQSSendMessagePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: SQSSendMessagePolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - sqs:SendMessage*
+          Resource:
+            Fn::GetAtt:
+            - CartDeleteSQSQueue
+            - Arn
+      Roles:
+      - Ref: AddToCartRole
+    Metadata:
+      SamResourceId: SQSSendMessagePolicy
+  ListCartFunction:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - LambdaLoggingPolicy
+    Properties:
+      CodeUri: s3://aws-serverless-shopping-cart-src-000000000000-us-east-1/31b17a7f0702ecfb30a6061d21a611bf
+      Handler: list_cart.lambda_handler
+      Role:
+        Fn::GetAtt:
+        - ListCartRole
+        - Arn
+      Environment:
+        Variables:
+          USERPOOL_ID:
+            Ref: UserPoolId
+      Events:
+        ListCart:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: CartApi
+            Path: /cart
+            Method: get
+    Metadata:
+      SamResourceId: ListCartFunction
+  AddToCartFunction:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - LambdaLoggingPolicy
+    Properties:
+      CodeUri: s3://aws-serverless-shopping-cart-src-000000000000-us-east-1/31b17a7f0702ecfb30a6061d21a611bf
+      Handler: add_to_cart.lambda_handler
+      Role:
+        Fn::GetAtt:
+        - AddToCartRole
+        - Arn
+      Environment:
+        Variables:
+          PRODUCT_SERVICE_URL:
+            Ref: ProductServiceUrl
+          USERPOOL_ID:
+            Ref: UserPoolId
+      Events:
+        AddToCart:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: CartApi
+            Path: /cart
+            Method: post
+    Metadata:
+      SamResourceId: AddToCartFunction
+  UpdateCartFunction:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - LambdaLoggingPolicy
+    Properties:
+      CodeUri: s3://aws-serverless-shopping-cart-src-000000000000-us-east-1/31b17a7f0702ecfb30a6061d21a611bf
+      Handler: update_cart.lambda_handler
+      Role:
+        Fn::GetAtt:
+        - AddToCartRole
+        - Arn
+      Environment:
+        Variables:
+          PRODUCT_SERVICE_URL:
+            Ref: ProductServiceUrl
+          USERPOOL_ID:
+            Ref: UserPoolId
+      Events:
+        AddToCart:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: CartApi
+            Path: /cart/{product_id}
+            Method: put
+    Metadata:
+      SamResourceId: UpdateCartFunction
+  MigrateCartFunction:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - LambdaLoggingPolicy
+    Properties:
+      CodeUri: s3://aws-serverless-shopping-cart-src-000000000000-us-east-1/31b17a7f0702ecfb30a6061d21a611bf
+      Handler: migrate_cart.lambda_handler
+      Timeout: 30
+      Environment:
+        Variables:
+          PRODUCT_SERVICE_URL:
+            Ref: ProductServiceUrl
+          USERPOOL_ID:
+            Ref: UserPoolId
+          DELETE_FROM_CART_SQS_QUEUE:
+            Ref: CartDeleteSQSQueue
+      Role:
+        Fn::GetAtt:
+        - AddToCartRole
+        - Arn
+      Events:
+        AddToCart:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: CartApi
+            Path: /cart/migrate
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+    Metadata:
+      SamResourceId: MigrateCartFunction
+  CheckoutCartFunction:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - LambdaLoggingPolicy
+    Properties:
+      CodeUri: s3://aws-serverless-shopping-cart-src-000000000000-us-east-1/31b17a7f0702ecfb30a6061d21a611bf
+      Handler: checkout_cart.lambda_handler
+      Timeout: 10
+      Environment:
+        Variables:
+          PRODUCT_SERVICE_URL:
+            Ref: ProductServiceUrl
+          USERPOOL_ID:
+            Ref: UserPoolId
+      Role:
+        Fn::GetAtt:
+        - AddToCartRole
+        - Arn
+      Events:
+        AddToCart:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: CartApi
+            Path: /cart/checkout
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+    Metadata:
+      SamResourceId: CheckoutCartFunction
+  GetCartTotalFunction:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - LambdaLoggingPolicy
+    Properties:
+      CodeUri: s3://aws-serverless-shopping-cart-src-000000000000-us-east-1/31b17a7f0702ecfb30a6061d21a611bf
+      Handler: get_cart_total.lambda_handler
+      Timeout: 10
+      Role:
+        Fn::GetAtt:
+        - ListCartRole
+        - Arn
+      Events:
+        GetCartTotal:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: CartApi
+            Path: /cart/{product_id}/total
+            Method: get
+    Metadata:
+      SamResourceId: GetCartTotalFunction
+  DeleteFromCartFunction:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - LambdaLoggingPolicy
+    Properties:
+      CodeUri: s3://aws-serverless-shopping-cart-src-000000000000-us-east-1/31b17a7f0702ecfb30a6061d21a611bf
+      Handler: delete_from_cart.lambda_handler
+      ReservedConcurrentExecutions: 25
+      Policies:
+      - SQSPollerPolicy:
+          QueueName:
+            Fn::GetAtt:
+            - CartDeleteSQSQueue
+            - QueueName
+      - Statement:
+        - Effect: Allow
+          Action:
+          - dynamodb:DeleteItem
+          - dynamodb:BatchWriteItem
+          Resource:
+          - Fn::GetAtt:
+            - DynamoDBShoppingCartTable
+            - Arn
+      Environment:
+        Variables:
+          USERPOOL_ID:
+            Ref: UserPoolId
+      Events:
+        RetrieveFromSQS:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::GetAtt:
+              - CartDeleteSQSQueue
+              - Arn
+            BatchSize: 5
+    Metadata:
+      SamResourceId: DeleteFromCartFunction
+  CartDBStreamHandler:
+    Type: AWS::Serverless::Function
+    DependsOn:
+    - LambdaLoggingPolicy
+    Properties:
+      CodeUri: s3://aws-serverless-shopping-cart-src-000000000000-us-east-1/31b17a7f0702ecfb30a6061d21a611bf
+      Handler: db_stream_handler.lambda_handler
+      Policies:
+      - AWSLambdaDynamoDBExecutionRole
+      - Statement:
+        - Effect: Allow
+          Action:
+          - dynamodb:UpdateItem
+          Resource:
+          - Fn::GetAtt:
+            - DynamoDBShoppingCartTable
+            - Arn
+      Events:
+        Stream:
+          Type: DynamoDB
+          Properties:
+            Stream:
+              Fn::GetAtt:
+              - DynamoDBShoppingCartTable
+              - StreamArn
+            BatchSize: 100
+            MaximumBatchingWindowInSeconds: 60
+            StartingPosition: LATEST
+    Metadata:
+      SamResourceId: CartDBStreamHandler
+  DynamoDBShoppingCartTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+      - AttributeName: pk
+        AttributeType: S
+      - AttributeName: sk
+        AttributeType: S
+      KeySchema:
+      - AttributeName: pk
+        KeyType: HASH
+      - AttributeName: sk
+        KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      TimeToLiveSpecification:
+        AttributeName: expirationTime
+        Enabled: true
+    Metadata:
+      SamResourceId: DynamoDBShoppingCartTable
+  APIGWCloudWatchRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - apigateway.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+    Metadata:
+      SamResourceId: APIGWCloudWatchRole
+  ApiGWAccount:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn:
+        Fn::GetAtt:
+        - APIGWCloudWatchRole
+        - Arn
+    Metadata:
+      SamResourceId: ApiGWAccount
+  CartDeleteSQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 20
+      RedrivePolicy:
+        deadLetterTargetArn:
+          Fn::GetAtt:
+          - CartDeleteSQSDLQ
+          - Arn
+        maxReceiveCount: 5
+    Metadata:
+      SamResourceId: CartDeleteSQSQueue
+  CartDeleteSQSDLQ:
+    Type: AWS::SQS::Queue
+    Metadata:
+      SamResourceId: CartDeleteSQSDLQ
+  CartApiUrl:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: /serverless-shopping-cart-demo/shopping-cart/cart-api-url
+      Value:
+        Fn::Sub: https://${CartApi}.execute-api.${AWS::Region}.localhost.localstack.cloud/Prod
+    Metadata:
+      SamResourceId: CartApiUrl
+Outputs:
+  CartApi:
+    Description: API Gateway endpoint URL for Prod stage for Cart Service
+    Value:
+      Fn::Sub: https://${CartApi}.execute-api.${AWS::Region}.localhost.localstack.cloud/Prod
