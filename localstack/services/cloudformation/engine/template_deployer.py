@@ -599,18 +599,6 @@ def evaluate_resource_condition(conditions: dict[str, bool], resource: dict) -> 
     return True
 
 
-# TODO: move (registry/util)
-def get_resource_model_instance(resource_id: str, resources) -> Optional[GenericBaseModel]:
-    """Obtain a typed resource entity instance representing the given stack resource."""
-    resource = resources[resource_id]
-    resource_type = get_resource_type(resource)
-    resource_class = RESOURCE_MODELS.get(resource_type)
-    if not resource_class:
-        return None
-    instance = resource_class(resource)
-    return instance
-
-
 # -----------------------
 # MAIN TEMPLATE DEPLOYER
 # -----------------------
