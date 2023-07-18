@@ -94,12 +94,12 @@ class GatewayRestAPI(GenericBaseModel):
         return "AWS::ApiGateway::RestApi"
 
     def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "RootResourceId":
-            api_id = self.props.get("id")
-            resources = connect_to().apigateway.get_resources(restApiId=api_id)["items"]
-            for res in resources:
-                if res["path"] == "/" and not res.get("parentId"):
-                    return res["id"]
+        # if attribute_name == "RootResourceId":
+        #     api_id = self.props.get("id")
+        #     resources = connect_to().apigateway.get_resources(restApiId=api_id)["items"]
+        #     for res in resources:
+        #         if res["path"] == "/" and not res.get("parentId"):
+        #             return res["id"]
         return super(GatewayRestAPI, self).get_cfn_attribute(attribute_name)
 
     def fetch_state(self, stack_name, resources):
@@ -206,6 +206,11 @@ class GatewayRestAPI(GenericBaseModel):
 
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = result["id"]
+
+            resources = connect_to().apigateway.get_resources(restApiId=result["id"])["items"]
+            for res in resources:
+                if res["path"] == "/" and not res.get("parentId"):
+                    resources[resource_id]["Properties"]["RootResourceId"] = res["id"]
 
         return {
             "create": {"function": _create, "result_handler": _handle_result},
