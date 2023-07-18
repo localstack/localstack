@@ -85,10 +85,6 @@ class GenericBaseModel:
         """Retrieve the given CF attribute for this resource"""
         return self.props.get(attribute_name)
 
-    # TODO: make this stricter
-    def get_ref(self):
-        return self.physical_resource_id
-
     # ---------------------
     # GENERIC UTIL METHODS
     # ---------------------
