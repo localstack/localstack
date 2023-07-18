@@ -1572,4 +1572,4 @@ def get_regional_domain_name(domain_name: str) -> str:
     In LocalStack, we're returning this format: "d-<domain_hash>.execute-api.localhost.localstack.cloud"
     """
     domain_name_hash = get_domain_name_hash(domain_name)
-    return f"d-{domain_name_hash}.execute-api.localhost.localstack.cloud"
+    return f"d-{domain_name_hash}.execute-api.{LOCALHOST_HOSTNAME}"
