@@ -21,6 +21,7 @@ from localstack.services.cloudformation.deployment_utils import (
     convert_data_types,
     fix_account_id_in_arns,
     fix_boto_parameters_based_on_report,
+    log_not_available_message,
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
@@ -626,43 +627,61 @@ class ResourceProviderExecutor:
             resource_type = get_resource_type(
                 {"Type": raw_payload["resourceType"]}
             )  # TODO: simplify signature of get_resource_type to just take the type
-            resource_provider = self.load_resource_provider(resource_type)
-            event = self.execute_action(resource_provider, payload)
+            try:
+                resource_provider = self.load_resource_provider(resource_type)
+                event = self.execute_action(resource_provider, payload)
 
-            if event.status == OperationStatus.SUCCESS:
-                logical_resource_id = raw_payload["requestData"]["logicalResourceId"]
-                resource = self.resources[logical_resource_id]
-                if "PhysicalResourceId" not in resource:
-                    # branch for non-legacy providers
-                    # TODO: move out of if? (physical res id can be set earlier possibly)
-                    if isinstance(resource_provider, LegacyResourceProvider):
-                        raise Exception(
-                            "A GenericBaseModel should always have a PhysicalResourceId set after deployment"
+                if event.status == OperationStatus.SUCCESS:
+                    logical_resource_id = raw_payload["requestData"]["logicalResourceId"]
+                    resource = self.resources[logical_resource_id]
+                    if "PhysicalResourceId" not in resource:
+                        # branch for non-legacy providers
+                        # TODO: move out of if? (physical res id can be set earlier possibly)
+                        if isinstance(resource_provider, LegacyResourceProvider):
+                            raise Exception(
+                                "A GenericBaseModel should always have a PhysicalResourceId set after deployment"
+                            )
+
+                        if not hasattr(resource_provider, "SCHEMA"):
+                            raise Exception(
+                                "A ResourceProvider should always have a SCHEMA property defined."
+                            )
+
+                        resource_type_schema = resource_provider.SCHEMA
+                        physical_resource_id = (
+                            self.extract_physical_resource_id_from_model_with_schema(
+                                event.resource_model,
+                                raw_payload["resourceType"],
+                                resource_type_schema,
+                            )
                         )
 
-                    if not hasattr(resource_provider, "SCHEMA"):
-                        raise Exception(
-                            "A ResourceProvider should always have a SCHEMA property defined."
-                        )
+                        resource["PhysicalResourceId"] = physical_resource_id
+                        resource["Properties"] = event.resource_model
+                    return event
 
-                    resource_type_schema = resource_provider.SCHEMA
-                    physical_resource_id = self.extract_physical_resource_id_from_model_with_schema(
-                        event.resource_model, raw_payload["resourceType"], resource_type_schema
-                    )
+                # update the shared state
+                context = {**payload["callbackContext"], **event.custom_context}
+                payload["callbackContext"] = context
+                payload["requestData"]["resourceProperties"] = event.resource_model
 
-                    resource["PhysicalResourceId"] = physical_resource_id
-                    resource["Properties"] = event.resource_model
-                return event
+                if current_iteration == 0:
+                    time.sleep(0)
+                else:
+                    time.sleep(sleep_time)
 
-            # update the shared state
-            context = {**payload["callbackContext"], **event.custom_context}
-            payload["callbackContext"] = context
-            payload["requestData"]["resourceProperties"] = event.resource_model
+            except NoResourceProvider:
+                log_not_available_message(
+                    raw_payload["resourceType"],
+                    f"No resource provider found for \"{raw_payload['resourceType']}\"",
+                )
 
-            if current_iteration == 0:
-                time.sleep(0)
-            else:
-                time.sleep(sleep_time)
+                if config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+                    # TODO: figure out a better way to handle non-implemented here?
+                    return ProgressEvent(OperationStatus.SUCCESS, resource_model={})
+                else:
+                    raise  # re-raise here if explicitly enabled
+
         else:
             raise TimeoutError("Could not perform deploy loop action")
 
