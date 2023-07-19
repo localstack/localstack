@@ -18,11 +18,16 @@ Todos:
 * make the InfraProvisioner into a fixture and add a pytest hook implementation
 
 """
-import pytest
+import json
+
 import aws_cdk as cdk
+import pytest
+import requests
+
+from localstack.aws.connect import ServiceLevelClientFactory
+
 
 class BotoDeployment:
-
     def setup(self):
         ...
 
@@ -30,68 +35,72 @@ class BotoDeployment:
         ...
 
 
-
-class InfraProvisioner:
-
-    def add_cdk_step(self, cdk_app: cdk.App):
-        """
-        1. check if synthesized templates exists
-        2. if no templates exists OR forced update enabled => synth cdk.App into CloudFormation template and save it
-        3. deploy templates / assets / etc.
-        4. register teardown
-        """
-        # cdk
-        # ca = cdk.assertions.Template.from_stack()
-
-
 class TestSomeScenario:
-    # ... infra setup
-    # ... CloudFormation stack(s) + Other manual infra setup (e.g. via boto calls)
-
     @pytest.fixture(scope="class", autouse=True)
     def define_infrastructure(self, aws_client):
         # CDK setup
         app = cdk.App()
-        stack1 = cdk.Stack(app, "StackA")
-        stack2 = cdk.Stack(app, "StackB")
-        queue = cdk.aws_sqs.Queue(stack, "Queue")
+        stack = cdk.Stack(app, "ClusterStack")
 
-        def clean_s3_bucket():
-            ...
+        # TODO: cdk.context.json equivalent
+        # vpc = cdk.aws_ec2.Vpc.from_lookup(is_default=True)
+        # cluster = cdk.aws_ecs.Cluster(stack1, "SomeCluster", vpc=vpc)
 
-        provisioner = InfraProvisioner()
+        cluster = cdk.aws_ecs.Cluster(stack, "SomeCluster")
+        # TODO: task def
+        # TODO: service
+
+        cdk.aws_ecs_patterns.ApplicationLoadBalancedFargateService(
+            stack2,
+            "Wow",
+            task_image_options=cdk.aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
+                image=cdk.aws_ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample")
+            ),
+        )
+
+        # cdk.aws_s3_deployment.BucketDeployment(this, 'bucketdeploy')
+        topic1 = cdk.aws_sns.Topic(stack1, "Topic")
+        topic2 = cdk.aws_sns.Topic(stack2, "Topic")
+        provisioner = InfraProvisioner(aws_client)
         # will be cleaned up in reverse order
-        provisioner.add_boto_step(setup_func, teardown_func)
-        provisioner.add_cdk_step(app, "my-first-scenario-1")
-        provisioner.add_boto_step(teardown=clean_s3_bucket)
+        # provisioner.add_boto_step(setup_func, teardown_func)
+        provisioner.add_cdk_stack(stack1)
+        # provisioner.add_cdk_app(app, "my-first-scenario-1")
+        # provisioner.add_custom_step(teardown=clean_s3_bucket)
+
+        cdk.aws_iam.CfnUser(stack, "User", user_name="CustomName")
 
         provisioner.provision()
         yield provisioner
-        provisioner.cleanup()
-
+        provisioner.teardown()
 
     # ... state initialization
-    def initialize_state(self, aws_client):
-        """
-        Initialize application state
-        """
-        ...
-        table_name = "...."
-        aws_client.dynamodb.put_items(TableName=table_name, ....)
-
+    # def initialize_state(self, aws_client):
+    #     """
+    #     Initialize application state
+    #     """
+    #     ...
+    #     table_name = "...."
+    #     aws_client.dynamodb.put_items(TableName=table_name, ....)
 
     ### TESTS
 
-    def test_infra_state(self):
-        ...
+    # def test_infra_state(self, define_infrastructure):
+    #     provisioner = define_infrastructure
+    #     print(":/")
+    #
+    #     # we need:
+    #     # access to deployed stacks & resources, responses from create calls
+    #
 
     def test_scenario1(self, aws_client):
         sqs_client = aws_client.sqs
         sqs_client.send_message(QueueUrl="...", MessageBody="...")
 
         logs = aws_client.logs.filter_log_events(...)
-        assert logs # something
+        assert logs  # something
 
-    def test_scenario2(self):
-        ...
+    def test_scenario_run_task(self, aws_client):
+        # aws_client.ecs.run_task(taskDefinition=)
 
+        requests.get("...")
