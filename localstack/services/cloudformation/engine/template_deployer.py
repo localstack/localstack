@@ -859,8 +859,7 @@ class Reference:
 
     source_logical_id: str
     destination_logical_id: str
-    value_lookup_function: Callable[[dict], str]
-    source_update_function: Callable[[dict, str], None]
+    source_update_function: Callable[[dict], None]
 
 
 def build_references(resources: dict) -> list[Reference]:
@@ -870,16 +869,12 @@ def build_references(resources: dict) -> list[Reference]:
         for prop_name, prop in props.items():
             if isinstance(prop, dict) and "Ref" in prop:
 
-                def setter(resources: dict, value: str):
-                    resources[resource_id]["Properties"][prop_name] = value
-
-                def getter(resource: dict):
-                    return resource["PhysicalResourceId"]
+                def setter(resources: dict):
+                    resources[resource_id]["Properties"][prop_name] = resource["PhysicalResourceId"]
 
                 ref = Reference(
                     source_logical_id=resource_id,
                     destination_logical_id=prop["Ref"],
-                    value_lookup_function=getter,
                     source_update_function=setter,
                 )
                 refs.append(ref)
@@ -1516,8 +1511,7 @@ class TemplateDeployer:
     def update_references(self, logical_resource_id: str):
         for ref in self.references:
             if ref.destination_logical_id == logical_resource_id:
-                value = ref.value_lookup_function(self.resources[logical_resource_id])
-                ref.source_update_function(self.resources, value)
+                ref.source_update_function(self.resources)
 
     def create_resource_provider_executor(self) -> ResourceProviderExecutor:
         return ResourceProviderExecutor(
