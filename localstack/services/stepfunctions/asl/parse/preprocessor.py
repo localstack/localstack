@@ -131,6 +131,9 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.default_
 from localstack.services.stepfunctions.asl.component.state.state_choice.state_choice import (
     StateChoice,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
+    ItemSelector,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.itemprocessor.item_processor import (
     ItemProcessor,
     ItemProcessorProps,
@@ -524,6 +527,10 @@ class Preprocessor(ASLParserVisitor):
             cmp = self.visit(child)
             props.add(cmp)
         return ItemProcessor.from_props(props)
+
+    def visitItem_selector_decl(self, ctx: ASLParser.Item_selector_declContext) -> ItemSelector:
+        payload_tmpl: PayloadTmpl = self.visit(ctx.payload_tmpl_decl())
+        return ItemSelector(payload_tmpl=payload_tmpl)
 
     def visitRetry_decl(self, ctx: ASLParser.Retry_declContext) -> RetryDecl:
         retriers: list[RetrierDecl] = list()

@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 
 from localstack.aws.api.stepfunctions import HistoryEventType, MapStateStartedEventDetails
@@ -20,8 +21,12 @@ from localstack.services.stepfunctions.asl.component.common.retry.retry_outcome 
 from localstack.services.stepfunctions.asl.component.state.state_execution.execute_state import (
     ExecutionState,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
+    ItemSelector,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.itemprocessor.item_processor import (
     ItemProcessor,
+    ItemProcessorEvalInput,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     MaxConcurrency,
@@ -35,7 +40,7 @@ class StateMap(ExecutionState):
     item_processor: ItemProcessor
 
     items_path: ItemsPath
-    # item_selector: ItemSelector  # TODO
+    item_selector: Optional[ItemSelector]
     max_concurrency: MaxConcurrency
     result_path: Optional[ResultPath]
     result_selector: ResultSelector
@@ -52,6 +57,7 @@ class StateMap(ExecutionState):
         super(StateMap, self).from_state_props(state_props)
         self.item_processor = state_props.get(ItemProcessor)
         self.items_path = state_props.get(ItemsPath) or ItemsPath()
+        self.item_selector = state_props.get(ItemSelector)
         self.max_concurrency = state_props.get(MaxConcurrency) or MaxConcurrency()
         self.result_path = state_props.get(ResultPath)
         self.result_selector = state_props.get(ResultSelector)
@@ -98,21 +104,24 @@ class StateMap(ExecutionState):
 
     def _eval_execution(self, env: Environment) -> None:
         self.items_path.eval(env)
-        input_list = env.stack.pop()
+        input_items: list[json] = env.stack.pop()
 
-        input_list_len = len(input_list)
         env.event_history.add_event(
             hist_type_event=HistoryEventType.MapStateStarted,
             event_detail=EventDetails(
-                mapStateStartedEventDetails=MapStateStartedEventDetails(length=input_list_len)
+                mapStateStartedEventDetails=MapStateStartedEventDetails(length=len(input_items))
             ),
         )
 
-        env.stack.append(self.name)
-        env.stack.append(self.max_concurrency.num)
-        env.stack.append(input_list)
-
+        eval_input = ItemProcessorEvalInput(
+            state_name=self.name,
+            max_concurrency=self.max_concurrency.num,
+            input_items=input_items,
+            item_selector=self.item_selector,
+        )
+        env.stack.append(eval_input)
         self.item_processor.eval(env)
+
         env.event_history.add_event(
             hist_type_event=HistoryEventType.MapStateSucceeded,
         )
