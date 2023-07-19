@@ -87,7 +87,6 @@ def get_attr_from_model_instance(
 
     if _use_legacy():
         # TODO: open a PR with this branch removed to see where the legacy models are not behaving correctly
-        #   then we can remove the
         model_class = RESOURCE_MODELS.get(resource_type)
         if not model_class:
             LOG.debug('Unable to find model class for resource type "%s"', resource_type)
@@ -108,7 +107,7 @@ def get_attr_from_model_instance(
             log_method = getattr(LOG, "debug")
             if config.CFN_VERBOSE_ERRORS:
                 log_method = getattr(LOG, "exception")
-            log_method("Failed to retrieve model attribute: %s", attribute)
+            log_method("Failed to retrieve resource attribute: %s.%s", resource_id, attribute)
 
     else:
         # TODO: write code for property GetAtt lookup
