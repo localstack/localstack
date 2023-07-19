@@ -350,3 +350,29 @@ class TestCloudFormationConditions:
         )
         param = aws_client.ssm.get_parameter(Name=stack.outputs["ParameterName"])
         assert param["Parameter"]["Value"] == match_value
+
+    @pytest.mark.aws_validated
+    def test_sub_in_conditions(self, deploy_cfn_template, aws_client):
+        region = aws_client.cloudformation.meta.region_name
+        topic_prefix = f"test-topic-{short_uid()}"
+        suffix = short_uid()
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../../templates/conditions/intrinsic-functions-in-conditions.yaml",
+            ),
+            parameters={
+                "TopicName": f"{topic_prefix}-{region}",
+                "TopicPrefix": topic_prefix,
+                "TopicNameWithSuffix": f"{topic_prefix}-{region}-{suffix}",
+                "TopicNameSuffix": suffix,
+            },
+        )
+
+        topic_arn = stack.outputs["TopicRef"]
+        aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        assert topic_arn.split(":")[-1] == f"{topic_prefix}-{region}"
+
+        topic_arn_with_suffix = stack.outputs["TopicWithSuffixRef"]
+        aws_client.sns.get_topic_attributes(TopicArn=topic_arn_with_suffix)
+        assert topic_arn_with_suffix.split(":")[-1] == f"{topic_prefix}-{region}-{suffix}"

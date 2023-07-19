@@ -207,6 +207,79 @@ def resolve_condition(condition, conditions, parameters, mappings, stack_name):
                         ]
                     )
                     return result
+                case "Fn::Sub":
+                    # we can assume anything in there is a ref
+                    if isinstance(v, str):
+                        # { "Fn::Sub" : "Hello ${Name}" }
+                        result = v
+                        variables_found = re.findall("\\${([^}]+)}", v)
+                        for var in variables_found:
+                            # can't be a resource here (!), so also not attribute access
+                            if var.startswith("AWS::"):
+                                # pseudo-parameter
+                                resolved_pseudo_param = resolve_pseudo_parameter(var, stack_name)
+                                result = result.replace(f"${{{var}}}", resolved_pseudo_param)
+                            else:
+                                # parameter
+                                param = parameters[var]
+                                parameter_type: str = param["ParameterType"]
+                                resolved_parameter = param.get("ResolvedValue") or param.get(
+                                    "ParameterValue"
+                                )
+
+                                if parameter_type in [
+                                    "CommaDelimitedList"
+                                ] or parameter_type.startswith("List<"):
+                                    resolved_parameter = [
+                                        p.strip() for p in resolved_parameter.split(",")
+                                    ]
+
+                                result = result.replace(f"${{{var}}}", resolved_parameter)
+
+                        return result
+                    elif isinstance(v, list):
+                        # { "Fn::Sub" : [ "Hello ${Name}", { "Name": "SomeName" } ] }
+                        result = v[0]
+                        variables_found = re.findall("\\${([^}]+)}", v[0])
+                        for var in variables_found:
+                            if var in v[1]:
+                                # variable is included in provided mapping and can either be a static value or another reference
+                                if isinstance(v[1][var], dict):
+                                    # e.g. { "Fn::Sub" : [ "Hello ${Name}", { "Name": {"Ref": "NameParam"} } ] }
+                                    #   the values can have references, so we need to go deeper
+                                    resolved_var = resolve_condition(
+                                        v[1][var], conditions, parameters, mappings, stack_name
+                                    )
+                                    result = result.replace(f"${{{var}}}", resolved_var)
+                                else:
+                                    result = result.replace(f"${{{var}}}", v[1][var])
+                            else:
+                                # it's now either a GetAtt call or a direct reference
+                                if var.startswith("AWS::"):
+                                    # pseudo-parameter
+                                    resolved_pseudo_param = resolve_pseudo_parameter(
+                                        var, stack_name
+                                    )
+                                    result = result.replace(f"${{{var}}}", resolved_pseudo_param)
+                                else:
+                                    # parameter
+                                    param = parameters[var]
+                                    parameter_type: str = param["ParameterType"]
+                                    resolved_parameter = param.get("ResolvedValue") or param.get(
+                                        "ParameterValue"
+                                    )
+
+                                    if parameter_type in [
+                                        "CommaDelimitedList"
+                                    ] or parameter_type.startswith("List<"):
+                                        resolved_parameter = [
+                                            p.strip() for p in resolved_parameter.split(",")
+                                        ]
+
+                                    result = result.replace(f"${{{var}}}", resolved_parameter)
+                        return result
+                    else:
+                        raise Exception(f"Invalid template structure in Fn::Sub: {v}")
                 case _:
                     raise Exception(f"Invalid condition structure encountered: {condition=}")
     else:
