@@ -1262,12 +1262,10 @@ def external_service_url(service_key, host=None, port=None):
 
 
 def get_edge_port_http():
-    # TODO: update to use gateway_listen
-    return EDGE_PORT_HTTP or EDGE_PORT
+    return GATEWAY_LISTEN[0].port
 
 
 def get_edge_url(localstack_hostname=None, protocol=None):
-    # TODO: update to use gateway_listen
     port = get_edge_port_http()
     protocol = protocol or get_protocol()
     localstack_hostname = localstack_hostname or LOCALSTACK_HOSTNAME
