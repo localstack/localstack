@@ -1,7 +1,6 @@
 import asyncio
 import threading
 from asyncio import AbstractEventLoop
-from typing import List
 
 from hypercorn import Config
 from hypercorn.asyncio import serve
@@ -81,7 +80,7 @@ class GatewayServer(HypercornServer):
     exception-handlers.
     """
 
-    def __init__(self, gateway: Gateway, listen: List[HostAndPort], use_ssl: bool = False):
+    def __init__(self, gateway: Gateway, listen: list[HostAndPort], use_ssl: bool = False):
         """
         Creates a new GatewayServer instance.
 
@@ -123,7 +122,7 @@ class ProxyServer(GatewayServer):
     and just forward all incoming requests to a backend.
     """
 
-    def __init__(self, forward_base_url: str, listen: List[HostAndPort], use_ssl: bool = False):
+    def __init__(self, forward_base_url: str, listen: list[HostAndPort], use_ssl: bool = False):
         """
         Creates a new ProxyServer instance.
 
