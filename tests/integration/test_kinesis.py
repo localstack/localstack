@@ -10,6 +10,7 @@ from botocore.exceptions import ClientError
 
 from localstack import config, constants
 from localstack.services.kinesis import provider as kinesis_provider
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.aws import aws_stack, resources
 from localstack.utils.common import poll_condition, retry, select_attributes, short_uid
 from localstack.utils.kinesis import kinesis_connector
@@ -46,7 +47,7 @@ class TestKinesis:
             kinesis_client.create_stream()
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_create_stream_without_shard_count(
         self, kinesis_create_stream, wait_for_stream_ready, snapshot, aws_client
     ):
@@ -59,7 +60,7 @@ class TestKinesis:
 
         snapshot.match("Shards", shards)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_stream_consumers(
         self,
         kinesis_create_stream,
@@ -106,8 +107,8 @@ class TestKinesis:
             StreamARN=stream_arn, ConsumerName=consumer_name
         )
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
     def test_subscribe_to_shard(
         self,
         kinesis_create_stream,
@@ -162,8 +163,8 @@ class TestKinesis:
         # clean up
         aws_client.kinesis.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
     def test_subscribe_to_shard_with_sequence_number_as_iterator(
         self,
         kinesis_create_stream,
@@ -288,8 +289,8 @@ class TestKinesis:
         cbor_records = cbor_records_content.get("Records")
         assert 0 == len(cbor_records)
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
     def test_record_lifecycle_data_integrity(
         self, kinesis_create_stream, wait_for_stream_ready, snapshot, aws_client
     ):
@@ -314,7 +315,7 @@ class TestKinesis:
         response_records.sort(key=lambda k: k.get("Data"))
         snapshot.match("Records", response_records)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     @patch.object(kinesis_provider, "MAX_SUBSCRIPTION_SECONDS", 3)
     def test_subscribe_to_shard_timeout(
         self, kinesis_create_stream, wait_for_stream_ready, wait_for_consumer_ready, aws_client
@@ -362,7 +363,7 @@ class TestKinesis:
         # clean up
         aws_client.kinesis.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_add_tags_to_stream(
         self, kinesis_create_stream, wait_for_stream_ready, snapshot, aws_client
     ):
@@ -381,7 +382,7 @@ class TestKinesis:
         snapshot.match("Tags", stream_tags_response["Tags"][0])
         assert not stream_tags_response["HasMoreTags"]
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_get_records_next_shard_iterator(
         self, kinesis_create_stream, wait_for_stream_ready, aws_client
     ):
@@ -420,7 +421,7 @@ def wait_for_consumer_ready(aws_client):
 
 
 class TestKinesisPythonClient:
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_run_kcl(self):
         result = []
 

@@ -2,8 +2,7 @@ import json
 import os
 import unittest
 
-import pytest
-
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import retry, run
 from localstack.utils.testutil import get_lambda_log_events
@@ -35,7 +34,7 @@ class TestServerless(unittest.TestCase):
     def get_base_dir(cls):
         return os.path.join(os.path.dirname(__file__), "serverless")
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_event_rules_deployed(self):
         events = aws_stack.create_external_boto_client("events")
         rules = events.list_rules()["Rules"]
@@ -52,7 +51,7 @@ class TestServerless(unittest.TestCase):
         self.assertTrue(rule)
         self.assertEqual({"source": ["customSource"]}, json.loads(rule["EventPattern"]))
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_dynamodb_stream_handler_deployed(self):
         function_name = "sls-test-local-dynamodbStreamHandler"
         table_name = "Test"
@@ -72,7 +71,7 @@ class TestServerless(unittest.TestCase):
         resp = dynamodb_client.describe_table(TableName=table_name)
         self.assertEqual(event_source_arn, resp["Table"]["LatestStreamArn"])
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_kinesis_stream_handler_deployed(self):
         function_name = "sls-test-local-kinesisStreamHandler"
         function_name2 = "sls-test-local-kinesisConsumerHandler"
@@ -101,7 +100,7 @@ class TestServerless(unittest.TestCase):
         kinesis_client.put_record(StreamName=stream_name, Data=b"test123", PartitionKey="key1")
         retry(assert_invocations, sleep=2, retries=20)
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_queue_handler_deployed(self):
         function_name = "sls-test-local-queueHandler"
         queue_name = "sls-test-local-CreateQueue"
@@ -128,7 +127,7 @@ class TestServerless(unittest.TestCase):
         redrive_policy = json.loads(result["Attributes"]["RedrivePolicy"])
         self.assertEqual(3, redrive_policy["maxReceiveCount"])
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_lambda_with_configs_deployed(self):
         function_name = "sls-test-local-test"
 
@@ -145,7 +144,7 @@ class TestServerless(unittest.TestCase):
         self.assertEqual(2, resp.get("MaximumRetryAttempts"))
         self.assertEqual(7200, resp.get("MaximumEventAgeInSeconds"))
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_apigateway_deployed(self):
         function_name = "sls-test-local-router"
 
@@ -173,7 +172,7 @@ class TestServerless(unittest.TestCase):
                 resource_method["methodIntegration"]["uri"],
             )
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_s3_bucket_deployed(self):
         s3_client = aws_stack.create_external_boto_client("s3")
         bucket_name = "testing-bucket"

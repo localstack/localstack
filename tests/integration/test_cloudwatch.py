@@ -10,6 +10,7 @@ from dateutil.tz import tzutc
 
 from localstack import config
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import retry, short_uid, to_str
 from localstack.utils.sync import poll_condition
@@ -51,7 +52,7 @@ class TestCloudwatch:
         assert 1 == len(rs["Metrics"])
         assert namespace == rs["Metrics"][0]["Namespace"]
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_put_metric_data_values_list(self, snapshot, aws_client):
         metric_name = "test-metric"
         namespace = f"ns-{short_uid()}"
@@ -470,8 +471,8 @@ class TestCloudwatch:
             aws_client.sns.unsubscribe(SubscriptionArn=subscription_ok["SubscriptionArn"])
             aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name])
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..evaluatedDatapoints",
             "$..startDate",  # only sometimes visible? part of StateReasonData
@@ -580,8 +581,8 @@ class TestCloudwatch:
             aws_client.sns.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
             aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name])
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..evaluatedDatapoints"])
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..evaluatedDatapoints"])
     def test_breaching_alarm_actions(
         self, sns_create_topic, sqs_create_queue, snapshot, aws_client
     ):
@@ -648,7 +649,7 @@ class TestCloudwatch:
             aws_client.sns.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
             aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name])
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_enable_disable_alarm_actions(
         self, sns_create_topic, sqs_create_queue, snapshot, aws_client
     ):
@@ -747,7 +748,7 @@ class TestCloudwatch:
             aws_client.sns.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
             aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name])
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_aws_sqs_metrics_created(self, sqs_create_queue, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         sqs_url = sqs_create_queue()

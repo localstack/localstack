@@ -1,7 +1,6 @@
 import json
 
-import pytest
-
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -11,7 +10,7 @@ from tests.integration.apigateway.conftest import DEFAULT_STAGE_NAME
 
 # PutRecord does not return EncryptionType, but it's documented as such.
 # xxx requires further investigation
-@pytest.mark.skip_snapshot_verify(paths=["$..EncryptionType", "$..ChildShards"])
+@Markers.snapshot.skip_snapshot_verify(paths=["$..EncryptionType", "$..ChildShards"])
 def test_apigateway_to_kinesis(
     kinesis_create_stream,
     wait_for_stream_ready,

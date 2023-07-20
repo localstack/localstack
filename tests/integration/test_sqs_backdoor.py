@@ -4,6 +4,7 @@ import xmltodict
 from botocore.exceptions import ClientError
 
 from localstack.services.sqs.utils import parse_queue_url
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.strings import short_uid
 
 
@@ -21,7 +22,7 @@ def _parse_message_attributes(xml) -> list[dict]:
 
 
 class TestSqsDeveloperEdpoints:
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_list_messages_has_no_side_effects(self, sqs_create_queue, aws_client):
         queue_url = sqs_create_queue()
 
@@ -52,7 +53,7 @@ class TestSqsDeveloperEdpoints:
         assert attributes[0]["ApproximateReceiveCount"] == "1"
         assert attributes[1]["ApproximateReceiveCount"] == "0"
 
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_list_messages_as_botocore_endpoint_url(
         self, sqs_create_queue, aws_client, aws_client_factory
     ):
@@ -73,7 +74,7 @@ class TestSqsDeveloperEdpoints:
         assert response["Messages"][0]["Attributes"]["ApproximateReceiveCount"] == "0"
         assert response["Messages"][1]["Attributes"]["ApproximateReceiveCount"] == "0"
 
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_fifo_list_messages_as_botocore_endpoint_url(
         self, sqs_create_queue, aws_client, aws_client_factory
     ):
@@ -106,7 +107,7 @@ class TestSqsDeveloperEdpoints:
         assert response["Messages"][1]["Attributes"]["MessageGroupId"] == "1"
         assert response["Messages"][2]["Attributes"]["MessageGroupId"] == "2"
 
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_list_messages_with_invalid_action_raises_error(
         self, sqs_create_queue, aws_client_factory
     ):
@@ -123,7 +124,7 @@ class TestSqsDeveloperEdpoints:
             == "This endpoint only accepts ReceiveMessage calls"
         )
 
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_list_messages_as_json(self, sqs_create_queue, aws_client):
         queue_url = sqs_create_queue()
 
@@ -153,7 +154,7 @@ class TestSqsDeveloperEdpoints:
         assert "ApproximateFirstReceiveTimestamp" in attributes
         assert "SentTimestamp" in attributes
 
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_list_messages_without_queue_url(self, aws_client):
         # makes sure the service is loaded when running the test individually
         aws_client.sqs.list_queues()
@@ -168,7 +169,7 @@ class TestSqsDeveloperEdpoints:
             == "AWS.SimpleQueueService.NonExistentQueue"
         ), f"not a json {response.text}"
 
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_list_messages_with_invalid_queue_url(self, aws_client):
         # makes sure the service is loaded when running the test individually
         aws_client.sqs.list_queues()
@@ -181,7 +182,7 @@ class TestSqsDeveloperEdpoints:
         assert response.status_code == 404
         assert response.json()["ErrorResponse"]["Error"]["Code"] == "InvalidAddress"
 
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_list_messages_with_non_existent_queue(self, aws_client):
         # makes sure the service is loaded when running the test individually
         aws_client.sqs.list_queues()
@@ -205,7 +206,7 @@ class TestSqsDeveloperEdpoints:
             == "AWS.SimpleQueueService.NonExistentQueue"
         )
 
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_list_messages_with_queue_url_in_path(self, sqs_create_queue, aws_client):
         queue_url = sqs_create_queue()
 

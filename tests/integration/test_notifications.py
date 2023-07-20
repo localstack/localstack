@@ -1,5 +1,4 @@
-import pytest
-
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.common import retry, short_uid
 
 PUBLICATION_TIMEOUT = 1
@@ -7,7 +6,7 @@ PUBLICATION_RETRIES = 20
 
 
 class TestNotifications:
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_sqs_queue_names(self, aws_client):
         queue_name = f"{short_uid()}.fifo"
 

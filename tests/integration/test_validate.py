@@ -1,3 +1,5 @@
+from localstack.testing.pytest.marking import Markers
+
 """This is to demonstrate how to write tests for server-side request validation. Ideally these tests are part of the
 service test suite."""
 import pytest
@@ -6,7 +8,7 @@ from botocore.auth import SigV4Auth
 
 @pytest.mark.xfail(reason="there is no generalized way of server-side request validation yet")
 class TestMissingParameter:
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_opensearch(self, aws_http_client_factory):
         client = aws_http_client_factory("es", signer_factory=SigV4Auth)
 
@@ -21,7 +23,7 @@ class TestMissingParameter:
             'Member must not be null"}'
         )
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_sns(self, aws_http_client_factory):
         client = aws_http_client_factory("sns", region="us-east-1")
 
@@ -35,7 +37,7 @@ class TestMissingParameter:
             "must not be null</Message>" in response.text
         )
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_elasticache(self, aws_http_client_factory):
         client = aws_http_client_factory("elasticache")
 
@@ -52,7 +54,7 @@ class TestMissingParameter:
             in response.text
         )
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_sqs_create_queue(self, aws_http_client_factory):
         client = aws_http_client_factory("sqs")
 
@@ -70,7 +72,7 @@ class TestMissingParameter:
             in response.text
         )
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_sqs_send_message(self, aws_http_client_factory, sqs_queue):
         client = aws_http_client_factory("sqs")
 

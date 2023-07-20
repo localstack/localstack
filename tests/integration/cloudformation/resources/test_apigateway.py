@@ -2,11 +2,11 @@ import json
 import os.path
 from operator import itemgetter
 
-import pytest
 import requests
 
 from localstack import constants
 from localstack.aws.api.lambda_ import Runtime
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
 from localstack.utils.run import to_str
@@ -105,7 +105,7 @@ def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
     assert mappings[0] == "(none)"
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_cfn_apigateway_swagger_import(deploy_cfn_template, echo_http_server_post, aws_client):
     api_name = f"rest-api-{short_uid()}"
     deploy_cfn_template(
@@ -131,7 +131,7 @@ def test_cfn_apigateway_swagger_import(deploy_cfn_template, echo_http_server_pos
     assert content["url"].endswith("/post")
 
 
-@pytest.mark.only_localstack
+@Markers.parity.only_localstack
 def test_url_output(tmp_http_server, deploy_cfn_template):
     test_port, invocations, proxy = tmp_http_server
     integration_uri = f"http://localhost:{test_port}/{{proxy}}"
@@ -157,8 +157,8 @@ def test_url_output(tmp_http_server, deploy_cfn_template):
     assert f"https://{api_id}.execute-api.{constants.LOCALHOST_HOSTNAME}:4566" in api_url
 
 
-@pytest.mark.aws_validated
-@pytest.mark.skip_snapshot_verify(
+@Markers.parity.aws_validated
+@Markers.snapshot.skip_snapshot_verify(
     paths=[
         "$.get-method-post.methodIntegration.connectionType",  # TODO: maybe because this is a MOCK integration
     ]
@@ -210,8 +210,8 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, aws_client, snapshot
     assert not apis
 
 
-@pytest.mark.aws_validated
-@pytest.mark.skip_snapshot_verify(
+@Markers.parity.aws_validated
+@Markers.snapshot.skip_snapshot_verify(
     paths=["$.get-resources.items..resourceMethods.ANY"]  # TODO: empty in AWS
 )
 def test_cfn_deploy_apigateway_models(deploy_cfn_template, snapshot, aws_client):
@@ -261,7 +261,7 @@ def test_cfn_deploy_apigateway_models(deploy_cfn_template, snapshot, aws_client)
     assert result.status_code == 400
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
 
@@ -288,8 +288,8 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
     # TODO: snapshot the authorizer too? it's not attached to the REST API
 
 
-@pytest.mark.aws_validated
-@pytest.mark.skip_snapshot_verify(
+@Markers.parity.aws_validated
+@Markers.snapshot.skip_snapshot_verify(
     paths=[
         "$.resources.items..resourceMethods.GET"  # TODO: this is really weird, after importing, AWS returns them empty?
     ]
@@ -357,7 +357,7 @@ def test_cfn_apigateway_rest_api(deploy_cfn_template, aws_client):
     assert not apis
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_account(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -375,7 +375,7 @@ def test_account(deploy_cfn_template, aws_client):
     assert account_info["cloudwatchRoleArn"] == stack.outputs["RoleArn"]
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_update_usage_plan(deploy_cfn_template, aws_client):
     rest_api_name = f"api-{short_uid()}"
     stack = deploy_cfn_template(
@@ -444,8 +444,8 @@ def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_clie
     snapshot.match("rest-api", rest_api)
 
 
-@pytest.mark.aws_validated
-@pytest.mark.skip_snapshot_verify(
+@Markers.parity.aws_validated
+@Markers.snapshot.skip_snapshot_verify(
     paths=[
         "$.put-ssm-param.Tier",
         "$.get-resources.items..resourceMethods.GET",

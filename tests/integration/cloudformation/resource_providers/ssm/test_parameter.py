@@ -4,11 +4,12 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.aws.connect import ServiceLevelClientFactory
+from localstack.testing.pytest.marking import Markers
 
 
 class TestBasicCRD:
     @pytest.mark.skip(reason="re-enable after fixing schema extraction")
-    @pytest.mark.skip_snapshot_verify(paths=["$..error-message"])
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..error-message"])
     def test_black_box(self, deploy_cfn_template, aws_client: ServiceLevelClientFactory, snapshot):
         stack = deploy_cfn_template(
             template_path=os.path.join(

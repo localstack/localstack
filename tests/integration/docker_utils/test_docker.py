@@ -11,6 +11,7 @@ from docker.models.containers import Container
 
 from localstack import config
 from localstack.config import in_docker
+from localstack.testing.pytest.marking import Markers
 from localstack.utils import docker_utils
 from localstack.utils.common import is_ipv4_address, save_file, short_uid, to_str
 from localstack.utils.container_utils.container_client import (
@@ -181,7 +182,7 @@ class TestDockerClient:
         # it takes a while for it to be removed
         assert "foobar" in output
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_create_container_non_existing_image(self, docker_client: ContainerClient):
         with pytest.raises(NoSuchImage):
             docker_client.create_container("this_image_does_hopefully_not_exist_42069")
@@ -1011,7 +1012,7 @@ class TestDockerClient:
         finally:
             docker_client.remove_container(container_name)
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_pull_docker_image(self, docker_client: ContainerClient):
         try:
             docker_client.get_image_cmd("alpine", pull=False)
@@ -1023,12 +1024,12 @@ class TestDockerClient:
         docker_client.pull_image("alpine")
         assert ["/bin/sh"] == docker_client.get_image_cmd("alpine", pull=False)
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_pull_non_existent_docker_image(self, docker_client: ContainerClient):
         with pytest.raises(NoSuchImage):
             docker_client.pull_image("localstack_non_existing_image_for_tests")
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_pull_docker_image_with_tag(self, docker_client: ContainerClient):
         try:
             docker_client.get_image_cmd("alpine", pull=False)
@@ -1041,7 +1042,7 @@ class TestDockerClient:
         assert ["/bin/sh"] == docker_client.get_image_cmd("alpine:3.13", pull=False)
         assert "alpine:3.13" in docker_client.inspect_image("alpine:3.13", pull=False)["RepoTags"]
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_pull_docker_image_with_hash(self, docker_client: ContainerClient):
         try:
             docker_client.get_image_cmd("alpine", pull=False)
@@ -1065,7 +1066,7 @@ class TestDockerClient:
             )["RepoDigests"]
         )
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_run_container_automatic_pull(self, docker_client: ContainerClient):
         try:
             docker_client.remove_image("alpine")
@@ -1075,19 +1076,19 @@ class TestDockerClient:
         stdout, _ = docker_client.run_container("alpine", command=["echo", message], remove=True)
         assert message == stdout.decode(config.DEFAULT_ENCODING).strip()
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_push_non_existent_docker_image(self, docker_client: ContainerClient):
         with pytest.raises(NoSuchImage):
             docker_client.push_image("localstack_non_existing_image_for_tests")
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_push_access_denied(self, docker_client: ContainerClient):
         with pytest.raises(AccessDenied):
             docker_client.push_image("alpine")
         with pytest.raises(AccessDenied):
             docker_client.push_image("alpine:latest")
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_push_invalid_registry(self, docker_client: ContainerClient):
         image_name = f"localhost:{get_free_tcp_port()}/localstack_dummy_image"
         try:
@@ -1097,7 +1098,7 @@ class TestDockerClient:
         finally:
             docker_client.remove_image(image_name)
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_tag_image(self, docker_client: ContainerClient):
         if _is_podman_test() and isinstance(docker_client, SdkDockerClient):
             # TODO: Podman raises "normalizing image: normalizing name for compat API: invalid reference format"
@@ -1124,14 +1125,14 @@ class TestDockerClient:
                 except Exception as e:
                     LOG.info("Unable to remove image '%s': %s", img_ref, e)
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_tag_non_existing_image(self, docker_client: ContainerClient):
         with pytest.raises(NoSuchImage):
             docker_client.tag_image(
                 "localstack_non_existing_image_for_tests", "localstack_dummy_image"
             )
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     @pytest.mark.parametrize("custom_context", [True, False])
     @pytest.mark.parametrize("dockerfile_as_dir", [True, False])
     def test_build_image(
@@ -1166,7 +1167,7 @@ class TestDockerClient:
         assert "foo=bar" in result["Config"]["Env"]
         assert "45329/tcp" in result["Config"]["ExposedPorts"]
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_run_container_non_existent_image(self, docker_client: ContainerClient):
         try:
             docker_client.remove_image("alpine")
@@ -1193,7 +1194,7 @@ class TestDockerClient:
         docker_client.stop_container(name)
         assert not docker_client.is_container_running(name)
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_docker_image_names(self, docker_client: ContainerClient):
         try:
             docker_client.remove_image("alpine")
@@ -1238,7 +1239,7 @@ class TestDockerClient:
             candidates = (f"/{dummy_container.container_name}", dummy_container.container_name)
             assert docker_client.inspect_container(identifier)["Name"] in candidates
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_inspect_image(self, docker_client: ContainerClient):
         _pull_image_if_not_exists(docker_client, "alpine")
         assert "alpine" in docker_client.inspect_image("alpine")["RepoTags"][0]

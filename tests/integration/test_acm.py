@@ -4,6 +4,7 @@ from moto.ec2 import utils as ec2_utils
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -70,8 +71,8 @@ class TestACM:
         waiter = aws_client.acm.get_waiter("certificate_validated")
         waiter.wait(CertificateArn=certificate_arn, WaiterConfig={"Delay": 0.5, "MaxAttempts": 3})
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Certificate.SignatureAlgorithm"])
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..Certificate.SignatureAlgorithm"])
     def test_certificate_for_subdomain_wildcard(
         self, acm_request_certificate, aws_client, snapshot, monkeypatch
     ):

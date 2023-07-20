@@ -6,6 +6,7 @@ import requests
 from pytest_httpserver import HTTPServer
 
 from localstack import config
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import lambda_function_arn
 from localstack.utils.strings import short_uid, to_bytes, to_str
@@ -125,7 +126,7 @@ def test_firehose_http(
 
 
 class TestFirehoseIntegration:
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     def test_kinesis_firehose_elasticsearch_s3_backup(
         self, s3_bucket, kinesis_create_stream, cleanups, aws_client
     ):
@@ -227,7 +228,7 @@ class TestFirehoseIntegration:
 
         retry(assert_s3_contents)
 
-    @pytest.mark.skip_offline
+    @Markers.skip_offline
     @pytest.mark.parametrize("opensearch_endpoint_strategy", ["domain", "path", "port"])
     def test_kinesis_firehose_opensearch_s3_backup(
         self,

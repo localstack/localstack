@@ -2,9 +2,8 @@ import json
 import os
 import urllib.parse
 
-import pytest
-
 from localstack.constants import PATH_USER_REQUEST
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.sync import wait_until
 
 
@@ -247,7 +246,7 @@ def test_retry_and_catch(deploy_cfn_template, aws_client):
     assert receive_result["Messages"][0]["Body"] == "Fail"
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_cfn_statemachine_with_dependencies(deploy_cfn_template, aws_client):
 
     stack = deploy_cfn_template(

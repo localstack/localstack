@@ -7,6 +7,7 @@ import pytest
 from botocore.exceptions import WaiterError
 
 from localstack.aws.api.cloudcontrol import Operation, OperationStatus
+from localstack.testing.pytest.marking import Markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils.strings import long_uid, short_uid
@@ -68,7 +69,7 @@ def create_resource(aws_client):
 
 @pytest.mark.skip("Not Implemented yet")
 class TestCloudControlResourceApi:
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_lifecycle(self, snapshot, create_resource, aws_client):
         """simple create/delete lifecycle for a resource"""
 
@@ -127,7 +128,7 @@ class TestCloudControlResourceApi:
         with pytest.raises(aws_client.s3.exceptions.ClientError):
             aws_client.s3.head_bucket(Bucket=bucket_name)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_api_exceptions(self, snapshot, aws_client):
         """
         Test a few edge cases in the API which do not need the creating of resources
@@ -204,7 +205,7 @@ class TestCloudControlResourceApi:
             aws_client.cloudcontrol.list_resources(TypeName="AWS::LocalStack::DoesNotExist")
         snapshot.match("list_nonexistingtype", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_list_resources(self, create_resource, snapshot, aws_client):
         # TODO: test if only "terminal" states are included in lists (blocked by cfn registry)
         # TODO: test with custom type-version-id  (blocked by cfn registry)
@@ -273,7 +274,7 @@ class TestCloudControlResourceApi:
 
         # TODO: actually set up rest API and AWS::ApiGateway::Stage for a positive sample
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_double_create_with_client_token(self, create_resource, snapshot, aws_client):
         """
         ClientToken is used to deduplicate requests
@@ -297,7 +298,7 @@ class TestCloudControlResourceApi:
             )
         snapshot.match("create_response_duplicate_exc", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_create_exceptions(self, create_resource, snapshot, aws_client):
         """
         learnings:
@@ -348,7 +349,7 @@ class TestCloudControlResourceApi:
             )
         snapshot.match("create_extra_property_exc", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_create_invalid_desiredstate(self, snapshot, aws_client):
         with pytest.raises(aws_client.cloudcontrol.exceptions.ClientError) as e:
             aws_client.cloudcontrol.create_resource(
@@ -364,7 +365,7 @@ class TestCloudControlResourceApi:
         snapshot.match("create_invalid_state_exc_invalid_type", e.value.response)
 
     # TODO: updates
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_update(self, create_resource, snapshot, aws_client):
         bucket_name = f"localstack-testing-cc-{short_uid()}"
         initial_state = {"BucketName": bucket_name}
@@ -409,7 +410,7 @@ class TestCloudControlResourceApi:
 
 @pytest.mark.skip("Not Implemented yet")
 class TestCloudControlResourceRequestApi:
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invalid_request_token_exc(self, snapshot, aws_client):
         """Test behavior of methods when invoked with non-existing RequestToken"""
         with pytest.raises(aws_client.cloudcontrol.exceptions.RequestTokenNotFoundException) as e1:
@@ -420,7 +421,7 @@ class TestCloudControlResourceRequestApi:
             aws_client.cloudcontrol.cancel_resource_request(RequestToken="DOESNOTEXIST")
         snapshot.match("cancel_token_not_found", e2.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_list_request_status(self, snapshot, create_resource, aws_client):
         """
         This is a bit tricky to test against AWS because these lists are not manually "clearable" and instead are cleared after some time (7 days?)
@@ -497,7 +498,7 @@ class TestCloudControlResourceRequestApi:
         )
 
     @pytest.mark.skip(reason="needs a more complicated test setup")
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_get_request_status(self, snapshot, aws_client):
         """
         Tries to trigger all states ("CANCEL_COMPLETE", "CANCEL_IN_PROGRESS", "FAILED", "IN_PROGRESS", "PENDING", "SUCCESS")
@@ -513,7 +514,7 @@ class TestCloudControlResourceRequestApi:
         # 6. FAILED - ? not sure yet ?
         pass
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_cancel_request(self, snapshot, create_resource, aws_client):
         """
         Creates a resource & immediately cancels the create request
@@ -574,7 +575,7 @@ class TestCloudControlResourceRequestApi:
         [json.dumps({"BucketName": "<bucket-name>"}), json.dumps({})],
         ids=["SUCCESS", "FAIL"],
     )
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_cancel_edge_cases(self, create_resource, snapshot, desired_state, aws_client):
         """tests canceling a resource request that is in a SUCCESS or FAILED terminal state"""
 

@@ -1,6 +1,6 @@
 import os
 
-import pytest
+from localstack.testing.pytest.marking import Markers
 
 
 def test_vpc_creates_default_sg(deploy_cfn_template, aws_client):
@@ -27,7 +27,7 @@ def test_vpc_creates_default_sg(deploy_cfn_template, aws_client):
     assert acls[0]["VpcId"] == vpc_id
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_cfn_with_multiple_route_tables(deploy_cfn_template, aws_client):
 
     result = deploy_cfn_template(
@@ -66,8 +66,8 @@ def test_cfn_with_multiple_route_table_associations(deploy_cfn_template, aws_cli
     assert subnet2["PrivateDnsNameOptionsOnLaunch"]["HostnameType"] == "ip-name"
 
 
-@pytest.mark.aws_validated
-@pytest.mark.skip_snapshot_verify(paths=["$..DriftInformation", "$..Metadata"])
+@Markers.parity.aws_validated
+@Markers.snapshot.skip_snapshot_verify(paths=["$..DriftInformation", "$..Metadata"])
 def test_internet_gateway_ref_and_attr(deploy_cfn_template, snapshot, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(

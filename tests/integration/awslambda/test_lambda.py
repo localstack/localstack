@@ -22,6 +22,7 @@ from localstack.testing.aws.lambda_utils import (
     update_done,
 )
 from localstack.testing.aws.util import create_client_with_keys, is_aws_cloud
+from localstack.testing.pytest.marking import Markers
 from localstack.testing.pytest.snapshot import is_aws
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
@@ -147,7 +148,7 @@ def fixture_snapshot(snapshot):
 
 
 # some more common ones that usually don't work in the old provider
-pytestmark = pytest.mark.skip_snapshot_verify(
+pytestmark = Markers.snapshot.skip_snapshot_verify(
     condition=is_old_provider,
     paths=[
         "$..Architectures",
@@ -168,8 +169,8 @@ pytestmark = pytest.mark.skip_snapshot_verify(
 
 
 class TestLambdaBaseFeatures:
-    @pytest.mark.skip_snapshot_verify(paths=["$..LogResult"])
-    @pytest.mark.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..LogResult"])
+    @Markers.parity.aws_validated
     def test_large_payloads(self, caplog, create_lambda_function, snapshot, aws_client):
         """Testing large payloads sent to lambda functions (~5MB)"""
         # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
@@ -189,7 +190,7 @@ class TestLambdaBaseFeatures:
         )
         snapshot.match("invocation_response", result)
 
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
             "$..Tags",
@@ -199,7 +200,7 @@ class TestLambdaBaseFeatures:
             "$..RuntimeVersionConfig",
         ],
     )
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_function_state(self, lambda_su_role, snapshot, create_lambda_function_aws, aws_client):
         """Tests if a lambda starts in state "Pending" but moves to "Active" at some point"""
 
@@ -222,7 +223,7 @@ class TestLambdaBaseFeatures:
     @pytest.mark.skipif(
         is_old_provider(), reason="Credential injection not supported in old provider"
     )
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_lambda_different_iam_keys_environment(
         self, lambda_su_role, create_lambda_function, snapshot, aws_client
     ):
@@ -295,7 +296,7 @@ class TestLambdaBaseFeatures:
 
 
 class TestLambdaBehavior:
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
             # empty dict is interpreted as string and fails upon event parsing
@@ -313,7 +314,7 @@ class TestLambdaBehavior:
             "$..Payload.user_whoami",
         ],
     )
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.snapshot.skip_snapshot_verify(
         paths=[
             # fixable by setting /tmp permissions to 700
             "$..Payload.paths._tmp_mode",
@@ -325,7 +326,7 @@ class TestLambdaBehavior:
     )
     # TODO: fix arch compatibility detection for supported emulations
     @pytest.mark.skipif(get_arch() == "arm64", reason="Cannot inspect x86 runtime on arm")
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_runtime_introspection_x86(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_x86_{short_uid()}"
         create_lambda_function(
@@ -344,7 +345,7 @@ class TestLambdaBehavior:
         not is_arm_compatible() and not is_aws(),
         reason="ARM architecture not supported on this host",
     )
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.snapshot.skip_snapshot_verify(
         paths=[
             # fixable by setting /tmp permissions to 700
             "$..Payload.paths._tmp_mode",
@@ -354,7 +355,7 @@ class TestLambdaBehavior:
             "$..Payload.paths._var_task_uid",
         ],
     )
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_runtime_introspection_arm(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_arm_{short_uid()}"
         create_lambda_function(
@@ -372,8 +373,8 @@ class TestLambdaBehavior:
         is_old_local_executor(),
         reason="Monkey-patching of Docker flags is not applicable because no new container is spawned",
     )
-    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..LogResult"])
-    @pytest.mark.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..LogResult"])
+    @Markers.parity.aws_validated
     def test_runtime_ulimits(self, create_lambda_function, snapshot, monkeypatch, aws_client):
         """We consider ulimits parity as opt-in because development environments could hit these limits unlike in
         optimized production deployments."""
@@ -398,7 +399,7 @@ class TestLambdaBehavior:
         is_old_local_executor(),
         reason="Monkey-patching of Docker flags is not applicable because no new container is spawned",
     )
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_ignore_architecture(self, create_lambda_function, monkeypatch, aws_client):
         """Test configuration to ignore lambda architecture by creating a lambda with non-native architecture."""
         monkeypatch.setattr(config, "LAMBDA_IGNORE_ARCHITECTURE", True)
@@ -424,7 +425,7 @@ class TestLambdaBehavior:
 
     @pytest.mark.skipif(is_old_provider(), reason="unsupported in old provider")
     @pytest.mark.skip  # TODO remove once is_arch_compatible checks work properly
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_mixed_architecture(self, create_lambda_function, aws_client):
         """Test emulation and interaction of lambda functions with different architectures.
         Limitation: only works on ARM hosts that support x86 emulation.
@@ -483,7 +484,7 @@ class TestLambdaBehavior:
         payload_arm_2 = json.loads(invoke_result_arm_2["Payload"].read())
         assert payload_arm_2.get("platform_machine") == "aarch64"
 
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Payload", "$..LogResult"]
     )
     @pytest.mark.parametrize(
@@ -494,7 +495,7 @@ class TestLambdaBehavior:
         ],
         ids=["nodejs", "python"],
     )
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_lambda_cache_local(
         self, create_lambda_function, lambda_fn, lambda_runtime, snapshot, aws_client
     ):
@@ -515,7 +516,7 @@ class TestLambdaBehavior:
         snapshot.match("second_invoke_result", second_invoke_result)
 
     @pytest.mark.skipif(is_old_provider(), reason="old provider")
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_lambda_invoke_with_timeout(self, create_lambda_function, snapshot, aws_client):
         # Snapshot generation could be flaky against AWS with a small timeout margin (e.g., 1.02 instead of 1.00)
         regex = re.compile(r".*\s(?P<uuid>[-a-z0-9]+) Task timed out after \d.\d+ seconds")
@@ -564,7 +565,7 @@ class TestLambdaBehavior:
 
         retry(assert_events, retries=15)
 
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
             "$..Payload",
@@ -573,7 +574,7 @@ class TestLambdaBehavior:
             "$..CreateFunctionResponse.RuntimeVersionConfig",
         ],
     )
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_lambda_invoke_no_timeout(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_{short_uid()}"
         create_result = create_lambda_function(
@@ -612,7 +613,7 @@ class TestLambdaBehavior:
 
     @pytest.mark.skipif(is_old_provider(), reason="old provider")
     @pytest.mark.xfail(reason="Currently flaky in CI")
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_lambda_invoke_timed_out_environment_reuse(
         self, create_lambda_function, snapshot, aws_client
     ):
@@ -699,7 +700,7 @@ def handler(event, ctx):
 """
 
 
-@pytest.mark.skip_snapshot_verify(
+@Markers.snapshot.skip_snapshot_verify(
     condition=is_old_provider,
     paths=[
         "$..context",
@@ -713,7 +714,7 @@ def handler(event, ctx):
         "$..event.headers.x-amzn-trace-id",
     ],
 )
-@pytest.mark.skip_snapshot_verify(
+@Markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..event.headers.x-forwarded-proto",
         "$..event.headers.x-forwarded-port",
@@ -747,7 +748,7 @@ class TestLambdaURL:
         ],
     )
     @pytest.mark.skipif(condition=is_old_provider(), reason="broken/not-implemented")
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_lambda_url_invocation(self, create_lambda_function, snapshot, returnvalue, aws_client):
         snapshot.add_transformer(
             snapshot.transform.key_value(
@@ -797,7 +798,7 @@ class TestLambdaURL:
             },
         )
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_lambda_url_echo_invoke(self, create_lambda_function, snapshot, aws_client):
         snapshot.add_transformer(
             snapshot.transform.key_value(
@@ -842,7 +843,7 @@ class TestLambdaURL:
         assert "Body" not in event
         assert event["isBase64Encoded"] is False
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     @pytest.mark.skipif(condition=is_old_provider(), reason="broken/not-implemented")
     def test_lambda_url_invocation_exception(self, create_lambda_function, snapshot, aws_client):
         # TODO: extend tests
@@ -885,7 +886,7 @@ class TestLambdaURL:
 
 @pytest.mark.skipif(not is_aws(), reason="Not yet implemented")
 class TestLambdaPermissions:
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_lambda_permission_url_invocation(self, create_lambda_function, snapshot, aws_client):
 
         function_name = f"test-function-{short_uid()}"
@@ -926,14 +927,14 @@ class TestLambdaFeatures:
         )
         return creation_result["CreateFunctionResponse"]["FunctionArn"]
 
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Payload.context.memory_limit_in_mb", "$..logs.logs"]
     )
     # TODO remove, currently missing init duration in REPORT
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.snapshot.skip_snapshot_verify(
         condition=lambda: not is_old_provider(), paths=["$..logs.logs"]
     )
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invocation_with_logs(self, snapshot, invocation_echo_lambda, aws_client):
         """Test invocation of a lambda with no invocation type set, but LogType="Tail""" ""
         snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<request-id>"))
@@ -963,10 +964,10 @@ class TestLambdaFeatures:
         assert "END" in logs
         assert "REPORT" in logs
 
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..LogResult", "$..Payload.context.memory_limit_in_mb"]
     )
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invocation_type_request_response(self, snapshot, invocation_echo_lambda, aws_client):
         """Test invocation with InvocationType RequestResponse explicitly set"""
         result = aws_client.awslambda.invoke(
@@ -976,10 +977,10 @@ class TestLambdaFeatures:
         )
         snapshot.match("invoke-result", result)
 
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..LogResult", "$..ExecutedVersion"]
     )
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invocation_type_event(self, snapshot, invocation_echo_lambda, aws_client):
         """Check invocation response for type event"""
         result = aws_client.awslambda.invoke(
@@ -990,11 +991,11 @@ class TestLambdaFeatures:
 
         assert 202 == result["StatusCode"]
 
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..LogResult", "$..ExecutedVersion"]
     )
     @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invocation_type_dry_run(self, snapshot, invocation_echo_lambda, aws_client):
         """Check invocation response for type dryrun"""
         result = aws_client.awslambda.invoke(
@@ -1006,7 +1007,7 @@ class TestLambdaFeatures:
         assert 204 == result["StatusCode"]
 
     @pytest.mark.skip(reason="Not yet implemented")
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invocation_type_event_error(self, create_lambda_function, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<request-id>"))
 
@@ -1044,8 +1045,8 @@ class TestLambdaFeatures:
         assert len(uuids) == 2
         assert uuids[0] == uuids[1]
 
-    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
-    @pytest.mark.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
+    @Markers.parity.aws_validated
     def test_invocation_with_qualifier(
         self,
         s3_bucket,
@@ -1099,8 +1100,8 @@ class TestLambdaFeatures:
         )
         snapshot.match("invocation-response", invoke_result)
 
-    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
-    @pytest.mark.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
+    @Markers.parity.aws_validated
     def test_upload_lambda_from_s3(
         self,
         s3_bucket,
@@ -1146,8 +1147,8 @@ class TestLambdaFeatures:
         reason="Test for docker nodejs runtimes not applicable if run locally",
     )
     @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
-    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
-    @pytest.mark.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
+    @Markers.parity.aws_validated
     def test_lambda_with_context(
         self, create_lambda_function, check_lambda_logs, snapshot, aws_client
     ):
@@ -1324,7 +1325,7 @@ class TestLambdaMultiAccounts:
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaConcurrency:
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_lambda_concurrency_crud(self, snapshot, create_lambda_function, aws_client):
         func_name = f"fn-concurrency-{short_uid()}"
         create_lambda_function(
@@ -1358,7 +1359,7 @@ class TestLambdaConcurrency:
         snapshot.match("get_function_concurrency_deleted", deleted_concurrency_result)
 
     @pytest.mark.skip(reason="Requires prefer-provisioned feature")
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_lambda_concurrency_block(self, snapshot, create_lambda_function, aws_client):
         """
         Tests an edge case where reserved concurrency is equal to the sum of all provisioned concurrencies for a function.
@@ -1424,7 +1425,7 @@ class TestLambdaConcurrency:
 
     @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
     @pytest.mark.skipif(condition=is_aws(), reason="very slow (only execute when needed)")
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_lambda_provisioned_concurrency_moves_with_alias(
         self, create_lambda_function, snapshot, aws_client
     ):
@@ -1553,7 +1554,7 @@ class TestLambdaConcurrency:
             )
         snapshot.match("provisioned_concurrency_notfound", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_provisioned_concurrency(self, create_lambda_function, snapshot, aws_client):
         """
         TODO: what happens with running invocations in provisioned environments when the provisioned concurrency is deleted?
@@ -1601,7 +1602,7 @@ class TestLambdaConcurrency:
         result2 = json.loads(to_str(invoke_result2["Payload"].read()))
         assert result2 == "on-demand"
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_reserved_concurrency_async_queue(
         self, create_lambda_function, snapshot, sqs_create_queue, aws_client
     ):
@@ -1661,7 +1662,7 @@ class TestLambdaConcurrency:
         # TODO: snapshot logs & request ID for correlation after request id gets propagated
         #  https://github.com/localstack/localstack/pull/7874
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_reserved_concurrency(
         self, create_lambda_function, snapshot, sqs_create_queue, aws_client
     ):
@@ -1728,7 +1729,7 @@ class TestLambdaConcurrency:
         msg = retry(get_msg_from_queue, retries=10, sleep=2)
         snapshot.match("msg", msg)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_reserved_provisioned_overlap(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_{short_uid()}"
 
@@ -1804,7 +1805,7 @@ class TestLambdaConcurrency:
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaVersions:
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_lambda_versions_with_code_changes(
         self, lambda_su_role, create_lambda_function_aws, snapshot, aws_client
     ):
@@ -1884,7 +1885,7 @@ class TestLambdaVersions:
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaAliases:
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_lambda_alias_moving(
         self, lambda_su_role, create_lambda_function_aws, snapshot, aws_client
     ):
@@ -1972,7 +1973,7 @@ class TestLambdaAliases:
             )
         snapshot.match("invocation_exc_not_existent", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_alias_routingconfig(
         self, lambda_su_role, create_lambda_function_aws, snapshot, aws_client
     ):
@@ -2026,7 +2027,7 @@ class TestLambdaAliases:
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestRequestIdHandling:
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_request_id_format(self, aws_client):
         r = aws_client.awslambda.list_functions()
         request_id = r["ResponseMetadata"]["RequestId"]
@@ -2034,7 +2035,7 @@ class TestRequestIdHandling:
             r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", request_id
         )
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_request_id_invoke(self, aws_client, create_lambda_function, snapshot):
         func_name = f"test_lambda_{short_uid()}"
         log_group_name = f"/aws/lambda/{func_name}"
@@ -2065,7 +2066,7 @@ class TestRequestIdHandling:
         ]
         snapshot.match("end_log_entries", end_log_entries)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_request_id_invoke_url(self, aws_client, create_lambda_function, snapshot):
         snapshot.add_transformer(
             snapshot.transform.key_value(
@@ -2125,7 +2126,7 @@ class TestRequestIdHandling:
         ]
         snapshot.match("end_log_entries", end_log_entries)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_request_id_async_invoke_with_retry(
         self, aws_client, create_lambda_function, monkeypatch, snapshot
     ):

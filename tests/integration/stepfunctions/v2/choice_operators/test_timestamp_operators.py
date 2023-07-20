@@ -2,6 +2,7 @@ from typing import Any, Final
 
 import pytest
 
+from localstack.testing.pytest.marking import Markers
 from tests.integration.stepfunctions.utils import is_old_provider
 from tests.integration.stepfunctions.v2.choice_operators.utils import (
     create_and_test_comparison_function,
@@ -36,7 +37,7 @@ T1: Final[str] = "2012-10-09T19:00:56Z"
 BASE_COMPARISONS: Final[list[tuple[str, str]]] = [(T0, T0), (T0, T1), (T1, T0)]
 
 
-@pytest.mark.skip_snapshot_verify(
+@Markers.snapshot.skip_snapshot_verify(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestTimestamps:

@@ -7,6 +7,7 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.iam import Tag
 from localstack.services.iam.provider import ADDITIONAL_MANAGED_POLICIES
 from localstack.testing.aws.util import create_client_with_keys, wait_for_user
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.common import short_uid
 from localstack.utils.strings import long_uid
 
@@ -40,7 +41,7 @@ class TestIAMExtensions:
         assert user["UserName"] == user_name
         assert user["Arn"] == f"arn:aws:iam::{account_id}:user/{user_name}"
 
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_get_user_without_username_as_root(self, aws_client):
         """Test get_user on root account. Marked only localstack, since we usually cannot access as root directly"""
         account_id = aws_client.sts.get_caller_identity()["Account"]
@@ -123,7 +124,7 @@ class TestIAMExtensions:
         get_user_reply = aws_client.iam.get_user(UserName=user_name)
         assert "PermissionsBoundary" not in get_user_reply["User"]
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_create_role_with_malformed_assume_role_policy_document(self, aws_client, snapshot):
         role_name = f"role-{short_uid()}"
         # The error in this document is the trailing comma after `"Effect": "Allow"`
@@ -462,7 +463,7 @@ class TestIAMIntegrations:
         assert roles["Roles"][0]["RoleName"] == role_name_2
         assert len(roles["Roles"]) == 1
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     @pytest.mark.xfail
     @pytest.mark.parametrize(
         "service_name, expected_role",
@@ -485,7 +486,7 @@ class TestIAMIntegrations:
             if role_name:
                 aws_client.iam.delete_service_linked_role(RoleName=role_name)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_update_assume_role_policy(self, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.iam_api())
 
@@ -515,7 +516,7 @@ class TestIAMIntegrations:
         finally:
             aws_client.iam.delete_role(RoleName=role_name)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_create_describe_role(self, snapshot, aws_client, create_role, cleanups):
         snapshot.add_transformer(snapshot.transform.iam_api())
         path_prefix = f"/{short_uid()}/"
@@ -543,7 +544,7 @@ class TestIAMIntegrations:
         list_roles_result = aws_client.iam.list_roles(PathPrefix=path_prefix)
         snapshot.match("list_roles_result", list_roles_result)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_list_roles_with_permission_boundary(
         self, snapshot, aws_client, create_role, create_policy, cleanups
     ):
@@ -586,8 +587,8 @@ class TestIAMIntegrations:
         list_roles_result = aws_client.iam.list_roles(PathPrefix=path_prefix)
         snapshot.match("list_roles_result", list_roles_result)
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Policy.IsAttachable",
             "$..Policy.PermissionsBoundaryUsageCount",
@@ -642,8 +643,8 @@ class TestIAMIntegrations:
         )
         snapshot.match("valid_policy_arn", attach_policy_response)
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Policy.IsAttachable",
             "$..Policy.PermissionsBoundaryUsageCount",

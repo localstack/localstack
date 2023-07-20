@@ -1,16 +1,15 @@
 import json
 import os
 
-import pytest
-
 from localstack import config
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
 
-@pytest.mark.aws_validated
-@pytest.mark.skip_snapshot_verify(paths=["$..StreamDescription.StreamModeDetails"])
+@Markers.parity.aws_validated
+@Markers.snapshot.skip_snapshot_verify(paths=["$..StreamDescription.StreamModeDetails"])
 def test_stream_creation(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.resource_name())
     snapshot.add_transformers_list(
@@ -104,8 +103,8 @@ def test_cfn_handle_kinesis_firehose_resources(deploy_cfn_template, aws_client):
 
 
 # TODO: use a different template and move this test to a more generic API level test suite
-@pytest.mark.aws_validated
-@pytest.mark.skip_snapshot_verify  # nothing really works here right now
+@Markers.parity.aws_validated
+@Markers.snapshot.skip_snapshot_verify  # nothing really works here right now
 def test_describe_template(s3_create_bucket, aws_client, cleanups, snapshot):
     bucket_name = f"b-{short_uid()}"
     template_body = load_file(

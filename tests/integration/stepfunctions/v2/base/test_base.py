@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from localstack.testing.pytest.marking import Markers
 from tests.integration.stepfunctions.templates.base.base_templates import BaseTemplate
 from tests.integration.stepfunctions.utils import create_and_record_execution, is_old_provider
 
@@ -10,7 +11,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skip_snapshot_verify(
+@Markers.snapshot.skip_snapshot_verify(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestSnfApi:

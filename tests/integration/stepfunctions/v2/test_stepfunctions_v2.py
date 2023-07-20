@@ -5,6 +5,7 @@ import os
 import pytest
 
 from localstack.services.events.provider import TEST_EVENTS_CACHE
+from localstack.testing.pytest.marking import Markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.files import load_file
@@ -630,7 +631,7 @@ def test_multiregion_nested(region_name, statemachine_definition):
         client1.delete_state_machine(stateMachineArn=child_machine_arn)
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_default_logging_configuration(create_state_machine, aws_client):
     role_name = f"role_name-{short_uid()}"
     try:

@@ -1,5 +1,4 @@
-import pytest
-
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.common import short_uid
 
 TEST_TEMPLATE = """
@@ -18,7 +17,7 @@ Outputs:
 """
 
 
-@pytest.mark.only_localstack
+@Markers.parity.only_localstack
 def test_cfn_acm_certificate(deploy_cfn_template, aws_client):
     domain = f"domain-{short_uid()}.com"
     deploy_cfn_template(template=TEST_TEMPLATE, template_mapping={"domain": domain})

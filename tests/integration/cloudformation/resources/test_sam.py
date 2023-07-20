@@ -2,12 +2,11 @@ import json
 import os
 import os.path
 
-import pytest
-
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.strings import short_uid, to_str
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_sam_policies(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.iam_api())

@@ -10,6 +10,7 @@ from botocore.exceptions import ClientError
 from localstack.aws.api.apigateway import PutMode
 from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest.marking import Markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -83,7 +84,7 @@ def apigw_create_rest_api(aws_client):
 
 
 class TestApiGatewayApi:
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invoke_test_method(self, create_rest_apigw, snapshot, aws_client):
         snapshot.add_transformer(
             KeyValueBasedTransformer(
@@ -257,7 +258,7 @@ class TestApiGatewayApi:
         snapshot.match("rest-api-not-found", ex.value.response)
         assert ex.value.response["Error"]["Code"] == "NotFoundException"
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_list_and_delete_apis(self, apigw_create_rest_api, snapshot, aws_client):
         api_name1 = f"test-list-and-delete-apis-{short_uid()}"
         api_name2 = f"test-list-and-delete-apis-{short_uid()}"
@@ -280,7 +281,7 @@ class TestApiGatewayApi:
         response = aws_client.apigateway.get_rest_apis()
         snapshot.match("get-rest-api-after-delete", response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     @pytest.mark.xfail(reason="rest apis are case insensitive for now because of custom id tags")
     def test_get_api_case_insensitive(self, apigw_create_rest_api, snapshot, aws_client):
         api_name1 = f"test-case-sensitive-apis-{short_uid()}"
@@ -295,7 +296,7 @@ class TestApiGatewayApi:
             aws_client.apigateway.get_rest_api(restApiId=api_id.upper())
         snapshot.match("get-api-upper-case", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_create_rest_api_with_optional_params(self, apigw_create_rest_api, snapshot):
         # create only with mandatory name
         response = apigw_create_rest_api(
@@ -330,7 +331,7 @@ class TestApiGatewayApi:
             apigw_create_rest_api(name=f"test-api-{short_uid()}", minimumCompressionSize=-1)
         snapshot.match("string-compression-size", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_create_rest_api_with_tags(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}",
@@ -349,7 +350,7 @@ class TestApiGatewayApi:
         response = aws_client.apigateway.get_rest_apis()
         snapshot.match("get-rest-apis-w-tags", response)
 
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_create_rest_api_with_custom_id_tag(self, apigw_create_rest_api):
         custom_id_tag = "testid123"
         response = apigw_create_rest_api(
@@ -358,7 +359,7 @@ class TestApiGatewayApi:
         api_id = response["id"]
         assert api_id == custom_id_tag
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_update_rest_api_operation_add_remove(
         self, apigw_create_rest_api, snapshot, aws_client
     ):
@@ -398,7 +399,7 @@ class TestApiGatewayApi:
         assert response["binaryMediaTypes"] == ["image/jpeg"]
         assert "description" not in response
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_update_rest_api_compression(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="this is my api"
@@ -460,7 +461,7 @@ class TestApiGatewayApi:
             )
         snapshot.match("unsupported-operation", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_update_rest_api_behaviour(self, apigw_create_rest_api, snapshot, aws_client):
         # TODO: add more negative testing
         response = apigw_create_rest_api(
@@ -505,7 +506,7 @@ class TestApiGatewayApi:
             )
         snapshot.match("update-rest-api-remove-base-path", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_update_rest_api_invalid_api_id(self, snapshot, aws_client):
         patch_operations = [{"op": "replace", "path": "/apiKeySource", "value": "AUTHORIZER"}]
         with pytest.raises(ClientError) as ex:
@@ -515,7 +516,7 @@ class TestApiGatewayApi:
         snapshot.match("not-found-update-rest-api", ex.value.response)
         assert ex.value.response["Error"]["Code"] == "NotFoundException"
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_resource_lifecycle(self, apigw_create_rest_api, snapshot, aws_client):
         snapshot.add_transformer(SortingTransformer("items", lambda x: x["path"]))
         response = apigw_create_rest_api(
@@ -570,7 +571,7 @@ class TestApiGatewayApi:
         rest_api_resources = aws_client.apigateway.get_resources(restApiId=api_id)
         snapshot.match("rest-api-resources-after-delete", rest_api_resources)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_update_resource_behaviour(self, apigw_create_rest_api, snapshot, aws_client):
         snapshot.add_transformer(SortingTransformer("items", lambda x: x["path"]))
         response = apigw_create_rest_api(
@@ -700,7 +701,7 @@ class TestApiGatewayApi:
             )
         snapshot.match("add-unsupported", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_delete_resource(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource behaviour"
@@ -734,7 +735,7 @@ class TestApiGatewayApi:
             aws_client.apigateway.delete_resource(restApiId=api_id, resourceId=subresource_id)
         snapshot.match("delete-subresource", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_create_resource_parent_invalid(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource parent"
@@ -748,7 +749,7 @@ class TestApiGatewayApi:
             )
         snapshot.match("wrong-resource-parent-id", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_create_proxy_resource(self, apigw_create_rest_api, snapshot, aws_client):
         # test following docs
         # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-method-settings-method-request.html#api-gateway-proxy-resource
@@ -822,7 +823,7 @@ class TestApiGatewayApi:
         result_api_resource = aws_client.apigateway.get_resources(restApiId=api_id)
         snapshot.match("all-resources-2", result_api_resource)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_create_proxy_resource_validation(self, apigw_create_rest_api, snapshot, aws_client):
         # test following docs
         # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-method-settings-method-request.html#api-gateway-proxy-resource
@@ -874,7 +875,7 @@ class TestApiGatewayApi:
         )
         snapshot.match("create-greedy-child-resource", greedy_child_response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_authorizer_crud_no_api(self, snapshot, aws_client):
         # maybe move this test to a full lifecycle one
         # AWS validates the format of the authorizerUri before the restApi existence
@@ -892,7 +893,7 @@ class TestApiGatewayApi:
             aws_client.apigateway.get_authorizers(restApiId="test-fake-rest-id")
         snapshot.match("wrong-rest-api-id-get-authorizers", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_doc_arts_crud_no_api(self, snapshot, aws_client):
         # maybe move this test to a full lifecycle one
         with pytest.raises(ClientError) as e:
@@ -907,7 +908,7 @@ class TestApiGatewayApi:
             aws_client.apigateway.get_documentation_parts(restApiId="test-fake-rest-id")
         snapshot.match("wrong-rest-api-id-get-doc-parts", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_validators_crud_no_api(self, snapshot, aws_client):
         # maybe move this test to a full lifecycle one
         with pytest.raises(ClientError) as e:
@@ -923,7 +924,7 @@ class TestApiGatewayApi:
             aws_client.apigateway.get_request_validators(restApiId="test-fake-rest-id")
         snapshot.match("wrong-rest-api-id-get-validators", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_method_lifecycle(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource method lifecycle"
@@ -960,7 +961,7 @@ class TestApiGatewayApi:
             )
         snapshot.match("delete-deleted-method-response", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_method_request_parameters(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource method request params"
@@ -1002,8 +1003,8 @@ class TestApiGatewayApi:
 
         snapshot.match("req-params-same-name", e.value.response)
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(
         paths=[
             "$.delete-model-used-by-2-method.Error.Message",
             "$.delete-model-used-by-2-method.message",  # we can't guarantee the last method will be the same as AWS
@@ -1117,7 +1118,7 @@ class TestApiGatewayApi:
         delete_model = aws_client.apigateway.delete_model(restApiId=api_id, modelName="MySchemaTwo")
         snapshot.match("delete-model-unused-2", delete_model)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_put_method_validation(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource method request params"
@@ -1192,7 +1193,7 @@ class TestApiGatewayApi:
         # TODO: add more validation on methods once its subresources are tested
         # Authorizer, RequestValidator, Model
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_update_method(self, apigw_create_rest_api, snapshot, aws_client):
         # see https://www.linkedin.com/pulse/updating-aws-cli-patch-operations-rest-api-yitzchak-meirovich/
         # for patch path
@@ -1286,7 +1287,7 @@ class TestApiGatewayApi:
         )
         snapshot.match("update-method-remove", update_method_response_remove)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_update_method_validation(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource method request params"
@@ -1454,7 +1455,7 @@ class TestApiGatewayApi:
             )
         snapshot.match("wrong-req-validator-id", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_model_lifecycle(self, apigw_create_rest_api, snapshot, aws_client):
         snapshot.add_transformer(SortingTransformer("items", lambda x: x["name"]))
         # taken from https://docs.aws.amazon.com/apigateway/latest/api/API_CreateModel.html#API_CreateModel_Examples
@@ -1490,7 +1491,7 @@ class TestApiGatewayApi:
         )
         snapshot.match("del-model", del_model_response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_model_validation(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource model lifecycle"
@@ -1583,7 +1584,7 @@ class TestApiGatewayApi:
 
         snapshot.match("create-model-no-schema-xml", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_update_model(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing update resource model"
@@ -1657,7 +1658,7 @@ class TestApiGatewayApi:
 
 
 class TestApiGatewayApiRequestValidator:
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_request_validator_lifecycle(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}",
@@ -1722,7 +1723,7 @@ class TestApiGatewayApiRequestValidator:
         response = aws_client.apigateway.get_request_validators(restApiId=api_id)
         snapshot.match("get-request-validators-after-delete", response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invalid_get_request_validator(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}",
@@ -1747,13 +1748,13 @@ class TestApiGatewayApiRequestValidator:
             )
         snapshot.match("get-request-validators-invalid-validator-id", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invalid_get_request_validators(self, apigw_create_rest_api, snapshot, aws_client):
         with pytest.raises(ClientError) as e:
             aws_client.apigateway.get_request_validators(restApiId="api_id")
         snapshot.match("get-invalid-request-validators", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invalid_delete_request_validator(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}",
@@ -1778,7 +1779,7 @@ class TestApiGatewayApiRequestValidator:
             )
         snapshot.match("delete-request-validator-invalid-validator-id", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_create_request_validator_invalid_api_id(
         self, apigw_create_rest_api, snapshot, aws_client
     ):
@@ -1788,7 +1789,7 @@ class TestApiGatewayApiRequestValidator:
             )
         snapshot.match("invalid-create-request-validator", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invalid_update_request_validator_operations(
         self, apigw_create_rest_api, snapshot, aws_client
     ):
@@ -1844,7 +1845,7 @@ class TestApiGatewayApiRequestValidator:
 
 
 class TestApiGatewayApiDocumentationPart:
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_documentation_part_lifecycle(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}",
@@ -1900,7 +1901,7 @@ class TestApiGatewayApiDocumentationPart:
         )
         snapshot.match("delete_documentation_part", response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invalid_get_documentation_part(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}",
@@ -1927,7 +1928,7 @@ class TestApiGatewayApiDocumentationPart:
             )
         snapshot.match("get-documentation-part-invalid-doc-id", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invalid_get_documentation_parts(self, snapshot, aws_client):
         with pytest.raises(ClientError) as e:
             aws_client.apigateway.get_documentation_parts(
@@ -1935,7 +1936,7 @@ class TestApiGatewayApiDocumentationPart:
             )
         snapshot.match("get-inavlid-documentation-parts", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invalid_update_documentation_part(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}",
@@ -1995,7 +1996,7 @@ class TestApiGatewayApiDocumentationPart:
             )
         snapshot.match("update-documentation-part-invalid-path", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invalid_create_documentation_part_operations(
         self, apigw_create_rest_api, snapshot, aws_client
     ):
@@ -2021,7 +2022,7 @@ class TestApiGatewayApiDocumentationPart:
             )
         snapshot.match("create_documentation_part_invalid_location_type", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invalid_delete_documentation_part(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}",
@@ -2056,7 +2057,7 @@ class TestApiGatewayApiDocumentationPart:
             )
         snapshot.match("delete_already_deleted_documentation_part", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_import_documentation_parts(self, aws_client, import_apigw, snapshot):
         # snapshot array "ids"
         snapshot.add_transformer(snapshot.transform.jsonpath("$..ids[*]", "id"))

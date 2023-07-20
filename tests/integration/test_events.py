@@ -16,6 +16,7 @@ from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.aws import arns, aws_stack, resources
 from localstack.utils.files import load_file
 from localstack.utils.strings import long_uid, short_uid, to_str
@@ -231,7 +232,7 @@ class TestEvents:
         # clean up
         self.cleanup(rule_name=rule_name)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_put_events_with_target_sqs(self, aws_client):
         entries = [
             {
@@ -279,7 +280,7 @@ class TestEvents:
             input_path="$.detail",
         )
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_put_events_with_nested_event_pattern(self, aws_client):
         pattern = {"detail": {"event": {"data": {"type": ["1"]}}}}
         entries1 = [
@@ -1401,7 +1402,7 @@ class TestEvents:
     @pytest.mark.parametrize(
         "schedule_expression", ["rate(1 minute)", "rate(1 day)", "rate(1 hour)"]
     )
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_create_rule_with_one_unit_in_singular_should_succeed(
         self, schedule_expression, aws_client
     ):
@@ -1416,7 +1417,7 @@ class TestEvents:
     @pytest.mark.parametrize(
         "schedule_expression", ["rate(1 minutes)", "rate(1 days)", "rate(1 hours)"]
     )
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     @pytest.mark.xfail
     def test_create_rule_with_one_unit_in_plural_should_fail(self, schedule_expression, aws_client):
         rule_name = f"rule-{short_uid()}"
@@ -1425,7 +1426,7 @@ class TestEvents:
         with pytest.raises(ClientError):
             aws_client.events.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     @pytest.mark.xfail
     def test_verify_rule_event_content(self, aws_client):
         log_group_name = f"/aws/events/testLogGroup-{short_uid()}"
@@ -1469,8 +1470,8 @@ class TestEvents:
             log_group_name=log_group_name,
         )
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(
         condition=lambda: config.LEGACY_S3_PROVIDER, path="$..Messages..Body.detail.object.etag"
     )
     def test_put_events_to_default_eventbus_for_custom_eventbus(
@@ -1642,7 +1643,7 @@ class TestEvents:
                 )
             logs_client.delete_log_group(logGroupName=log_group_name)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_put_target_id_validation(
         self, sqs_create_queue, events_put_rule, snapshot, aws_client
     ):
@@ -1684,7 +1685,7 @@ class TestEvents:
             ],
         )
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_should_ignore_schedules_for_put_event(
         self, create_lambda_function, cleanups, aws_client
     ):
@@ -1738,7 +1739,7 @@ class TestEvents:
 
         retry(check_invocation, sleep=5, retries=15)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_put_events_nonexistent_event_bus(
         self,
         aws_client,
@@ -1819,7 +1820,7 @@ class TestEvents:
             aws_client.events.describe_event_bus(Name=nonexistent_event_bus)
         snapshot.match("non-existent-bus", e.value.response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_test_event_pattern(self, aws_client, snapshot, account_id, region):
         response = aws_client.events.test_event_pattern(
             Event=json.dumps(
@@ -1862,7 +1863,7 @@ class TestEvents:
         )
         snapshot.match("eventbridge-test-event-pattern-response-no-match", response)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_put_events_time(
         self,
         aws_client,

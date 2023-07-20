@@ -1,5 +1,6 @@
 import pytest
 
+from localstack.testing.pytest.marking import Markers
 from tests.integration.stepfunctions.templates.intrinsicfunctions.intrinsic_functions_templates import (
     IntrinsicFunctionTemplate as IFT,
 )
@@ -14,7 +15,7 @@ pytestmark = pytest.mark.skipif(
 # TODO: test for validation errors, and boundary testing.
 
 
-@pytest.mark.skip_snapshot_verify(
+@Markers.snapshot.skip_snapshot_verify(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestHashCalculations:

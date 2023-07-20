@@ -1,11 +1,10 @@
 import json
 
-import pytest
-
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.strings import short_uid
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_alarm_creation(deploy_cfn_template, snapshot):
     snapshot.add_transformer(snapshot.transform.resource_name())
     alarm_name = f"alarm-{short_uid()}"

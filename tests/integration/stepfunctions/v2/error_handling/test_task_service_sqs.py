@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from localstack.testing.pytest.marking import Markers
 from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.templates.errorhandling.error_handling_templates import (
@@ -17,7 +18,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skip_snapshot_verify(
+@Markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..loggingConfiguration",
         "$..tracingConfiguration",
@@ -116,7 +117,7 @@ class TestTaskServiceSqs:
             exec_input,
         )
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     def test_sqs_failure_in_wait_for_task_tok(
         self,
         aws_client,

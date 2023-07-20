@@ -19,6 +19,7 @@ from localstack.aws.api.secretsmanager import (
     ListSecretsResponse,
 )
 from localstack.testing.aws.lambda_utils import is_new_provider
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import short_uid
@@ -530,7 +531,7 @@ class TestSecretsManager:
     @pytest.mark.parametrize(
         "secret_name", ["Inv Name", " Inv Name", " Inv*Name? ", " Inv *?!]Name\\-"]
     )
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_invalid_secret_name(self, sm_snapshot, cleanups, secret_name: str, aws_client):
         cleanups.append(
             lambda: aws_client.secretsmanager.delete_secret(
@@ -757,7 +758,7 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     def test_update_secret_version_stages_current_previous(
         self, sm_snapshot, secret_name, aws_client
     ):
@@ -794,7 +795,7 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     def test_update_secret_version_stages_current_pending(
         self, sm_snapshot, secret_name, aws_client
     ):
@@ -848,7 +849,7 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     def test_update_secret_version_stages_current_pending_cycle(
         self, sm_snapshot, secret_name, aws_client
     ):
@@ -929,7 +930,7 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     def test_update_secret_version_stages_current_pending_cycle_custom_stages_1(
         self, sm_snapshot, secret_name, aws_client
     ):
@@ -1009,7 +1010,7 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     def test_update_secret_version_stages_current_pending_cycle_custom_stages_2(
         self, sm_snapshot, secret_name, aws_client
     ):
@@ -1100,7 +1101,7 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     def test_non_versioning_version_stages_replacement(self, sm_snapshot, secret_name, aws_client):
         create_secret_rs_0 = aws_client.secretsmanager.create_secret(
             Name=secret_name, SecretString="S0"
@@ -1137,7 +1138,7 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     def test_non_versioning_version_stages_no_replacement(
         self, sm_snapshot, secret_name, aws_client
     ):
@@ -1813,7 +1814,7 @@ class TestSecretsManager:
 
         aws_client.secretsmanager.delete_secret(**stage_deletion_req)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_secret_exists(self, cleanups, aws_client):
         secret_name = short_uid()
         cleanups.append(
@@ -1861,7 +1862,7 @@ class TestSecretsManager:
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_secret_exists_snapshots(self, sm_snapshot, cleanups, aws_client):
         secret_name = short_uid()
         cleanups.append(
@@ -1895,7 +1896,7 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res", delete_secret_res)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     @pytest.mark.parametrize(
         "operation",
         [

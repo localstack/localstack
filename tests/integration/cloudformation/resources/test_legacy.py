@@ -10,6 +10,7 @@ from botocore.parsers import ResponseParserError
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.cloudformation.engine import template_preparer
 from localstack.testing.aws.lambda_utils import is_new_provider
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.aws import arns
 from localstack.utils.common import load_file, short_uid
 from localstack.utils.testutil import create_zip_file, list_all_resources
@@ -775,7 +776,7 @@ class TestCloudFormation:
 
     # TODO: evaluate (can we drop this?)
     @pytest.mark.xfail(reason="GetAtt resolved old value")
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_updating_stack_with_iam_role(self, deploy_cfn_template, aws_client):
         lambda_role_name = f"lambda-role-{short_uid()}"
         lambda_function_name = f"lambda-function-{short_uid()}"

@@ -15,6 +15,7 @@ from localstack.services.awslambda.lambda_api import (
 from localstack.services.awslambda.lambda_utils import LAMBDA_DEFAULT_HANDLER
 from localstack.services.awslambda.packages import awslambda_go_runtime_package
 from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
+from localstack.testing.pytest.marking import Markers
 from localstack.utils import testutil
 from localstack.utils.archives import download_and_extract
 from localstack.utils.aws import arns, aws_stack
@@ -259,7 +260,7 @@ class TestRubyRuntimes:
         is_old_provider() and not use_docker(),
         reason="ruby runtimes not supported in local invocation",
     )
-    @pytest.mark.skip_snapshot_verify
+    @Markers.snapshot.skip_snapshot_verify
     # general invocation test
     def test_ruby_lambda_running_in_docker(self, create_lambda_function, snapshot, aws_client):
         """Test simple ruby lambda invocation"""
@@ -282,8 +283,8 @@ class TestRubyRuntimes:
 
 
 class TestGolangRuntimes:
-    @pytest.mark.skip_snapshot_verify
-    @pytest.mark.skip_offline
+    @Markers.snapshot.skip_snapshot_verify
+    @Markers.skip_offline
     # general invocation test
     def test_golang_lambda(self, tmp_path, create_lambda_function, snapshot, aws_client):
         """Test simple golang lambda invocation"""

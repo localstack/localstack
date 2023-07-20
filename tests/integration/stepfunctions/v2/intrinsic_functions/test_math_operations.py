@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from localstack.testing.pytest.marking import Markers
 from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.templates.intrinsicfunctions.intrinsic_functions_templates import (
@@ -18,7 +19,7 @@ pytestmark = pytest.mark.skipif(
 # TODO: test for validation errors, and boundary testing.
 
 
-@pytest.mark.skip_snapshot_verify(
+@Markers.snapshot.skip_snapshot_verify(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestMathOperations:

@@ -9,6 +9,7 @@ import pytest
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
+from localstack.testing.pytest.marking import Markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns
@@ -88,7 +89,7 @@ class TestCloudWatchLogs:
         )
         assert len(log_groups_after) == len(log_groups_before)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_list_tags_log_group(self, snapshot, aws_client):
         test_name = f"test-log-group-{short_uid()}"
         try:
@@ -139,7 +140,7 @@ class TestCloudWatchLogs:
             # clean up
             aws_client.logs.delete_log_group(logGroupName=test_name)
 
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.snapshot.skip_snapshot_verify(
         paths=[
             # TODO 'describe-log-groups' returns different attributes on AWS when using
             #   'logGroupNamePattern' compared to 'logGroupNamePrefix' (for the same log group)
@@ -246,8 +247,8 @@ class TestCloudWatchLogs:
             response["ResponseMetadata"]["HTTPHeaders"]["content-type"] == APPLICATION_AMZ_JSON_1_1
         )
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Statement.Condition.StringEquals",
             "$..add_permission.ResponseMetadata.HTTPStatusCode",
@@ -339,7 +340,7 @@ class TestCloudWatchLogs:
 
         retry(check_invocation, retries=6, sleep=3.0)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_put_subscription_filter_firehose(
         self, logs_log_group, logs_log_stream, s3_bucket, create_iam_role_with_policy, aws_client
     ):
@@ -429,7 +430,7 @@ class TestCloudWatchLogs:
                 DeliveryStreamName=firehose_name, AllowForceDelete=True
             )
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_put_subscription_filter_kinesis(
         self, logs_log_group, logs_log_stream, create_iam_role_with_policy, aws_client
     ):

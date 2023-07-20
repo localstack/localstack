@@ -7,6 +7,7 @@ import zipfile
 import pytest
 
 from localstack.testing.aws.lambda_utils import is_old_provider
+from localstack.testing.pytest.marking import Markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.files import cp_r
 from localstack.utils.strings import short_uid, to_bytes, to_str
@@ -57,7 +58,7 @@ class TestLambdaRuntimesCommon:
     # * Remove specific hashes and `touch -t` since we're not actually checking size & hash of the zip files anymore
     # * Create a generic parametrizable Makefile per runtime (possibly with an option to provide a specific one)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     @pytest.mark.multiruntime(scenario="echo")
     def test_echo_invoke(self, multiruntime_lambda, aws_client):
         # provided lambdas take a little longer for large payloads, hence timeout to 5s
@@ -108,7 +109,7 @@ class TestLambdaRuntimesCommon:
         assert not invoke_result.get("FunctionError")
 
     # skip snapshots of LS specific env variables
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.snapshot.skip_snapshot_verify(
         paths=[
             # LocalStack API
             "$..environment.LOCALSTACK_HOSTNAME",
@@ -136,7 +137,7 @@ class TestLambdaRuntimesCommon:
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     @pytest.mark.multiruntime(scenario="introspection")
     def test_introspection_invoke(self, multiruntime_lambda, snapshot, aws_client):
         create_function_result = multiruntime_lambda.create_function(
@@ -169,12 +170,12 @@ class TestLambdaRuntimesCommon:
         invocation_result_payload_qualified = json.loads(invocation_result_payload_qualified)
         snapshot.match("invocation_result_payload_qualified", invocation_result_payload_qualified)
 
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     @pytest.mark.multiruntime(scenario="uncaughtexception")
     def test_uncaught_exception_invoke(self, multiruntime_lambda, snapshot, aws_client):
         # unfortunately the stack trace is quite unreliable and changes when AWS updates the runtime transparently
@@ -197,12 +198,12 @@ class TestLambdaRuntimesCommon:
         assert "FunctionError" in invocation_result
         snapshot.match("error_result", invocation_result)
 
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     # this does only work on al2 lambdas, except provided.al2.
     # Source: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-modify.html#runtime-wrapper
     @pytest.mark.multiruntime(

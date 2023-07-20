@@ -6,10 +6,10 @@ import uuid
 from threading import Thread
 from typing import TYPE_CHECKING
 
-import pytest
 import requests
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.strings import short_uid
 
 if TYPE_CHECKING:
@@ -60,7 +60,7 @@ class SignalSuccess(Thread):
         self.should_break = True
 
 
-@pytest.mark.skip_snapshot_verify(paths=["$..WaitConditionName"])
+@Markers.snapshot.skip_snapshot_verify(paths=["$..WaitConditionName"])
 def test_waitcondition(deploy_cfn_template, snapshot, aws_client):
     """
     Complicated test, since we have a wait condition that must signal
@@ -93,7 +93,7 @@ def test_waitcondition(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("waitcondition_ref", {"WaitConditionName": wait_condition_name})
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_create_macro(deploy_cfn_template, create_lambda_function, snapshot, aws_client):
     macro_name = f"macro-{short_uid()}"
     snapshot.add_transformer(snapshot.transform.regex(macro_name, "<macro-name>"))

@@ -2,11 +2,12 @@ import os
 
 import pytest
 
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.strings import short_uid
 
 
 @pytest.mark.parametrize("attribute_name", ["TopicName", "TopicArn"])
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_nested_getatt_ref(deploy_cfn_template, aws_client, attribute_name, snapshot):
     topic_name = f"test-topic-{short_uid()}"
     snapshot.add_transformer(snapshot.transform.regex(topic_name, "<topic-name>"))
@@ -33,7 +34,7 @@ def test_nested_getatt_ref(deploy_cfn_template, aws_client, attribute_name, snap
     assert topic_arn in topic_arns
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_sub_resolving(deploy_cfn_template, aws_client, snapshot):
     """
     Tests different cases for Fn::Sub resolving

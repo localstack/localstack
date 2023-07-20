@@ -20,7 +20,7 @@ class TestParity:
         - Negative test: missing required properties
     """
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_create_with_full_properties(self, aws_client, deploy_cfn_template, snapshot, cleanups):
         """A sort of smoke test that simply covers as many properties as possible"""
         # TODO: keep extending this test with more properties for higher parity with the official resource on AWS

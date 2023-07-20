@@ -7,6 +7,7 @@ from botocore.exceptions import ClientError
 
 from localstack.aws.api.transcribe import BadRequestException, ConflictException, NotFoundException
 from localstack.aws.connect import ServiceLevelClientFactory
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.files import new_tmp_file
 from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_str
@@ -45,9 +46,9 @@ class TestTranscribe:
         else:
             return True
 
-    @pytest.mark.skip_offline
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.skip_offline
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..TranscriptionJob..Settings",
             "$..Error..Code",
@@ -132,8 +133,8 @@ class TestTranscribe:
 
         retry(_assert_transcript, retries=10, sleep=3)
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(
         paths=["$..TranscriptionJob..Settings", "$..TranscriptionJob..Transcript", "$..Error..Code"]
     )
     def test_get_transcription_job(self, transcribe_create_job, snapshot, aws_client):
@@ -149,8 +150,8 @@ class TestTranscribe:
 
         snapshot.match("GetError", e_info.value.response)
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(
         paths=["$..NextToken", "$..TranscriptionJobSummaries..OutputLocationType"]
     )
     def test_list_transcription_jobs(self, transcribe_create_job, snapshot, aws_client):
@@ -165,8 +166,8 @@ class TestTranscribe:
 
         snapshot.match("ListJobs", jobs)
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Error..Code"])
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..Error..Code"])
     def test_failing_deletion(self, snapshot, aws_client):
         # successful deletion is tested in the happy path test
         # this tests a failed deletion
@@ -175,8 +176,8 @@ class TestTranscribe:
 
         snapshot.match("MissingLanguageCode", e_info.value.response)
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(
         paths=["$..MissingLanguageCode..Message", "$..MalformedLanguageCode..Message"]
     )
     def test_failing_start_transcription_job(self, s3_bucket, snapshot, aws_client):
@@ -206,8 +207,8 @@ class TestTranscribe:
             )
         snapshot.match("MalformedLanguageCode", e_info.value.response)
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(
         paths=["$..TranscriptionJob..Settings", "$..TranscriptionJob..Transcript"]
     )
     @pytest.mark.parametrize(
@@ -281,8 +282,8 @@ class TestTranscribe:
         )
         snapshot.match("delete-transcription-job", res_delete_transcription_job)
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..TranscriptionJob..Transcript"])
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(paths=["$..TranscriptionJob..Transcript"])
     def test_transcribe_start_job_same_name(
         self,
         s3_bucket,

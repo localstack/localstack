@@ -3,6 +3,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack import config
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.aws import aws_stack, resources
 from localstack.utils.common import short_uid
 
@@ -10,7 +11,7 @@ from .test_integration import PARTITION_KEY
 
 
 class TestErrorInjection:
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_kinesis_error_injection(self, monkeypatch, wait_for_stream_ready, aws_client):
         kinesis = aws_stack.create_external_boto_client("kinesis", config=self.retry_config())
         stream_name = f"stream-{short_uid()}"
@@ -31,7 +32,7 @@ class TestErrorInjection:
         finally:
             aws_client.kinesis.delete_stream(StreamName=stream_name)
 
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_dynamodb_error_injection(self, monkeypatch):
         table = self.get_dynamodb_table()
 
@@ -47,7 +48,7 @@ class TestErrorInjection:
         finally:
             table.delete()
 
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_dynamodb_read_error_injection(self, monkeypatch):
         table = self.get_dynamodb_table()
 
@@ -63,7 +64,7 @@ class TestErrorInjection:
         finally:
             table.delete()
 
-    @pytest.mark.only_localstack
+    @Markers.parity.only_localstack
     def test_dynamodb_write_error_injection(self, monkeypatch):
         table = self.get_dynamodb_table()
 

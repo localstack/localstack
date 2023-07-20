@@ -16,6 +16,7 @@ from localstack.services.awslambda.lambda_utils import (
 )
 from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled, is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
@@ -58,7 +59,7 @@ def _snapshot_transformers(snapshot):
     snapshot.add_transformer(snapshot.transform.key_value("md5OfBody"))
 
 
-@pytest.mark.skip_snapshot_verify(
+@Markers.snapshot.skip_snapshot_verify(
     paths=[
         # FIXME: this is most of the event source mapping unfortunately
         "$..ParallelizationFactor",
@@ -71,7 +72,7 @@ def _snapshot_transformers(snapshot):
         "$..StateTransitionReason",
     ]
 )
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_failing_lambda_retries_after_visibility_timeout(
     create_lambda_function,
     sqs_create_queue,
@@ -159,7 +160,7 @@ def test_failing_lambda_retries_after_visibility_timeout(
     )
 
 
-@pytest.mark.skip_snapshot_verify(
+@Markers.snapshot.skip_snapshot_verify(
     paths=[
         # AWS returns empty lists for these values, even though they are not implemented yet
         # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_MessageAttributeValue.html
@@ -167,7 +168,7 @@ def test_failing_lambda_retries_after_visibility_timeout(
         "$..binaryListValues",
     ]
 )
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_message_body_and_attributes_passed_correctly(
     create_lambda_function,
     sqs_create_queue,
@@ -247,7 +248,7 @@ def test_message_body_and_attributes_passed_correctly(
     snapshot.match("first_attempt", response)
 
 
-@pytest.mark.skip_snapshot_verify(
+@Markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..ParallelizationFactor",
         "$..LastProcessingResult",
@@ -259,7 +260,7 @@ def test_message_body_and_attributes_passed_correctly(
         "$..StateTransitionReason",
     ]
 )
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_redrive_policy_with_failing_lambda(
     create_lambda_function,
     sqs_create_queue,
@@ -354,7 +355,7 @@ def test_redrive_policy_with_failing_lambda(
     snapshot.match("dlq_response", dlq_response)
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_sqs_queue_as_lambda_dead_letter_queue(
     lambda_su_role, create_lambda_function, sqs_create_queue, sqs_queue_arn, snapshot, aws_client
 ):
@@ -413,7 +414,7 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
 
 
 # TODO: flaky against AWS
-@pytest.mark.skip_snapshot_verify(
+@Markers.snapshot.skip_snapshot_verify(
     paths=[
         # FIXME: we don't seem to be returning SQS FIFO sequence numbers correctly
         "$..SequenceNumber",
@@ -435,7 +436,7 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
         "$..create_event_source_mapping.ResponseMetadata",
     ]
 )
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_report_batch_item_failures(
     create_lambda_function,
     sqs_create_queue,
@@ -589,7 +590,7 @@ def test_report_batch_item_failures(
     snapshot.match("dlq_response", dlq_response)
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_report_batch_item_failures_on_lambda_error(
     create_lambda_function,
     sqs_create_queue,
@@ -677,7 +678,7 @@ def test_report_batch_item_failures_on_lambda_error(
     snapshot.match("dlq_messages", messages)
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_report_batch_item_failures_invalid_result_json_batch_fails(
     create_lambda_function,
     sqs_create_queue,
@@ -770,7 +771,7 @@ def test_report_batch_item_failures_invalid_result_json_batch_fails(
     snapshot.match("dlq_response", dlq_response)
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_report_batch_item_failures_empty_json_batch_succeeds(
     create_lambda_function,
     sqs_create_queue,
@@ -854,7 +855,7 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
     assert "Messages" not in dlq_response
 
 
-@pytest.mark.skip_snapshot_verify(
+@Markers.snapshot.skip_snapshot_verify(
     paths=[
         # create event source mapping attributes
         "$..FunctionResponseTypes",
@@ -874,8 +875,8 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
 class TestSQSEventSourceMapping:
     # FIXME refactor and move to test_lambda_sqs_integration
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
+    @Markers.parity.aws_validated
+    @Markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Error.Message", "$..message"]
     )
     def test_event_source_mapping_default_batch_size(
@@ -936,7 +937,7 @@ class TestSQSEventSourceMapping:
         finally:
             aws_client.awslambda.delete_event_source_mapping(UUID=uuid)
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     def test_sqs_event_source_mapping(
         self,
         create_lambda_function,
@@ -984,7 +985,7 @@ class TestSQSEventSourceMapping:
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
         assert rs.get("Messages") is None
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     @pytest.mark.parametrize(
         "filter, item_matching, item_not_matching",
         [
@@ -1114,7 +1115,7 @@ class TestSQSEventSourceMapping:
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
         assert rs.get("Messages") is None
 
-    @pytest.mark.aws_validated
+    @Markers.parity.aws_validated
     @pytest.mark.parametrize(
         "invalid_filter", [None, "simple string", {"eventSource": "aws:sqs"}, {"eventSource": []}]
     )

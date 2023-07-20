@@ -1,10 +1,9 @@
-import pytest
-
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.strings import short_uid, to_bytes
 
 
-@pytest.mark.aws_validated
-@pytest.mark.skip_snapshot_verify(paths=["$..tags"])
+@Markers.parity.aws_validated
+@Markers.snapshot.skip_snapshot_verify(paths=["$..tags"])
 def test_duplicate_resources(deploy_cfn_template, s3_bucket, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.key_value("id"))
     snapshot.add_transformer(snapshot.transform.key_value("name"))

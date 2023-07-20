@@ -6,6 +6,7 @@ import pytest
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.lambda_utils import is_old_provider
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.strings import short_uid, to_str
 
 TEST_LAMBDA_XRAY_TRACEID = os.path.join(
@@ -15,7 +16,7 @@ TEST_LAMBDA_XRAY_TRACEID = os.path.join(
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 @pytest.mark.parametrize("tracing_mode", ["Active", "PassThrough"])
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_traceid_outside_handler(create_lambda_function, lambda_su_role, tracing_mode, aws_client):
     fn_name = f"test-xray-traceid-fn-{short_uid()}"
 

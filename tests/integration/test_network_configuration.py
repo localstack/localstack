@@ -1,3 +1,5 @@
+from localstack.testing.pytest.marking import Markers
+
 """
 This test file captures the _current_ state of returning URLs before making
 sweeping changes. This is to ensure that the refactoring does not cause
@@ -18,7 +20,7 @@ from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.utils.files import new_tmp_file, save_file
 from localstack.utils.strings import short_uid
 
-pytestmark = [pytest.mark.only_localstack]
+pytestmark = [Markers.parity.only_localstack]
 
 
 class TestOpenSearch:

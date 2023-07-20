@@ -4,6 +4,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -40,7 +41,7 @@ def test_nested_stack(deploy_cfn_template, s3_create_bucket, aws_client):
     retry(assert_bucket_exists)
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_nested_stack_output_refs(deploy_cfn_template, s3_create_bucket, aws_client):
     """test output handling of nested stacks incl. referencing the nested output in the parent stack"""
     bucket_name = s3_create_bucket()
@@ -77,7 +78,7 @@ def test_nested_stack_output_refs(deploy_cfn_template, s3_create_bucket, aws_cli
 
 
 @pytest.mark.skip(reason="Nested stacks don't work properly")
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_nested_with_nested_stack(deploy_cfn_template, s3_create_bucket, aws_client):
     bucket_name = s3_create_bucket()
     bucket_to_create_name = f"test-bucket-{short_uid()}"
@@ -110,7 +111,7 @@ def test_nested_with_nested_stack(deploy_cfn_template, s3_create_bucket, aws_cli
     assert f"arn:aws:s3:::{bucket_to_create_name}" == outputs["parameterValue"]
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 @pytest.mark.skip(reason="not working correctly")
 def test_lifecycle_nested_stack(deploy_cfn_template, s3_create_bucket, aws_client):
     bucket_name = s3_create_bucket()
@@ -164,14 +165,14 @@ def test_lifecycle_nested_stack(deploy_cfn_template, s3_create_bucket, aws_clien
     retry(_assert_bucket_is_deleted, retries=5, sleep=2, sleep_before=2)
 
 
-@pytest.mark.skip_snapshot_verify(
+@Markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..Role.Description",
         "$..Role.MaxSessionDuration",
         "$..Role.AssumeRolePolicyDocument..Action",
     ]
 )
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_nested_output_in_params(deploy_cfn_template, s3_create_bucket, snapshot, aws_client):
     """
     Deploys a Stack with two nested stacks (sub1 and sub2) with a dependency between each other sub2 depends on sub1.

@@ -1,8 +1,7 @@
 import json
 import re
 
-import pytest
-
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import wait_until
 
@@ -119,7 +118,7 @@ def test_cfn_handle_secretsmanager_secret(deploy_cfn_template, aws_client):
     assert "DeletedDate" in rs
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_cfn_secret_policy(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(template=TEST_TEMPLATE_SECRET_POLICY)
     secret_id = stack.outputs["SecretId"]

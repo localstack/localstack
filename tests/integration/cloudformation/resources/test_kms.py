@@ -1,7 +1,6 @@
 import os.path
 
-import pytest
-
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.strings import short_uid
 
 
@@ -18,7 +17,7 @@ def test_kms_key_disabled(deploy_cfn_template, aws_client):
     assert not my_key["KeyMetadata"]["Enabled"]
 
 
-@pytest.mark.aws_validated
+@Markers.parity.aws_validated
 def test_cfn_with_kms_resources(deploy_cfn_template, aws_client, snapshot):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.key_value("KeyAlias"))
