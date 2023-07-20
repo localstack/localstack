@@ -3,11 +3,12 @@ import socket
 import pytest as pytest
 
 from localstack.constants import LOCALHOST
+from localstack.testing.pytest.marking import Markers
 from localstack.utils.common import short_uid
 from localstack.utils.net import Port, port_can_be_bound, resolve_hostname
 
 
-@pytest.mark.skip_offline
+@Markers.skip_offline
 def test_resolve_hostname():
     assert "127." in resolve_hostname(LOCALHOST)
     assert resolve_hostname("example.com")

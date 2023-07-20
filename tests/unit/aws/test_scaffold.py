@@ -4,9 +4,10 @@ import pytest
 from click.testing import CliRunner
 
 from localstack.aws.scaffold import generate
+from localstack.testing.pytest.marking import Markers
 
 
-@pytest.mark.skip_offline
+@Markers.skip_offline
 @pytest.mark.parametrize(
     "service",
     [
