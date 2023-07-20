@@ -376,3 +376,22 @@ class TestCloudFormationConditions:
         topic_arn_with_suffix = stack.outputs["TopicWithSuffixRef"]
         aws_client.sns.get_topic_attributes(TopicArn=topic_arn_with_suffix)
         assert topic_arn_with_suffix.split(":")[-1] == f"{topic_prefix}-{region}-{suffix}"
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize("env", ["dev", "production"])
+    def test_conditional_in_conditional(self, env, deploy_cfn_template, aws_client):
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../../templates/conditions/conditional-in-conditional.yml",
+            ),
+            parameters={
+                "SelectedRegion": "us-east-1",
+                "Environment": env,
+            },
+        )
+
+        if env == "production":
+            assert stack.outputs["Result"] == "true"
+        else:
+            assert stack.outputs["Result"] == "false"
