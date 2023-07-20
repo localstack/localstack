@@ -8,20 +8,22 @@ from localstack.testing.scenario.provisioning import InfraProvisioner
 
 class TestEcsScenario:
     @pytest.fixture(scope="class", autouse=True)
-    def define_infrastructure(self, aws_client):
+    def infrastructure(self, aws_client):
         app = cdk.App()
         stack = cdk.Stack(app, "ClusterStack")
-        cluster = ecs.Cluster(stack, "MyCluster")
-        cdk.aws_ecs_patterns.ApplicationLoadBalancedFargateService(
+        nginx_service = cdk.aws_ecs_patterns.ApplicationLoadBalancedFargateService(
             stack,
-            "balancedService",
+            "NginxService",
             task_image_options=cdk.aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
                 image=ecs.ContainerImage.from_registry("nginx"),
                 container_port=80,
             ),
             desired_count=1,
-            listener_port=8080,
+            listener_port=8080,  # TODO: this doesn't seem to be working yet
         )
+        cdk.CfnOutput(stack, "ClusterName", value=nginx_service.cluster.cluster_name)
+        cdk.CfnOutput(stack, "ServiceName", value=nginx_service.service.service_name)
+        cdk.CfnOutput(stack, "AlbArn", value=nginx_service.load_balancer.load_balancer_arn)
 
         provisioner = InfraProvisioner(aws_client)
         provisioner.add_cdk_stack(stack)
@@ -29,8 +31,17 @@ class TestEcsScenario:
         yield provisioner
         provisioner.teardown()
 
-    def test_scenario_run_task(self, aws_client):
-        ecs_client = aws_client.ecs
-        clusters = ecs_client.list_clusters()
+    def test_scenario_validate_infra(self, aws_client, infrastructure):
+        outputs = infrastructure.get_stack_outputs(stack_name="ClusterStack")
+        cluster_name = outputs["ClusterName"]
+        alb_arn = outputs["AlbArn"]
+        clusters = aws_client.ecs.describe_clusters(clusters=[cluster_name])
+        assert clusters["clusters"][0]["clusterName"] == cluster_name
 
-        print("done")
+        albs = aws_client.elbv2.describe_load_balancers(LoadBalancerArns=[alb_arn])
+        assert albs["LoadBalancers"][0]["LoadBalancerArn"] == alb_arn
+
+    def test_scenario_call_service(self, aws_client, infrastructure):
+        # TODO: add a test here to call the deployed NGINX service
+        # outputs = infrastructure.get_stack_outputs(stack_name="ClusterStack")
+        requests.get("...")  # not working yet
