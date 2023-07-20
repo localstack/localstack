@@ -26,8 +26,8 @@ class SnapshotMarkers:
 
 
 class Markers:
-    parity: ParityMarkers
-    snapshot: SnapshotMarkers
+    parity = ParityMarkers
+    snapshot = SnapshotMarkers
 
     skip_offline = pytest.mark.skip_offline
     only_on_amd64 = pytest.mark.only_on_amd64
