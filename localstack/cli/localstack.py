@@ -7,8 +7,7 @@ from typing import Dict, List, Optional, Tuple
 
 from localstack import config
 from localstack.utils.analytics.cli import publish_invocation
-
-from ..utils.json import CustomEncoder
+from localstack.utils.json import CustomEncoder
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
