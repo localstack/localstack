@@ -110,8 +110,9 @@ def test_start_host(runner, monkeypatch):
 
 
 def test_status_services(runner, httpserver, monkeypatch):
-    monkeypatch.setattr(config, "EDGE_PORT_HTTP", httpserver.port)
-    monkeypatch.setattr(config, "EDGE_PORT", httpserver.port)
+    monkeypatch.setattr(
+        config, "GATEWAY_LISTEN", [config.HostAndPort("127.0.0.1", httpserver.port)]
+    )
 
     services = {"dynamodb": "starting", "s3": "running"}
     httpserver.expect_request("/_localstack/health", method="GET").respond_with_json(
