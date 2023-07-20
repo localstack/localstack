@@ -1,8 +1,10 @@
 from unittest.mock import patch
 
+import pytest
+
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.dynamodb.provider import DynamoDBProvider, get_store
-from localstack.services.dynamodb.utils import ItemSet, SchemaExtractor
+from localstack.services.dynamodb.utils import ItemSet, SchemaExtractor, dynamize_value
 from localstack.utils.aws import aws_stack
 
 
@@ -75,3 +77,32 @@ def test_get_key_schema_without_table_definition(mock_get_table_schema):
     assert (
         dynamodb_store.table_definitions[table_name] == mock_get_table_schema.return_value["Table"]
     )
+
+
+@pytest.mark.parametrize(
+    "value, result",
+    [
+        (True, {"BOOL": True}),
+        (None, {"NULL": True}),
+        ("test", {"S": "test"}),
+        (1, {"N": "1"}),
+        ({"test", "test1"}, {"SS": ["test", "test1"]}),
+        ({1, 2}, {"NS": ["1", "2"]}),
+        ({b"test", b"test1"}, {"BS": [b"test", b"test1"]}),
+        (b"test", {"B": b"test"}),
+        ({"key": "val"}, {"M": {"key": {"S": "val"}}}),
+        (["val", 2], {"L": [{"S": "val"}, {"N": "2"}]}),
+    ],
+)
+def test_dynamize_value(value, result):
+    # we need to set a special case for SS, NS and BS because sets are unordered, and won't keep the order when
+    # transformed into lists
+    if isinstance(value, (set, frozenset)):
+        dynamized = dynamize_value(value)
+        assert dynamized.keys() == result.keys()
+        for key, val in dynamized.items():
+            result[key].sort()
+            val.sort()
+            assert result[key] == val
+    else:
+        assert dynamize_value(value) == result

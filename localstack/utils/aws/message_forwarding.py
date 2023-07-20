@@ -16,7 +16,6 @@ from localstack.utils.aws.arns import (
     firehose_name,
     get_sqs_queue_url,
 )
-from localstack.utils.aws.aws_stack import connect_to_service
 from localstack.utils.http import add_path_parameters_to_url, add_query_params_to_url
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.strings import to_bytes, to_str
@@ -75,12 +74,14 @@ def send_event_to_target(
         sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), **kwargs)
 
     elif ":states:" in target_arn:
-        stepfunctions_client = connect_to_service("stepfunctions", region_name=region)
+        stepfunctions_client = connect_to(region_name=region).stepfunctions
         stepfunctions_client.start_execution(stateMachineArn=target_arn, input=json.dumps(event))
 
     elif ":firehose:" in target_arn:
         delivery_stream_name = firehose_name(target_arn)
-        firehose_client = connect_to_service("firehose", region_name=region)
+        firehose_client = clients.firehose.request_metadata(
+            service_principal=source_service, source_arn=source_arn
+        )
         firehose_client.put_record(
             DeliveryStreamName=delivery_stream_name,
             Record={"Data": to_bytes(json.dumps(event))},
@@ -91,7 +92,9 @@ def send_event_to_target(
             send_event_to_api_destination(target_arn, event, target.get("HttpParameters"))
 
         else:
-            events_client = connect_to_service("events", region_name=region)
+            events_client = clients.events.request_metadata(
+                service_principal=source_service, source_arn=source_arn
+            )
             eventbus_name = target_arn.split(":")[-1].split("/")[-1]
             events_client.put_events(
                 Entries=[
@@ -114,7 +117,9 @@ def send_event_to_target(
 
         stream_name = target_arn.split("/")[-1]
         partition_key = collections.get_safe(event, partition_key_path, event["id"])
-        kinesis_client = connect_to_service("kinesis", region_name=region)
+        kinesis_client = clients.kinesis.request_metadata(
+            service_principal=source_service, source_arn=source_arn
+        )
 
         kinesis_client.put_record(
             StreamName=stream_name,
@@ -123,8 +128,10 @@ def send_event_to_target(
         )
 
     elif ":logs:" in target_arn:
-        log_group_name = target_arn.split(":")[-1]
-        logs_client = connect_to_service("logs", region_name=region)
+        log_group_name = target_arn.split(":")[6]
+        logs_client = clients.logs.request_metadata(
+            service_principal=source_service, source_arn=source_arn
+        )
         log_stream_name = str(uuid.uuid4())
         logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
         logs_client.put_log_events(
@@ -204,7 +211,7 @@ def send_event_to_api_destination(target_arn, event, http_parameters: Optional[D
     # ARN format: ...:api-destination/{name}/{uuid}
     region = extract_region_from_arn(target_arn)
     api_destination_name = target_arn.split(":")[-1].split("/")[1]
-    events_client = connect_to_service("events", region_name=region)
+    events_client = connect_to(region_name=region).events
     destination = events_client.describe_api_destination(Name=api_destination_name)
 
     # get destination endpoint details

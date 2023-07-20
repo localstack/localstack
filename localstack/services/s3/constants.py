@@ -54,3 +54,19 @@ ALLOWED_HEADER_OVERRIDES = {
 # are creating bucket policies that enforce aws:SecureTransport, which makes the CDK deployment fail.
 # TODO: potentially look into making configurable
 ENABLE_MOTO_BUCKET_POLICY_ENFORCEMENT = False
+
+# params are required in presigned url
+SIGNATURE_V2_PARAMS = ["Signature", "Expires", "AWSAccessKeyId"]
+
+SIGNATURE_V4_PARAMS = [
+    "X-Amz-Algorithm",
+    "X-Amz-Credential",
+    "X-Amz-Date",
+    "X-Amz-Expires",
+    "X-Amz-SignedHeaders",
+    "X-Amz-Signature",
+]
+
+# The chunk size to use when iterating over and writing to S3 streams.
+# chosen as middle ground between memory usage and amount of iterations over the S3 object body
+S3_CHUNK_SIZE = 65536

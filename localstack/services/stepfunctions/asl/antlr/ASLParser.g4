@@ -45,6 +45,10 @@ state_stmt
     | items_path_decl
     | item_processor_decl
     | max_concurrency_decl
+    | timeout_seconds_decl
+    | timeout_seconds_path_decl
+    | heartbeat_seconds_decl
+    | heartbeat_seconds_path_decl
     | branches_decl
     | parameters_decl
     | retry_decl
@@ -98,7 +102,7 @@ result_decl
     ;
 
 result_path_decl
-    : RESULTPATH COLON keyword_or_string // TODO keywords too?
+    : RESULTPATH COLON (keyword_or_string | NULL) // TODO keywords too?
     ;
 
 output_path_decl
@@ -147,6 +151,22 @@ max_concurrency_decl
 
 parameters_decl
     : PARAMETERS COLON payload_tmpl_decl
+    ;
+
+timeout_seconds_decl
+    : TIMEOUTSECONDS COLON INT
+    ;
+
+timeout_seconds_path_decl
+    : TIMEOUTSECONDSPATH COLON STRINGPATH
+    ;
+
+heartbeat_seconds_decl
+    : HEARTBEATSECONDS COLON INT
+    ;
+
+heartbeat_seconds_path_decl
+    : HEARTBEATSECONDSPATH COLON STRINGPATH
     ;
 
 payload_tmpl_decl

@@ -20,14 +20,16 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class CatcherDecl(EvalComponent):
+    _DEFAULT_RESULT_PATH: Final[ResultPath] = ResultPath(result_path_src="$")
+
     def __init__(
         self,
         error_equals: ErrorEqualsDecl,
         next_decl: Next,
-        result_path: ResultPath = ResultPath(result_path_src="$"),
+        result_path: ResultPath = _DEFAULT_RESULT_PATH,
     ):
         self.error_equals: Final[ErrorEqualsDecl] = error_equals
-        self.result_path: Final[ResultPath] = result_path
+        self.result_path: Final[ResultPath] = result_path or CatcherDecl._DEFAULT_RESULT_PATH
         self.next_decl: Final[Next] = next_decl
 
     @classmethod
@@ -63,10 +65,12 @@ class CatcherDecl(EvalComponent):
                 f"Internal Error: invalid event details declaration in FailureEvent: '{failure_event}'."
             )
         spec_event_details: dict = list(failure_event.event_details.values())[0]
+        error = spec_event_details["error"]
+        cause = spec_event_details.get("cause") or ""
         # Stepfunctions renames these fields to capital in this scenario.
         return {
-            "Error": spec_event_details["error"],
-            "Cause": spec_event_details["cause"],
+            "Error": error,
+            "Cause": cause,
         }
 
     def _eval_body(self, env: Environment) -> None:

@@ -28,28 +28,18 @@ from localstack.aws.api.s3 import (
 from localstack.aws.chain import HandlerChain
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Request, Response
+from localstack.services.s3.constants import SIGNATURE_V2_PARAMS, SIGNATURE_V4_PARAMS
 from localstack.services.s3.utils import (
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
     _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
     forwarded_from_virtual_host_addressed_request,
     is_bucket_name_valid,
+    is_presigned_url_request,
 )
 from localstack.utils.strings import to_bytes
 
 LOG = logging.getLogger(__name__)
-
-# params are required in presigned url
-SIGNATURE_V2_PARAMS = ["Signature", "Expires", "AWSAccessKeyId"]
-
-SIGNATURE_V4_PARAMS = [
-    "X-Amz-Algorithm",
-    "X-Amz-Credential",
-    "X-Amz-Date",
-    "X-Amz-Expires",
-    "X-Amz-SignedHeaders",
-    "X-Amz-Signature",
-]
 
 
 SIGNATURE_V2_POST_FIELDS = [
@@ -254,19 +244,6 @@ def is_expired(expiry_datetime: datetime.datetime):
     return now_datetime > expiry_datetime
 
 
-def is_presigned_url_request(context: RequestContext) -> bool:
-    """
-    Detects pre-signed URL from query string parameters
-    Return True if any kind of presigned URL query string parameter is encountered
-    :param context: the request context from the handler chain
-    """
-    # Detecting pre-sign url and checking signature
-    query_parameters = context.request.args
-    return any(p in query_parameters for p in SIGNATURE_V2_PARAMS) or any(
-        p in query_parameters for p in SIGNATURE_V4_PARAMS
-    )
-
-
 def is_valid_sig_v2(query_args: set) -> bool:
     """
     :param query_args: a Set representing the query parameters from the presign URL request
@@ -305,6 +282,7 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
     :param context: RequestContext
     """
     query_parameters = context.request.args
+    method = context.request.method
     # todo: use the current User credentials instead? so it would not be set in stone??
     credentials = Credentials(
         access_key=TEST_AWS_ACCESS_KEY_ID,
@@ -329,13 +307,10 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
 
     auth_signer = HmacV1QueryAuthValidation(credentials=credentials, expires=expires)
 
-    pre_signature_request = _reverse_inject_signature_hmac_v1_query(context)
-
-    split = urlsplit(pre_signature_request.url)
-    headers = _get_aws_request_headers(pre_signature_request.headers)
+    split_url, headers = _reverse_inject_signature_hmac_v1_query(context.request)
 
     signature, string_to_sign = auth_signer.get_signature(
-        pre_signature_request.method, split, headers, auth_path=None
+        method, split_url, headers, auth_path=None
     )
     # after passing through the virtual host to path proxy, the signature is parsed and `+` are replaced by space
     req_signature = context.request.args.get("Signature").replace(" ", "+")
@@ -352,36 +327,20 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
             raise ex
 
 
-def _get_aws_request_headers(werkzeug_headers: Headers) -> HTTPHeaders:
-    """
-    Converts Werkzeug headers into HTTPHeaders() needed to form an AWSRequest
-    :param werkzeug_headers: Werkzeug request headers
-    :return: headers in HTTPHeaders format
-    """
-    # Werkzeug Headers can have multiple values for the same key
-    # HTTPHeaders will append automatically the values when we set it to the same key multiple times
-    # see https://docs.python.org/3/library/http.client.html#httpmessage-objects
-    # see https://docs.python.org/3/library/email.compat32-message.html#email.message.Message.__setitem__
-    headers = HTTPHeaders()
-    for key, value in werkzeug_headers.items():
-        headers[key] = value
-
-    return headers
-
-
-def _reverse_inject_signature_hmac_v1_query(context: RequestContext) -> Request:
+def _reverse_inject_signature_hmac_v1_query(
+    request: Request,
+) -> tuple[urlparse.SplitResult, HTTPHeaders]:
     """
     Reverses what does HmacV1QueryAuth._inject_signature while injecting the signature in the request.
     Transforms the query string parameters in headers to recalculate the signature
     see botocore.auth.HmacV1QueryAuth._inject_signature
-    :param context:
-    :return:
+    :param request: the original request
+    :return: tuple of a split result from the reversed request, and the reversed headers
     """
-
     new_headers = {}
     new_query_string_dict = {}
 
-    for header, value in context.request.args.items():
+    for header, value in request.args.items():
         header_low = header.lower()
         if header_low not in HmacV1QueryAuthValidation.post_signature_headers:
             new_headers[header] = value
@@ -390,7 +349,7 @@ def _reverse_inject_signature_hmac_v1_query(context: RequestContext) -> Request:
 
     # there should not be any headers here. If there are, it means they have been added by the client
     # We should verify them, they will fail the signature except if they were part of the original request
-    for header, value in context.request.headers.items():
+    for header, value in request.headers.items():
         header_low = header.lower()
         if header_low.startswith("x-amz-") or header_low in ["content-type", "date", "content-md5"]:
             new_headers[header_low] = value
@@ -398,36 +357,16 @@ def _reverse_inject_signature_hmac_v1_query(context: RequestContext) -> Request:
     # rebuild the query string
     new_query_string = percent_encode_sequence(new_query_string_dict)
 
-    # easier to recreate the request, we would have to delete every cached property otherwise
-    reversed_request = _create_new_request(
-        request=context.request,
-        headers=new_headers,
-        query_string=new_query_string,
-    )
+    # we need to URL encode the path, as the key needs to be urlencoded for the signature to match
+    encoded_path = urlparse.quote(request.path)
 
-    return reversed_request
+    reversed_url = f"{request.scheme}://{request.host}{encoded_path}?{new_query_string}"
 
+    reversed_headers = HTTPHeaders()
+    for key, value in new_headers.items():
+        reversed_headers[key] = value
 
-def _create_new_request(request: Request, headers: Dict[str, str], query_string: str) -> Request:
-    """
-    Create a new request from an existent one, with new headers and query string
-    It is easier to create a new one as the existing request has a lot of cached properties based on query_string
-    :param request: the incoming pre-signed request
-    :param headers: new headers used for signature calculation
-    :param query_string: new query string for signature calculation
-    :return: a new Request with passed headers and query_string
-    """
-    return Request(
-        method=request.method,
-        headers=headers,
-        path=request.path,
-        query_string=query_string,
-        body=request.data,
-        scheme=request.scheme,
-        root_path=request.root_path,
-        server=request.server,
-        remote_addr=request.remote_addr,
-    )
+    return urlsplit(reversed_url), reversed_headers
 
 
 def validate_presigned_url_s3v4(context: RequestContext) -> None:
@@ -560,6 +499,8 @@ class S3SigV4SignatureContext:
             else:
                 self.path = self.request.path
 
+        # we need to URL encode the path, as the key needs to be urlencoded for the signature to match
+        self.path = urlparse.quote(self.path)
         self.aws_request = self._get_aws_request()
 
     def update_host_port(self, new_host_port: str, original_host_port: str = None):

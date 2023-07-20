@@ -102,5 +102,111 @@
         }
       }
     }
+  },
+  "tests/integration/test_events.py::TestEvents::test_put_events_nonexistent_event_bus": {
+    "recorded-date": "05-05-2023, 12:00:22",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "EventId": "<uuid:1>"
+          },
+          {
+            "EventId": "<uuid:2>"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-events": [
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:1>",
+            "detail-type": "CustomType",
+            "source": "MySource",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "message": "for the default event bus"
+            }
+          }
+        }
+      ],
+      "non-existent-bus": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Event bus <custom-event-bus> does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_events.py::TestEvents::test_test_event_pattern": {
+    "recorded-date": "05-07-2023, 19:41:16",
+    "recorded-content": {
+      "eventbridge-test-event-pattern-response": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "eventbridge-test-event-pattern-response-no-match": {
+        "Result": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_events.py::TestEvents::test_put_events_time": {
+    "recorded-date": "13-07-2023, 02:49:20",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "EventId": "<uuid:1>"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-events": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:1>",
+            "detail-type": "CustomType",
+            "source": "MySource",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "message": "for the default event bus"
+            }
+          }
+        }
+      ]
+    }
   }
 }

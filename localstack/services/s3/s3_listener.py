@@ -21,6 +21,7 @@ from requests.models import Request, Response
 
 from localstack import config, constants
 from localstack.aws.api import CommonServiceException
+from localstack.aws.connect import connect_to
 from localstack.aws.protocol.serializer import gen_amzn_requestid
 from localstack.config import get_protocol as get_service_protocol
 from localstack.services.generic_proxy import ProxyListener
@@ -328,7 +329,7 @@ def send_notification_for_subscriber(
 
     key = unquote(object_path.replace("//", "/"))[1:]
 
-    s3_client = aws_stack.connect_to_service("s3")
+    s3_client = connect_to().s3
     object_data = {}
     try:
         object_data = s3_client.head_object(Bucket=bucket_name, Key=key)
@@ -352,7 +353,7 @@ def send_notification_for_subscriber(
 
     if notification.get("Queue"):
         region = arns.extract_region_from_arn(notification["Queue"])
-        sqs_client = aws_stack.connect_to_service("sqs", region_name=region)
+        sqs_client = connect_to(region_name=region).sqs
         try:
             queue_url = arns.sqs_queue_url_for_arn(notification["Queue"])
             sqs_client.send_message(
@@ -366,7 +367,7 @@ def send_notification_for_subscriber(
             )
     if notification.get("Topic"):
         region = arns.extract_region_from_arn(notification["Topic"])
-        sns_client = aws_stack.connect_to_service("sns", region_name=region)
+        sns_client = connect_to(region_name=region).sns
         try:
             sns_client.publish(
                 TopicArn=notification["Topic"],
@@ -383,9 +384,7 @@ def send_notification_for_subscriber(
         # make sure we don't run into a socket timeout
         region = arns.extract_region_from_arn(lambda_function_config)
         connection_config = botocore.config.Config(read_timeout=300)
-        lambda_client = aws_stack.connect_to_service(
-            "lambda", config=connection_config, region_name=region
-        )
+        lambda_client = connect_to(config=connection_config, region_name=region).awslambda
         try:
             lambda_client.invoke(
                 FunctionName=lambda_function_config,
@@ -398,12 +397,12 @@ def send_notification_for_subscriber(
             )
 
     if "EventBridge" in notification:
-        s3api_client = aws_stack.connect_to_service("s3")
+        s3api_client = connect_to().s3
         region = (
             s3api_client.get_bucket_location(Bucket=bucket_name)["LocationConstraint"]
             or config.DEFAULT_REGION
         )
-        events_client = aws_stack.connect_to_service("events", region_name=region)
+        events_client = connect_to(region_name=region).events
 
         entry = {
             "Source": "aws.s3",
@@ -782,7 +781,7 @@ def fix_range_content_type(bucket_name, path, headers, response):
     if response.status_code >= 400:
         return
 
-    s3_client = aws_stack.connect_to_service("s3")
+    s3_client = connect_to().s3
     path = urlparse(unquote(path)).path
     key_name = extract_key_name(headers, path)
     result = s3_client.head_object(Bucket=bucket_name, Key=key_name)
@@ -1020,7 +1019,7 @@ def bucket_exists(bucket_name):
     """
     bucket_name = normalize_bucket_name(bucket_name)
 
-    s3_client = aws_stack.connect_to_service("s3")
+    s3_client = connect_to().s3
     try:
         s3_client.head_bucket(Bucket=bucket_name)
     except ClientError as err:
@@ -1794,7 +1793,7 @@ class ProxyListenerS3(ProxyListener):
 
 
 def serve_static_website(headers, path, bucket_name):
-    s3_client = aws_stack.connect_to_service("s3")
+    s3_client = connect_to().s3
 
     # check if bucket exists
     try:

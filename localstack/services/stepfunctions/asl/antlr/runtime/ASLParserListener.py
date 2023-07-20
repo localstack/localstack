@@ -1,4 +1,4 @@
-# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLParser.g4 by ANTLR 4.11.1
+# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLParser.g4 by ANTLR 4.12.0
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .ASLParser import ASLParser
@@ -248,6 +248,42 @@ class ASLParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by ASLParser#parameters_decl.
     def exitParameters_decl(self, ctx:ASLParser.Parameters_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#timeout_seconds_decl.
+    def enterTimeout_seconds_decl(self, ctx:ASLParser.Timeout_seconds_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#timeout_seconds_decl.
+    def exitTimeout_seconds_decl(self, ctx:ASLParser.Timeout_seconds_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#timeout_seconds_path_decl.
+    def enterTimeout_seconds_path_decl(self, ctx:ASLParser.Timeout_seconds_path_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#timeout_seconds_path_decl.
+    def exitTimeout_seconds_path_decl(self, ctx:ASLParser.Timeout_seconds_path_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#heartbeat_seconds_decl.
+    def enterHeartbeat_seconds_decl(self, ctx:ASLParser.Heartbeat_seconds_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#heartbeat_seconds_decl.
+    def exitHeartbeat_seconds_decl(self, ctx:ASLParser.Heartbeat_seconds_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#heartbeat_seconds_path_decl.
+    def enterHeartbeat_seconds_path_decl(self, ctx:ASLParser.Heartbeat_seconds_path_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#heartbeat_seconds_path_decl.
+    def exitHeartbeat_seconds_path_decl(self, ctx:ASLParser.Heartbeat_seconds_path_declContext):
         pass
 
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-import json
 from typing import Final, Optional
 
 from localstack.aws.api.stepfunctions import (
@@ -13,7 +12,9 @@ from localstack.aws.api.stepfunctions import (
     GetExecutionHistoryOutput,
     HistoryEventList,
     InvalidName,
+    SensitiveCause,
     SensitiveData,
+    SensitiveError,
     StartExecutionOutput,
     Timestamp,
     TraceHeader,
@@ -45,13 +46,17 @@ class Execution:
         def terminated(self) -> None:
             exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
             self.execution.stop_date = datetime.datetime.now()
-            self.execution.output = to_json_str(self.execution.exec_worker.env.inp)
             if isinstance(exit_program_state, ProgramEnded):
                 self.execution.exec_status = ExecutionStatus.SUCCEEDED
+                self.execution.output = to_json_str(
+                    self.execution.exec_worker.env.inp, separators=(",", ":")
+                )
             elif isinstance(exit_program_state, ProgramStopped):
                 self.execution.exec_status = ExecutionStatus.ABORTED
             elif isinstance(exit_program_state, ProgramError):
                 self.execution.exec_status = ExecutionStatus.FAILED
+                self.execution.error = exit_program_state.error["error"]
+                self.execution.cause = exit_program_state.error["cause"]
             else:
                 raise RuntimeWarning(
                     f"Execution ended with unsupported ProgramState type '{type(exit_program_state)}'."
@@ -72,6 +77,9 @@ class Execution:
     output: Optional[SensitiveData]
     output_details: Optional[CloudWatchEventsExecutionDataDetails]
 
+    error: Optional[SensitiveError]
+    cause: Optional[SensitiveCause]
+
     exec_worker: Optional[ExecutionWorker]
 
     def __init__(
@@ -82,7 +90,6 @@ class Execution:
         state_machine: StateMachine,
         start_date: Timestamp,
         input_data: Optional[dict] = None,
-        input_details: Optional[CloudWatchEventsExecutionDataDetails] = None,
         trace_header: Optional[TraceHeader] = None,
     ):
         self.name = name
@@ -91,31 +98,39 @@ class Execution:
         self.state_machine = state_machine
         self.start_date = start_date
         self.input_data = input_data
-        self.input_details = input_details
+        self.input_details = CloudWatchEventsExecutionDataDetails(included=True)
         self.trace_header = trace_header
         self.exec_status = None
         self.stop_date = None
         self.output = None
-        self.output_details = None
+        self.output_details = CloudWatchEventsExecutionDataDetails(included=True)
         self.exec_worker = None
+        self.error = None
+        self.cause = None
 
     def to_start_output(self) -> StartExecutionOutput:
         return StartExecutionOutput(executionArn=self.exec_arn, startDate=self.start_date)
 
     def to_describe_output(self) -> DescribeExecutionOutput:
-        return DescribeExecutionOutput(
+        describe_output = DescribeExecutionOutput(
             executionArn=self.exec_arn,
             stateMachineArn=self.state_machine.arn,
-            name=self.state_machine.name,
+            name=self.name,
             status=self.exec_status,
             startDate=self.start_date,
             stopDate=self.stop_date,
-            input=json.dumps(self.input_data),
+            input=to_json_str(self.input_data, separators=(",", ":")),
             inputDetails=self.input_details,
-            output=self.output,
-            outputDetails=self.output_details,
             traceHeader=self.trace_header,
         )
+        if describe_output["status"] == ExecutionStatus.SUCCEEDED:
+            describe_output["output"] = self.output
+            describe_output["outputDetails"] = self.output_details
+        if self.error is not None:
+            describe_output["error"] = self.error
+        if self.cause is not None:
+            describe_output["cause"] = self.cause
+        return describe_output
 
     def to_execution_list_item(self) -> ExecutionListItem:
         return ExecutionListItem(

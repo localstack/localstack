@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from mypy_boto3_elasticbeanstalk import ElasticBeanstalkClient
     from mypy_boto3_elbv2 import ElasticLoadBalancingv2Client
     from mypy_boto3_emr import EMRClient
+    from mypy_boto3_emr_serverless import EMRServerlessClient
     from mypy_boto3_es import ElasticsearchServiceClient
     from mypy_boto3_events import EventBridgeClient
     from mypy_boto3_firehose import FirehoseClient
@@ -53,6 +54,7 @@ if TYPE_CHECKING:
     from mypy_boto3_lakeformation import LakeFormationClient
     from mypy_boto3_lambda import LambdaClient
     from mypy_boto3_logs import CloudWatchLogsClient
+    from mypy_boto3_mediaconvert import MediaConvertClient
     from mypy_boto3_mediastore import MediaStoreClient
     from mypy_boto3_mq import MQClient
     from mypy_boto3_mwaa import MWAAClient
@@ -82,6 +84,7 @@ if TYPE_CHECKING:
     from mypy_boto3_sns import SNSClient
     from mypy_boto3_sqs import SQSClient
     from mypy_boto3_ssm import SSMClient
+    from mypy_boto3_sso_admin import SSOAdminClient
     from mypy_boto3_stepfunctions import SFNClient
     from mypy_boto3_sts import STSClient
     from mypy_boto3_timestream_query import TimestreamQueryClient
@@ -138,6 +141,7 @@ class TypedServiceClientFactory(abc.ABC):
         "ElasticLoadBalancingv2Client", "MetadataRequestInjector[ElasticLoadBalancingv2Client]"
     ]
     emr: Union["EMRClient", "MetadataRequestInjector[EMRClient]"]
+    emr_serverless: Union["EMRServerlessClient", "MetadataRequestInjector[EMRServerlessClient]"]
     es: Union["ElasticsearchServiceClient", "MetadataRequestInjector[ElasticsearchServiceClient]"]
     events: Union["EventBridgeClient", "MetadataRequestInjector[EventBridgeClient]"]
     firehose: Union["FirehoseClient", "MetadataRequestInjector[FirehoseClient]"]
@@ -160,6 +164,7 @@ class TypedServiceClientFactory(abc.ABC):
     kms: Union["KMSClient", "MetadataRequestInjector[KMSClient]"]
     lakeformation: Union["LakeFormationClient", "MetadataRequestInjector[LakeFormationClient]"]
     logs: Union["CloudWatchLogsClient", "MetadataRequestInjector[CloudWatchLogsClient]"]
+    mediaconvert: Union["MediaConvertClient", "MetadataRequestInjector[MediaConvertClient]"]
     mediastore: Union["MediaStoreClient", "MetadataRequestInjector[MediaStoreClient]"]
     mq: Union["MQClient", "MetadataRequestInjector[MQClient]"]
     mwaa: Union["MWAAClient", "MetadataRequestInjector[MWAAClient]"]
@@ -202,6 +207,7 @@ class TypedServiceClientFactory(abc.ABC):
     sns: Union["SNSClient", "MetadataRequestInjector[SNSClient]"]
     sqs: Union["SQSClient", "MetadataRequestInjector[SQSClient]"]
     ssm: Union["SSMClient", "MetadataRequestInjector[SSMClient]"]
+    sso_admin: Union["SSOAdminClient", "MetadataRequestInjector[SSOAdminClient]"]
     stepfunctions: Union["SFNClient", "MetadataRequestInjector[SFNClient]"]
     sts: Union["STSClient", "MetadataRequestInjector[STSClient]"]
     timestream_query: Union[
@@ -228,8 +234,10 @@ class ServicePrincipal(str):
     To save some space in our DTOs, we only add the `<service-name>` part of the service principal here.
     """
 
-    awslambda = "lambda"
     apigateway = "apigateway"
+    awslambda = "lambda"
+    events = "events"
     firehose = "firehose"
-    sqs = "sqs"
+    s3 = "s3"
     sns = "sns"
+    sqs = "sqs"

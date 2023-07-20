@@ -2,7 +2,6 @@ import pytest
 
 import localstack.services.sqs.exceptions
 import localstack.services.sqs.models
-from localstack.aws.api.sqs import Message
 from localstack.services.sqs import provider
 from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.services.sqs.utils import get_message_attributes_md5, parse_queue_url
@@ -43,14 +42,12 @@ def test_compare_sqs_message_attrs_md5():
     assert md5_provider == md5_listener
 
 
-def test_handle_string_max_receive_count_in_dead_letter_check():
+def test_parse_max_receive_count_string_in_redrive_policy():
     # fmt: off
     policy = {"RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:us-east-1:000000000000:DeadLetterQueue\",\"maxReceiveCount\": \"5\" }"}
     # fmt: on
     queue = localstack.services.sqs.models.SqsQueue("TestQueue", "us-east-1", "123456789", policy)
-    sqs_message = localstack.services.sqs.models.SqsMessage(Message(), {})
-    result = provider.SqsProvider()._dead_letter_check(queue, sqs_message, None)
-    assert result is False
+    assert queue.max_receive_count == 5
 
 
 def test_except_check_message_size():

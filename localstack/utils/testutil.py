@@ -10,6 +10,7 @@ import time
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from localstack.aws.connect import connect_externally_to, connect_to
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns
 from localstack.utils.aws import resources as resource_utils
@@ -123,8 +124,9 @@ def create_lambda_archive(
         return result
 
 
-def delete_lambda_function(name, region_name: str = None):  # TODO: remove all occurrences
-    client = aws_stack.connect_to_service("lambda", region_name=region_name)
+# TODO: remove all occurrences
+def delete_lambda_function(name, region_name: str = None):
+    client = connect_externally_to(region_name=region_name).awslambda
     client.delete_function(FunctionName=name)
 
 
@@ -195,6 +197,7 @@ def create_lambda_function(
     role=None,
     timeout=None,
     region_name=None,
+    s3_client=None,
     **kwargs,
 ):
     """Utility method to create a new function via the Lambda API
@@ -208,7 +211,7 @@ def create_lambda_function(
 
     starting_position = starting_position or LAMBDA_DEFAULT_STARTING_POSITION
     runtime = runtime or LAMBDA_DEFAULT_RUNTIME
-    client = client or aws_stack.connect_to_service("lambda", region_name=region_name)
+    client = client or connect_to(region_name=region_name).awslambda
 
     # load zip file content if handler_file is specified
     if not zip_file and handler_file:
@@ -234,7 +237,7 @@ def create_lambda_function(
 
     lambda_code = {"ZipFile": zip_file}
     if len(zip_file) > MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE:
-        s3 = aws_stack.connect_to_service("s3")
+        s3 = s3_client or connect_externally_to().s3
         resource_utils.get_or_create_bucket(LAMBDA_ASSETS_BUCKET_NAME)
         asset_key = f"{short_uid()}.zip"
         s3.upload_fileobj(
@@ -433,7 +436,7 @@ def list_all_s3_objects():
 
 
 def delete_all_s3_objects(buckets):
-    s3_client = aws_stack.connect_to_service("s3")
+    s3_client = connect_to().s3
     buckets = ensure_list(buckets)
     for bucket in buckets:
         keys = all_s3_object_keys(bucket)
@@ -461,22 +464,23 @@ def all_s3_object_keys(bucket: str) -> List[str]:
     return keys
 
 
-def map_all_s3_objects(to_json: bool = True, buckets: List[str] = None) -> Dict[str, Any]:
-    s3_client = aws_stack.connect_to_resource("s3")
+def map_all_s3_objects(
+    to_json: bool = True, buckets: str | List[str] = None, s3_resource=None
+) -> Dict[str, Any]:
+    # TODO: remove aws_stack
+    s3_resource = s3_resource or aws_stack.connect_to_resource("s3")
     result = {}
     buckets = ensure_list(buckets)
-    buckets = [s3_client.Bucket(b) for b in buckets] if buckets else s3_client.buckets.all()
+    buckets = [s3_resource.Bucket(b) for b in buckets] if buckets else s3_resource.buckets.all()
     for bucket in buckets:
         for key in bucket.objects.all():
-            value = download_s3_object(s3_client, key.bucket_name, key.key)
+            value = download_s3_object(s3_resource, key.bucket_name, key.key)
             try:
                 if to_json:
                     value = json.loads(value)
-                key = "%s%s%s" % (
-                    key.bucket_name,
-                    "" if key.key.startswith("/") else "/",
-                    key.key,
-                )
+                bucket_name = key.bucket_name
+                separator = "" if key.key.startswith("/") else "/"
+                key = f"{bucket_name}{separator}{key.key}"
                 result[key] = value
             except Exception:
                 # skip non-JSON or binary objects
@@ -543,7 +547,7 @@ def check_expected_lambda_log_events_length(
 
 
 def list_all_log_events(log_group_name: str, logs_client=None) -> List[Dict]:
-    logs = logs_client or aws_stack.connect_to_service("logs")
+    logs = logs_client or connect_to().logs
     return list_all_resources(
         lambda kwargs: logs.filter_log_events(logGroupName=log_group_name, **kwargs),
         last_token_attr_name="nextToken",

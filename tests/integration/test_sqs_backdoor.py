@@ -4,7 +4,7 @@ import xmltodict
 from botocore.exceptions import ClientError
 
 from localstack.services.sqs.utils import parse_queue_url
-from localstack.utils.aws import aws_stack
+from localstack.utils.strings import short_uid
 
 
 def _parse_message_attributes(xml) -> list[dict]:
@@ -53,16 +53,16 @@ class TestSqsDeveloperEdpoints:
         assert attributes[1]["ApproximateReceiveCount"] == "0"
 
     @pytest.mark.only_localstack
-    def test_list_messages_as_botocore_endpoint_url(self, sqs_create_queue, aws_client):
+    def test_list_messages_as_botocore_endpoint_url(
+        self, sqs_create_queue, aws_client, aws_client_factory
+    ):
         queue_url = sqs_create_queue()
 
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-1")
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-2")
 
         # use the developer endpoint as boto client URL
-        client = aws_stack.connect_to_service(
-            "sqs", endpoint_url="http://localhost:4566/_aws/sqs/messages"
-        )
+        client = aws_client_factory(endpoint_url="http://localhost:4566/_aws/sqs/messages").sqs
         # max messages is ignored
         response = client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
 
@@ -74,12 +74,45 @@ class TestSqsDeveloperEdpoints:
         assert response["Messages"][1]["Attributes"]["ApproximateReceiveCount"] == "0"
 
     @pytest.mark.only_localstack
-    def test_list_messages_with_invalid_action_raises_error(self, sqs_create_queue):
+    def test_fifo_list_messages_as_botocore_endpoint_url(
+        self, sqs_create_queue, aws_client, aws_client_factory
+    ):
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "true",
+            },
+        )
+
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-1", MessageGroupId="1")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-2", MessageGroupId="1")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-3", MessageGroupId="2")
+
+        # use the developer endpoint as boto client URL
+        client = aws_client_factory(endpoint_url="http://localhost:4566/_aws/sqs/messages").sqs
+        # max messages is ignored
+        response = client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
+
+        assert len(response["Messages"]) == 3
+
+        assert response["Messages"][0]["Body"] == "message-1"
+        assert response["Messages"][1]["Body"] == "message-2"
+        assert response["Messages"][2]["Body"] == "message-3"
+        assert response["Messages"][0]["Attributes"]["ApproximateReceiveCount"] == "0"
+        assert response["Messages"][1]["Attributes"]["ApproximateReceiveCount"] == "0"
+        assert response["Messages"][2]["Attributes"]["ApproximateReceiveCount"] == "0"
+        assert response["Messages"][0]["Attributes"]["MessageGroupId"] == "1"
+        assert response["Messages"][1]["Attributes"]["MessageGroupId"] == "1"
+        assert response["Messages"][2]["Attributes"]["MessageGroupId"] == "2"
+
+    @pytest.mark.only_localstack
+    def test_list_messages_with_invalid_action_raises_error(
+        self, sqs_create_queue, aws_client_factory
+    ):
         queue_url = sqs_create_queue()
 
-        client = aws_stack.connect_to_service(
-            "sqs", endpoint_url="http://localhost:4566/_aws/sqs/messages"
-        )
+        client = aws_client_factory(endpoint_url="http://localhost:4566/_aws/sqs/messages").sqs
 
         with pytest.raises(ClientError) as e:
             client.send_message(QueueUrl=queue_url, MessageBody="foobar")

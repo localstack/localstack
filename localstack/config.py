@@ -1,13 +1,12 @@
 import logging
 import os
 import platform
-import re
 import socket
 import subprocess
 import tempfile
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Mapping, Tuple, TypeVar
+from typing import Any, Dict, List, Mapping, Optional, Tuple, TypeVar, Union
 
 from localstack import constants
 from localstack.constants import (
@@ -15,7 +14,6 @@ from localstack.constants import (
     DEFAULT_BUCKET_MARKER_LOCAL,
     DEFAULT_DEVELOP_PORT,
     DEFAULT_LAMBDA_CONTAINER_REGISTRY,
-    DEFAULT_SERVICE_PORTS,
     DEFAULT_VOLUME_DIR,
     ENV_INTERNAL_TEST_COLLECT_METRIC,
     ENV_INTERNAL_TEST_RUN,
@@ -199,43 +197,55 @@ class Directories:
         return str(self.__dict__)
 
 
-def eval_log_type(env_var_name):
-    """get the log type from environment variable"""
+def eval_log_type(env_var_name: str) -> Union[str, bool]:
+    """Get the log type from environment variable"""
     ls_log = os.environ.get(env_var_name, "").lower().strip()
     return ls_log if ls_log in LOG_LEVELS else False
 
 
-def is_env_true(env_var_name):
+def parse_boolean_env(env_var_name: str) -> Optional[bool]:
+    """Parse the value of the given env variable and return True/False, or None if it is not a boolean value."""
+    value = os.environ.get(env_var_name, "").lower().strip()
+    if value in TRUE_STRINGS:
+        return True
+    if value in FALSE_STRINGS:
+        return False
+    return None
+
+
+def is_env_true(env_var_name: str) -> bool:
     """Whether the given environment variable has a truthy value."""
     return os.environ.get(env_var_name, "").lower().strip() in TRUE_STRINGS
 
 
-def is_env_not_false(env_var_name):
+def is_env_not_false(env_var_name: str) -> bool:
     """Whether the given environment variable is empty or has a truthy value."""
     return os.environ.get(env_var_name, "").lower().strip() not in FALSE_STRINGS
 
 
-def load_environment(profile: str = None):
+def load_environment(profile: str = None) -> Optional[str]:
     """Loads the environment variables from ~/.localstack/{profile}.env
     :param profile: the profile to load (defaults to "default")
+    :returns str: the name of the actually loaded profile (might be the fallback)
     """
     if not profile:
         profile = "default"
 
     path = os.path.join(CONFIG_DIR, f"{profile}.env")
     if not os.path.exists(path):
-        return
+        return None
 
     import dotenv
 
     dotenv.load_dotenv(path, override=False)
+    return profile
 
 
 def is_persistence_enabled() -> bool:
     return PERSISTENCE and dirs.data
 
 
-def is_linux():
+def is_linux() -> bool:
     return platform.system() == "Linux"
 
 
@@ -255,8 +265,8 @@ def in_docker():
     Returns True if running in a docker container, else False
     Ref. https://docs.docker.com/config/containers/runmetrics/#control-groups
     """
-    if OVERRIDE_IN_DOCKER:
-        return True
+    if OVERRIDE_IN_DOCKER is not None:
+        return OVERRIDE_IN_DOCKER
 
     # check some marker files that we create in our Dockerfiles
     for path in [
@@ -338,8 +348,8 @@ def in_docker():
     return False
 
 
-# whether the in_docker check should always return true
-OVERRIDE_IN_DOCKER = is_env_true("OVERRIDE_IN_DOCKER")
+# whether the in_docker check should always return True or False
+OVERRIDE_IN_DOCKER = parse_boolean_env("OVERRIDE_IN_DOCKER")
 
 is_in_docker = in_docker()
 is_in_linux = is_linux()
@@ -352,10 +362,11 @@ CONFIG_DIR = os.environ.get("CONFIG_DIR", os.path.expanduser("~/.localstack"))
 
 # keep this on top to populate environment
 try:
-    load_environment(CONFIG_PROFILE)
+    # CLI specific: the actually loaded configuration profile
+    LOADED_PROFILE = load_environment(CONFIG_PROFILE)
 except ImportError:
     # dotenv may not be available in lambdas or other environments where config is loaded
-    pass
+    LOADED_PROFILE = None
 
 # default AWS region
 DEFAULT_REGION = (
@@ -373,6 +384,9 @@ SNAPSHOT_LOAD_STRATEGY = os.environ.get("SNAPSHOT_LOAD_STRATEGY", "").upper()
 
 # the strategy saving snapshots to disk when `PERSISTENCE=1` is used (on_shutdown, on_request, scheduled, manual)
 SNAPSHOT_SAVE_STRATEGY = os.environ.get("SNAPSHOT_SAVE_STRATEGY", "").upper()
+
+# the flush interval (in seconds) for persistence when the snapshot save strategy is set to "scheduled"
+SNAPSHOT_FLUSH_INTERVAL = int(os.environ.get("SNAPSHOT_FLUSH_INTERVAL") or 15)
 
 # whether to clear config.dirs.tmp on startup and shutdown
 CLEAR_TMP_FOLDER = is_env_not_false("CLEAR_TMP_FOLDER")
@@ -412,6 +426,9 @@ LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 
 # whether legacy s3 is enabled
 LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "legacy"
+
+# whether the S3 streaming provider is enabled (beware, it breaks persistence for now)
+STREAM_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "stream"
 
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
@@ -464,7 +481,6 @@ if is_trace_logging_enabled():
     LOG.debug(
         "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
     )
-
 
 # expose services on a specific host externally
 # DEPRECATED:  since v2.0.0 as we are moving to LOCALSTACK_HOST
@@ -603,7 +619,6 @@ def get_gateway_listen(gateway_listen: str) -> List[HostAndPort]:
     EDGE_PORT_HTTP,
 ) = populate_legacy_edge_configuration(os.environ)
 
-
 # optional target URL to forward all edge requests to
 EDGE_FORWARD_URL = os.environ.get("EDGE_FORWARD_URL", "").strip()
 
@@ -612,6 +627,9 @@ DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
 
 # Default timeout for Docker API calls sent by the Docker SDK client, in seconds.
 DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS = int(os.environ.get("DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS") or 60)
+
+# Default number of retries to connect to the Docker API by the Docker SDK client.
+DOCKER_SDK_DEFAULT_RETRIES = int(os.environ.get("DOCKER_SDK_DEFAULT_RETRIES") or 0)
 
 # whether to enable API-based updates of configuration variables at runtime
 ENABLE_CONFIG_UPDATES = is_env_true("ENABLE_CONFIG_UPDATES")
@@ -706,7 +724,10 @@ try:
             DOCKER_HOST_FROM_CONTAINER = "host.docker.internal"
     # update LOCALSTACK_HOSTNAME if host.docker.internal is available
     if is_in_docker:
-        DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname("host.docker.internal")
+        try:
+            DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname("host.docker.internal")
+        except socket.error:
+            DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname("host.containers.internal")
         if LOCALSTACK_HOSTNAME == DOCKER_BRIDGE_IP:
             LOCALSTACK_HOSTNAME = DOCKER_HOST_FROM_CONTAINER
 except socket.error:
@@ -782,6 +803,14 @@ SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "off"
 
 # Disable the check for MaxNumberOfMessage in SQS ReceiveMessage
 SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT = is_env_true("SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT")
+
+# Disable cloudwatch metrics for SQS
+SQS_DISABLE_CLOUDWATCH_METRICS = is_env_true("SQS_DISABLE_CLOUDWATCH_METRICS")
+
+# Interval for reporting "approximate" metrics to cloudwatch, default is 60 seconds
+SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL = int(
+    os.environ.get("SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL") or 60
+)
 
 # DEPRECATED: only applies to old lambda provider
 # Endpoint host under which LocalStack APIs are accessible from Lambda Docker containers.
@@ -1005,6 +1034,13 @@ MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER
 # Whether to return and parse access key ids starting with an "A", like on AWS
 PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 
+# Show exceptions for CloudFormation deploy errors
+CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
+
+# Selectively enable/disable new resource providers
+# e.g. CFN_RESOURCE_PROVIDER_OVERRIDES='{"AWS::Lambda::Version": "GenericBaseModel","AWS::Lambda::Function": "ResourceProvider"}'
+CFN_RESOURCE_PROVIDER_OVERRIDES = os.environ.get("CFN_RESOURCE_PROVIDER_OVERRIDES", "{}")
+
 # HINT: Please add deprecated environment variables to deprecations.py
 
 # list of environment variable names used for configuration.
@@ -1013,7 +1049,9 @@ PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 CONFIG_ENV_VARS = [
     "ALLOW_NONSTANDARD_REGIONS",
     "BUCKET_MARKER_LOCAL",
-    "CFN_ENABLE_RESOLVE_REFS_IN_MODELS",
+    "CFN_VERBOSE_ERRORS",
+    "CFN_RESOURCE_PROVIDER_OVERRIDES",
+    "CI",
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEBUG_HANDLER_CHAIN",
@@ -1092,11 +1130,13 @@ CONFIG_ENV_VARS = [
     "LEGACY_EDGE_PROXY",
     "LEGACY_SNS_GCM_PUBLISHING",
     "LOCALSTACK_API_KEY",
+    "LOCALSTACK_AUTH_TOKEN",
     "LOCALSTACK_HOST",
     "LOCALSTACK_HOSTNAME",
     "LOG_LICENSE_ISSUES",
     "LS_LOG",
     "MAIN_CONTAINER_NAME",
+    "MAIN_DOCKER_NETWORK",
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "OUTBOUND_HTTP_PROXY",
     "OUTBOUND_HTTPS_PROXY",
@@ -1111,10 +1151,13 @@ CONFIG_ENV_VARS = [
     "SKIP_SSL_CERT_DOWNLOAD",
     "SNAPSHOT_LOAD_STRATEGY",
     "SNAPSHOT_SAVE_STRATEGY",
+    "SNAPSHOT_FLUSH_INTERVAL",
     "SQS_DELAY_PURGE_RETRY",
     "SQS_DELAY_RECENTLY_DELETED",
     "SQS_ENDPOINT_STRATEGY",
     "SQS_PORT_EXTERNAL",
+    "SQS_DISABLE_CLOUDWATCH_METRICS",
+    "SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL",
     "STEPFUNCTIONS_LAMBDA_ENDPOINT",
     "SYNCHRONOUS_KINESIS_EVENTS",
     "SYNCHRONOUS_SNS_EVENTS",
@@ -1122,10 +1165,6 @@ CONFIG_ENV_VARS = [
     "TEST_IAM_USER_ID",
     "TEST_IAM_USER_NAME",
     "TF_COMPAT_MODE",
-    "THUNDRA_APIKEY",
-    "THUNDRA_AGENT_JAVA_VERSION",
-    "THUNDRA_AGENT_NODE_VERSION",
-    "THUNDRA_AGENT_PYTHON_VERSION",
     "USE_SINGLE_REGION",
     "USE_SSL",
     "WAIT_FOR_DEBUGGER",
@@ -1165,57 +1204,20 @@ def collect_config_items() -> List[Tuple[str, Any]]:
     return result
 
 
-def parse_service_ports() -> Dict[str, int]:
-    """Parses the environment variable $SERVICES with a comma-separated list of services
-    and (optional) ports they should run on: 'service1:port1,service2,service3:port3'"""
-    service_ports = os.environ.get("SERVICES", "").strip()
-    if service_ports and not is_env_true("EAGER_SERVICE_LOADING"):
-        LOG.warning("SERVICES variable is ignored if EAGER_SERVICE_LOADING=0.")
-        service_ports = None  # TODO remove logic once we clear up the service ports stuff
-    if not service_ports:
-        return DEFAULT_SERVICE_PORTS
-    result = {}
-    for service_port in re.split(r"\s*,\s*", service_ports):
-        parts = re.split(r"[:=]", service_port)
-        service = parts[0]
-        key_upper = service.upper().replace("-", "_")
-        port_env_name = "%s_PORT" % key_upper
-        # (1) set default port number
-        port_number = DEFAULT_SERVICE_PORTS.get(service)
-        # (2) set port number from <SERVICE>_PORT environment, if present
-        if os.environ.get(port_env_name):
-            port_number = os.environ.get(port_env_name)
-        # (3) set port number from <service>:<port> portion in $SERVICES, if present
-        if len(parts) > 1:
-            port_number = int(parts[-1])
-        # (4) try to parse as int, fall back to 0 (invalid port)
-        try:
-            port_number = int(port_number)
-        except Exception:
-            port_number = 0
-        result[service] = port_number
-    return result
-
-
-# TODO: use functools cache, instead of global variable here
-SERVICE_PORTS = parse_service_ports()
-
-
 def populate_config_env_var_names():
     global CONFIG_ENV_VARS
 
-    for key, value in DEFAULT_SERVICE_PORTS.items():
-        clean_key = key.upper().replace("-", "_")
-        CONFIG_ENV_VARS += [
-            clean_key + "_BACKEND",
-            clean_key + "_PORT_EXTERNAL",
-            "PROVIDER_OVERRIDE_" + clean_key,
-        ]
+    CONFIG_ENV_VARS += [
+        key
+        for key in [key.upper() for key in os.environ]
+        if key.startswith("LOCALSTACK_") or key.startswith("PROVIDER_OVERRIDE_")
+    ]
 
     # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)
     CONFIG_ENV_VARS += [
         "LOCALSTACK_" + v for v in CONFIG_ENV_VARS if not v.startswith("LOCALSTACK_")
     ]
+
     CONFIG_ENV_VARS = list(set(CONFIG_ENV_VARS))
 
 
@@ -1228,14 +1230,7 @@ def service_port(service_key: str, external: bool = False) -> int:
     if external:
         if service_key == "sqs" and SQS_PORT_EXTERNAL:
             return SQS_PORT_EXTERNAL
-    if FORWARD_EDGE_INMEM:
-        if service_key == "elasticsearch":
-            # TODO Elasticsearch domains are a special case - we do not want to route them through
-            #  the edge service, as that would require too many route mappings. In the future, we
-            #  should integrate them with the port range for external services (4510-4530)
-            return SERVICE_PORTS.get(service_key, 0)
-        return get_edge_port_http()
-    return SERVICE_PORTS.get(service_key, 0)
+    return get_edge_port_http()
 
 
 def get_protocol():

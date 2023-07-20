@@ -1,18 +1,20 @@
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     generate_default_name,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils import common
-from localstack.utils.aws import aws_stack
 
 
-def get_ddb_provisioned_throughput(params, **kwargs):
+def get_ddb_provisioned_throughput(
+    properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+) -> dict | None:
     # see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html#cfn-dynamodb-table-provisionedthroughput
-    args = params.get("ProvisionedThroughput")
+    args = properties.get("ProvisionedThroughput")
     if args == PLACEHOLDER_AWS_NO_VALUE:
         return None
-    is_ondemand = params.get("BillingMode") == "PAY_PER_REQUEST"
+    is_ondemand = properties.get("BillingMode") == "PAY_PER_REQUEST"
     # if the BillingMode is set to PAY_PER_REQUEST, you cannot specify ProvisionedThroughput
     # if the BillingMode is set to PROVISIONED (default), you have to specify ProvisionedThroughput
 
@@ -35,9 +37,11 @@ def get_ddb_provisioned_throughput(params, **kwargs):
     return args
 
 
-def get_ddb_global_sec_indexes(params: dict, **kwargs) -> list | None:
-    args: list = params.get("GlobalSecondaryIndexes")
-    is_ondemand = params.get("BillingMode") == "PAY_PER_REQUEST"
+def get_ddb_global_sec_indexes(
+    properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+) -> list | None:
+    args: list = properties.get("GlobalSecondaryIndexes")
+    is_ondemand = properties.get("BillingMode") == "PAY_PER_REQUEST"
     if not args:
         return
 
@@ -58,10 +62,12 @@ def get_ddb_global_sec_indexes(params: dict, **kwargs) -> list | None:
     return args
 
 
-def get_ddb_kinesis_stream_specification(params, **kwargs):
-    args = params.get("KinesisStreamSpecification")
+def get_ddb_kinesis_stream_specification(
+    properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+) -> dict:
+    args = properties.get("KinesisStreamSpecification")
     if args:
-        args["TableName"] = params["TableName"]
+        args["TableName"] = properties["TableName"]
     return args
 
 
@@ -72,22 +78,17 @@ class DynamoDBTable(GenericBaseModel):
 
     def get_cfn_attribute(self, attribute_name):
         actual_attribute = "LatestStreamArn" if attribute_name == "StreamArn" else attribute_name
+        if attribute_name == "Arn":
+            return self.props.get("TableArn", self.props.get("Table", {}).get("TableArn"))
         value = self.props.get("Table", {}).get(actual_attribute)
         if value:
             return value
-        #
-        # if attribute_name == "Arn":
-        #     return self.props.get("TableArn")
-        return super(DynamoDBTable, self).get_cfn_attribute(attribute_name)
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        if attribute == "Arn":
-            return self.props.get("Table", {}).get("TableArn")
-        return self.props.get("TableName")
+        return super(DynamoDBTable, self).get_cfn_attribute(attribute_name)
 
     def fetch_state(self, stack_name, resources):
         table_name = self.props.get("TableName") or self.logical_resource_id
-        return aws_stack.connect_to_service("dynamodb").describe_table(TableName=table_name)
+        return connect_to().dynamodb.describe_table(TableName=table_name)
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -98,6 +99,10 @@ class DynamoDBTable(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["TableDescription"]["TableName"]
+            resource["Properties"]["Table"] = result["TableDescription"]
+
         return {
             "create": [
                 {
@@ -110,14 +115,15 @@ class DynamoDBTable(GenericBaseModel):
                         "ProvisionedThroughput": get_ddb_provisioned_throughput,
                         "LocalSecondaryIndexes": "LocalSecondaryIndexes",
                         "GlobalSecondaryIndexes": get_ddb_global_sec_indexes,
-                        "StreamSpecification": lambda params, **kwargs: (
+                        "StreamSpecification": lambda properties, logical_resource_id, *args, **kwargs: (
                             common.merge_dicts(
-                                params.get("StreamSpecification"),
+                                properties.get("StreamSpecification"),
                                 {"StreamEnabled": True},
                                 default=None,
                             )
                         ),
                     },
+                    "result_handler": _handle_result,
                 },
                 {
                     "function": "enable_kinesis_streaming_destination",

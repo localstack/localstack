@@ -66,15 +66,15 @@
 /tests/unit/test_apigateway.py @calvernaz
 
 # Cloudformation
-/localstack/aws/api/cloudformation/ @dominikschubert
-/localstack/services/cloudformation/ @dominikschubert
-/localstack/utils/cloudformation/ @dominikschubert
-/tests/integration/cloudformation/ @dominikschubert
-/tests/unit/test_cloudformation.py @dominikschubert
+/localstack/aws/api/cloudformation/ @dominikschubert @pinzon @simonrw
+/localstack/services/cloudformation/ @dominikschubert @pinzon @simonrw
+/localstack/utils/cloudformation/ @dominikschubert @pinzon @simonrw
+/tests/integration/cloudformation/ @dominikschubert @pinzon @simonrw
+/tests/unit/test_cloudformation.py @dominikschubert @pinzon @simonrw
 # left empty (without owner) because the models belong to the specific service owners
 # you can overwrite this for single services afterwards
 /localstack/services/cloudformation/models/
-/localstack/services/cloudformation/models/cloudformation.py @dominikschubert
+/localstack/services/cloudformation/models/cloudformation.py @dominikschubert @pinzon @simonrw
 
 # Cloudwatch
 /localstack/aws/api/cloudwatch/ @steffyP

@@ -53,13 +53,13 @@ def create_and_test_comparison_function(
     stepfunctions_client,
     create_iam_role_for_sfn,
     create_state_machine,
-    snapshot,
+    sfn_snapshot,
     comparison_func_name: str,
     comparisons: list[tuple[Any, Any]],
     add_literal_value: bool = True,
 ):
     snf_role_arn = create_iam_role_for_sfn()
-    snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+    sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
     base_sm_name: str = f"statemachine_{short_uid()}"
 
@@ -97,4 +97,4 @@ def create_and_test_comparison_function(
             "$.events[*].executionSucceededEventDetails.output", exec_hist_resp
         )
         input_output_cases.append({"input": exec_input, "output": output})
-    snapshot.match("cases", input_output_cases)
+    sfn_snapshot.match("cases", input_output_cases)

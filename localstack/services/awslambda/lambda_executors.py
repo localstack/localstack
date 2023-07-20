@@ -19,12 +19,13 @@ from multiprocessing import Process, Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from localstack import config
+from localstack.aws.connect import connect_to
 from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY
 from localstack.runtime.hooks import hook_spec
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
     LAMBDA_RUNTIME_PROVIDED,
-    get_container_network_for_lambda,
+    get_main_container_network_for_lambda,
     get_main_endpoint_from_container,
     is_java_lambda,
     is_nodejs_runtime,
@@ -878,7 +879,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
     ) -> InvocationResult:
         full_url = self._get_lambda_stay_open_url(lambda_docker_ip)
 
-        client = aws_stack.connect_to_service("lambda", endpoint_url=full_url)
+        client = connect_to(endpoint_url=full_url).awslambda
         event = inv_context.event or "{}"
 
         LOG.debug(f"Calling {full_url} to run invocation in docker-reuse Lambda container")
@@ -889,7 +890,10 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             LogType="Tail",
         )
 
-        log_output = base64.b64decode(response.get("LogResult") or b"").decode("utf-8")
+        # Decode may fail when log is cut off at 4kbytes if it contains multi-byte characters
+        log_output = base64.b64decode(response.get("LogResult") or b"").decode(
+            "utf-8", errors="replace"
+        )
         result = response["Payload"].read().decode("utf-8")
 
         if "FunctionError" in response:
@@ -1021,7 +1025,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         env_vars.pop("AWS_LAMBDA_EVENT_BODY", None)
         container_config.env_vars = env_vars
 
-        container_config.network = get_container_network_for_lambda()
+        container_config.network = get_main_container_network_for_lambda()
         container_config.additional_flags = docker_flags
 
         container_config.dns = config.LAMBDA_DOCKER_DNS
@@ -1239,7 +1243,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
             inv_context.lambda_command = inv_context.handler
 
         # add Docker Lambda env vars
-        container_config.network = get_container_network_for_lambda()
+        container_config.network = get_main_container_network_for_lambda()
         if container_config.network == "host":
             port = get_free_tcp_port()
             container_config.env_vars["DOCKER_LAMBDA_API_PORT"] = port

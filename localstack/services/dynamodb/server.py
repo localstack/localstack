@@ -3,9 +3,9 @@ import os
 import threading
 
 from localstack import config
+from localstack.aws.connect import connect_externally_to
 from localstack.config import is_env_true
 from localstack.services.dynamodb.packages import dynamodblocal_package
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.functions import run_safe
 from localstack.utils.net import wait_for_port_closed
@@ -18,7 +18,7 @@ RESTART_LOCK = threading.RLock()
 
 
 def _log_listener(line, **_kwargs):
-    LOG.info(line.rstrip())
+    LOG.debug(line.rstrip())
 
 
 class DynamodbServer(Server):
@@ -148,13 +148,13 @@ class DynamodbServer(Server):
         dynamodblocal_package.install()
 
         cmd = self._create_shell_command()
-        LOG.debug("starting dynamodb process %s", cmd)
+        LOG.debug("Starting DynamoDB Local: %s", cmd)
         t = ShellCommandThread(
             cmd,
             strip_color=True,
             log_listener=_log_listener,
             auto_restart=True,
-            name="dynamodb-server",
+            name="dynamodb-local",
         )
         TMP_THREADS.append(t)
         t.start()
@@ -166,7 +166,7 @@ class DynamodbServer(Server):
 
         try:
             self.wait_is_up()
-            out = aws_stack.connect_to_service("dynamodb", endpoint_url=self.url).list_tables()
+            out = connect_externally_to(endpoint_url=self.url).dynamodb.list_tables()
         except Exception:
             if print_error:
                 LOG.exception("DynamoDB health check failed")

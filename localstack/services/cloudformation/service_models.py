@@ -8,11 +8,6 @@ LOG = logging.getLogger(__name__)
 # dict key used to store the deployment state of a resource
 KEY_RESOURCE_STATE = "_state_"
 
-# ref attribute definitions
-REF_ATTRS = ["PhysicalResourceId", "Ref"]
-REF_ID_ATTRS = REF_ATTRS + ["Id"]
-REF_ARN_ATTRS = ["Ref", "Arn"]
-
 
 class DependencyNotYetSatisfied(Exception):
     """Exception indicating that a resource dependency is not (yet) deployed/available."""
@@ -55,17 +50,10 @@ class GenericBaseModel:
     # ABSTRACT BASE METHODS
     # ----------------------
 
-    # TODO: this shouldn't have an attribute parameter
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        """Determine the physical resource ID (Ref) of this resource (to be overwritten by subclasses)"""
-        return None
-
-    # TODO: change the signature to pass in a Stack instance (instead of stack_name and resources)
     def fetch_state(self, stack_name, resources):
         """Fetch the latest deployment state of this resource, or return None if not currently deployed (NOTE: THIS IS NOT ALWAYS TRUE)."""
         return None
 
-    # TODO: change the signature to pass in a Stack instance (instead of stack_name and resources)
     def update_resource(self, new_resource, stack_name, resources):
         """Update the deployment of this resource, using the updated properties (implemented by subclasses)."""
         raise NotImplementedError
@@ -94,23 +82,22 @@ class GenericBaseModel:
     # ----------------------
 
     def get_cfn_attribute(self, attribute_name):
-        """Retrieve the given CF attribute for this resource (inherited from moto's CloudFormationModel)"""
-        if attribute_name in REF_ARN_ATTRS and hasattr(self, "arn"):
-            return self.arn
-        if attribute_name in REF_ATTRS:
-            result = self.get_physical_resource_id(attribute=attribute_name)
-            if result:
-                return result
-        props = self.props
-        if attribute_name in props:
-            return props.get(attribute_name)
-        return None
+        """Retrieve the given CF attribute for this resource"""
+        return self.props.get(attribute_name)
+
+    # TODO: make this stricter
+    def get_ref(self):
+        return self.physical_resource_id
 
     # ---------------------
     # GENERIC UTIL METHODS
     # ---------------------
 
+    # TODO: remove
     def fetch_and_update_state(self, *args, **kwargs):
+        if self.physical_resource_id is None:
+            return None
+
         from localstack.services.cloudformation.engine import template_deployer
 
         try:
@@ -123,11 +110,13 @@ class GenericBaseModel:
             ):
                 LOG.debug("Unable to fetch state for resource %s: %s", self, e)
 
+    # TODO: remove
     def fetch_state_if_missing(self, *args, **kwargs):
         if not self.state:
             self.fetch_and_update_state(*args, **kwargs)
         return self.state
 
+    # TODO: remove
     def update_state(self, details):
         """Update the deployment state of this resource (existing attributes will be overwritten)."""
         details = details or {}
@@ -135,15 +124,16 @@ class GenericBaseModel:
         return self.props
 
     @property
-    def physical_resource_id(self):
+    def physical_resource_id(self) -> str | None:
         """Return the (cached) physical resource ID."""
         return self.resource_json.get("PhysicalResourceId")
 
     @property
-    def logical_resource_id(self):
+    def logical_resource_id(self) -> str:
         """Return the logical resource ID."""
-        return self.resource_json.get("LogicalResourceId")
+        return self.resource_json["LogicalResourceId"]
 
+    # TODO: rename? make it clearer what props are in comparison with state, properties and resource_json
     @property
     def props(self) -> dict:
         """Return a copy of (1) the resource properties (from the template), combined with
@@ -151,9 +141,3 @@ class GenericBaseModel:
         result = dict(self.properties)
         result.update(self.state or {})
         return result
-
-    # TODO: remove after -ext does not depend on this anymore
-    @property
-    def resource_id(self) -> str:
-        """Return the logical resource ID of this resource (i.e., the ref. name within the stack's resources)."""
-        return self.resource_json["LogicalResourceId"]

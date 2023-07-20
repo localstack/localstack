@@ -190,14 +190,21 @@ def store_lambda_logs(
 def get_main_endpoint_from_container() -> str:
     if config.HOSTNAME_FROM_LAMBDA:
         return config.HOSTNAME_FROM_LAMBDA
-    return get_endpoint_for_network(network=get_container_network_for_lambda())
+    return get_endpoint_for_network(network=get_main_container_network_for_lambda())
 
 
-def get_container_network_for_lambda() -> str:
+def get_main_container_network_for_lambda() -> str:
     global LAMBDA_CONTAINER_NETWORK
     if config.LAMBDA_DOCKER_NETWORK:
-        return config.LAMBDA_DOCKER_NETWORK
+        return config.LAMBDA_DOCKER_NETWORK.split(",")[0]
     return get_main_container_network()
+
+
+def get_all_container_networks_for_lambda() -> list[str]:
+    global LAMBDA_CONTAINER_NETWORK
+    if config.LAMBDA_DOCKER_NETWORK:
+        return config.LAMBDA_DOCKER_NETWORK.split(",")
+    return [get_main_container_network()]
 
 
 def rm_docker_container(container_name_or_id, check_existence=False, safe=False):

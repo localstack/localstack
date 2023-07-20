@@ -40,7 +40,7 @@ class TestNumerics:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         type_equals = []
         for var in TYPE_COMPARISONS_VARS:
@@ -53,7 +53,7 @@ class TestNumerics:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "NumericEquals",
             comparisons=[*type_equals, (-0, 0), (0.0, 0), (2.22, 2.22)],
         )
@@ -63,7 +63,7 @@ class TestNumerics:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         type_equals = []
         for var in TYPE_COMPARISONS_VARS:
@@ -76,7 +76,7 @@ class TestNumerics:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "NumericEqualsPath",
             comparisons=[*type_equals, (-0, 0), (0.0, 0), (2.22, 2.22)],
             add_literal_value=False,
@@ -87,13 +87,13 @@ class TestNumerics:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "NumericGreaterThan",
             comparisons=[(-0, 0), (0.0, 0), (0, 1), (1, 1), (1, 0), (0, 1)],
         )
@@ -103,13 +103,13 @@ class TestNumerics:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "NumericGreaterThanPath",
             comparisons=[(-0, 0), (0.0, 0), (0, 1), (1, 1), (1, 0), (0, 1)],
             add_literal_value=False,
@@ -120,13 +120,13 @@ class TestNumerics:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "NumericGreaterThanEquals",
             comparisons=[(-0, 0), (0.0, 0), (0, 1), (1, 1), (1, 0), (0, 1)],
         )
@@ -136,13 +136,13 @@ class TestNumerics:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "NumericGreaterThanEqualsPath",
             comparisons=[(-0, 0), (0.0, 0), (0, 1), (1, 1), (1, 0), (0, 1)],
             add_literal_value=False,
@@ -153,13 +153,13 @@ class TestNumerics:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "NumericLessThan",
             comparisons=[(-0, 0), (0.0, 0), (0, 1), (1, 1), (1, 0), (0, 1)],
         )
@@ -169,13 +169,13 @@ class TestNumerics:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "NumericLessThanPath",
             comparisons=[(-0, 0), (0.0, 0), (0, 1), (1, 1), (1, 0), (0, 1)],
             add_literal_value=False,
@@ -186,13 +186,13 @@ class TestNumerics:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "NumericLessThanEquals",
             comparisons=[(-0, 0), (0.0, 0), (0, 1), (1, 1), (1, 0), (0, 1)],
         )
@@ -202,13 +202,13 @@ class TestNumerics:
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
         create_and_test_comparison_function(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             "NumericLessThanEqualsPath",
             comparisons=[(-0, 0), (0.0, 0), (0, 1), (1, 1), (1, 0), (0, 1)],
             add_literal_value=False,

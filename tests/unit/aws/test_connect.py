@@ -13,6 +13,7 @@ from localstack.aws.connect import (
 )
 from localstack.aws.gateway import Gateway
 from localstack.aws.handlers import add_internal_request_params, add_region_from_header
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Response
 from localstack.http.hypercorn import GatewayServer
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
@@ -58,9 +59,7 @@ class TestClientFactory:
         mock.meta.events.register.assert_not_called()
 
     @patch.object(ExternalClientFactory, "_get_client")
-    def test_external_client_credentials_not_loaded_from_env_if_set_to_none(
-        self, mock, monkeypatch
-    ):
+    def test_external_client_credentials_origin(self, mock, monkeypatch):
         connect_to = ExternalClientFactory(use_ssl=True)
         connect_to.get_client(
             "abc", region_name="xx-south-1", aws_access_key_id="foo", aws_secret_access_key="bar"
@@ -78,8 +77,6 @@ class TestClientFactory:
         )
 
         mock.reset_mock()
-        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "lorem")
-        monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "ipsum")
 
         connect_to.get_client(
             "def", region_name=None, aws_secret_access_key=None, aws_access_key_id=None
@@ -90,8 +87,23 @@ class TestClientFactory:
             use_ssl=True,
             verify=False,
             endpoint_url="http://localhost:4566",
-            aws_access_key_id="test",
-            aws_secret_access_key="test",
+            aws_access_key_id=None,
+            aws_secret_access_key=None,
+            aws_session_token=None,
+            config=connect_to._config,
+        )
+
+        mock.reset_mock()
+
+        connect_to.get_client("def", region_name=None, aws_access_key_id=TEST_AWS_ACCESS_KEY_ID)
+        mock.assert_called_once_with(
+            service_name="def",
+            region_name="us-east-1",
+            use_ssl=True,
+            verify=False,
+            endpoint_url="http://localhost:4566",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
             aws_session_token=None,
             config=connect_to._config,
         )

@@ -1,4 +1,4 @@
-# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLParser.g4 by ANTLR 4.11.1
+# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLParser.g4 by ANTLR 4.12.0
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .ASLParser import ASLParser
@@ -141,6 +141,26 @@ class ASLParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ASLParser#parameters_decl.
     def visitParameters_decl(self, ctx:ASLParser.Parameters_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#timeout_seconds_decl.
+    def visitTimeout_seconds_decl(self, ctx:ASLParser.Timeout_seconds_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#timeout_seconds_path_decl.
+    def visitTimeout_seconds_path_decl(self, ctx:ASLParser.Timeout_seconds_path_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#heartbeat_seconds_decl.
+    def visitHeartbeat_seconds_decl(self, ctx:ASLParser.Heartbeat_seconds_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#heartbeat_seconds_path_decl.
+    def visitHeartbeat_seconds_path_decl(self, ctx:ASLParser.Heartbeat_seconds_path_declContext):
         return self.visitChildren(ctx)
 
 

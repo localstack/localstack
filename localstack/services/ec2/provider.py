@@ -73,6 +73,7 @@ from localstack.aws.api.ec2 import (
     VpcEndpointSubnetIdList,
     scope,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.ec2.exceptions import (
     InvalidLaunchTemplateIdError,
     InvalidLaunchTemplateNameError,
@@ -80,7 +81,6 @@ from localstack.services.ec2.exceptions import (
 )
 from localstack.services.ec2.models import get_ec2_backend
 from localstack.services.moto import call_moto
-from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
 from localstack.utils.strings import first_char_to_upper, long_uid, short_uid
 
@@ -386,7 +386,7 @@ class Ec2Provider(Ec2Api, ABC):
 
         template.default_version_number = int(request["DefaultVersion"])
 
-        client = aws_stack.connect_to_service("ec2")
+        client = connect_to().ec2
         retrieved_template = client.describe_launch_templates(LaunchTemplateIds=[template.id])
 
         result: ModifyLaunchTemplateResult = {

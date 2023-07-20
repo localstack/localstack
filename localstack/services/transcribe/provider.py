@@ -12,6 +12,7 @@ from localstack import config
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.transcribe import (
     BadRequestException,
+    ConflictException,
     GetTranscriptionJobResponse,
     ListTranscriptionJobsResponse,
     MaxResults,
@@ -27,14 +28,17 @@ from localstack.aws.api.transcribe import (
     TranscriptionJobStatus,
     TranscriptionJobSummary,
 )
+from localstack.aws.connect import connect_to
+from localstack.packages.ffmpeg import ffmpeg_package
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.services.s3.utils import (
+    get_bucket_and_key_from_presign_url,
+    get_bucket_and_key_from_s3_uri,
+)
 from localstack.services.transcribe.models import TranscribeStore, transcribe_stores
-from localstack.services.transcribe.packages import ffmpeg_package
-from localstack.utils.aws import aws_stack
 from localstack.utils.files import new_tmp_file
 from localstack.utils.http import download
 from localstack.utils.run import run
-from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_thread
 
 LOG = logging.getLogger(__name__)
@@ -99,6 +103,15 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
         store = transcribe_stores[context.account_id][context.region]
 
         if job := store.transcription_jobs.get(transcription_job_name):
+            # fetch output key and output bucket
+            output_bucket, output_key = get_bucket_and_key_from_presign_url(
+                job["Transcript"]["TranscriptFileUri"]
+            )
+            job["Transcript"]["TranscriptFileUri"] = connect_to().s3.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": output_bucket, "Key": output_key},
+                ExpiresIn=60 * 15,
+            )
             return GetTranscriptionJobResponse(TranscriptionJob=job)
 
         raise NotFoundException(
@@ -122,6 +135,30 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             raise BadRequestException(f"Language code must be one of {LANGUAGE_MODELS.keys()}")
 
         store = transcribe_stores[context.account_id][context.region]
+
+        if job_name in store.transcription_jobs:
+            raise ConflictException(
+                "The requested job name already exists. Use a different job name."
+            )
+
+        s3_path = request["Media"]["MediaFileUri"]
+        output_bucket = request.get("OutputBucketName", get_bucket_and_key_from_s3_uri(s3_path)[0])
+        output_key = request.get("OutputKey")
+
+        if not output_key:
+            output_key = f"{job_name}.json"
+
+        s3_client = connect_to().s3
+
+        # the presign url is valid for 15 minutes
+        presign_url = s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": output_bucket, "Key": output_key},
+            ExpiresIn=60 * 15,
+        )
+
+        transcript = Transcript(TranscriptFileUri=presign_url)
+
         job = TranscriptionJob(
             TranscriptionJobName=job_name,
             LanguageCode=language_code,
@@ -129,6 +166,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             CreationTime=datetime.datetime.utcnow(),
             StartTime=datetime.datetime.utcnow(),
             TranscriptionJobStatus=TranscriptionJobStatus.QUEUED,
+            Transcript=transcript,
         )
         store.transcription_jobs[job_name] = job
 
@@ -224,7 +262,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
 
             # Get file from S3
             file_path = new_tmp_file()
-            s3_client = aws_stack.connect_to_service("s3")
+            s3_client = connect_to().s3
             s3_path = job["Media"]["MediaFileUri"]
             bucket, _, key = s3_path.removeprefix("s3://").partition("/")
             s3_client.download_file(Bucket=bucket, Key=key, Filename=file_path)
@@ -321,13 +359,13 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             }
 
             # Save to S3
-            output_key = short_uid() + ".json"
-            s3_client.put_object(Bucket=bucket, Key=output_key, Body=json.dumps(output))
+            output_s3_path = job["Transcript"]["TranscriptFileUri"]
+            output_bucket, output_key = get_bucket_and_key_from_presign_url(output_s3_path)
+            s3_client.put_object(Bucket=output_bucket, Key=output_key, Body=json.dumps(output))
 
             # Update job details
             job["CompletionTime"] = datetime.datetime.utcnow()
             job["TranscriptionJobStatus"] = TranscriptionJobStatus.COMPLETED
-            job["Transcript"] = Transcript(TranscriptFileUri=f"s3://{bucket}/{output_key}")
             job["MediaFormat"] = MediaFormat.wav
 
             LOG.info("Transcription job completed: %s", job_name)

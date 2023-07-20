@@ -1191,6 +1191,137 @@ class TestLambdaFeatures:
         retry(check_logs, retries=15)
 
 
+class TestLambdaMultiAccounts:
+    @pytest.fixture
+    def primary_client(self, aws_client):
+        return aws_client.awslambda
+
+    @pytest.fixture
+    def secondary_client(self, secondary_aws_client):
+        return secondary_aws_client.awslambda
+
+    @pytest.mark.skipif(is_old_provider(), reason="Not supported by old provider")
+    def test_cross_account_access(
+        self, primary_client, secondary_client, create_lambda_function, dummylayer
+    ):
+        # Create resources using primary test credentials
+        func_name = f"func-{short_uid()}"
+        func_arn = create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            runtime=Runtime.python3_9,
+        )["CreateFunctionResponse"]["FunctionArn"]
+
+        layer_name = f"layer-{short_uid()}"
+        layer_arn = primary_client.publish_layer_version(
+            LayerName=layer_name, Content={"ZipFile": dummylayer}
+        )["LayerArn"]
+
+        # Operations related to Lambda layers
+        # - GetLayerVersion
+        # - GetLayerVersionByArn
+        # - ListLayerVersions
+        # - DeleteLayerVersion
+        # - AddLayerVersionPermission
+        # - GetLayerVersionPolicy
+        # - RemoveLayerVersionPermission
+
+        # Run assertions using secondary test credentials
+
+        assert secondary_client.get_layer_version(LayerName=layer_arn, VersionNumber=1)
+
+        assert secondary_client.get_layer_version_by_arn(Arn=layer_arn + ":1")
+
+        assert secondary_client.list_layer_versions(LayerName=layer_arn)
+
+        assert secondary_client.add_layer_version_permission(
+            LayerName=layer_arn,
+            VersionNumber=1,
+            Action="lambda:GetLayerVersion",
+            Principal="*",
+            StatementId="s1",
+        )
+
+        assert secondary_client.get_layer_version_policy(LayerName=layer_arn, VersionNumber=1)
+
+        assert secondary_client.remove_layer_version_permission(
+            LayerName=layer_arn, VersionNumber=1, StatementId="s1"
+        )
+
+        assert secondary_client.delete_layer_version(LayerName=layer_arn, VersionNumber=1)
+
+        # Operations related to functions.
+        # See: https://docs.aws.amazon.com/lambda/latest/dg/access-control-resource-based.html#permissions-resource-xaccountinvoke
+        #
+        # - Invoke
+        # - GetFunction
+        # - GetFunctionConfiguration
+        # - UpdateFunctionCode (NOT TESTED)
+        # - DeleteFunction
+        # - PublishVersion
+        # - ListVersionsByFunction
+        # - CreateAlias
+        # - GetAlias
+        # - ListAliases
+        # - UpdateAlias
+        # - DeleteAlias
+        # - GetPolicy (NOT TESTED)
+        # - PutFunctionConcurrency
+        # - DeleteFunctionConcurrency
+        # - ListTags
+        # - TagResource
+        # - UntagResource
+
+        assert (
+            secondary_client.get_function(FunctionName=func_arn)["Configuration"]["FunctionArn"]
+            == func_arn
+        )
+
+        assert (
+            secondary_client.get_function_configuration(FunctionName=func_arn)["FunctionArn"]
+            == func_arn
+        )
+
+        assert secondary_client.list_versions_by_function(FunctionName=func_arn)
+
+        assert secondary_client.put_function_concurrency(
+            FunctionName=func_arn, ReservedConcurrentExecutions=1
+        )
+
+        assert secondary_client.delete_function_concurrency(FunctionName=func_arn)
+
+        alias_name = short_uid()
+        assert secondary_client.create_alias(
+            FunctionName=func_arn, FunctionVersion="$LATEST", Name=alias_name
+        )
+
+        assert secondary_client.get_alias(FunctionName=func_arn, Name=alias_name)
+
+        alias_description = "blyat"
+        assert secondary_client.update_alias(
+            FunctionName=func_arn, Name=alias_name, Description=alias_description
+        )
+
+        resp = secondary_client.list_aliases(FunctionName=func_arn)
+        assert len(resp["Aliases"]) == 1
+        assert resp["Aliases"][0]["Description"] == alias_description
+
+        assert secondary_client.delete_alias(FunctionName=func_arn, Name=alias_name)
+
+        tags = {"foo": "bar"}
+        assert secondary_client.tag_resource(Resource=func_arn, Tags=tags)
+
+        assert secondary_client.list_tags(Resource=func_arn)["Tags"] == tags
+
+        assert secondary_client.untag_resource(Resource=func_arn, TagKeys=["lorem"])
+
+        assert secondary_client.invoke(FunctionName=func_arn)
+
+        assert secondary_client.publish_version(FunctionName=func_arn)
+
+        assert secondary_client.delete_function(FunctionName=func_arn)
+
+
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaConcurrency:
     @pytest.mark.aws_validated

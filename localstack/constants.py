@@ -1,7 +1,5 @@
 import os
 
-import localstack_client.config
-
 import localstack
 
 # LocalStack version
@@ -40,22 +38,8 @@ ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 SSL_CERT_URL = f"{ARTIFACTS_REPO}/raw/master/local-certs/server.key"
 SSL_CERT_URL_FALLBACK = "{api_endpoint}/proxy/localstack.cert.key"
 
-# map of default service APIs and ports to be spun up (fetch map from localstack_client)
-DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
-
 # host to bind to when starting the services
 BIND_HOST = "0.0.0.0"
-
-# Fallback Account ID if not available in the client request
-DEFAULT_AWS_ACCOUNT_ID = "000000000000"
-
-# AWS user account ID used for tests - TODO move to config.py
-if "TEST_AWS_ACCOUNT_ID" not in os.environ:
-    os.environ["TEST_AWS_ACCOUNT_ID"] = DEFAULT_AWS_ACCOUNT_ID
-
-# Values used by tests
-TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
-TEST_AWS_REGION_NAME = "us-east-1"
 
 # root code folder
 MODULE_MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -143,12 +127,6 @@ OPENSEARCH_PLUGIN_LIST = [
     "ingest-attachment",
 ]
 
-ELASTICMQ_JAR_URL = (
-    "https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-1.1.0.jar"
-)
-STEPFUNCTIONS_ZIP_URL = "https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip"
-KMS_URL_PATTERN = "https://s3-eu-west-2.amazonaws.com/local-kms/3/local-kms_<arch>.bin"
-
 # API endpoint for analytics events
 API_ENDPOINT = os.environ.get("API_ENDPOINT") or "https://api.localstack.cloud/v1"
 # new analytics API endpoint
@@ -169,15 +147,24 @@ try:
 except Exception:
     MAX_POOL_CONNECTIONS = 150
 
-# credentials used in the test suite
-TEST_AWS_ACCESS_KEY_ID = "test"
-TEST_AWS_SECRET_ACCESS_KEY = "test"
+# Fallback Account ID if not available in the client request
+DEFAULT_AWS_ACCOUNT_ID = "000000000000"
 
-# additional credentials used in the test suite (mainly for cross-account access)
-SECONDARY_TEST_AWS_ACCESS_KEY_ID = "test2"
-SECONDARY_TEST_AWS_SECRET_ACCESS_KEY = "test2"
+# Credentials used in the test suite
+# These can be overridden if the tests are being run against AWS
+# If a structured access key ID is used, it must correspond to the account ID
+TEST_AWS_ACCOUNT_ID = os.getenv("TEST_AWS_ACCOUNT_ID") or DEFAULT_AWS_ACCOUNT_ID
+TEST_AWS_ACCESS_KEY_ID = os.getenv("TEST_AWS_ACCESS_KEY_ID") or "test"
+TEST_AWS_SECRET_ACCESS_KEY = os.getenv("TEST_AWS_SECRET_ACCESS_KEY") or "test"
+TEST_AWS_REGION_NAME = "us-east-1"
 
-# credentials being used for internal calls
+# Additional credentials used in the test suite (when running cross-account tests)
+SECONDARY_TEST_AWS_ACCOUNT_ID = os.getenv("SECONDARY_TEST_AWS_ACCOUNT_ID") or "000000000002"
+SECONDARY_TEST_AWS_ACCESS_KEY_ID = os.getenv("SECONDARY_TEST_AWS_ACCESS_KEY_ID") or "000000000002"
+SECONDARY_TEST_AWS_SECRET_ACCESS_KEY = os.getenv("SECONDARY_TEST_AWS_SECRET_ACCESS_KEY") or "test2"
+SECONDARY_TEST_AWS_REGION_NAME = "ap-southeast-1"
+
+# Credentials used for internal calls
 INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"
 INTERNAL_AWS_SECRET_ACCESS_KEY = "__internal_call__"
 
@@ -194,8 +181,7 @@ TRACE_LOG_LEVELS = [LS_LOG_TRACE, LS_LOG_TRACE_INTERNAL]
 # list of official docker images
 OFFICIAL_IMAGES = [
     "localstack/localstack",
-    "localstack/localstack-light",
-    "localstack/localstack-full",
+    "localstack/localstack-pro",
 ]
 
 # s3 virtual host name

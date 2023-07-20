@@ -9,6 +9,7 @@ from boto3.s3.transfer import KB, TransferConfig
 from botocore.exceptions import ClientError
 
 from localstack.config import LEGACY_S3_PROVIDER
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -615,6 +616,9 @@ class TestS3NotificationsToSQS:
             )
             for m in resp["Messages"]:
                 if "s3:TestEvent" in m["Body"]:
+                    aws_client.sqs.delete_message(
+                        QueueUrl=queue_url, ReceiptHandle=m["ReceiptHandle"]
+                    )
                     continue
                 recv_messages.append(m)
 
@@ -839,6 +843,10 @@ class TestS3NotificationsToSQS:
 
     @pytest.mark.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="no validation implemented")
+    # AWS seems to return "ArgumentName" (without the number) if the request fails a basic verification
+    # -  basically everything it can check isolated of the structure of the request
+    # and then the "ArgumentNameX" (with the number) for each verification against the target services
+    # e.g. queues not existing, no permissions etc.
     @pytest.mark.skip_snapshot_verify(
         condition=lambda: not LEGACY_S3_PROVIDER,
         paths=[
@@ -877,9 +885,9 @@ class TestS3NotificationsToSQS:
         snapshot.match("invalid_skip", e.value.response)
 
         # set valid but not-existing queue
-        config["QueueConfigurations"][0][
-            "QueueArn"
-        ] = f"{arns.sqs_queue_arn('my-queue', account_id=account_id)}"
+        config["QueueConfigurations"][0]["QueueArn"] = arns.sqs_queue_arn(
+            "my-queue", account_id=account_id, region_name=aws_client.s3.meta.region_name
+        )
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_notification_configuration(
                 Bucket=bucket_name,
@@ -892,6 +900,63 @@ class TestS3NotificationsToSQS:
         )
         config = aws_client.s3.get_bucket_notification_configuration(Bucket=bucket_name)
         snapshot.match("skip_destination_validation", config)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="no validation implemented")
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: not LEGACY_S3_PROVIDER,
+        paths=[
+            "$..Error.ArgumentName",
+            "$..Error.ArgumentValue",
+            "$..Error.ArgumentName1",
+            "$..Error.ArgumentValue1",
+            "$..Error.ArgumentName2",
+            "$..Error.ArgumentValue2",
+            # AWS seems to validate all "form" verifications beforehand, so one error message is wrong
+            "$..Error.Message",
+        ],
+    )
+    def test_multiple_invalid_sqs_arns(self, s3_create_bucket, account_id, snapshot, aws_client):
+        bucket_name = s3_create_bucket()
+        config = {
+            "QueueConfigurations": [
+                {"Id": "id1", "Events": ["s3:ObjectCreated:*"], "QueueArn": "invalid_arn"},
+                {
+                    "Id": "id2",
+                    "Events": ["s3:ObjectRemoved:*"],
+                    "QueueArn": "invalid_arn_2",
+                },
+            ]
+        }
+        # multiple invalid arns
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_notification_configuration(
+                Bucket=bucket_name,
+                NotificationConfiguration=config,
+            )
+        snapshot.match("two-queue-arns-invalid", e.value.response)
+
+        # one invalid arn, one not existing
+        config["QueueConfigurations"][0]["QueueArn"] = arns.sqs_queue_arn(
+            "my-queue", account_id=account_id, region_name=aws_client.s3.meta.region_name
+        )
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_notification_configuration(
+                Bucket=bucket_name,
+                NotificationConfiguration=config,
+            )
+        snapshot.match("one-queue-invalid-one-not-existent", e.value.response)
+
+        # multiple not existing queues
+        config["QueueConfigurations"][1]["QueueArn"] = arns.sqs_queue_arn(
+            "my-queue-2", account_id=account_id, region_name=aws_client.s3.meta.region_name
+        )
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_notification_configuration(
+                Bucket=bucket_name,
+                NotificationConfiguration=config,
+            )
+        snapshot.match("multiple-queues-do-not-exist", e.value.response)
 
     @pytest.mark.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
@@ -950,5 +1015,67 @@ class TestS3NotificationsToSQS:
 
         assert len(events) == 3, f"unexpected number of events in {events}"
         # order seems not be guaranteed - sort so we can rely on the order
+        events.sort(key=lambda x: x["eventTime"])
+        snapshot.match("receive_messages", {"messages": events})
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..messages[1].requestParameters.sourceIPAddress",  # AWS IP address is different as its internal
+        ],
+    )
+    def test_restore_object(
+        self,
+        s3_create_bucket,
+        sqs_create_queue,
+        s3_create_sqs_bucket_notification,
+        snapshot,
+        aws_client,
+    ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        # setup fixture
+        bucket_name = s3_create_bucket()
+        queue_url = sqs_create_queue()
+        key_name = "my_key_restore"
+        s3_create_sqs_bucket_notification(bucket_name, queue_url, ["s3:ObjectRestore:*"])
+
+        # We set the StorageClass to Glacier Flexible Retrieval (formerly Glacier) as it's the only one allowing
+        # Expedited retrieval Tier (with the Intelligent Access Archive tier)
+        aws_client.s3.put_object(
+            Bucket=bucket_name, Key=key_name, Body="something", StorageClass="GLACIER"
+        )
+
+        aws_client.s3.restore_object(
+            Bucket=bucket_name,
+            Key=key_name,
+            RestoreRequest={
+                "Days": 1,
+                "GlacierJobParameters": {
+                    "Tier": "Expedited",  # Set it as Expedited, it should be done within 1-5min
+                },
+            },
+        )
+
+        def _is_object_restored():
+            resp = aws_client.s3.head_object(Bucket=bucket_name, Key=key_name)
+            assert 'ongoing-request="false"' in resp["Restore"]
+
+        if is_aws_cloud():
+            retries = 12
+            sleep = 30
+        else:
+            retries = 3
+            sleep = 1
+
+        retry(_is_object_restored, retries=retries, sleep=sleep)
+
+        # collect s3 events from SQS queue
+        events = sqs_collect_s3_events(aws_client.sqs, queue_url, min_events=2)
+
+        assert len(events) == 2, f"unexpected number of events in {events}"
+        # order seems not be guaranteed - sort, so we can rely on the order
         events.sort(key=lambda x: x["eventTime"])
         snapshot.match("receive_messages", {"messages": events})

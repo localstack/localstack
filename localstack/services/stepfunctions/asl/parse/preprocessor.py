@@ -87,6 +87,14 @@ from localstack.services.stepfunctions.asl.component.common.retry.max_attempts_d
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_decl import RetrierDecl
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_props import RetrierProps
 from localstack.services.stepfunctions.asl.component.common.retry.retry_decl import RetryDecl
+from localstack.services.stepfunctions.asl.component.common.timeouts.heartbeat import (
+    HeartbeatSeconds,
+    HeartbeatSecondsPath,
+)
+from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import (
+    TimeoutSeconds,
+    TimeoutSecondsPath,
+)
 from localstack.services.stepfunctions.asl.component.component import Component
 from localstack.services.stepfunctions.asl.component.program.program import Program
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
@@ -145,16 +153,16 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_parallel.state_parallel import (
     StateParallel,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.resource import (
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     LambdaResource,
     Resource,
     ServiceResource,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
+    StateTaskService,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task_lambda import (
     StateTaskLambda,
-)
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task_service import (
-    StateTaskService,
 )
 from localstack.services.stepfunctions.asl.component.state.state_fail.state_fail import StateFail
 from localstack.services.stepfunctions.asl.component.state.state_pass.result import Result
@@ -185,6 +193,8 @@ from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
 class Preprocessor(ASLParserVisitor):
     @staticmethod
     def _inner_string_of(parse_tree: ParseTree) -> Optional[str]:
+        if Antlr4Utils.is_terminal(parse_tree, ASLLexer.NULL):
+            return None
         pt = Antlr4Utils.is_production(parse_tree) or Antlr4Utils.is_terminal(parse_tree)
         inner_str = pt.getText()
         if inner_str.startswith('"') and inner_str.endswith('"'):
@@ -237,7 +247,7 @@ class Preprocessor(ASLParserVisitor):
         return Next(name=inner_str)
 
     def visitResult_path_decl(self, ctx: ASLParser.Result_path_declContext) -> ResultPath:
-        inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
         return ResultPath(result_path_src=inner_str)
 
     def visitInput_path_decl(self, ctx: ASLParser.Input_path_declContext) -> InputPath:
@@ -257,6 +267,30 @@ class Preprocessor(ASLParserVisitor):
     def visitParameters_decl(self, ctx: ASLParser.Parameters_declContext) -> Parameters:
         payload_tmpl: PayloadTmpl = self.visit(ctx.payload_tmpl_decl())
         return Parameters(payload_tmpl=payload_tmpl)
+
+    def visitTimeout_seconds_decl(
+        self, ctx: ASLParser.Timeout_seconds_declContext
+    ) -> TimeoutSeconds:
+        seconds = int(ctx.INT().getText())
+        return TimeoutSeconds(timeout_seconds=seconds)
+
+    def visitTimeout_seconds_path_decl(
+        self, ctx: ASLParser.Timeout_seconds_path_declContext
+    ) -> TimeoutSecondsPath:
+        path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
+        return TimeoutSecondsPath(path=path)
+
+    def visitHeartbeat_seconds_decl(
+        self, ctx: ASLParser.Heartbeat_seconds_declContext
+    ) -> HeartbeatSeconds:
+        seconds = int(ctx.INT().getText())
+        return HeartbeatSeconds(heartbeat_seconds=seconds)
+
+    def visitHeartbeat_seconds_path_decl(
+        self, ctx: ASLParser.Heartbeat_seconds_path_declContext
+    ) -> HeartbeatSecondsPath:
+        path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
+        return HeartbeatSecondsPath(path=path)
 
     def visitResult_selector_decl(
         self, ctx: ASLParser.Result_selector_declContext

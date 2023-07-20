@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/choice_operators/test_numeric.py::TestNumerics::test_numeric_equals": {
-    "recorded-date": "01-03-2023, 15:28:00",
+    "recorded-date": "22-06-2023, 13:14:08",
     "recorded-content": {
       "cases": [
         {

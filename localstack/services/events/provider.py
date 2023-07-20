@@ -7,6 +7,7 @@ import re
 import time
 from typing import Any, Dict, List, Optional
 
+from moto.events import events_backends
 from moto.events.responses import EventsHandler as MotoEventsHandler
 
 from localstack import config
@@ -30,16 +31,18 @@ from localstack.aws.api.events import (
     RuleName,
     RuleState,
     ScheduleExpression,
+    String,
     TagList,
     TargetList,
+    TestEventPatternResponse,
 )
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.services.events.models import EventsStore, events_stores
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import event_bus_arn
+from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.collections import pick_attributes
 from localstack.utils.common import TMP_FILES, mkdir, save_file, truncate
@@ -67,31 +70,67 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         JobScheduler.shutdown()
 
     @staticmethod
-    def get_store() -> EventsStore:
-        return events_stores[get_aws_account_id()][aws_stack.get_region()]
+    def get_store(context: RequestContext) -> EventsStore:
+        return events_stores[context.account_id][context.region]
+
+    def test_event_pattern(
+        self, context: RequestContext, event_pattern: EventPattern, event: String
+    ) -> TestEventPatternResponse:
+
+        # https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html
+        # Test event pattern uses event pattern to match against event.
+        # So event pattern keys must be in the event keys and values must match.
+        # If event pattern has a key that event does not have, it is not a match.
+        evt_pattern = json.loads(str(event_pattern))
+        evt = json.loads(str(event))
+
+        if any(key not in evt or evt[key] not in values for key, values in evt_pattern.items()):
+            return TestEventPatternResponse(Result=False)
+        return TestEventPatternResponse(Result=True)
 
     @staticmethod
-    def get_scheduled_rule_func(rule_name: RuleName):
+    def get_scheduled_rule_func(
+        store: EventsStore,
+        rule_name: RuleName,
+        event_bus_name_or_arn: Optional[EventBusNameOrArn] = None,
+    ):
         def func(*args, **kwargs):
-            client = aws_stack.connect_to_service("events")
-            targets = client.list_targets_by_rule(Rule=rule_name)["Targets"]
-            if targets:
+            moto_backend = events_backends[store._account_id][store._region_name]
+            event_bus_name = get_event_bus_name(event_bus_name_or_arn)
+            event_bus = moto_backend.event_buses[event_bus_name]
+            rule = event_bus.rules.get(rule_name)
+            if not rule:
+                LOG.info("Unable to find rule `%s` for event bus `%s`", rule_name, event_bus_name)
+                return
+            if rule.targets:
                 LOG.debug(
                     "Notifying %s targets in response to triggered Events rule %s",
-                    len(targets),
+                    len(rule.targets),
                     rule_name,
                 )
-            for target in targets:
+            for target in rule.targets:
                 arn = target.get("Arn")
                 # TODO generate event matching aws in case no Input has been specified
                 event_str = target.get("Input") or "{}"
                 event = json.loads(event_str)
                 attr = pick_attributes(target, ["$.SqsParameters", "$.KinesisParameters"])
+
                 try:
-                    send_event_to_target(arn, event, target_attributes=attr, target=target)
+                    send_event_to_target(
+                        arn,
+                        event,
+                        target_attributes=attr,
+                        role=target.get("RoleArn"),
+                        target=target,
+                        source_arn=rule.arn,
+                        source_service=ServicePrincipal.events,
+                    )
                 except Exception as e:
                     LOG.info(
-                        f"Unable to send event notification {truncate(event)} to target {target}: {e}"
+                        "Unable to send event notification %s to target %s: %s",
+                        truncate(event),
+                        target,
+                        e,
                     )
 
         return func
@@ -111,27 +150,33 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             if "minute" in unit:
                 return "*/%s * * * *" % value
             if "hour" in unit:
-                return "* */%s * * *" % value
+                return "0 */%s * * *" % value
             if "day" in unit:
-                return "* * */%s * *" % value
+                return "0 0 */%s * *" % value
             raise Exception("Unable to parse events schedule expression: %s" % schedule)
         return schedule
 
     @staticmethod
     def put_rule_job_scheduler(
+        store: EventsStore,
         name: Optional[RuleName],
         state: Optional[RuleState],
         schedule_expression: Optional[ScheduleExpression],
+        event_bus_name_or_arn: Optional[EventBusNameOrArn] = None,
     ):
-        enabled = state != "DISABLED"
-        if schedule_expression:
-            job_func = EventsProvider.get_scheduled_rule_func(name)
-            cron = EventsProvider.convert_schedule_to_cron(schedule_expression)
-            LOG.debug("Adding new scheduled Events rule with cron schedule %s", cron)
+        if not schedule_expression:
+            return
 
-            job_id = JobScheduler.instance().add_job(job_func, cron, enabled)
-            rule_scheduled_jobs = EventsProvider.get_store().rule_scheduled_jobs
-            rule_scheduled_jobs[name] = job_id
+        job_func = EventsProvider.get_scheduled_rule_func(
+            store, name, event_bus_name_or_arn=event_bus_name_or_arn
+        )
+        cron = EventsProvider.convert_schedule_to_cron(schedule_expression)
+        LOG.debug("Adding new scheduled Events rule with cron schedule %s", cron)
+
+        enabled = state != "DISABLED"
+        job_id = JobScheduler.instance().add_job(job_func, cron, enabled)
+        rule_scheduled_jobs = store.rule_scheduled_jobs
+        rule_scheduled_jobs[name] = job_id
 
     def put_rule(
         self,
@@ -145,7 +190,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         tags: TagList = None,
         event_bus_name: EventBusNameOrArn = None,
     ) -> PutRuleResponse:
-        self.put_rule_job_scheduler(name, state, schedule_expression)
+        store = self.get_store(context)
+        self.put_rule_job_scheduler(
+            store, name, state, schedule_expression, event_bus_name_or_arn=event_bus_name
+        )
         return call_moto(context)
 
     def delete_rule(
@@ -155,7 +203,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name: EventBusNameOrArn = None,
         force: Boolean = None,
     ) -> None:
-        rule_scheduled_jobs = self.get_store().rule_scheduled_jobs
+        rule_scheduled_jobs = self.get_store(context).rule_scheduled_jobs
         job_id = rule_scheduled_jobs.get(name)
         if job_id:
             LOG.debug("Removing scheduled Events: {} | job_id: {}".format(name, job_id))
@@ -165,7 +213,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def disable_rule(
         self, context: RequestContext, name: RuleName, event_bus_name: EventBusNameOrArn = None
     ) -> None:
-        rule_scheduled_jobs = self.get_store().rule_scheduled_jobs
+        rule_scheduled_jobs = self.get_store(context).rule_scheduled_jobs
         job_id = rule_scheduled_jobs.get(name)
         if job_id:
             LOG.debug("Disabling Rule: {} | job_id: {}".format(name, job_id))
@@ -293,7 +341,7 @@ def check_valid_numeric_content_base_rule(list_of_operators):
     return True
 
 
-def filter_event_with_content_base_parameter(pattern_value, event_value):
+def filter_event_with_content_base_parameter(pattern_value: list, event_value: str | int):
     for element in pattern_value:
         if (isinstance(element, (str, int))) and (event_value == element or element in event_value):
             return True
@@ -417,7 +465,7 @@ def filter_event_based_on_event_format(
                         if not handle_prefix_filtering(value.get(key_a), value_a):
                             return False
 
-            # 2. check if the pattern is a list and event values are not contained in itEventsApi
+            # 2. check if the pattern is a list and event values are not contained in it
             if isinstance(value, list):
                 if identify_content_base_parameter_in_pattern(value):
                     if not filter_event_with_content_base_parameter(value, event_value):
@@ -476,10 +524,18 @@ def process_events(event: Dict, targets: List[Dict]):
                 arn,
                 changed_event,
                 pick_attributes(target, ["$.SqsParameters", "$.KinesisParameters"]),
+                role=target.get("RoleArn"),
                 target=target,
+                source_service=ServicePrincipal.events,
+                source_arn=target.get("RuleArn"),
             )
         except Exception as e:
             LOG.info(f"Unable to send event notification {truncate(event)} to target {target}: {e}")
+
+
+def get_event_bus_name(event_bus_name_or_arn: Optional[EventBusNameOrArn] = None) -> str:
+    event_bus_name_or_arn = event_bus_name_or_arn or DEFAULT_EVENT_BUS_NAME
+    return event_bus_name_or_arn.split("/")[-1]
 
 
 # specific logic for put_events which forwards matching events to target listeners
@@ -496,16 +552,30 @@ def events_handler_put_events(self):
 
     for event_envelope in events:
         event = event_envelope["event"]
-        event_bus_name = event.get("EventBusName") or DEFAULT_EVENT_BUS_NAME
-        event_rules = self.events_backend.event_buses[event_bus_name].rules
+        event_bus_name = get_event_bus_name(event.get("EventBusName"))
+        event_bus = self.events_backend.event_buses.get(event_bus_name)
+        if not event_bus:
+            continue
 
         matching_rules = [
             r
-            for r in event_rules.values()
+            for r in event_bus.rules.values()
             if r.event_bus_name == event_bus_name and not r.scheduled_expression
         ]
         if not matching_rules:
             continue
+
+        event_time = datetime.datetime.utcnow()
+        if event_timestamp := event.get("Time"):
+            try:
+                # if provided, use the time from event
+                event_time = datetime.datetime.utcfromtimestamp(event_timestamp)
+            except ValueError:
+                # if we can't parse it, pass and keep using `utcnow`
+                LOG.debug(
+                    "Could not parse the `Time` parameter, falling back to `utcnow` for the following Event: '%s'",
+                    event,
+                )
 
         # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
         formatted_event = {
@@ -514,7 +584,7 @@ def events_handler_put_events(self):
             "detail-type": event.get("DetailType"),
             "source": event.get("Source"),
             "account": get_aws_account_id(),
-            "time": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "time": event_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "region": self.region,
             "resources": event.get("Resources", []),
             "detail": json.loads(event.get("Detail", "{}")),
@@ -523,11 +593,11 @@ def events_handler_put_events(self):
         targets = []
         for rule in matching_rules:
             if filter_event_based_on_event_format(self, rule.name, event_bus_name, formatted_event):
-                targets.extend(
-                    self.events_backend.list_targets_by_rule(
-                        rule.name, event_bus_arn(event_bus_name)
-                    )["Targets"]
-                )
+                rule_targets = self.events_backend.list_targets_by_rule(
+                    rule.name, event_bus_arn(event_bus_name)
+                ).get("Targets", [])
+
+                targets.extend([{"RuleArn": rule.arn} | target for target in rule_targets])
 
         # process event
         process_events(formatted_event, targets)

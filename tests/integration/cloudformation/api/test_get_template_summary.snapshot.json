@@ -1,16 +1,14 @@
 {
   "tests/integration/cloudformation/api/test_get_template_summary.py::test_get_template_summary": {
-    "recorded-date": "30-11-2022, 14:27:17",
+    "recorded-date": "24-05-2023, 15:05:00",
     "recorded-content": {
       "template-summary": {
+        "Metadata": "{'TopicName': 'sns-topic-simple'}",
         "Parameters": [],
         "ResourceIdentifierSummaries": [
           {
             "LogicalResourceIds": [
               "topic123"
-            ],
-            "ResourceIdentifiers": [
-              "TopicArn"
             ],
             "ResourceType": "AWS::SNS::Topic"
           }

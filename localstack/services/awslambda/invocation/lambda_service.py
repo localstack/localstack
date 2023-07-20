@@ -23,13 +23,15 @@ from localstack.aws.api.lambda_ import (
     State,
 )
 from localstack.aws.connect import connect_to
-from localstack.services.awslambda import api_utils
+from localstack.constants import AWS_REGION_US_EAST_1
+from localstack.services.awslambda import api_utils, usage
 from localstack.services.awslambda.api_utils import (
     lambda_arn,
     qualified_lambda_arn,
     qualifier_is_alias,
 )
 from localstack.services.awslambda.invocation.lambda_models import (
+    BUCKET_ACCOUNT,
     ArchiveCode,
     Function,
     FunctionVersion,
@@ -247,6 +249,7 @@ class LambdaService:
         qualified_arn = qualified_lambda_arn(function_name, version_qualifier, account_id, region)
         try:
             version_manager = self.get_lambda_version_manager(qualified_arn)
+            usage.runtime.record(version_manager.function_version.config.runtime)
         except ValueError:
             version = function.versions.get(version_qualifier)
             state = version and version.config.state.state
@@ -256,14 +259,15 @@ class LambdaService:
                     f"Failed to create the runtime executor for the function {function_name}. "
                     "Please ensure that Docker is available in the LocalStack container by adding the volume mount "
                     '"/var/run/docker.sock:/var/run/docker.sock" to your LocalStack startup. '
-                    "Check out https://docs.localstack.cloud/references/lambda-provider-v2/#docker-not-available"
+                    "Check out https://docs.localstack.cloud/user-guide/aws/lambda/#docker-not-available"
                 )
             elif state == State.Pending:
                 HINT_LOG.warning(
                     "Lambda functions are created and updated asynchronously in the new lambda provider like in AWS. "
                     f"Before invoking {function_name}, please wait until the function transitioned from the state "
-                    f'Pending to Active using: "aws lambda wait function-active-v2 --function-name {function_name}" '
-                    "Check out https://docs.localstack.cloud/references/lambda-provider-v2/#function-in-pending-state"
+                    "Pending to Active using: "
+                    f'"awslocal lambda wait function-active-v2 --function-name {function_name}" '
+                    "Check out https://docs.localstack.cloud/user-guide/aws/lambda/#function-in-pending-state"
                 )
             raise ResourceConflictException(
                 f"The operation cannot be performed at this time. The function is currently in the following state: {state}"
@@ -273,6 +277,8 @@ class LambdaService:
             payload = b"{}"
         if invocation_type is None:
             invocation_type = "RequestResponse"
+        if invocation_type == InvocationType.DryRun:
+            return None
         # TODO payload verification  An error occurred (InvalidRequestContentException) when calling the Invoke operation: Could not parse request body into json: Could not parse payload into json: Unexpected character (''' (code 39)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')
         #  at [Source: (byte[])"'test'"; line: 1, column: 2]
 
@@ -559,7 +565,7 @@ def store_lambda_archive(
             Type="User",
         )
     # store all buckets in us-east-1 for now
-    s3_client: "S3Client" = connect_to(region_name="us-east-1").s3
+    s3_client = connect_to(region_name=AWS_REGION_US_EAST_1, aws_access_key_id=BUCKET_ACCOUNT).s3
     bucket_name = f"awslambda-{region_name}-tasks"
     # s3 create bucket is idempotent
     s3_client.create_bucket(Bucket=bucket_name)
@@ -569,6 +575,7 @@ def store_lambda_archive(
     code_sha256 = to_str(base64.b64encode(sha256(archive_file).digest()))
     return S3Code(
         id=code_id,
+        account_id=account_id,
         s3_bucket=bucket_name,
         s3_key=key,
         s3_object_version=None,
@@ -606,6 +613,7 @@ def store_s3_bucket_archive(
     :return: S3 Code object representing the archive stored in S3
     """
     if archive_bucket == config.BUCKET_MARKER_LOCAL:
+        usage.hotreload.increment()
         return create_hot_reloading_code(path=archive_key)
     s3_client: "S3Client" = connect_to().s3
     kwargs = {"VersionId": archive_version} if archive_version else {}

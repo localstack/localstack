@@ -251,7 +251,14 @@ class TransformerUtility:
         """
         :return: array with Transformers, for iam api.
         """
-        return [TransformerUtility.key_value("UserName"), TransformerUtility.key_value("UserId")]
+        return [
+            TransformerUtility.key_value("UserName"),
+            TransformerUtility.key_value("UserId"),
+            TransformerUtility.key_value("RoleId"),
+            TransformerUtility.key_value("RoleName"),
+            TransformerUtility.key_value("PolicyName"),
+            TransformerUtility.key_value("PolicyId"),
+        ]
 
     @staticmethod
     def transcribe_api():
@@ -400,6 +407,8 @@ class TransformerUtility:
             TransformerUtility.jsonpath(
                 jsonpath="$..Mac", value_replacement="<mac>", reference_replacement=False
             ),
+            TransformerUtility.key_value("CiphertextBlob", reference_replacement=False),
+            TransformerUtility.key_value("Plaintext", reference_replacement=False),
             RegexTransformer(PATTERN_KEY_ARN, replacement="<key-arn>"),
         ]
 
@@ -429,7 +438,7 @@ class TransformerUtility:
             # this will be able to use a KeyValue based once we provide a certificate for message signing in SNS
             # a match must be made case-insensitive because the key casing is different from lambda notifications
             RegexTransformer(
-                r"(?<=(?i)UnsubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=Unsubscribe)",
+                r"(?i)(?<=UnsubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=Unsubscribe)",
                 replacement="<unsubscribe-domain>",
             ),
             KeyValueBasedTransformer(_resource_name_transformer, "resource"),
@@ -523,6 +532,31 @@ class TransformerUtility:
         arn_part_repl = f"<ExecArnPart_{index}idx>"
         arn_part: str = "".join(start_exec["executionArn"].rpartition(":")[-1])
         return RegexTransformer(arn_part, arn_part_repl)
+
+    @staticmethod
+    def stepfunctions_api():
+        return [
+            JsonpathTransformer(
+                "$..SdkHttpMetadata.AllHttpHeaders.Date",
+                "date",
+                replace_reference=False,
+            ),
+            JsonpathTransformer(
+                "$..SdkHttpMetadata.AllHttpHeaders.X-Amzn-Trace-Id",
+                "X-Amzn-Trace-Id",
+                replace_reference=False,
+            ),
+            JsonpathTransformer(
+                "$..SdkHttpMetadata.HttpHeaders.Date",
+                "date",
+                replace_reference=False,
+            ),
+            JsonpathTransformer(
+                "$..SdkHttpMetadata.HttpHeaders.X-Amzn-Trace-Id",
+                "X-Amzn-Trace-Id",
+                replace_reference=False,
+            ),
+        ]
 
     # TODO add example
     # @staticmethod

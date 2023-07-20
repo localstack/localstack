@@ -1,40 +1,44 @@
 import logging
 import re
+from functools import cache
 from typing import Optional, TypedDict
 
 from botocore.utils import ArnParser, InvalidArnException
 
-from localstack.aws.accounts import get_aws_account_id
-from localstack.utils.aws.aws_stack import connect_to_service, get_region, get_valid_regions
+from localstack.aws.accounts import DEFAULT_AWS_ACCOUNT_ID, get_aws_account_id
+from localstack.aws.connect import connect_to
+from localstack.utils.aws.aws_stack import get_region, get_valid_regions
 
 # set up logger
 LOG = logging.getLogger(__name__)
-
-# maps SQS queue ARNs to queue URLs
-SQS_ARN_TO_URL_CACHE = {}
 
 # TODO: extract ARN utils into separate file!
 
 _arn_parser = ArnParser()
 
 
-def sqs_queue_url_for_arn(queue_arn):
+@cache
+def sqs_queue_url_for_arn(queue_arn: str) -> str:
+    """
+    Return the SQS queue URL for the given queue ARN.
+    """
     if "://" in queue_arn:
         return queue_arn
-    if queue_arn in SQS_ARN_TO_URL_CACHE:
-        return SQS_ARN_TO_URL_CACHE[queue_arn]
 
     try:
         arn = parse_arn(queue_arn)
+        account_id = arn["account"]
         region_name = arn["region"]
         queue_name = arn["resource"]
     except InvalidArnException:
+        account_id = DEFAULT_AWS_ACCOUNT_ID
         region_name = None
         queue_name = queue_arn
 
-    sqs_client = connect_to_service("sqs", region_name=region_name)
-    result = sqs_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
-    SQS_ARN_TO_URL_CACHE[queue_arn] = result
+    sqs_client = connect_to(region_name=region_name).sqs
+    result = sqs_client.get_queue_url(QueueName=queue_name, QueueOwnerAWSAccountId=account_id)[
+        "QueueUrl"
+    ]
     return result
 
 
@@ -189,7 +193,7 @@ def lambda_function_or_layer_arn(
     if re.match(pattern, entity_name):
         return entity_name
     if ":" in entity_name:
-        client = connect_to_service("lambda")
+        client = connect_to().awslambda
         entity_name, _, alias = entity_name.rpartition(":")
         try:
             alias_response = client.get_alias(FunctionName=entity_name, Name=alias)
@@ -290,7 +294,7 @@ def ssm_parameter_arn(param_name: str, account_id: str = None, region_name: str 
 
 def s3_bucket_arn(bucket_name_or_arn: str, account_id=None):
     bucket_name = s3_bucket_name(bucket_name_or_arn)
-    return "arn:aws:s3:::%s" % bucket_name
+    return f"arn:aws:s3:::{bucket_name}"
 
 
 def s3_bucket_name(bucket_name_or_arn: str) -> str:
@@ -327,9 +331,10 @@ def sqs_queue_name(queue_arn):
         return queue_arn
 
 
-def sns_topic_arn(topic_name, account_id=None):
+def sns_topic_arn(topic_name, account_id=None, region_name=None):
     account_id = account_id or get_aws_account_id()
-    return "arn:aws:sns:%s:%s:%s" % (get_region(), account_id, topic_name)
+    region_name = region_name or get_region()
+    return f"arn:aws:sns:{region_name}:{account_id}:{topic_name}"
 
 
 def firehose_name(firehose_arn):

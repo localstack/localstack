@@ -14,6 +14,7 @@ from localstack.aws.api.dynamodb import (
 )
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
+from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack, queries, resources
@@ -918,19 +919,23 @@ class TestDynamoDB:
 
         # Replicate table in US and EU
         dynamodb_ap_south_1.update_table(
-            TableName=table_name, ReplicaUpdates=[{"Create": {"RegionName": "us-east-1"}}]
+            TableName=table_name,
+            ReplicaUpdates=[{"Create": {"RegionName": "us-east-1", "KMSMasterKeyId": "foo"}}],
         )
         dynamodb_ap_south_1.update_table(
-            TableName=table_name, ReplicaUpdates=[{"Create": {"RegionName": "eu-west-1"}}]
+            TableName=table_name,
+            ReplicaUpdates=[{"Create": {"RegionName": "eu-west-1", "KMSMasterKeyId": "bar"}}],
         )
 
         # Ensure all replicas can be described
         response = dynamodb_ap_south_1.describe_table(TableName=table_name)
-        assert len(response["Table"]["Replicas"]) == 3
+        assert len(response["Table"]["Replicas"]) == 2
         response = dynamodb_us_east_1.describe_table(TableName=table_name)
-        assert len(response["Table"]["Replicas"]) == 3
+        assert len(response["Table"]["Replicas"]) == 2
+        assert "bar" in [replica.get("KMSMasterKeyId") for replica in response["Table"]["Replicas"]]
         response = dynamodb_eu_west_1.describe_table(TableName=table_name)
-        assert len(response["Table"]["Replicas"]) == 3
+        assert len(response["Table"]["Replicas"]) == 2
+        assert "foo" in [replica.get("KMSMasterKeyId") for replica in response["Table"]["Replicas"]]
         with pytest.raises(Exception) as exc:
             dynamodb_sa_east_1.describe_table(TableName=table_name)
         exc.match("ResourceNotFoundException")
@@ -985,9 +990,9 @@ class TestDynamoDB:
 
         # Ensure replica details are updated in other regions
         response = dynamodb_us_east_1.describe_table(TableName=table_name)
-        assert len(response["Table"]["Replicas"]) == 2
+        assert len(response["Table"]["Replicas"]) == 1
         response = dynamodb_ap_south_1.describe_table(TableName=table_name)
-        assert len(response["Table"]["Replicas"]) == 2
+        assert len(response["Table"]["Replicas"]) == 1
 
         # Ensure removing the last replica disables global table
         dynamodb_us_east_1.update_table(
@@ -1443,6 +1448,45 @@ class TestDynamoDB:
         assert len(response["StreamDescription"]["Shards"]) == 0
 
     @pytest.mark.aws_validated
+    def test_dynamodb_streams_shard_iterator_format(
+        self,
+        dynamodb_create_table,
+        wait_for_dynamodb_stream_ready,
+        aws_client,
+    ):
+        """Test the dynamodb stream iterators starting with the stream arn followed by |<int>|"""
+        table_name = f"test-table-{short_uid()}"
+        partition_key = "my_partition_key"
+
+        dynamodb_create_table(table_name=table_name, partition_key=partition_key)
+
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        stream_arn = aws_client.dynamodb.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
+        )["TableDescription"]["LatestStreamArn"]
+        assert wait_for_dynamodb_stream_ready(stream_arn)
+
+        describe_stream_result = aws_client.dynamodbstreams.describe_stream(StreamArn=stream_arn)[
+            "StreamDescription"
+        ]
+        shard_id = describe_stream_result["Shards"][0]["ShardId"]
+
+        shard_iterator = aws_client.dynamodbstreams.get_shard_iterator(
+            StreamArn=stream_arn, ShardId=shard_id, ShardIteratorType="TRIM_HORIZON"
+        )["ShardIterator"]
+
+        def _matches(iterator: str) -> bool:
+            return bool(re.match(rf"^{stream_arn}\|\d\|.+$", iterator))
+
+        assert _matches(shard_iterator)
+
+        get_records_result = aws_client.dynamodbstreams.get_records(ShardIterator=shard_iterator)
+        shard_iterator = get_records_result["NextShardIterator"]
+        assert _matches(shard_iterator)
+        assert not get_records_result["Records"]
+
+    @pytest.mark.aws_validated
     def test_dynamodb_idempotent_writing(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
@@ -1518,7 +1562,9 @@ class TestDynamoDB:
         assert "retries" not in str(ctx)
 
     @pytest.mark.only_localstack
-    def test_nosql_workbench_localhost_region(self, dynamodb_create_table, aws_client):
+    def test_nosql_workbench_localhost_region(
+        self, dynamodb_create_table, aws_client, aws_client_factory
+    ):
         """Test for AWS NoSQL Workbench, which sends "localhost" as region in header"""
         table_name = f"t-{short_uid()}"
         dynamodb_create_table(table_name=table_name, partition_key=PARTITION_KEY)
@@ -1526,7 +1572,7 @@ class TestDynamoDB:
         table = aws_client.dynamodb.describe_table(TableName=table_name)
         assert table.get("Table")
         # describe table for "localhost" region
-        client = aws_stack.connect_to_service("dynamodb", region_name="localhost")
+        client = aws_client_factory(region_name="localhost").dynamodb
         table = client.describe_table(TableName=table_name)
         assert table.get("Table")
 

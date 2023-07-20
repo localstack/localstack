@@ -70,7 +70,6 @@ from abc import ABC
 from email.utils import parsedate_to_datetime
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 from typing.io import IO
-from urllib.parse import quote
 from xml.etree import ElementTree as ETree
 
 import cbor2
@@ -234,7 +233,7 @@ class RequestParser(abc.ABC):
             if location == "header":
                 header_name = shape.serialization.get("name")
                 payload = request.headers.get(header_name)
-                if shape.type_name == "list":
+                if payload and shape.type_name == "list":
                     # headers may contain a comma separated list of values (e.g., the ObjectAttributes member in
                     # s3.GetObjectAttributes), so we prepare it here for the handler, which will be `_parse_list`.
                     payload = payload.split(",")
@@ -1075,7 +1074,7 @@ class S3RequestParser(RestXMLRequestParser):
             and uri_params is not None
             and shape.serialization.get("location") == "uri"
             and shape.serialization.get("name") == "Key"
-            and request.base_url.endswith(f"{quote(uri_params['Key'])}/")
+            and request.base_url.endswith(f"{uri_params['Key']}/")
         ):
             uri_params = dict(uri_params)
             uri_params["Key"] = uri_params["Key"] + "/"

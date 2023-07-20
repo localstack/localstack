@@ -260,6 +260,12 @@ class RecorderStatus(str):
     Failure = "Failure"
 
 
+class RecordingStrategyType(str):
+    ALL_SUPPORTED_RESOURCE_TYPES = "ALL_SUPPORTED_RESOURCE_TYPES"
+    INCLUSION_BY_RESOURCE_TYPES = "INCLUSION_BY_RESOURCE_TYPES"
+    EXCLUSION_BY_RESOURCE_TYPES = "EXCLUSION_BY_RESOURCE_TYPES"
+
+
 class RemediationExecutionState(str):
     QUEUED = "QUEUED"
     IN_PROGRESS = "IN_PROGRESS"
@@ -574,6 +580,52 @@ class ResourceType(str):
     AWS_CustomerProfiles_Domain = "AWS::CustomerProfiles::Domain"
     AWS_AutoScaling_WarmPool = "AWS::AutoScaling::WarmPool"
     AWS_Connect_PhoneNumber = "AWS::Connect::PhoneNumber"
+    AWS_AppConfig_DeploymentStrategy = "AWS::AppConfig::DeploymentStrategy"
+    AWS_AppFlow_Flow = "AWS::AppFlow::Flow"
+    AWS_AuditManager_Assessment = "AWS::AuditManager::Assessment"
+    AWS_CloudWatch_MetricStream = "AWS::CloudWatch::MetricStream"
+    AWS_DeviceFarm_InstanceProfile = "AWS::DeviceFarm::InstanceProfile"
+    AWS_DeviceFarm_Project = "AWS::DeviceFarm::Project"
+    AWS_EC2_EC2Fleet = "AWS::EC2::EC2Fleet"
+    AWS_EC2_SubnetRouteTableAssociation = "AWS::EC2::SubnetRouteTableAssociation"
+    AWS_ECR_PullThroughCacheRule = "AWS::ECR::PullThroughCacheRule"
+    AWS_GroundStation_Config = "AWS::GroundStation::Config"
+    AWS_ImageBuilder_ImagePipeline = "AWS::ImageBuilder::ImagePipeline"
+    AWS_IoT_FleetMetric = "AWS::IoT::FleetMetric"
+    AWS_IoTWireless_ServiceProfile = "AWS::IoTWireless::ServiceProfile"
+    AWS_NetworkManager_Device = "AWS::NetworkManager::Device"
+    AWS_NetworkManager_GlobalNetwork = "AWS::NetworkManager::GlobalNetwork"
+    AWS_NetworkManager_Link = "AWS::NetworkManager::Link"
+    AWS_NetworkManager_Site = "AWS::NetworkManager::Site"
+    AWS_Panorama_Package = "AWS::Panorama::Package"
+    AWS_Pinpoint_App = "AWS::Pinpoint::App"
+    AWS_Redshift_ScheduledAction = "AWS::Redshift::ScheduledAction"
+    AWS_Route53Resolver_FirewallRuleGroupAssociation = (
+        "AWS::Route53Resolver::FirewallRuleGroupAssociation"
+    )
+    AWS_SageMaker_AppImageConfig = "AWS::SageMaker::AppImageConfig"
+    AWS_SageMaker_Image = "AWS::SageMaker::Image"
+    AWS_ECS_TaskSet = "AWS::ECS::TaskSet"
+    AWS_Cassandra_Keyspace = "AWS::Cassandra::Keyspace"
+    AWS_Signer_SigningProfile = "AWS::Signer::SigningProfile"
+    AWS_Amplify_App = "AWS::Amplify::App"
+    AWS_AppMesh_VirtualNode = "AWS::AppMesh::VirtualNode"
+    AWS_AppMesh_VirtualService = "AWS::AppMesh::VirtualService"
+    AWS_AppRunner_VpcConnector = "AWS::AppRunner::VpcConnector"
+    AWS_AppStream_Application = "AWS::AppStream::Application"
+    AWS_CodeArtifact_Repository = "AWS::CodeArtifact::Repository"
+    AWS_EC2_PrefixList = "AWS::EC2::PrefixList"
+    AWS_EC2_SpotFleet = "AWS::EC2::SpotFleet"
+    AWS_Evidently_Project = "AWS::Evidently::Project"
+    AWS_Forecast_Dataset = "AWS::Forecast::Dataset"
+    AWS_IAM_SAMLProvider = "AWS::IAM::SAMLProvider"
+    AWS_IAM_ServerCertificate = "AWS::IAM::ServerCertificate"
+    AWS_Pinpoint_Campaign = "AWS::Pinpoint::Campaign"
+    AWS_Pinpoint_InAppTemplate = "AWS::Pinpoint::InAppTemplate"
+    AWS_SageMaker_Domain = "AWS::SageMaker::Domain"
+    AWS_Transfer_Agreement = "AWS::Transfer::Agreement"
+    AWS_Transfer_Connector = "AWS::Transfer::Connector"
+    AWS_KinesisFirehose_DeliveryStream = "AWS::KinesisFirehose::DeliveryStream"
 
 
 class ResourceValueType(str):
@@ -1302,13 +1354,25 @@ class ConfigurationItem(TypedDict, total=False):
 
 
 ConfigurationItemList = List[ConfigurationItem]
+
+
+class RecordingStrategy(TypedDict, total=False):
+    useOnly: Optional[RecordingStrategyType]
+
+
 ResourceTypeList = List[ResourceType]
+
+
+class ExclusionByResourceTypes(TypedDict, total=False):
+    resourceTypes: Optional[ResourceTypeList]
 
 
 class RecordingGroup(TypedDict, total=False):
     allSupported: Optional[AllSupported]
     includeGlobalResourceTypes: Optional[IncludeGlobalResourceTypes]
     resourceTypes: Optional[ResourceTypeList]
+    exclusionByResourceTypes: Optional[ExclusionByResourceTypes]
+    recordingStrategy: Optional[RecordingStrategy]
 
 
 class ConfigurationRecorder(TypedDict, total=False):

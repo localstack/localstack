@@ -123,6 +123,28 @@ class TestIAMExtensions:
         get_user_reply = aws_client.iam.get_user(UserName=user_name)
         assert "PermissionsBoundary" not in get_user_reply["User"]
 
+    @pytest.mark.aws_validated
+    def test_create_role_with_malformed_assume_role_policy_document(self, aws_client, snapshot):
+        role_name = f"role-{short_uid()}"
+        # The error in this document is the trailing comma after `"Effect": "Allow"`
+        assume_role_policy_document = """
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Principal": "*",
+              "Effect": "Allow",
+            }
+          ]
+        }
+        """
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.create_role(
+                RoleName=role_name, AssumeRolePolicyDocument=assume_role_policy_document
+            )
+        snapshot.match("invalid-json", e.value.response)
+
 
 class TestIAMIntegrations:
     def test_attach_iam_role_to_new_iam_user(self, aws_client):
@@ -466,8 +488,6 @@ class TestIAMIntegrations:
     @pytest.mark.aws_validated
     def test_update_assume_role_policy(self, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.iam_api())
-        snapshot.add_transformer(snapshot.transform.resource_name("role_name"))
-        snapshot.add_transformer(snapshot.transform.key_value("RoleId", "role_id"))
 
         policy = {
             "Version": "2012-10-17",
@@ -494,3 +514,176 @@ class TestIAMIntegrations:
             snapshot.match("updated_policy", result)
         finally:
             aws_client.iam.delete_role(RoleName=role_name)
+
+    @pytest.mark.aws_validated
+    def test_create_describe_role(self, snapshot, aws_client, create_role, cleanups):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+        path_prefix = f"/{short_uid()}/"
+        snapshot.add_transformer(snapshot.transform.regex(path_prefix, "/<path-prefix>/"))
+
+        trust_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "ec2.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+
+        role_name = f"role-{short_uid()}"
+        create_role_result = create_role(
+            RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Path=path_prefix
+        )
+        snapshot.match("create_role_result", create_role_result)
+        get_role_result = aws_client.iam.get_role(RoleName=role_name)
+        snapshot.match("get_role_result", get_role_result)
+
+        list_roles_result = aws_client.iam.list_roles(PathPrefix=path_prefix)
+        snapshot.match("list_roles_result", list_roles_result)
+
+    @pytest.mark.aws_validated
+    def test_list_roles_with_permission_boundary(
+        self, snapshot, aws_client, create_role, create_policy, cleanups
+    ):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+        path_prefix = f"/{short_uid()}/"
+        snapshot.add_transformer(snapshot.transform.regex(path_prefix, "/<path-prefix>/"))
+
+        trust_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "ec2.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+        permission_boundary = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {"Effect": "Allow", "Action": ["lambda:ListFunctions"], "Resource": ["*"]}
+            ],
+        }
+
+        role_name = f"role-{short_uid()}"
+        policy_name = f"policy-{short_uid()}"
+        result = create_role(
+            RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy), Path=path_prefix
+        )
+        snapshot.match("created_role", result)
+        policy_arn = create_policy(
+            PolicyName=policy_name, PolicyDocument=json.dumps(permission_boundary)
+        )["Policy"]["Arn"]
+
+        aws_client.iam.put_role_permissions_boundary(
+            RoleName=role_name, PermissionsBoundary=policy_arn
+        )
+        cleanups.append(lambda: aws_client.iam.delete_role_permissions_boundary(RoleName=role_name))
+
+        list_roles_result = aws_client.iam.list_roles(PathPrefix=path_prefix)
+        snapshot.match("list_roles_result", list_roles_result)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Policy.IsAttachable",
+            "$..Policy.PermissionsBoundaryUsageCount",
+            "$..Policy.Tags",
+        ]
+    )
+    def test_role_attach_policy(self, snapshot, aws_client, create_role, create_policy):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+
+        trust_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "ec2.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+        policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {"Effect": "Allow", "Action": ["lambda:ListFunctions"], "Resource": ["*"]}
+            ],
+        }
+
+        role_name = f"test-role-{short_uid()}"
+        policy_name = f"test-policy-{short_uid()}"
+        create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy))
+        create_policy_response = create_policy(
+            PolicyName=policy_name, PolicyDocument=json.dumps(policy_document)
+        )
+        snapshot.match("create_policy_response", create_policy_response)
+        policy_arn = create_policy_response["Policy"]["Arn"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.attach_role_policy(
+                RoleName=role_name, PolicyArn="longpolicynamebutnoarn"
+            )
+        snapshot.match("non_existent_malformed_policy_arn", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_name)
+        snapshot.match("existing_policy_name_provided", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=f"{policy_arn}123")
+        snapshot.match("valid_arn_not_existent", e.value.response)
+
+        attach_policy_response = aws_client.iam.attach_role_policy(
+            RoleName=role_name, PolicyArn=policy_arn
+        )
+        snapshot.match("valid_policy_arn", attach_policy_response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Policy.IsAttachable",
+            "$..Policy.PermissionsBoundaryUsageCount",
+            "$..Policy.Tags",
+        ]
+    )
+    def test_user_attach_policy(self, snapshot, aws_client, create_user, create_policy):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+
+        policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {"Effect": "Allow", "Action": ["lambda:ListFunctions"], "Resource": ["*"]}
+            ],
+        }
+
+        user_name = f"test-role-{short_uid()}"
+        policy_name = f"test-policy-{short_uid()}"
+        create_user(UserName=user_name)
+        create_policy_response = create_policy(
+            PolicyName=policy_name, PolicyDocument=json.dumps(policy_document)
+        )
+        snapshot.match("create_policy_response", create_policy_response)
+        policy_arn = create_policy_response["Policy"]["Arn"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.attach_user_policy(
+                UserName=user_name, PolicyArn="longpolicynamebutnoarn"
+            )
+        snapshot.match("non_existent_malformed_policy_arn", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.attach_user_policy(UserName=user_name, PolicyArn=policy_name)
+        snapshot.match("existing_policy_name_provided", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.iam.attach_user_policy(UserName=user_name, PolicyArn=f"{policy_arn}123")
+        snapshot.match("valid_arn_not_existent", e.value.response)
+
+        attach_policy_response = aws_client.iam.attach_user_policy(
+            UserName=user_name, PolicyArn=policy_arn
+        )
+        snapshot.match("valid_policy_arn", attach_policy_response)

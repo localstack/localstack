@@ -1,16 +1,22 @@
 import abc
-from typing import Optional
+import copy
+import logging
+import threading
+from threading import Thread
+from typing import Any, Optional
 
-from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, HistoryEventType
+from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import (
     CatchOutcome,
-    CatchOutcomeCaught,
     CatchOutcomeNotCaught,
 )
-from localstack.services.stepfunctions.asl.component.common.error_name.error_name import ErrorName
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
+    FailureEventException,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
     StatesErrorNameType,
@@ -19,10 +25,21 @@ from localstack.services.stepfunctions.asl.component.common.path.result_path imp
 from localstack.services.stepfunctions.asl.component.common.result_selector import ResultSelector
 from localstack.services.stepfunctions.asl.component.common.retry.retry_decl import RetryDecl
 from localstack.services.stepfunctions.asl.component.common.retry.retry_outcome import RetryOutcome
+from localstack.services.stepfunctions.asl.component.common.timeouts.heartbeat import (
+    Heartbeat,
+    HeartbeatSeconds,
+)
+from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import (
+    EvalTimeoutError,
+    Timeout,
+    TimeoutSeconds,
+)
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
+
+LOG = logging.getLogger(__name__)
 
 
 class ExecutionState(CommonStateField, abc.ABC):
@@ -54,6 +71,32 @@ class ExecutionState(CommonStateField, abc.ABC):
         # encounters runtime errors and its retry policy is exhausted or isn't defined.
         self.catch: Optional[CatchDecl] = None
 
+        # TimeoutSeconds (Optional)
+        # If the state_task runs longer than the specified seconds, this state fails with a States.Timeout error name.
+        # Must be a positive, non-zero integer. If not provided, the default value is 99999999. The count begins after
+        # the state_task has been started, for example, when ActivityStarted or LambdaFunctionStarted are logged in the
+        # Execution event history.
+        # TimeoutSecondsPath (Optional)
+        # If you want to provide a timeout value dynamically from the state input using a reference path, use
+        # TimeoutSecondsPath. When resolved, the reference path must select fields whose values are positive integers.
+        # A Task state cannot include both TimeoutSeconds and TimeoutSecondsPath
+        # TimeoutSeconds and TimeoutSecondsPath fields are encoded by the timeout type.
+        self.timeout: Timeout = TimeoutSeconds(
+            timeout_seconds=TimeoutSeconds.DEFAULT_TIMEOUT_SECONDS
+        )
+
+        # HeartbeatSeconds (Optional)
+        # If more time than the specified seconds elapses between heartbeats from the task, this state fails with a
+        # States.Timeout error name. Must be a positive, non-zero integer less than the number of seconds specified in
+        # the TimeoutSeconds field. If not provided, the default value is 99999999. For Activities, the count begins
+        # when GetActivityTask receives a token and ActivityStarted is logged in the Execution event history.
+        # HeartbeatSecondsPath (Optional)
+        # If you want to provide a heartbeat value dynamically from the state input using a reference path, use
+        # HeartbeatSecondsPath. When resolved, the reference path must select fields whose values are positive integers.
+        # A Task state cannot include both HeartbeatSeconds and HeartbeatSecondsPath
+        # HeartbeatSeconds and HeartbeatSecondsPath fields are encoded by the Heartbeat type.
+        self.heartbeat: Optional[Heartbeat] = None
+
     def from_state_props(self, state_props: StateProps) -> None:
         super().from_state_props(state_props=state_props)
         self.result_path = state_props.get(ResultPath)
@@ -61,27 +104,40 @@ class ExecutionState(CommonStateField, abc.ABC):
         self.retry = state_props.get(RetryDecl)
         self.catch = state_props.get(CatchDecl)
 
+        # If provided, the "HeartbeatSeconds" interval MUST be smaller than the "TimeoutSeconds" value.
+        # If not provided, the default value of "TimeoutSeconds" is 60.
+        timeout = state_props.get(Timeout)
+        heartbeat = state_props.get(Heartbeat)
+        if isinstance(timeout, TimeoutSeconds) and isinstance(heartbeat, HeartbeatSeconds):
+            if timeout.timeout_seconds <= heartbeat.heartbeat_seconds:
+                raise RuntimeError(
+                    f"'HeartbeatSeconds' interval MUST be smaller than the 'TimeoutSeconds' value, "
+                    f"got '{timeout.timeout_seconds}' and '{heartbeat.heartbeat_seconds}' respectively."
+                )
+        if heartbeat is not None and timeout is None:
+            timeout = TimeoutSeconds(timeout_seconds=60, is_default=True)
+
+        if timeout is not None:
+            self.timeout = timeout
+        if heartbeat is not None:
+            self.heartbeat = heartbeat
+
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        # This implements the default handling of exceptions which
-        # corresponds to an ExecutionFailed due to States.Runtime.
-
-        error_name: str = StatesErrorNameType.StatesRuntime.to_name()
-        state_name: str = self.name
-        entered_event_id: str = env.context_object["Execution"]["Id"]
-
-        failure_event = FailureEvent(
-            error_name=ErrorName(error_name),
-            event_type=HistoryEventType.ExecutionFailed,
+        if isinstance(ex, FailureEventException):
+            return ex.failure_event
+        LOG.warning(
+            "State Task encountered an unhandled exception that lead to a State.Runtime error."
+        )
+        return FailureEvent(
+            error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
+            event_type=HistoryEventType.TaskFailed,
             event_details=EventDetails(
-                executionFailedEventDetails=ExecutionFailedEventDetails(
-                    error=f"An error occurred while executing the state {state_name} "
-                    f"(entered at the event id #{entered_event_id}). {ex}",
-                    cause=error_name,
+                taskFailedEventDetails=TaskFailedEventDetails(
+                    error=StatesErrorNameType.StatesRuntime.to_name(),
+                    cause=str(ex),
                 )
             ),
         )
-
-        return failure_event
 
     @abc.abstractmethod
     def _eval_execution(self, env: Environment) -> None:
@@ -115,14 +171,59 @@ class ExecutionState(CommonStateField, abc.ABC):
         self.catch.eval(env)
         res: CatchOutcome = env.stack.pop()
 
-        if isinstance(res, CatchOutcomeCaught):
-            pass
-        elif isinstance(res, CatchOutcomeNotCaught):
-            raise RuntimeError(f"No Catcher when dealing with exception '{ex}'.")
+        if isinstance(res, CatchOutcomeNotCaught):
+            self._terminate_with_event(failure_event=failure_event, env=env)
+
+    def _handle_uncaught(self, ex: Exception, env: Environment):
+        # Log state failure.
+        state_failure_event = self._from_error(env=env, ex=ex)
+        env.event_history.add_event(
+            hist_type_event=state_failure_event.event_type,
+            event_detail=state_failure_event.event_details,
+        )
+        self._terminate_with_event(state_failure_event, env)
+
+    @staticmethod
+    def _terminate_with_event(failure_event: FailureEvent, env: Environment) -> None:
+        raise FailureEventException(failure_event=failure_event)
+
+    def _evaluate_with_timeout(self, env: Environment) -> None:
+        self.timeout.eval(env=env)
+        timeout_seconds: int = env.stack.pop()
+
+        frame: Environment = env.open_frame()
+        frame.inp = copy.deepcopy(env.inp)
+        frame.stack = copy.deepcopy(env.stack)
+        execution_outputs: list[Any] = list()
+        execution_exceptions: list[Optional[Exception]] = [None]
+        terminated_event = threading.Event()
+
+        def _exec_and_notify():
+            try:
+                self._eval_execution(frame)
+                execution_outputs.extend(frame.stack)
+            except Exception as ex:
+                execution_exceptions.append(ex)
+            terminated_event.set()
+
+        thread = Thread(target=_exec_and_notify)
+        thread.start()
+        finished_on_time: bool = terminated_event.wait(timeout_seconds)
+        frame.set_ended()
+
+        execution_exception = execution_exceptions.pop()
+        if execution_exception:
+            raise execution_exception
+
+        if not finished_on_time:
+            raise EvalTimeoutError()
+
+        execution_output = execution_outputs.pop()
+        env.stack.append(execution_output)
 
     def _eval_state(self, env: Environment) -> None:
         try:
-            self._eval_execution(env)
+            self._evaluate_with_timeout(env)
 
             if self.result_selector:
                 self.result_selector.eval(env=env)
@@ -138,4 +239,4 @@ class ExecutionState(CommonStateField, abc.ABC):
             elif self.catch:
                 self._handle_catch(ex, env)
             else:
-                raise ex
+                self._handle_uncaught(ex, env)

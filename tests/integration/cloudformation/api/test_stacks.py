@@ -589,3 +589,19 @@ def test_events_resource_types(deploy_cfn_template, snapshot, aws_client):
     resource_types = list(set([event["ResourceType"] for event in events]))
     resource_types.sort()
     snapshot.match("resource_types", resource_types)
+
+
+@pytest.mark.aws_validated
+def test_list_parameter_type(aws_client, deploy_cfn_template, cleanups, lambda_su_role):
+    stack_name = f"test-stack-{short_uid()}"
+    cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_parameter_list_type.yaml"
+        ),
+        parameters={
+            "ParamsList": "foo,bar",
+        },
+    )
+
+    assert stack.outputs["ParamValue"] == "foo|bar"

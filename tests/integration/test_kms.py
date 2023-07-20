@@ -12,12 +12,7 @@ from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.kms.utils import get_hash_algorithm
-from localstack.utils.strings import short_uid
-
-
-@pytest.fixture(autouse=True)
-def kms_api_snapshot_transformer(snapshot):
-    snapshot.add_transformer(snapshot.transform.kms_api())
+from localstack.utils.strings import short_uid, to_str
 
 
 @pytest.fixture(scope="class")
@@ -28,6 +23,11 @@ def kms_client_for_region(aws_client_factory):
         return aws_client_factory(region_name=region_name).kms
 
     return _kms_client
+
+
+@pytest.fixture(scope="class")
+def user_arn(aws_client):
+    return aws_client.sts.get_caller_identity()["Arn"]
 
 
 def _get_all_key_ids(kms_client):
@@ -61,9 +61,9 @@ def _get_alias(kms_client, alias_name, key_id=None):
 
 
 class TestKMS:
-    @pytest.fixture(scope="class")
-    def user_arn(self, aws_client):
-        return aws_client.sts.get_caller_identity()["Arn"]
+    @pytest.fixture(autouse=True)
+    def kms_api_snapshot_transformer(self, snapshot):
+        snapshot.add_transformer(snapshot.transform.kms_api())
 
     @pytest.mark.aws_validated
     def test_create_alias(self, kms_create_alias, kms_create_key, snapshot):
@@ -303,12 +303,23 @@ class TestKMS:
         assert len(grants_after) == len(grants_before) - 1
 
     @pytest.mark.aws_validated
-    def test_retire_grant(self, kms_grant_and_key, aws_client):
+    def test_retire_grant_with_grant_token(self, kms_grant_and_key, aws_client):
         grant = kms_grant_and_key[0]
         key_id = kms_grant_and_key[1]["KeyId"]
         grants_before = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
 
         aws_client.kms.retire_grant(GrantToken=grant["GrantToken"])
+
+        grants_after = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
+        assert len(grants_after) == len(grants_before) - 1
+
+    @pytest.mark.aws_validated
+    def test_retire_grant_with_grant_id_and_key_id(self, kms_grant_and_key, aws_client):
+        grant = kms_grant_and_key[0]
+        key_id = kms_grant_and_key[1]["KeyId"]
+        grants_before = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
+
+        aws_client.kms.retire_grant(GrantId=grant["GrantId"], KeyId=key_id)
 
         grants_after = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
         assert len(grants_after) == len(grants_before) - 1
@@ -351,30 +362,6 @@ class TestKMS:
         assert right_grant_found
         assert not wrong_grant_found
 
-    @pytest.mark.aws_validated
-    def test_generate_data_key_pair_without_plaintext(self, kms_key, aws_client):
-        key_id = kms_key["KeyId"]
-        result = aws_client.kms.generate_data_key_pair_without_plaintext(
-            KeyId=key_id, KeyPairSpec="RSA_2048"
-        )
-        assert result.get("PrivateKeyCiphertextBlob")
-        assert "PrivateKeyPlaintext" not in result
-        assert result.get("PublicKey")
-
-    @pytest.mark.aws_validated
-    def test_generate_data_key_pair(self, kms_key, aws_client):
-        key_id = kms_key["KeyId"]
-        result = aws_client.kms.generate_data_key_pair(KeyId=key_id, KeyPairSpec="RSA_2048")
-        assert result.get("PrivateKeyCiphertextBlob")
-        assert result.get("PrivateKeyPlaintext")
-        assert result.get("PublicKey")
-
-        # assert correct value of encrypted key
-        decrypted = aws_client.kms.decrypt(
-            CiphertextBlob=result["PrivateKeyCiphertextBlob"], KeyId=key_id
-        )
-        assert decrypted["Plaintext"] == result["PrivateKeyPlaintext"]
-
     @pytest.mark.parametrize("number_of_bytes", [12, 44, 91, 1, 1024])
     @pytest.mark.aws_validated
     def test_generate_random(self, snapshot, number_of_bytes, aws_client):
@@ -398,28 +385,6 @@ class TestKMS:
             kms_client.generate_random(NumberOfBytes=number_of_bytes)
 
         snapshot.match("generate-random-exc", e.value.response)
-
-    @pytest.mark.aws_validated
-    def test_generate_data_key(self, kms_key, aws_client):
-        key_id = kms_key["KeyId"]
-        # LocalStack currently doesn't act on KeySpec or on NumberOfBytes params, but one of them has to be set.
-        result = aws_client.kms.generate_data_key(KeyId=key_id, KeySpec="AES_256")
-        assert result.get("CiphertextBlob")
-        assert result.get("Plaintext")
-        assert result.get("KeyId")
-
-        # assert correct value of encrypted key
-        decrypted = aws_client.kms.decrypt(CiphertextBlob=result["CiphertextBlob"], KeyId=key_id)
-        assert decrypted["Plaintext"] == result["Plaintext"]
-
-    @pytest.mark.aws_validated
-    def test_generate_data_key_without_plaintext(self, kms_key, aws_client):
-        key_id = kms_key["KeyId"]
-        # LocalStack currently doesn't act on KeySpec or on NumberOfBytes params, but one of them has to be set.
-        result = aws_client.kms.generate_data_key_without_plaintext(KeyId=key_id, KeySpec="AES_256")
-        assert result.get("CiphertextBlob")
-        assert "Plaintext" not in result
-        assert result.get("KeyId")
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -1105,3 +1070,263 @@ class TestKMS:
         with pytest.raises(ClientError) as e:
             aws_client.kms.encrypt(KeyId=key_id, Plaintext=base64.b64encode(message * 100))
         snapshot.match("invalid-plaintext-size-encrypt", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..message"])
+    def test_encrypt_decrypt_encryption_context(self, kms_create_key, snapshot, aws_client):
+        key_id = kms_create_key()["KeyId"]
+        message = b"test message 123 !%$@ 1234567890"
+        encryption_context = {"context-key": "context-value"}
+        algo = "SYMMETRIC_DEFAULT"
+
+        encrypt_response = aws_client.kms.encrypt(
+            KeyId=key_id,
+            Plaintext=base64.b64encode(message),
+            EncryptionAlgorithm=algo,
+            EncryptionContext=encryption_context,
+        )
+        snapshot.match("encrypt_response", encrypt_response)
+        ciphertext = encrypt_response["CiphertextBlob"]
+
+        decrypt_response = aws_client.kms.decrypt(
+            KeyId=key_id,
+            CiphertextBlob=ciphertext,
+            EncryptionAlgorithm=algo,
+            EncryptionContext=encryption_context,
+        )
+        snapshot.match("decrypt_response_with_encryption_context", decrypt_response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(
+                KeyId=key_id,
+                CiphertextBlob=ciphertext,
+                EncryptionAlgorithm=algo,
+            )
+        snapshot.match("decrypt_response_without_encryption_context", e.value.response)
+
+
+class TestKMSMultiAccounts:
+    def test_cross_accounts_access(
+        self, aws_client, secondary_aws_client, kms_create_key, user_arn
+    ):
+        # Create the keys in the primary AWS account. They will only be referred to by their ARNs hereon
+        key_arn_1 = kms_create_key()["Arn"]
+        key_arn_2 = kms_create_key(KeyUsage="SIGN_VERIFY", KeySpec="RSA_4096")["Arn"]
+        key_arn_3 = kms_create_key(KeyUsage="GENERATE_VERIFY_MAC", KeySpec="HMAC_512")["Arn"]
+
+        # Create client in secondary account and attempt to run operations with the above keys
+        client = secondary_aws_client.kms
+
+        # Cross-account access is supported for following operations in KMS:
+        # - CreateGrant
+        # - DescribeKey
+        # - GetKeyRotationStatus
+        # - GetPublicKey
+        # - ListGrants
+        # - RetireGrant
+        # - RevokeGrant
+
+        response = client.create_grant(
+            KeyId=key_arn_1,
+            GranteePrincipal=user_arn,
+            Operations=["Decrypt", "Encrypt"],
+        )
+        grant_token = response["GrantToken"]
+
+        response = client.create_grant(
+            KeyId=key_arn_2,
+            GranteePrincipal=user_arn,
+            Operations=["Sign", "Verify"],
+        )
+        grant_id = response["GrantId"]
+
+        assert client.describe_key(KeyId=key_arn_1)["KeyMetadata"]
+
+        assert client.get_key_rotation_status(KeyId=key_arn_1)
+
+        assert client.get_public_key(KeyId=key_arn_1)
+
+        assert client.list_grants(KeyId=key_arn_1)["Grants"]
+
+        assert client.retire_grant(GrantToken=grant_token)
+
+        assert client.revoke_grant(GrantId=grant_id, KeyId=key_arn_2)
+
+        # And additionally, the following cryptographic operations:
+        # - Decrypt
+        # - Encrypt
+        # - GenerateDataKey
+        # - GenerateDataKeyPair
+        # - GenerateDataKeyPairWithoutPlaintext
+        # - GenerateDataKeyWithoutPlaintext
+        # - GenerateMac
+        # - ReEncrypt (NOT IMPLEMENTED IN LOCALSTACK)
+        # - Sign
+        # - Verify
+        # - VerifyMac
+
+        assert client.generate_data_key(KeyId=key_arn_1)
+
+        assert client.generate_data_key_without_plaintext(KeyId=key_arn_1)
+
+        assert client.generate_data_key_pair(KeyId=key_arn_1, KeyPairSpec="RSA_2048")
+
+        assert client.generate_data_key_pair_without_plaintext(
+            KeyId=key_arn_1, KeyPairSpec="RSA_2048"
+        )
+
+        plaintext = "hello"
+        ciphertext = client.encrypt(KeyId=key_arn_1, Plaintext="hello")["CiphertextBlob"]
+
+        response = client.decrypt(CiphertextBlob=ciphertext, KeyId=key_arn_1)
+        assert plaintext == to_str(response["Plaintext"])
+
+        message = "world"
+        signature = client.sign(
+            KeyId=key_arn_2,
+            MessageType="RAW",
+            Message=message,
+            SigningAlgorithm="RSASSA_PKCS1_V1_5_SHA_256",
+        )["Signature"]
+
+        assert client.verify(
+            KeyId=key_arn_2,
+            Signature=signature,
+            Message=message,
+            SigningAlgorithm="RSASSA_PKCS1_V1_5_SHA_256",
+        )["SignatureValid"]
+
+        mac = client.generate_mac(KeyId=key_arn_3, Message=message, MacAlgorithm="HMAC_SHA_512")[
+            "Mac"
+        ]
+
+        assert client.verify_mac(
+            KeyId=key_arn_3, Message=message, MacAlgorithm="HMAC_SHA_512", Mac=mac
+        )["MacValid"]
+
+
+class TestKMSGenerateKeys:
+    @pytest.fixture(autouse=True)
+    def generate_key_transformers(self, snapshot):
+        snapshot.add_transformer(snapshot.transform.resource_name())
+
+    @pytest.mark.aws_validated
+    def test_generate_data_key_pair_without_plaintext(self, kms_key, aws_client, snapshot):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("PrivateKeyCiphertextBlob", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("PublicKey", reference_replacement=False)
+        )
+
+        key_id = kms_key["KeyId"]
+        result = aws_client.kms.generate_data_key_pair_without_plaintext(
+            KeyId=key_id, KeyPairSpec="RSA_2048"
+        )
+        snapshot.match("generate-data-key-pair-without-plaintext", result)
+
+    @pytest.mark.aws_validated
+    def test_generate_data_key_pair(self, kms_key, aws_client, snapshot):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("PrivateKeyCiphertextBlob", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("PrivateKeyPlaintext", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("PublicKey", reference_replacement=False)
+        )
+
+        key_id = kms_key["KeyId"]
+        result = aws_client.kms.generate_data_key_pair(KeyId=key_id, KeyPairSpec="RSA_2048")
+        snapshot.match("generate-data-key-pair", result)
+
+        # assert correct value of encrypted key
+        decrypted = aws_client.kms.decrypt(
+            CiphertextBlob=result["PrivateKeyCiphertextBlob"], KeyId=key_id
+        )
+        assert decrypted["Plaintext"] == result["PrivateKeyPlaintext"]
+
+    @pytest.mark.aws_validated
+    def test_generate_data_key(self, kms_key, aws_client, snapshot):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("CiphertextBlob", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("Plaintext", reference_replacement=False)
+        )
+
+        key_id = kms_key["KeyId"]
+        # LocalStack currently doesn't act on KeySpec or on NumberOfBytes params, but one of them has to be set.
+        result = aws_client.kms.generate_data_key(KeyId=key_id, KeySpec="AES_256")
+        snapshot.match("generate-data-key-result", result)
+
+        # assert correct value of encrypted key
+        decrypted = aws_client.kms.decrypt(CiphertextBlob=result["CiphertextBlob"], KeyId=key_id)
+        assert decrypted["Plaintext"] == result["Plaintext"]
+
+    @pytest.mark.aws_validated
+    def test_generate_data_key_without_plaintext(self, kms_key, aws_client, snapshot):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("CiphertextBlob", reference_replacement=False)
+        )
+        key_id = kms_key["KeyId"]
+        # LocalStack currently doesn't act on KeySpec or on NumberOfBytes params, but one of them has to be set.
+        result = aws_client.kms.generate_data_key_without_plaintext(KeyId=key_id, KeySpec="AES_256")
+        snapshot.match("generate-data-key-without-plaintext", result)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
+    def test_encryption_context_generate_data_key(self, kms_key, aws_client, snapshot):
+        encryption_context = {"context-key": "context-value"}
+        key_id = kms_key["KeyId"]
+        result = aws_client.kms.generate_data_key(
+            KeyId=key_id, KeySpec="AES_256", EncryptionContext=encryption_context
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(CiphertextBlob=result["CiphertextBlob"], KeyId=key_id)
+        snapshot.match("decrypt-without-encryption-context", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
+    def test_encryption_context_generate_data_key_without_plaintext(
+        self, kms_key, aws_client, snapshot
+    ):
+        encryption_context = {"context-key": "context-value"}
+        key_id = kms_key["KeyId"]
+        result = aws_client.kms.generate_data_key_without_plaintext(
+            KeyId=key_id, KeySpec="AES_256", EncryptionContext=encryption_context
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(CiphertextBlob=result["CiphertextBlob"], KeyId=key_id)
+        snapshot.match("decrypt-without-encryption-context", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..message"])
+    def test_encryption_context_generate_data_key_pair(self, kms_key, aws_client, snapshot):
+        encryption_context = {"context-key": "context-value"}
+        key_id = kms_key["KeyId"]
+        result = aws_client.kms.generate_data_key_pair(
+            KeyId=key_id, KeyPairSpec="RSA_2048", EncryptionContext=encryption_context
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(CiphertextBlob=result["PrivateKeyCiphertextBlob"], KeyId=key_id)
+        snapshot.match("decrypt-without-encryption-context", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..message"])
+    def test_encryption_context_generate_data_key_pair_without_plaintext(
+        self, kms_key, aws_client, snapshot
+    ):
+        encryption_context = {"context-key": "context-value"}
+        key_id = kms_key["KeyId"]
+        result = aws_client.kms.generate_data_key_pair_without_plaintext(
+            KeyId=key_id, KeyPairSpec="RSA_2048", EncryptionContext=encryption_context
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(CiphertextBlob=result["PrivateKeyCiphertextBlob"], KeyId=key_id)
+        snapshot.match("decrypt-without-encryption-context", e.value.response)

@@ -759,5 +759,290 @@
         }
       }
     }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_fifo_delete_message_with_expired_receipt_handle": {
+    "recorded-date": "06-05-2023, 04:18:50",
+    "recorded-content": {
+      "response": {
+        "Messages": [
+          {
+            "Body": "g1-m1",
+            "MD5OfBody": "fc4286b824b39ddf3606c9f27ff664bd",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value <receipt-handle:1> for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_cross_account_access[domain]": {
+    "recorded-date": "06-05-2023, 04:43:43",
+    "recorded-content": {}
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_cross_account_access[path]": {
+    "recorded-date": "06-05-2023, 04:43:44",
+    "recorded-content": {}
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_list_queues": {
+    "recorded-date": "06-05-2023, 04:43:47",
+    "recorded-content": {}
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_fifo_set_content_based_deduplication_strategy": {
+    "recorded-date": "30-05-2023, 20:20:59",
+    "recorded-content": {
+      "before-update": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ContentBasedDeduplication": "true",
+          "CreatedTimestamp": "timestamp",
+          "DeduplicationScope": "queue",
+          "DelaySeconds": "0",
+          "FifoQueue": "true",
+          "FifoThroughputLimit": "perQueue",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "after-update": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ContentBasedDeduplication": "false",
+          "CreatedTimestamp": "timestamp",
+          "DeduplicationScope": "queue",
+          "DelaySeconds": "0",
+          "FifoQueue": "true",
+          "FifoThroughputLimit": "perQueue",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_sqs_permission_lifecycle": {
+    "recorded-date": "22-06-2023, 17:01:51",
+    "recorded-content": {
+      "add-permission-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Statement": [
+              {
+                "Sid": "crossaccountpermission",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": [
+                    "arn:aws:iam::111111111111:<resource:3>",
+                    "arn:aws:iam::668614515564:<resource:3>"
+                  ]
+                },
+                "Action": "SQS:ReceiveMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove-permission-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-after-removal": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-first-account-same-label": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Statement": [
+              {
+                "Sid": "crossaccountpermission",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                },
+                "Action": "SQS:ReceiveMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-second-account-same-label": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value crossaccountpermission for parameter Label is invalid. Reason: Already exists.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-queue-policy-attribute-second-account-different-label": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Statement": [
+              {
+                "Sid": "crossaccountpermission",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                },
+                "Action": "SQS:ReceiveMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+              },
+              {
+                "Sid": "crossaccountpermission2",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                },
+                "Action": "SQS:ReceiveMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-delete-first-permission": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Statement": [
+              {
+                "Sid": "crossaccountpermission2",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                },
+                "Action": "SQS:ReceiveMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-delete-second-permission": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-queue-policy-attribute-delete-non-existent-label": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value crossaccountpermission2 for parameter Label is invalid. Reason: can't find label.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_delete_message_batch_with_too_large_batch": {
+    "recorded-date": "24-06-2023, 17:14:03",
+    "recorded-content": {
+      "error_response": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.TooManyEntriesInBatchRequest",
+          "Message": "Maximum number of entries per request are 10. You have sent 20.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_change_message_visibility_batch_with_too_large_batch": {
+    "recorded-date": "24-06-2023, 17:14:36",
+    "recorded-content": {
+      "error_response": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.TooManyEntriesInBatchRequest",
+          "Message": "Maximum number of entries per request are 10. You have sent 20.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

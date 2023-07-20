@@ -1,0 +1,33 @@
+Parameters:
+  ParameterName:
+    Type: String
+
+Resources:
+  WaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+
+  WaitHandleParameter:
+    Type: AWS::SSM::Parameter
+    DependsOn: WaitHandle
+    Properties:
+      Name:
+        Ref: ParameterName
+      Value:
+        Ref: WaitHandle
+      Type: String
+
+  WaitCondition:
+    Type: AWS::CloudFormation::WaitCondition
+    Properties:
+      Handle:
+        Ref: WaitHandle
+      Timeout: 300
+
+Outputs:
+  WaitHandleId:
+    Value:
+      Ref: WaitHandle
+
+  WaitConditionRef:
+    Value:
+      Ref: WaitCondition

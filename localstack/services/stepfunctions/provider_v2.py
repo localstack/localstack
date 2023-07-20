@@ -16,6 +16,7 @@ from localstack.aws.api.stepfunctions import (
     IncludeExecutionDataGetExecutionHistory,
     InvalidExecutionInput,
     InvalidName,
+    InvalidToken,
     ListExecutionsOutput,
     ListExecutionsPageToken,
     ListStateMachinesOutput,
@@ -24,6 +25,9 @@ from localstack.aws.api.stepfunctions import (
     PageSize,
     PageToken,
     ReverseOrder,
+    SendTaskFailureOutput,
+    SendTaskHeartbeatOutput,
+    SendTaskSuccessOutput,
     SensitiveCause,
     SensitiveData,
     SensitiveError,
@@ -35,7 +39,16 @@ from localstack.aws.api.stepfunctions import (
     StateMachineType,
     StepfunctionsApi,
     StopExecutionOutput,
+    TaskDoesNotExist,
+    TaskTimedOut,
+    TaskToken,
     TraceHeader,
+)
+from localstack.services.stepfunctions.asl.eval.callback.callback import (
+    CallbackConsumerTimeout,
+    CallbackNotifyConsumerError,
+    CallbackOutcomeFailure,
+    CallbackOutcomeSuccess,
 )
 from localstack.services.stepfunctions.backend.execution import Execution
 from localstack.services.stepfunctions.backend.state_machine import StateMachine
@@ -54,6 +67,17 @@ class StepFunctionsProvider(StepfunctionsApi):
         execution: Optional[Execution] = self.get_store(context).executions.get(execution_arn)
         if not execution:
             raise InvalidName()  # TODO
+        return execution
+
+    def _get_executions(
+        self, context: RequestContext, execution_status: Optional[ExecutionStatus] = None
+    ):
+        store = self.get_store(context)
+        execution: list[Execution] = list(store.executions.values())
+        if execution_status:
+            execution = list(
+                filter(lambda e: e.exec_status == execution_status, store.executions.values())
+            )
         return execution
 
     def _is_idempotent_create_state_machine(
@@ -147,6 +171,63 @@ class StepFunctionsProvider(StepfunctionsApi):
             loggingConfiguration=sm.logging_config,
         )
 
+    def send_task_heartbeat(
+        self, context: RequestContext, task_token: TaskToken
+    ) -> SendTaskHeartbeatOutput:
+        running_executions: list[Execution] = self._get_executions(context, ExecutionStatus.RUNNING)
+        for execution in running_executions:
+            try:
+                if execution.exec_worker.env.callback_pool_manager.heartbeat(
+                    callback_id=task_token
+                ):
+                    return SendTaskHeartbeatOutput()
+            except CallbackNotifyConsumerError as consumer_error:
+                if isinstance(consumer_error, CallbackConsumerTimeout):
+                    raise TaskTimedOut()
+                else:
+                    raise TaskDoesNotExist()
+        raise InvalidToken()
+
+    def send_task_success(
+        self, context: RequestContext, task_token: TaskToken, output: SensitiveData
+    ) -> SendTaskSuccessOutput:
+        outcome = CallbackOutcomeSuccess(callback_id=task_token, output=output)
+        running_executions: list[Execution] = self._get_executions(context, ExecutionStatus.RUNNING)
+        for execution in running_executions:
+            try:
+                if execution.exec_worker.env.callback_pool_manager.notify(
+                    callback_id=task_token, outcome=outcome
+                ):
+                    return SendTaskSuccessOutput()
+            except CallbackNotifyConsumerError as consumer_error:
+                if isinstance(consumer_error, CallbackConsumerTimeout):
+                    raise TaskTimedOut()
+                else:
+                    raise TaskDoesNotExist()
+        raise InvalidToken()
+
+    def send_task_failure(
+        self,
+        context: RequestContext,
+        task_token: TaskToken,
+        error: SensitiveError = None,
+        cause: SensitiveCause = None,
+    ) -> SendTaskFailureOutput:
+        outcome = CallbackOutcomeFailure(callback_id=task_token, error=error, cause=cause)
+        store = self.get_store(context)
+        for execution in store.executions.values():
+            try:
+                if execution.exec_worker.env.callback_pool_manager.notify(
+                    callback_id=task_token, outcome=outcome
+                ):
+                    return SendTaskFailureOutput()
+            except CallbackNotifyConsumerError as consumer_error:
+                if isinstance(consumer_error, CallbackConsumerTimeout):
+                    raise TaskTimedOut()
+                else:
+                    raise TaskDoesNotExist()
+        raise InvalidToken()
+
     def start_execution(
         self,
         context: RequestContext,
@@ -169,7 +250,7 @@ class StepFunctionsProvider(StepfunctionsApi):
             except Exception as ex:
                 raise InvalidExecutionInput(str(ex))  # TODO: report parsing error like AWS.
 
-        exec_name = long_uid()
+        exec_name = name or long_uid()  # TODO: validate name format
         arn_data: ArnData = parse_arn(state_machine_arn)
         exec_arn = ":".join(
             [

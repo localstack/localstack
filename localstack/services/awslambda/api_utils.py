@@ -3,8 +3,9 @@ import datetime
 import random
 import re
 import string
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Tuple
 
+from localstack.aws.api import RequestContext
 from localstack.aws.api import lambda_ as api_spec
 from localstack.aws.api.lambda_ import (
     AliasConfiguration,
@@ -22,6 +23,7 @@ from localstack.aws.api.lambda_ import (
     ResourceNotFoundException,
     Runtime,
     TracingConfig,
+    VpcConfigResponse,
 )
 from localstack.utils.collections import merge_recursive
 
@@ -54,7 +56,7 @@ DESTINATION_ARN_PATTERN = re.compile(
 
 # Pattern for extracting various attributes from a full or partial ARN or just a function name.
 FUNCTION_NAME_REGEX = re.compile(
-    r"(arn:(aws[a-zA-Z-]*):lambda:)?((?P<region>[a-z]{2}(-gov)?-[a-z]+-\d{1}):)?(?P<account>\d{12}:)?(function:)?(?P<name>[a-zA-Z0-9-_\.]+)(:(?P<qualifier>\$LATEST|[a-zA-Z0-9-_]+))?"
+    r"(arn:(aws[a-zA-Z-]*):lambda:)?((?P<region>[a-z]{2}(-gov)?-[a-z]+-\d{1}):)?(?:(?P<account>\d{12}):)?(function:)?(?P<name>[a-zA-Z0-9-_\.]+)(:(?P<qualifier>\$LATEST|[a-zA-Z0-9-_]+))?"
 )  # also length 1-170 incl.
 # Pattern for a lambda function handler
 HANDLER_REGEX = re.compile(r"[^\s]+")
@@ -96,10 +98,13 @@ RUNTIMES = [
     Runtime.python3_7,
     Runtime.python3_8,
     Runtime.python3_9,
+    Runtime.python3_10,
     Runtime.ruby2_7,
+    Runtime.ruby3_2,
     Runtime.java8,
     Runtime.java8_al2,
     Runtime.java11,
+    Runtime.java17,
     Runtime.dotnetcore3_1,
     Runtime.dotnet6,
     Runtime.go1_x,
@@ -179,30 +184,41 @@ def qualifier_is_alias(qualifier: str) -> bool:
     return bool(ALIAS_REGEX.match(qualifier))
 
 
-def get_function_name(function_arn_or_name: str, region: str) -> str:
+def get_function_name(function_arn_or_name: str, context: RequestContext) -> str:
     """
-    Return function name from a given arn. Will check if the region provided matches the region in the arn, if an arn
+    Return function name from a given arn.
+    Will check if the context region matches the arn region in the arn, if an arn is provided.
 
     :param function_arn_or_name: Function arn or only name
-    :param region: Region of the request
     :return: function name
     """
-    name, _ = get_name_and_qualifier(function_arn_or_name, qualifier=None, region=region)
+    name, _ = get_name_and_qualifier(function_arn_or_name, qualifier=None, context=context)
     return name
 
 
-def function_name_qualifier_and_region_from_arn(arn: str) -> tuple[str, str | None, str | None]:
+def function_locators_from_arn(arn: str) -> tuple[str, str | None, str | None, str | None]:
     """
     Takes a full or partial arn, or a name
 
     :param arn: Given arn (or name)
-    :return: tuple with (name, qualifier, region). Qualifier and region are none if missing
+    :return: tuple with (name, qualifier, account, region). Qualifier and region are none if missing
     """
-    return FUNCTION_NAME_REGEX.match(arn).group("name", "qualifier", "region")
+    return FUNCTION_NAME_REGEX.match(arn).group("name", "qualifier", "account", "region")
+
+
+def get_account_and_region(function_arn_or_name: str, context: RequestContext) -> Tuple[str, str]:
+    """
+    Takes a full ARN, partial ARN or a name. Returns account ID and region from ARN if available, else
+    falls back to context account ID and region.
+
+    Lambda allows cross-account access. This function should be used to resolve the correct Store based on the ARN.
+    """
+    _, _, account_id, region = function_locators_from_arn(function_arn_or_name)
+    return account_id or context.account_id, region or context.region
 
 
 def get_name_and_qualifier(
-    function_arn_or_name: str, qualifier: str | None, region: str
+    function_arn_or_name: str, qualifier: str | None, context: RequestContext
 ) -> tuple[str, str | None]:
     """
     Takes a full or partial arn, or a name and a qualifier
@@ -210,20 +226,18 @@ def get_name_and_qualifier(
 
     :param function_arn_or_name: Given arn (or name)
     :param qualifier: A qualifier for the function (or None)
-    :param region: The region the function lives in
+    :param context: Request context
     :return: tuple with (name, qualifier). Qualifier is none if missing
     """
-    function_name, arn_qualifier, arn_region = function_name_qualifier_and_region_from_arn(
-        function_arn_or_name
-    )
+    function_name, arn_qualifier, _, arn_region = function_locators_from_arn(function_arn_or_name)
     if qualifier and arn_qualifier and arn_qualifier != qualifier:
         raise InvalidParameterValueException(
             "The derived qualifier from the function name does not match the specified qualifier.",
             Type="User",
         )
-    if arn_region and arn_region != region:
+    if arn_region and arn_region != context.region:
         raise ResourceNotFoundException(
-            f"Functions from '{arn_region}' are not reachable in this region ('{region}')",
+            f"Functions from '{arn_region}' are not reachable in this region ('{context.region}')",
             Type="User",
         )
     qualifier = qualifier or arn_qualifier
@@ -427,6 +441,13 @@ def map_config_out(
             TargetArn=version.config.dead_letter_arn
         )
 
+    if version.config.vpc_config:
+        optional_kwargs["VpcConfig"] = VpcConfigResponse(
+            VpcId=version.config.vpc_config.vpc_id,
+            SubnetIds=version.config.vpc_config.subnet_ids,
+            SecurityGroupIds=version.config.vpc_config.security_group_ids,
+        )
+
     if version.config.environment is not None:
         optional_kwargs["Environment"] = EnvironmentResponse(
             Variables=version.config.environment
@@ -576,7 +597,7 @@ def layer_version_arn(layer_name: str, account: str, region: str, version: str):
     return f"arn:aws:lambda:{region}:{account}:layer:{layer_name}:{version}"
 
 
-def parse_layer_arn(layer_version_arn: str):
+def parse_layer_arn(layer_version_arn: str) -> Tuple[str, str, str, str]:
     return LAYER_VERSION_ARN_PATTERN.match(layer_version_arn).group(
         "region_name", "account_id", "layer_name", "layer_version"
     )
@@ -586,7 +607,7 @@ def parse_layer_arn(layer_version_arn: str):
 #  https://github.com/localstack/localstack/pull/7675#discussion_r1107777058
 def validate_layer_runtime(compatible_runtime: str) -> str | None:
     if compatible_runtime is not None and compatible_runtime not in RUNTIMES:
-        return f"Value '{compatible_runtime}' at 'compatibleRuntime' failed to satisfy constraint: Member must satisfy enum value set: [ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, java17, nodejs, nodejs4.3, java8.al2, go1.x, nodejs20.x, go1.9, byol, nodejs10.x, python3.10, java8, nodejs12.x, nodejs8.x, nodejs14.x, nodejs8.9, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby2.5, python3.6, python2.7]"
+        return f"Value '{compatible_runtime}' at 'compatibleRuntime' failed to satisfy constraint: Member must satisfy enum value set: [ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, java17, nodejs, nodejs4.3, java8.al2, go1.x, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, python3.10, java8, nodejs12.x, python3.11, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby2.5, python3.6, python2.7]"
     return None
 
 
@@ -602,7 +623,7 @@ def validate_layer_runtimes_and_architectures(
     validations = []
 
     if compatible_runtimes and set(compatible_runtimes).difference(RUNTIMES):
-        constraint = "Member must satisfy enum value set: [nodejs12.x, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9]"
+        constraint = "Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9]"
         validation_msg = f"Value '[{', '.join([s for s in compatible_runtimes])}]' at 'compatibleRuntimes' failed to satisfy constraint: {constraint}"
         validations.append(validation_msg)
 
