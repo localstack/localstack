@@ -81,7 +81,12 @@ def scheduled_test_lambda(aws_client):
 @pytest.mark.usefixtures("scheduled_test_lambda")
 class TestIntegration:
     def test_firehose_s3(
-        self, s3_resource, firehose_create_delivery_stream, s3_create_bucket, aws_client
+        self,
+        s3_resource,
+        firehose_create_delivery_stream,
+        s3_create_bucket,
+        aws_client,
+        create_role,
     ):
         stream_name = f"fh-stream-{short_uid()}"
         bucket_name = s3_create_bucket()
@@ -92,7 +97,7 @@ class TestIntegration:
         stream = firehose_create_delivery_stream(
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose"),
+                "RoleARN": create_role(AssumeRolePolicyDocument="{}")["Role"]["Arn"],
                 "BucketARN": arns.s3_bucket_arn(bucket_name),
                 "Prefix": s3_prefix,
             },
@@ -118,7 +123,11 @@ class TestIntegration:
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
     def test_firehose_extended_s3(
-        self, firehose_create_delivery_stream, s3_create_bucket, aws_client
+        self,
+        firehose_create_delivery_stream,
+        s3_create_bucket,
+        aws_client,
+        create_role,
     ):
         stream_name = f"fh-stream-{short_uid()}"
         bucket_name = s3_create_bucket()
@@ -129,7 +138,7 @@ class TestIntegration:
         stream = firehose_create_delivery_stream(
             DeliveryStreamName=stream_name,
             ExtendedS3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose"),
+                "RoleARN": create_role(AssumeRolePolicyDocument="{}")["Role"]["Arn"],
                 "BucketARN": arns.s3_bucket_arn(bucket_name),
                 "Prefix": s3_prefix,
             },
@@ -153,7 +162,9 @@ class TestIntegration:
         for key in all_objects.keys():
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
-    def test_firehose_kinesis_to_s3(self, s3_resource, kinesis_create_stream, aws_client):
+    def test_firehose_kinesis_to_s3(
+        self, s3_resource, kinesis_create_stream, aws_client, create_role
+    ):
         stream_name = f"fh-stream-{short_uid()}"
 
         kinesis_stream_name = kinesis_create_stream()
@@ -161,16 +172,18 @@ class TestIntegration:
         s3_prefix = "/testdata"
         test_data = '{"test": "firehose_data_%s"}' % short_uid()
 
+        firehose_role_arn = create_role(AssumeRolePolicyDocument="{}")["Role"]["Arn"]
+
         # create Firehose stream
         stream = aws_client.firehose.create_delivery_stream(
             DeliveryStreamType="KinesisStreamAsSource",
             KinesisStreamSourceConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose"),
+                "RoleARN": firehose_role_arn,
                 "KinesisStreamARN": arns.kinesis_stream_arn(kinesis_stream_name),
             },
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose"),
+                "RoleARN": firehose_role_arn,
                 "BucketARN": arns.s3_bucket_arn(TEST_BUCKET_NAME),
                 "Prefix": s3_prefix,
             },

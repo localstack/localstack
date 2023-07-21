@@ -24,9 +24,7 @@ import boto3
 import requests
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import LOCALHOST_HOSTNAME, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
-from localstack.services.awslambda.lambda_api import LAMBDA_TEST_ROLE
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME,
@@ -245,13 +243,20 @@ def create_lambda_function(
         )
         lambda_code = {"S3Bucket": LAMBDA_ASSETS_BUCKET_NAME, "S3Key": asset_key}
 
+    iam_client = connect_externally_to().iam
+
+    if not role:
+        role = iam_client.create_role(
+            RoleName=f"lambda-test-role-{short_uid()}", AssumeRolePolicyDocument="{}"
+        )["Role"]["Arn"]
+
     # create function
     additional_kwargs = kwargs
     kwargs = {
         "FunctionName": func_name,
         "Runtime": runtime,
         "Handler": handler,
-        "Role": role or LAMBDA_TEST_ROLE.format(account_id=get_aws_account_id()),
+        "Role": role,
         "Code": lambda_code,
         "Timeout": timeout or LAMBDA_TIMEOUT_SEC,
         "Environment": dict(Variables=envvars),

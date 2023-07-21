@@ -1,0 +1,23 @@
+{
+  "tests/integration/test_sts.py::TestSTSIntegrations::test_assume_role": {
+    "recorded-date": "21-07-2023, 17:33:59",
+    "recorded-content": {
+      "assume_existing_role": {
+        "AssumedRoleUser": {
+          "Arn": "<assumed-role-arn>",
+          "AssumedRoleId": "<assumed-role-id>"
+        },
+        "Credentials": {
+          "AccessKeyId": "<access-key-id:1>",
+          "Expiration": "datetime",
+          "SecretAccessKey": "<secret-access-key:1>",
+          "SessionToken": "<session-token:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

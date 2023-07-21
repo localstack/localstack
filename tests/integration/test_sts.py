@@ -8,6 +8,7 @@ from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.testing.aws.util import create_client_with_keys
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import retry
 from localstack.utils.numbers import is_number
 from localstack.utils.strings import short_uid, to_str
 
@@ -88,20 +89,85 @@ TEST_SAML_ASSERTION = """
 </samlp:Response>
 """
 
+ASSUME_POLICY_TEMPLATE = """
+{{
+    "Version": "2012-10-17",
+    "Statement": [
+        {{
+            "Effect": "Allow",
+            "Principal": {{
+                "AWS": "arn:aws:iam::{account_id}:root"
+            }},
+            "Action": "sts:AssumeRole",
+            "Condition": {{}}
+        }}
+    ]
+}}
+"""
+
 
 class TestSTSIntegrations:
-    def test_assume_role(self, aws_client):
-        test_role_session_name = "s3-access-example"
-        test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
-        response = aws_client.sts.assume_role(
-            RoleArn=test_role_arn, RoleSessionName=test_role_session_name
+    @pytest.mark.aws_validated
+    def test_assume_role(self, snapshot, aws_client, account_id):
+        assume_policy = ASSUME_POLICY_TEMPLATE.format(account_id=account_id).strip("\n")
+
+        create_result = aws_client.iam.create_role(
+            Path="/",
+            RoleName=f"test-role-{short_uid()}",
+            AssumeRolePolicyDocument=assume_policy,
+            MaxSessionDuration=3600,
         )
 
-        assert response["Credentials"]
-        assert response["Credentials"]["SecretAccessKey"]
-        if response["AssumedRoleUser"]["AssumedRoleId"]:
-            assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
-            assert assume_role_id_parts[1] == test_role_session_name
+        assumed_role_name = create_result["Role"]["RoleName"]
+        assumed_session_name = f"test-session-{short_uid()}"
+        assumed_role_id = rf"[A-Z0-9]+:{assumed_session_name}"
+
+        assumed_role_arn = (
+            f"arn:aws:sts::{account_id}:assumed-role/{assumed_role_name}/{assumed_session_name}"
+        )
+
+        snapshot.add_transformer(snapshot.transform.regex(assumed_role_arn, "<assumed-role-arn>"))
+        snapshot.add_transformer(snapshot.transform.regex(assumed_role_id, "<assumed-role-id>"))
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.jsonpath(
+                    "$.assume_existing_role.Credentials.AccessKeyId", "access-key-id"
+                ),
+                snapshot.transform.jsonpath(
+                    "$.assume_existing_role.Credentials.SecretAccessKey", "secret-access-key"
+                ),
+                snapshot.transform.jsonpath(
+                    "$.assume_existing_role.Credentials.SessionToken", "session-token"
+                ),
+            ]
+        )
+
+        def assert_with_retry():
+            assume_result = aws_client.sts.assume_role(
+                RoleArn=create_result["Role"]["Arn"], RoleSessionName=assumed_session_name
+            )
+
+            # added by moto
+            if "PackedPolicySize" in assume_result:
+                del assume_result["PackedPolicySize"]
+
+            snapshot.match("assume_existing_role", assume_result)
+
+            if assume_result["AssumedRoleUser"]["AssumedRoleId"]:
+                assume_role_id_parts = assume_result["AssumedRoleUser"]["AssumedRoleId"].split(":")
+                assert assume_role_id_parts[1] == assumed_session_name
+
+        # roles are not immediately assumable in AWS
+        retry(assert_with_retry, retries=5, sleep=5, sleep_before=3)
+
+        with pytest.raises(aws_client.sts.exceptions.ClientError) as e:
+            aws_client.sts.assume_role(
+                RoleArn=create_result["Role"]["Arn"].replace("role/", "role/random-"),
+                RoleSessionName=assumed_session_name,
+            )
+
+            assert "(AccessDenied)" in str(e)
 
     def test_assume_role_with_web_identity(self, aws_client):
         test_role_session_name = "web_token"

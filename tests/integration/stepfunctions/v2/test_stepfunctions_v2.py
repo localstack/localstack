@@ -265,9 +265,9 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.mark.usefixtures("setup_and_tear_down")
 class TestStateMachine:
-    def test_create_choice_state_machine(self, aws_client):
+    def test_create_choice_state_machine(self, aws_client, create_role):
         state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
-        role_arn = arns.role_arn("sfn_role")
+        role_arn = create_role(AssumeRolePolicyDocument="{}")["Role"]["Arn"]
 
         definition = clone(STATE_MACHINE_CHOICE)
         lambda_arn_4 = arns.lambda_function_arn(TEST_LAMBDA_NAME_4)
@@ -302,13 +302,13 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, sfn_client=aws_client.stepfunctions)
 
-    def test_create_run_map_state_machine(self, aws_client):
+    def test_create_run_map_state_machine(self, aws_client, create_role):
         names = ["Bob", "Meg", "Joe"]
         test_input = [{"map": name} for name in names]
         test_output = [{"Hello": name} for name in names]
         state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
-        role_arn = arns.role_arn("sfn_role")
+        role_arn = create_role(AssumeRolePolicyDocument="{}")["Role"]["Arn"]
         definition = clone(STATE_MACHINE_MAP)
         lambda_arn_3 = arns.lambda_function_arn(TEST_LAMBDA_NAME_3)
         definition["States"]["ExampleMapState"]["ItemProcessor"]["States"]["CallLambda"][
@@ -341,11 +341,11 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
 
-    def test_create_run_state_machine(self, aws_client):
+    def test_create_run_state_machine(self, aws_client, create_role):
         state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
         # create state machine
-        role_arn = arns.role_arn("sfn_role")
+        role_arn = create_role(AssumeRolePolicyDocument="{}")["Role"]["Arn"]
         definition = clone(STATE_MACHINE_BASIC)
         lambda_arn_1 = arns.lambda_function_arn(TEST_LAMBDA_NAME_1)
         lambda_arn_2 = arns.lambda_function_arn(TEST_LAMBDA_NAME_2)
@@ -376,11 +376,11 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
 
-    def test_try_catch_state_machine(self, aws_client):
+    def test_try_catch_state_machine(self, aws_client, create_role):
         state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
         # create state machine
-        role_arn = arns.role_arn("sfn_role")
+        role_arn = create_role(AssumeRolePolicyDocument="{}")["Role"]["Arn"]
         definition = clone(STATE_MACHINE_CATCH)
         lambda_arn_1 = arns.lambda_function_arn(TEST_LAMBDA_NAME_1)
         lambda_arn_2 = arns.lambda_function_arn(TEST_LAMBDA_NAME_2)
@@ -409,11 +409,11 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
 
-    def test_intrinsic_functions(self, aws_client):
+    def test_intrinsic_functions(self, aws_client, create_role):
         state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
         # create state machine
-        role_arn = arns.role_arn("sfn_role")
+        role_arn = create_role(AssumeRolePolicyDocument="{}")["Role"]["Arn"]
         definition = clone(STATE_MACHINE_INTRINSIC_FUNCS)
         lambda_arn_1 = arns.lambda_function_arn(TEST_LAMBDA_NAME_5)
         lambda_arn_2 = arns.lambda_function_arn(TEST_LAMBDA_NAME_5)
@@ -448,7 +448,7 @@ class TestStateMachine:
         cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
 
     @pytest.mark.skip("Accurate events reporting not yet supported.")
-    def test_events_state_machine(self, aws_client):
+    def test_events_state_machine(self, aws_client, create_role):
         events = aws_stack.create_external_boto_client("events")
         state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
@@ -461,7 +461,7 @@ class TestStateMachine:
         definition["States"]["step1"]["Parameters"]["Entries"][0]["EventBusName"] = bus_name
         definition = json.dumps(definition)
         sm_name = f"events-{short_uid()}"
-        role_arn = arns.role_arn("sfn_role")
+        role_arn = create_role(AssumeRolePolicyDocument="{}")["Role"]["Arn"]
         aws_client.stepfunctions.create_state_machine(
             name=sm_name, definition=definition, roleArn=role_arn
         )
@@ -488,7 +488,7 @@ class TestStateMachine:
         cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
         events.delete_event_bus(Name=bus_name)
 
-    def test_create_state_machines_in_parallel(self, cleanups, aws_client):
+    def test_create_state_machines_in_parallel(self, cleanups, aws_client, create_role):
         """
         Perform a test that creates a series of state machines in parallel. Without concurrency control, using
         StepFunctions-Local, the following error is pretty consistently reproducible:
@@ -497,7 +497,7 @@ class TestStateMachine:
         CreateStateMachine operation: Invalid State Machine Definition: ''DUPLICATE_STATE_NAME: Duplicate State name:
         MissingValue at /States/MissingValue', 'DUPLICATE_STATE_NAME: Duplicate State name: Add at /States/Add''
         """
-        role_arn = arns.role_arn("sfn_role")
+        role_arn = create_role(AssumeRolePolicyDocument="{}")["Role"]["Arn"]
         definition = clone(STATE_MACHINE_CHOICE)
         lambda_arn_4 = arns.lambda_function_arn(TEST_LAMBDA_NAME_4)
         definition["States"]["Add"]["Resource"] = lambda_arn_4
@@ -579,11 +579,11 @@ STS_ROLE_POLICY_DOC = {
 @pytest.mark.skip("Investigate error around states:startExecution.sync")
 @pytest.mark.parametrize("region_name", ("us-east-1", "us-east-2", "eu-west-1", "eu-central-1"))
 @pytest.mark.parametrize("statemachine_definition", (TEST_STATE_MACHINE_3,))  # TODO: add sync2 test
-def test_multiregion_nested(region_name, statemachine_definition):
+def test_multiregion_nested(region_name, statemachine_definition, create_role):
     client1 = aws_stack.create_external_boto_client("stepfunctions", region_name=region_name)
     # create state machine
     child_machine_name = f"sf-child-{short_uid()}"
-    role = arns.role_arn("sfn_role")
+    role = create_role["Role"]["Arn"]
     child_machine_result = client1.create_state_machine(
         name=child_machine_name, definition=json.dumps(TEST_STATE_MACHINE), roleArn=role
     )
@@ -591,7 +591,7 @@ def test_multiregion_nested(region_name, statemachine_definition):
 
     # create parent state machine
     name = f"sf-parent-{short_uid()}"
-    role = arns.role_arn("sfn_role")
+    role = create_role["Role"]["Arn"]
     result = client1.create_state_machine(
         name=name,
         definition=json.dumps(statemachine_definition).replace(
@@ -747,11 +747,11 @@ def test_aws_sdk_task(aws_client):
         aws_client.stepfunctions.delete_state_machine(stateMachineArn=machine_arn)
 
 
-def test_run_aws_sdk_secrets_manager(aws_client):
+def test_run_aws_sdk_secrets_manager(aws_client, create_role):
     state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
     # create state machine
-    role_arn = arns.role_arn("sfn_role")
+    role_arn = create_role(AssumeRolePolicyDocument="{}")["Role"]["Arn"]
     definition = {
         "StartAt": "StateCreateSecret",
         "States": {

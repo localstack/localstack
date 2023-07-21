@@ -127,11 +127,11 @@ def test_firehose_http(
 class TestFirehoseIntegration:
     @pytest.mark.skip_offline
     def test_kinesis_firehose_elasticsearch_s3_backup(
-        self, s3_bucket, kinesis_create_stream, cleanups, aws_client
+        self, s3_bucket, kinesis_create_stream, cleanups, aws_client, create_role
     ):
         domain_name = f"test-domain-{short_uid()}"
         stream_name = f"test-stream-{short_uid()}"
-        role_arn = "arn:aws:iam::000000000000:role/Firehose-Role"
+        role_arn = create_role(AssumeRolePolicyDocument="{}")["Role"]["Arn"]
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
         es_create_response = aws_client.es.create_elasticsearch_domain(DomainName=domain_name)
         cleanups.append(lambda: aws_client.es.delete_elasticsearch_domain(DomainName=domain_name))
@@ -236,10 +236,11 @@ class TestFirehoseIntegration:
         monkeypatch,
         opensearch_endpoint_strategy,
         aws_client,
+        create_role,
     ):
         domain_name = f"test-domain-{short_uid()}"
         stream_name = f"test-stream-{short_uid()}"
-        role_arn = "arn:aws:iam::000000000000:role/Firehose-Role"
+        role_arn = create_role(AssumeRolePolicyDocument="{}")["Role"]["Arn"]
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", opensearch_endpoint_strategy)
         try:
@@ -341,13 +342,13 @@ class TestFirehoseIntegration:
             aws_client.opensearch.delete_domain(DomainName=domain_name)
 
     def test_delivery_stream_with_kinesis_as_source(
-        self, s3_bucket, kinesis_create_stream, cleanups, aws_client
+        self, s3_bucket, kinesis_create_stream, cleanups, aws_client, create_role
     ):
 
         bucket_arn = arns.s3_bucket_arn(s3_bucket)
         stream_name = f"test-stream-{short_uid()}"
         log_group_name = f"group{short_uid()}"
-        role_arn = "arn:aws:iam::000000000000:role/Firehose-Role"
+        role_arn = create_role(AssumeRolePolicyDocument="{}")["Role"]["Arn"]
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
 
         kinesis_create_stream(StreamName=stream_name, ShardCount=2)
