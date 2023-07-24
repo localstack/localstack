@@ -23,6 +23,7 @@ FilterName = str
 FilterValue = str
 FirewallDomainName = str
 FirewallRuleGroupPolicy = str
+InstanceCount = int
 Ip = str
 IpAddressCount = int
 Ipv6 = str
@@ -32,6 +33,10 @@ ListResolverConfigsMaxResult = int
 MaxResults = int
 Name = str
 NextToken = str
+OutpostArn = str
+OutpostInstanceType = str
+OutpostResolverName = str
+OutpostResolverStatusMessage = str
 Port = int
 Priority = int
 ResolverQueryLogConfigAssociationErrorMessage = str
@@ -120,11 +125,22 @@ class IpAddressStatus(str):
     DELETING = "DELETING"
     DELETE_FAILED_FAS_EXPIRED = "DELETE_FAILED_FAS_EXPIRED"
     UPDATING = "UPDATING"
+    UPDATE_FAILED = "UPDATE_FAILED"
 
 
 class MutationProtectionStatus(str):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
+
+
+class OutpostResolverStatus(str):
+    CREATING = "CREATING"
+    OPERATIONAL = "OPERATIONAL"
+    UPDATING = "UPDATING"
+    DELETING = "DELETING"
+    ACTION_NEEDED = "ACTION_NEEDED"
+    FAILED_CREATION = "FAILED_CREATION"
+    FAILED_DELETION = "FAILED_DELETION"
 
 
 class ResolverAutodefinedReverseStatus(str):
@@ -309,6 +325,12 @@ class ResourceUnavailableException(ServiceException):
     ResourceType: Optional[String]
 
 
+class ServiceQuotaExceededException(ServiceException):
+    code: str = "ServiceQuotaExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class ThrottlingException(ServiceException):
     code: str = "ThrottlingException"
     sender_fault: bool = False
@@ -394,6 +416,8 @@ class ResolverEndpoint(TypedDict, total=False):
     CreationTime: Optional[Rfc3339TimeString]
     ModificationTime: Optional[Rfc3339TimeString]
     ResolverEndpointType: Optional[ResolverEndpointType]
+    OutpostArn: Optional[OutpostArn]
+    PreferredInstanceType: Optional[OutpostInstanceType]
 
 
 class AssociateResolverEndpointIpAddressResponse(TypedDict, total=False):
@@ -517,6 +541,33 @@ class CreateFirewallRuleResponse(TypedDict, total=False):
     FirewallRule: Optional[FirewallRule]
 
 
+class CreateOutpostResolverRequest(ServiceRequest):
+    CreatorRequestId: CreatorRequestId
+    Name: OutpostResolverName
+    InstanceCount: Optional[InstanceCount]
+    PreferredInstanceType: OutpostInstanceType
+    OutpostArn: OutpostArn
+    Tags: Optional[TagList]
+
+
+class OutpostResolver(TypedDict, total=False):
+    Arn: Optional[Arn]
+    CreationTime: Optional[Rfc3339TimeString]
+    ModificationTime: Optional[Rfc3339TimeString]
+    CreatorRequestId: Optional[CreatorRequestId]
+    Id: Optional[ResourceId]
+    InstanceCount: Optional[InstanceCount]
+    PreferredInstanceType: Optional[OutpostInstanceType]
+    Name: Optional[OutpostResolverName]
+    Status: Optional[OutpostResolverStatus]
+    StatusMessage: Optional[OutpostResolverStatusMessage]
+    OutpostArn: Optional[OutpostArn]
+
+
+class CreateOutpostResolverResponse(TypedDict, total=False):
+    OutpostResolver: Optional[OutpostResolver]
+
+
 class IpAddressRequest(TypedDict, total=False):
     SubnetId: SubnetId
     Ip: Optional[Ip]
@@ -534,6 +585,8 @@ class CreateResolverEndpointRequest(ServiceRequest):
     IpAddresses: IpAddressesRequest
     Tags: Optional[TagList]
     ResolverEndpointType: Optional[ResolverEndpointType]
+    OutpostArn: Optional[OutpostArn]
+    PreferredInstanceType: Optional[OutpostInstanceType]
 
 
 class CreateResolverEndpointResponse(TypedDict, total=False):
@@ -627,6 +680,14 @@ class DeleteFirewallRuleRequest(ServiceRequest):
 
 class DeleteFirewallRuleResponse(TypedDict, total=False):
     FirewallRule: Optional[FirewallRule]
+
+
+class DeleteOutpostResolverRequest(ServiceRequest):
+    Id: ResourceId
+
+
+class DeleteOutpostResolverResponse(TypedDict, total=False):
+    OutpostResolver: Optional[OutpostResolver]
 
 
 class DeleteResolverEndpointRequest(ServiceRequest):
@@ -773,6 +834,14 @@ class GetFirewallRuleGroupRequest(ServiceRequest):
 
 class GetFirewallRuleGroupResponse(TypedDict, total=False):
     FirewallRuleGroup: Optional[FirewallRuleGroup]
+
+
+class GetOutpostResolverRequest(ServiceRequest):
+    Id: ResourceId
+
+
+class GetOutpostResolverResponse(TypedDict, total=False):
+    OutpostResolver: Optional[OutpostResolver]
 
 
 class GetResolverConfigRequest(ServiceRequest):
@@ -954,6 +1023,20 @@ class ListFirewallRulesRequest(ServiceRequest):
 class ListFirewallRulesResponse(TypedDict, total=False):
     NextToken: Optional[NextToken]
     FirewallRules: Optional[FirewallRules]
+
+
+class ListOutpostResolversRequest(ServiceRequest):
+    OutpostArn: Optional[OutpostArn]
+    MaxResults: Optional[MaxResults]
+    NextToken: Optional[NextToken]
+
+
+OutpostResolverList = List[OutpostResolver]
+
+
+class ListOutpostResolversResponse(TypedDict, total=False):
+    OutpostResolvers: Optional[OutpostResolverList]
+    NextToken: Optional[NextToken]
 
 
 class ListResolverConfigsRequest(ServiceRequest):
@@ -1198,6 +1281,17 @@ class UpdateIpAddress(TypedDict, total=False):
 UpdateIpAddresses = List[UpdateIpAddress]
 
 
+class UpdateOutpostResolverRequest(ServiceRequest):
+    Id: ResourceId
+    Name: Optional[OutpostResolverName]
+    InstanceCount: Optional[InstanceCount]
+    PreferredInstanceType: Optional[OutpostInstanceType]
+
+
+class UpdateOutpostResolverResponse(TypedDict, total=False):
+    OutpostResolver: Optional[OutpostResolver]
+
+
 class UpdateResolverConfigRequest(ServiceRequest):
     ResourceId: ResourceId
     AutodefinedReverseFlag: AutodefinedReverseFlag
@@ -1317,6 +1411,19 @@ class Route53ResolverApi:
     ) -> CreateFirewallRuleGroupResponse:
         raise NotImplementedError
 
+    @handler("CreateOutpostResolver")
+    def create_outpost_resolver(
+        self,
+        context: RequestContext,
+        creator_request_id: CreatorRequestId,
+        name: OutpostResolverName,
+        preferred_instance_type: OutpostInstanceType,
+        outpost_arn: OutpostArn,
+        instance_count: InstanceCount = None,
+        tags: TagList = None,
+    ) -> CreateOutpostResolverResponse:
+        raise NotImplementedError
+
     @handler("CreateResolverEndpoint")
     def create_resolver_endpoint(
         self,
@@ -1328,6 +1435,8 @@ class Route53ResolverApi:
         name: Name = None,
         tags: TagList = None,
         resolver_endpoint_type: ResolverEndpointType = None,
+        outpost_arn: OutpostArn = None,
+        preferred_instance_type: OutpostInstanceType = None,
     ) -> CreateResolverEndpointResponse:
         raise NotImplementedError
 
@@ -1375,6 +1484,12 @@ class Route53ResolverApi:
     def delete_firewall_rule_group(
         self, context: RequestContext, firewall_rule_group_id: ResourceId
     ) -> DeleteFirewallRuleGroupResponse:
+        raise NotImplementedError
+
+    @handler("DeleteOutpostResolver")
+    def delete_outpost_resolver(
+        self, context: RequestContext, id: ResourceId
+    ) -> DeleteOutpostResolverResponse:
         raise NotImplementedError
 
     @handler("DeleteResolverEndpoint")
@@ -1450,6 +1565,12 @@ class Route53ResolverApi:
     def get_firewall_rule_group_policy(
         self, context: RequestContext, arn: Arn
     ) -> GetFirewallRuleGroupPolicyResponse:
+        raise NotImplementedError
+
+    @handler("GetOutpostResolver")
+    def get_outpost_resolver(
+        self, context: RequestContext, id: ResourceId
+    ) -> GetOutpostResolverResponse:
         raise NotImplementedError
 
     @handler("GetResolverConfig")
@@ -1570,6 +1691,16 @@ class Route53ResolverApi:
         max_results: MaxResults = None,
         next_token: NextToken = None,
     ) -> ListFirewallRulesResponse:
+        raise NotImplementedError
+
+    @handler("ListOutpostResolvers")
+    def list_outpost_resolvers(
+        self,
+        context: RequestContext,
+        outpost_arn: OutpostArn = None,
+        max_results: MaxResults = None,
+        next_token: NextToken = None,
+    ) -> ListOutpostResolversResponse:
         raise NotImplementedError
 
     @handler("ListResolverConfigs")
@@ -1742,6 +1873,17 @@ class Route53ResolverApi:
         mutation_protection: MutationProtectionStatus = None,
         name: Name = None,
     ) -> UpdateFirewallRuleGroupAssociationResponse:
+        raise NotImplementedError
+
+    @handler("UpdateOutpostResolver")
+    def update_outpost_resolver(
+        self,
+        context: RequestContext,
+        id: ResourceId,
+        name: OutpostResolverName = None,
+        instance_count: InstanceCount = None,
+        preferred_instance_type: OutpostInstanceType = None,
+    ) -> UpdateOutpostResolverResponse:
         raise NotImplementedError
 
     @handler("UpdateResolverConfig")

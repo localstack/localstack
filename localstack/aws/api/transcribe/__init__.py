@@ -181,6 +181,10 @@ class SubtitleFormat(str):
     srt = "srt"
 
 
+class ToxicityCategory(str):
+    ALL = "ALL"
+
+
 class TranscriptFilterType(str):
     EXACT = "EXACT"
 
@@ -620,6 +624,14 @@ class GetTranscriptionJobRequest(ServiceRequest):
     TranscriptionJobName: TranscriptionJobName
 
 
+ToxicityCategories = List[ToxicityCategory]
+
+
+class ToxicityDetectionSettings(TypedDict, total=False):
+    ToxicityCategories: ToxicityCategories
+
+
+ToxicityDetection = List[ToxicityDetectionSettings]
 SubtitleFileUris = List[Uri]
 SubtitleFormats = List[SubtitleFormat]
 
@@ -682,6 +694,7 @@ class TranscriptionJob(TypedDict, total=False):
     Tags: Optional[TagList]
     Subtitles: Optional[SubtitlesOutput]
     LanguageIdSettings: Optional[LanguageIdSettingsMap]
+    ToxicityDetection: Optional[ToxicityDetection]
 
 
 class GetTranscriptionJobResponse(TypedDict, total=False):
@@ -837,6 +850,7 @@ class TranscriptionJobSummary(TypedDict, total=False):
     IdentifyMultipleLanguages: Optional[Boolean]
     IdentifiedLanguageScore: Optional[IdentifiedLanguageScore]
     LanguageCodes: Optional[LanguageCodeList]
+    ToxicityDetection: Optional[ToxicityDetection]
 
 
 TranscriptionJobSummaries = List[TranscriptionJobSummary]
@@ -941,6 +955,7 @@ class StartTranscriptionJobRequest(ServiceRequest):
     Subtitles: Optional[Subtitles]
     Tags: Optional[TagList]
     LanguageIdSettings: Optional[LanguageIdSettingsMap]
+    ToxicityDetection: Optional[ToxicityDetection]
 
 
 class StartTranscriptionJobResponse(TypedDict, total=False):
@@ -1306,6 +1321,7 @@ class TranscribeApi:
         subtitles: Subtitles = None,
         tags: TagList = None,
         language_id_settings: LanguageIdSettingsMap = None,
+        toxicity_detection: ToxicityDetection = None,
     ) -> StartTranscriptionJobResponse:
         raise NotImplementedError
 
