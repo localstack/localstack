@@ -358,9 +358,8 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
             TLSSecurityPolicy=TLSSecurityPolicy.Policy_Min_TLS_1_0_2019_07,
             CustomEndpointEnabled=False,
         ),
-        AdvancedSecurityOptions=AdvancedSecurityOptions(
-            Enabled=False, InternalUserDatabaseEnabled=False
-        ),
+        AdvancedSecurityOptions=stored_status.get("AdvancedSecurityOptions")
+        or AdvancedSecurityOptions(Enabled=False, InternalUserDatabaseEnabled=False),
         AutoTuneOptions=AutoTuneOptionsOutput(State=AutoTuneState.ENABLE_IN_PROGRESS),
     )
     if stored_status.get("Endpoint"):
