@@ -132,7 +132,9 @@ class S3ProviderStream(S3Provider):
         if content_sha_256 and content_sha_256.startswith("STREAMING-"):
             # this is a chunked request, we need to properly decode it while setting the key value
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
-            body = AwsChunkedDecoder(body, decoded_content_length)
+            # we're passing the S3 Object, the decoder will set its `ChecksumValue` once it has finished reading
+            # the stream
+            body = AwsChunkedDecoder(body, decoded_content_length, key_object)
 
         try:
             key_object.value = body
@@ -300,9 +302,6 @@ class S3ProviderStream(S3Provider):
         key = moto_backend.upload_part(bucket_name, upload_id, part_number, body)
         response = UploadPartOutput(ETag=key.etag)
 
-        if key.checksum_algorithm is not None:
-            response[f"Checksum{key.checksum_algorithm.upper()}"] = key.checksum_value
-
         if key.encryption is not None:
             response["ServerSideEncryption"] = key.encryption
             if key.encryption == "aws:kms" and key.kms_key_id is not None:
@@ -405,11 +404,6 @@ class StreamedFakeKey(s3_models.FakeKey):
 
         if self.checksum_algorithm:
             calculated_checksum = base64.b64encode(checksum.digest()).decode()
-            # in case the underlying stream is a AwsChunkedDecoder, we will access the
-            if hasattr(new_value, "trailing_headers"):
-                self.checksum_value = new_value.trailing_headers.get(
-                    f"x-amz-checksum-{self.checksum_algorithm}".lower()
-                )
 
             if self.checksum_value and self.checksum_value != calculated_checksum:
                 self.dispose()

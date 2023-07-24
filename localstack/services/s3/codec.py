@@ -1,5 +1,5 @@
 import io
-from typing import IO
+from typing import IO, Any, Optional
 
 
 class AwsChunkedDecoder(io.RawIOBase):
@@ -7,13 +7,17 @@ class AwsChunkedDecoder(io.RawIOBase):
     This helper class takes a IO[bytes] stream, and decodes it on the fly, so that S3 can directly access the stream
     without worrying about implementation details of `aws-chunked`.
     It does need access to the trailing headers, which are going to be available once the stream is fully read.
+    You can also directly pass the S3 Object, so the stream would set the checksum value once it's done.
+    TODO: should we register callback instead of passing the object?
     See `aws-chunked` format here: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-streaming.html
     """
 
     def readable(self):
         return True
 
-    def __init__(self, stream: IO[bytes], decoded_content_length: int):
+    def __init__(
+        self, stream: IO[bytes], decoded_content_length: int, s3_object: Optional[Any] = None
+    ):
         self._stream = stream
 
         self._decoded_length = decoded_content_length  # Length of the encoded object
@@ -21,6 +25,7 @@ class AwsChunkedDecoder(io.RawIOBase):
         self._end_chunk = False
         self._chunk_size = 0
         self._trailing_headers = {}
+        self.s3_object = s3_object
 
     @property
     def trailing_headers(self):
@@ -63,6 +68,8 @@ class AwsChunkedDecoder(io.RawIOBase):
         if self._chunk_size == 0 and self._decoded_length <= 0:
             # If the next chunk is 0, and we decoded everything, try to get the trailing headers
             self._get_trailing_headers()
+            if self.s3_object:
+                self._set_checksum_value()
             return b""
 
         # take the minimum account between the requested size, and the left chunk size
@@ -97,3 +104,9 @@ class AwsChunkedDecoder(io.RawIOBase):
             if trailing_header := line.strip():
                 header_key, header_value = trailing_header.decode("utf-8").split(":", maxsplit=1)
                 self._trailing_headers[header_key.lower()] = header_value.strip()
+
+    def _set_checksum_value(self):
+        if checksum_algorithm := getattr(self.s3_object, "checksum_algorithm", None):
+            self.s3_object.checksum_value = self._trailing_headers.get(
+                f"x-amz-checksum-{checksum_algorithm.lower()}"
+            )
