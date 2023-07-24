@@ -299,6 +299,16 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#iterator_decl.
+    def visitIterator_decl(self, ctx:ASLParser.Iterator_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#iterator_decl_item.
+    def visitIterator_decl_item(self, ctx:ASLParser.Iterator_decl_itemContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#item_selector_decl.
     def visitItem_selector_decl(self, ctx:ASLParser.Item_selector_declContext):
         return self.visitChildren(ctx)

@@ -58,6 +58,26 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    def test_map_state_legacy(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_LEGACY)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     def test_map_state_item_selector(
         self,
         aws_client,
@@ -66,6 +86,26 @@ class TestBaseScenarios:
         sfn_snapshot,
     ):
         template = ST.load_sfn_template(ST.MAP_STATE_ITEM_SELECTOR)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    def test_map_state_parameters_legacy(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_PARAMETERS_LEGACY)
         definition = json.dumps(template)
 
         exec_input = json.dumps({})
@@ -98,6 +138,26 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    def test_map_state_parameters_singleton_legacy(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_PARAMETERS_SINGLETON_LEGACY)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     def test_map_state_catch(
         self,
         aws_client,
@@ -106,6 +166,26 @@ class TestBaseScenarios:
         sfn_snapshot,
     ):
         template = ST.load_sfn_template(ST.MAP_STATE_CATCH)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    def test_map_state_catch_legacy(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_CATCH_LEGACY)
         definition = json.dumps(template)
 
         exec_input = json.dumps({})
@@ -138,6 +218,26 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    def test_map_state_retry_legacy(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_RETRY_LEGACY)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     def test_map_state_break_condition(
         self,
         aws_client,
@@ -146,6 +246,26 @@ class TestBaseScenarios:
         sfn_snapshot,
     ):
         template = ST.load_sfn_template(ST.MAP_STATE_BREAK_CONDITION)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    def test_map_state_break_condition_legacy(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_BREAK_CONDITION_LEGACY)
         definition = json.dumps(template)
 
         exec_input = json.dumps({})
