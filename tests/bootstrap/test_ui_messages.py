@@ -18,11 +18,9 @@ def news_endpoint_mock():
     with HTTPMockServer(7775, "/news") as response_mock:
         yield response_mock
 
-def test_news_endpoint(news_endpoint_mock: ResponseMock):
-    news_endpoint_mock.set_reponse({"foo": "bar"})
-    time.sleep(2)
-    print("test over")
-    assert True
+
+
+
 
 def is_pro():
     command = f"aws --endpoint-url=http://localhost:{LOCALSTACK_TEST_PORT} ecr describe-repositories"
@@ -48,6 +46,9 @@ class TestMessages:
         # for line in result.output.splitlines():
         #     if "dynamodb" in line:
         #         assert "available" in line
+
+    def test_inject_message(self):
+
 
 
 class TestMessageDisplay:
@@ -108,7 +109,7 @@ class TestCLI:
     def test_no_messages_to_display(self):
         # with cached messages file
         # >> localstack messages
-        # assert messages
+        # assert no messages
         pytest.fail()
 
     def test_poll_news_during_message_command(self):

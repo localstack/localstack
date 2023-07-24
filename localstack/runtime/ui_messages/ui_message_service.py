@@ -58,6 +58,9 @@ class UIMessageService:
         self._cache[topic] = messages
         self._write_file_cache()
 
+    def get_messages_for_topic(self, topic: TopicType):
+        return self._cache[topic]
+
 
     def _get_ordered_messages(self) -> MessageListType:
         messages_accumulator: MessageListType = []
@@ -69,10 +72,8 @@ class UIMessageService:
     def print_cached_messages(self):
         ordered_messages = self._get_ordered_messages()
 
-        if True: #len(ordered_messages) > 0:
+        if len(ordered_messages) > 0:
             print()
-            # print('foobar')
-            console.rule("messages")
             for message in ordered_messages:
                 print(message['content']['title'] + ' - ' + message['content']['body'])
             console.rule("/messages")
