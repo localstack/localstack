@@ -44,7 +44,7 @@ from localstack.services.s3.models import get_moto_s3_backend
 from localstack.services.s3.provider import S3Provider
 from localstack.services.s3.utils import (
     InvalidRequest,
-    extract_bucket_key_version_id_from_uri,
+    extract_bucket_key_version_id_from_s3_url,
     get_bucket_from_moto,
     get_key_from_moto_bucket,
     get_s3_checksum,
@@ -192,7 +192,7 @@ class S3ProviderStream(S3Provider):
         if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
             validate_kms_key_id(sse_kms_key_id, dest_moto_bucket)
 
-        src_bucket, src_key, src_version_id = extract_bucket_key_version_id_from_uri(
+        src_bucket, src_key, src_version_id = extract_bucket_key_version_id_from_s3_url(
             request["CopySource"]
         )
         src_moto_bucket = get_bucket_from_moto(moto_backend, bucket=src_bucket)

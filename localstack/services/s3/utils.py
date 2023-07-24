@@ -76,12 +76,24 @@ class InvalidRequest(ServiceException):
 
 
 # TODO: write unit tests
-def extract_bucket_key_version_id_from_uri(
-    copy_source: str,
+def extract_bucket_key_version_id_from_s3_url(
+    s3_url: str,
 ) -> tuple[BucketName, ObjectKey, Optional[str]]:
-    copy_source_parsed = urlparser.urlparse(copy_source)
-    src_bucket, src_key = urlparser.unquote(copy_source_parsed.path).lstrip("/").split("/", 1)
-    src_version_id = urlparser.parse_qs(copy_source_parsed.query).get("versionId", [None])[0]
+    """
+    Utility to parse bucket name, object key and optionally its versionId. It can accept different format:
+    - <bucket-name/<object-key>?versionId=<version-id>, used for example in CopySource for CopyObject
+    - s3://<bucket-name>/<object-key>, used everywhere, notably Glue
+    :param s3_url: the S3 URL to parse
+    :return: parsed BucketName, ObjectKey and optionally VersionId
+    """
+    copy_source_parsed = urlparser.urlparse(s3_url)
+    if src_bucket := copy_source_parsed.hostname:
+        src_key = urlparser.unquote(copy_source_parsed.path).lstrip("/")
+        src_version_id = None
+    else:
+        src_bucket, src_key = urlparser.unquote(copy_source_parsed.path).lstrip("/").split("/", 1)
+        src_version_id = urlparser.parse_qs(copy_source_parsed.query).get("versionId", [None])[0]
+
     return src_bucket, src_key, src_version_id
 
 
