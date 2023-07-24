@@ -135,6 +135,7 @@ ThirdPartyTypeArn = str
 TimeoutMinutes = int
 TotalStackInstancesCount = int
 TransformName = str
+TreatUnrecognizedResourceTypesAsWarnings = bool
 Type = str
 TypeArn = str
 TypeConfiguration = str
@@ -1649,12 +1650,21 @@ class GetTemplateOutput(TypedDict, total=False):
     StagesAvailable: Optional[StageList]
 
 
+class TemplateSummaryConfig(TypedDict, total=False):
+    TreatUnrecognizedResourceTypesAsWarnings: Optional[TreatUnrecognizedResourceTypesAsWarnings]
+
+
 class GetTemplateSummaryInput(ServiceRequest):
     TemplateBody: Optional[TemplateBody]
     TemplateURL: Optional[TemplateURL]
     StackName: Optional[StackNameOrId]
     StackSetName: Optional[StackSetNameOrId]
     CallAs: Optional[CallAs]
+    TemplateSummaryConfig: Optional[TemplateSummaryConfig]
+
+
+class Warnings(TypedDict, total=False):
+    UnrecognizedResourceTypes: Optional[ResourceTypes]
 
 
 ResourceIdentifiers = List[ResourceIdentifierPropertyKey]
@@ -1696,6 +1706,7 @@ class GetTemplateSummaryOutput(TypedDict, total=False):
     Metadata: Optional[Metadata]
     DeclaredTransforms: Optional[TransformsList]
     ResourceIdentifierSummaries: Optional[ResourceIdentifierSummaries]
+    Warnings: Optional[Warnings]
 
 
 StackIdList = List[StackId]
@@ -2624,6 +2635,7 @@ class CloudformationApi:
         stack_name: StackNameOrId = None,
         stack_set_name: StackSetNameOrId = None,
         call_as: CallAs = None,
+        template_summary_config: TemplateSummaryConfig = None,
     ) -> GetTemplateSummaryOutput:
         raise NotImplementedError
 
