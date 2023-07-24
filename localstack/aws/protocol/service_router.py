@@ -277,7 +277,7 @@ def resolve_conflicts(candidates: Set[str], request: Request):
     These conflicts need to be resolved manually.
     """
     if candidates == {"timestream-query", "timestream-write"}:
-        return "timestream-query"
+        return "timestream-write"
     if candidates == {"docdb", "neptune", "rds"}:
         return "rds"
 
