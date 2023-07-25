@@ -433,7 +433,7 @@ def do_start_tcp_proxy(
     if target_address is None:
         target_address = HostAndPort(host=config.LOCALHOST_IP, port=constants.DEFAULT_PORT_EDGE)
 
-    src = f"{listen.host}:{listen.port}"
+    src = str(listen)
     dst = f"{config.LOCALHOST_IP}:{target_address.port}"
 
     LOG.debug(f"proxying requests from {src} to {dst}")
