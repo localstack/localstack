@@ -480,8 +480,6 @@ def start_edge(listen_str: str, use_ssl: bool = True, asynchronous: bool = False
         edge_thread.join()
 
 
-# TODO: rename to better represent what is going on, e.g. run_module_as_root
-# but this will break `ext`
 def run_module_as_sudo(
     module: str, arguments: Optional[List[str]] = None, asynchronous=False, env_vars=None
 ):
