@@ -76,6 +76,10 @@ class TestInterNetworkConnectivity:
             docker_client, network_name, localstack_container.container
         )
 
+    @pytest.mark.skip(reason="TODO")
+    def test_wildcard_domain_connectivity(self):
+        pass
+
     def run_connectivity_test_from_external_container(
         self, docker_client: ContainerClient, network_name: str, container: LocalstackContainer
     ):
