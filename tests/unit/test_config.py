@@ -10,9 +10,6 @@ from localstack.config import HostAndPort
 HOSTNAME_CHARACTERS = string.ascii_letters + string.digits + "-" + "."
 SAMPLER = sampled_from(HOSTNAME_CHARACTERS)
 
-HOSTNAME_CHARACTERS = string.ascii_letters + string.digits + "-" + "."
-SAMPLER = sampled_from(HOSTNAME_CHARACTERS)
-
 
 class TestProviderConfig:
     def test_provider_default_value(self):
