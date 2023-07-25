@@ -529,7 +529,6 @@ def env_vars_to_string(env_vars: Dict) -> str:
     return " ".join(f"{k}='{v}'" for k, v in env_vars.items())
 
 
-# TODO: upstream this into HostAndPort
 def parse_gateway_listen(listen: str) -> List[HostAndPort]:
     addresses = []
     for address in listen.split(","):
