@@ -1,11 +1,9 @@
 
-import subprocess
 import time
 import pytest
 from click.testing import CliRunner
 from localstack.cli.localstack import localstack as cli
-from tests.fixtures.HTTPMockServer import HTTPMockServer, ResponseMock
-from tests.fixtures.docker_fixture import localstack_docker, LOCALSTACK_TEST_PORT
+from tests.fixtures.HTTPMockServer import HTTPMockServer
 from localstack import constants, config
 
 
@@ -17,38 +15,6 @@ def runner():
 def news_endpoint_mock():
     with HTTPMockServer(7775, "/news") as response_mock:
         yield response_mock
-
-
-
-
-
-def is_pro():
-    command = f"aws --endpoint-url=http://localhost:{LOCALSTACK_TEST_PORT} ecr describe-repositories"
-    aws_process = subprocess.run(command, shell=True, check=False, timeout=10)
-    return aws_process.returncode == 0
-
-def test_docker(localstack_docker):
-    assert is_pro()
-
-class TestMessages:
-    def test_something(self, runner: CliRunner):  # pylint: disable=redefined-outer-name
-        result = runner.invoke(cli, ["status", "services"])
-        assert result.exit_code != 0
-        assert "could not connect to LocalStack health endpoint" in result.output
-
-        # runner.invoke(cli, ["start", "-d"])
-        # runner.invoke(cli, ["wait", "-t", "60"])
-
-        # result = runner.invoke(cli, ["status", "services"])
-
-        # # just a smoke test
-        # assert "dynamodb" in result.output
-        # for line in result.output.splitlines():
-        #     if "dynamodb" in line:
-        #         assert "available" in line
-
-    def test_inject_message(self):
-
 
 
 class TestMessageDisplay:
@@ -96,6 +62,11 @@ class TestNewsMessages:
 
         # assert news are shown
         assert "news" in result.output
+
+    def test_show_messages(self, runner: CliRunner):
+        result = runner.invoke(cli, ['messages'])
+        print(result.output)
+        assert "messages" in result.output
 
 
 

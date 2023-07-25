@@ -19,7 +19,7 @@ class HTTPMockServer:
         self._httpd: socketserver.TCPServer | None = None
         self._server_thread: threading.Thread | None = None
 
-        self.response_mock = ResponseMock(http_endpoint=f"http://{self._endpoint}:{self._port}")
+        self.response_mock = ResponseMock(http_endpoint=f"http://localhosts:{self._port}{self._endpoint}")
 
 
     def __enter__(self) -> ResponseMock:

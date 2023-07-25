@@ -1,23 +1,34 @@
+from functools import reduce
 import json
 import os
+import time
 from typing import Dict, List, Literal, TypedDict
 
 from localstack import config
 
 from localstack.cli import console
 
-class MessageContent(TypedDict):
-    title: str
-    body: str
+StyleType = Literal["default", "success", "warning", "error"]
 
 class Message(TypedDict):
+    validAfterTimestampUTC: int
+    validBeforeTimestampUTC: int
     priority: int
-    content: MessageContent
+    presentationStyle: StyleType
+    title: str
+    body: str
 
 MessageListType = List[Message]
 
 TopicType = Literal['news', 'licensing']
 _CacheType = Dict[TopicType, MessageListType]
+
+map_style: Dict[StyleType, str] = {
+    "default": "",
+    "success": "[green]",
+    "warning": "[yellow]",
+    "error": "[red]",
+}
 
 
 class UIMessageService:
@@ -32,7 +43,6 @@ class UIMessageService:
 
 
     def _read_file_cache(self):
-        print(f"reading cache at: '{self._cache_path}'")
         try:
             with open(self._cache_path, 'r', encoding='utf-8') as file:
                 self._cache = json.load(file)
@@ -62,19 +72,25 @@ class UIMessageService:
         return self._cache[topic]
 
 
-    def _get_ordered_messages(self) -> MessageListType:
-        messages_accumulator: MessageListType = []
+    def _get_valid_ordered_messages(self) -> MessageListType:
+        all_messages: MessageListType = []
         for _, messages in self._cache.items():
-            messages_accumulator = messages_accumulator + messages
+            all_messages = all_messages + messages
 
-        return sorted(messages_accumulator, key=lambda x: x['priority'], reverse=True)
+        now = int(time.time())
+        valid_messages = [message for message in all_messages if (message['validAfterTimestampUTC'] < now and now < message['validBeforeTimestampUTC'])]
+        return sorted(valid_messages, key=lambda x: x['priority'], reverse=True)
 
-    def print_cached_messages(self):
-        ordered_messages = self._get_ordered_messages()
+    def print_cached_messages(self, show_even_if_empty: bool = False):
+        ordered_messages = self._get_valid_ordered_messages()
+        cnt_messages = len(ordered_messages)
 
-        if len(ordered_messages) > 0:
-            print()
-            for message in ordered_messages:
-                print(message['content']['title'] + ' - ' + message['content']['body'])
-            console.rule("/messages")
+        if (cnt_messages > 0) or show_even_if_empty:
+            console.rule(f"messages ({cnt_messages})")
+
+            for i in range(cnt_messages):
+                message = ordered_messages[i]
+                console.print(f"({i + 1}/{cnt_messages}) {map_style[message['presentationStyle']]}{message['title']}  - {message['body']}")
+
+            console.rule("EOT")
             print()

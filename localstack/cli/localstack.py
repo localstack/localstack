@@ -6,6 +6,7 @@ import traceback
 from typing import Dict, List, Optional
 
 from localstack import config
+from localstack.runtime.ui_messages.news_client import fetch_news_blocking
 from localstack.utils.analytics.cli import publish_invocation
 from localstack.runtime import ui_messages
 
@@ -819,3 +820,23 @@ def is_frozen_bundle() -> bool:
     # check if we are in a PyInstaller binary
     # https://pyinstaller.org/en/stable/runtime-information.html
     return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
+
+
+@localstack.command(name="messages", short_help="Fetch and show current messages.")
+@publish_invocation
+def cmd_messages() -> None:
+    """
+    Fetch and how messages from all topics
+    - news messages
+    - currently cached messages
+    """
+    console.print(":mailbox_with_mail: The 'messages' command fetches news from the LocalStack servers (e.g. new versions released) and also displays messages that are locally cached, for example relating to your current license and subscription.\n")
+
+    with console.status("Fetching news from server..."):
+        result = fetch_news_blocking()
+        if result == "error":
+            console.print("[red]An error occurred while fetching news from the server.")
+
+    message_service = ui_messages.get_instance()
+    message_service.print_cached_messages(show_even_if_empty=True)
+
