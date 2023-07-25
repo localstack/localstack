@@ -3,11 +3,14 @@ import requests
 
 from localstack import config
 from localstack.config import in_docker
-from localstack.utils.bootstrap import LocalstackContainerServer
+from localstack.utils.bootstrap import LocalstackContainer, LocalstackContainerServer
+from localstack.utils.container_utils.container_client import ContainerClient
+from localstack.utils.docker_utils import create_docker_client
+from localstack.utils.strings import short_uid
 
 
 @pytest.fixture
-def localstack_server():
+def localstack_container():
     server = LocalstackContainerServer()
     assert not server.is_up()
 
@@ -18,13 +21,56 @@ def localstack_server():
     assert not server.is_up()
 
 
+@pytest.fixture(scope="session")
+def docker_client() -> ContainerClient:
+    return create_docker_client()
+
+
+@pytest.fixture
+def create_network(docker_client: ContainerClient):
+    networks = []
+
+    def inner(network_name: str):
+        docker_client.create_network(network_name)
+        networks.append(network_name)
+
+    yield inner
+
+    for network in networks[::-1]:
+        docker_client.delete_network(network)
+
+
 @pytest.mark.skipif(condition=in_docker(), reason="cannot run bootstrap tests in docker")
 class TestLocalstackContainerServer:
-    def test_lifecycle(self, localstack_server):
-        localstack_server.container.ports.add(config.EDGE_PORT)
-        localstack_server.start()
-        assert localstack_server.wait_is_up(60)
+    def test_lifecycle(self, localstack_container):
+        localstack_container.container.ports.add(config.EDGE_PORT)
+        localstack_container.start()
+        assert localstack_container.wait_is_up(60)
 
         response = requests.get("http://localhost:4566/_localstack/health")
 
         assert response.ok, "expected health check to return OK: %s" % response.text
+
+
+@pytest.mark.skipif(condition=in_docker(), reason="cannot run bootstrap tests in docker")
+class TestInterNetworkConnectivity:
+    @pytest.mark.skip(reason="WIP")
+    def test_user_defined_network_connectivity(
+        self,
+        localstack_container: LocalstackContainerServer,
+        create_network,
+    ):
+        network_name = f"net-{short_uid()}"
+        create_network(network_name)
+
+        container_name = f"ls-{short_uid()}"
+        localstack_container.container.name = container_name
+        localstack_container.container.network = network_name
+        localstack_container.container.ports.add(config.EDGE_PORT)
+        localstack_container.start()
+        assert localstack_container.wait_is_up(60)
+
+        self.run_connectivity_test_from_external_container(localstack_container.container)
+
+    def run_connectivity_test_from_external_container(self, container: LocalstackContainer):
+        raise NotImplementedError
