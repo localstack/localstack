@@ -274,7 +274,7 @@ class TestEdgeVariablesDerivedCorrectly:
         assert "could not parse hostname" in str(exc_info)
 
     @pytest.mark.parametrize("port", [-1000, 100_000])
-    def test_negative_port(self, port):
+    def test_port_out_of_range(self, port):
         with pytest.raises(ValueError) as exc_info:
             config.HostAndPort.parse(f"localhost:{port}")
 
