@@ -1,15 +1,17 @@
-
 import time
+
 import pytest
 from click.testing import CliRunner
+
+from localstack import config, constants
 from localstack.cli.localstack import localstack as cli
 from tests.fixtures.HTTPMockServer import HTTPMockServer
-from localstack import constants, config
 
 
 @pytest.fixture
 def runner():
     return CliRunner()
+
 
 @pytest.fixture(scope="module")
 def news_endpoint_mock():
@@ -19,7 +21,6 @@ def news_endpoint_mock():
 
 class TestMessageDisplay:
     def test_show_messages_in_cli(self, runner: CliRunner):
-
         print(f"test cache folder: '{config.dirs.cache}'")
         # with cached messages file
         # start cli
@@ -64,10 +65,9 @@ class TestNewsMessages:
         assert "news" in result.output
 
     def test_show_messages(self, runner: CliRunner):
-        result = runner.invoke(cli, ['messages'])
+        result = runner.invoke(cli, ["messages"])
         print(result.output)
         assert "messages" in result.output
-
 
 
 class TestCLI:

@@ -1,7 +1,7 @@
 import http.server
-import json
 import socketserver
 import threading
+
 
 class ResponseMock:
     def __init__(self, http_endpoint: str):
@@ -19,8 +19,9 @@ class HTTPMockServer:
         self._httpd: socketserver.TCPServer | None = None
         self._server_thread: threading.Thread | None = None
 
-        self.response_mock = ResponseMock(http_endpoint=f"http://localhosts:{self._port}{self._endpoint}")
-
+        self.response_mock = ResponseMock(
+            http_endpoint=f"http://localhosts:{self._port}{self._endpoint}"
+        )
 
     def __enter__(self) -> ResponseMock:
         response_mock = self.response_mock
@@ -38,7 +39,9 @@ class HTTPMockServer:
                     self.send_response(404)
                     self.send_header("Content-type", "text/html")
                     self.end_headers()
-                    self.wfile.write(f"'{self.path}' Not found, try {other._endpoint} instead".encode("utf-8"))
+                    self.wfile.write(
+                        f"'{self.path}' Not found, try {other._endpoint} instead".encode("utf-8")
+                    )
                     print(f"GET {self.path}: 404")
 
             def do_POST(self) -> None:
@@ -52,9 +55,10 @@ class HTTPMockServer:
                     self.send_response(404)
                     self.send_header("Content-type", "text/html")
                     self.end_headers()
-                    self.wfile.write(f"'{self.path}' Not found, try {other._endpoint} instead".encode("utf-8"))
+                    self.wfile.write(
+                        f"'{self.path}' Not found, try {other._endpoint} instead".encode("utf-8")
+                    )
                     print(f"POST {self.path}: 404")
-
 
         self._httpd = socketserver.TCPServer(("", self._port), Handler)
         self._server_thread = threading.Thread(target=self._httpd.serve_forever)
@@ -63,10 +67,8 @@ class HTTPMockServer:
         return response_mock
 
     def __exit__(self, exctype, excinst, exctb):
-        print('exit')
-        if (self._httpd and self._server_thread):
-            print('shutdown...')
+        print("exit")
+        if self._httpd and self._server_thread:
+            print("shutdown...")
             self._httpd.shutdown()
             self._server_thread.join()
-
-

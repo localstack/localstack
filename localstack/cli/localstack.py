@@ -6,9 +6,9 @@ import traceback
 from typing import Dict, List, Optional
 
 from localstack import config
+from localstack.runtime import ui_messages
 from localstack.runtime.ui_messages.news_client import fetch_news_blocking
 from localstack.utils.analytics.cli import publish_invocation
-from localstack.runtime import ui_messages
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -830,7 +830,9 @@ def cmd_messages() -> None:
     - news messages
     - currently cached messages
     """
-    console.print(":mailbox_with_mail: The 'messages' command fetches news from the LocalStack servers (e.g. new versions released) and also displays messages that are locally cached, for example relating to your current license and subscription.\n")
+    console.print(
+        ":mailbox_with_mail: The 'messages' command fetches news from the LocalStack servers (e.g. new versions released) and also displays messages that are locally cached, for example relating to your current license and subscription.\n"
+    )
 
     with console.status("Fetching news from server..."):
         result = fetch_news_blocking()
@@ -839,4 +841,3 @@ def cmd_messages() -> None:
 
     message_service = ui_messages.get_instance()
     message_service.print_cached_messages(show_even_if_empty=True)
-
