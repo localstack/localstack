@@ -260,6 +260,12 @@ class TestEdgeVariablesDerivedCorrectly:
         assert h.host == hostname
         assert h.port == port
 
+    def test_invalid_port(self):
+        with pytest.raises(ValueError) as exc_info:
+            config.HostAndPort.parse("0.0.0.0:not-a-port")
+
+        assert "specified port not-a-port not a number" in str(exc_info)
+
     # test edge cases
     def test_empty_hostname(self):
         with pytest.raises(ValueError) as exc_info:
