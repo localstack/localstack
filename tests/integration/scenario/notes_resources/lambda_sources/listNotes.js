@@ -9,7 +9,17 @@ exports.handler = async () => {
   };
 
   try {
-    const client = new DynamoDBClient({});
+    let client;
+    if (process.env.LOCALSTACK_HOSTNAME) {
+      const localStackConfig = {
+        endpoint: `http://${process.env.LOCALSTACK_HOSTNAME}:${process.env.EDGE_PORT}`,
+        region: 'us-east-1', // Change the region as per your setup
+      };
+      client = new  DynamoDBClient(localStackConfig);
+    } else {
+      // Use the default AWS configuration
+      client = new DynamoDBClient({});
+    }
     const result = await client.send(new ScanCommand(params));
     // Return the matching list of items in response body
     return success(result.Items.map((Item) => unmarshall(Item)));

@@ -1,4 +1,5 @@
 import json
+from typing import Callable
 
 import aws_cdk as cdk
 
@@ -13,9 +14,11 @@ class InfraProvisioner:
     """
 
     cloudformation_stacks: dict[str, dict]
+    custom_cleanup_steps: list[Callable]
 
     def __init__(self, aws_client: ServiceLevelClientFactory):
         self.cloudformation_stacks = {}
+        self.custom_cleanup_steps = []
         self.aws_client = aws_client
 
     def provision(self):
@@ -41,6 +44,8 @@ class InfraProvisioner:
         return self.cloudformation_stacks[stack_name]["Outputs"]
 
     def teardown(self):
+        for fn in self.custom_cleanup_steps:
+            fn()
         for stack_name, stack in self.cloudformation_stacks.items():
             self.aws_client.cloudformation.delete_stack(StackName=stack_name)
             self.aws_client.cloudformation.get_waiter("stack_delete_complete").wait(
@@ -81,3 +86,6 @@ class InfraProvisioner:
             self.aws_client.ssm.put_parameter(
                 Name="/cdk-bootstrap/hnb659fds/version", Type="String", Value="10"
             )
+
+    def add_custom_teardown(self, cleanup_task: Callable):
+        self.custom_cleanup_steps.append(cleanup_task)

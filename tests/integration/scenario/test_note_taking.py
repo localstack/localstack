@@ -1,5 +1,6 @@
 import copy
 import json
+import logging
 import os
 import shutil
 import tempfile
@@ -18,6 +19,8 @@ import requests
 from constructs import Construct
 
 from localstack.testing.scenario.provisioning import InfraProvisioner
+
+LOG = logging.getLogger(__name__)
 
 
 class NotesApi(Construct):
@@ -134,23 +137,40 @@ class TestNoteTakingScenario:
                 os.remove(tmp_zip_path)
 
     @pytest.fixture(scope="class", autouse=True)
-    def infrastructure(
-        self, aws_client, s3_create_bucket_class_scope, create_archive_for_lambda_resource
-    ):
+    def infrastructure(self, aws_client, create_archive_for_lambda_resource):
+        provisioner = InfraProvisioner(aws_client)
+        app = cdk.App()
+        stack = cdk.Stack(app, "NoteTakingStack")
+
+        # TODO how to skip creation if still have the cdk app deployed?
+
         # stack definition
         # manually create s3 bucket + upload lambda
-        bucket_name = s3_create_bucket_class_scope(Bucket="notes")
+        bucket_name = "notes-sample-scenario-test"
+        aws_client.s3.create_bucket(Bucket=bucket_name)
         lambda_notes = ["createNote", "deleteNote", "getNote", "listNotes", "updateNote"]
+        object_keys = []
         for note in lambda_notes:
             archive = create_archive_for_lambda_resource(lambda_name=note)
+            key = f"{note}.zip"
+            object_keys.append({"Key": key})
             aws_client.s3.upload_file(
                 Filename=archive,
                 Bucket=bucket_name,
-                Key=f"{note}.zip",
+                Key=key,
             )
 
-        app = cdk.App()
-        stack = cdk.Stack(app, "NoteTakingStack")
+        # add custom tear down for deleting bucket + content (not using fixture, because we might want to keep the state
+        #   during test development)
+        def bucket_cleanup():
+            try:
+                aws_client.s3.delete_objects(Bucket=bucket_name, Delete={"Objects": object_keys})
+                aws_client.s3.delete_bucket(Bucket=bucket_name)
+            except Exception as e:
+                LOG.debug("error cleaning up bucket %s: %s", bucket_name, e)
+
+        provisioner.add_custom_teardown(bucket_cleanup)
+
         table = dynamodb.Table(
             stack,
             "notes",
@@ -197,6 +217,7 @@ class TestNoteTakingScenario:
         )
 
         # TODO this seems to belong to audio upload/transcription and is currently not part of the app
+        # TODO this bucket will not be automatically deleted when deleting the stack
         files_bucket = s3.Bucket(stack, "files_bucket")
         files_bucket.add_cors_rule(
             allowed_origins=apigw.Cors.ALL_ORIGINS,
@@ -255,13 +276,12 @@ class TestNoteTakingScenario:
         cdk.CfnOutput(stack, "Region", value=stack.region)
 
         # provisioning
-        provisioner = InfraProvisioner(aws_client)
         provisioner.add_cdk_stack(stack)
         provisioner.provision()
         yield provisioner
         provisioner.teardown()
 
-    def test_something(self, infrastructure):
+    def test_notes_rest_api(self, infrastructure):
         outputs = infrastructure.get_stack_outputs("NoteTakingStack")
         gateway_url = outputs["GatewayUrl"]
         base_url = f"{gateway_url}notes"

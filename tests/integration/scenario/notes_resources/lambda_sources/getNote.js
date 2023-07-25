@@ -14,7 +14,17 @@ exports.handler = async (event) => {
   };
 
   try {
-    const client = new DynamoDBClient({});
+    let client;
+    if (process.env.LOCALSTACK_HOSTNAME) {
+      const localStackConfig = {
+        endpoint: `http://${process.env.LOCALSTACK_HOSTNAME}:${process.env.EDGE_PORT}`,
+        region: 'us-east-1', // Change the region as per your setup
+      };
+      client = new  DynamoDBClient(localStackConfig);
+    } else {
+      // Use the default AWS configuration
+      client = new DynamoDBClient({});
+    }
     const result = await client.send(new GetItemCommand(params));
     if (result.Item) {
       // Return the retrieved item
