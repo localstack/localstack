@@ -35,7 +35,7 @@ def test_gateway_server():
     gateway = Gateway()
     gateway.request_handlers.append(echo_request_handler)
     gateway_listen = HostAndPort(host="127.0.0.1", port=get_free_tcp_port())
-    server = GatewayServer(gateway, [gateway_listen], use_ssl=True)
+    server = GatewayServer(gateway, gateway_listen, use_ssl=True)
     with server_context(server):
         get_response = requests.get(
             f"https://localhost.localstack.cloud:{gateway_listen.port}",
@@ -47,7 +47,7 @@ def test_gateway_server():
 def test_proxy_server(httpserver):
     httpserver.expect_request("/base-path/relative-path").respond_with_data("Reached Mock Server.")
     gateway_listen = HostAndPort(host="127.0.0.1", port=get_free_tcp_port())
-    proxy_server = ProxyServer(httpserver.url_for("/base-path"), [gateway_listen], use_ssl=True)
+    proxy_server = ProxyServer(httpserver.url_for("/base-path"), gateway_listen, use_ssl=True)
     with server_context(proxy_server):
         # Test that only the base path is added by the proxy
         response = requests.get(
@@ -78,7 +78,7 @@ def test_proxy_server_properly_handles_headers(httpserver):
         return Response(headers=headers)
 
     httpserver.expect_request("").respond_with_handler(header_echo_handler)
-    proxy_server = ProxyServer(httpserver.url_for("/"), [gateway_listen], use_ssl=True)
+    proxy_server = ProxyServer(httpserver.url_for("/"), gateway_listen, use_ssl=True)
 
     with server_context(proxy_server):
         response = requests.request(
@@ -105,7 +105,7 @@ def test_proxy_server_with_chunked_request(httpserver, httpserver_echo_request_m
 
     httpserver.expect_request("/").respond_with_handler(handler)
     gateway_listen = HostAndPort(host="127.0.0.1", port=get_free_tcp_port())
-    proxy_server = ProxyServer(httpserver.url_for("/"), [gateway_listen], use_ssl=True)
+    proxy_server = ProxyServer(httpserver.url_for("/"), gateway_listen, use_ssl=True)
 
     def chunk_generator():
         for chunk in chunks:
@@ -130,7 +130,7 @@ def test_proxy_server_with_streamed_response(httpserver):
 
     httpserver.expect_request("").respond_with_handler(stream_response_handler)
     gateway_listen = HostAndPort(host="127.0.0.1", port=get_free_tcp_port())
-    proxy_server = ProxyServer(httpserver.url_for("/"), [gateway_listen], use_ssl=True)
+    proxy_server = ProxyServer(httpserver.url_for("/"), gateway_listen, use_ssl=True)
 
     with server_context(proxy_server):
         with requests.get(

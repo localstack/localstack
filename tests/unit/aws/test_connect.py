@@ -34,7 +34,7 @@ class TestClientFactory:
             for handler in request_handlers:
                 gateway.request_handlers.append(handler)
             port = get_free_tcp_port()
-            gateway_listen = [HostAndPort(host="127.0.0.1", port=port)]
+            gateway_listen = HostAndPort(host="127.0.0.1", port=port)
             server = GatewayServer(gateway, gateway_listen, use_ssl=True)
             server.start()
             server.wait_is_up(timeout=10)

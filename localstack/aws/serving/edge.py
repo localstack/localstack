@@ -6,7 +6,9 @@ from localstack.runtime.shutdown import SHUTDOWN_HANDLERS
 from localstack.services.plugins import SERVICE_PLUGINS
 
 
-def serve_gateway(listen: List[HostAndPort], use_ssl: bool, asynchronous: bool = False):
+def serve_gateway(
+    listen: HostAndPort | List[HostAndPort], use_ssl: bool, asynchronous: bool = False
+):
     """
     Implementation of the edge.do_start_edge_proxy interface to start a Hypercorn server instance serving the
     LocalstackAwsGateway.

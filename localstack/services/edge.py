@@ -356,7 +356,9 @@ def is_trace_logging_enabled(headers) -> bool:
     return HEADER_LOCALSTACK_ACCOUNT_ID not in headers.keys()
 
 
-def do_start_edge(listen: List[HostAndPort], use_ssl: bool, asynchronous: bool = False):
+def do_start_edge(
+    listen: HostAndPort | List[HostAndPort], use_ssl: bool, asynchronous: bool = False
+):
     from localstack.aws.serving.edge import serve_gateway
 
     return serve_gateway(listen, use_ssl, asynchronous)

@@ -11,6 +11,7 @@ from localstack.aws.handlers.proxy import ProxyHandler
 from localstack.aws.serving.asgi import AsgiGateway
 from localstack.config import HostAndPort
 from localstack.logging.setup import setup_hypercorn_logger
+from localstack.utils.collections import ensure_list
 from localstack.utils.functions import call_safe
 from localstack.utils.serving import Server
 from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
@@ -80,7 +81,9 @@ class GatewayServer(HypercornServer):
     exception-handlers.
     """
 
-    def __init__(self, gateway: Gateway, listen: list[HostAndPort], use_ssl: bool = False):
+    def __init__(
+        self, gateway: Gateway, listen: HostAndPort | list[HostAndPort], use_ssl: bool = False
+    ):
         """
         Creates a new GatewayServer instance.
 
@@ -94,11 +97,12 @@ class GatewayServer(HypercornServer):
         config.h11_pass_raw_headers = True
         setup_hypercorn_logger(config)
 
-        config.bind = [str(host_and_port) for host_and_port in listen]
+        listens = ensure_list(listen)
+        config.bind = [str(host_and_port) for host_and_port in listens]
 
         if use_ssl:
             install_predefined_cert_if_available()
-            serial_number = listen[0].port
+            serial_number = listens[0].port
             _, cert_file_name, key_file_name = create_ssl_cert(serial_number=serial_number)
             config.certfile = cert_file_name
             config.keyfile = key_file_name
@@ -122,7 +126,9 @@ class ProxyServer(GatewayServer):
     and just forward all incoming requests to a backend.
     """
 
-    def __init__(self, forward_base_url: str, listen: list[HostAndPort], use_ssl: bool = False):
+    def __init__(
+        self, forward_base_url: str, listen: HostAndPort | list[HostAndPort], use_ssl: bool = False
+    ):
         """
         Creates a new ProxyServer instance.
 
