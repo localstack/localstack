@@ -17,6 +17,7 @@ from localstack.utils.threads import start_worker_thread
 LOG = logging.getLogger(__name__)
 
 BUFFER_SIZE = 2**10  # 1024
+TLS_BUFFER_SIZE = 16384  # 16 KB, max TLS record size
 
 PortOrUrl = Union[str, int]
 
@@ -140,7 +141,7 @@ class TLSProxyServer(Server):
                         s_read, _, _ = select.select(sockets, [], [])
 
                         for s in s_read:
-                            data = s.recv(BUFFER_SIZE)
+                            data = s.recv(TLS_BUFFER_SIZE)
                             if not data:
                                 return
 
@@ -152,6 +153,9 @@ class TLSProxyServer(Server):
             LOG.warning(
                 "Error while proxying SSL request: %s", e, exc_info=LOG.isEnabledFor(logging.DEBUG)
             )
+        finally:
+            source_socket.close()
+            LOG.debug("Connection finished!")
 
     def do_run(self):
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -168,6 +172,8 @@ class TLSProxyServer(Server):
                     try:
                         conn, addr = ssock.accept()
                         self.thread_pool.submit(self._handle_socket, conn, addr)
+                    except ssl.SSLZeroReturnError:
+                        pass
                     except Exception as e:
                         LOG.exception("Error accepting socket: %s", e)
 
