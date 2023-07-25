@@ -6,7 +6,7 @@ import re
 import subprocess
 import sys
 import threading
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, TypeVar
+from typing import Dict, List, Optional, TypeVar
 
 from requests.models import Response
 
@@ -41,6 +41,7 @@ from localstack.utils.aws.aws_stack import (
     is_internal_call_context,
     set_default_region_in_headers,
 )
+from localstack.utils.collections import split_list_by
 from localstack.utils.functions import empty_context_manager
 from localstack.utils.http import parse_request_data
 from localstack.utils.http import safe_requests as requests
@@ -445,18 +446,6 @@ def do_start_tcp_proxy(
     if not asynchronous:
         proxy.join()
     return proxy
-
-
-def split_list_by(lst: Iterable[T], predicate: Callable[[T], bool]) -> Tuple[List[T], List[T]]:
-    truthy, falsy = [], []
-
-    for item in lst:
-        if predicate(item):
-            truthy.append(item)
-        else:
-            falsy.append(item)
-
-    return truthy, falsy
 
 
 def start_edge(listen_str: str, use_ssl: bool = True, asynchronous: bool = False):
