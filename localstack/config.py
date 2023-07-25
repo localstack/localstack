@@ -1261,8 +1261,10 @@ def external_service_url(service_key, host=None, port=None):
     return service_url(service_key, host=host, port=port)
 
 
+# FIXME: we don't separate http and non-http ports any more,
+#        so this function should be removed
 def get_edge_port_http():
-    return GATEWAY_LISTEN[0].port
+    return EDGE_PORT_HTTP or EDGE_PORT
 
 
 def get_edge_url(localstack_hostname=None, protocol=None):
