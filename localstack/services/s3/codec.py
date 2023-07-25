@@ -6,7 +6,7 @@ class AwsChunkedDecoder(io.RawIOBase):
     """
     This helper class takes a IO[bytes] stream, and decodes it on the fly, so that S3 can directly access the stream
     without worrying about implementation details of `aws-chunked`.
-    It does need access to the trailing headers, which are going to be available once the stream is fully read.
+    It needs to expose the trailing headers, which will be available once the stream is fully read.
     You can also directly pass the S3 Object, so the stream would set the checksum value once it's done.
     TODO: should we register callback instead of passing the object?
     See `aws-chunked` format here: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-streaming.html
@@ -94,11 +94,13 @@ class AwsChunkedDecoder(io.RawIOBase):
 
     def _get_next_chunk_length(self):
         line = self._stream.readline()
-        # TODO: try except?
         chunk_length = int(line.split(b";")[0], 16)
         self._chunk_size = chunk_length
 
     def _get_trailing_headers(self):
+        """
+        Once the stream content is read, we try to parse the trailing headers.
+        """
         # try to get all trailing headers until the end of the stream
         while line := self._stream.readline():
             if trailing_header := line.strip():
@@ -106,6 +108,11 @@ class AwsChunkedDecoder(io.RawIOBase):
                 self._trailing_headers[header_key.lower()] = header_value.strip()
 
     def _set_checksum_value(self):
+        """
+        If an S3 object was passed, we check the presence of the `checksum_algorithm` field, so that we can properly
+        get the right checksum header value, and set it directly to the object. It allows us to transparently access
+        the provided checksum value by the client in the S3 logic.
+        """
         if checksum_algorithm := getattr(self.s3_object, "checksum_algorithm", None):
             self.s3_object.checksum_value = self._trailing_headers.get(
                 f"x-amz-checksum-{checksum_algorithm.lower()}"
