@@ -7,6 +7,7 @@ import subprocess
 import sys
 import threading
 from typing import Dict, List, Optional, TypeVar
+from urllib.parse import urlparse
 
 from requests.models import Response
 
@@ -420,13 +421,22 @@ def start_proxy(
     Starts a TCP proxy to perform a low-level forwarding of incoming requests.
     The proxy's source port (given as method argument) is bound to the EDGE_BIND_HOST.
     The target IP is always 127.0.0.1.
+    The target port is parsed from the EDGE_FORWARD_URL (for compatibility with the legacy edge proxy forwarding).
+    All other parts of the EDGE_FORWARD_URL are _not_ used anymore.
 
     :param port: source port
     :param asynchronous: False if the function should join the proxy thread and block until it terminates.
     :return: created thread executing the proxy
     """
-    listen_hosts = parse_gateway_listen(listen_str)
-    listen = listen_hosts[0]
+    if config.EDGE_FORWARD_URL != "":
+        destination_port = urlparse(config.EDGE_FORWARD_URL).port
+        if not destination_port or destination_port < 1 or destination_port > 65535:
+            raise ValueError("EDGE_FORWARD_URL does not contain a valid port.")
+
+        listen = f"{constants.LOCALHOST_IP}:{destination_port}"
+    else:
+        listen_hosts = parse_gateway_listen(listen_str)
+        listen = listen_hosts[0]
     return do_start_tcp_proxy(listen, target_address, asynchronous)
 
 
@@ -439,8 +449,7 @@ def do_start_tcp_proxy(
     src = str(listen)
     dst = str(target_address)
 
-    LOG.debug(f"proxying requests from {src} to {dst}")
-
+    LOG.debug("Starting Local TCP Proxy: %s -> %s", src, dst)
     proxy = start_thread(
         lambda *args, **kwargs: start_tcp_proxy(src=src, dst=dst, handler=None, **kwargs),
         name="edge-tcp-proxy",
