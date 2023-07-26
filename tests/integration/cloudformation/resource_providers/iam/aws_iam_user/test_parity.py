@@ -5,6 +5,7 @@ import os
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
@@ -20,7 +21,7 @@ class TestParity:
         - Negative test: missing required properties
     """
 
-    @pytest.mark.aws_validated
+    @markers.parity.aws_validated
     def test_create_with_full_properties(self, aws_client, deploy_cfn_template, snapshot, cleanups):
         """A sort of smoke test that simply covers as many properties as possible"""
         # TODO: keep extending this test with more properties for higher parity with the official resource on AWS
