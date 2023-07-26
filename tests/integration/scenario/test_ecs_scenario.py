@@ -6,6 +6,9 @@ import requests
 from localstack.testing.scenario.provisioning import InfraProvisioner
 
 
+@pytest.mark.xfail(
+    reason="requires pro",
+)
 class TestEcsScenario:
     @pytest.fixture(scope="class", autouse=True)
     def infrastructure(self, aws_client):
@@ -27,9 +30,8 @@ class TestEcsScenario:
 
         provisioner = InfraProvisioner(aws_client)
         provisioner.add_cdk_stack(stack)
-        provisioner.provision()
-        yield provisioner
-        provisioner.teardown()
+        with provisioner.provisioner() as prov:
+            yield prov
 
     def test_scenario_validate_infra(self, aws_client, infrastructure):
         outputs = infrastructure.get_stack_outputs(stack_name="ClusterStack")

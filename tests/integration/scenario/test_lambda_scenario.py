@@ -5,7 +5,7 @@ import aws_cdk as cdk
 import aws_cdk.aws_lambda as awslambda
 import pytest
 
-from localstack.testing.scenario.provisioning import InfraProvisioner
+from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
 from localstack.utils.strings import to_str
 
 FN_CODE = """
@@ -50,10 +50,11 @@ class TestBasicLambda:
 class TestBasicLambdaInS3:
     @pytest.fixture(scope="class", autouse=True)
     def infrastructure(self, aws_client):
-        aws_client.s3.create_bucket(Bucket="lambda-s3-bucket")
+        bucket_name = "lambda-s3-bucket"
+        aws_client.s3.create_bucket(Bucket=bucket_name)
         aws_client.s3.upload_file(
             Filename=os.path.join(os.path.dirname(__file__), "./fn/handler.zip"),
-            Bucket="lambda-s3-bucket",
+            Bucket=bucket_name,
             Key="handler.zip",
         )
 
@@ -72,10 +73,12 @@ class TestBasicLambdaInS3:
         # provisioning
         provisioner = InfraProvisioner(aws_client)
         provisioner.add_cdk_stack(stack)
-        provisioner.provision()
-        yield provisioner
-        provisioner.teardown()
-        # TODO: clear & delete bucket manually
+        # clear & delete bucket manually
+        provisioner.add_custom_teardown(lambda: cleanup_s3_bucket(aws_client.s3, bucket_name))
+        provisioner.add_custom_teardown(lambda: aws_client.s3.delete_bucket(Bucket=bucket_name))
+
+        with provisioner.provisioner() as prov:
+            yield prov
 
     def test_scenario_validate_infra(self, aws_client, infrastructure):
         lambda_client = aws_client.awslambda
