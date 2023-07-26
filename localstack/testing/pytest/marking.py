@@ -15,8 +15,8 @@ class SkipSnapshotVerifyMarker:
     def __call__(
         self,
         *,
-        paths: Optional[list[str]] = None,
-        condition: Optional[Callable[[...], bool]] = None
+        paths: "Optional[list[str]]" = None,
+        condition: "Optional[Callable[[...], bool]]" = None
     ):
         ...
 
