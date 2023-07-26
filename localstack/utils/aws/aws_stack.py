@@ -369,6 +369,11 @@ def create_external_boto_client(
     *args,
     **kwargs,
 ):
+    warnings.warn(
+        "`create_external_boto_client` is obsolete. Use `localstack.aws.connect.connect_externally_to`",
+        DeprecationWarning,
+    )
+
     # Currently we use the Access Key ID field to specify the AWS account ID; this will change when IAM matures.
     # It is important that the correct Account ID is included in the request as that will determine access to namespaced resources.
     if aws_access_key_id is None:
