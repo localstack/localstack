@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from localstack.utils.strings import short_uid
 from localstack.testing.pytest import markers
+from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
 )
