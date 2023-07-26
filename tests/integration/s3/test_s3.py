@@ -1,4 +1,5 @@
 import base64
+import contextlib
 import datetime
 import gzip
 import hashlib
@@ -28,10 +29,11 @@ from botocore.exceptions import ClientError
 
 from localstack import config, constants
 from localstack.aws.api.s3 import StorageClass
-from localstack.config import LEGACY_S3_PROVIDER
+from localstack.config import LEGACY_S3_PROVIDER, STREAM_S3_PROVIDER
 from localstack.constants import (
     LOCALHOST_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
+    SECONDARY_TEST_AWS_REGION_NAME,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
@@ -40,6 +42,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON39,
 )
 from localstack.services.s3 import constants as s3_constants
+from localstack.services.s3.utils import parse_expiration_header
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
@@ -623,6 +626,22 @@ class TestS3:
         snapshot.match("get_object", obj)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @pytest.mark.parametrize("key", ["file%2Fname", "test@key/"])
+    def test_put_get_object_special_character(self, s3_bucket, aws_client, snapshot, key):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"test")
+        snapshot.match("put-object-special-char", resp)
+        resp = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        # FIXME: Moto will by default clean up key name, but they will return the cleaned up key name in ListObject...
+        if "%" not in key or is_aws_cloud():
+            snapshot.match("list-object-special-char", resp)
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("get-object-special-char", resp)
+        resp = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("del-object-special-char", resp)
+
+    @pytest.mark.aws_validated
     @pytest.mark.parametrize("delimiter", ["/", "%2F"])
     def test_list_objects_with_prefix(self, s3_create_bucket, delimiter, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -889,6 +908,33 @@ class TestS3:
         snapshot.match("list-all-uploads-completed", list_multipart_uploads)
 
     @pytest.mark.aws_validated
+    def test_multipart_no_such_upload(self, s3_bucket, snapshot, aws_client):
+        fake_upload_id = "fakeid"
+        fake_key = "fake-key"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=fake_key,
+                Body=BytesIO(b"data"),
+                PartNumber=1,
+                UploadId=fake_upload_id,
+            )
+        snapshot.match("upload-exc", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket, Key=fake_key, UploadId=fake_upload_id
+            )
+        snapshot.match("complete-exc", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.abort_multipart_upload(
+                Bucket=s3_bucket, Key=fake_key, UploadId=fake_upload_id
+            )
+        snapshot.match("abort-exc", e.value.response)
+
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
     )
@@ -985,7 +1031,7 @@ class TestS3:
         object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=key)
         snapshot.match("created-object-tags", object_tags)
 
-        tag_set = {"TagSet": [{"Key": "tag1", "Value": "tag1"}]}
+        tag_set = {"TagSet": [{"Key": "tag1", "Value": "tag1"}, {"Key": "tag2", "Value": ""}]}
         aws_client.s3.put_object_tagging(Bucket=s3_bucket, Key=key, Tagging=tag_set)
 
         object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=key)
@@ -1084,7 +1130,7 @@ class TestS3:
         response = aws_client.s3.put_object(**params)
         snapshot.match("put-object-generated", response)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        if is_aws_cloud() or is_asf_provider():
+        if is_aws_cloud() or not is_old_provider():
             # get_object_attributes is not implemented in moto
             object_attrs = aws_client.s3.get_object_attributes(
                 Bucket=bucket,
@@ -1112,8 +1158,9 @@ class TestS3:
         snapshot.match("get-object-with-checksum", get_object_with_checksum)
 
     @pytest.mark.aws_validated
-    @pytest.mark.parametrize("algorithm", ["SHA256", None])
+    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", None])
     @pytest.mark.xfail(condition=LEGACY_S3_PROVIDER, reason="Patched only in ASF provider")
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_get_object_checksum(self, s3_bucket, snapshot, algorithm, aws_client):
         key = "test-checksum-retrieval"
         body = b"test-checksum"
@@ -1130,6 +1177,12 @@ class TestS3:
             Bucket=s3_bucket, Key=key, ChecksumMode="ENABLED"
         )
         snapshot.match("get-object-with-checksum", get_object_with_checksum)
+
+        # test that the casing of ChecksumMode is not important, the spec indicate only ENABLED
+        head_object_with_checksum = aws_client.s3.get_object(
+            Bucket=s3_bucket, Key=key, ChecksumMode="enabled"
+        )
+        snapshot.match("head-object-with-checksum", head_object_with_checksum)
 
         object_attrs = aws_client.s3.get_object_attributes(
             Bucket=s3_bucket,
@@ -1213,6 +1266,37 @@ class TestS3:
         snapshot.match("head_object_copy", head_object)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_s3_copy_metadata_directive_copy(self, s3_create_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        object_key = "source-object"
+        bucket_name = s3_create_bucket()
+        resp = aws_client.s3.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body="test",
+            Metadata={"key": "value"},
+        )
+        snapshot.match("put-object", resp)
+
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
+        snapshot.match("head-object", head_object)
+
+        object_key_copy = f"{object_key}-copy"
+        resp = aws_client.s3.copy_object(
+            Bucket=bucket_name,
+            CopySource=f"{bucket_name}/{object_key}",
+            Key=object_key_copy,
+            Metadata={"another-key": "value"},  # this will be ignored
+            MetadataDirective="COPY",
+        )
+        snapshot.match("copy-object", resp)
+
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key_copy)
+        snapshot.match("head-object-copy", head_object)
+
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
     def test_s3_copy_content_type_and_metadata(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -1256,6 +1340,583 @@ class TestS3:
 
         head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key_copy)
         snapshot.match("head_object_second_copy", head_object)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_s3_copy_object_in_place(self, s3_create_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("DisplayName"),
+                snapshot.transform.key_value("ID", value_replacement="owner-id"),
+            ]
+        )
+        object_key = "source-object"
+        bucket_name = s3_create_bucket()
+        # need to delete to allow public-read ACL on the bucket
+        aws_client.s3.delete_bucket_ownership_controls(Bucket=bucket_name)
+        aws_client.s3.delete_public_access_block(Bucket=bucket_name)
+
+        resp = aws_client.s3.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='{"key": "value"}',
+            ContentType="application/json",
+            Metadata={"key": "value"},
+        )
+        snapshot.match("put_object", resp)
+
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
+        snapshot.match("head_object", head_object)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=bucket_name,
+            Key=object_key,
+            ObjectAttributes=["StorageClass"],
+        )
+        snapshot.match("object-attrs", object_attrs)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=bucket_name, CopySource=f"{bucket_name}/{object_key}", Key=object_key
+            )
+        snapshot.match("copy-object-in-place-no-change", e.value.response)
+
+        # it seems as long as you specify the field necessary, it does not check if the previous value was the same
+        # and allows the copy
+
+        # copy the object with the same StorageClass as the source object
+        resp = aws_client.s3.copy_object(
+            Bucket=bucket_name,
+            CopySource=f"{bucket_name}/{object_key}",
+            Key=object_key,
+            ChecksumAlgorithm="SHA256",
+            StorageClass=StorageClass.STANDARD,
+        )
+        snapshot.match("copy-object-in-place-with-storage-class", resp)
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=bucket_name,
+            Key=object_key,
+            ObjectAttributes=["StorageClass"],
+        )
+        snapshot.match("object-attrs-after-copy", object_attrs)
+
+        # get source object ACl, private
+        object_acl = aws_client.s3.get_object_acl(Bucket=bucket_name, Key=object_key)
+        snapshot.match("object-acl", object_acl)
+        # copy the object with any ACL does not work, even if different from source object
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=bucket_name,
+                CopySource=f"{bucket_name}/{object_key}",
+                Key=object_key,
+                ACL="public-read",
+            )
+        snapshot.match("copy-object-in-place-with-acl", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_s3_copy_object_in_place_storage_class(self, s3_bucket, snapshot, aws_client):
+        # this test will validate that setting StorageClass (even the same as source) allows a copy in place
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "source-object"
+
+        resp = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body="test",
+            StorageClass=StorageClass.STANDARD,
+        )
+        snapshot.match("put-object", resp)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object", head_object)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ObjectAttributes=["StorageClass"],
+        )
+        snapshot.match("object-attrs", object_attrs)
+
+        # copy the object with the same StorageClass as the source object
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+            StorageClass=StorageClass.STANDARD,
+        )
+        snapshot.match("copy-object-in-place-with-storage-class", resp)
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ObjectAttributes=["StorageClass"],
+        )
+        snapshot.match("object-attrs-after-copy", object_attrs)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..ServerSideEncryption",
+            "$..SSEKMSKeyId",  # TODO: fix this in moto, when not providing a KMS key, it should use AWS managed one
+            "$..ETag",  # Etag are different because of encryption
+        ]
+    )
+    def test_s3_copy_object_in_place_with_encryption(
+        self, s3_bucket, kms_create_key, snapshot, aws_client
+    ):
+        # this test will validate encryption parameters that allows a copy in place
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("Description"))
+        snapshot.add_transformer(snapshot.transform.key_value("SSEKMSKeyId"))
+        object_key = "source-object"
+        kms_key_id = kms_create_key()["KeyId"]
+
+        resp = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body="test",
+            ServerSideEncryption="aws:kms",
+            BucketKeyEnabled=True,
+            SSEKMSKeyId=kms_key_id,
+        )
+        snapshot.match("put-object-with-kms-encryption", resp)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object", head_object)
+
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+            ServerSideEncryption="aws:kms",  # this will use AWS managed key, and not copy the original object key
+        )
+        snapshot.match("copy-object-in-place-with-sse", resp)
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-copy-with-sse", head_object)
+
+        # this is an edge case, if the source object SSE was not AES256, AWS allows you to not specify any fields
+        # as it will use AES256 by default and is different from the source key
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+        )
+        snapshot.match("copy-object-in-place-without-kms-sse", resp)
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-copy-without-kms-sse", head_object)
+
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+            ServerSideEncryption="AES256",
+        )
+        snapshot.match("copy-object-in-place-with-aes", resp)
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-copy-with-aes", head_object)
+
+    @pytest.mark.aws_validated
+    def test_copy_in_place_with_bucket_encryption(self, aws_client, s3_bucket, snapshot):
+        response = aws_client.s3.put_bucket_encryption(
+            Bucket=s3_bucket,
+            ServerSideEncryptionConfiguration={
+                "Rules": [
+                    {
+                        "ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"},
+                        "BucketKeyEnabled": False,
+                    },
+                ]
+            },
+        )
+        snapshot.match("put-bucket-encryption", response)
+
+        key_name = "test-enc"
+        response = aws_client.s3.put_object(
+            Body=b"",
+            Bucket=s3_bucket,
+            Key=key_name,
+        )
+        snapshot.match("put-obj", response)
+
+        response = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource={"Bucket": s3_bucket, "Key": key_name},
+            Key=key_name,
+        )
+        snapshot.match("copy-obj", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_s3_copy_object_in_place_metadata_directive(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "source-object"
+        resp = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body='{"key": "value"}',
+            ContentType="application/json",
+            Metadata={"key": "value"},
+        )
+        snapshot.match("put_object", resp)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head_object", head_object)
+
+        with pytest.raises(ClientError) as e:
+            # copy the object with the same Metadata as the source object, it will fail
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{object_key}",
+                Key=object_key,
+                Metadata={"key": "value"},
+            )
+        snapshot.match("no-metadata-directive-fail", e.value.response)
+
+        # copy the object in place, it needs MetadataDirective="REPLACE"
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+            Metadata={"key2": "value2"},
+            MetadataDirective="REPLACE",
+        )
+        snapshot.match("copy-replace-directive", resp)
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-replace-directive", head_object)
+
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+            MetadataDirective="COPY",  # this is the default value
+            StorageClass=StorageClass.STANDARD,  # we need to add storage class to make the copy request legal
+        )
+        snapshot.match("copy-copy-directive", resp)
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-copy-directive", head_object)
+
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+            MetadataDirective="COPY",
+            Metadata={"key3": "value3"},  # assert that this is ignored
+            StorageClass=StorageClass.STANDARD,  # we need to add storage class to make the copy request legal
+        )
+        snapshot.match("copy-copy-directive-ignore", resp)
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-copy-directive-ignore", head_object)
+
+        # copy the object with no Metadata as the source object but with REPLACE
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+            MetadataDirective="REPLACE",
+        )
+        snapshot.match("copy-replace-directive-empty", resp)
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-replace-directive-empty", head_object)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_s3_copy_object_in_place_website_redirect_location(
+        self, s3_bucket, snapshot, aws_client
+    ):
+        # this test will validate that setting WebsiteRedirectLocation (even the same as source) allows a copy in place
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "source-object"
+
+        resp = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body="test",
+            WebsiteRedirectLocation="/test/direct",
+        )
+        snapshot.match("put-object", resp)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object", head_object)
+
+        # copy the object with the same WebsiteRedirectLocation as the source object
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+            WebsiteRedirectLocation="/test/direct",
+        )
+        snapshot.match("copy-object-in-place-with-website-redirection", resp)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object-after-copy", head_object)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_s3_copy_object_legal_hold(self, s3_create_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "source-object"
+        dest_key = "dest-key"
+        # creating a bucket with ObjectLockEnabledForBucket enables versioning by default, as it's not allowed otherwise
+        # write test for this
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
+
+        resp = aws_client.s3.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='{"key": "value"}',
+            ObjectLockLegalHoldStatus="ON",
+        )
+        snapshot.match("put_object", resp)
+
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
+        snapshot.match("head_object", head_object)
+
+        resp = aws_client.s3.copy_object(
+            Bucket=bucket_name,
+            CopySource=f"{bucket_name}/{object_key}",
+            Key=dest_key,
+        )
+        snapshot.match("copy-legal-hold", resp)
+        # the destination key did not keep the legal hold from the source key
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=dest_key)
+        snapshot.match("head-dest-key", head_object)
+
+        # disabled the Legal Hold so that the fixture can clean up
+        for key in (object_key, dest_key):
+            with contextlib.suppress(ClientError):
+                aws_client.s3.put_object_legal_hold(
+                    Bucket=bucket_name, Key=key, LegalHold={"Status": "OFF"}
+                )
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_s3_copy_object_lock(self, s3_create_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "source-object"
+        dest_key = "dest-key"
+        # creating a bucket with ObjectLockEnabledForBucket enables versioning by default, as it's not allowed otherwise
+        # see https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock-overview.html
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
+
+        resp = aws_client.s3.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='{"key": "value"}',
+            ObjectLockMode="GOVERNANCE",  # allows the root user to delete it
+            ObjectLockRetainUntilDate=datetime.datetime.now() + datetime.timedelta(milliseconds=1),
+        )
+        snapshot.match("put-source-object", resp)
+
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
+        snapshot.match("head-source-object", head_object)
+
+        resp = aws_client.s3.copy_object(
+            Bucket=bucket_name,
+            CopySource=f"{bucket_name}/{object_key}",
+            Key=dest_key,
+        )
+        snapshot.match("copy-lock", resp)
+        # the destination key did not keep the lock nor lock until from the source key
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=dest_key)
+        snapshot.match("head-dest-key", head_object)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_s3_copy_object_storage_class(self, s3_bucket, snapshot, aws_client):
+        # this test will validate that setting StorageClass (even the same as source) allows a copy in place
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "source-object"
+        dest_key = "dest-object"
+
+        resp = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body="test",
+            StorageClass=StorageClass.STANDARD_IA,
+        )
+        snapshot.match("put-object", resp)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object", head_object)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ObjectAttributes=["StorageClass"],
+        )
+        snapshot.match("object-attrs", object_attrs)
+
+        # copy the object to see if it keeps the StorageClass from the source object
+        resp = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=dest_key,
+        )
+        snapshot.match("copy-object-in-place-with-storage-class", resp)
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=dest_key,
+            ObjectAttributes=["StorageClass"],
+        )
+        # the destination key does not keep the source key storage class
+        snapshot.match("object-attrs-after-copy", object_attrs)
+
+        # try copying in place, as the StorageClass by default would be STANDARD and different from source
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{object_key}",
+                Key=object_key,
+            )
+        snapshot.match("exc-invalid-request-storage-class", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256"])
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_s3_copy_object_with_checksum(self, s3_create_bucket, snapshot, aws_client, algorithm):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "source-object"
+        bucket_name = s3_create_bucket()
+        # create key with no checksum
+        resp = aws_client.s3.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='{"key": "value"}',
+            ContentType="application/json",
+            Metadata={"key": "value"},
+        )
+        snapshot.match("put-object-no-checksum", resp)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=bucket_name,
+            Key=object_key,
+            ObjectAttributes=["Checksum"],
+        )
+        snapshot.match("object-attrs", object_attrs)
+
+        # copy the object in place with some metadata and replacing it, but with a checksum
+        resp = aws_client.s3.copy_object(
+            Bucket=bucket_name,
+            CopySource=f"{bucket_name}/{object_key}",
+            Key=object_key,
+            ChecksumAlgorithm=algorithm,
+            Metadata={"key1": "value1"},
+            MetadataDirective="REPLACE",
+        )
+        snapshot.match("copy-object-in-place-with-checksum", resp)
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=bucket_name,
+            Key=object_key,
+            ObjectAttributes=["Checksum"],
+        )
+        snapshot.match("object-attrs-after-copy", object_attrs)
+
+        dest_key = "dest-object"
+        # copy the object to check if the new object has the checksum too
+        resp = aws_client.s3.copy_object(
+            Bucket=bucket_name,
+            CopySource=f"{bucket_name}/{object_key}",
+            Key=dest_key,
+        )
+        snapshot.match("copy-object-to-dest-keep-checksum", resp)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_s3_copy_object_preconditions(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "source-object"
+        dest_key = "dest-object"
+        # create key with no checksum
+        put_object = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body=b"data",
+        )
+        head_obj = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object", head_obj)
+
+        # wait a bit for the `unmodified_since` value so that it's unvalid.
+        # S3 compares it the last-modified field, but you can't set the value in the future otherwise it ignores it
+        # It needs to be now or less, but the object needs to be a bit more recent than that.
+        time.sleep(3)
+
+        # we're testing the order of validation at the same time by validating all of them at once, by elimination
+        now = datetime.datetime.now().astimezone(tz=ZoneInfo("GMT"))
+        wrong_unmodified_since = now - datetime.timedelta(days=1)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{object_key}",
+                Key=dest_key,
+                CopySourceIfModifiedSince=now,
+                CopySourceIfUnmodifiedSince=wrong_unmodified_since,
+                CopySourceIfMatch="etag123",
+                CopySourceIfNoneMatch=put_object["ETag"],
+            )
+        snapshot.match("copy-precondition-if-match", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{object_key}",
+                Key=dest_key,
+                CopySourceIfModifiedSince=now,
+                CopySourceIfUnmodifiedSince=wrong_unmodified_since,
+                CopySourceIfNoneMatch=put_object["ETag"],
+            )
+        snapshot.match("copy-precondition-if-unmodified-since", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{object_key}",
+                Key=dest_key,
+                CopySourceIfModifiedSince=now,
+                CopySourceIfNoneMatch=put_object["ETag"],
+            )
+        snapshot.match("copy-precondition-if-none-match", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{object_key}",
+                Key=dest_key,
+                CopySourceIfModifiedSince=now,
+            )
+        snapshot.match("copy-precondition-if-modified-since", e.value.response)
+
+        # AWS will ignore the value if it's in the future
+        copy_obj = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=dest_key,
+            CopySourceIfModifiedSince=now + datetime.timedelta(days=1),
+        )
+        snapshot.match("copy-ignore-future-modified-since", copy_obj)
+
+        # AWS will ignore the missing quotes around the ETag and still reject the request
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource=f"{s3_bucket}/{object_key}",
+                Key=dest_key,
+                CopySourceIfNoneMatch=put_object["ETag"].strip('"'),
+            )
+        snapshot.match("copy-etag-missing-quotes", e.value.response)
+
+        # Positive tests with all conditions checked
+        copy_obj_all_positive = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=dest_key,
+            CopySourceIfMatch=put_object["ETag"].strip('"'),
+            CopySourceIfNoneMatch="etag123",
+            CopySourceIfModifiedSince=now - datetime.timedelta(days=1),
+            CopySourceIfUnmodifiedSince=now,
+        )
+        snapshot.match("copy-success", copy_obj_all_positive)
 
     @pytest.mark.aws_validated
     # behaviour is wrong in Legacy, we inherit Bucket ACL
@@ -1677,106 +2338,6 @@ class TestS3:
         snapshot.match("get_object", result)
 
     @pytest.mark.aws_validated
-    def test_delete_bucket_lifecycle_configuration(self, s3_bucket, snapshot, aws_client):
-        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
-        snapshot.match("get-bucket-lifecycle-exc-1", e.value.response)
-
-        resp = aws_client.s3.delete_bucket_lifecycle(Bucket=s3_bucket)
-        snapshot.match("delete-bucket-lifecycle-no-bucket", resp)
-
-        lfc = {
-            "Rules": [
-                {
-                    "Expiration": {"Days": 7},
-                    "ID": "wholebucket",
-                    "Filter": {"Prefix": ""},
-                    "Status": "Enabled",
-                }
-            ]
-        }
-        aws_client.s3.put_bucket_lifecycle_configuration(
-            Bucket=s3_bucket, LifecycleConfiguration=lfc
-        )
-        result = retry(
-            aws_client.s3.get_bucket_lifecycle_configuration, retries=3, sleep=1, Bucket=s3_bucket
-        )
-        snapshot.match("get-bucket-lifecycle-conf", result)
-        aws_client.s3.delete_bucket_lifecycle(Bucket=s3_bucket)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
-        snapshot.match("get-bucket-lifecycle-exc-2", e.value.response)
-
-    @pytest.mark.aws_validated
-    def test_delete_lifecycle_configuration_on_bucket_deletion(
-        self, s3_create_bucket, snapshot, aws_client
-    ):
-        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
-        bucket_name = f"test-bucket-{short_uid()}"  # keep the same name for both bucket
-        s3_create_bucket(Bucket=bucket_name)
-        lfc = {
-            "Rules": [
-                {
-                    "Expiration": {"Days": 7},
-                    "ID": "wholebucket",
-                    "Filter": {"Prefix": ""},
-                    "Status": "Enabled",
-                }
-            ]
-        }
-        aws_client.s3.put_bucket_lifecycle_configuration(
-            Bucket=bucket_name, LifecycleConfiguration=lfc
-        )
-        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=bucket_name)
-        snapshot.match("get-bucket-lifecycle-conf", result)
-        aws_client.s3.delete_bucket(Bucket=bucket_name)
-        s3_create_bucket(Bucket=bucket_name)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.get_bucket_lifecycle_configuration(Bucket=bucket_name)
-        snapshot.match("get-bucket-lifecycle-exc", e.value.response)
-
-    @pytest.mark.aws_validated
-    @pytest.mark.xfail(
-        reason="Bucket lifecycle doesn't affect object expiration in both providers for now"
-    )
-    def test_bucket_lifecycle_configuration_object_expiry(self, s3_bucket, snapshot, aws_client):
-        snapshot.add_transformer(
-            [
-                snapshot.transform.key_value("BucketName"),
-                snapshot.transform.key_value(
-                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
-                ),
-            ]
-        )
-
-        lfc = {
-            "Rules": [
-                {
-                    "Expiration": {"Days": 7},
-                    "ID": "wholebucket",
-                    "Filter": {"Prefix": ""},
-                    "Status": "Enabled",
-                }
-            ]
-        }
-        aws_client.s3.put_bucket_lifecycle_configuration(
-            Bucket=s3_bucket, LifecycleConfiguration=lfc
-        )
-        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
-        snapshot.match("get-bucket-lifecycle-conf", result)
-
-        key = "test-object-expiry"
-        aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
-
-        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
-        snapshot.match("head-object-expiry", response)
-        response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
-        snapshot.match("get-object-expiry", response)
-
-    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
@@ -1801,6 +2362,22 @@ class TestS3:
         content = resp["Body"].read()
         assert chunk_size == len(content)
         snapshot.match("get-object", resp)
+
+    @pytest.mark.aws_validated
+    def test_download_fileobj_multiple_range_requests(self, s3_bucket, aws_client):
+        object_key = "test-download_fileobj"
+
+        body = os.urandom(70_000 * 100 * 5)
+        aws_client.s3.upload_fileobj(BytesIO(body), s3_bucket, object_key)
+
+        # get object and compare results
+        downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        assert downloaded_object["Body"].read() == body
+
+        # use download_fileobj to verify multithreaded range requests work
+        test_fileobj = BytesIO()
+        aws_client.s3.download_fileobj(Bucket=s3_bucket, Key=object_key, Fileobj=test_fileobj)
+        assert body == test_fileobj.getvalue()
 
     @pytest.mark.aws_validated
     def test_get_range_object_headers(self, s3_bucket, aws_client):
@@ -1841,6 +2418,7 @@ class TestS3:
             "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD",
             "X-Amz-Date": "20190918T051509Z",
             "X-Amz-Decoded-Content-Length": str(len(body)),
+            "Content-Encoding": "aws-chunked",
         }
         data = (
             "d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
@@ -1854,6 +2432,112 @@ class TestS3:
         download_file_object = to_str(downloaded_object["Body"].read())
         assert len(body) == len(str(download_file_object))
         assert body == str(download_file_object)
+
+    @pytest.mark.only_localstack
+    @pytest.mark.xfail(
+        reason="Not implemented in other providers than stream",
+        condition=not STREAM_S3_PROVIDER,
+    )
+    def test_put_object_chunked_newlines_with_checksum(self, s3_bucket, aws_client):
+        # Boto still does not support chunk encoding, which means we can't test with the client nor
+        # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
+        # Test for https://github.com/localstack/localstack/issues/6659
+        object_key = "data"
+        body = "Hello Blob"
+        valid_checksum = hash_sha256(body)
+        headers = {
+            "Authorization": aws_stack.mock_aws_request_headers("s3")["Authorization"],
+            "Content-Type": "audio/mpeg",
+            "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER",
+            "X-Amz-Date": "20190918T051509Z",
+            "X-Amz-Decoded-Content-Length": str(len(body)),
+            "x-amz-sdk-checksum-algorithm": "SHA256",
+            "x-amz-trailer": "x-amz-checksum-sha256",
+            "Content-Encoding": "aws-chunked",
+        }
+
+        def get_data(content: str, checksum_value: str) -> str:
+            return (
+                "a;chunk-signature=b5311ac60a88890e740a41e74f3d3b03179fd058b1e24bb3ab224042377c4ec9\r\n"
+                f"{content}\r\n"
+                "0;chunk-signature=78fae1c533e34dbaf2b83ad64ff02e4b64b7bc681ea76b6acf84acf1c48a83cb\r\n"
+                f"x-amz-checksum-sha256:{checksum_value}\r\n"
+                "x-amz-trailer-signature:712fb67227583c88ac32f468fc30a249cf9ceeb0d0e947ea5e5209a10b99181c\r\n\r\n"
+            )
+
+        # put object
+        url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}"
+        valid_data = get_data(body, valid_checksum)
+        requests.put(url, valid_data, headers=headers, verify=False)
+        # get object and assert content length
+        downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        download_file_object = to_str(downloaded_object["Body"].read())
+        assert len(body) == len(str(download_file_object))
+        assert body == str(download_file_object)
+
+        # test with wrong checksum
+        wrong_data = get_data(body, "wrongchecksum")
+        request = requests.put(url, wrong_data, headers=headers, verify=False)
+        assert request.status_code == 400
+        assert "Value for x-amz-checksum-sha256 header is invalid." in request.text
+
+    @pytest.mark.only_localstack
+    def test_upload_part_chunked_newlines_valid_etag(self, s3_bucket, aws_client):
+        # Boto still does not support chunk encoding, which means we can't test with the client nor
+        # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
+        # Test for https://github.com/localstack/localstack/issues/8703
+        object_key = "data"
+        body = "Hello Blob"
+        precalculated_etag = hashlib.md5(body.encode()).hexdigest()
+        headers = {
+            "Authorization": aws_stack.mock_aws_request_headers("s3")["Authorization"],
+            "Content-Type": "audio/mpeg",
+            "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER",
+            "X-Amz-Date": "20190918T051509Z",
+            "X-Amz-Decoded-Content-Length": str(len(body)),
+            "Content-Encoding": "aws-chunked",
+        }
+
+        data = (
+            "a;chunk-signature=b5311ac60a88890e740a41e74f3d3b03179fd058b1e24bb3ab224042377c4ec9\r\n"
+            f"{body}\r\n"
+            "0;chunk-signature=78fae1c533e34dbaf2b83ad64ff02e4b64b7bc681ea76b6acf84acf1c48a83cb\r\n"
+        )
+
+        key_name = "test-multipart-chunked"
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+        )
+        upload_id = response["UploadId"]
+
+        # # upload the part 1
+        url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}?partNumber={1}&uploadId={upload_id}"
+        response = requests.put(url, data, headers=headers, verify=False)
+        assert response.ok
+        part_etag = response.headers.get("ETag")
+        xml_response = xmltodict.parse(response.content)
+        assert "UploadPartOutput" in xml_response
+
+        # validate that the object etag is the same as the pre-calculated one
+        assert part_etag.strip('"') == precalculated_etag
+
+        multipart_upload_parts = [
+            {
+                "ETag": part_etag,
+                "PartNumber": 1,
+            }
+        ]
+
+        aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+
+        completed_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+        assert completed_object["Body"].read() == to_bytes(body)
 
     @pytest.mark.only_localstack
     def test_virtual_host_proxy_does_not_decode_gzip(self, aws_client, s3_bucket):
@@ -3254,10 +3938,20 @@ class TestS3:
             )
         snapshot.match("put-obj-disabled-key", e.value.response)
 
+        # schedule the deletion of the key
+        aws_client.kms.schedule_key_deletion(KeyId=kms_key["KeyId"], PendingWindowInDays=7)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+            )
+        snapshot.match("get-obj-pending-deletion-key", e.value.response)
+
     @pytest.mark.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
     )
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_complete_multipart_parts_order(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -3289,6 +3983,16 @@ class TestS3:
                 UploadId=upload_id,
             )
             multipart_upload_parts.append({"ETag": response["ETag"], "PartNumber": part_number})
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=BytesIO(b""),
+                PartNumber=-1,
+                UploadId=upload_id,
+            )
+        snapshot.match("upload-part-negative-part-number", e.value.response)
 
         # testing completing the multipart with an unordered sequence of parts
         with pytest.raises(ClientError) as e:
@@ -3397,6 +4101,7 @@ class TestS3:
         """
         Test that the response structure is correct for the S3 API
         """
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="test", Body="test")
         headers = {"x-amz-content-sha256": "UNSIGNED-PAYLOAD"}
 
         s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
@@ -3414,6 +4119,12 @@ class TestS3:
 
         resp_dict = xmltodict.parse(resp.content)
         assert "ListAllMyBucketsResult" in resp_dict
+        # validate that the Owner tag is first, before Buckets. This is because the Java SDK is counting on the order
+        # to properly set the Owner value to the buckets.
+        resp_dict["ListAllMyBucketsResult"].pop("@xmlns", None)
+        list_buckets_tags = list(resp_dict["ListAllMyBucketsResult"].keys())
+        assert list_buckets_tags[0] == "Owner"
+        assert list_buckets_tags[1] == "Buckets"
 
         # Lists all objects in a bucket
         bucket_url = _bucket_url(s3_bucket)
@@ -3421,6 +4132,11 @@ class TestS3:
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
+        # validate that the Contents tag is last, after BucketName. Again for the Java SDK to properly set the
+        # BucketName value to the objects.
+        list_objects_tags = list(resp_dict["ListBucketResult"].keys())
+        assert list_objects_tags.index("Name") < list_objects_tags.index("Contents")
+        assert list_objects_tags[-1] == "Contents"
 
         # Lists all objects V2 in a bucket
         list_objects_v2_url = f"{bucket_url}?list-type=2"
@@ -3428,6 +4144,10 @@ class TestS3:
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
+        # same as ListObjects
+        list_objects_v2_tags = list(resp_dict["ListBucketResult"].keys())
+        assert list_objects_v2_tags.index("Name") < list_objects_v2_tags.index("Contents")
+        assert list_objects_v2_tags[-1] == "Contents"
 
         # Lists all multipart uploads in a bucket
         list_multipart_uploads_url = f"{bucket_url}?uploads"
@@ -3886,6 +4606,774 @@ class TestS3:
 
         response = aws_client.s3.get_object(Bucket=bucket_1, Key=key_name)
         snapshot.match("get-obj-default-kms-s3-key-from-bucket", response)
+
+    @pytest.mark.aws_validated
+    def test_s3_analytics_configurations(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value(
+                    "Bucket", reference_replacement=False, value_replacement="<bucket>"
+                ),
+            ]
+        )
+
+        bucket = s3_create_bucket()
+        analytics_bucket = s3_create_bucket()
+        analytics_bucket_arn = f"arn:aws:s3:::{analytics_bucket}"
+
+        storage_analysis = {
+            "Id": "config_with_storage_analysis_1",
+            "Filter": {
+                "Prefix": "test_ls",
+            },
+            "StorageClassAnalysis": {
+                "DataExport": {
+                    "OutputSchemaVersion": "V_1",
+                    "Destination": {
+                        "S3BucketDestination": {
+                            "Format": "CSV",
+                            "Bucket": analytics_bucket_arn,
+                            "Prefix": "test",
+                        }
+                    },
+                }
+            },
+        }
+        # id in storage analysis is different from the one in the request
+        with pytest.raises(ClientError) as err_put:
+            aws_client.s3.put_bucket_analytics_configuration(
+                Bucket=bucket,
+                Id="different-id",
+                AnalyticsConfiguration=storage_analysis,
+            )
+        snapshot.match("put_config_with_storage_analysis_err", err_put.value.response)
+
+        # non-existing storage analysis get
+        with pytest.raises(ClientError) as err_get:
+            aws_client.s3.get_bucket_analytics_configuration(
+                Bucket=bucket,
+                Id="non-existing",
+            )
+        snapshot.match("get_config_with_storage_analysis_err", err_get.value.response)
+
+        # non-existing storage analysis delete
+        with pytest.raises(ClientError) as err_delete:
+            aws_client.s3.delete_bucket_analytics_configuration(
+                Bucket=bucket,
+                Id=storage_analysis["Id"],
+            )
+        snapshot.match("delete_config_with_storage_analysis_err", err_delete.value.response)
+
+        # put storage analysis
+        response = aws_client.s3.put_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+            AnalyticsConfiguration=storage_analysis,
+        )
+        snapshot.match("put_config_with_storage_analysis_1", response)
+
+        response = aws_client.s3.get_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+        )
+        snapshot.match("get_config_with_storage_analysis_1", response)
+
+        # update storage analysis
+        storage_analysis["Filter"]["Prefix"] = "test_ls_2"
+        aws_client.s3.put_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+            AnalyticsConfiguration=storage_analysis,
+        )
+        response = aws_client.s3.get_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+        )
+        snapshot.match("get_config_with_storage_analysis_2", response)
+
+        # add a new storage analysis
+        storage_analysis["Id"] = "config_with_storage_analysis_2"
+        storage_analysis["Filter"]["Prefix"] = "test_ls_3"
+        aws_client.s3.put_bucket_analytics_configuration(
+            Bucket=bucket, Id=storage_analysis["Id"], AnalyticsConfiguration=storage_analysis
+        )
+        response = aws_client.s3.get_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+        )
+        snapshot.match("get_config_with_storage_analysis_3", response)
+
+        response = aws_client.s3.list_bucket_analytics_configurations(Bucket=bucket)
+        snapshot.match("list_config_with_storage_analysis_1", response)
+
+        # delete storage analysis
+        aws_client.s3.delete_bucket_analytics_configuration(
+            Bucket=bucket,
+            Id=storage_analysis["Id"],
+        )
+        response = aws_client.s3.list_bucket_analytics_configurations(Bucket=bucket)
+        snapshot.match("list_config_with_storage_analysis_2", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_s3_legal_hold_lock_versioned(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "locked-object"
+        # creating a bucket with ObjectLockEnabledForBucket enables versioning by default, as it's not allowed otherwise
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
+
+        # create an object, get version1
+        resp = aws_client.s3.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='{"key": "value"}',
+        )
+        snapshot.match("put-object", resp)
+        version_id = resp["VersionId"]
+
+        # put a legal hold on the object with version1
+        resp = aws_client.s3.put_object_legal_hold(
+            Bucket=bucket_name,
+            Key=object_key,
+            VersionId=version_id,
+            LegalHold={"Status": "ON"},
+        )
+        snapshot.match("put-object-legal-hold-ver1", resp)
+
+        head_object = aws_client.s3.head_object(
+            Bucket=bucket_name, Key=object_key, VersionId=version_id
+        )
+        snapshot.match("head-object-ver1", head_object)
+
+        resp = aws_client.s3.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='{"key": "value"}',
+        )
+        snapshot.match("put-object-2", resp)
+        version_id_2 = resp["VersionId"]
+
+        # put a legal hold on the object with version2
+        resp = aws_client.s3.put_object_legal_hold(
+            Bucket=bucket_name,
+            Key=object_key,
+            VersionId=version_id_2,
+            LegalHold={"Status": "ON"},
+        )
+        snapshot.match("put-object-legal-hold-ver2", resp)
+
+        head_object = aws_client.s3.head_object(
+            Bucket=bucket_name, Key=object_key, VersionId=version_id_2
+        )
+        snapshot.match("head-object-ver2", head_object)
+
+        # remove the legal hold from the version1
+        resp = aws_client.s3.put_object_legal_hold(
+            Bucket=bucket_name,
+            Key=object_key,
+            VersionId=version_id,
+            LegalHold={"Status": "OFF"},
+        )
+        snapshot.match("remove-object-legal-hold-ver1", resp)
+
+        head_object = aws_client.s3.head_object(
+            Bucket=bucket_name, Key=object_key, VersionId=version_id
+        )
+        snapshot.match("head-object-ver1-no-lock", head_object)
+
+        # now delete the object with version1, the legal hold should be off
+        resp = aws_client.s3.delete_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            VersionId=version_id,
+        )
+        snapshot.match("delete-object-ver1", resp)
+
+        # disabled the Legal Hold so that the fixture can clean up
+        aws_client.s3.put_object_legal_hold(
+            Bucket=bucket_name,
+            Key=object_key,
+            LegalHold={"Status": "OFF"},
+            VersionId=version_id_2,
+        )
+
+    @pytest.mark.aws_validated
+    def test_s3_intelligent_tier_config(self, aws_client, s3_create_bucket, snapshot):
+        bucket = s3_create_bucket()
+        intelligent_tier_configuration = {
+            "Id": "test1",
+            "Filter": {
+                "Prefix": "test1",
+            },
+            "Status": "Enabled",
+            "Tierings": [
+                {"Days": 90, "AccessTier": "ARCHIVE_ACCESS"},
+            ],
+        }
+
+        # different id in tiering config and in put request
+        with pytest.raises(ClientError) as put_err_1:
+            aws_client.s3.put_bucket_intelligent_tiering_configuration(
+                Bucket=bucket,
+                Id="incorrect_id",
+                IntelligentTieringConfiguration=intelligent_tier_configuration,
+            )
+        snapshot.match(
+            "put_bucket_intelligent_tiering_configuration_err_1`", put_err_1.value.response
+        )
+
+        # put tiering config
+        response = aws_client.s3.put_bucket_intelligent_tiering_configuration(
+            Bucket=bucket,
+            Id=intelligent_tier_configuration["Id"],
+            IntelligentTieringConfiguration=intelligent_tier_configuration,
+        )
+        snapshot.match("put_bucket_intelligent_tiering_configuration_1", response)
+
+        # get tiering config and snapshot match
+        response = aws_client.s3.get_bucket_intelligent_tiering_configuration(
+            Bucket=bucket,
+            Id=intelligent_tier_configuration["Id"],
+        )
+        snapshot.match("get_bucket_intelligent_tiering_configuration_1", response)
+
+        # put tiering config with different id
+        intelligent_tier_configuration["Id"] = "test2"
+        intelligent_tier_configuration["Filter"]["Prefix"] = "test2"
+
+        aws_client.s3.put_bucket_intelligent_tiering_configuration(
+            Bucket=bucket,
+            Id=intelligent_tier_configuration["Id"],
+            IntelligentTieringConfiguration=intelligent_tier_configuration,
+        )
+
+        response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=bucket)
+        snapshot.match("list_bucket_intelligent_tiering_configurations_1", response)
+
+        # update the config by adding config with same id
+        intelligent_tier_configuration["Id"] = "test1"
+        intelligent_tier_configuration["Filter"]["Prefix"] = "testupdate"
+
+        aws_client.s3.put_bucket_intelligent_tiering_configuration(
+            Bucket=bucket,
+            Id=intelligent_tier_configuration["Id"],
+            IntelligentTieringConfiguration=intelligent_tier_configuration,
+        )
+
+        response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=bucket)
+        snapshot.match("list_bucket_intelligent_tiering_configurations_2", response)
+
+        # delete the config with non-existing bucket
+        with pytest.raises(ClientError) as delete_err_1:
+            aws_client.s3.delete_bucket_intelligent_tiering_configuration(
+                Bucket="non-existing-bucket",
+                Id=intelligent_tier_configuration["Id"],
+            )
+        snapshot.match(
+            "delete_bucket_intelligent_tiering_configuration_err_1", delete_err_1.value.response
+        )
+
+        # delete the config with non-existing id
+        with pytest.raises(ClientError) as delete_err_2:
+            aws_client.s3.delete_bucket_intelligent_tiering_configuration(
+                Bucket=bucket,
+                Id="non-existing-id",
+            )
+        snapshot.match(
+            "delete_bucket_intelligent_tiering_configuration_err_2", delete_err_2.value.response
+        )
+
+        # delete the config
+        aws_client.s3.delete_bucket_intelligent_tiering_configuration(
+            Bucket=bucket,
+            Id=intelligent_tier_configuration["Id"],
+        )
+
+        response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=bucket)
+        snapshot.match("list_bucket_intelligent_tiering_configurations_3", response)
+
+    @pytest.mark.aws_validated
+    def test_s3_get_object_headers(self, aws_client, s3_create_bucket, snapshot):
+        bucket = s3_create_bucket()
+        key = "en-gb.wav"
+        file_path = os.path.join(os.path.dirname(__file__), f"../files/{key}")
+
+        aws_client.s3.upload_file(file_path, bucket, key)
+        objects = aws_client.s3.list_objects(Bucket=bucket)
+        etag = objects["Contents"][0]["ETag"]
+
+        # TODO: some of the headers missing in the get object response
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=bucket, Key=key, IfNoneMatch=etag)
+        snapshot.match("if_none_match_err_1", e.value.response["Error"])
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=bucket, Key=key, IfNoneMatch=etag.strip('"'))
+        snapshot.match("if_none_match_err_2", e.value.response["Error"])
+
+        response = aws_client.s3.get_object(Bucket=bucket, Key=key, IfNoneMatch="etag")
+        snapshot.match("if_none_match_1", response["ResponseMetadata"]["HTTPStatusCode"])
+
+        response = aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch=etag)
+        snapshot.match("if_match_1", response["ResponseMetadata"]["HTTPStatusCode"])
+
+        response = aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch=etag.strip('"'))
+        snapshot.match("if_match_2", response["ResponseMetadata"]["HTTPStatusCode"])
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch="etag")
+        snapshot.match("if_match_err_1", e.value.response["Error"])
+
+    @pytest.mark.aws_validated
+    def test_s3_object_hold(self, aws_client, s3_create_bucket, snapshot):
+        bucket_name_with_lock = f"bucket-with-lock-{short_uid()}"
+        bucket_name_without_lock = f"bucket-without-lock-{short_uid()}"
+        key_1 = "test1.txt"
+        key_2 = "test2.txt"
+
+        s3_create_bucket(Bucket=bucket_name_with_lock, ObjectLockEnabledForBucket=True)
+        aws_client.s3.put_object(Bucket=bucket_name_with_lock, Key=key_1, Body="test")
+        key_1_version_id = aws_client.s3.get_object(Bucket=bucket_name_with_lock, Key=key_1)[
+            "VersionId"
+        ]
+        key_2_version_id = aws_client.s3.put_object(Bucket=bucket_name_with_lock, Key=key_2)[
+            "VersionId"
+        ]
+
+        s3_create_bucket(Bucket=bucket_name_without_lock, ObjectLockEnabledForBucket=False)
+        aws_client.s3.put_object(Bucket=bucket_name_without_lock, Key=key_1, Body="test")
+
+        # non-existing bucket
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.put_object_retention(
+                Bucket="non-existing-bucket",
+                Key=key_1,
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+            )
+        snapshot.match("put_object_retention_1", exc.value.response["Error"])
+
+        # non-existing key
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.put_object_retention(
+                Bucket=bucket_name_with_lock,
+                Key="non-existing-key",
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+            )
+        snapshot.match("put_object_retention_2", exc.value.response["Error"])
+
+        # no lock on bucket
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.get_object_retention(Bucket=bucket_name_without_lock, Key=key_1)
+        snapshot.match("get_object_retention_1", exc.value.response["Error"])
+
+        response = aws_client.s3.put_object_retention(
+            Bucket=bucket_name_with_lock,
+            Key=key_1,
+            Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+        )
+        snapshot.match("put_object_retention_4", response["ResponseMetadata"]["HTTPStatusCode"])
+
+        response = aws_client.s3.get_object_retention(Bucket=bucket_name_with_lock, Key=key_1)
+        snapshot.match("get_object_retention_2", response)
+
+        # delete object with lock without bypass
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.delete_object(
+                Bucket=bucket_name_with_lock, Key=key_1, VersionId=key_1_version_id
+            )
+        snapshot.match("delete_object_1", exc.value.response["Error"])
+
+        # delete object with lock with bypass
+        response = aws_client.s3.delete_object(
+            Bucket=bucket_name_with_lock,
+            Key=key_1,
+            VersionId=key_1_version_id,
+            BypassGovernanceRetention=True,
+        )
+        snapshot.match("delete_object_2", response["ResponseMetadata"]["HTTPStatusCode"])
+
+        # add object retention to key_2 with 5 seconds retention
+        aws_client.s3.put_object_retention(
+            Bucket=bucket_name_with_lock,
+            Key=key_2,
+            Retention={
+                "Mode": "GOVERNANCE",
+                "RetainUntilDate": datetime.datetime.utcnow() + datetime.timedelta(seconds=5),
+            },
+        )
+
+        # delete object with lock without bypass before 5 seconds
+        with pytest.raises(ClientError):
+            aws_client.s3.delete_object(
+                Bucket=bucket_name_with_lock, Key=key_2, VersionId=key_2_version_id
+            )
+
+        # delete object with lock without bypass after 5 seconds
+        time.sleep(6)
+        aws_client.s3.delete_object(
+            Bucket=bucket_name_with_lock,
+            Key=key_2,
+            VersionId=key_2_version_id,
+        )
+
+        # put object retention on bucket without lock configured
+        with pytest.raises(ClientError) as exc:
+            aws_client.s3.put_object_retention(
+                Bucket=bucket_name_without_lock,
+                Key=key_1,
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+            )
+        snapshot.match("put_object_retention_5", exc.value.response["Error"])
+
+    @pytest.mark.aws_validated
+    def test_put_bucket_logging(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("TargetBucket"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value(
+                    "ID", value_replacement="owner-id", reference_replacement=False
+                ),
+            ]
+        )
+
+        bucket_name = s3_create_bucket()
+        target_bucket = s3_create_bucket()
+        bucket_logging_status = {
+            "LoggingEnabled": {
+                "TargetBucket": target_bucket,
+                "TargetPrefix": "log",
+            },
+        }
+        resp = aws_client.s3.get_bucket_acl(Bucket=target_bucket)
+        snapshot.match("get-bucket-default-acl", resp)
+
+        # this might have been failing in the past, as the target bucket does not give access to LogDelivery to
+        # write/read_acp. however, AWS accepts it, because you can also set it with Permissions
+        resp = aws_client.s3.put_bucket_logging(
+            Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
+        )
+        snapshot.match("put-bucket-logging", resp)
+
+        resp = aws_client.s3.get_bucket_logging(Bucket=bucket_name)
+        snapshot.match("get-bucket-logging", resp)
+
+    @pytest.mark.aws_validated
+    def test_put_bucket_logging_accept_wrong_grants(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
+
+        bucket_name = s3_create_bucket()
+
+        target_bucket = s3_create_bucket()
+        # We need to delete the ObjectOwnership from the bucket, because you otherwise can't set TargetGrants on it
+        # TODO: have the same default as AWS and have ObjectOwnership set
+        aws_client.s3.delete_bucket_ownership_controls(Bucket=target_bucket)
+
+        bucket_logging_status = {
+            "LoggingEnabled": {
+                "TargetBucket": target_bucket,
+                "TargetPrefix": "log",
+                "TargetGrants": [
+                    {
+                        "Grantee": {
+                            "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                            "Type": "Group",
+                        },
+                        "Permission": "WRITE",
+                    },
+                    {
+                        "Grantee": {
+                            "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                            "Type": "Group",
+                        },
+                        "Permission": "READ_ACP",
+                    },
+                ],
+            },
+        }
+
+        # from the documentation, only WRITE | READ | FULL_CONTROL are allowed, but AWS let READ_ACP pass
+        resp = aws_client.s3.put_bucket_logging(
+            Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
+        )
+        snapshot.match("put-bucket-logging", resp)
+
+        resp = aws_client.s3.get_bucket_logging(Bucket=bucket_name)
+        snapshot.match("get-bucket-logging", resp)
+
+    @pytest.mark.aws_validated
+    def test_put_bucket_logging_wrong_target(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
+        bucket_name = s3_create_bucket()
+        target_bucket = s3_create_bucket(
+            CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
+        )
+
+        with pytest.raises(ClientError) as e:
+            bucket_logging_status = {
+                "LoggingEnabled": {
+                    "TargetBucket": target_bucket,
+                    "TargetPrefix": "log",
+                },
+            }
+            aws_client.s3.put_bucket_logging(
+                Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
+            )
+        snapshot.match("put-bucket-logging-different-regions", e.value.response)
+
+        nonexistent_target_bucket = f"target-bucket-{short_uid()}-{short_uid()}"
+        with pytest.raises(ClientError) as e:
+            bucket_logging_status = {
+                "LoggingEnabled": {
+                    "TargetBucket": nonexistent_target_bucket,
+                    "TargetPrefix": "log",
+                },
+            }
+            aws_client.s3.put_bucket_logging(
+                Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
+            )
+        snapshot.match("put-bucket-logging-non-existent-bucket", e.value.response)
+        assert e.value.response["Error"]["TargetBucket"] == nonexistent_target_bucket
+
+    @pytest.mark.aws_validated
+    def test_s3_inventory_report_crud(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.resource_name())
+        src_bucket = s3_create_bucket()
+        dest_bucket = s3_create_bucket()
+
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "InventoryPolicy",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "s3.amazonaws.com"},
+                    "Action": "s3:PutObject",
+                    "Resource": [f"arn:aws:s3:::{dest_bucket}/*"],
+                    "Condition": {
+                        "ArnLike": {"aws:SourceArn": f"arn:aws:s3:::{src_bucket}"},
+                    },
+                },
+            ],
+        }
+
+        aws_client.s3.put_bucket_policy(Bucket=dest_bucket, Policy=json.dumps(policy))
+        inventory_config = {
+            "Id": "test-inventory",
+            "Destination": {
+                "S3BucketDestination": {
+                    "Bucket": f"arn:aws:s3:::{dest_bucket}",
+                    "Format": "CSV",
+                }
+            },
+            "IsEnabled": True,
+            "IncludedObjectVersions": "All",
+            "OptionalFields": ["Size", "ETag"],
+            "Schedule": {"Frequency": "Daily"},
+        }
+
+        put_inv_config = aws_client.s3.put_bucket_inventory_configuration(
+            Bucket=src_bucket,
+            Id=inventory_config["Id"],
+            InventoryConfiguration=inventory_config,
+        )
+        snapshot.match("put-inventory-config", put_inv_config)
+
+        list_inv_configs = aws_client.s3.list_bucket_inventory_configurations(Bucket=src_bucket)
+        snapshot.match("list-inventory-config", list_inv_configs)
+
+        get_inv_config = aws_client.s3.get_bucket_inventory_configuration(
+            Bucket=src_bucket,
+            Id=inventory_config["Id"],
+        )
+        snapshot.match("get-inventory-config", get_inv_config)
+
+        del_inv_config = aws_client.s3.delete_bucket_inventory_configuration(
+            Bucket=src_bucket,
+            Id=inventory_config["Id"],
+        )
+        snapshot.match("del-inventory-config", del_inv_config)
+
+        list_inv_configs_after_del = aws_client.s3.list_bucket_inventory_configurations(
+            Bucket=src_bucket
+        )
+        snapshot.match("list-inventory-config-after-del", list_inv_configs_after_del)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_inventory_configuration(
+                Bucket=src_bucket,
+                Id=inventory_config["Id"],
+            )
+        snapshot.match("get-nonexistent-inv-config", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_s3_put_inventory_report_exceptions(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.resource_name())
+        src_bucket = s3_create_bucket()
+        dest_bucket = s3_create_bucket()
+        config_id = "test-inventory"
+
+        def _get_config():
+            return {
+                "Id": config_id,
+                "Destination": {
+                    "S3BucketDestination": {
+                        "Bucket": f"arn:aws:s3:::{dest_bucket}",
+                        "Format": "CSV",
+                    }
+                },
+                "IsEnabled": True,
+                "IncludedObjectVersions": "All",
+                "Schedule": {"Frequency": "Daily"},
+            }
+
+        def _put_bucket_inventory_configuration(inventory_configuration):
+            aws_client.s3.put_bucket_inventory_configuration(
+                Bucket=src_bucket,
+                Id=config_id,
+                InventoryConfiguration=inventory_configuration,
+            )
+
+        # put an inventory config with a wrong ID
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["Id"] = config_id + "wrong"
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-id", e.value.response)
+
+        # set the Destination Bucket only as the name and not the ARN
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["Destination"]["S3BucketDestination"]["Bucket"] = dest_bucket
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-destination-arn", e.value.response)
+
+        # set the wrong Destination Format (should be CSV/ORC/Parquet)
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["Destination"]["S3BucketDestination"]["Format"] = "WRONG-FORMAT"
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-destination-format", e.value.response)
+
+        # set the wrong Schedule Frequency (should be Daily/Weekly)
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["Schedule"]["Frequency"] = "Hourly"
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-schedule-frequency", e.value.response)
+
+        # set the wrong IncludedObjectVersions (should be All/Current)
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["IncludedObjectVersions"] = "Wrong"
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-object-versions", e.value.response)
+
+        # set wrong OptionalFields
+        with pytest.raises(ClientError) as e:
+            inv_config = _get_config()
+            inv_config["OptionalFields"] = ["TestField"]
+            _put_bucket_inventory_configuration(inv_config)
+        snapshot.match("wrong-optional-field", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_put_bucket_inventory_config_order(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.resource_name())
+        src_bucket = s3_create_bucket()
+        dest_bucket = s3_create_bucket()
+
+        def _put_bucket_inventory_configuration(config_id: str):
+            inventory_configuration = {
+                "Id": config_id,
+                "Destination": {
+                    "S3BucketDestination": {
+                        "Bucket": f"arn:aws:s3:::{dest_bucket}",
+                        "Format": "CSV",
+                    }
+                },
+                "IsEnabled": True,
+                "IncludedObjectVersions": "All",
+                "Schedule": {"Frequency": "Daily"},
+            }
+            aws_client.s3.put_bucket_inventory_configuration(
+                Bucket=src_bucket,
+                Id=config_id,
+                InventoryConfiguration=inventory_configuration,
+            )
+
+        for inv_config_id in ("test-1", "z-test", "a-test"):
+            _put_bucket_inventory_configuration(inv_config_id)
+
+        list_inv_configs = aws_client.s3.list_bucket_inventory_configurations(Bucket=src_bucket)
+        snapshot.match("list-inventory-config", list_inv_configs)
+
+        del_inv_config = aws_client.s3.delete_bucket_inventory_configuration(
+            Bucket=src_bucket,
+            Id="z-test",
+        )
+        snapshot.match("del-inventory-config", del_inv_config)
+
+        list_inv_configs = aws_client.s3.list_bucket_inventory_configurations(Bucket=src_bucket)
+        snapshot.match("list-inventory-config-after-del", list_inv_configs)
+
+
+class TestS3MultiAccounts:
+    @pytest.fixture
+    def primary_client(self, aws_client):
+        return aws_client.s3
+
+    @pytest.fixture
+    def secondary_client(self, secondary_aws_client):
+        """
+        Create a boto client with secondary test credentials and region.
+        """
+        return secondary_aws_client.s3
+
+    def test_shared_bucket_namespace(self, primary_client, secondary_client):
+        # Ensure that the bucket name space is shared by all accounts and regions
+        primary_client.create_bucket(Bucket="foo")
+
+        with pytest.raises(ClientError) as exc:
+            secondary_client.create_bucket(
+                Bucket="foo",
+                CreateBucketConfiguration={"LocationConstraint": SECONDARY_TEST_AWS_REGION_NAME},
+            )
+        exc.match("BucketAlreadyExists")
+
+    def test_cross_account_access(self, primary_client, secondary_client):
+        # Ensure that following operations can be performed across accounts
+        # - ListObjects
+        # - PutObject
+        # - GetObject
+
+        bucket_name = "foo"
+        key_name = "lorem/ipsum"
+        body1 = b"zaphod beeblebrox"
+        body2 = b"42"
+
+        # First user creates a bucket and puts an object
+        primary_client.create_bucket(Bucket=bucket_name)
+        response = primary_client.list_buckets()
+        assert bucket_name in [bucket["Name"] for bucket in response["Buckets"]]
+        primary_client.put_object(Bucket=bucket_name, Key=key_name, Body=body1)
+
+        # Second user must not see this bucket in their `ListBuckets` response
+        response = secondary_client.list_buckets()
+        assert bucket_name not in [bucket["Name"] for bucket in response["Buckets"]]
+
+        # Yet they should be able to `ListObjects` in that bucket
+        response = secondary_client.list_objects(Bucket=bucket_name)
+        assert key_name in [key["Key"] for key in response["Contents"]]
+
+        # Along with `GetObject` and `PutObject`
+        # ACL and permission enforcement is currently not implemented
+        response = secondary_client.get_object(Bucket=bucket_name, Key=key_name)
+        assert response["Body"].read() == body1
+        assert secondary_client.put_object(Bucket=bucket_name, Key=key_name, Body=body2)
+
+        # The modified object must be reflected for the first user
+        response = primary_client.get_object(Bucket=bucket_name, Key=key_name)
+        assert response["Body"].read() == body2
 
 
 class TestS3TerraformRawRequests:
@@ -4839,8 +6327,8 @@ class TestS3PresignedUrl:
         if not is_aws_cloud():
             # moto does not respect credentials passed, and will always set hard coded values from a template here
             # until this can be used, we are hardcoding the AccessKeyId and SecretAccessKey
-            response["Credentials"]["AccessKeyId"] = "test"
-            response["Credentials"]["SecretAccessKey"] = "test"
+            response["Credentials"]["AccessKeyId"] = TEST_AWS_ACCESS_KEY_ID
+            response["Credentials"]["SecretAccessKey"] = TEST_AWS_SECRET_ACCESS_KEY
 
         client = boto3.client(
             "s3",
@@ -5352,6 +6840,31 @@ class TestS3PresignedUrl:
         req = requests.get(url_f_slash)
         request_content = xmltodict.parse(req.content)
         assert "GET\n//test-bucket" in request_content["Error"]["CanonicalRequest"]
+
+    @pytest.mark.parametrize(
+        "signature_version",
+        ["s3", "s3v4"],
+    )
+    def test_s3_presign_url_encoding(
+        self, aws_client, s3_bucket, signature_version, patch_s3_skip_signature_validation_false
+    ):
+        object_key = "table1-partitioned/date=2023-06-28/test.csv"
+        aws_client.s3.put_object(Key=object_key, Bucket=s3_bucket, Body="123")
+
+        s3_endpoint_path_style = _endpoint_url()
+        client = _s3_client_custom_config(
+            Config(signature_version=signature_version, s3={}),
+            endpoint_url=s3_endpoint_path_style,
+        )
+
+        url = client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": s3_bucket, "Key": object_key},
+        )
+
+        req = requests.get(url)
+        assert req.ok
+        assert req.content == b"123"
 
     @staticmethod
     def _get_presigned_snapshot_transformers(snapshot):
@@ -6639,6 +8152,607 @@ class TestS3BucketPolicies:
             aws_client.s3.get_object(Bucket=s3_bucket, Key="test/123")
         assert exc.value.response["Error"]["Code"] == "403"
         assert exc.value.response["Error"]["Message"] == "Forbidden"
+
+
+class TestS3BucketLifecycle:
+    @pytest.mark.aws_validated
+    def test_delete_bucket_lifecycle_configuration(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-exc-1", e.value.response)
+
+        resp = aws_client.s3.delete_bucket_lifecycle(Bucket=s3_bucket)
+        snapshot.match("delete-bucket-lifecycle-no-bucket", resp)
+
+        lfc = {
+            "Rules": [
+                {
+                    "Expiration": {"Days": 7},
+                    "ID": "wholebucket",
+                    "Filter": {"Prefix": ""},
+                    "Status": "Enabled",
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = retry(
+            aws_client.s3.get_bucket_lifecycle_configuration, retries=3, sleep=1, Bucket=s3_bucket
+        )
+        snapshot.match("get-bucket-lifecycle-conf", result)
+        aws_client.s3.delete_bucket_lifecycle(Bucket=s3_bucket)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-exc-2", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_delete_lifecycle_configuration_on_bucket_deletion(
+        self, s3_create_bucket, snapshot, aws_client
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        bucket_name = f"test-bucket-{short_uid()}"  # keep the same name for both bucket
+        s3_create_bucket(Bucket=bucket_name)
+        lfc = {
+            "Rules": [
+                {
+                    "Expiration": {"Days": 7},
+                    "ID": "wholebucket",
+                    "Filter": {"Prefix": ""},
+                    "Status": "Enabled",
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=bucket_name, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+        aws_client.s3.delete_bucket(Bucket=bucket_name)
+        s3_create_bucket(Bucket=bucket_name)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        snapshot.match("get-bucket-lifecycle-exc", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_put_bucket_lifecycle_conf_exc(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("ArgumentValue", value_replacement="datetime")
+        )
+        lfc = {"Rules": []}
+        with pytest.raises(ClientError) as e:
+            lfc["Rules"] = [
+                {
+                    "Expiration": {"Days": 7},
+                    "Status": "Enabled",
+                }
+            ]
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket, LifecycleConfiguration=lfc
+            )
+        snapshot.match("missing-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            lfc["Rules"] = [
+                {
+                    "Expiration": {"Days": 7},
+                    "ID": "wholebucket",
+                    "Status": "Enabled",
+                }
+            ]
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket, LifecycleConfiguration=lfc
+            )
+        snapshot.match("missing-filter", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            lfc["Rules"] = [
+                {
+                    "Expiration": {"Days": 7},
+                    "Filter": {},
+                    "ID": "wholebucket",
+                    "Status": "Enabled",
+                    "NoncurrentVersionExpiration": {},  # No NewerNoncurrentVersions or NoncurrentDays
+                }
+            ]
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket, LifecycleConfiguration=lfc
+            )
+        snapshot.match("missing-noncurrent-version-expiration-data", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            lfc["Rules"] = [
+                {
+                    "Expiration": {"Days": 7},
+                    "Filter": {
+                        "And": {
+                            "Prefix": "test",
+                        },
+                        "Prefix": "",
+                    },
+                    "ID": "wholebucket",
+                    "Status": "Enabled",
+                }
+            ]
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket, LifecycleConfiguration=lfc
+            )
+        snapshot.match("wrong-filter-and-plus-prefix", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            lfc["Rules"] = [
+                {
+                    "Expiration": {"Days": 7},
+                    "Filter": {
+                        "ObjectSizeGreaterThan": 500,
+                        "Prefix": "",
+                    },
+                    "ID": "wholebucket",
+                    "Status": "Enabled",
+                }
+            ]
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket, LifecycleConfiguration=lfc
+            )
+        snapshot.match("wrong-filter-and-and-object-size", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            lfc["Rules"] = [
+                {
+                    "Expiration": {
+                        "Date": datetime.datetime(year=2023, month=1, day=1, hour=2, minute=2)
+                    },
+                    "ID": "wrong-data",
+                    "Filter": {},
+                    "Status": "Enabled",
+                }
+            ]
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket, LifecycleConfiguration=lfc
+            )
+        snapshot.match("wrong-data-no-midnight", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            lfc["Rules"] = [
+                {
+                    "ID": "duplicate-tag-keys",
+                    "Filter": {
+                        "And": {
+                            "Tags": [
+                                {
+                                    "Key": "testlifecycle",
+                                    "Value": "positive",
+                                },
+                                {
+                                    "Key": "testlifecycle",
+                                    "Value": "positive-two",
+                                },
+                            ],
+                        },
+                    },
+                    "Status": "Enabled",
+                    "Expiration": {"Days": 1},
+                }
+            ]
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket, LifecycleConfiguration=lfc
+            )
+
+        snapshot.match("duplicate-tag-keys", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_bucket_lifecycle_configuration_date(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+            ]
+        )
+        rule_id = "rule_number_one"
+
+        lfc = {
+            "Rules": [
+                {
+                    "Expiration": {
+                        "Date": datetime.datetime(year=2023, month=1, day=1, tzinfo=ZoneInfo("GMT"))
+                    },
+                    "ID": rule_id,
+                    "Filter": {},
+                    "Status": "Enabled",
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_bucket_lifecycle_configuration_object_expiry(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value(
+                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
+                ),
+            ]
+        )
+        rule_id = "rule_number_one"
+
+        lfc = {
+            "Rules": [
+                {
+                    "Expiration": {"Days": 7},
+                    "ID": rule_id,
+                    "Filter": {"Prefix": ""},
+                    "Status": "Enabled",
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+        key = "test-object-expiry"
+        aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("head-object-expiry", response)
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("get-object-expiry", response)
+
+        expiration = response["Expiration"]
+
+        parsed_exp_date, parsed_exp_rule = parse_expiration_header(expiration)
+        assert parsed_exp_rule == rule_id
+        last_modified = response["LastModified"]
+
+        # use a bit of margin for the 7 days expiration, as it can depend on the time of day, but at least we validate
+        assert 6 <= (parsed_exp_date - last_modified).days <= 8
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_bucket_lifecycle_configuration_object_expiry_versioned(
+        self, s3_bucket, snapshot, aws_client
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"), priority=-1)
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value(
+                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
+                ),
+            ]
+        )
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        rule_id = "rule2"
+        current_exp_days = 3
+        non_current_exp_days = 1
+        lfc = {
+            "Rules": [
+                {
+                    "ID": rule_id,
+                    "Status": "Enabled",
+                    "Filter": {},
+                    "Expiration": {"Days": current_exp_days},
+                    "NoncurrentVersionExpiration": {"NoncurrentDays": non_current_exp_days},
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+        key = "test-object-expiry"
+        put_object_1 = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+        version_id_1 = put_object_1["VersionId"]
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("head-object-expiry", response)
+
+        parsed_exp_date, parsed_exp_rule = parse_expiration_header(response["Expiration"])
+        assert parsed_exp_rule == rule_id
+        # use a bit of margin for the days expiration, as it can depend on the time of day, but at least we validate
+        assert (
+            current_exp_days - 1
+            <= (parsed_exp_date - response["LastModified"]).days
+            <= current_exp_days + 1
+        )
+
+        key = "test-object-expiry"
+        put_object_2 = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+        version_id_2 = put_object_2["VersionId"]
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key, VersionId=version_id_1)
+        snapshot.match("head-object-expiry-noncurrent", response)
+
+        # This is not in the documentation anymore, but it still seems to be the case
+        # See https://stackoverflow.com/questions/33096697/object-expiration-of-non-current-version
+        # Note that for versioning-enabled buckets, this header applies only to current versions; Amazon S3 does not
+        # provide a header to infer when a noncurrent version will be eligible for permanent deletion.
+        assert "Expiration" not in response
+
+        # if you specify the VersionId, AWS won't return the Expiration header, even if that's the current version
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key, VersionId=version_id_2)
+        snapshot.match("head-object-expiry-current-with-version-id", response)
+        assert "Expiration" not in response
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("head-object-expiry-current-without-version-id", response)
+        # assert that the previous version id which didn't return the Expiration header is the same object
+        assert response["VersionId"] == version_id_2
+
+        parsed_exp_date, parsed_exp_rule = parse_expiration_header(response["Expiration"])
+        assert parsed_exp_rule == rule_id
+        # use a bit of margin for the days expiration, as it can depend on the time of day, but at least we validate
+        assert (
+            current_exp_days - 1
+            <= (parsed_exp_date - response["LastModified"]).days
+            <= current_exp_days + 1
+        )
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_object_expiry_after_bucket_lifecycle_configuration(
+        self, s3_bucket, snapshot, aws_client
+    ):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value(
+                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
+                ),
+            ]
+        )
+        key = "test-object-expiry"
+        put_object = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+        snapshot.match("put-object-before", put_object)
+
+        rule_id = "rule3"
+        current_exp_days = 7
+        lfc = {
+            "Rules": [
+                {
+                    "Expiration": {"Days": current_exp_days},
+                    "ID": rule_id,
+                    "Filter": {},
+                    "Status": "Enabled",
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("head-object-expiry-before", response)
+
+        put_object = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+        snapshot.match("put-object-after", put_object)
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("head-object-expiry-after", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_bucket_lifecycle_multiple_rules(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value(
+                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
+                ),
+            ]
+        )
+
+        rule_id_1 = "rule_one"
+        rule_id_2 = "rule_two"
+        rule_id_3 = "rule_three"
+        current_exp_days = 7
+        lfc = {
+            "Rules": [
+                {
+                    "ID": rule_id_1,
+                    "Filter": {"Prefix": "testobject"},
+                    "Status": "Enabled",
+                    "Expiration": {"Days": current_exp_days},
+                },
+                {
+                    "ID": rule_id_2,
+                    "Filter": {"Prefix": "test"},
+                    "Status": "Enabled",
+                    "Expiration": {"Days": current_exp_days},
+                },
+                {
+                    "ID": rule_id_3,
+                    "Filter": {"Prefix": "t"},
+                    "Status": "Enabled",
+                    "Expiration": {"Days": current_exp_days},
+                },
+            ]
+        }
+
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+        key_match_1 = "testobject-expiry"
+        put_object = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key_match_1)
+        snapshot.match("put-object-match-both-rules", put_object)
+
+        _, parsed_exp_rule = parse_expiration_header(put_object["Expiration"])
+        assert parsed_exp_rule == rule_id_1
+
+        key_match_2 = "test-one-rule"
+        put_object_2 = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key_match_2)
+        snapshot.match("put-object-match-rule-2", put_object_2)
+
+        _, parsed_exp_rule = parse_expiration_header(put_object_2["Expiration"])
+        assert parsed_exp_rule == rule_id_2
+
+        key_no_match = "no-rules"
+        put_object_3 = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key_no_match)
+        snapshot.match("put-object-no-match", put_object_3)
+        assert "Expiration" not in put_object_3
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_bucket_lifecycle_object_size_rules(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value(
+                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
+                ),
+            ]
+        )
+
+        rule_id_1 = "rule_one"
+        rule_id_2 = "rule_two"
+        current_exp_days = 7
+        lfc = {
+            "Rules": [
+                {
+                    "ID": rule_id_1,
+                    "Filter": {
+                        "ObjectSizeGreaterThan": 20,
+                    },
+                    "Status": "Enabled",
+                    "Expiration": {"Days": current_exp_days},
+                },
+                {
+                    "ID": rule_id_2,
+                    "Filter": {
+                        "ObjectSizeLessThan": 10,
+                    },
+                    "Status": "Enabled",
+                    "Expiration": {"Days": current_exp_days},
+                },
+            ]
+        }
+
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+        key_match_1 = "testobject-expiry"
+        put_object = aws_client.s3.put_object(Body=b"a" * 22, Bucket=s3_bucket, Key=key_match_1)
+        snapshot.match("put-object-match-rule-1", put_object)
+
+        _, parsed_exp_rule = parse_expiration_header(put_object["Expiration"])
+        assert parsed_exp_rule == rule_id_1
+
+        key_match_2 = "test-one-rule"
+        put_object_2 = aws_client.s3.put_object(Body=b"a" * 5, Bucket=s3_bucket, Key=key_match_2)
+        snapshot.match("put-object-match-rule-2", put_object_2)
+
+        _, parsed_exp_rule = parse_expiration_header(put_object_2["Expiration"])
+        assert parsed_exp_rule == rule_id_2
+
+        key_no_match = "no-rules"
+        put_object_3 = aws_client.s3.put_object(Body=b"a" * 15, Bucket=s3_bucket, Key=key_no_match)
+        snapshot.match("put-object-no-match", put_object_3)
+        assert "Expiration" not in put_object_3
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_bucket_lifecycle_tag_rules(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value(
+                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
+                ),
+            ]
+        )
+
+        rule_id_1 = "rule_one"
+        rule_id_2 = "rule_two"
+        current_exp_days = 7
+        lfc = {
+            "Rules": [
+                {
+                    "ID": rule_id_1,
+                    "Filter": {
+                        "Tag": {
+                            "Key": "testlifecycle",
+                            "Value": "positive",
+                        },
+                    },
+                    "Status": "Enabled",
+                    "Expiration": {"Days": current_exp_days},
+                },
+                {
+                    "ID": rule_id_2,
+                    "Filter": {
+                        "And": {
+                            "Tags": [
+                                {
+                                    "Key": "testlifecycle",
+                                    "Value": "positive",
+                                },
+                                {
+                                    "Key": "testlifecycletwo",
+                                    "Value": "positive-two",
+                                },
+                            ],
+                        },
+                    },
+                    "Status": "Enabled",
+                    "Expiration": {"Days": current_exp_days},
+                },
+            ]
+        }
+
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+        key_match_1 = "testobject-expiry"
+        tag_set_match = "testlifecycle=positive&testlifecycletwo=positivetwo"
+        put_object = aws_client.s3.put_object(
+            Body=b"test", Bucket=s3_bucket, Key=key_match_1, Tagging=tag_set_match
+        )
+        snapshot.match("put-object-match-both-rules", put_object)
+
+        _, parsed_exp_rule = parse_expiration_header(put_object["Expiration"])
+        assert parsed_exp_rule == rule_id_1
+
+        key_match_2 = "test-one-rule"
+        tag_set_match_one = "testlifecycle=positive"
+        put_object_2 = aws_client.s3.put_object(
+            Body=b"test", Bucket=s3_bucket, Key=key_match_2, Tagging=tag_set_match_one
+        )
+        snapshot.match("put-object-match-rule-1", put_object_2)
+
+        _, parsed_exp_rule = parse_expiration_header(put_object_2["Expiration"])
+        assert parsed_exp_rule == rule_id_1
+
+        key_no_match = "no-rules"
+        tag_set_no_match = "testlifecycle2=positivetwo"
+        put_object_3 = aws_client.s3.put_object(
+            Body=b"test", Bucket=s3_bucket, Key=key_no_match, Tagging=tag_set_no_match
+        )
+        snapshot.match("put-object-no-match", put_object_3)
+        assert "Expiration" not in put_object_3
 
 
 def _anon_client(service: str):

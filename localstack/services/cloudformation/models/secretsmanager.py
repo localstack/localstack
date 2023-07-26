@@ -3,9 +3,9 @@ import logging
 import random
 import string
 
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import select_attributes
 
 LOG = logging.getLogger(__name__)
@@ -16,17 +16,16 @@ class SecretsManagerSecret(GenericBaseModel):
     def cloudformation_type():
         return "AWS::SecretsManager::Secret"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("ARN")
+    def get_cfn_attribute(self, attribute_name: str):
+        match attribute_name:
+            case "Id":
+                return self.props.get("ARN")
 
-    def get_cfn_attribute(self, attribute_name):
         return super(SecretsManagerSecret, self).get_cfn_attribute(attribute_name)
 
     def fetch_state(self, stack_name, resources):
         secret_name = self.props.get("Name") or self.logical_resource_id
-        result = aws_stack.connect_to_service("secretsmanager").describe_secret(
-            SecretId=secret_name
-        )
+        result = connect_to().secretsmanager.describe_secret(SecretId=secret_name)
         return result
 
     @staticmethod
@@ -70,16 +69,20 @@ class SecretsManagerSecret(GenericBaseModel):
     def add_defaults(resource, stack_name: str):
         name = resource.get("Properties", {}).get("Name")
         if not name:
+            # not actually correct. Given the LogicalResourceId "MySecret",
+            # an example for the generated name would be "MySecret-krxoxgcznYdq-sQNsqO"
             resource["Properties"]["Name"] = generate_default_name(
                 stack_name, resource["LogicalResourceId"]
             )
 
     @classmethod
     def get_deploy_templates(cls):
-        def _create_params(params, **kwargs):
+        def _create_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             attributes = ["Name", "Description", "KmsKeyId", "SecretString", "Tags"]
-            result = select_attributes(params, attributes)
-            gen_secret = params.get("GenerateSecretString")
+            result = select_attributes(properties, attributes)
+            gen_secret = properties.get("GenerateSecretString")
             if gen_secret:
                 excl_lower = gen_secret.get("ExcludeLowercase")
                 excl_upper = gen_secret.get("ExcludeUppercase")
@@ -108,10 +111,15 @@ class SecretsManagerSecret(GenericBaseModel):
                 result["SecretString"] = secret_value
             return result
 
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["Properties"]["ARN"] = result["ARN"]
+            resource["PhysicalResourceId"] = result["ARN"]
+
         return {
             "create": {
                 "function": "create_secret",
                 "parameters": _create_params,
+                "result_handler": _handle_result,
             },
             "delete": {"function": "delete_secret", "parameters": {"SecretId": "Name"}},
         }
@@ -121,9 +129,6 @@ class SecretsManagerSecretTargetAttachment(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::SecretsManager::SecretTargetAttachment"
-
-    def get_physical_resource_id(self, attribute, **kwargs):
-        return arns.secretsmanager_secret_arn(self.props.get("SecretId"))
 
     def fetch_state(self, stack_name, resources):
         # TODO implement?
@@ -135,9 +140,6 @@ class SecretsManagerRotationSchedule(GenericBaseModel):
     def cloudformation_type():
         return "AWS::SecretsManager::RotationSchedule"
 
-    def get_physical_resource_id(self, attribute, **kwargs):
-        return arns.secretsmanager_secret_arn(self.props.get("SecretId"))
-
     def fetch_state(self, stack_name, resources):
         # TODO implement?
         return {"state": "dummy"}
@@ -148,27 +150,31 @@ class SecretsManagerResourcePolicy(GenericBaseModel):
     def cloudformation_type():
         return "AWS::SecretsManager::ResourcePolicy"
 
-    def get_physical_resource_id(self, attribute, **kwargs):
-        return arns.secretsmanager_secret_arn(self.props.get("SecretId"))
-
     def fetch_state(self, stack_name, resources):
         secret_id = self.props.get("SecretId")
-        result = aws_stack.connect_to_service("secretsmanager").get_resource_policy(
-            SecretId=secret_id
-        )
+        result = connect_to().secretsmanager.get_resource_policy(SecretId=secret_id)
         return result
 
     @staticmethod
     def get_deploy_templates():
-        def create_params(params, **kwargs):
+        def create_params(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ) -> dict:
             return {
-                "SecretId": params["SecretId"].split(":")[-1],
-                "ResourcePolicy": json.dumps(params["ResourcePolicy"]),
-                "BlockPublicPolicy": params.get("BlockPublicPolicy"),
+                "SecretId": properties["SecretId"],
+                "ResourcePolicy": json.dumps(properties["ResourcePolicy"]),
+                "BlockPublicPolicy": properties.get("BlockPublicPolicy"),
             }
 
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["ARN"]
+
         return {
-            "create": {"function": "put_resource_policy", "parameters": create_params},
+            "create": {
+                "function": "put_resource_policy",
+                "parameters": create_params,
+                "result_handler": _handle_result,
+            },
             "delete": {
                 "function": "delete_resource_policy",
                 "parameters": {"SecretId": "SecretId"},

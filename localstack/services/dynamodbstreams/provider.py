@@ -23,6 +23,7 @@ from localstack.aws.api.dynamodbstreams import (
     StreamStatus,
     TableName,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.dynamodbstreams.dynamodbstreams_api import (
     get_dynamodbstreams_store,
     get_kinesis_stream_name,
@@ -32,7 +33,6 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
     table_name_from_stream_arn,
 )
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws import aws_stack
 from localstack.utils.collections import select_from_typed_dict
 
 LOG = logging.getLogger(__name__)
@@ -54,11 +54,11 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         exclusive_start_shard_id: ShardId = None,
     ) -> DescribeStreamOutput:
         store = get_dynamodbstreams_store(context.account_id, context.region)
-        kinesis = aws_stack.connect_to_service("kinesis")
+        kinesis = connect_to().kinesis
         for stream in store.ddb_streams.values():
             if stream["StreamArn"] == stream_arn:
                 # get stream details
-                dynamodb = aws_stack.connect_to_service("dynamodb")
+                dynamodb = connect_to().dynamodb
                 table_name = table_name_from_stream_arn(stream["StreamArn"])
                 stream_name = get_kinesis_stream_name(table_name)
                 stream_details = kinesis.describe_stream(StreamName=stream_name)
@@ -92,7 +92,8 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
-        kinesis = aws_stack.connect_to_service("kinesis")
+        kinesis = connect_to().kinesis
+        prefix, _, payload["ShardIterator"] = payload["ShardIterator"].rpartition("|")
         try:
             kinesis_records = kinesis.get_records(**payload)
         except kinesis.exceptions.ExpiredIteratorException:
@@ -100,7 +101,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
             raise ExpiredIteratorException("Shard iterator has expired")
         result = {
             "Records": [],
-            "NextShardIterator": kinesis_records.get("NextShardIterator"),
+            "NextShardIterator": f"{prefix}|{kinesis_records.get('NextShardIterator')}",
         }
         for record in kinesis_records["Records"]:
             record_data = loads(record["Data"])
@@ -118,7 +119,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
     ) -> GetShardIteratorOutput:
         stream_name = stream_name_from_stream_arn(stream_arn)
         stream_shard_id = kinesis_shard_id(shard_id)
-        kinesis = aws_stack.connect_to_service("kinesis")
+        kinesis = connect_to().kinesis
 
         kwargs = {"StartingSequenceNumber": sequence_number} if sequence_number else {}
         result = kinesis.get_shard_iterator(
@@ -128,6 +129,8 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
             **kwargs,
         )
         del result["ResponseMetadata"]
+        # TODO not quite clear what the |1| exactly denotes, because at AWS it's sometimes other numbers
+        result["ShardIterator"] = f"{stream_arn}|1|{result['ShardIterator']}"
         return GetShardIteratorOutput(**result)
 
     def list_streams(

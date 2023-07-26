@@ -28,7 +28,7 @@ from localstack.services.stepfunctions.asl.component.state.state_type import Sta
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import State
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.asl.eval.programstate.program_running import ProgramRunning
+from localstack.services.stepfunctions.asl.eval.program_state import ProgramRunning
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 LOG = logging.getLogger(__name__)

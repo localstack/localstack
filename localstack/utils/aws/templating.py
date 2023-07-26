@@ -128,7 +128,21 @@ def calculate(fn, self, *args, **kwarg):
     return result
 
 
+class ExtAssignment(airspeed.Assignment):
+    """
+    Extends the airspeed Assignment class to support names with dashes, e.g., "X-Amz-Target"
+    """
+
+    START = re.compile(
+        r"\s*\(\s*\$([a-z_][a-z0-9_]*(?:\.[a-z_][a-z0-9_-]*)*)\s*=\s*(.*)$", re.S + re.I
+    )
+
+
 class ExtNameOrCall(airspeed.NameOrCall):
+    """
+    Extends the airspeed NameOrCall class to support names with dashes, e.g., "foo-bar"
+    """
+
     NAME = re.compile(r"([a-zA-Z0-9_-]+)(.*)$", re.S)
 
 
@@ -137,6 +151,12 @@ def parse_expr(self):
     self.part = self.next_element(ExtNameOrCall)
     with contextlib.suppress(airspeed.NoMatch):
         self.subexpression = self.next_element(airspeed.SubExpression)
+
+
+@patch(airspeed.SetDirective.parse, pass_target=False)
+def parse_setexpr(self):
+    self.identity_match(self.START)
+    self.assignment = self.require_next_element(ExtAssignment, "assignment")
 
 
 class ReturnDirective(airspeed.EvaluateDirective):

@@ -9,12 +9,6 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
-    StatesErrorName,
-)
-from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
-    StatesErrorNameType,
-)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task import (
     lambda_eval_utils,
 )
@@ -39,7 +33,7 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
     }
 
     def _get_supported_parameters(self) -> Optional[set[str]]:
-        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower(), None)
+        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     @staticmethod
     def _error_cause_from_client_error(client_error: ClientError) -> tuple[str, str]:
@@ -67,10 +61,7 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
             error, cause = self._error_cause_from_client_error(ex)
             error_name = CustomErrorName(error)
         else:
-            error = "Exception"
-            error_name = StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed)
-            cause = str(ex)
-
+            return super()._from_error(env=env, ex=ex)
         return FailureEvent(
             error_name=error_name,
             event_type=HistoryEventType.TaskFailed,

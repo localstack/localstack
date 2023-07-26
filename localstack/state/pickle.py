@@ -225,19 +225,6 @@ class Pickler(dill.Pickler):
         self.dispatch = dispatch
 
 
-class Unpickler(dill.Unpickler):
-    """
-    Custom dill unpickler that considers dispatchers and subclass dispatchers registered via ``register``.
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        dispatch = _SuperclassMatchingTypeDict(dill.Pickler.dispatch.copy())
-        dispatch.update(Pickler.dispatch_overwrite.copy())  # makes sure ours take precedence
-        dispatch.match_subclasses_of.update(Pickler.match_subclasses_of.copy())
-        self.dispatch = dispatch
-
-
 class PickleEncoder(Encoder):
     """
     An Encoder that use a dill pickling under the hood, and by default uses the custom ``Pickler`` that can be
@@ -262,7 +249,7 @@ class PickleDecoder(Decoder):
     unpickler_class: Type[dill.Unpickler]
 
     def __init__(self, unpickler_class: Type[dill.Unpickler] = None):
-        self.unpickler_class = unpickler_class or Unpickler
+        self.unpickler_class = unpickler_class or dill.Unpickler
 
     def decode(self, file: BinaryIO) -> Any:
         return self.unpickler_class(file).load()

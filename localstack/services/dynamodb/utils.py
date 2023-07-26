@@ -8,6 +8,7 @@ from moto.core.exceptions import JsonRESTError
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.dynamodb import ResourceNotFoundException
+from localstack.aws.connect import connect_to
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import dynamodb_table_arn
@@ -99,12 +100,11 @@ class SchemaExtractor:
         schema = SCHEMA_CACHE.get(key)
         if not schema:
             # TODO: consider making in-memory lookup instead of API call
-            ddb_client = aws_stack.connect_to_service(
-                "dynamodb",
+            ddb_client = connect_to(
                 aws_access_key_id=account_id,
                 aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
                 region_name=region_name,
-            )
+            ).dynamodb
             try:
                 schema = ddb_client.describe_table(TableName=table_name)
                 SCHEMA_CACHE[key] = schema
@@ -123,12 +123,11 @@ class ItemFinder:
         from localstack.services.dynamodb.provider import ValidationException
 
         table_name = table_name or put_item["TableName"]
-        ddb_client = aws_stack.connect_to_service(
-            "dynamodb",
+        ddb_client = connect_to(
             aws_access_key_id=account_id or get_aws_account_id(),
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
             region_name=region_name or aws_stack.get_region(),
-        )
+        ).dynamodb
 
         search_key = {}
         if "Key" in put_item:
@@ -180,12 +179,11 @@ class ItemFinder:
 
     @staticmethod
     def get_all_table_items(table_name: str) -> List:
-        ddb_client = aws_stack.connect_to_service(
-            "dynamodb",
+        ddb_client = connect_to(
             aws_access_key_id=get_aws_account_id(),
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
             region_name=aws_stack.get_region(),
-        )
+        ).dynamodb
         dynamodb_kwargs = {"TableName": table_name}
         all_items = list_all_resources(
             lambda kwargs: ddb_client.scan(**{**kwargs, **dynamodb_kwargs}),

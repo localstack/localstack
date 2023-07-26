@@ -62,8 +62,9 @@ from localstack.aws.api.secretsmanager import (
     ValidateResourcePolicyRequest,
     ValidateResourcePolicyResponse,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.moto import call_moto
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 from localstack.utils.time import today_no_time
@@ -122,6 +123,20 @@ class SecretsmanagerProvider(SecretsmanagerApi):
                     "characters, or any of the following: -/_+=.@!"
                 )
 
+    @staticmethod
+    def _raise_if_missing_client_req_token(
+        request: Union[
+            CreateSecretRequest,
+            PutSecretValueRequest,
+            RotateSecretRequest,
+            UpdateSecretRequest,
+        ]
+    ):
+        if "ClientRequestToken" not in request:
+            raise InvalidRequestException(
+                "You must provide a ClientRequestToken value. We recommend a UUID-type value."
+            )
+
     @handler("CancelRotateSecret", expand=False)
     def cancel_rotate_secret(
         self, context: RequestContext, request: CancelRotateSecretRequest
@@ -133,7 +148,9 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def create_secret(
         self, context: RequestContext, request: CreateSecretRequest
     ) -> CreateSecretResponse:
+        self._raise_if_missing_client_req_token(request)
         self._raise_if_invalid_secret_id(request["Name"])
+
         return call_moto(context)
 
     @handler("DeleteResourcePolicy", expand=False)
@@ -192,6 +209,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def put_secret_value(
         self, context: RequestContext, request: PutSecretValueRequest
     ) -> PutSecretValueResponse:
+        self._raise_if_missing_client_req_token(request)
         self._raise_if_invalid_secret_id(request["SecretId"])
         return call_moto(context, request)
 
@@ -220,6 +238,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def rotate_secret(
         self, context: RequestContext, request: RotateSecretRequest
     ) -> RotateSecretResponse:
+        self._raise_if_missing_client_req_token(request)
         self._raise_if_invalid_secret_id(request["SecretId"])
         return call_moto(context, request)
 
@@ -244,6 +263,9 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def update_secret(
         self, context: RequestContext, request: UpdateSecretRequest
     ) -> UpdateSecretResponse:
+        # if we're modifying the value of the secret, ClientRequestToken is required
+        if any(key for key in request if key in ("SecretBinary", "SecretString")):
+            self._raise_if_missing_client_req_token(request)
         self._raise_if_invalid_secret_id(request["SecretId"])
         return call_moto(context, request)
 
@@ -544,7 +566,7 @@ def backend_rotate_secret(
 
     rotation_func = None
     try:
-        lm_client = aws_stack.connect_to_service("lambda", region_name=self.region_name)
+        lm_client = connect_to(region_name=self.region_name).awslambda
         get_func_res = lm_client.get_function(FunctionName=rotation_lambda_arn)
         lm_spec = get_func_res["Configuration"]
         lm_spec["Code"] = {"ZipFile": str(short_uid())}

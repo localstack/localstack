@@ -1,5 +1,5 @@
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import select_attributes
 
 
@@ -8,11 +8,8 @@ class Route53RecordSet(GenericBaseModel):
     def cloudformation_type():
         return "AWS::Route53::RecordSet"
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("Name")  # Ref attribute is the domain name itself
-
     def fetch_state(self, stack_name, resources):
-        route53 = aws_stack.connect_to_service("route53")
+        route53 = connect_to().route53
         props = self.props
         result = route53.list_resource_record_sets(HostedZoneId=props["HostedZoneId"])[
             "ResourceRecordSets"
@@ -22,7 +19,9 @@ class Route53RecordSet(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def param_change_batch(params, **kwargs):
+        def param_change_batch(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ):
             attr_names = [
                 "Name",
                 "Type",
@@ -37,7 +36,7 @@ class Route53RecordSet(GenericBaseModel):
                 "AliasTarget",
                 "HealthCheckId",
             ]
-            attrs = select_attributes(params, attr_names)
+            attrs = select_attributes(properties, attr_names)
             if "TTL" in attrs:
                 if isinstance(attrs["TTL"], str):
                     attrs["TTL"] = int(attrs["TTL"])
@@ -47,15 +46,17 @@ class Route53RecordSet(GenericBaseModel):
             if "ResourceRecords" in attrs:
                 attrs["ResourceRecords"] = [{"Value": r} for r in attrs["ResourceRecords"]]
             return {
-                "Comment": params.get("Comment", ""),
+                "Comment": properties.get("Comment", ""),
                 "Changes": [{"Action": "CREATE", "ResourceRecordSet": attrs}],
             }
 
-        def hosted_zone_id_change_batch(params, **kwargs):
-            route53 = aws_stack.connect_to_service("route53")
-            hosted_zone_id = params.get("HostedZoneId")
+        def hosted_zone_id_change_batch(
+            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+        ):
+            route53 = connect_to().route53
+            hosted_zone_id = properties.get("HostedZoneId")
             if not hosted_zone_id:
-                hosted_zone_name = params.get("HostedZoneName")
+                hosted_zone_name = properties.get("HostedZoneName")
                 # https://docs.aws.amazon.com/Route53/latest/APIReference/API_ChangeResourceRecordSets.html"
                 # "Specify either HostedZoneName or HostedZoneId, but not both. If you have multiple hosted zones with
                 # the same domain name, you must specify the hosted zone using HostedZoneId."
@@ -70,6 +71,10 @@ class Route53RecordSet(GenericBaseModel):
                 hosted_zone_id = hosted_zone.get("Id")
             return hosted_zone_id
 
+        def _handle_result(result, resource_id, resources, resource_type):
+            resource = resources[resource_id]
+            resource["PhysicalResourceId"] = resource["Properties"]["Name"]
+
         return {
             "create": {
                 "function": "change_resource_record_sets",
@@ -77,5 +82,6 @@ class Route53RecordSet(GenericBaseModel):
                     "HostedZoneId": hosted_zone_id_change_batch,
                     "ChangeBatch": param_change_batch,
                 },
+                "result_handler": _handle_result,
             }
         }

@@ -1,5 +1,6 @@
 import ast
 import base64
+import copy
 import json
 import logging
 from enum import Enum
@@ -9,6 +10,7 @@ from urllib.parse import quote_plus, unquote_plus
 from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.context import ApiInvocationContext
+from localstack.services.apigateway.helpers import select_integration_response
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.strings import to_str
@@ -178,8 +180,16 @@ class Templates:
     @staticmethod
     def build_variables_mapping(api_context: ApiInvocationContext):
         # TODO: make this (dict) an object so usages of "render_vtl" variables are defined
+        ctx = copy.deepcopy(api_context.context or {})
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-override-request-response-parameters.html
+        # create namespace for request override
+        ctx["requestOverride"] = {
+            "header": {},
+            "path": {},
+            "querystring": {},
+        }
         return {
-            "context": api_context.context or {},
+            "context": ctx,
             "stage_variables": api_context.stage_variables or {},
             "input": {
                 "body": api_context.data_as_string(),
@@ -213,6 +223,12 @@ class RequestTemplates(Templates):
 
         variables = self.build_variables_mapping(api_context)
         result = self.render_vtl(template.strip(), variables=variables)
+
+        # set the request overrides into context
+        api_context.headers.update(
+            variables.get("context", {}).get("requestOverride", {}).get("header", {})
+        )
+
         LOG.info(f"Endpoint request body after transformations:\n{result}")
         return result
 
@@ -254,15 +270,8 @@ class ResponseTemplates(Templates):
 
         # if there is integration response for the status code returned
         # by the integration we use the template configured for that status code
-        if status_code in integration_responses:
-            response_templates = integration_responses[status_code].get("responseTemplates", {})
-        else:
-            # if there is no integration response for the status code returned
-            # by the integration we use the first integration response status code
-            LOG.info(
-                f"Found multiple integration response status codes: {integration_status_codes}"
-            )
-            response_templates = integration_responses[0].get("responseTemplates", {})
+        selected_integration_response = select_integration_response(status_code, api_context)
+        response_templates = selected_integration_response.get("responseTemplates", {})
 
         # we only support JSON templates for now - if there is no template we return
         # the response as is

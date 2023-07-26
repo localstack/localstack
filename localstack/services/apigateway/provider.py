@@ -1,7 +1,9 @@
+import copy
 import io
 import json
 import logging
 from copy import deepcopy
+from datetime import datetime
 from typing import IO, Any
 
 from moto.apigateway import models as apigw_models
@@ -13,6 +15,7 @@ from localstack.aws.api import CommonServiceException, RequestContext, ServiceRe
 from localstack.aws.api.apigateway import (
     Account,
     ApigatewayApi,
+    ApiKey,
     ApiKeys,
     Authorizer,
     Authorizers,
@@ -24,14 +27,17 @@ from localstack.aws.api.apigateway import (
     ClientCertificate,
     ClientCertificates,
     ConflictException,
+    ConnectionType,
     CreateAuthorizerRequest,
     CreateRestApiRequest,
     DocumentationPart,
+    DocumentationPartIds,
     DocumentationPartLocation,
     DocumentationParts,
     ExportResponse,
     GetDocumentationPartsRequest,
     Integration,
+    IntegrationResponse,
     IntegrationType,
     ListOfPatchOperation,
     ListOfString,
@@ -45,12 +51,15 @@ from localstack.aws.api.apigateway import (
     NullableBoolean,
     NullableInteger,
     PutIntegrationRequest,
+    PutIntegrationResponseRequest,
+    PutMode,
     PutRestApiRequest,
     RequestValidator,
     RequestValidators,
     Resource,
     RestApi,
     RestApis,
+    StatusCode,
     String,
     Tags,
     TestInvokeMethodRequest,
@@ -62,17 +71,24 @@ from localstack.aws.forwarder import NotImplementedAvoidFallbackError, create_aw
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
+    ERROR_MODEL,
     OpenApiExporter,
+    OpenAPIExt,
     apply_json_patch_safe,
     get_apigateway_store,
     import_api_from_openapi_spec,
+    is_greedy_path,
+    is_variable_path,
+    log_template,
+    multi_value_dict_for_list,
+    resolve_references,
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.models import RestApiContainer
 from localstack.services.apigateway.patches import apply_patches
 from localstack.services.apigateway.router_asf import ApigatewayRouter, to_invocation_context
 from localstack.services.edge import ROUTER
-from localstack.services.moto import call_moto
+from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.collections import (
     DelSafeDict,
@@ -101,28 +117,49 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def test_invoke_method(
         self, context: RequestContext, request: TestInvokeMethodRequest
     ) -> TestInvokeMethodResponse:
-
         invocation_context = to_invocation_context(context.request)
-        invocation_context.method = request["httpMethod"]
+        invocation_context.method = request.get("httpMethod")
+        invocation_context.api_id = request.get("restApiId")
+        invocation_context.path_with_query_string = request.get("pathWithQueryString")
+
+        moto_rest_api = get_moto_rest_api(context=context, rest_api_id=invocation_context.api_id)
+        resource = moto_rest_api.resources.get(request["resourceId"])
+        if not resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        invocation_context.resource = {"id": resource.id}
+        invocation_context.resource_path = resource.path_part
 
         if data := parse_json_or_yaml(to_str(invocation_context.data or b"")):
-            orig_data = data
-            if path_with_query_string := orig_data.get("pathWithQueryString"):
-                invocation_context.path_with_query_string = path_with_query_string
             invocation_context.data = data.get("body")
-            invocation_context.headers = orig_data.get("headers", {})
+            invocation_context.headers = data.get("headers", {})
 
+        req_start_time = datetime.now()
         result = invoke_rest_api_from_request(invocation_context)
+        req_end_time = datetime.now()
 
-        # TODO: implement the other TestInvokeMethodResponse parameters
-        #   * multiValueHeaders: Optional[MapOfStringToList]
-        #   * log: Optional[String]
-        #   * latency: Optional[Long]
-
+        # TODO: add the missing fields to the log. Next iteration will add helpers to extract the missing fields
+        # from the apicontext
+        log = log_template(
+            request_id=invocation_context.context["requestId"],
+            date=req_start_time,
+            http_method=invocation_context.method,
+            resource_path=invocation_context.invocation_path,
+            request_path="",
+            query_string="",
+            request_headers="",
+            request_body="",
+            response_body="",
+            response_headers=result.headers,
+            status_code=result.status_code,
+        )
         return TestInvokeMethodResponse(
             status=result.status_code,
             headers=dict(result.headers),
             body=to_str(result.content),
+            log=log,
+            latency=int((req_end_time - req_start_time).total_seconds()),
+            multiValueHeaders=multi_value_dict_for_list(result.headers),
         )
 
     @handler("CreateRestApi", expand=False)
@@ -148,7 +185,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         store.rest_apis[result["id"]] = rest_api_container
         # add the 2 default models
         rest_api_container.models[EMPTY_MODEL] = DEFAULT_EMPTY_MODEL
-        rest_api_container.models["Error"] = DEFAULT_ERROR_MODEL
+        rest_api_container.models[ERROR_MODEL] = DEFAULT_ERROR_MODEL
 
         return response
 
@@ -233,6 +270,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     @handler("PutRestApi", expand=False)
     def put_rest_api(self, context: RequestContext, request: PutRestApiRequest) -> RestApi:
+        # TODO: take into account the mode: overwrite or merge
+        # the default is now `merge`, but we are removing everything
         body_data = request["body"].read()
         rest_api = get_moto_rest_api(context, request["restApiId"])
 
@@ -250,7 +289,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
         store.rest_apis[request["restApiId"]].rest_api = response
         # TODO: verify this
-        return to_rest_api_response_json(response)
+        response = to_rest_api_response_json(response)
+        response.setdefault("tags", {})
+        return response
 
     def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
         try:
@@ -416,6 +457,26 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> Method:
         response: Method = call_moto(context)
         remove_empty_attributes_from_method(response)
+        if method_integration := response.get("methodIntegration"):
+            remove_empty_attributes_from_integration(method_integration)
+            # moto will not return `responseParameters` field if it's not truthy, but AWS will return an empty dict
+            # if it was set to an empty dict
+            if "responseParameters" not in method_integration:
+                moto_rest_api = get_moto_rest_api(context, rest_api_id)
+                moto_resource = moto_rest_api.resources[resource_id]
+                moto_method_integration = moto_resource.resource_methods[
+                    http_method
+                ].method_integration
+                if moto_method_integration.integration_responses:
+                    for (
+                        status_code,
+                        integration_response,
+                    ) in moto_method_integration.integration_responses.items():
+                        if integration_response.response_parameters == {}:
+                            method_integration["integrationResponses"][str(status_code)][
+                                "responseParameters"
+                            ] = {}
+
         return response
 
     def put_method(
@@ -436,7 +497,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         # TODO: add missing validation? check order of validation as well
         moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
         moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
-        if not moto_rest_api or not moto_rest_api.resources.get(resource_id):
+        if not moto_rest_api or not (moto_resource := moto_rest_api.resources.get(resource_id)):
             raise NotFoundException("Invalid Resource identifier specified")
 
         if http_method not in ("GET", "PUT", "POST", "DELETE", "PATCH", "OPTIONS", "HEAD", "ANY"):
@@ -478,11 +539,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         response: Method = call_moto(context)
         remove_empty_attributes_from_method(response)
+        moto_http_method = moto_resource.resource_methods[http_method]
+        moto_http_method.authorization_type = moto_http_method.authorization_type.upper()
 
         # this is straight from the moto patch, did not test it yet but has the same functionality
         # FIXME: check if still necessary after testing Authorizers
         if need_authorizer_id and "authorizerId" not in response:
             response["authorizerId"] = authorizer_id
+
+        response["authorizationType"] = response["authorizationType"].upper()
 
         return response
 
@@ -508,6 +573,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         applicable_patch_operations = []
         modifying_auth_type = False
         modified_authorizer_id = False
+        had_req_params = bool(moto_method.request_parameters)
+        had_req_models = bool(moto_method.request_models)
+
         for patch_operation in patch_operations:
             op = patch_operation.get("op")
             path = patch_operation.get("path")
@@ -572,8 +640,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         # TODO: test with multiple patch operations which would not be compatible between each other
         _patch_api_gateway_entity(moto_method, applicable_patch_operations)
 
+        # if we removed all values of those fields, set them to None so that they're not returned anymore
+        if had_req_params and len(moto_method.request_parameters) == 0:
+            moto_method.request_parameters = None
+        if had_req_models and len(moto_method.request_models) == 0:
+            moto_method.request_models = None
+
         response = moto_method.to_json()
         remove_empty_attributes_from_method(response)
+        remove_empty_attributes_from_integration(response.get("methodIntegration"))
         return response
 
     def delete_method(
@@ -590,6 +665,30 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         call_moto(context)
 
     # method responses
+
+    def get_method_response(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        status_code: StatusCode,
+    ) -> MethodResponse:
+        # this could probably be easier in a patch?
+        moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+        moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
+        # TODO: snapshot test different possibilities
+        if not moto_rest_api or not (moto_resource := moto_rest_api.resources.get(resource_id)):
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        if not (moto_method := moto_resource.resource_methods.get(http_method)):
+            raise NotFoundException("Invalid Method identifier specified")
+
+        if not (moto_method_response := moto_method.get_response(status_code)):
+            raise NotFoundException("Invalid Response status code specified")
+
+        method_response = moto_method_response.to_json()
+        return method_response
 
     @handler("UpdateMethodResponse", expand=False)
     def update_method_response(
@@ -868,6 +967,41 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         if rest_api_container:
             rest_api_container.documentation_parts.pop(documentation_part_id, None)
+
+    def import_documentation_parts(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        body: IO[Blob],
+        mode: PutMode = None,
+        fail_on_warnings: Boolean = None,
+    ) -> DocumentationPartIds:
+
+        body_data = body.read()
+        openapi_spec = parse_json_or_yaml(to_str(body_data))
+
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        if not (rest_api_container := store.rest_apis.get(rest_api_id)):
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
+
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-documenting-api-quick-start-import-export.html
+        resolved_schema = resolve_references(openapi_spec, rest_api_id=rest_api_id)
+        documentation = resolved_schema.get(OpenAPIExt.DOCUMENTATION)
+
+        ids = []
+        # overwrite mode
+        if mode == PutMode.overwrite:
+            rest_api_container.documentation_parts.clear()
+            for doc_part in documentation["documentationParts"]:
+                entity_id = short_uid()[:6]
+                rest_api_container.documentation_parts[entity_id] = DocumentationPart(
+                    id=entity_id, **doc_part
+                )
+                ids.append(entity_id)
+        # TODO: implement the merge mode
+        return DocumentationPartIds(ids=ids)
 
     # base path mappings
 
@@ -1251,10 +1385,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             create_api_request,
         )
         response = self.create_rest_api(create_api_context, create_api_request)
+        api_id = response.get("id")
+        # remove the 2 default models automatically created, but not when importing
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        store.rest_apis[api_id].models = {}
 
         # put rest api
         put_api_request = PutRestApiRequest(
-            restApiId=response.get("id"),
+            restApiId=api_id,
             failOnWarnings=str_to_bool(fail_on_warnings) or False,
             parameters=parameters or {},
             body=io.BytesIO(body_data),
@@ -1264,7 +1402,29 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             "PutRestApi",
             put_api_request,
         )
-        return self.put_rest_api(put_api_context, put_api_request)
+        put_api_response = self.put_rest_api(put_api_context, put_api_request)
+        if not put_api_response.get("tags"):
+            put_api_response.pop("tags", None)
+        return put_api_response
+
+    # integrations
+
+    def get_integration(
+        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+    ) -> Integration:
+        try:
+            response: Integration = call_moto(context)
+        except CommonServiceException as e:
+            # the Exception raised by moto does not have the right message not status code
+            if e.code == "NotFoundException":
+                raise NotFoundException("Invalid Integration identifier specified")
+            raise
+
+        if integration_responses := response.get("integrationResponses"):
+            for integration_response in integration_responses.values():
+                remove_empty_attributes_from_integration_response(integration_response)
+
+        return response
 
     def put_integration(
         self, context: RequestContext, request: PutIntegrationRequest
@@ -1276,7 +1436,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     "Integrations of type 'AWS_PROXY' currently only supports "
                     "Lambda function and Firehose stream invocations."
                 )
-        return call_moto(context)
+        moto_request = copy.copy(request)
+        moto_request.setdefault("passthroughBehavior", "WHEN_NO_MATCH")
+        moto_request.setdefault("timeoutInMillis", 29000)
+        if request.get("type") in (IntegrationType.HTTP, IntegrationType.HTTP_PROXY):
+            moto_request.setdefault("connectionType", ConnectionType.INTERNET)
+        response = call_moto_with_request(context, moto_request)
+        remove_empty_attributes_from_integration(integration=response)
+
+        return response
 
     def delete_integration(
         self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
@@ -1285,6 +1453,54 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             call_moto(context)
         except Exception as e:
             raise NotFoundException("Invalid Resource identifier specified") from e
+
+    # integration responses
+
+    def get_integration_response(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        status_code: StatusCode,
+    ) -> IntegrationResponse:
+        response: IntegrationResponse = call_moto(context)
+        remove_empty_attributes_from_integration_response(response)
+        # moto does not return selectionPattern is set to an empty string
+        # TODO: fix upstream
+        if "selectionPattern" not in response:
+            moto_rest_api = get_moto_rest_api(context, rest_api_id)
+            moto_resource = moto_rest_api.resources.get(resource_id)
+            method_integration = moto_resource.resource_methods[http_method].method_integration
+            integration_response = method_integration.integration_responses[status_code]
+            if integration_response.selection_pattern is not None:
+                response["selectionPattern"] = integration_response.selection_pattern
+        return response
+
+    @handler("PutIntegrationResponse", expand=False)
+    def put_integration_response(
+        self,
+        context: RequestContext,
+        request: PutIntegrationResponseRequest,
+    ) -> IntegrationResponse:
+        response = call_moto(context)
+        # Moto has a specific case where it will set a None to an empty dict, but AWS does not behave the same
+        if request.get("responseTemplates") is None:
+            moto_rest_api = get_moto_rest_api(context, request.get("restApiId"))
+            moto_resource = moto_rest_api.resources.get(request["resourceId"])
+            method_integration = moto_resource.resource_methods[
+                request["httpMethod"]
+            ].method_integration
+            integration_response = method_integration.integration_responses[request["statusCode"]]
+            integration_response.response_templates = None
+            response.pop("responseTemplates", None)
+
+        # Moto also does not return the selection pattern if it is set to an empty string
+        # TODO: fix upstream
+        if (selection_pattern := request.get("selectionPattern")) is not None:
+            response["selectionPattern"] = selection_pattern
+
+        return response
 
     def get_export(
         self,
@@ -1334,6 +1550,21 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return ApiKeys(
             items=paginated_list, warnings=moto_response.get("warnings"), position=next_token
         )
+
+    def update_api_key(
+        self,
+        context: RequestContext,
+        api_key: String,
+        patch_operations: ListOfPatchOperation = None,
+    ) -> ApiKey:
+        response: ApiKey = call_moto(context)
+        if "value" in response:
+            response.pop("value", None)
+
+        if "tags" not in response:
+            response["tags"] = {}
+
+        return response
 
     def create_model(
         self,
@@ -1433,10 +1664,13 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
             key = path[1:]  # remove the leading slash
             value = operation.get("value")
-            if key == "schema" and not value:
-                raise BadRequestException(
-                    "Model schema must have at least 1 property or array items defined"
-                )
+            if key == "schema":
+                if not value:
+                    raise BadRequestException(
+                        "Model schema must have at least 1 property or array items defined"
+                    )
+                # delete the resolved model to invalidate it
+                store.rest_apis[rest_api_id].resolved_models.pop(model_name, None)
             model[key] = value
         remove_empty_attributes_from_model(model)
         return model
@@ -1456,6 +1690,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         validate_model_in_use(moto_rest_api, model_name)
 
         store.rest_apis[rest_api_id].models.pop(model_name, None)
+        store.rest_apis[rest_api_id].resolved_models.pop(model_name, None)
 
 
 # ---------------
@@ -1465,13 +1700,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
 def get_moto_rest_api(context: RequestContext, rest_api_id: str) -> MotoRestAPI:
     moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
-    rest_api = moto_backend.apis.get(rest_api_id)
-    if not rest_api:
+    if rest_api := moto_backend.apis.get(rest_api_id):
+        return rest_api
+    else:
         raise NotFoundException(
             f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
         )
-
-    return rest_api
 
 
 def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True) -> RestApi:
@@ -1500,13 +1734,26 @@ def remove_empty_attributes_from_method(method: Method) -> Method:
     if not method.get("methodResponses"):
         method.pop("methodResponses", None)
 
-    if not method.get("requestModels"):
+    if method.get("requestModels") is None:
         method.pop("requestModels", None)
 
-    if not method.get("requestParameters"):
+    if method.get("requestParameters") is None:
         method.pop("requestParameters", None)
 
     return method
+
+
+def remove_empty_attributes_from_integration(integration: Integration):
+    if not integration:
+        return integration
+
+    if not integration.get("integrationResponses"):
+        integration.pop("integrationResponses", None)
+
+    if integration.get("requestParameters") is None:
+        integration.pop("requestParameters", None)
+
+    return integration
 
 
 def remove_empty_attributes_from_model(model: Model) -> Model:
@@ -1516,18 +1763,17 @@ def remove_empty_attributes_from_model(model: Model) -> Model:
     return model
 
 
-def is_greedy_path(path_part: str) -> bool:
-    return path_part.startswith("{") and path_part.endswith("+}")
+def remove_empty_attributes_from_integration_response(integration_response: IntegrationResponse):
+    if integration_response.get("responseTemplates") is None:
+        integration_response.pop("responseTemplates", None)
 
-
-def is_variable_path(path_part: str) -> bool:
-    return path_part.startswith("{") and path_part.endswith("}")
+    return integration_response
 
 
 def validate_model_in_use(moto_rest_api: MotoRestAPI, model_name: str) -> None:
     for resource in moto_rest_api.resources.values():
         for method in resource.resource_methods.values():
-            if model_name in set(method.request_models.values()):
+            if method.request_models and model_name in set(method.request_models.values()):
                 path = f"{resource.get_path()}/{method.http_method}"
                 raise ConflictException(
                     f"Cannot delete model '{model_name}', is referenced in method request: {path}"
@@ -1655,7 +1901,7 @@ DEFAULT_EMPTY_MODEL = Model(
 
 DEFAULT_ERROR_MODEL = Model(
     id=short_uid()[:6],
-    name="Error",
+    name=ERROR_MODEL,
     contentType="application/json",
     description="This is a default error schema model",
     schema=json.dumps(

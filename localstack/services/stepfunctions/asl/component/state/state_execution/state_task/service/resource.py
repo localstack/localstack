@@ -9,6 +9,7 @@ from localstack.utils.aws import aws_stack
 
 class ResourceCondition(str):
     WaitForTaskToken = "waitForTaskToken"
+    Sync = "sync"
 
 
 class ResourceARN(TypedDict):
@@ -121,5 +122,7 @@ class ServiceResource(Resource):
             match tail_parts[-1]:
                 case "waitForTaskToken":
                     self.condition = ResourceCondition.WaitForTaskToken
+                case "sync":
+                    self.condition = ResourceCondition.Sync
                 case unsupported:
                     raise RuntimeError(f"Unsupported condition '{unsupported}'.")

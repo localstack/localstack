@@ -41,11 +41,27 @@ class HttpClient(abc.ABC):
         self.close()
 
 
+class _VerifyRespectingSession(requests.Session):
+    """
+    A class which wraps requests.Session to circumvent https://github.com/psf/requests/issues/3829.
+    This ensures that if `REQUESTS_CA_BUNDLE` or `CURL_CA_BUNDLE` are set, the request does not perform the TLS
+    verification if `session.verify` is set to `False.
+    """
+
+    def merge_environment_settings(self, url, proxies, stream, verify, *args, **kwargs):
+        if self.verify is False:
+            verify = False
+
+        return super(_VerifyRespectingSession, self).merge_environment_settings(
+            url, proxies, stream, verify, *args, **kwargs
+        )
+
+
 class SimpleRequestsClient(HttpClient):
     session: requests.Session
 
     def __init__(self, session: requests.Session = None):
-        self.session = session or requests.Session()
+        self.session = session or _VerifyRespectingSession()
 
     @staticmethod
     def _get_destination_url(request: Request, server: str | None = None) -> str:

@@ -11,6 +11,7 @@ from localstack.http import Response
 from localstack.http.request import restore_payload
 from localstack.services.generic_proxy import ProxyListener, modify_and_forward
 
+from ..accounts import reset_aws_access_key_id, reset_aws_account_id
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain
 from .routes import RouterHandler
@@ -31,6 +32,9 @@ def push_request_context(_chain: HandlerChain, context: RequestContext, _respons
     context._legacy_flask_cv_request_token = flask.globals._cv_request.set(context)
     context._legacy_quart_cv_request_token = quart.globals._cv_request.set(context)
     request_context.THREAD_LOCAL.request_context = context.request
+    # resetting thread local storage to avoid leakage between requests at all cost
+    reset_aws_access_key_id()
+    reset_aws_account_id()
 
 
 def pop_request_context(_chain: HandlerChain, _context: RequestContext, _response: Response):

@@ -14,12 +14,13 @@ from localstack.aws.api.opensearch import (
     EngineType,
     ValidationException,
 )
-from localstack.http.client import SimpleRequestsClient
+from localstack.http.client import SimpleStreamingRequestsClient
 from localstack.http.proxy import ProxyHandler
 from localstack.services.edge import ROUTER
 from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import (
     ShellCommandThread,
     chmod_r,
@@ -228,7 +229,7 @@ def register_cluster(
     forward_url = config.OPENSEARCH_CUSTOM_BACKEND or forward_url
 
     # if the opensearch security plugin is enabled, only TLS connections are allowed, but the cert cannot be verified
-    client = SimpleRequestsClient()
+    client = SimpleStreamingRequestsClient()
     client.session.verify = False
     endpoint = ProxyHandler(forward_url, client)
 
@@ -302,6 +303,10 @@ class OpensearchCluster(Server):
         self.security_options = security_options
         self.is_security_enabled = self.security_options and self.security_options.enabled
         self.auth = security_options.auth if self.is_security_enabled else None
+
+        parsed_arn = parse_arn(arn)
+        self.account_id = parsed_arn["account"]
+        self.region_name = parsed_arn["region"]
 
     @property
     def default_version(self) -> str:
@@ -411,7 +416,8 @@ class OpensearchCluster(Server):
             "http.publish_port": self.port,
             "transport.port": "0",
             "network.host": self.host,
-            "http.compression": "false",
+            # TODO this breaks the cluster check?!
+            "http.compression": "true",
             "path.data": f'"{dirs.data}"',
             "path.repo": f'"{dirs.backup}"',
             "discovery.type": "single-node",
@@ -549,6 +555,10 @@ class EdgeProxiedOpensearchCluster(Server):
         self.cluster = None
         self.cluster_port = None
         self.proxy = None
+
+        parsed_arn = parse_arn(arn)
+        self.account_id = parsed_arn["account"]
+        self.region_name = parsed_arn["region"]
 
     @property
     def version(self):

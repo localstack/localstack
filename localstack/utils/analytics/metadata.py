@@ -2,15 +2,18 @@ import dataclasses
 import logging
 import os
 import platform
+from typing import Optional
 
 from localstack import config, constants
 from localstack.runtime import hooks
 from localstack.utils.functions import call_safe
 from localstack.utils.json import FileMappedDocument
 from localstack.utils.objects import singleton_factory
-from localstack.utils.strings import long_uid, md5, short_uid
+from localstack.utils.strings import long_uid, md5
 
 LOG = logging.getLogger(__name__)
+
+_PHYSICAL_ID_SALT = "ls"
 
 
 @dataclasses.dataclass
@@ -48,7 +51,7 @@ def read_client_metadata() -> ClientMetadata:
     return ClientMetadata(
         session_id=get_session_id(),
         machine_id=get_machine_id(),
-        api_key=read_api_key_safe() or "",  # api key should not be None
+        api_key=get_api_key_or_auth_token() or "",  # api key should not be None
         system=get_system(),
         version=get_version_string(),
         is_ci=os.getenv("CI") is not None,
@@ -90,43 +93,96 @@ def get_machine_id() -> str:
     return doc["machine_id"]
 
 
+def _generate_session_id() -> str:
+    return long_uid()
+
+
+def _anonymize_physical_id(physical_id: str) -> str:
+    """
+    Returns 12 digits of the salted hash of the given physical ID.
+
+    :param physical_id: the physical id
+    :return: an anonymized 12 digit value representing the physical ID.
+    """
+    hashed = md5(_PHYSICAL_ID_SALT + physical_id)
+    return hashed[:12]
+
+
+def _generate_machine_id() -> str:
+    try:
+        # try to get a robust ID from the docker socket (which will be the same from the host and the
+        # container)
+        from localstack.utils.docker_utils import DOCKER_CLIENT
+
+        docker_id = DOCKER_CLIENT.get_system_id()
+        # some systems like podman don't return a stable ID, so we double-check that here
+        if docker_id == DOCKER_CLIENT.get_system_id():
+            return f"dkr_{_anonymize_physical_id(docker_id)}"
+    except Exception:
+        pass
+
+    if config.is_in_docker:
+        return f"gen_{long_uid()[:12]}"
+
+    # this can potentially be useful when generated on the host using the CLI and then mounted into the
+    # container via machine.json
+    try:
+        if os.path.exists("/etc/machine-id"):
+            with open("/etc/machine-id") as fd:
+                machine_id = str(fd.read()).strip()
+                if machine_id:
+                    return f"sys_{_anonymize_physical_id(machine_id)}"
+    except Exception:
+        pass
+
+    # always fall back to a generated id
+    return f"gen_{long_uid()[:12]}"
+
+
+def get_api_key_or_auth_token() -> Optional[str]:
+    # TODO: this is duplicated code from ext, but should probably migrate that to localstack
+    auth_token = os.environ.get("LOCALSTACK_AUTH_TOKEN", "").strip("'\" ")
+    if auth_token:
+        return auth_token
+
+    api_key = os.environ.get("LOCALSTACK_API_KEY", "").strip("'\" ")
+    if api_key:
+        return api_key
+
+    return None
+
+
+@singleton_factory
+def get_system() -> str:
+    try:
+        # try to get the system from the docker socket
+        from localstack.utils.docker_utils import DOCKER_CLIENT
+
+        system = DOCKER_CLIENT.get_system_info()
+        if system.get("OSType"):
+            return system.get("OSType").lower()
+    except Exception:
+        pass
+
+    if config.is_in_docker:
+        return "docker"
+
+    return platform.system().lower()
+
+
 @hooks.prepare_host()
 def prepare_host_machine_id():
     # lazy-init machine ID into cache on the host, which can then be used in the container
     get_machine_id()
 
 
-def _generate_session_id() -> str:
-    return long_uid()
+@hooks.configure_localstack_container()
+def _mount_machine_file(container):
+    from localstack.utils.container_utils.container_client import VolumeBind
 
-
-def _generate_machine_id() -> str:
-    if config.is_in_docker:
-        return short_uid()
-
-    # this can potentially be useful when generated on the host using the CLI and then mounted into the container via
-    # machine.json
-    try:
-        if os.path.exists("/etc/machine-id"):
-            with open("/etc/machine-id") as fd:
-                return md5(str(fd.read()))[:8]
-    except Exception:
-        pass
-
-    # always fall back to short_uid()
-    return short_uid()
-
-
-def read_api_key_safe():
-    try:
-        # FIXME this info (maybe along with other info) should be plugged in by ext instead of importing it here
-        from localstack_ext.bootstrap.licensing import read_api_key
-
-        return read_api_key(raise_if_missing=False)
-    except ImportError:
-        # the ext package is not available, API key cannot be read (or used)
-        return None
-
-
-def get_system() -> str:
-    return platform.system()
+    # mount tha machine file from the host's CLI cache directory into the appropriate location in the
+    # container
+    machine_file = os.path.join(config.dirs.cache, "machine.json")
+    if os.path.isfile(machine_file):
+        target = os.path.join(config.dirs.for_container().cache, "machine.json")
+        container.volumes.add(VolumeBind(machine_file, target, read_only=True))

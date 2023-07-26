@@ -82,6 +82,7 @@ InventoryId = str
 IsEnabled = bool
 IsLatest = bool
 IsPublic = bool
+IsRestoreInProgress = bool
 IsTruncated = bool
 KMSContext = str
 KeyCount = int
@@ -232,6 +233,8 @@ class BucketLocationConstraint(str):
     us_gov_west_1 = "us-gov-west-1"
     us_west_1 = "us-west-1"
     us_west_2 = "us-west-2"
+    ap_south_2 = "ap-south-2"
+    eu_south_2 = "eu-south-2"
 
 
 class BucketLogsPermission(str):
@@ -368,6 +371,8 @@ class InventoryOptionalField(str):
     IntelligentTieringAccessTier = "IntelligentTieringAccessTier"
     BucketKeyStatus = "BucketKeyStatus"
     ChecksumAlgorithm = "ChecksumAlgorithm"
+    ObjectAccessControlList = "ObjectAccessControlList"
+    ObjectOwner = "ObjectOwner"
 
 
 class JSONType(str):
@@ -455,6 +460,10 @@ class ObjectVersionStorageClass(str):
     STANDARD = "STANDARD"
 
 
+class OptionalObjectAttributes(str):
+    RestoreStatus = "RestoreStatus"
+
+
 class OwnerOverride(str):
     Destination = "Destination"
 
@@ -519,6 +528,7 @@ class RestoreRequestType(str):
 class ServerSideEncryption(str):
     AES256 = "AES256"
     aws_kms = "aws:kms"
+    aws_kms_dsse = "aws:kms:dsse"
 
 
 class SseKmsEncryptedObjectsStatus(str):
@@ -607,7 +617,7 @@ class NoSuchKey(ServiceException):
 class NoSuchUpload(ServiceException):
     code: str = "NoSuchUpload"
     sender_fault: bool = False
-    status_code: int = 400
+    status_code: int = 404
     UploadId: Optional[MultipartUploadId]
 
 
@@ -763,6 +773,20 @@ class MethodNotAllowed(ServiceException):
     status_code: int = 405
     Method: Optional[Method]
     ResourceType: Optional[ResourceType]
+
+
+class CrossLocationLoggingProhibitted(ServiceException):
+    code: str = "CrossLocationLoggingProhibitted"
+    sender_fault: bool = False
+    status_code: int = 403
+    TargetBucketLocation: Optional[BucketRegion]
+
+
+class InvalidTargetBucketForLogging(ServiceException):
+    code: str = "InvalidTargetBucketForLogging"
+    sender_fault: bool = False
+    status_code: int = 400
+    TargetBucket: Optional[BucketName]
 
 
 AbortDate = datetime
@@ -1478,11 +1502,13 @@ FilterRuleList = List[FilterRule]
 
 class GetBucketAccelerateConfigurationOutput(TypedDict, total=False):
     Status: Optional[BucketAccelerateStatus]
+    RequestCharged: Optional[RequestCharged]
 
 
 class GetBucketAccelerateConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     ExpectedBucketOwner: Optional[AccountId]
+    RequestPayer: Optional[RequestPayer]
 
 
 class GetBucketAclOutput(TypedDict, total=False):
@@ -2271,8 +2297,8 @@ class ListBucketMetricsConfigurationsRequest(ServiceRequest):
 
 
 class ListBucketsOutput(TypedDict, total=False):
-    Buckets: Optional[Buckets]
     Owner: Optional[Owner]
+    Buckets: Optional[Buckets]
 
 
 class MultipartUpload(TypedDict, total=False):
@@ -2301,6 +2327,7 @@ class ListMultipartUploadsOutput(TypedDict, total=False):
     Uploads: Optional[MultipartUploadList]
     CommonPrefixes: Optional[CommonPrefixList]
     EncodingType: Optional[EncodingType]
+    RequestCharged: Optional[RequestCharged]
 
 
 class ListMultipartUploadsRequest(ServiceRequest):
@@ -2312,6 +2339,15 @@ class ListMultipartUploadsRequest(ServiceRequest):
     Prefix: Optional[Prefix]
     UploadIdMarker: Optional[UploadIdMarker]
     ExpectedBucketOwner: Optional[AccountId]
+    RequestPayer: Optional[RequestPayer]
+
+
+RestoreExpiryDate = datetime
+
+
+class RestoreStatus(TypedDict, total=False):
+    IsRestoreInProgress: Optional[IsRestoreInProgress]
+    RestoreExpiryDate: Optional[RestoreExpiryDate]
 
 
 class ObjectVersion(TypedDict, total=False):
@@ -2324,6 +2360,7 @@ class ObjectVersion(TypedDict, total=False):
     IsLatest: Optional[IsLatest]
     LastModified: Optional[LastModified]
     Owner: Optional[Owner]
+    RestoreStatus: Optional[RestoreStatus]
 
 
 ObjectVersionList = List[ObjectVersion]
@@ -2343,6 +2380,10 @@ class ListObjectVersionsOutput(TypedDict, total=False):
     MaxKeys: Optional[MaxKeys]
     CommonPrefixes: Optional[CommonPrefixList]
     EncodingType: Optional[EncodingType]
+    RequestCharged: Optional[RequestCharged]
+
+
+OptionalObjectAttributesList = List[OptionalObjectAttributes]
 
 
 class ListObjectVersionsRequest(ServiceRequest):
@@ -2354,6 +2395,8 @@ class ListObjectVersionsRequest(ServiceRequest):
     Prefix: Optional[Prefix]
     VersionIdMarker: Optional[VersionIdMarker]
     ExpectedBucketOwner: Optional[AccountId]
+    RequestPayer: Optional[RequestPayer]
+    OptionalObjectAttributes: Optional[OptionalObjectAttributesList]
 
 
 class Object(TypedDict, total=False):
@@ -2364,6 +2407,7 @@ class Object(TypedDict, total=False):
     Size: Optional[Size]
     StorageClass: Optional[ObjectStorageClass]
     Owner: Optional[Owner]
+    RestoreStatus: Optional[RestoreStatus]
 
 
 ObjectList = List[Object]
@@ -2373,14 +2417,15 @@ class ListObjectsOutput(TypedDict, total=False):
     IsTruncated: Optional[IsTruncated]
     Marker: Optional[Marker]
     NextMarker: Optional[NextMarker]
-    Contents: Optional[ObjectList]
     Name: Optional[BucketName]
     Prefix: Optional[Prefix]
     Delimiter: Optional[Delimiter]
     MaxKeys: Optional[MaxKeys]
     CommonPrefixes: Optional[CommonPrefixList]
     EncodingType: Optional[EncodingType]
+    RequestCharged: Optional[RequestCharged]
     BucketRegion: Optional[BucketRegion]
+    Contents: Optional[ObjectList]
 
 
 class ListObjectsRequest(ServiceRequest):
@@ -2392,11 +2437,11 @@ class ListObjectsRequest(ServiceRequest):
     Prefix: Optional[Prefix]
     RequestPayer: Optional[RequestPayer]
     ExpectedBucketOwner: Optional[AccountId]
+    OptionalObjectAttributes: Optional[OptionalObjectAttributesList]
 
 
 class ListObjectsV2Output(TypedDict, total=False):
     IsTruncated: Optional[IsTruncated]
-    Contents: Optional[ObjectList]
     Name: Optional[BucketName]
     Prefix: Optional[Prefix]
     Delimiter: Optional[Delimiter]
@@ -2407,7 +2452,9 @@ class ListObjectsV2Output(TypedDict, total=False):
     ContinuationToken: Optional[Token]
     NextContinuationToken: Optional[NextToken]
     StartAfter: Optional[StartAfter]
+    RequestCharged: Optional[RequestCharged]
     BucketRegion: Optional[BucketRegion]
+    Contents: Optional[ObjectList]
 
 
 class ListObjectsV2Request(ServiceRequest):
@@ -2421,6 +2468,7 @@ class ListObjectsV2Request(ServiceRequest):
     StartAfter: Optional[StartAfter]
     RequestPayer: Optional[RequestPayer]
     ExpectedBucketOwner: Optional[AccountId]
+    OptionalObjectAttributes: Optional[OptionalObjectAttributesList]
 
 
 class Part(TypedDict, total=False):
@@ -3384,7 +3432,11 @@ class S3Api:
 
     @handler("GetBucketAccelerateConfiguration")
     def get_bucket_accelerate_configuration(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
     ) -> GetBucketAccelerateConfigurationOutput:
         raise NotImplementedError
 
@@ -3726,6 +3778,7 @@ class S3Api:
         prefix: Prefix = None,
         upload_id_marker: UploadIdMarker = None,
         expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
     ) -> ListMultipartUploadsOutput:
         raise NotImplementedError
 
@@ -3741,6 +3794,8 @@ class S3Api:
         prefix: Prefix = None,
         version_id_marker: VersionIdMarker = None,
         expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
+        optional_object_attributes: OptionalObjectAttributesList = None,
     ) -> ListObjectVersionsOutput:
         raise NotImplementedError
 
@@ -3756,6 +3811,7 @@ class S3Api:
         prefix: Prefix = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        optional_object_attributes: OptionalObjectAttributesList = None,
     ) -> ListObjectsOutput:
         raise NotImplementedError
 
@@ -3773,6 +3829,7 @@ class S3Api:
         start_after: StartAfter = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        optional_object_attributes: OptionalObjectAttributesList = None,
     ) -> ListObjectsV2Output:
         raise NotImplementedError
 

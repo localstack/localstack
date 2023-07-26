@@ -22,17 +22,19 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestMathOperations:
-    def test_math_random(self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client):
+    def test_math_random(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
         snf_role_arn = create_iam_role_for_sfn()
-        snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
-        snapshot.add_transformer(
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+        sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 "$..events..executionSucceededEventDetails.output.FunctionResult",
                 "RandomNumberGenerated",
                 replace_reference=False,
             )
         )
-        snapshot.add_transformer(
+        sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 "$..events..stateExitedEventDetails.output.FunctionResult",
                 "RandomNumberGenerated",
@@ -47,7 +49,7 @@ class TestMathOperations:
         creation_resp = create_state_machine(
             name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
         state_machine_arn = creation_resp["stateMachineArn"]
 
         start_end_tuples = [(12.50, 44.51), (9999, 99999), (-99999, -9999)]
@@ -60,7 +62,7 @@ class TestMathOperations:
             exec_resp = aws_client.stepfunctions.start_execution(
                 stateMachineArn=state_machine_arn, input=exec_input
             )
-            snapshot.add_transformer(snapshot.transform.sfn_sm_exec_arn(exec_resp, i))
+            sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, i))
             execution_arn = exec_resp["executionArn"]
 
             await_execution_success(
@@ -70,21 +72,21 @@ class TestMathOperations:
             exec_hist_resp = aws_client.stepfunctions.get_execution_history(
                 executionArn=execution_arn
             )
-            snapshot.match(f"exec_hist_resp_{i}", exec_hist_resp)
+            sfn_snapshot.match(f"exec_hist_resp_{i}", exec_hist_resp)
 
     def test_math_random_seeded(
-        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
         snf_role_arn = create_iam_role_for_sfn()
-        snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
-        snapshot.add_transformer(
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+        sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 "$..events..executionSucceededEventDetails.output.FunctionResult",
                 "RandomNumberGenerated",
                 replace_reference=False,
             )
         )
-        snapshot.add_transformer(
+        sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 "$..events..stateExitedEventDetails.output.FunctionResult",
                 "RandomNumberGenerated",
@@ -99,7 +101,7 @@ class TestMathOperations:
         creation_resp = create_state_machine(
             name=sm_name, definition=definition_str, roleArn=snf_role_arn
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
         state_machine_arn = creation_resp["stateMachineArn"]
 
         input_value = {"fst": 0, "snd": 999, "trd": 3}
@@ -109,7 +111,7 @@ class TestMathOperations:
         exec_resp = aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_arn, input=exec_input
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
         execution_arn = exec_resp["executionArn"]
 
         await_execution_success(
@@ -117,9 +119,11 @@ class TestMathOperations:
         )
 
         exec_hist_resp = aws_client.stepfunctions.get_execution_history(executionArn=execution_arn)
-        snapshot.match("exec_hist_resp", exec_hist_resp)
+        sfn_snapshot.match("exec_hist_resp", exec_hist_resp)
 
-    def test_math_add(self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client):
+    def test_math_add(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
         add_tuples = [(-9, 3), (1.49, 1.50), (1.50, 1.51), (-1.49, -1.50), (-1.50, -1.51)]
         input_values = list()
         for fst, snd in add_tuples:
@@ -128,7 +132,7 @@ class TestMathOperations:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             IFT.MATH_ADD,
             input_values,
         )

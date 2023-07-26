@@ -236,6 +236,7 @@ def test_create_change_set_missing_stackname(aws_client):
         )
 
 
+@pytest.mark.aws_validated
 def test_create_change_set_with_ssm_parameter(
     cleanup_changesets,
     cleanup_stacks,
@@ -430,6 +431,80 @@ def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_tem
         template=template_body,
         stack_name=stack.stack_name,
     )
+
+
+@pytest.mark.aws_validated
+def test_create_and_then_update_refreshes_template_metadata(
+    aws_client,
+    cleanup_changesets,
+    cleanup_stacks,
+    is_change_set_finished,
+    is_change_set_created_and_available,
+):
+    stacks_to_cleanup = set()
+    changesets_to_cleanup = set()
+
+    try:
+        stack_name = f"stack-{short_uid()}"
+
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml"
+        )
+
+        template_body = load_template_raw(template_path)
+
+        create_response = aws_client.cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=f"change-set-{short_uid()}",
+            TemplateBody=template_body,
+            ChangeSetType="CREATE",
+        )
+
+        stacks_to_cleanup.add(create_response["StackId"])
+        changesets_to_cleanup.add(create_response["Id"])
+
+        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+            ChangeSetName=create_response["Id"]
+        )
+
+        aws_client.cloudformation.execute_change_set(
+            StackName=stack_name, ChangeSetName=create_response["Id"]
+        )
+
+        wait_until(is_change_set_finished(create_response["Id"]))
+
+        # Note the metadata alone won't change if there are no changes to resources
+        # TODO: find a better way to make a replacement in yaml template
+        template_body = template_body.replace(
+            "TopicName: sns-topic-simple",
+            "TopicName: sns-topic-simple-updated",
+        )
+
+        update_response = aws_client.cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=f"change-set-{short_uid()}",
+            TemplateBody=template_body,
+            ChangeSetType="UPDATE",
+        )
+
+        stacks_to_cleanup.add(update_response["StackId"])
+        changesets_to_cleanup.add(update_response["Id"])
+
+        wait_until(is_change_set_created_and_available(update_response["Id"]))
+
+        aws_client.cloudformation.execute_change_set(
+            StackName=stack_name, ChangeSetName=update_response["Id"]
+        )
+
+        wait_until(is_change_set_finished(update_response["Id"]))
+
+        summary = aws_client.cloudformation.get_template_summary(StackName=stack_name)
+
+        assert "TopicName" in summary["Metadata"]
+        assert "sns-topic-simple-updated" in summary["Metadata"]
+    finally:
+        cleanup_stacks(list(stacks_to_cleanup))
+        cleanup_changesets(list(changesets_to_cleanup))
 
 
 @pytest.mark.aws_validated

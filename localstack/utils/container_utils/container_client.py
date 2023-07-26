@@ -21,11 +21,14 @@ else:
     from typing_extensions import Protocol, get_args, Literal
 
 from localstack import config
-from localstack.utils.collections import HashableList
+from localstack.utils.collections import HashableList, ensure_list
 from localstack.utils.files import TMP_FILES, rm_rf, save_file
 from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
+
+# list of well-known image repo prefixes that should be stripped off to canonicalize image names
+WELL_KNOWN_IMAGE_REPO_PREFIXES = ("localhost/", "docker.io/library/")
 
 
 @unique
@@ -131,6 +134,8 @@ class Ulimit:
 
 # defines the type for port mappings (source->target port range)
 PortRange = Union[List, HashableList]
+# defines the protocol for a port range ("tcp" or "udp")
+PortProtocol = str
 
 
 def isinstance_union(obj, class_or_tuple):
@@ -147,7 +152,7 @@ class PortMappings:
     # bind host to be used for defining port mappings
     bind_host: str
     # maps `from` port range to `to` port range for port mappings
-    mappings: Dict[PortRange, List]
+    mappings: Dict[Tuple[PortRange, PortProtocol], List]
 
     def __init__(self, bind_host: str = None):
         self.bind_host = bind_host if bind_host else ""
@@ -157,22 +162,24 @@ class PortMappings:
         self,
         port: Union[int, PortRange],
         mapped: Union[int, PortRange] = None,
-        protocol: str = "tcp",
+        protocol: PortProtocol = "tcp",
     ):
         mapped = mapped or port
         if isinstance_union(port, PortRange):
             for i in range(port[1] - port[0] + 1):
                 if isinstance_union(mapped, PortRange):
-                    self.add(port[0] + i, mapped[0] + i)
+                    self.add(port[0] + i, mapped[0] + i, protocol)
                 else:
-                    self.add(port[0] + i, mapped)
+                    self.add(port[0] + i, mapped, protocol)
             return
         if port is None or int(port) <= 0:
             raise Exception(f"Unable to add mapping for invalid port: {port}")
-        if self.contains(port):
+        if self.contains(port, protocol):
             return
         bisected_host_port = None
-        for from_range, to_range in dict(self.mappings).items():
+        for (from_range, from_protocol), to_range in self.mappings.items():
+            if not from_protocol == protocol:
+                continue
             if not self.in_expanded_range(port, from_range):
                 continue
             if not self.in_expanded_range(mapped, to_range):
@@ -181,41 +188,44 @@ class PortMappings:
             to_range_len = to_range[1] - to_range[0]
             is_uniform = from_range_len == to_range_len
             if is_uniform:
-                self.expand_range(port, from_range, remap=True)
-                self.expand_range(mapped, to_range)
+                self.expand_range(port, from_range, protocol=protocol, remap=True)
+                self.expand_range(mapped, to_range, protocol=protocol)
             else:
                 if not self.in_range(mapped, to_range):
                     continue
                 # extending a 1 to 1 mapping to be many to 1
                 elif from_range_len == 1:
-                    self.expand_range(port, from_range, remap=True)
+                    self.expand_range(port, from_range, protocol=protocol, remap=True)
                 # splitting a uniform mapping
                 else:
                     bisected_port_index = mapped - to_range[0]
                     bisected_host_port = from_range[0] + bisected_port_index
-                    self.bisect_range(mapped, to_range)
-                    self.bisect_range(bisected_host_port, from_range, remap=True)
+                    self.bisect_range(mapped, to_range, protocol=protocol)
+                    self.bisect_range(bisected_host_port, from_range, protocol=protocol, remap=True)
                     break
             return
-        protocol = str(protocol or "tcp").lower()
         if bisected_host_port is None:
-            port_range = [port, port, protocol]
+            port_range = [port, port]
         elif bisected_host_port < port:
-            port_range = [bisected_host_port, port, protocol]
+            port_range = [bisected_host_port, port]
         else:
-            port_range = [port, bisected_host_port, protocol]
-        self.mappings[HashableList(port_range)] = [mapped, mapped]
+            port_range = [port, bisected_host_port]
+        protocol = str(protocol or "tcp").lower()
+        self.mappings[(HashableList(port_range), protocol)] = [mapped, mapped]
 
     def to_str(self) -> str:
         bind_address = f"{self.bind_host}:" if self.bind_host else ""
 
         def entry(k, v):
-            protocol = "/%s" % k[2] if k[2] != "tcp" else ""
-            if k[0] == k[1] and v[0] == v[1]:
-                return "-p %s%s:%s%s" % (bind_address, k[0], v[0], protocol)
-            if k[0] != k[1] and v[0] == v[1]:
-                return "-p %s%s-%s:%s%s" % (bind_address, k[0], k[1], v[0], protocol)
-            return "-p %s%s-%s:%s-%s%s" % (bind_address, k[0], k[1], v[0], v[1], protocol)
+            from_range, protocol = k
+            to_range = v
+            # use /<protocol> suffix if the protocol is not"tcp"
+            protocol_suffix = f"/{protocol}" if protocol != "tcp" else ""
+            if from_range[0] == from_range[1] and to_range[0] == to_range[1]:
+                return f"-p {bind_address}{from_range[0]}:{to_range[0]}{protocol_suffix}"
+            if from_range[0] != from_range[1] and to_range[0] == to_range[1]:
+                return f"-p {bind_address}{from_range[0]}-{from_range[1]}:{to_range[0]}{protocol_suffix}"
+            return f"-p {bind_address}{from_range[0]}-{from_range[1]}:{to_range[0]}-{to_range[1]}{protocol_suffix}"
 
         return " ".join([entry(k, v) for k, v in self.mappings.items()])
 
@@ -223,10 +233,15 @@ class PortMappings:
         bind_address = f"{self.bind_host}:" if self.bind_host else ""
 
         def entry(k, v):
-            protocol = "/%s" % k[2] if k[2] != "tcp" else ""
-            if k[0] == k[1] and v[0] == v[1]:
-                return ["-p", f"{bind_address}{k[0]}:{v[0]}{protocol}"]
-            return ["-p", f"{bind_address}{k[0]}-{k[1]}:{v[0]}-{v[1]}{protocol}"]
+            from_range, protocol = k
+            to_range = v
+            protocol_suffix = f"/{protocol}" if protocol != "tcp" else ""
+            if from_range[0] == from_range[1] and to_range[0] == to_range[1]:
+                return ["-p", f"{bind_address}{from_range[0]}:{to_range[0]}{protocol_suffix}"]
+            return [
+                "-p",
+                f"{bind_address}{from_range[0]}-{from_range[1]}:{to_range[0]}-{to_range[1]}{protocol_suffix}",
+            ]
 
         return [item for k, v in self.mappings.items() for item in entry(k, v)]
 
@@ -234,31 +249,38 @@ class PortMappings:
         bind_address = self.bind_host or ""
 
         def entry(k, v):
-            protocol = "/%s" % k[2]
-            if k[0] != k[1] and v[0] == v[1]:
-                container_port = v[0]
-                host_ports = list(range(k[0], k[1] + 1))
+            from_range, protocol = k
+            to_range = v
+            protocol_suffix = f"/{protocol}"
+            if from_range[0] != from_range[1] and to_range[0] == to_range[1]:
+                container_port = to_range[0]
+                host_ports = list(range(from_range[0], from_range[1] + 1))
                 return [
                     (
-                        f"{container_port}{protocol}",
+                        f"{container_port}{protocol_suffix}",
                         (bind_address, host_ports) if bind_address else host_ports,
                     )
                 ]
             return [
                 (
-                    f"{container_port}{protocol}",
+                    f"{container_port}{protocol_suffix}",
                     (bind_address, host_port) if bind_address else host_port,
                 )
-                for container_port, host_port in zip(range(v[0], v[1] + 1), range(k[0], k[1] + 1))
+                for container_port, host_port in zip(
+                    range(to_range[0], to_range[1] + 1), range(from_range[0], from_range[1] + 1)
+                )
             ]
 
         items = [item for k, v in self.mappings.items() for item in entry(k, v)]
         return dict(items)
 
-    def contains(self, port: int) -> bool:
-        for from_range, to_range in self.mappings.items():
-            if self.in_range(port, from_range):
-                return True
+    def contains(self, port: int, protocol: PortProtocol = "tcp") -> bool:
+        for from_range_w_protocol, to_range in self.mappings.items():
+            from_protocol = from_range_w_protocol[1]
+            if from_protocol == protocol:
+                from_range = from_range_w_protocol[0]
+                if self.in_range(port, from_range):
+                    return True
 
     def in_range(self, port: int, range: PortRange) -> bool:
         return port >= range[0] and port <= range[1]
@@ -266,7 +288,9 @@ class PortMappings:
     def in_expanded_range(self, port: int, range: PortRange):
         return port >= range[0] - 1 and port <= range[1] + 1
 
-    def expand_range(self, port: int, range: PortRange, remap: bool = False):
+    def expand_range(
+        self, port: int, range: PortRange, protocol: PortProtocol = "tcp", remap: bool = False
+    ):
         """
         Expand the given port range by the given port. If remap==True, put the updated range into self.mappings
         """
@@ -280,9 +304,11 @@ class PortMappings:
         else:
             raise Exception(f"Unable to add port {port} to existing range {range}")
         if remap:
-            self._remap_range(range, new_range)
+            self._remap_range(range, new_range, protocol=protocol)
 
-    def bisect_range(self, port: int, range: PortRange, remap: bool = False):
+    def bisect_range(
+        self, port: int, range: PortRange, protocol: PortProtocol = "tcp", remap: bool = False
+    ):
         """
         Bisect a port range, at the provided port. This is needed in some cases when adding a
         non-uniform host to port mapping adjacent to an existing port range.
@@ -296,10 +322,12 @@ class PortMappings:
         else:
             new_range[1] = port - 1
         if remap:
-            self._remap_range(range, new_range)
+            self._remap_range(range, new_range, protocol)
 
-    def _remap_range(self, old_key: PortRange, new_key: PortRange):
-        self.mappings[HashableList(new_key)] = self.mappings.pop(old_key)
+    def _remap_range(self, old_key: PortRange, new_key: PortRange, protocol: PortProtocol):
+        self.mappings[(HashableList(new_key), protocol)] = self.mappings.pop(
+            (HashableList(old_key), protocol)
+        )
 
     def __repr__(self):
         return f"<PortMappings: {self.to_dict()}>"
@@ -385,11 +413,11 @@ class ContainerConfiguration:
     command: Optional[List[str]] = None
     env_vars: Dict[str, str] = dataclasses.field(default_factory=dict)
 
-    privileged: Optional[bool] = None
-    remove: Optional[bool] = None
-    interactive: Optional[bool] = None
-    tty: Optional[bool] = None
-    detach: Optional[bool] = None
+    privileged: bool = False
+    remove: bool = False
+    interactive: bool = False
+    tty: bool = False
+    detach: bool = False
 
     stdin: Optional[str] = None
     user: Optional[str] = None
@@ -420,10 +448,21 @@ class DockerRunFlags:
     ports: Optional[PortMappings]
     ulimits: Optional[List[Ulimit]]
     user: Optional[str]
+    dns: Optional[List[str]]
 
 
+# TODO: remove Docker/Podman compatibility switches (in particular strip_wellknown_repo_prefixes=...)
+#  from the container client base interface and introduce derived Podman client implementations instead!
 class ContainerClient(metaclass=ABCMeta):
     STOP_TIMEOUT = 0
+
+    @abstractmethod
+    def get_system_info(self) -> dict:
+        """Returns the docker system-wide information as dictionary (``docker info``)."""
+
+    def get_system_id(self) -> str:
+        """Returns the unique and stable ID of the docker daemon."""
+        return self.get_system_info()["ID"]
 
     @abstractmethod
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
@@ -433,7 +472,7 @@ class ContainerClient(metaclass=ABCMeta):
     def get_networks(self, container_name: str) -> List[str]:
         LOG.debug("Getting networks for container: %s", container_name)
         container_attrs = self.inspect_container(container_name_or_id=container_name)
-        return list(container_attrs["NetworkSettings"]["Networks"].keys())
+        return list(container_attrs["NetworkSettings"].get("Networks", {}).keys())
 
     def get_container_ipv4_for_network(
         self, container_name_or_id: str, container_network: str
@@ -452,8 +491,16 @@ class ContainerClient(metaclass=ABCMeta):
         # we always need the ID for this
         container_id = self.get_container_id(container_name=container_name_or_id)
         network_attrs = self.inspect_network(container_network)
-        containers = network_attrs["Containers"]
+        containers = network_attrs.get("Containers") or {}
         if container_id not in containers:
+            LOG.debug("Network attributes: %s", network_attrs)
+            try:
+                inspection = self.inspect_container(container_name_or_id=container_name_or_id)
+                LOG.debug("Container %s Attributes: %s", container_name_or_id, inspection)
+                logs = self.get_container_logs(container_name_or_id=container_name_or_id)
+                LOG.debug("Container %s Logs: %s", container_name_or_id, logs)
+            except ContainerException as e:
+                LOG.debug("Cannot inspect container %s: %s", container_name_or_id, e)
             raise ContainerException(
                 "Container %s is not connected to target network %s",
                 container_name_or_id,
@@ -474,7 +521,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param timeout: Timeout after which SIGKILL is sent to the container.
                         If not specified, defaults to `STOP_TIMEOUT`
         """
-        pass
 
     @abstractmethod
     def restart_container(self, container_name: str, timeout: int = 10):
@@ -494,7 +540,6 @@ class ContainerClient(metaclass=ABCMeta):
     @abstractmethod
     def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
         """Removes container with given name"""
-        pass
 
     @abstractmethod
     def remove_image(self, image: str, force: bool = True) -> None:
@@ -503,7 +548,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param image: Image name and tag
         :param force: Force removal
         """
-        pass
 
     @abstractmethod
     def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
@@ -511,7 +555,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         :return: A list of dicts with keys id, image, name, labels, status
         """
-        pass
 
     def get_running_container_names(self) -> List[str]:
         """Returns a list of the names of all running containers"""
@@ -528,24 +571,20 @@ class ContainerClient(metaclass=ABCMeta):
         self, container_name: str, local_path: str, container_path: str
     ) -> None:
         """Copy contents of the given local path into the container"""
-        pass
 
     @abstractmethod
     def copy_from_container(
         self, container_name: str, local_path: str, container_path: str
     ) -> None:
         """Copy contents of the given container to the host"""
-        pass
 
     @abstractmethod
     def pull_image(self, docker_image: str, platform: Optional[DockerPlatform] = None) -> None:
         """Pulls an image with a given name from a Docker registry"""
-        pass
 
     @abstractmethod
     def push_image(self, docker_image: str) -> None:
         """Pushes an image with a given name to a Docker registry"""
-        pass
 
     @abstractmethod
     def build_image(
@@ -562,7 +601,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param context_path: Path for build context (defaults to dirname of Dockerfile)
         :param platform: Target platform for build (defaults to platform of Docker host)
         """
-        pass
 
     @abstractmethod
     def tag_image(self, source_ref: str, target_name: str) -> None:
@@ -571,27 +609,30 @@ class ContainerClient(metaclass=ABCMeta):
         :param source_ref: Name or ID of the image to be tagged
         :param target_name: New name (tag) of the tagged image
         """
-        pass
 
     @abstractmethod
-    def get_docker_image_names(self, strip_latest=True, include_tags=True) -> List[str]:
+    def get_docker_image_names(
+        self,
+        strip_latest: bool = True,
+        include_tags: bool = True,
+        strip_wellknown_repo_prefixes: bool = True,
+    ) -> List[str]:
         """
         Get all names of docker images available to the container engine
         :param strip_latest: return images both with and without :latest tag
-        :param include_tags: Include tags of the images in the names
+        :param include_tags: include tags of the images in the names
+        :param strip_wellknown_repo_prefixes: whether to strip off well-known repo prefixes like
+               "localhost/" or "docker.io/library/" which are added by the Podman API, but not by Docker
         :return: List of image names
         """
-        pass
 
     @abstractmethod
-    def get_container_logs(self, container_name_or_id: str, safe=False) -> str:
+    def get_container_logs(self, container_name_or_id: str, safe: bool = False) -> str:
         """Get all logs of a given container"""
-        pass
 
     @abstractmethod
     def stream_container_logs(self, container_name_or_id: str) -> CancellableStream:
         """Returns a blocking generator you can iterate over to retrieve log output as it happens."""
-        pass
 
     @abstractmethod
     def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
@@ -599,7 +640,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         :return: Dict containing docker attributes as returned by the daemon
         """
-        pass
 
     def inspect_container_volumes(self, container_name_or_id) -> List[VolumeInfo]:
         """Return information about the volumes mounted into the given container.
@@ -614,14 +654,17 @@ class ContainerClient(metaclass=ABCMeta):
         return volumes
 
     @abstractmethod
-    def inspect_image(self, image_name: str, pull: bool = True) -> Dict[str, Union[Dict, str]]:
+    def inspect_image(
+        self, image_name: str, pull: bool = True, strip_wellknown_repo_prefixes: bool = True
+    ) -> Dict[str, Union[dict, list, str]]:
         """Get detailed attributes of an image.
 
         :param image_name: Image name to inspect
         :param pull: Whether to pull image if not existent
+        :param strip_wellknown_repo_prefixes: whether to strip off well-known repo prefixes like
+               "localhost/" or "docker.io/library/" which are added by the Podman API, but not by Docker
         :return: Dict containing docker attributes as returned by the daemon
         """
-        pass
 
     @abstractmethod
     def create_network(self, network_name: str) -> str:
@@ -630,7 +673,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param network_name: Name of the network
         :return Network ID
         """
-        pass
 
     @abstractmethod
     def delete_network(self, network_name: str) -> None:
@@ -638,7 +680,6 @@ class ContainerClient(metaclass=ABCMeta):
         Delete a network with the given name
         :param network_name: Name of the network
         """
-        pass
 
     @abstractmethod
     def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
@@ -646,7 +687,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         :return: Dict containing docker attributes as returned by the daemon
         """
-        pass
 
     @abstractmethod
     def connect_container_to_network(
@@ -658,7 +698,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param container_name_or_id: Container to connect to the network
         :param aliases: List of dns names the container should be available under in the network
         """
-        pass
 
     @abstractmethod
     def disconnect_container_from_network(
@@ -669,7 +708,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param network_name: Network to disconnect the container from
         :param container_name_or_id: Container to disconnect from the network
         """
-        pass
 
     def get_container_name(self, container_id: str) -> str:
         """Get the name of a container by a given identifier"""
@@ -685,7 +723,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         If container has multiple networks, it will return the IP of the first
         """
-        pass
 
     def get_image_cmd(self, docker_image: str, pull: bool = True) -> List[str]:
         """Get the command for the given image
@@ -703,13 +740,12 @@ class ContainerClient(metaclass=ABCMeta):
         :return: Image entrypoint
         """
         LOG.debug("Getting the entrypoint for image: %s", docker_image)
-        entrypoint_list = self.inspect_image(docker_image, pull)["Config"]["Entrypoint"] or []
+        entrypoint_list = self.inspect_image(docker_image, pull)["Config"].get("Entrypoint") or []
         return shlex.join(entrypoint_list)
 
     @abstractmethod
     def has_docker(self) -> bool:
         """Check if system has docker available"""
-        pass
 
     @abstractmethod
     def commit(
@@ -724,7 +760,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param image_name: Destination image name
         :param image_tag: Destination image tag
         """
-        pass
 
     def create_container_from_config(self, container_config: ContainerConfiguration) -> str:
         """
@@ -776,7 +811,7 @@ class ContainerClient(metaclass=ABCMeta):
         cap_drop: Optional[List[str]] = None,
         security_opt: Optional[List[str]] = None,
         network: Optional[str] = None,
-        dns: Optional[str] = None,
+        dns: Optional[Union[str, List[str]]] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
@@ -787,7 +822,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         :return: Container ID
         """
-        pass
 
     @abstractmethod
     def run_container(
@@ -821,7 +855,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         :return: A tuple (stdout, stderr)
         """
-        pass
 
     @abstractmethod
     def exec_in_container(
@@ -839,7 +872,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         :return: A tuple (stdout, stderr)
         """
-        pass
 
     @abstractmethod
     def start_container(
@@ -854,7 +886,6 @@ class ContainerClient(metaclass=ABCMeta):
 
         :return: A tuple (stdout, stderr) if attach or interactive is set, otherwise a tuple (b"container_name_or_id", b"")
         """
-        pass
 
     @abstractmethod
     def login(self, username: str, password: str, registry: Optional[str] = None) -> None:
@@ -865,7 +896,6 @@ class ContainerClient(metaclass=ABCMeta):
         :param password: Password / token for the registry
         :param registry: Registry url
         """
-        pass
 
 
 class Util:
@@ -916,14 +946,31 @@ class Util:
         return f
 
     @staticmethod
-    def append_without_latest(image_names):
+    def append_without_latest(image_names: List[str]):
         suffix = ":latest"
         for image in list(image_names):
             if image.endswith(suffix):
                 image_names.append(image[: -len(suffix)])
 
     @staticmethod
-    def tar_path(path, target_path, is_dir: bool):
+    def strip_wellknown_repo_prefixes(image_names: List[str]) -> List[str]:
+        """
+        Remove well-known repo prefixes like `localhost/` or `docker.io/library/` from the list of given
+        image names. This is mostly to ensure compatibility of our Docker client with Podman API responses.
+        :return: a copy of the list of image names, with well-known repo prefixes removed
+        """
+        result = []
+        for image in image_names:
+            for prefix in WELL_KNOWN_IMAGE_REPO_PREFIXES:
+                if image.startswith(prefix):
+                    image = image.removeprefix(prefix)
+                    # strip only one of the matching prefixes (avoid multi-stripping)
+                    break
+            result.append(image)
+        return result
+
+    @staticmethod
+    def tar_path(path: str, target_path: str, is_dir: bool):
         f = tempfile.NamedTemporaryFile()
         with tarfile.open(mode="w", fileobj=f) as t:
             abs_path = os.path.abspath(path)
@@ -963,6 +1010,7 @@ class Util:
         privileged: Optional[bool] = None,
         user: Optional[str] = None,
         ulimits: Optional[List[Ulimit]] = None,
+        dns: Optional[Union[str, List[str]]] = None,
     ) -> DockerRunFlags:
         """Parses additional CLI-formatted Docker flags, which could overwrite provided defaults.
         :param additional_flags: String which contains the flag definitions inspired by the Docker CLI reference:
@@ -976,6 +1024,7 @@ class Util:
         :param privileged: Run the container in privileged mode. Warning will be printed if overwritten in flags.
         :param ulimits: ulimit options in the format <type>=<soft limit>[:<hard limit>]
         :param user: User to run first process. Warning will be printed if user is overwritten in flags.
+        :param dns: List of DNS servers to configure the container with.
         :return: A DockerRunFlags object that will return new objects if respective parameters were None and
                 additional flags contained a flag for that object or the same which are passed otherwise.
         """
@@ -1021,6 +1070,7 @@ class Util:
         parser.add_argument(
             "--volume", "-v", help="Bind mount a volume", dest="volumes", action="append"
         )
+        parser.add_argument("--dns", help="Set custom DNS servers", dest="dns", action="append")
 
         # Parse
         flags = shlex.split(additional_flags)
@@ -1064,11 +1114,13 @@ class Util:
             )
             platform = args.platform
 
-        if args.privileged is not None:
+        if args.privileged:
             LOG.warning(
-                f"Overwriting Docker container privileged flag {privileged} with new value {args.privileged}"
+                "Overwriting Docker container privileged flag %s with new value %s",
+                privileged,
+                args.privileged,
             )
-            privileged = True
+            privileged = args.privileged
 
         if args.publish_ports:
             for port_mapping in args.publish_ports:
@@ -1082,14 +1134,14 @@ class Util:
                     )
                     _, host_port, container_port = port_split
                 else:
-                    raise ValueError("Invalid port string provided: %s", port_mapping)
+                    raise ValueError(f"Invalid port string provided: {port_mapping}")
                 host_port_split = host_port.split("-")
                 if len(host_port_split) == 2:
                     host_port = [int(host_port_split[0]), int(host_port_split[1])]
                 elif len(host_port_split) == 1:
                     host_port = int(host_port)
                 else:
-                    raise ValueError("Invalid port string provided: %s", port_mapping)
+                    raise ValueError(f"Invalid port string provided: {port_mapping}")
                 if "/" in container_port:
                     container_port, protocol = container_port.split("/")
                 ports = ports if ports is not None else PortMappings()
@@ -1133,6 +1185,13 @@ class Util:
                     LOG.info("Volume options like :ro or :rw are currently ignored.")
                 mounts.append((host_path, container_path))
 
+        dns = ensure_list(dns or [])
+        if args.dns:
+            LOG.info(
+                "Extending Docker container DNS servers %s with additional values %s", dns, args.dns
+            )
+            dns.extend(args.dns)
+
         return DockerRunFlags(
             env_vars=env_vars,
             extra_hosts=extra_hosts,
@@ -1144,6 +1203,7 @@ class Util:
             privileged=privileged,
             ulimits=ulimits,
             user=user,
+            dns=dns,
         )
 
     @staticmethod

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import contextlib
 import json
 import logging
@@ -18,7 +17,8 @@ from werkzeug import Response
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.sns.constants import PLATFORM_ENDPOINT_MSGS_ENDPOINT
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.services.sns.constants import PLATFORM_ENDPOINT_MSGS_ENDPOINT, SMS_MSGS_ENDPOINT
 from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils import testutil
@@ -191,6 +191,68 @@ class TestSNSProvider:
         snapshot.match("empty-unsubscribe", response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$.get-topic-attrs.Attributes.DeliveryPolicy",
+            "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
+            "$.get-topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
+        ]
+    )
+    def test_create_topic_with_attributes(self, sns_create_topic, snapshot, aws_client):
+        create_topic = sns_create_topic(
+            Name="topictest.fifo",
+            Attributes={
+                "DisplayName": "TestTopic",
+                "SignatureVersion": "2",
+                "FifoTopic": "true",
+            },
+        )
+        topic_arn = create_topic["TopicArn"]
+
+        get_attrs_resp = aws_client.sns.get_topic_attributes(
+            TopicArn=topic_arn,
+        )
+        snapshot.match("get-topic-attrs", get_attrs_resp)
+
+        with pytest.raises(ClientError) as e:
+            wrong_topic_arn = f"{topic_arn[:-8]}{short_uid()}"
+            aws_client.sns.get_topic_attributes(TopicArn=wrong_topic_arn)
+
+        snapshot.match("get-attrs-nonexistent-topic", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
+    def test_create_subscriptions_with_attributes(
+        self, sns_create_topic, sqs_create_queue, sqs_queue_arn, snapshot, aws_client
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_queue_arn(queue_url)
+
+        subscribe_resp = aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_arn,
+            Attributes={
+                "RawMessageDelivery": "true",
+                "FilterPolicyScope": "MessageBody",
+            },
+            ReturnSubscriptionArn=True,
+        )
+        snapshot.match("subscribe", subscribe_resp)
+
+        get_attrs_resp = aws_client.sns.get_subscription_attributes(
+            SubscriptionArn=subscribe_resp["SubscriptionArn"]
+        )
+        snapshot.match("get-attrs", get_attrs_resp)
+
+        with pytest.raises(ClientError) as e:
+            wrong_sub_arn = f"{subscribe_resp['SubscriptionArn'][:-8]}{short_uid()}"
+            aws_client.sns.get_subscription_attributes(SubscriptionArn=wrong_sub_arn)
+
+        snapshot.match("get-attrs-nonexistent-sub", e.value.response)
+
+    @pytest.mark.aws_validated
     def test_attribute_raw_subscribe(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -204,14 +266,10 @@ class TestSNSProvider:
         )
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
-        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
-        subscription_arn = subscription["SubscriptionArn"]
-
-        aws_client.sns.set_subscription_attributes(
-            SubscriptionArn=subscription_arn,
-            AttributeName="RawMessageDelivery",
-            AttributeValue="true",
+        subscription = sns_create_sqs_subscription(
+            topic_arn=topic_arn, queue_url=queue_url, Attributes={"RawMessageDelivery": "true"}
         )
+        subscription_arn = subscription["SubscriptionArn"]
 
         response_attributes = aws_client.sns.get_subscription_attributes(
             SubscriptionArn=subscription_arn
@@ -464,7 +522,7 @@ class TestSNSProvider:
         self, sns_create_topic, sns_subscription, sns_create_platform_application, aws_client
     ):
 
-        sns_backend = SnsProvider.get_store()
+        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         topic_arn = sns_create_topic()["TopicArn"]
 
         app_arn = sns_create_platform_application(Name="app1", Platform="p1", Attributes={})[
@@ -517,9 +575,26 @@ class TestSNSProvider:
 
     @pytest.mark.only_localstack
     def test_publish_sms(self, aws_client):
-        response = aws_client.sns.publish(PhoneNumber="+33000000000", Message="This is a SMS")
+        phone_number = "+33000000000"
+        response = aws_client.sns.publish(PhoneNumber=phone_number, Message="This is a SMS")
         assert "MessageId" in response
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        sns_backend = SnsProvider.get_store(
+            account_id=TEST_AWS_ACCOUNT_ID,
+            region_name=TEST_AWS_REGION_NAME,
+        )
+
+        def check_messages():
+            sms_was_found = False
+            for message in sns_backend.sms_messages:
+                if message["PhoneNumber"] == phone_number:
+                    sms_was_found = True
+                    break
+
+            assert sms_was_found
+
+        retry(check_messages, sleep=0.5)
 
     @pytest.mark.aws_validated
     def test_publish_non_existent_target(self, sns_create_topic, snapshot, aws_client):
@@ -584,7 +659,7 @@ class TestSNSProvider:
         )
         subscription_arn = subscription["SubscriptionArn"]
         parsed_arn = parse_arn(subscription_arn)
-        store = SnsProvider.get_store(account_id=parsed_arn["account"], region=parsed_arn["region"])
+        store = SnsProvider.get_store(parsed_arn["account"], parsed_arn["region"])
 
         sub_attr = aws_client.sns.get_subscription_attributes(SubscriptionArn=subscription_arn)
         assert sub_attr["Attributes"]["PendingConfirmation"] == "true"
@@ -1145,14 +1220,14 @@ class TestSNSProvider:
 
         aws_client.sns.publish(Message=message, TopicArn=topic_arn)
 
-        sns_backend = SnsProvider.get_store()
+        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
         def check_messages():
             sms_messages = sns_backend.sms_messages
             for contact in list_of_contacts:
                 sms_was_found = False
                 for message in sms_messages:
-                    if message["endpoint"] == contact:
+                    if message["PhoneNumber"] == contact:
                         sms_was_found = True
                         break
 
@@ -1179,6 +1254,19 @@ class TestSNSProvider:
         with pytest.raises(ClientError) as e:
             sns_subscription(TopicArn=topic_arn, Protocol="sms", Endpoint="NAA+15551234567")
         snapshot.match("wrong-endpoint", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_publish_wrong_arn_format(self, snapshot, aws_client):
+        message = "Good news everyone!"
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.publish(Message=message, TopicArn="randomstring")
+
+        snapshot.match("invalid-topic-arn", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.publish(Message=message, TopicArn="randomstring:1")
+
+        snapshot.match("invalid-topic-arn-1", e.value.response)
 
     @pytest.mark.aws_validated
     def test_publish_sqs_from_sns(
@@ -1248,6 +1336,7 @@ class TestSNSProvider:
         }
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
     def test_publish_batch_messages_from_sns_to_sqs(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -1291,11 +1380,15 @@ class TestSNSProvider:
                     "Id": "4",
                     "Message": "Test Message without subject",
                 },
+                {
+                    "Id": "5",
+                    "Message": json.dumps({"default": "test default", "sqs": "test sqs"}),
+                    "MessageStructure": "json",
+                },
             ],
         )
         snapshot.match("publish-batch", publish_batch_response)
 
-        message_ids_received = set()
         messages = []
 
         def get_messages():
@@ -1303,23 +1396,19 @@ class TestSNSProvider:
             sqs_response = aws_client.sqs.receive_message(
                 QueueUrl=queue_url,
                 WaitTimeSeconds=1,
-                VisibilityTimeout=10,
+                VisibilityTimeout=0,
                 MessageAttributeNames=["All"],
                 AttributeNames=["All"],
             )
             for message in sqs_response["Messages"]:
-                if message["MessageId"] in message_ids_received:
-                    aws_client.sqs.delete_message(
-                        QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"]
-                    )
-                    continue
-
-                message_ids_received.add(message["MessageId"])
                 messages.append(message)
+                aws_client.sqs.delete_message(
+                    QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"]
+                )
 
-            assert len(messages) == 4
+            assert len(messages) == 5
 
-        retry(get_messages, retries=3, sleep=1)
+        retry(get_messages, retries=10, sleep=0.1)
         # we need to sort the list (the order does not matter as we're not using FIFO)
         messages.sort(key=itemgetter("Body"))
         snapshot.match("messages", {"Messages": messages})
@@ -1702,6 +1791,19 @@ class TestSNSProvider:
                 ],
             )
         snapshot.match("no-dedup-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "1",
+                        "Message": json.dumps({"sqs": "test sqs"}),
+                        "MessageStructure": "json",
+                    }
+                ],
+            )
+        snapshot.match("no-default-key-json", e.value.response)
 
     @pytest.mark.aws_validated
     def test_subscribe_to_sqs_with_queue_url(
@@ -2725,125 +2827,6 @@ class TestSNSProvider:
         snapshot.match("batch-exception", e.value.response)
 
     @pytest.mark.only_localstack
-    def test_publish_to_platform_endpoint_can_retrospect(
-        self, sns_create_topic, sns_subscription, sns_create_platform_application, aws_client
-    ):
-        sns_backend = SnsProvider.get_store()
-        # clean up the saved messages
-        sns_backend_endpoint_arns = list(sns_backend.platform_endpoint_messages.keys())
-        for saved_endpoint_arn in sns_backend_endpoint_arns:
-            sns_backend.platform_endpoint_messages.pop(saved_endpoint_arn, None)
-
-        topic_arn = sns_create_topic()["TopicArn"]
-        application_platform_name = f"app-platform-{short_uid()}"
-
-        app_arn = sns_create_platform_application(
-            Name=application_platform_name, Platform="APNS", Attributes={}
-        )["PlatformApplicationArn"]
-
-        endpoint_arn = aws_client.sns.create_platform_endpoint(
-            PlatformApplicationArn=app_arn, Token=short_uid()
-        )["EndpointArn"]
-
-        endpoint_arn_2 = aws_client.sns.create_platform_endpoint(
-            PlatformApplicationArn=app_arn, Token=short_uid()
-        )["EndpointArn"]
-
-        sns_subscription(
-            TopicArn=topic_arn,
-            Protocol="application",
-            Endpoint=endpoint_arn,
-        )
-
-        # example message from
-        # https://docs.aws.amazon.com/sns/latest/dg/sns-send-custom-platform-specific-payloads-mobile-devices.html
-        message = json.dumps({"APNS": json.dumps({"aps": {"content-available": 1}})})
-        message_for_topic = {
-            "default": "This is the default message which must be present when publishing a message to a topic.",
-            "APNS": json.dumps({"aps": {"content-available": 1}}),
-        }
-        message_for_topic_string = json.dumps(message_for_topic)
-        message_attributes = {
-            "AWS.SNS.MOBILE.APNS.TOPIC": {
-                "DataType": "String",
-                "StringValue": "com.amazon.mobile.messaging.myapp",
-            },
-            "AWS.SNS.MOBILE.APNS.PUSH_TYPE": {
-                "DataType": "String",
-                "StringValue": "background",
-            },
-            "AWS.SNS.MOBILE.APNS.PRIORITY": {
-                "DataType": "String",
-                "StringValue": "5",
-            },
-        }
-        # publish to a topic which has a platform subscribed to it
-        aws_client.sns.publish(
-            TopicArn=topic_arn,
-            Message=message_for_topic_string,
-            MessageAttributes=message_attributes,
-            MessageStructure="json",
-        )
-        # publish directly to the platform endpoint
-        aws_client.sns.publish(
-            TargetArn=endpoint_arn_2,
-            Message=message,
-            MessageAttributes=message_attributes,
-            MessageStructure="json",
-        )
-
-        # assert that message has been received
-        def check_message():
-            assert len(sns_backend.platform_endpoint_messages[endpoint_arn]) > 0
-
-        retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
-
-        msgs_url = config.get_edge_url() + PLATFORM_ENDPOINT_MSGS_ENDPOINT
-        api_contents = requests.get(msgs_url).json()
-        api_platform_endpoints_msgs = api_contents["platform_endpoint_messages"]
-
-        assert len(api_platform_endpoints_msgs) == 2
-        assert len(api_platform_endpoints_msgs[endpoint_arn]) == 1
-        assert len(api_platform_endpoints_msgs[endpoint_arn_2]) == 1
-        assert api_contents["region"] == "us-east-1"
-
-        assert api_platform_endpoints_msgs[endpoint_arn][0]["Message"] == json.dumps(
-            message_for_topic["APNS"]
-        )
-        assert (
-            api_platform_endpoints_msgs[endpoint_arn][0]["MessageAttributes"] == message_attributes
-        )
-
-        # Ensure you can select the region
-        msg_with_region = requests.get(msgs_url, params={"region": "eu-west-1"}).json()
-        assert len(msg_with_region["platform_endpoint_messages"]) == 0
-        assert msg_with_region["region"] == "eu-west-1"
-
-        # Ensure messages can be filtered by EndpointArn
-        api_contents_with_endpoint = requests.get(
-            msgs_url, params={"endpointArn": endpoint_arn}
-        ).json()
-        msgs_with_endpoint = api_contents_with_endpoint["platform_endpoint_messages"]
-        assert len(msgs_with_endpoint) == 1
-        assert len(msgs_with_endpoint[endpoint_arn]) == 1
-        assert api_contents_with_endpoint["region"] == "us-east-1"
-
-        # Ensure you can reset the saved messages by EndpointArn
-        delete_res = requests.delete(msgs_url, params={"endpointArn": endpoint_arn})
-        assert delete_res.status_code == 204
-        api_contents_with_endpoint = requests.get(
-            msgs_url, params={"endpointArn": endpoint_arn}
-        ).json()
-        msgs_with_endpoint = api_contents_with_endpoint["platform_endpoint_messages"]
-        assert len(msgs_with_endpoint[endpoint_arn]) == 0
-
-        # Ensure you can reset the saved messages by region
-        delete_res = requests.delete(msgs_url, params={"region": "us-east-1"})
-        assert delete_res.status_code == 204
-        msg_with_region = requests.get(msgs_url, params={"region": "us-east-1"}).json()
-        assert not msg_with_region["platform_endpoint_messages"]
-
-    @pytest.mark.only_localstack
     def test_publish_to_platform_endpoint_is_dispatched(
         self, sns_create_topic, sns_subscription, sns_create_platform_application, aws_client
     ):
@@ -2885,7 +2868,7 @@ class TestSNSProvider:
             MessageStructure="json",
         )
 
-        sns_backend = SnsProvider.get_store()
+        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         platform_endpoint_msgs = sns_backend.platform_endpoint_messages
 
         # assert that message has been received
@@ -3590,6 +3573,144 @@ class TestSNSProvider:
         snapshot.match("token-not-exists", e.value.response)
 
 
+@pytest.mark.only_localstack
+class TestSNSMultiAccounts:
+    @pytest.fixture
+    def sns_primary_client(self, aws_client):
+        return aws_client.sns
+
+    @pytest.fixture
+    def sns_secondary_client(self, secondary_aws_client):
+        return secondary_aws_client.sns
+
+    @pytest.fixture
+    def sqs_primary_client(self, aws_client):
+        return aws_client.sqs
+
+    @pytest.fixture
+    def sqs_secondary_client(self, secondary_aws_client):
+        return secondary_aws_client.sqs
+
+    def test_cross_account_access(self, sns_primary_client, sns_secondary_client):
+        # Cross-account access is supported for below operations.
+        # This list is taken from ActionName param of the AddPermissions operation
+        #
+        # - GetTopicAttributes
+        # - SetTopicAttributes
+        # - AddPermission
+        # - RemovePermission
+        # - Publish
+        # - Subscribe
+        # - ListSubscriptionsByTopic
+        # - DeleteTopic
+
+        topic_name = f"topic-{short_uid()}"
+        topic_arn = sns_primary_client.create_topic(Name=topic_name)["TopicArn"]
+
+        assert sns_secondary_client.set_topic_attributes(
+            TopicArn=topic_arn, AttributeName="DisplayName", AttributeValue="xenon"
+        )
+
+        response = sns_secondary_client.get_topic_attributes(TopicArn=topic_arn)
+        assert response["Attributes"]["DisplayName"] == "xenon"
+
+        assert sns_secondary_client.add_permission(
+            TopicArn=topic_arn,
+            Label="foo",
+            AWSAccountId=["666666666666"],
+            ActionName=["AddPermission"],
+        )
+        assert sns_secondary_client.remove_permission(TopicArn=topic_arn, Label="foo")
+
+        assert sns_secondary_client.publish(TopicArn=topic_arn, Message="hello world")
+
+        subscription_arn = sns_secondary_client.subscribe(
+            TopicArn=topic_arn, Protocol="email", Endpoint="devil@hell.com"
+        )["SubscriptionArn"]
+
+        response = sns_secondary_client.list_subscriptions_by_topic(TopicArn=topic_arn)
+        subscriptions = [s["SubscriptionArn"] for s in response["Subscriptions"]]
+        assert subscription_arn in subscriptions
+
+        assert sns_secondary_client.delete_topic(TopicArn=topic_arn)
+
+    def test_cross_account_publish_to_sqs(
+        self,
+        sns_primary_client,
+        sns_secondary_client,
+        sqs_primary_client,
+        sqs_secondary_client,
+        sqs_queue_arn,
+    ):
+        """
+        This test validates that we can publish to SQS queues that are not in the default account, and that another
+        account can publish to the topic as well
+
+        Note: we are not setting Queue policies here as it's only in localstack and IAM is not enforced, for the sake
+        of simplicity
+        """
+
+        topic_name = "sample_topic"
+        topic_1 = sns_primary_client.create_topic(Name=topic_name)
+        topic_1_arn = topic_1["TopicArn"]
+
+        # create a queue with the primary AccountId
+        queue_name = "sample_queue"
+        queue_1 = sqs_primary_client.create_queue(QueueName=queue_name)
+        queue_1_url = queue_1["QueueUrl"]
+        queue_1_arn = sqs_queue_arn(queue_1_url)
+
+        # create a queue with the secondary AccountId
+        queue_2 = sqs_secondary_client.create_queue(QueueName=queue_name)
+        queue_2_url = queue_2["QueueUrl"]
+        # test that we get the right queue URL at the same time, even if we use the primary client
+        queue_2_arn = sqs_queue_arn(queue_2_url)
+
+        # test that we can subscribe with the primary client to a queue from the same account
+        sns_primary_client.subscribe(
+            TopicArn=topic_1_arn,
+            Protocol="sqs",
+            Endpoint=queue_1_arn,
+        )
+
+        # test that we can subscribe with the primary client to a queue from the secondary account
+        sns_primary_client.subscribe(
+            TopicArn=topic_1_arn,
+            Protocol="sqs",
+            Endpoint=queue_2_arn,
+        )
+
+        # now, we have 2 subscriptions in topic_1, one to the queue_1 located in the same account, and to queue_2
+        # located in the secondary account
+
+        sns_primary_client.publish(TopicArn=topic_1_arn, Message="TestMessageOwner")
+
+        def get_messages_from_queues(message_content: str):
+            for client, queue_url in (
+                (sqs_primary_client, queue_1_url),
+                (sqs_secondary_client, queue_2_url),
+            ):
+                response = client.receive_message(
+                    QueueUrl=queue_url,
+                    VisibilityTimeout=0,
+                    WaitTimeSeconds=5,
+                )
+                messages = response["Messages"]
+                assert len(messages) == 1
+                assert topic_1_arn in messages[0]["Body"]
+                assert message_content in messages[0]["Body"]
+                client.delete_message(
+                    QueueUrl=queue_url, ReceiptHandle=messages[0]["ReceiptHandle"]
+                )
+
+        get_messages_from_queues("TestMessageOwner")
+
+        # assert that we can also publish to the topic 1 from the secondary account
+        sns_secondary_client.publish(TopicArn=topic_1_arn, Message="TestMessageSecondary")
+
+        get_messages_from_queues("TestMessageSecondary")
+
+
 class TestSNSPublishDelivery:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -3748,3 +3869,198 @@ class TestSNSPublishDelivery:
         )
 
         snapshot.match("delivery-events", events)
+
+
+@pytest.mark.only_localstack
+class TestSNSRetrospectionEndpoints:
+    def test_publish_to_platform_endpoint_can_retrospect(
+        self, sns_create_topic, sns_subscription, sns_create_platform_application, aws_client
+    ):
+        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        # clean up the saved messages
+        sns_backend_endpoint_arns = list(sns_backend.platform_endpoint_messages.keys())
+        for saved_endpoint_arn in sns_backend_endpoint_arns:
+            sns_backend.platform_endpoint_messages.pop(saved_endpoint_arn, None)
+
+        topic_arn = sns_create_topic()["TopicArn"]
+        application_platform_name = f"app-platform-{short_uid()}"
+
+        app_arn = sns_create_platform_application(
+            Name=application_platform_name, Platform="APNS", Attributes={}
+        )["PlatformApplicationArn"]
+
+        endpoint_arn = aws_client.sns.create_platform_endpoint(
+            PlatformApplicationArn=app_arn, Token=short_uid()
+        )["EndpointArn"]
+
+        endpoint_arn_2 = aws_client.sns.create_platform_endpoint(
+            PlatformApplicationArn=app_arn, Token=short_uid()
+        )["EndpointArn"]
+
+        sns_subscription(
+            TopicArn=topic_arn,
+            Protocol="application",
+            Endpoint=endpoint_arn,
+        )
+
+        # example message from
+        # https://docs.aws.amazon.com/sns/latest/dg/sns-send-custom-platform-specific-payloads-mobile-devices.html
+        message = json.dumps({"APNS": json.dumps({"aps": {"content-available": 1}})})
+        message_for_topic = {
+            "default": "This is the default message which must be present when publishing a message to a topic.",
+            "APNS": json.dumps({"aps": {"content-available": 1}}),
+        }
+        message_for_topic_string = json.dumps(message_for_topic)
+        message_attributes = {
+            "AWS.SNS.MOBILE.APNS.TOPIC": {
+                "DataType": "String",
+                "StringValue": "com.amazon.mobile.messaging.myapp",
+            },
+            "AWS.SNS.MOBILE.APNS.PUSH_TYPE": {
+                "DataType": "String",
+                "StringValue": "background",
+            },
+            "AWS.SNS.MOBILE.APNS.PRIORITY": {
+                "DataType": "String",
+                "StringValue": "5",
+            },
+        }
+        # publish to a topic which has a platform subscribed to it
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message=message_for_topic_string,
+            MessageAttributes=message_attributes,
+            MessageStructure="json",
+        )
+        # publish directly to the platform endpoint
+        aws_client.sns.publish(
+            TargetArn=endpoint_arn_2,
+            Message=message,
+            MessageAttributes=message_attributes,
+            MessageStructure="json",
+        )
+
+        # assert that message has been received
+        def check_message():
+            assert len(sns_backend.platform_endpoint_messages[endpoint_arn]) > 0
+
+        retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+
+        msgs_url = config.get_edge_url() + PLATFORM_ENDPOINT_MSGS_ENDPOINT
+        api_contents = requests.get(msgs_url).json()
+        api_platform_endpoints_msgs = api_contents["platform_endpoint_messages"]
+
+        assert len(api_platform_endpoints_msgs) == 2
+        assert len(api_platform_endpoints_msgs[endpoint_arn]) == 1
+        assert len(api_platform_endpoints_msgs[endpoint_arn_2]) == 1
+        assert api_contents["region"] == "us-east-1"
+
+        assert api_platform_endpoints_msgs[endpoint_arn][0]["Message"] == json.dumps(
+            message_for_topic["APNS"]
+        )
+        assert (
+            api_platform_endpoints_msgs[endpoint_arn][0]["MessageAttributes"] == message_attributes
+        )
+
+        # Ensure you can select the region
+        msg_with_region = requests.get(msgs_url, params={"region": "eu-west-1"}).json()
+        assert len(msg_with_region["platform_endpoint_messages"]) == 0
+        assert msg_with_region["region"] == "eu-west-1"
+
+        # Ensure messages can be filtered by EndpointArn
+        api_contents_with_endpoint = requests.get(
+            msgs_url, params={"endpointArn": endpoint_arn}
+        ).json()
+        msgs_with_endpoint = api_contents_with_endpoint["platform_endpoint_messages"]
+        assert len(msgs_with_endpoint) == 1
+        assert len(msgs_with_endpoint[endpoint_arn]) == 1
+        assert api_contents_with_endpoint["region"] == "us-east-1"
+
+        # Ensure you can reset the saved messages by EndpointArn
+        delete_res = requests.delete(msgs_url, params={"endpointArn": endpoint_arn})
+        assert delete_res.status_code == 204
+        api_contents_with_endpoint = requests.get(
+            msgs_url, params={"endpointArn": endpoint_arn}
+        ).json()
+        msgs_with_endpoint = api_contents_with_endpoint["platform_endpoint_messages"]
+        assert len(msgs_with_endpoint[endpoint_arn]) == 0
+
+        # Ensure you can reset the saved messages by region
+        delete_res = requests.delete(msgs_url, params={"region": "us-east-1"})
+        assert delete_res.status_code == 204
+        msg_with_region = requests.get(msgs_url, params={"region": "us-east-1"}).json()
+        assert not msg_with_region["platform_endpoint_messages"]
+
+    def test_publish_sms_can_retrospect(self, sns_create_topic, sns_subscription, aws_client):
+        sns_store = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+
+        list_of_contacts = [
+            f"+{random.randint(100000000, 9999999999)}",
+            f"+{random.randint(100000000, 9999999999)}",
+            f"+{random.randint(100000000, 9999999999)}",
+        ]
+        phone_number_1 = list_of_contacts[0]
+        message = "Good news everyone!"
+        topic_arn = sns_create_topic()["TopicArn"]
+        for number in list_of_contacts:
+            sns_subscription(TopicArn=topic_arn, Protocol="sms", Endpoint=number)
+
+        # clean up the saved messages
+        sns_store.sms_messages.clear()
+
+        # publish to a topic which has a PhoneNumbers subscribed to it
+        aws_client.sns.publish(Message=message, TopicArn=topic_arn)
+
+        # publish directly to the PhoneNumber
+        aws_client.sns.publish(
+            PhoneNumber=phone_number_1,
+            Message=message,
+        )
+
+        # assert that message has been received
+        def check_message():
+            assert len(sns_store.sms_messages) == 4
+
+        retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+
+        msgs_url = config.get_edge_url() + SMS_MSGS_ENDPOINT
+        api_contents = requests.get(msgs_url).json()
+        api_sms_msgs = api_contents["sms_messages"]
+
+        assert len(api_sms_msgs) == 3
+        assert len(api_sms_msgs[phone_number_1]) == 2
+        assert len(api_sms_msgs[list_of_contacts[1]]) == 1
+        assert len(api_sms_msgs[list_of_contacts[2]]) == 1
+
+        assert api_contents["region"] == "us-east-1"
+
+        assert api_sms_msgs[phone_number_1][0]["Message"] == "Good news everyone!"
+
+        # Ensure you can select the region
+        msg_with_region = requests.get(msgs_url, params={"region": "eu-west-1"}).json()
+        assert len(msg_with_region["sms_messages"]) == 0
+        assert msg_with_region["region"] == "eu-west-1"
+
+        # Ensure messages can be filtered by EndpointArn
+        api_contents_with_number = requests.get(
+            msgs_url, params={"phoneNumber": phone_number_1}
+        ).json()
+        msgs_with_number = api_contents_with_number["sms_messages"]
+        assert len(msgs_with_number) == 1
+        assert len(msgs_with_number[phone_number_1]) == 2
+        assert api_contents_with_number["region"] == "us-east-1"
+
+        # Ensure you can reset the saved messages by EndpointArn
+        delete_res = requests.delete(msgs_url, params={"phoneNumber": phone_number_1})
+        assert delete_res.status_code == 204
+        api_contents_with_number = requests.get(
+            msgs_url, params={"phoneNumber": phone_number_1}
+        ).json()
+        msgs_with_number = api_contents_with_number["sms_messages"]
+        assert len(msgs_with_number[phone_number_1]) == 0
+
+        # Ensure you can reset the saved messages by region
+        delete_res = requests.delete(msgs_url, params={"region": "us-east-1"})
+        assert delete_res.status_code == 204
+        msg_with_region = requests.get(msgs_url, params={"region": "us-east-1"}).json()
+        assert not msg_with_region["sms_messages"]

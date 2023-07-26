@@ -13,11 +13,13 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
     ContextObjectManager,
 )
 from localstack.services.stepfunctions.asl.eval.event.event_history import EventHistory
-from localstack.services.stepfunctions.asl.eval.programstate.program_ended import ProgramEnded
-from localstack.services.stepfunctions.asl.eval.programstate.program_error import ProgramError
-from localstack.services.stepfunctions.asl.eval.programstate.program_running import ProgramRunning
-from localstack.services.stepfunctions.asl.eval.programstate.program_state import ProgramState
-from localstack.services.stepfunctions.asl.eval.programstate.program_stopped import ProgramStopped
+from localstack.services.stepfunctions.asl.eval.program_state import (
+    ProgramEnded,
+    ProgramError,
+    ProgramRunning,
+    ProgramState,
+    ProgramStopped,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -33,6 +35,7 @@ class Environment:
         self.event_history: EventHistory = EventHistory()
         self.callback_pool_manager: CallbackPoolManager = CallbackPoolManager()
 
+        self._is_frame: bool = False
         self.heap: dict[str, Any] = dict()
         self.stack: list[Any] = list()
         self.inp: Optional[Any] = None
@@ -54,9 +57,11 @@ class Environment:
             StateMachine=env.context_object_manager.context_object["StateMachine"],
         )
         frame = cls(context_object_init=context_object_init)
-        frame.heap = env.heap
+        frame._is_frame = True
         frame.event_history = env.event_history
-        frame.context_object = env.context_object_manager.context_object
+        frame.callback_pool_manager = env.callback_pool_manager
+        frame.heap = env.heap
+        frame._program_state = copy.deepcopy(env._program_state)
         return frame
 
     @property
@@ -121,3 +126,6 @@ class Environment:
     def close_frame(self, frame: Environment) -> None:
         with self._state_mutex:
             self._frames.remove(frame)
+
+    def is_frame(self) -> bool:
+        return self._is_frame

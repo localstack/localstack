@@ -600,5 +600,149 @@
         }
       }
     }
+  },
+  "tests/integration/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test]": {
+    "recorded-date": "06-07-2023, 22:46:19",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Invalid tag name <test_invalid_name:123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_invalid_tags_send_email[test-test_invalid_value:123]": {
+    "recorded-date": "06-07-2023, 22:46:20",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Invalid tag value <test_invalid_value:123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test_invalid_value:123]": {
+    "recorded-date": "06-07-2023, 22:46:21",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Invalid tag name <test_invalid_name:123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name_len]": {
+    "recorded-date": "06-07-2023, 22:46:23",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Tag name cannot exceed 255 characters.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_value_len]": {
+    "recorded-date": "06-07-2023, 22:46:24",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Tag value cannot exceed 255 characters.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_invalid_tags_send_email[test_priority_name_value]": {
+    "recorded-date": "06-07-2023, 22:46:26",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Invalid tag name <test_invalid_name@123>: only alphanumeric ASCII characters, '_', and '-' are allowed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_invalid_tags_send_email[-]": {
+    "recorded-date": "06-07-2023, 22:46:28",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "The tag name must be specified.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_invalid_tags_send_email[-test]": {
+    "recorded-date": "06-07-2023, 22:46:29",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "The tag name must be specified.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_invalid_tags_send_email[test-]": {
+    "recorded-date": "06-07-2023, 22:46:32",
+    "recorded-content": {
+      "response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "The tag value must be specified.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

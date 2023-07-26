@@ -575,6 +575,13 @@
     },
     {
       "op": "add",
+      "path": "/shapes/NoSuchUpload/error",
+      "value": {
+        "httpStatusCode": 404
+      }
+    },
+    {
+      "op": "add",
       "path": "/shapes/ReplicationConfigurationNotFoundError",
       "value": {
         "type": "structure",
@@ -773,6 +780,91 @@
         "documentation": "<p>The specified method is not allowed against this resource.</p>",
         "exception": true
       }
+    },
+    {
+      "op": "remove",
+      "path": "/shapes/ListBucketsOutput/members/Buckets"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ListBucketsOutput/members/Buckets",
+      "value": {
+        "shape":"Buckets",
+        "documentation":"<p>The list of buckets owned by the requester.</p>"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "/shapes/ListObjectsOutput/members/Contents"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ListObjectsOutput/members/Contents",
+      "value": {
+        "shape":"ObjectList",
+        "documentation":"<p>Metadata about each object returned.</p>"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "/shapes/ListObjectsV2Output/members/Contents"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ListObjectsV2Output/members/Contents",
+      "value": {
+        "shape":"ObjectList",
+        "documentation":"<p>Metadata about each object returned.</p>"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/CrossLocationLoggingProhibitted",
+      "value": {
+        "type": "structure",
+        "members": {
+          "TargetBucketLocation": {
+            "shape": "BucketRegion"
+          }
+        },
+        "error": {
+          "httpStatusCode": 403
+        },
+        "documentation": "<p>Cross S3 location logging not allowed. </p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidTargetBucketForLogging",
+      "value": {
+        "type": "structure",
+        "members": {
+          "TargetBucket": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 400
+        },
+        "documentation": "<p>The target bucket for logging does not exist</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/operations/PutBucketInventoryConfiguration/http/responseCode",
+      "value": 204
+    },
+    {
+      "op": "add",
+      "path": "/operations/PutBucketAnalyticsConfiguration/http/responseCode",
+      "value": 204
+    },
+    {
+      "op": "add",
+      "path": "/operations/PutBucketIntelligentTieringConfiguration/http/responseCode",
+      "value": 204
     }
   ]
 }

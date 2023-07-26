@@ -1,5 +1,6 @@
 from typing import Final, Optional
 
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
@@ -35,7 +36,7 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
     }
 
     def _get_supported_parameters(self) -> Optional[set[str]]:
-        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower(), None)
+        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, ClientError):
@@ -53,19 +54,7 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
                     )
                 ),
             )
-        else:
-            return FailureEvent(
-                error_name=CustomErrorName(self._ERROR_NAME_AWS),
-                event_type=HistoryEventType.TaskFailed,
-                event_details=EventDetails(
-                    taskFailedEventDetails=TaskFailedEventDetails(
-                        error=self._ERROR_NAME_AWS,
-                        cause=str(ex),  # TODO: update to report expected cause.
-                        resource=self._get_sfn_resource(),
-                        resourceType=self._get_sfn_resource_type(),
-                    )
-                ),
-            )
+        return super()._from_error(env=env, ex=ex)
 
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
         # TODO: Stepfunctions automatically dumps to json MessageBody's definitions.
@@ -76,7 +65,7 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
                 parameters["MessageBody"] = to_json_str(message_body)
 
         api_action = camel_to_snake_case(self.resource.api_action)
-        sqs_client = aws_stack.create_external_boto_client("sqs")
+        sqs_client = aws_stack.connect_to_service("sqs", config=Config(parameter_validation=False))
         response = getattr(sqs_client, api_action)(**parameters)
         response.pop("ResponseMetadata", None)
         env.stack.append(response)

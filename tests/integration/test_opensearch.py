@@ -1,3 +1,4 @@
+import gzip
 import json
 import logging
 import os
@@ -472,6 +473,13 @@ class TestOpensearchProvider:
         response = aws_client.opensearch.describe_domains(DomainNames=[opensearch_domain])
         assert len(response["DomainStatusList"]) == 1
         assert response["DomainStatusList"][0]["DomainName"] == opensearch_domain
+
+    def test_gzip_responses(self, opensearch_endpoint):
+        gzip_response = requests.get(opensearch_endpoint, stream=True)
+        # get the raw data, don't let requests decode the response
+        raw_data = b"".join(chunk for chunk in gzip_response.raw.stream(1024, decode_content=False))
+        # force the gzip decoding here (which would raise an exception if it's not actually gzip)
+        assert gzip.decompress(raw_data)
 
     def test_domain_version(self, opensearch_domain, opensearch_create_domain, aws_client):
         response = aws_client.opensearch.describe_domain(DomainName=opensearch_domain)

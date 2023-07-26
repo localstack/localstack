@@ -3,12 +3,72 @@ import logging
 from typing import Final
 
 import pytest
+from jsonpath_ng.ext import parse
 
+from localstack.aws.api.stepfunctions import HistoryEventType
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.testing.snapshots.transformer import TransformContext
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.templates.callbacks.callback_templates import CallbackTemplates
 from tests.integration.stepfunctions.utils import await_execution_success
 
 LOG = logging.getLogger(__name__)
+
+
+@pytest.fixture
+def sfn_snapshot(snapshot):
+    snapshot.add_transformers_list(snapshot.transform.stepfunctions_api())
+    return snapshot
+
+
+class SfnNoneRecursiveParallelTransformer:
+    """
+    Normalises a sublist of events triggered in by a Parallel state to be order-independent.
+    """
+
+    def __init__(self, events_jsonpath: str = "$..events"):
+        self.events_jsonpath: str = events_jsonpath
+
+    @staticmethod
+    def _normalise_events(events: list[dict]) -> None:
+        start_idx = None
+        sublist = list()
+        in_sublist = False
+        for i, event in enumerate(events):
+            event_type = event.get("type")
+            if event_type is None:
+                LOG.debug(f"No 'type' in event item '{event}'.")
+                in_sublist = False
+
+            elif event_type in {
+                None,
+                HistoryEventType.ParallelStateSucceeded,
+                HistoryEventType.ParallelStateAborted,
+                HistoryEventType.ParallelStateExited,
+                HistoryEventType.ParallelStateFailed,
+            }:
+                events[start_idx:i] = sorted(sublist, key=lambda e: to_json_str(e))
+                in_sublist = False
+            elif event_type == HistoryEventType.ParallelStateStarted:
+                in_sublist = True
+                sublist = []
+                start_idx = i + 1
+            elif in_sublist:
+                event["id"] = (0,)
+                event["previousEventId"] = 0
+                sublist.append(event)
+
+    def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
+        pattern = parse("$..events")
+        events = pattern.find(input_data)
+        if not events:
+            LOG.debug(f"No Stepfunctions 'events' for jsonpath '{self.events_jsonpath}'.")
+            return input_data
+
+        for events_data in events:
+            self._normalise_events(events_data.value)
+
+        return input_data
 
 
 @pytest.fixture
@@ -137,7 +197,54 @@ def sqs_send_task_success_state_machine(aws_client, create_state_machine, create
         state_machine_arn = creation_resp["stateMachineArn"]
 
         aws_client.stepfunctions.start_execution(
-            stateMachineArn=state_machine_arn, input=json.dumps({"QueueUrl": sqs_queue_url})
+            stateMachineArn=state_machine_arn,
+            input=json.dumps({"QueueUrl": sqs_queue_url, "Iterator": {"Count": 300}}),
+        )
+
+    return _create_state_machine
+
+
+@pytest.fixture
+def sqs_send_task_failure_state_machine(aws_client, create_state_machine, create_iam_role_for_sfn):
+    def _create_state_machine(sqs_queue_url):
+        snf_role_arn = create_iam_role_for_sfn()
+        sm_name: str = f"sqs_send_task_failure_state_machine_{short_uid()}"
+        template = CallbackTemplates.load_sfn_template(CallbackTemplates.SQS_FAILURE_ON_TASK_TOKEN)
+        definition = json.dumps(template)
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition, roleArn=snf_role_arn
+        )
+        state_machine_arn = creation_resp["stateMachineArn"]
+
+        aws_client.stepfunctions.start_execution(
+            stateMachineArn=state_machine_arn,
+            input=json.dumps({"QueueUrl": sqs_queue_url, "Iterator": {"Count": 300}}),
+        )
+
+    return _create_state_machine
+
+
+@pytest.fixture
+def sqs_send_heartbeat_and_task_success_state_machine(
+    aws_client, create_state_machine, create_iam_role_for_sfn
+):
+    def _create_state_machine(sqs_queue_url):
+        snf_role_arn = create_iam_role_for_sfn()
+        sm_name: str = f"sqs_send_heartbeat_and_task_success_state_machine_{short_uid()}"
+        template = CallbackTemplates.load_sfn_template(
+            CallbackTemplates.SQS_HEARTBEAT_SUCCESS_ON_TASK_TOKEN
+        )
+        definition = json.dumps(template)
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition, roleArn=snf_role_arn
+        )
+        state_machine_arn = creation_resp["stateMachineArn"]
+
+        aws_client.stepfunctions.start_execution(
+            stateMachineArn=state_machine_arn,
+            input=json.dumps({"QueueUrl": sqs_queue_url, "Iterator": {"Count": 300}}),
         )
 
     return _create_state_machine

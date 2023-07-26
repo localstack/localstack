@@ -1818,3 +1818,115 @@ class TestEvents:
         with pytest.raises(ClientError) as e:
             aws_client.events.describe_event_bus(Name=nonexistent_event_bus)
         snapshot.match("non-existent-bus", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_test_event_pattern(self, aws_client, snapshot, account_id, region):
+        response = aws_client.events.test_event_pattern(
+            Event=json.dumps(
+                {
+                    "id": "1",
+                    "source": "order",
+                    "detail-type": "Test",
+                    "account": account_id,
+                    "region": region,
+                    "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                }
+            ),
+            EventPattern=json.dumps(
+                {
+                    "source": ["order"],
+                    "detail-type": ["Test"],
+                }
+            ),
+        )
+        snapshot.match("eventbridge-test-event-pattern-response", response)
+
+        # negative test, source is not matched
+        response = aws_client.events.test_event_pattern(
+            Event=json.dumps(
+                {
+                    "id": "1",
+                    "source": "order",
+                    "detail-type": "Test",
+                    "account": account_id,
+                    "region": region,
+                    "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                }
+            ),
+            EventPattern=json.dumps(
+                {
+                    "source": ["shipment"],
+                    "detail-type": ["Test"],
+                }
+            ),
+        )
+        snapshot.match("eventbridge-test-event-pattern-response-no-match", response)
+
+    @pytest.mark.aws_validated
+    def test_put_events_time(
+        self,
+        aws_client,
+        sqs_create_queue,
+        sqs_queue_arn,
+        events_put_rule,
+        events_allow_event_rule_to_sqs_queue,
+        snapshot,
+    ):
+        default_bus_rule_name = f"rule-{short_uid()}"
+        default_bus_target_id = f"test-target-default-b-{short_uid()}"
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("MD5OfBody"),  # the event contains a timestamp
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_queue_arn(queue_url)
+
+        rule_on_default_bus = events_put_rule(
+            Name=default_bus_rule_name,
+            EventPattern=json.dumps({"detail-type": ["CustomType"], "source": ["MySource"]}),
+            State="ENABLED",
+        )
+
+        events_allow_event_rule_to_sqs_queue(
+            event_rule_arn=rule_on_default_bus["RuleArn"],
+            sqs_queue_arn=queue_arn,
+            sqs_queue_url=queue_url,
+        )
+
+        aws_client.events.put_targets(
+            Rule=default_bus_rule_name,
+            Targets=[{"Id": default_bus_target_id, "Arn": queue_arn}],
+        )
+
+        # create an entry with a defined time
+        entries = [
+            {
+                "Source": "MySource",
+                "DetailType": "CustomType",
+                "Detail": json.dumps({"message": "for the default event bus"}),
+                "Time": datetime(year=2022, day=1, month=1),
+            }
+        ]
+        response = aws_client.events.put_events(Entries=entries)
+        snapshot.match("put-events", response)
+
+        def _get_sqs_messages():
+            resp = aws_client.sqs.receive_message(
+                QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=1
+            )
+            msgs = resp.get("Messages")
+            assert len(msgs) == 1
+            aws_client.sqs.delete_message(
+                QueueUrl=queue_url, ReceiptHandle=msgs[0]["ReceiptHandle"]
+            )
+            return msgs
+
+        messages = retry(_get_sqs_messages, retries=5, sleep=0.1)
+        snapshot.match("get-events", messages)
+
+        message_body = json.loads(messages[0]["Body"])
+        assert message_body["time"] == "2022-01-01T00:00:00Z"

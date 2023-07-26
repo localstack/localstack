@@ -26,6 +26,7 @@ def serve_asgi_app():
     ) -> HypercornServer:
         if not config:
             config = Config()
+            config.h11_pass_raw_headers = True
             config.bind = f"localhost:{net.get_free_tcp_port()}"
 
         srv = HypercornServer(app, config, loop=event_loop)

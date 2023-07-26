@@ -251,6 +251,42 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#timeout_seconds_decl.
+    def enterTimeout_seconds_decl(self, ctx:ASLParser.Timeout_seconds_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#timeout_seconds_decl.
+    def exitTimeout_seconds_decl(self, ctx:ASLParser.Timeout_seconds_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#timeout_seconds_path_decl.
+    def enterTimeout_seconds_path_decl(self, ctx:ASLParser.Timeout_seconds_path_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#timeout_seconds_path_decl.
+    def exitTimeout_seconds_path_decl(self, ctx:ASLParser.Timeout_seconds_path_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#heartbeat_seconds_decl.
+    def enterHeartbeat_seconds_decl(self, ctx:ASLParser.Heartbeat_seconds_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#heartbeat_seconds_decl.
+    def exitHeartbeat_seconds_decl(self, ctx:ASLParser.Heartbeat_seconds_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#heartbeat_seconds_path_decl.
+    def enterHeartbeat_seconds_path_decl(self, ctx:ASLParser.Heartbeat_seconds_path_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#heartbeat_seconds_path_decl.
+    def exitHeartbeat_seconds_path_decl(self, ctx:ASLParser.Heartbeat_seconds_path_declContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#payload_tmpl_decl.
     def enterPayload_tmpl_decl(self, ctx:ASLParser.Payload_tmpl_declContext):
         pass
@@ -491,6 +527,33 @@ class ASLParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by ASLParser#processor_config_decl.
     def exitProcessor_config_decl(self, ctx:ASLParser.Processor_config_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#iterator_decl.
+    def enterIterator_decl(self, ctx:ASLParser.Iterator_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#iterator_decl.
+    def exitIterator_decl(self, ctx:ASLParser.Iterator_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#iterator_decl_item.
+    def enterIterator_decl_item(self, ctx:ASLParser.Iterator_decl_itemContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#iterator_decl_item.
+    def exitIterator_decl_item(self, ctx:ASLParser.Iterator_decl_itemContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#item_selector_decl.
+    def enterItem_selector_decl(self, ctx:ASLParser.Item_selector_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#item_selector_decl.
+    def exitItem_selector_decl(self, ctx:ASLParser.Item_selector_declContext):
         pass
 
 

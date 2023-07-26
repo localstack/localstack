@@ -26,7 +26,7 @@ pytestmark = pytest.mark.skipif(
 class TestTaskServiceAwsSdk:
     @pytest.mark.skip_snapshot_verify(paths=["$..SecretList"])
     def test_list_secrets(
-        self, aws_client, create_iam_role_for_sfn, create_state_machine, snapshot
+        self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot
     ):
         template = ST.load_sfn_template(ST.AWSSDK_LIST_SECRETS)
         definition = json.dumps(template)
@@ -35,7 +35,7 @@ class TestTaskServiceAwsSdk:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )

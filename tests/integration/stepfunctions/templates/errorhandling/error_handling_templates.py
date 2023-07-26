@@ -33,6 +33,10 @@ class ErrorHandlingTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/task_service_lambda_invoke_catch_unknown.json5"
     )
 
+    AWS_SERVICE_LAMBDA_INVOKE_CATCH_TIMEOUT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/task_service_lambda_invoke_catch_timeout.json5"
+    )
+
     AWS_SERVICE_LAMBDA_INVOKE_CATCH_RELEVANT: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/task_service_lambda_invoke_catch_relevant.json5"
     )
@@ -41,8 +45,8 @@ class ErrorHandlingTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/task_service_sqs_send_msg_catch.json5"
     )
 
-    AWS_SERVICE_DYNAMODB_PUT_ITEM: Final[str] = os.path.join(
-        _THIS_FOLDER, "statemachines/task_service_dynamodb_put_item.json5"
+    AWS_SERVICE_SQS_SEND_MSG_CATCH_TOKEN_FAILURE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/aws_service_sqs_send_msg_catch_token_failure.json5"
     )
 
     # Lambda Functions.

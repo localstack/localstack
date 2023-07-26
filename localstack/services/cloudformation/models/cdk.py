@@ -13,10 +13,6 @@ class CDKMetadata(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         return self.props
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        # return a synthetic ID here, as some parts of the CFn engine depend on PhysicalResourceId being resolvable
-        return md5(canonical_json(self.props))
-
     @staticmethod
     def add_defaults(resource, stack_name: str):
         resource["Properties"]["PhysicalResourceId"] = (
@@ -31,7 +27,12 @@ class CDKMetadata(GenericBaseModel):
         def _no_op(*args, **kwargs):
             pass
 
+        def _handle_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = md5(
+                canonical_json(resources[resource_id]["Properties"])
+            )
+
         return {
-            "create": {"function": _no_op},
+            "create": {"function": _no_op, "result_handler": _handle_result},
             "delete": {"function": _no_op},
         }

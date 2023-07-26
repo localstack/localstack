@@ -82,11 +82,19 @@ SECONDS: '"Seconds"';
 TIMESTAMPPATH: '"TimestampPath"';
 TIMESTAMP: '"Timestamp"';
 
+TIMEOUTSECONDS: '"TimeoutSeconds"';
+TIMEOUTSECONDSPATH: '"TimeoutSecondsPath"';
+
+HEARTBEATSECONDS: '"HeartbeatSeconds"';
+HEARTBEATSECONDSPATH: '"HeartbeatSecondsPath"';
+
 PROCESSORCONFIG: '"ProcessorConfig"';
 MODE: '"Mode"';
 INLINE: '"INLINE"';
 
 ITEMPROCESSOR: '"ItemProcessor"';
+ITERATOR: '"Iterator"';
+ITEMSELECTOR: '"ItemSelector"';
 MAXCONCURRENCY: '"MaxConcurrency"';
 
 RESOURCE: '"Resource"';

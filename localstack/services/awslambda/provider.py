@@ -169,6 +169,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     VersionFunctionConfiguration,
     VersionIdentifier,
     VersionState,
+    VpcConfig,
 )
 from localstack.services.awslambda.invocation.lambda_service import (
     LambdaService,
@@ -350,6 +351,26 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # Assumes that a non-alias is a version
         else:
             return resolved_fn.versions[resolved_qualifier].config.revision_id
+
+    def _resolve_vpc_id(self, subnet_id: str) -> str:
+        return connect_to().ec2.describe_subnets(SubnetIds=[subnet_id])["Subnets"][0]["VpcId"]
+
+    def _build_vpc_config(
+        self,
+        vpc_config: Optional[dict] = None,
+    ) -> VpcConfig | None:
+        if not vpc_config:
+            return None
+
+        subnet_ids = vpc_config.get("SubnetIds", [])
+        if subnet_ids is not None and len(subnet_ids) == 0:
+            return VpcConfig(vpc_id="", security_group_ids=[], subnet_ids=[])
+
+        return VpcConfig(
+            vpc_id=self._resolve_vpc_id(subnet_ids[0]),
+            security_group_ids=vpc_config.get("SecurityGroupIds", []),
+            subnet_ids=subnet_ids,
+        )
 
     def _create_version_model(
         self,
@@ -676,7 +697,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         runtime = request.get("Runtime")
         if package_type == PackageType.Zip and runtime not in IMAGE_MAPPING:
             raise InvalidParameterValueException(
-                f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
+                f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
                 Type="User",
             )
         if snap_start := request.get("SnapStart"):
@@ -771,6 +792,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     ),
                     runtime_version_config=runtime_version_config,
                     dead_letter_arn=request.get("DeadLetterConfig", {}).get("TargetArn"),
+                    vpc_config=self._build_vpc_config(request.get("VpcConfig")),
                     state=VersionState(
                         state=State.Pending,
                         code=StateReasonCode.Creating,
@@ -862,10 +884,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if "DeadLetterConfig" in request:
             replace_kwargs["dead_letter_arn"] = request.get("DeadLetterConfig", {}).get("TargetArn")
 
+        if vpc_config := request.get("VpcConfig"):
+            replace_kwargs["vpc_config"] = self._build_vpc_config(vpc_config)
+
         if "Runtime" in request:
             if request["Runtime"] not in IMAGE_MAPPING:
                 raise InvalidParameterValueException(
-                    f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
+                    f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
                     Type="User",
                 )
             replace_kwargs["runtime"] = request["Runtime"]

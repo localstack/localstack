@@ -306,6 +306,12 @@ class OnFailure(str):
     DELETE = "DELETE"
 
 
+class OnStackFailure(str):
+    DO_NOTHING = "DO_NOTHING"
+    ROLLBACK = "ROLLBACK"
+    DELETE = "DELETE"
+
+
 class OperationResultFilterName(str):
     OPERATION_RESULT_STATUS = "OPERATION_RESULT_STATUS"
 
@@ -315,6 +321,12 @@ class OperationStatus(str):
     IN_PROGRESS = "IN_PROGRESS"
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
+
+
+class OrganizationStatus(str):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
+    DISABLED_PERMANENTLY = "DISABLED_PERMANENTLY"
 
 
 class PermissionModels(str):
@@ -421,6 +433,7 @@ class StackInstanceDetailedStatus(str):
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
     INOPERABLE = "INOPERABLE"
+    SKIPPED_SUSPENDED_ACCOUNT = "SKIPPED_SUSPENDED_ACCOUNT"
 
 
 class StackInstanceFilterName(str):
@@ -682,6 +695,16 @@ class AccountLimit(TypedDict, total=False):
 
 AccountLimitList = List[AccountLimit]
 AccountList = List[Account]
+
+
+class ActivateOrganizationsAccessInput(ServiceRequest):
+    pass
+
+
+class ActivateOrganizationsAccessOutput(TypedDict, total=False):
+    pass
+
+
 MajorVersion = int
 
 
@@ -928,6 +951,7 @@ class CreateChangeSetInput(ServiceRequest):
     ChangeSetType: Optional[ChangeSetType]
     ResourcesToImport: Optional[ResourcesToImport]
     IncludeNestedStacks: Optional[IncludeNestedStacks]
+    OnStackFailure: Optional[OnStackFailure]
 
 
 class CreateChangeSetOutput(TypedDict, total=False):
@@ -1020,6 +1044,14 @@ class CreateStackSetInput(ServiceRequest):
 
 class CreateStackSetOutput(TypedDict, total=False):
     StackSetId: Optional[StackSetId]
+
+
+class DeactivateOrganizationsAccessInput(ServiceRequest):
+    pass
+
+
+class DeactivateOrganizationsAccessOutput(TypedDict, total=False):
+    pass
 
 
 class DeactivateTypeInput(ServiceRequest):
@@ -1141,6 +1173,15 @@ class DescribeChangeSetOutput(TypedDict, total=False):
     IncludeNestedStacks: Optional[IncludeNestedStacks]
     ParentChangeSetId: Optional[ChangeSetId]
     RootChangeSetId: Optional[ChangeSetId]
+    OnStackFailure: Optional[OnStackFailure]
+
+
+class DescribeOrganizationsAccessInput(ServiceRequest):
+    CallAs: Optional[CallAs]
+
+
+class DescribeOrganizationsAccessOutput(TypedDict, total=False):
+    Status: Optional[OrganizationStatus]
 
 
 class DescribePublisherInput(ServiceRequest):
@@ -2200,6 +2241,13 @@ class CloudformationApi:
     service = "cloudformation"
     version = "2010-05-15"
 
+    @handler("ActivateOrganizationsAccess")
+    def activate_organizations_access(
+        self,
+        context: RequestContext,
+    ) -> ActivateOrganizationsAccessOutput:
+        raise NotImplementedError
+
     @handler("ActivateType", expand=False)
     def activate_type(
         self, context: RequestContext, request: ActivateTypeInput
@@ -2253,6 +2301,7 @@ class CloudformationApi:
         change_set_type: ChangeSetType = None,
         resources_to_import: ResourcesToImport = None,
         include_nested_stacks: IncludeNestedStacks = None,
+        on_stack_failure: OnStackFailure = None,
     ) -> CreateChangeSetOutput:
         raise NotImplementedError
 
@@ -2315,6 +2364,13 @@ class CloudformationApi:
         client_request_token: ClientRequestToken = None,
         managed_execution: ManagedExecution = None,
     ) -> CreateStackSetOutput:
+        raise NotImplementedError
+
+    @handler("DeactivateOrganizationsAccess")
+    def deactivate_organizations_access(
+        self,
+        context: RequestContext,
+    ) -> DeactivateOrganizationsAccessOutput:
         raise NotImplementedError
 
     @handler("DeactivateType", expand=False)
@@ -2395,6 +2451,12 @@ class CloudformationApi:
         next_token: NextToken = None,
         logical_resource_id: LogicalResourceId = None,
     ) -> DescribeChangeSetHooksOutput:
+        raise NotImplementedError
+
+    @handler("DescribeOrganizationsAccess")
+    def describe_organizations_access(
+        self, context: RequestContext, call_as: CallAs = None
+    ) -> DescribeOrganizationsAccessOutput:
         raise NotImplementedError
 
     @handler("DescribePublisher")

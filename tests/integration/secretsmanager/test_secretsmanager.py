@@ -7,6 +7,7 @@ from typing import Optional
 
 import pytest
 import requests
+from botocore.auth import SigV4Auth
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
@@ -1376,12 +1377,12 @@ class TestSecretsManager:
         assert res_json["VersionStages"] == version_stages
         return res_json
 
-    def test_http_update_secret_with_missing_client_request_token(self, secret_name):
+    def test_update_secret_with_non_provided_client_request_token(self, aws_client, secret_name):
         # Create v0.
         secret_string_v0: str = "secret_string_v0"
-        cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
-            self.secretsmanager_http_create_secret_string(secret_name, secret_string_v0),
-            secret_name,
+        cr_v0_res_json: json = aws_client.secretsmanager.create_secret(
+            Name=secret_name,
+            SecretString=secret_string_v0,
         )
         version_id_v0 = cr_v0_res_json["VersionId"]
 
@@ -1402,13 +1403,13 @@ class TestSecretsManager:
             version_id_v1,
         )
 
-        # Update without client request token.
+        # Update without client request token, the SDK will generate it.
         secret_string_v2: str = "secret_string_v2"
-        res_update_json = self.secretsmanager_http_update_secret_val_res(
-            self.secretsmanager_http_update_secret(secret_name, secret_string_v2, None),
-            secret_name,
-            None,
+        res_update_json = aws_client.secretsmanager.update_secret(
+            SecretId=secret_name,
+            SecretString=secret_string_v2,
         )
+
         version_id_v2 = res_update_json["VersionId"]
         assert version_id_v2 != version_id_v1
         assert version_id_v2 != version_id_v0
@@ -1421,14 +1422,13 @@ class TestSecretsManager:
             version_id_v2,
         )
 
-    def test_http_put_secret_value_with_new_custom_client_request_token(self, secret_name):
+    def test_put_secret_value_with_new_custom_client_request_token(self, secret_name, aws_client):
         # Create v0.
         secret_string_v0: str = "MySecretString"
-        cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
-            self.secretsmanager_http_create_secret_string(secret_name, secret_string_v0),
-            secret_name,
+        cr_v0_res_json: json = aws_client.secretsmanager.create_secret(
+            Name=secret_name,
+            SecretString=secret_string_v0,
         )
-        #
         # Check v0 base consistency.
         self.secretsmanager_http_get_secret_value_val_res(
             self.secretsmanager_http_get_secret_value(secret_name),
@@ -1472,14 +1472,16 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
-    def test_http_put_secret_value_with_duplicate_client_request_token(self, secret_name):
+    def test_http_put_secret_value_with_duplicate_client_request_token(
+        self, secret_name, aws_client
+    ):
         # Create v0.
         secret_string_v0: str = "MySecretString"
-        cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
-            self.secretsmanager_http_create_secret_string(secret_name, secret_string_v0),
-            secret_name,
+        cr_v0_res_json: json = aws_client.secretsmanager.create_secret(
+            Name=secret_name,
+            SecretString=secret_string_v0,
         )
-        #
+
         # Check v0 base consistency.
         self.secretsmanager_http_get_secret_value_val_res(
             self.secretsmanager_http_get_secret_value(secret_name),
@@ -1518,14 +1520,16 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
-    def test_http_put_secret_value_with_null_client_request_token(self, secret_name):
+    def test_http_put_secret_value_with_non_provided_client_request_token(
+        self, secret_name, aws_client
+    ):
         # Create v0.
         secret_string_v0: str = "MySecretString"
-        cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
-            self.secretsmanager_http_create_secret_string(secret_name, secret_string_v0),
-            secret_name,
+        cr_v0_res_json: json = aws_client.secretsmanager.create_secret(
+            Name=secret_name,
+            SecretString=secret_string_v0,
         )
-        #
+
         # Check v0 base consistency.
         self.secretsmanager_http_get_secret_value_val_res(
             self.secretsmanager_http_get_secret_value(secret_name),
@@ -1534,14 +1538,11 @@ class TestSecretsManager:
             cr_v0_res_json["VersionId"],
         )
 
-        # Update v0 with null ClientRequestToken.
+        # Update v0 with non-provided ClientRequestToken (the SDK will generate one).
         secret_string_v1: str = "MyNewSecretString"
-        #
-        pv_v1_res_json = self.secretsmanager_http_put_secret_value_val_res(
-            self.secretsmanager_http_put_secret_value_with(secret_name, secret_string_v1, None),
-            secret_name,
+        pv_v1_res_json = aws_client.secretsmanager.put_secret_value(
+            SecretId=secret_name, SecretString=secret_string_v1
         )
-        #
         # Check v1 base consistency.
         self.secretsmanager_http_get_secret_value_val_res(
             self.secretsmanager_http_get_secret_value(secret_name),
@@ -1549,7 +1550,7 @@ class TestSecretsManager:
             secret_string_v1,
             pv_v1_res_json["VersionId"],
         )
-        #
+
         # Check versioning base consistency.
         versions_v0_v1: json = [
             {"VersionId": cr_v0_res_json["VersionId"], "VersionStages": ["AWSPREVIOUS"]},
@@ -1565,60 +1566,13 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
-    def test_http_put_secret_value_with_undefined_client_request_token(self, secret_name):
+    def test_http_put_secret_value_duplicate_req(self, secret_name, aws_client):
         # Create v0.
         secret_string_v0: str = "MySecretString"
-        cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
-            self.secretsmanager_http_create_secret_string(secret_name, secret_string_v0),
-            secret_name,
+        cr_v0_res_json: json = aws_client.secretsmanager.create_secret(
+            Name=secret_name,
+            SecretString=secret_string_v0,
         )
-        #
-        # Check v0 base consistency.
-        self.secretsmanager_http_get_secret_value_val_res(
-            self.secretsmanager_http_get_secret_value(secret_name),
-            secret_name,
-            secret_string_v0,
-            cr_v0_res_json["VersionId"],
-        )
-
-        # Update v0 with undefined ClientRequestToken.
-        secret_string_v1: str = "MyNewSecretString"
-        #
-        pv_v1_res_json = self.secretsmanager_http_put_secret_value_val_res(
-            self.secretsmanager_http_put_secret_value(secret_name, secret_string_v1), secret_name
-        )
-        #
-        # Check v1 base consistency.
-        self.secretsmanager_http_get_secret_value_val_res(
-            self.secretsmanager_http_get_secret_value(secret_name),
-            secret_name,
-            secret_string_v1,
-            pv_v1_res_json["VersionId"],
-        )
-        #
-        # Check versioning base consistency.
-        versions_v0_v1: json = [
-            {"VersionId": cr_v0_res_json["VersionId"], "VersionStages": ["AWSPREVIOUS"]},
-            {"VersionId": pv_v1_res_json["VersionId"], "VersionStages": ["AWSCURRENT"]},
-        ]
-        self.secretsmanager_http_list_secret_version_ids_val_res(
-            self.secretsmanager_http_list_secret_version_ids(secret_name),
-            secret_name,
-            versions_v0_v1,
-        )
-
-        self.secretsmanager_http_delete_secret_val_res(
-            self.secretsmanager_http_delete_secret(secret_name), secret_name
-        )
-
-    def test_http_put_secret_value_duplicate_req(self, secret_name):
-        # Create v0.
-        secret_string_v0: str = "MySecretString"
-        cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
-            self.secretsmanager_http_create_secret_string(secret_name, secret_string_v0),
-            secret_name,
-        )
-        #
         # Check v0 base consistency.
         self.secretsmanager_http_get_secret_value_val_res(
             self.secretsmanager_http_get_secret_value(secret_name),
@@ -1657,14 +1611,15 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
-    def test_http_put_secret_value_null_client_request_token_new_version_stages(self, secret_name):
+    def test_http_put_secret_value_null_client_request_token_new_version_stages(
+        self, secret_name, aws_client
+    ):
         # Create v0.
         secret_string_v0: str = "MySecretString"
-        cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
-            self.secretsmanager_http_create_secret_string(secret_name, secret_string_v0),
-            secret_name,
+        cr_v0_res_json: json = aws_client.secretsmanager.create_secret(
+            Name=secret_name,
+            SecretString=secret_string_v0,
         )
-        #
         # Check v0 base consistency.
         self.secretsmanager_http_get_secret_value_val_res(
             self.secretsmanager_http_get_secret_value(secret_name),
@@ -1673,21 +1628,18 @@ class TestSecretsManager:
             cr_v0_res_json["VersionId"],
         )
 
-        # Update v0 with null ClientRequestToken.
+        # Update v0 with null ClientRequestToken (auto-generated by SDK).
         secret_string_v1: str = "MyNewSecretString"
         version_stages_v1: list[str] = ["AWSPENDING"]
-        #
-        pv_v1_res_json = self.secretsmanager_http_put_secret_value_with_version_val_res(
-            self.secretsmanager_http_put_secret_value_with_version(
-                secret_name, secret_string_v1, None, version_stages_v1
-            ),
-            secret_name,
-            None,
-            version_stages_v1,
+
+        pv_v1_res_json = aws_client.secretsmanager.put_secret_value(
+            SecretId=secret_name,
+            SecretString=secret_string_v1,
+            VersionStages=version_stages_v1,
         )
-        #
+
         assert pv_v1_res_json["VersionId"] != cr_v0_res_json["VersionId"]
-        #
+
         # Check v1 base consistency.
         self.secretsmanager_http_get_secret_value_with_val_res(
             self.secretsmanager_http_get_secret_value_with(secret_name, "AWSPENDING"),
@@ -1696,7 +1648,7 @@ class TestSecretsManager:
             pv_v1_res_json["VersionId"],
             "AWSPENDING",
         )
-        #
+
         # Check v0 base consistency.
         self.secretsmanager_http_get_secret_value_val_res(
             self.secretsmanager_http_get_secret_value(secret_name),
@@ -1704,7 +1656,7 @@ class TestSecretsManager:
             secret_string_v0,
             cr_v0_res_json["VersionId"],
         )
-        #
+
         # Check versioning base consistency.
         versions_v0_v1: json = [
             {"VersionId": cr_v0_res_json["VersionId"], "VersionStages": ["AWSCURRENT"]},
@@ -1721,15 +1673,17 @@ class TestSecretsManager:
         )
 
     def test_http_put_secret_value_custom_client_request_token_new_version_stages(
-        self, secret_name
+        self,
+        secret_name,
+        aws_client,
     ):
         # Create v0.
         secret_string_v0: str = "MySecretString"
-        cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
-            self.secretsmanager_http_create_secret_string(secret_name, secret_string_v0),
-            secret_name,
+        cr_v0_res_json: json = aws_client.secretsmanager.create_secret(
+            Name=secret_name,
+            SecretString=secret_string_v0,
         )
-        #
+
         # Check v0 base consistency.
         self.secretsmanager_http_get_secret_value_val_res(
             self.secretsmanager_http_get_secret_value(secret_name),
@@ -1738,13 +1692,13 @@ class TestSecretsManager:
             cr_v0_res_json["VersionId"],
         )
 
-        # Update v0 with null ClientRequestToken.
+        # Update v0 with new ClientRequestToken.
         secret_string_v1: str = "MyNewSecretString"
         version_stages_v1: list[str] = ["AWSPENDING"]
         crt_v1: str = str(uuid.uuid4())
         while crt_v1 == cr_v0_res_json["VersionId"]:
             crt_v1 = str(uuid.uuid4())
-        #
+
         self.secretsmanager_http_put_secret_value_with_version_val_res(
             self.secretsmanager_http_put_secret_value_with_version(
                 secret_name, secret_string_v1, crt_v1, version_stages_v1
@@ -1753,7 +1707,7 @@ class TestSecretsManager:
             crt_v1,
             version_stages_v1,
         )
-        #
+
         # Check v1 base consistency.
         self.secretsmanager_http_get_secret_value_with_val_res(
             self.secretsmanager_http_get_secret_value_with(secret_name, "AWSPENDING"),
@@ -1762,7 +1716,7 @@ class TestSecretsManager:
             crt_v1,
             "AWSPENDING",
         )
-        #
+
         # Check v0 base consistency.
         self.secretsmanager_http_get_secret_value_val_res(
             self.secretsmanager_http_get_secret_value(secret_name),
@@ -1770,7 +1724,7 @@ class TestSecretsManager:
             secret_string_v0,
             cr_v0_res_json["VersionId"],
         )
-        #
+
         # Check versioning base consistency.
         versions_v0_v1: json = [
             {"VersionId": cr_v0_res_json["VersionId"], "VersionStages": ["AWSCURRENT"]},
@@ -1940,3 +1894,44 @@ class TestSecretsManager:
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res", delete_secret_res)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize(
+        "operation",
+        [
+            "CreateSecret",
+            "UpdateSecret",
+            "RotateSecret",
+            "PutSecretValue",
+        ],
+    )
+    def test_no_client_request_token(
+        self, aws_client, sm_snapshot, cleanups, aws_http_client_factory, operation
+    ):
+        # https://docs.aws.amazon.com/cli/latest/reference/secretsmanager/create-secret.html#options
+        secret_name = short_uid()
+        # we should need to clean up but better safe than sorry
+        cleanups.append(
+            lambda: aws_client.secretsmanager.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
+        )
+
+        client = aws_http_client_factory("secretsmanager", signer_factory=SigV4Auth)
+        # When using the SDK or CLI, it will automatically create and add ClientRequestToken to your request
+        # try to not append it to see what exception AWS returns
+        parameters = {"SecretString": "thisisthesecret", "Description": "My secret string"}
+        if operation == "CreateSecret":
+            parameters["Name"] = secret_name
+        else:
+            parameters["SecretId"] = secret_name
+
+        headers = {
+            "X-Amz-Target": f"secretsmanager.{operation}",
+            "Content-Type": "application/x-amz-json-1.1",
+        }
+
+        response = client.post("/", data=json.dumps(parameters), headers=headers)
+        exc_response = {"Error": response.json(), "Metadata": {"StatusCode": response.status_code}}
+
+        sm_snapshot.match("no-client-request-exc", exc_response)

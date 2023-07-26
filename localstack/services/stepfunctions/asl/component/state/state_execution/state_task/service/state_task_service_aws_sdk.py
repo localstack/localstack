@@ -28,9 +28,12 @@ from localstack.utils.common import camel_to_snake_case
 class StateTaskServiceAwsSdk(StateTaskServiceCallback):
     _API_NAMES: dict[str, str] = {"sfn": "stepfunctions"}
     _SFN_TO_BOTO_PARAM_NORMALISERS = {
-        "stepfunctions": {"send_task_success": {"Output": "output", "TaskToken": "taskToken"}}
+        "stepfunctions": {
+            "send_task_success": {"Output": "output", "TaskToken": "taskToken"},
+            "send_task_heartbeat": {"TaskToken": "taskToken"},
+            "send_task_failure": {"TaskToken": "taskToken", "Error": "error", "Cause": "cause"},
+        }
     }
-    _NORMALISED_SERVICE_NAMES = {"dynamodb": "DynamoDb"}
 
     _normalised_api_name: str
     _normalised_api_action: str
@@ -83,9 +86,10 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
         )
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        norm_service_name: str = self._normalise_service_name(self.resource.api_name)
         if isinstance(ex, ClientError):
+            norm_service_name: str = self._normalise_service_name(self.resource.api_name)
             error: str = self._normalise_exception_name(norm_service_name, ex)
+
             error_message: str = ex.response["Error"]["Message"]
             cause_details = [
                 f"Service: {norm_service_name}",
@@ -100,24 +104,11 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
             cause: str = f"{error_message} ({', '.join(cause_details)})"
             failure_event = self._get_task_failure_event(error=error, cause=cause)
             return failure_event
-        else:
-            error = f"{norm_service_name}.{norm_service_name}Exception"
-            return FailureEvent(
-                error_name=CustomErrorName(error),
-                event_type=HistoryEventType.TaskFailed,
-                event_details=EventDetails(
-                    taskFailedEventDetails=TaskFailedEventDetails(
-                        error=error,
-                        cause=str(ex),  # TODO: update to report expected cause.
-                        resource=self._get_sfn_resource(),
-                        resourceType=self._get_sfn_resource_type(),
-                    )
-                ),
-            )
+        return super()._from_error(env=env, ex=ex)
 
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
-        api_client = aws_stack.connect_to_service(
-            self._normalised_api_name, config=Config(parameter_validation=False)
+        api_client = aws_stack.create_external_boto_client(
+            service_name=self._normalised_api_name, config=Config(parameter_validation=False)
         )
         response = getattr(api_client, self._normalised_api_action)(**parameters) or dict()
         if response:

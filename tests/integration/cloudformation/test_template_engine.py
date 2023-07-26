@@ -10,6 +10,7 @@ import yaml
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.cloudformation_utils import load_template_file, load_template_raw
+from localstack.testing.pytest.fixtures import StackDeployError
 from localstack.utils.aws import arns
 from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
@@ -183,7 +184,7 @@ class TestIntrinsicFunctions:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip(reason="functions not currently supported")
-    def test_json_and_find_in_map_functions(self, deploy_cfn_template):
+    def test_to_json_functions(self, deploy_cfn_template):
         template_path = os.path.join(
             os.path.dirname(__file__), "../templates/function_to_json_string.yml"
         )
@@ -203,6 +204,18 @@ class TestIntrinsicFunctions:
         assert json_result["key1"] == first_value
         assert json_result["key2"] == second_value
         assert "value1" == deployed.outputs["Result2"]
+
+    @pytest.mark.aws_validated
+    def test_find_map_function(self, deploy_cfn_template):
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../templates/function_find_in_map.yml"
+        )
+
+        deployed = deploy_cfn_template(
+            template_path=template_path,
+        )
+
+        assert deployed.outputs["Result"] == "us-east-1"
 
     @pytest.mark.aws_validated
     @pytest.mark.skip(reason="function not currently supported")
@@ -502,6 +515,7 @@ class TestMacros:
         paths=[
             "$..TemplateBody.Resources.Parameter.LogicalResourceId",
             "$..TemplateBody.Conditions",
+            "$..TemplateBody.Mappings",
             "$..TemplateBody.StackId",
             "$..TemplateBody.StackName",
             "$..TemplateBody.Transform",
@@ -660,6 +674,7 @@ class TestMacros:
         paths=[
             "$..TemplateBody.Resources.Parameter.LogicalResourceId",
             "$..TemplateBody.Conditions",
+            "$..TemplateBody.Mappings",
             "$..TemplateBody.Parameters",
             "$..TemplateBody.StackId",
             "$..TemplateBody.StackName",
@@ -727,6 +742,7 @@ class TestMacros:
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$..Event.fragment.Conditions",
+            "$..Event.fragment.Mappings",
             "$..Event.fragment.Outputs",
             "$..Event.fragment.Resources.Parameter.LogicalResourceId",
             "$..Event.fragment.StackId",
@@ -976,3 +992,47 @@ class TestMacros:
 
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.match("failed_description", failed_events_by_policy[0])
+
+
+class TestStackEvents:
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..EventId",
+            "$..PhysicalResourceId",
+            "$..ResourceProperties",
+            # TODO: we do not maintain parity here, just that the property exists
+            "$..ResourceStatusReason",
+        ]
+    )
+    def test_invalid_stack_deploy(self, deploy_cfn_template, aws_client, snapshot):
+        logical_resource_id = "MyParameter"
+        template = {
+            "Resources": {
+                logical_resource_id: {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        # invalid: missing required property _type_
+                        "Value": "abc123",
+                    },
+                },
+            },
+        }
+
+        with pytest.raises(StackDeployError) as exc_info:
+            deploy_cfn_template(template=json.dumps(template))
+
+        stack_events = exc_info.value.events
+        # filter out only the single create event that failed
+        failed_events = [
+            every
+            for every in stack_events
+            if every["ResourceStatus"] == "CREATE_FAILED"
+            and every["LogicalResourceId"] == logical_resource_id
+        ]
+        assert len(failed_events) == 1
+        failed_event = failed_events[0]
+
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.match("failed_event", failed_event)
+        assert "ResourceStatusReason" in failed_event
