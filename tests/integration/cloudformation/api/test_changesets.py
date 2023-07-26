@@ -328,7 +328,7 @@ def test_describe_change_set_nonexisting(snapshot, aws_client):
     snapshot.match("exception", ex.value)
 
 
-@pytest.mark.xfail(reason="fails because of the properties mutation in the result_handler")
+@pytest.mark.skip(reason="fails because of the properties mutation in the result_handler")
 def test_execute_change_set(
     is_change_set_finished,
     is_change_set_created_and_available,

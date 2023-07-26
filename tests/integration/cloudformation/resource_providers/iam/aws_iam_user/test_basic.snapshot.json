@@ -77,5 +77,46 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/resource_providers/iam/aws_iam_user/test_basic.py::TestBasicCRD::test_getatt": {
+    "recorded-date": "05-07-2023, 14:15:12",
+    "recorded-content": {
+      "stack-outputs": {
+        "GetAttArn": "arn:aws:iam::111111111111:user/<user-name>",
+        "Ref": "<user-name>"
+      },
+      "describe-resource": {
+        "User": {
+          "Arn": "arn:aws:iam::111111111111:user/<user-name>",
+          "CreateDate": "datetime",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stack_resource": {
+        "StackResourceDetail": {
+          "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+          },
+          "LastUpdatedTimestamp": "timestamp",
+          "LogicalResourceId": "MyResource",
+          "Metadata": {},
+          "PhysicalResourceId": "<user-name>",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceType": "AWS::IAM::User",
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/stack-fd6b2c74/666b7260-1b2d-11ee-8c20-12a3d6611181",
+          "StackName": "stack-fd6b2c74"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

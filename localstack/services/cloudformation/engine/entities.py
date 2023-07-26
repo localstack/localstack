@@ -190,8 +190,9 @@ class Stack:
 
         self.events.insert(0, event)
 
-    def set_resource_status(self, resource_id: str, status: str, physical_res_id: str = None):
+    def set_resource_status(self, resource_id: str, status: str):
         """Update the deployment status of the given resource ID and publish a corresponding stack event."""
+        physical_res_id = self.resources.get(resource_id, {}).get("PhysicalResourceId")
         self._set_resource_status_details(resource_id, physical_res_id=physical_res_id)
         state = self.resource_states.setdefault(resource_id, {})
         state["PreviousResourceStatus"] = state.get("ResourceStatus")
