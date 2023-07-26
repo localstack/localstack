@@ -231,7 +231,7 @@ def route53resolver():
 
 @aws_provider(api="s3", name="legacy")
 def s3_legacy():
-    from localstack.services.s3 import s3_listener, s3_starter
+    from localstack.services.s3.legacy import s3_listener, s3_starter
 
     return Service(
         "s3", listener=s3_listener.UPDATE_S3, start=s3_starter.start_s3, check=s3_starter.check_s3
@@ -240,7 +240,7 @@ def s3_legacy():
 
 @aws_provider(api="s3", name="v1")
 def s3_v1():
-    from localstack.services.s3 import s3_listener, s3_starter
+    from localstack.services.s3.legacy import s3_listener, s3_starter
 
     return Service(
         "s3", listener=s3_listener.UPDATE_S3, start=s3_starter.start_s3, check=s3_starter.check_s3

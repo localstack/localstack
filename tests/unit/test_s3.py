@@ -12,16 +12,10 @@ from localstack.aws.api import RequestContext
 from localstack.constants import LOCALHOST, S3_VIRTUAL_HOSTNAME
 from localstack.http import Request
 from localstack.services.infra import patch_instance_tracker_meta
-from localstack.services.s3 import (
-    multipart_content,
-    presigned_url,
-    s3_listener,
-    s3_starter,
-    s3_utils,
-)
+from localstack.services.s3 import presigned_url
 from localstack.services.s3 import utils as s3_utils_asf
 from localstack.services.s3.codec import AwsChunkedDecoder
-from localstack.services.s3.s3_utils import get_key_from_s3_url, get_s3_backend
+from localstack.services.s3.legacy import multipart_content, s3_listener, s3_starter, s3_utils
 from localstack.utils.strings import short_uid
 
 
@@ -429,7 +423,7 @@ class TestS3Utils:
                 for key in ["my/key/123", "/mykey"]:
                     url = f"{prefix}{key}"
                     expected = f"{'/' if slash_prefix else ''}{key.lstrip('/')}"
-                    assert get_key_from_s3_url(url, leading_slash=slash_prefix) == expected
+                    assert s3_utils.get_key_from_s3_url(url, leading_slash=slash_prefix) == expected
 
 
 class S3BackendTest(unittest.TestCase):
@@ -439,7 +433,7 @@ class S3BackendTest(unittest.TestCase):
         patch_instance_tracker_meta()
 
     def test_key_instances_before_removing(self):
-        s3_backend = get_s3_backend()
+        s3_backend = s3_utils.get_s3_backend()
 
         bucket_name = "test"
         region = "us-east-1"
@@ -457,7 +451,7 @@ class S3BackendTest(unittest.TestCase):
         self.assertNotIn(key, key.instances or [])
 
     def test_no_bucket_in_instances(self):
-        s3_backend = get_s3_backend()
+        s3_backend = s3_utils.get_s3_backend()
 
         bucket_name = f"b-{short_uid()}"
         region = "us-east-1"
@@ -475,6 +469,7 @@ class TestS3UtilsAsf:
     Testing the new utils from ASF
     Some utils are duplicated, but it will be easier once we remove the old listener, we won't have to
     untangle and leave old functions around
+    TODO: move tests from legacy to new utils when duplicated, to keep coverage
     """
 
     # test whether method correctly distinguishes between hosted and path style bucket references

@@ -10,7 +10,7 @@ from localstack import config
 from localstack.aws.spec import ServiceCatalog, build_service_index_cache, load_service_index_cache
 from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Request
-from localstack.services.s3.s3_utils import uses_host_addressing
+from localstack.services.s3.utils import uses_host_addressing
 from localstack.services.sqs.utils import is_sqs_queue_url
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import to_bytes
