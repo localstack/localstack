@@ -540,7 +540,7 @@ class HostAndPort:
         if isinstance(other, self.__class__):
             return self.host == other.host and self.port == other.port
         elif isinstance(other, str):
-            return self == self.__class__.parse(other)
+            return self == self.parse(other)
         else:
             raise TypeError(f"cannot compare {self.__class__} to {other.__class__}")
 
