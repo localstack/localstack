@@ -1,10 +1,21 @@
 import json
-from typing import Callable
+import logging
+from typing import Callable, Optional
 
 import aws_cdk as cdk
+import mypy_boto3_s3
 
 from localstack.aws.api.cloudformation import Capability
 from localstack.aws.connect import ServiceLevelClientFactory
+
+LOG = logging.getLogger(__name__)
+
+
+def cleanup_s3_bucket(s3_client: mypy_boto3_s3.S3Client, bucket_name: str):
+    LOG.debug(f"Cleaning provisioned S3 Bucket {bucket_name}")
+    objs = s3_client.list_objects_v2(Bucket=bucket_name)
+    obj_keys = [{"Key": o["Key"]} for o in objs["Contents"]]
+    s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": obj_keys})
 
 
 class InfraProvisioner:
@@ -40,6 +51,21 @@ class InfraProvisioner:
             outputs = describe_stack["Stacks"][0]["Outputs"]
             stack["Outputs"] = {o["OutputKey"]: o["OutputValue"] for o in outputs}
 
+            if stack["AutoCleanS3"]:
+                stack_resources = self.aws_client.cloudformation.describe_stack_resources(
+                    StackName=stack_name
+                )["StackResources"]
+                s3_buckets = [
+                    r["PhysicalResourceId"]
+                    for r in stack_resources
+                    if r["ResourceType"] == "AWS::S3::Bucket"
+                ]
+
+                for s3_bucket in s3_buckets:
+                    self.custom_cleanup_steps.append(
+                        lambda: cleanup_s3_bucket(self.aws_client.s3, s3_bucket)
+                    )
+
     def get_stack_outputs(self, stack_name: str):
         return self.cloudformation_stacks[stack_name]["Outputs"]
 
@@ -52,7 +78,7 @@ class InfraProvisioner:
                 StackName=stack_name, WaiterConfig={"Delay": 1}
             )
 
-    def add_cdk_stack(self, cdk_stack: cdk.Stack):
+    def add_cdk_stack(self, cdk_stack: cdk.Stack, autoclean_bucket: Optional[bool] = True):
         """
         1. check if synthesized templates exists
         2. if no templates exists OR forced update enabled => synth cdk.App into CloudFormation template and save it
@@ -64,6 +90,7 @@ class InfraProvisioner:
         self.cloudformation_stacks[cdk_stack.stack_name] = {
             "StackName": cdk_stack.stack_name,
             "Template": template,
+            "AutoCleanS3": autoclean_bucket,
         }
 
     def add_cdk_app(self, cdk_app: cdk.App):
