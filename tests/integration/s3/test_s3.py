@@ -29,11 +29,14 @@ from botocore.exceptions import ClientError
 
 from localstack import config, constants
 from localstack.aws.api.s3 import StorageClass
+from localstack.aws.connect import connect_externally_to
 from localstack.config import LEGACY_S3_PROVIDER, STREAM_S3_PROVIDER
 from localstack.constants import (
     LOCALHOST_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
+    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_REGION_NAME,
+    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
@@ -8752,7 +8755,12 @@ def _anon_client(service: str):
     conf = Config(signature_version=UNSIGNED)
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         return boto3.client(service, config=conf, region_name=None)
-    return aws_stack.create_external_boto_client(service, config=conf)
+    return connect_externally_to.get_client(
+        aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+        service=service,
+        config=conf,
+    )
 
 
 def _s3_client_custom_config(conf: Config, endpoint_url: str = None):

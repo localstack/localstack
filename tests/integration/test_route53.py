@@ -111,8 +111,8 @@ class TestRoute53:
                 VPC={"VPCRegion": vpc_region, "VPCId": vpc2_id},
             )
 
-    def test_reusable_delegation_sets(self):
-        client = aws_stack.create_external_boto_client("route53")
+    def test_reusable_delegation_sets(self, aws_client):
+        client = aws_client.route53
 
         sets_before = client.list_reusable_delegation_sets().get("DelegationSets", [])
 

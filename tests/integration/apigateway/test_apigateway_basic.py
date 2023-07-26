@@ -20,7 +20,12 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
 from localstack.config import get_edge_url
-from localstack.constants import APPLICATION_JSON, LOCALHOST_HOSTNAME
+from localstack.constants import (
+    APPLICATION_JSON,
+    LOCALHOST_HOSTNAME,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
     connect_api_gateway_to_sqs,
@@ -184,7 +189,9 @@ class TestAPIGateway:
 
     def test_api_gateway_kinesis_integration(self, aws_client):
         # create target Kinesis stream
-        stream = resource_util.create_kinesis_stream(self.TEST_STREAM_KINESIS_API_GW)
+        stream = resource_util.create_kinesis_stream(
+            TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, self.TEST_STREAM_KINESIS_API_GW
+        )
         stream.wait_for()
 
         # create API Gateway and connect it to the target stream

@@ -20,9 +20,9 @@ from botocore.exceptions import (
 from botocore.parsers import ResponseParserError
 from rich.console import Console
 
+from localstack.aws.connect import connect_externally_to
 from localstack.aws.mocking import Instance, generate_request
 from localstack.aws.spec import ServiceCatalog
-from localstack.utils.aws import aws_stack
 
 logging.basicConfig(level=logging.INFO)
 service_models = ServiceCatalog()
@@ -55,7 +55,7 @@ class RowEntry(TypedDict, total=False):
 
 def simulate_call(service: str, op: str) -> RowEntry:
     """generates a mock request based on the service and operation model and sends it to the API"""
-    client = aws_stack.create_external_boto_client(
+    client = connect_externally_to.get_client(
         service,
         config=botocore.config.Config(
             parameter_validation=False,

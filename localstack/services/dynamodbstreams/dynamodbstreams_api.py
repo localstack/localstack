@@ -47,7 +47,9 @@ def add_dynamodb_stream(
     store = get_dynamodbstreams_store()
     # create kinesis stream as a backend
     stream_name = get_kinesis_stream_name(table_name)
-    resources.create_kinesis_stream(stream_name)
+    resources.create_kinesis_stream(
+        account_id=get_aws_account_id(), region_name=aws_stack.get_region(), stream_name=stream_name
+    )
     latest_stream_label = latest_stream_label or "latest"
     stream = {
         "StreamArn": arns.dynamodb_stream_arn(

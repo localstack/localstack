@@ -530,10 +530,9 @@ class TestIntegration:
             # cleanup
             process.stop()
 
-    def test_scheduled_lambda(self, scheduled_test_lambda):
+    def test_scheduled_lambda(self, aws_client, scheduled_test_lambda):
         def check_invocation(*args):
-            log_events = get_lambda_logs(scheduled_test_lambda)
-            assert log_events
+            assert get_lambda_logs(scheduled_test_lambda, aws_client.awslambda)
 
         # wait for up to 1 min for invocations to get triggered
         retry(check_invocation, retries=14, sleep=5)
@@ -553,7 +552,7 @@ def test_kinesis_lambda_forward_chain(
     lambda_1_resp = create_lambda_function(
         func_name=lambda1_name,
         zip_file=zip_file,
-        event_source_arn=get_event_source_arn(stream1_name),
+        event_source_arn=get_event_source_arn(stream1_name, aws_client.kinesis),
         starting_position="TRIM_HORIZON",
     )
     lambda_1_event_source_uuid = lambda_1_resp["CreateEventSourceMappingResponse"]["UUID"]
@@ -563,7 +562,7 @@ def test_kinesis_lambda_forward_chain(
     lambda_2_resp = create_lambda_function(
         func_name=lambda2_name,
         zip_file=zip_file,
-        event_source_arn=get_event_source_arn(stream2_name),
+        event_source_arn=get_event_source_arn(stream2_name, aws_client.kinesis),
         starting_position="TRIM_HORIZON",
     )
     lambda_2_event_source_uuid = lambda_2_resp["CreateEventSourceMappingResponse"]["UUID"]
@@ -744,9 +743,8 @@ class TestLambdaOutgoingSdkCalls:
 # ---------------
 
 
-def get_event_source_arn(stream_name):
-    kinesis = aws_stack.create_external_boto_client("kinesis")
-    return kinesis.describe_stream(StreamName=stream_name)["StreamDescription"]["StreamARN"]
+def get_event_source_arn(stream_name, client) -> str:
+    return client.describe_stream(StreamName=stream_name)["StreamDescription"]["StreamARN"]
 
 
 def get_lambda_invocations_count(

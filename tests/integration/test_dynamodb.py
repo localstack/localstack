@@ -11,7 +11,6 @@ from localstack.aws.api.dynamodb import (
     ContinuousBackupsUnavailableException,
     PointInTimeRecoverySpecification,
 )
-from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.snapshots.transformer import SortingTransformer
@@ -184,8 +183,8 @@ class TestDynamoDB:
 
     @pytest.mark.only_localstack
     def test_stream_spec_and_region_replacement(self, aws_client):
-        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
-        kinesis = aws_stack.create_external_boto_client("kinesis")
+        ddbstreams = aws_client.dynamodbstreams
+        kinesis = aws_client.kinesis
         table_name = f"ddb-{short_uid()}"
         resources.create_dynamodb_table(
             table_name,
@@ -573,9 +572,9 @@ class TestDynamoDB:
 
     @pytest.mark.only_localstack
     def test_dynamodb_stream_shard_iterator(
-        self, wait_for_stream_ready, dynamodb_create_table_with_parameters
+        self, aws_client, wait_for_stream_ready, dynamodb_create_table_with_parameters
     ):
-        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
+        ddbstreams = aws_client.dynamodbstreams
 
         table_name = f"table_with_stream-{short_uid()}"
         table = dynamodb_create_table_with_parameters(
@@ -724,9 +723,9 @@ class TestDynamoDB:
         aws_client.dynamodb.delete_table(TableName=table_name)
 
     @pytest.mark.only_localstack
-    def test_dynamodb_stream_stream_view_type(self):
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
-        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
+    def test_dynamodb_stream_stream_view_type(self, aws_client):
+        dynamodb = aws_client.dynamodb
+        ddbstreams = aws_client.dynamodbstreams
         table_name = "table_with_stream_%s" % short_uid()
 
         # create table
@@ -802,14 +801,11 @@ class TestDynamoDB:
         delete_table(table_name)
 
     @pytest.mark.only_localstack
-    def test_dynamodb_with_kinesis_stream(self):
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+    def test_dynamodb_with_kinesis_stream(self, aws_client, secondary_aws_client):
+        dynamodb = aws_client.dynamodb
+
         # Create Kinesis stream in another account to test that integration works cross-account
-        kinesis = aws_stack.create_external_boto_client(
-            "kinesis",
-            aws_access_key_id="222244448888",
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-        )
+        kinesis = secondary_aws_client.kinesis
 
         # create kinesis datastream
         stream_name = f"kinesis_dest_stream_{short_uid()}"
@@ -1012,9 +1008,9 @@ class TestDynamoDB:
         assert len(response["Table"]["Replicas"]) == 0
 
     @pytest.mark.only_localstack
-    def test_global_tables(self):
+    def test_global_tables(self, aws_client):
         resources.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+        dynamodb = aws_client.dynamodb
 
         # create global table
         regions = [
@@ -1437,7 +1433,7 @@ class TestDynamoDB:
         self, aws_client, dynamodb_create_table
     ):
         table_name = f"test-ddb-table-{short_uid()}"
-        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
+        ddbstreams = aws_client.dynamodbstreams
 
         dynamodb_create_table(
             table_name=table_name,
