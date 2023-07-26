@@ -13,9 +13,18 @@ LOG = logging.getLogger(__name__)
 
 def cleanup_s3_bucket(s3_client: mypy_boto3_s3.S3Client, bucket_name: str):
     LOG.debug(f"Cleaning provisioned S3 Bucket {bucket_name}")
-    objs = s3_client.list_objects_v2(Bucket=bucket_name)
-    obj_keys = [{"Key": o["Key"]} for o in objs["Contents"]]
-    s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": obj_keys})
+    try:
+        objs = s3_client.list_objects_v2(Bucket=bucket_name)
+        objs_num = objs["KeyCount"]
+        if objs_num > 0:
+            LOG.debug(f"Deleting {objs_num} objects from {bucket_name}")
+            obj_keys = [{"Key": o["Key"]} for o in objs["Contents"]]
+            s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": obj_keys})
+    except Exception:
+        LOG.warning(
+            f"Failed to clean provisioned S3 Bucket {bucket_name}",
+            exc_info=LOG.isEnabledFor(logging.DEBUG),
+        )
 
 
 class InfraProvisioner:
@@ -78,7 +87,7 @@ class InfraProvisioner:
                 StackName=stack_name, WaiterConfig={"Delay": 1}
             )
 
-    def add_cdk_stack(self, cdk_stack: cdk.Stack, autoclean_bucket: Optional[bool] = True):
+    def add_cdk_stack(self, cdk_stack: cdk.Stack, autoclean_buckets: Optional[bool] = True):
         """
         1. check if synthesized templates exists
         2. if no templates exists OR forced update enabled => synth cdk.App into CloudFormation template and save it
@@ -90,7 +99,7 @@ class InfraProvisioner:
         self.cloudformation_stacks[cdk_stack.stack_name] = {
             "StackName": cdk_stack.stack_name,
             "Template": template,
-            "AutoCleanS3": autoclean_bucket,
+            "AutoCleanS3": autoclean_buckets,
         }
 
     def add_cdk_app(self, cdk_app: cdk.App):
