@@ -243,7 +243,10 @@ class TestEdgeVariablesDerivedCorrectly:
             edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
-        assert gateway_listen == [HostAndPort(host=default_ip, port=4566)]
+        assert gateway_listen == [
+            HostAndPort(host=default_ip, port=10101),
+            HostAndPort(host=default_ip, port=20202),
+        ]
         assert edge_bind_host == "192.168.0.1"
         assert edge_port == 10101
         assert edge_port_http == 20202

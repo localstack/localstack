@@ -572,18 +572,6 @@ def populate_legacy_edge_configuration(
             default_host=constants.LOCALHOST_HOSTNAME,
         )
 
-    # parse gateway listen from multiple components
-    if gateway_listen_raw is not None:
-        gateway_listen = []
-        for address in gateway_listen_raw.split(","):
-            gateway_listen.append(HostAndPort.parse(address.strip(), default_host=default_ip))
-    else:
-        # default to existing behaviour
-        gateway_listen = [HostAndPort(host=default_ip, port=localstack_host.port)]
-
-    assert gateway_listen is not None
-    assert localstack_host is not None
-
     def legacy_fallback(envar_name: str, default: T) -> T:
         result = default
         result_raw = environment.get(envar_name)
@@ -591,6 +579,21 @@ def populate_legacy_edge_configuration(
             result = result_raw
 
         return result
+
+    # parse gateway listen from multiple components
+    if gateway_listen_raw is not None:
+        gateway_listen = []
+        for address in gateway_listen_raw.split(","):
+            gateway_listen.append(HostAndPort.parse(address.strip(), default_host=default_ip))
+    else:
+        edge_port = int(environment.get("EDGE_PORT", localstack_host.port))
+        edge_port_http = int(environment.get("EDGE_PORT_HTTP", 0))
+        gateway_listen = [HostAndPort(host=default_ip, port=edge_port)]
+        if edge_port_http:
+            gateway_listen.append(HostAndPort(host=default_ip, port=edge_port_http))
+
+    assert gateway_listen is not None
+    assert localstack_host is not None
 
     # derive legacy variables from GATEWAY_LISTEN unless GATEWAY_LISTEN is not given and
     # legacy variables are
