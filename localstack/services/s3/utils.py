@@ -18,6 +18,7 @@ from localstack.aws.api import CommonServiceException, RequestContext, ServiceEx
 from localstack.aws.api.s3 import (
     BucketName,
     ChecksumAlgorithm,
+    CopySource,
     InvalidArgument,
     LifecycleExpiration,
     LifecycleRule,
@@ -75,24 +76,18 @@ class InvalidRequest(ServiceException):
     status_code: int = 400
 
 
-# TODO: write unit tests
-def extract_bucket_key_version_id_from_s3_url(
-    s3_url: str,
+def extract_bucket_key_version_id_from_copy_source(
+    copy_source: CopySource,
 ) -> tuple[BucketName, ObjectKey, Optional[str]]:
     """
-    Utility to parse bucket name, object key and optionally its versionId. It can accept different format:
+    Utility to parse bucket name, object key and optionally its versionId. It accepts the CopySource format:
     - <bucket-name/<object-key>?versionId=<version-id>, used for example in CopySource for CopyObject
-    - s3://<bucket-name>/<object-key>, used everywhere, notably Glue
-    :param s3_url: the S3 URL to parse
+    :param copy_source: the S3 CopySource to parse
     :return: parsed BucketName, ObjectKey and optionally VersionId
     """
-    copy_source_parsed = urlparser.urlparse(s3_url)
-    if src_bucket := copy_source_parsed.hostname:
-        src_key = urlparser.unquote(copy_source_parsed.path).lstrip("/")
-        src_version_id = None
-    else:
-        src_bucket, src_key = urlparser.unquote(copy_source_parsed.path).lstrip("/").split("/", 1)
-        src_version_id = urlparser.parse_qs(copy_source_parsed.query).get("versionId", [None])[0]
+    copy_source_parsed = urlparser.urlparse(copy_source)
+    src_bucket, src_key = urlparser.unquote(copy_source_parsed.path).lstrip("/").split("/", 1)
+    src_version_id = urlparser.parse_qs(copy_source_parsed.query).get("versionId", [None])[0]
 
     return src_bucket, src_key, src_version_id
 
@@ -279,24 +274,31 @@ def forwarded_from_virtual_host_addressed_request(headers: dict[str, str]) -> bo
 def extract_bucket_name_and_key_from_headers_and_path(
     headers: dict[str, str], path: str
 ) -> tuple[Optional[str], Optional[str]]:
+    """
+    Extract the bucket name and the object key from a request headers and path. This works with both virtual host
+    and path style requests.
+    :param headers: the request headers, used to get the Host
+    :param path: the request path
+    :return: if found, the bucket name and object key
+    """
     bucket_name = None
-    key_name = None
+    object_key = None
     host = headers.get("host", "")
     if ".s3" in host:
-        vhost_match = _s3_virtual_host_regex.match(headers.get("host", ""))
+        vhost_match = _s3_virtual_host_regex.match(host)
         if vhost_match and vhost_match.group(3):
             bucket_name = vhost_match.group(3)
             split = path.split("/", maxsplit=1)
             if len(split) > 1:
-                key_name = split[1]
+                object_key = split[1]
     else:
         path_without_params = path.partition("?")[0]
         bucket_name = path_without_params.split("/", maxsplit=2)[1]
         split = path.split("/", maxsplit=2)
         if len(split) > 2:
-            key_name = split[2]
+            object_key = split[2]
 
-    return bucket_name, key_name
+    return bucket_name, object_key
 
 
 def get_bucket_from_moto(
