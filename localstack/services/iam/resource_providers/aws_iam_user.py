@@ -101,6 +101,9 @@ class IAMUserProvider(ResourceProvider[IAMUserProperties]):
             for group in model.get("Groups", []):
                 iam_client.add_user_to_group(GroupName=group, UserName=model["UserName"])
 
+            for policy_arn in model.get("ManagedPolicyArns", []):
+                iam_client.attach_user_policy(UserName=model["UserName"], PolicyArn=policy_arn)
+
             request.custom_context[REPEATED_INVOCATION] = True
             return ProgressEvent(
                 status=OperationStatus.IN_PROGRESS,
@@ -141,7 +144,8 @@ class IAMUserProvider(ResourceProvider[IAMUserProperties]):
         """
         Update a resource
         """
-        raise NotImplementedError
+        return ProgressEvent(OperationStatus.SUCCESS, request.desired_state)
+        # raise NotImplementedError
 
 
 class IAMUserProviderPlugin(CloudFormationResourceProviderPlugin):

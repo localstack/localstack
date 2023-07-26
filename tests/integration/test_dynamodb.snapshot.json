@@ -26,7 +26,7 @@
     }
   },
   "tests/integration/test_dynamodb.py::TestDynamoDB::test_return_values_in_put_item": {
-    "recorded-date": "15-09-2022, 09:00:37",
+    "recorded-date": "13-07-2023, 11:57:53",
     "recorded-content": {
       "PutFirstItem": {
         "ResponseMetadata": {
@@ -36,8 +36,12 @@
       },
       "PutFirstItemOLD": {
         "Attributes": {
-          "data": "foobar",
-          "id": "id1"
+          "data": {
+            "S": "foobar"
+          },
+          "id": {
+            "S": "id1"
+          }
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -46,8 +50,12 @@
       },
       "PutFirstItemB": {
         "Attributes": {
-          "data": "foobar",
-          "id": "id1"
+          "data": {
+            "S": "foobar"
+          },
+          "id": {
+            "S": "id1"
+          }
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

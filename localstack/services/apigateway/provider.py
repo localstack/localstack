@@ -34,6 +34,10 @@ from localstack.aws.api.apigateway import (
     DocumentationPartIds,
     DocumentationPartLocation,
     DocumentationParts,
+    DomainName,
+    DomainNames,
+    DomainNameStatus,
+    EndpointConfiguration,
     ExportResponse,
     GetDocumentationPartsRequest,
     Integration,
@@ -47,6 +51,7 @@ from localstack.aws.api.apigateway import (
     MethodResponse,
     Model,
     Models,
+    MutualTlsAuthenticationInput,
     NotFoundException,
     NullableBoolean,
     NullableInteger,
@@ -59,6 +64,7 @@ from localstack.aws.api.apigateway import (
     Resource,
     RestApi,
     RestApis,
+    SecurityPolicy,
     StatusCode,
     String,
     Tags,
@@ -67,6 +73,7 @@ from localstack.aws.api.apigateway import (
     VpcLink,
     VpcLinks,
 )
+from localstack.aws.connect import connect_to
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError, create_aws_request_context
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import (
@@ -76,6 +83,7 @@ from localstack.services.apigateway.helpers import (
     OpenAPIExt,
     apply_json_patch_safe,
     get_apigateway_store,
+    get_regional_domain_name,
     import_api_from_openapi_spec,
     is_greedy_path,
     is_variable_path,
@@ -84,7 +92,7 @@ from localstack.services.apigateway.helpers import (
     resolve_references,
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
-from localstack.services.apigateway.models import RestApiContainer
+from localstack.services.apigateway.models import ApiGatewayStore, RestApiContainer
 from localstack.services.apigateway.patches import apply_patches
 from localstack.services.apigateway.router_asf import ApigatewayRouter, to_invocation_context
 from localstack.services.edge import ROUTER
@@ -292,6 +300,74 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response = to_rest_api_response_json(response)
         response.setdefault("tags", {})
         return response
+
+    @handler("CreateDomainName")
+    def create_domain_name(
+        self,
+        context: RequestContext,
+        domain_name: String,
+        certificate_name: String = None,
+        certificate_body: String = None,
+        certificate_private_key: String = None,
+        certificate_chain: String = None,
+        certificate_arn: String = None,
+        regional_certificate_name: String = None,
+        regional_certificate_arn: String = None,
+        endpoint_configuration: EndpointConfiguration = None,
+        tags: MapOfStringToString = None,
+        security_policy: SecurityPolicy = None,
+        mutual_tls_authentication: MutualTlsAuthenticationInput = None,
+        ownership_verification_certificate_arn: String = None,
+    ) -> DomainName:
+        if not domain_name:
+            raise BadRequestException("No Domain Name specified")
+
+        store: ApiGatewayStore = get_apigateway_store(context.account_id, context.region)
+        if store.domain_names.get(domain_name):
+            raise ConflictException(f"Domain name with ID {domain_name} already exists")
+
+        # find matching hosted zone
+        zone_id = None
+        route53 = connect_to().route53
+        hosted_zones = route53.list_hosted_zones().get("HostedZones", [])
+        hosted_zones = [hz for hz in hosted_zones if domain_name.endswith(hz["Name"].strip("."))]
+        zone_id = hosted_zones[0]["Id"].replace("/hostedzone/", "") if hosted_zones else zone_id
+
+        domain: DomainName = DomainName(
+            domainName=domain_name,
+            certificateName=certificate_name,
+            certificateArn=certificate_arn,
+            regionalDomainName=get_regional_domain_name(domain_name),
+            domainNameStatus=DomainNameStatus.AVAILABLE,
+            regionalHostedZoneId=zone_id,
+            regionalCertificateName=regional_certificate_name,
+            regionalCertificateArn=regional_certificate_arn,
+            securityPolicy=SecurityPolicy.TLS_1_2,
+            endpointConfiguration=endpoint_configuration,
+        )
+        store.domain_names[domain_name] = domain
+        return domain
+
+    @handler("GetDomainName")
+    def get_domain_name(self, context: RequestContext, domain_name: String) -> DomainName:
+        store: ApiGatewayStore = get_apigateway_store(context.account_id, context.region)
+        if domain := store.domain_names.get(domain_name):
+            return domain
+        raise NotFoundException("Invalid domain name identifier specified")
+
+    @handler("GetDomainNames")
+    def get_domain_names(
+        self, context: RequestContext, position: String = None, limit: NullableInteger = None
+    ) -> DomainNames:
+        store = get_apigateway_store(context.account_id, context.region)
+        domain_names = store.domain_names.values()
+        return DomainNames(items=list(domain_names), position=position)
+
+    @handler("DeleteDomainName")
+    def delete_domain_name(self, context: RequestContext, domain_name: String) -> None:
+        store: ApiGatewayStore = get_apigateway_store(context.account_id, context.region)
+        if not store.domain_names.pop(domain_name, None):
+            raise NotFoundException("Invalid domain name identifier specified")
 
     def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
         try:
@@ -947,8 +1023,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         rest_api_container.documentation_parts[documentation_part_id] = patched_doc_part
 
-        result = to_documentation_part_response_json(rest_api_id, patched_doc_part)
-        return result
+        return to_documentation_part_response_json(rest_api_id, patched_doc_part)
 
     def delete_documentation_part(
         self, context: RequestContext, rest_api_id: String, documentation_part_id: String

@@ -10,6 +10,7 @@ from botocore.parsers import ResponseParserError
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.cloudformation.engine import template_preparer
 from localstack.testing.aws.lambda_utils import is_new_provider
+from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.common import load_file, short_uid
 from localstack.utils.testutil import create_zip_file, list_all_resources
@@ -363,9 +364,9 @@ class TestCloudFormation:
         "create_bucket_first, region", [(True, "eu-west-1"), (False, "us-east-1")]
     )
     def test_cfn_handle_s3_notification_configuration(
-        self, region, create_boto_client, deploy_cfn_template, create_bucket_first
+        self, region, aws_client_factory, deploy_cfn_template, create_bucket_first
     ):
-        s3_client = create_boto_client("s3", region_name=region)
+        s3_client = aws_client_factory(region_name=region).s3
         bucket_name = f"target-{short_uid()}"
         queue_name = f"queue-{short_uid()}"
         # the queue is always created in us-east-1
@@ -775,7 +776,7 @@ class TestCloudFormation:
 
     # TODO: evaluate (can we drop this?)
     @pytest.mark.xfail(reason="GetAtt resolved old value")
-    @pytest.mark.aws_validated
+    @markers.parity.aws_validated
     def test_updating_stack_with_iam_role(self, deploy_cfn_template, aws_client):
         lambda_role_name = f"lambda-role-{short_uid()}"
         lambda_function_name = f"lambda-function-{short_uid()}"

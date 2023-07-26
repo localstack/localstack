@@ -4,6 +4,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.constants import APPLICATION_JSON
+from localstack.testing.pytest import markers
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.sync import retry
 from tests.integration.apigateway.apigateway_fixtures import (
@@ -13,9 +14,9 @@ from tests.integration.apigateway.apigateway_fixtures import (
 from tests.integration.apigateway.conftest import DEFAULT_STAGE_NAME
 
 
-@pytest.mark.aws_validated
+@markers.parity.aws_validated
 @pytest.mark.parametrize("ddb_action", ["PutItem", "Query", "Scan"])
-@pytest.mark.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..headers.connection",
         "$..headers.x-amz-apigw-id",
@@ -27,7 +28,6 @@ from tests.integration.apigateway.conftest import DEFAULT_STAGE_NAME
 def test_rest_api_to_dynamodb_integration(
     ddb_action,
     dynamodb_create_table,
-    dynamodb_resource,
     create_rest_api_with_integration,
     snapshot,
     aws_client,
@@ -45,10 +45,9 @@ def test_rest_api_to_dynamodb_integration(
     table_name = table["TableName"]
 
     # insert items
-    dynamodb_table = dynamodb_resource.Table(table_name)
     item_ids = ("test", "test2", "test 3")
     for item_id in item_ids:
-        dynamodb_table.put_item(Item={"id": item_id})
+        aws_client.dynamodb.put_item(TableName=table_name, Item={"id": {"S": item_id}})
 
     # construct request mapping template
     if ddb_action == "PutItem":
@@ -97,8 +96,8 @@ def test_rest_api_to_dynamodb_integration(
     if ddb_action == "PutItem":
         result = _invoke_with_retries("test-new")
         snapshot.match("result-put-item", result)
-        result = dynamodb_table.scan()
-        result["Items"] = sorted(result["Items"], key=lambda x: x["id"])
+        result = aws_client.dynamodb.scan(TableName=table_name)
+        result["Items"] = sorted(result["Items"], key=lambda x: x["id"]["S"])
         snapshot.match("result-scan", result)
 
     elif ddb_action == "Query":
@@ -116,7 +115,7 @@ def test_rest_api_to_dynamodb_integration(
         snapshot.match("result-scan", result)
 
 
-@pytest.mark.aws_validated
+@markers.parity.aws_validated
 def test_error_aws_proxy_not_supported(create_rest_api_with_integration, snapshot, aws_client):
     region_name = aws_client.apigateway.meta.region_name
     integration_uri = f"arn:aws:apigateway:{region_name}:dynamodb:action/Query"
