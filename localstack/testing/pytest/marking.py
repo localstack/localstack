@@ -8,7 +8,7 @@ import pytest
 
 class ParityMarkers:
     aws_validated = pytest.mark.aws_validated
-    only_localstack = pytest.mark.aws_validated
+    only_localstack = pytest.mark.only_localstack
 
 
 class SkipSnapshotVerifyMarker:
