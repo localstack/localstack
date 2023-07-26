@@ -247,6 +247,14 @@ class TestIntrinsicFunctions:
         zone = "us-east-1a"  # TODO parametrize
         assert zone in deployed.outputs["Zones"]
 
+    def test_sub_not_ready(self, deploy_cfn_template):
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../templates/sub_dependencites.yaml"
+        )
+        deploy_cfn_template(
+            template_path=template_path,
+        )
+
 
 class TestImports:
     @pytest.mark.skip(reason="flaky due to issues in parameter handling and re-resolving")
