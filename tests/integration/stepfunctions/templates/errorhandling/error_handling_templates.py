@@ -21,6 +21,10 @@ class ErrorHandlingTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/task_service_aws_sdk_dynamodb_put_item.json5"
     )
 
+    AWS_SERVICE_DYNAMODB_PUT_ITEM: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/task_service_dynamodb_put_item.json5"
+    )
+
     AWS_LAMBDA_INVOKE_CATCH_UNKNOWN: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/task_lambda_invoke_catch_unknown.json5"
     )

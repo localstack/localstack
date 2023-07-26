@@ -10,8 +10,8 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_callback import (
-    StateTaskServiceCallback,
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
+    StateTaskService,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
@@ -19,7 +19,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.strings import camel_to_snake_case
 
 
-class StateTaskServiceDynamoDB(StateTaskServiceCallback):
+class StateTaskServiceDynamoDB(StateTaskService):
     _ERROR_NAME_AWS: Final[str] = "DynamoDB.AmazonDynamoDBException"
 
     _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
@@ -73,7 +73,7 @@ class StateTaskServiceDynamoDB(StateTaskServiceCallback):
     }
 
     def _get_supported_parameters(self) -> Optional[set[str]]:
-        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower(), None)
+        return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     @staticmethod
     def _error_cause_from_client_error(client_error: ClientError) -> tuple[str, str]:

@@ -3,9 +3,6 @@ from botocore.exceptions import ClientError
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.aws.protocol.service_router import get_service_catalog
-from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
-    CustomErrorName,
-)
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
 )
@@ -26,6 +23,7 @@ from localstack.utils.common import camel_to_snake_case
 
 
 class StateTaskServiceAwsSdk(StateTaskServiceCallback):
+    _NORMALISED_SERVICE_NAMES = {"dynamodb": "DynamoDb"}
     _API_NAMES: dict[str, str] = {"sfn": "stepfunctions"}
     _SFN_TO_BOTO_PARAM_NORMALISERS = {
         "stepfunctions": {
