@@ -568,8 +568,8 @@ class HostAndPort:
                 host = hostname.strip()
             try:
                 port = int(port_s)
-            except ValueError:
-                raise ValueError(f"specified port {port_s} not a number")
+            except ValueError as e:
+                raise ValueError(f"specified port {port_s} not a number") from e
         else:
             if input.strip():
                 host = input.strip()
