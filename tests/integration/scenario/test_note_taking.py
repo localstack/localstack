@@ -290,7 +290,8 @@ class TestNoteTakingScenario:
         cdk.CfnOutput(stack, "Region", value=stack.region)
 
         # provisioning
-        infra.add_cdk_stack(stack)  # autoclean_buckets=True
+        infra.add_cdk_stack(stack)
+        # set skip_teardown=True to prevent the stack to be deleted
         with infra.provisioner(skip_teardown=False) as prov:
             yield prov
 
@@ -357,3 +358,13 @@ class TestNoteTakingScenario:
         response = requests.get(f"{base_url}/{note_2['noteId']}")
         assert response.status_code == 404
         assert json.loads(response.text) == {"status": False, "error": "Item not found."}
+
+    def test_another_scenario(self, aws_client, infrastructure):
+        # TODO test something different
+        #   added to test the skipping of infra-teardown
+        outputs = infrastructure.get_stack_outputs("NoteTakingStack")
+        gateway_url = outputs["GatewayUrl"]
+        base_url = f"{gateway_url}notes"
+
+        response = requests.get(base_url)
+        assert response.status_code == 200

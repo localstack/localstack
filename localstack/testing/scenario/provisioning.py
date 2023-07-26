@@ -55,8 +55,18 @@ class InfraProvisioner:
         finally:
             if not skip_teardown:
                 self.teardown()
+            else:
+                LOG.info("Skipping teardown. Resources and stacks are not deleted.")
 
     def provision(self):
+        if all(
+            self._is_stack_deployed(stack_name, stack)
+            for stack_name, stack in self.cloudformation_stacks.items()
+        ):
+            # TODO it's currently all or nothing -> deploying one new stack will most likely fail
+            LOG.info("All stacks are already deployed. Skipping the provisioning.")
+            return
+
         self.run_manual_setup_tasks()
         self.bootstrap_cdk()
         for stack_name, stack in self.cloudformation_stacks.items():
@@ -148,3 +158,13 @@ class InfraProvisioner:
     def run_manual_setup_tasks(self):
         for fn in self.custom_setup_steps:
             fn()
+
+    def _is_stack_deployed(self, stack_name: str, stack: dict) -> bool:
+        try:
+            describe_stack = self.aws_client.cloudformation.describe_stacks(StackName=stack_name)
+            if outputs := describe_stack["Stacks"][0].get("Outputs"):
+                stack["Outputs"] = {o["OutputKey"]: o["OutputValue"] for o in outputs}
+        except Exception:
+            return False
+        # TODO should we try to run teardown first, if the status is not "CREATE_COMPLETE"?
+        return describe_stack["Stacks"][0]["StackStatus"] == "CREATE_COMPLETE"
