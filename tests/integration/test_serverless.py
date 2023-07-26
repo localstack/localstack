@@ -36,7 +36,7 @@ class TestServerless:
         # run('cd %s; npm run undeploy -- --region=%s' % (cls.get_base_dir(), aws_stack.get_region()))
 
     @markers.skip_offline
-    def test_event_rules_deployed(self):
+    def test_event_rules_deployed(self, setup):
         events = aws_stack.create_external_boto_client("events")
         rules = events.list_rules()["Rules"]
 
@@ -53,7 +53,7 @@ class TestServerless:
         assert {"source": ["customSource"]} == json.loads(rule["EventPattern"])
 
     @markers.skip_offline
-    def test_dynamodb_stream_handler_deployed(self):
+    def test_dynamodb_stream_handler_deployed(self, setup):
         function_name = "sls-test-local-dynamodbStreamHandler"
         table_name = "Test"
 
@@ -73,7 +73,7 @@ class TestServerless:
         assert event_source_arn == resp["Table"]["LatestStreamArn"]
 
     @markers.skip_offline
-    def test_kinesis_stream_handler_deployed(self):
+    def test_kinesis_stream_handler_deployed(self, setup):
         function_name = "sls-test-local-kinesisStreamHandler"
         function_name2 = "sls-test-local-kinesisConsumerHandler"
         stream_name = "KinesisTestStream"
@@ -102,7 +102,7 @@ class TestServerless:
         retry(assert_invocations, sleep=2, retries=20)
 
     @markers.skip_offline
-    def test_queue_handler_deployed(self):
+    def test_queue_handler_deployed(self, setup):
         function_name = "sls-test-local-queueHandler"
         queue_name = "sls-test-local-CreateQueue"
 
@@ -129,7 +129,7 @@ class TestServerless:
         assert 3 == redrive_policy["maxReceiveCount"]
 
     @markers.skip_offline
-    def test_lambda_with_configs_deployed(self):
+    def test_lambda_with_configs_deployed(self, setup):
         function_name = "sls-test-local-test"
 
         lambda_client = aws_stack.create_external_boto_client("lambda")
@@ -175,7 +175,7 @@ class TestServerless:
             )
 
     @markers.skip_offline
-    def test_s3_bucket_deployed(self):
+    def test_s3_bucket_deployed(self, setup):
         s3_client = aws_stack.create_external_boto_client("s3")
         bucket_name = "testing-bucket"
         response = s3_client.head_bucket(Bucket=bucket_name)
