@@ -16,6 +16,7 @@ from localstack.testing.aws.lambda_utils import (
     s3_lambda_permission,
 )
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -55,7 +56,7 @@ def get_lambda_logs_event(aws_client):
     return _get_lambda_logs_event
 
 
-@pytest.mark.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     condition=is_old_provider,
     paths=[
         "$..BisectBatchOnFunctionError",
@@ -70,7 +71,7 @@ def get_lambda_logs_event(aws_client):
         "$..TumblingWindowInSeconds",
     ],
 )
-@pytest.mark.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     paths=[
         # dynamodb issues, not related to lambda
         "$..TableDescription.BillingModeSummary.LastUpdateToPayPerRequestDateTime",
@@ -85,7 +86,7 @@ def get_lambda_logs_event(aws_client):
     ],
 )
 class TestDynamoDBEventSourceMapping:
-    @pytest.mark.aws_validated
+    @markers.parity.aws_validated
     def test_dynamodb_event_source_mapping(
         self,
         create_lambda_function,
@@ -158,7 +159,7 @@ class TestDynamoDBEventSourceMapping:
         # this will fail in november 2286, if this code is still around by then, read this comment and update to 10
         assert int(math.log10(timestamp)) == 9
 
-    @pytest.mark.aws_validated
+    @markers.parity.aws_validated
     def test_disabled_dynamodb_event_source_mapping(
         self,
         create_lambda_function,
@@ -223,7 +224,7 @@ class TestDynamoDBEventSourceMapping:
             expected_length=1, function_name=function_name, logs_client=aws_client.logs
         )
 
-    @pytest.mark.aws_validated
+    @markers.parity.aws_validated
     def test_deletion_event_source_mapping_with_dynamodb(
         self,
         create_lambda_function,
@@ -268,9 +269,9 @@ class TestDynamoDBEventSourceMapping:
         list_esm = aws_client.awslambda.list_event_source_mappings(EventSourceArn=latest_stream_arn)
         snapshot.match("list_event_source_mapping_result", list_esm)
 
-    @pytest.mark.aws_validated
+    @markers.parity.aws_validated
     # FIXME last three skip verification entries are purely due to numbering mismatches
-    @pytest.mark.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Messages..Body.requestContext.approximateInvokeCount",
             "$..Messages..Body.requestContext.functionArn",
@@ -356,7 +357,7 @@ class TestDynamoDBEventSourceMapping:
         messages = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("destination_queue_messages", messages)
 
-    @pytest.mark.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.parametrize(
         "item_to_put1, item_to_put2, filter, calls",
         [
@@ -512,7 +513,7 @@ class TestDynamoDBEventSourceMapping:
             events = retry(assert_lambda_called, retries=max_retries)
         snapshot.match("lambda-multiple-log-events", events)
 
-    @pytest.mark.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.parametrize(
         "filter",
         [

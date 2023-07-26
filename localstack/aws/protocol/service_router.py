@@ -181,7 +181,12 @@ def legacy_rules(request: Request) -> Optional[str]:
 
     # TODO Remove once fallback to S3 is disabled (after S3 ASF and Cors rework)
     # necessary for correct handling of cors for internal endpoints
-    if path == "/health" or path.startswith("/_localstack") or path.startswith("/_pods"):
+    if (
+        path == "/health"
+        or path.startswith("/_localstack")
+        or path.startswith("/_pods")
+        or path.startswith("/_aws")
+    ):
         return None
 
     # TODO The remaining rules here are special S3 rules - needs to be discussed how these should be handled.
