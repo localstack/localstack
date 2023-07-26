@@ -284,6 +284,11 @@ def connect_to_service(
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
     """
+    warnings.warn(
+        "`connect_to_service` is obsolete. Use `localstack.aws.connect`",
+        DeprecationWarning,
+    )
+
     # determine context and create cache key
     region_name = region_name or get_region()
     env = get_environment(env, region_name=region_name)
@@ -370,7 +375,7 @@ def create_external_boto_client(
     **kwargs,
 ):
     warnings.warn(
-        "`create_external_boto_client` is obsolete. Use `localstack.aws.connect.connect_externally_to`",
+        "`create_external_boto_client` is obsolete. Use `localstack.aws.connect`",
         DeprecationWarning,
     )
 
