@@ -18,13 +18,10 @@ Todos:
 * make the InfraProvisioner into a fixture and add a pytest hook implementation
 
 """
-import json
-
 import aws_cdk as cdk
 import pytest
-import requests
 
-from localstack.aws.connect import ServiceLevelClientFactory
+from localstack.testing.scenario.provisioning import InfraProvisioner
 
 
 class BotoDeployment:
@@ -41,12 +38,13 @@ class TestSomeScenario:
         # CDK setup
         app = cdk.App()
         stack = cdk.Stack(app, "ClusterStack")
+        stack2 = cdk.Stack(app, "ClusterStack2")
 
         # TODO: cdk.context.json equivalent
         # vpc = cdk.aws_ec2.Vpc.from_lookup(is_default=True)
         # cluster = cdk.aws_ecs.Cluster(stack1, "SomeCluster", vpc=vpc)
 
-        cluster = cdk.aws_ecs.Cluster(stack, "SomeCluster")
+        # cluster = cdk.aws_ecs.Cluster(stack, "SomeCluster")
         # TODO: task def
         # TODO: service
 
@@ -59,12 +57,13 @@ class TestSomeScenario:
         )
 
         # cdk.aws_s3_deployment.BucketDeployment(this, 'bucketdeploy')
-        topic1 = cdk.aws_sns.Topic(stack1, "Topic")
-        topic2 = cdk.aws_sns.Topic(stack2, "Topic")
+        # topic1 = cdk.aws_sns.Topic(stack1, "Topic")
+        # topic2 = cdk.aws_sns.Topic(stack2, "Topic")
+
         provisioner = InfraProvisioner(aws_client)
         # will be cleaned up in reverse order
         # provisioner.add_boto_step(setup_func, teardown_func)
-        provisioner.add_cdk_stack(stack1)
+        # provisioner.add_cdk_stack(stack1)
         # provisioner.add_cdk_app(app, "my-first-scenario-1")
         # provisioner.add_custom_step(teardown=clean_s3_bucket)
 
@@ -93,14 +92,14 @@ class TestSomeScenario:
     #     # access to deployed stacks & resources, responses from create calls
     #
 
-    def test_scenario1(self, aws_client):
-        sqs_client = aws_client.sqs
-        sqs_client.send_message(QueueUrl="...", MessageBody="...")
-
-        logs = aws_client.logs.filter_log_events(...)
-        assert logs  # something
-
-    def test_scenario_run_task(self, aws_client):
-        # aws_client.ecs.run_task(taskDefinition=)
-
-        requests.get("...")
+    # def test_scenario1(self, aws_client):
+    #     sqs_client = aws_client.sqs
+    #     sqs_client.send_message(QueueUrl="...", MessageBody="...")
+    #
+    #     logs = aws_client.logs.filter_log_events(...)
+    #     assert logs  # something
+    #
+    # def test_scenario_run_task(self, aws_client):
+    #     # aws_client.ecs.run_task(taskDefinition=)
+    #
+    #     requests.get("...")

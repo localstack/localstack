@@ -1,9 +1,13 @@
 import json
 import logging
-from typing import Callable, Optional
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Callable, Optional
 
 import aws_cdk as cdk
-import mypy_boto3_s3
+from typing_extensions import Self
+
+if TYPE_CHECKING:
+    from mypy_boto3_s3 import S3Client
 
 from localstack.aws.api.cloudformation import Capability
 from localstack.aws.connect import ServiceLevelClientFactory
@@ -11,7 +15,7 @@ from localstack.aws.connect import ServiceLevelClientFactory
 LOG = logging.getLogger(__name__)
 
 
-def cleanup_s3_bucket(s3_client: mypy_boto3_s3.S3Client, bucket_name: str):
+def cleanup_s3_bucket(s3_client: "S3Client", bucket_name: str):
     LOG.debug(f"Cleaning provisioned S3 Bucket {bucket_name}")
     try:
         objs = s3_client.list_objects_v2(Bucket=bucket_name)
@@ -35,13 +39,25 @@ class InfraProvisioner:
 
     cloudformation_stacks: dict[str, dict]
     custom_cleanup_steps: list[Callable]
+    custom_setup_steps: list[Callable]
 
     def __init__(self, aws_client: ServiceLevelClientFactory):
         self.cloudformation_stacks = {}
         self.custom_cleanup_steps = []
+        self.custom_setup_steps = []
         self.aws_client = aws_client
 
+    @contextmanager
+    def provisioner(self, skip_teardown: bool = False) -> Self:
+        try:
+            self.provision()
+            yield self
+        finally:
+            if not skip_teardown:
+                self.teardown()
+
     def provision(self):
+        self.run_manual_setup_tasks()
         self.bootstrap_cdk()
         for stack_name, stack in self.cloudformation_stacks.items():
             self.aws_client.cloudformation.create_stack(
@@ -125,3 +141,10 @@ class InfraProvisioner:
 
     def add_custom_teardown(self, cleanup_task: Callable):
         self.custom_cleanup_steps.append(cleanup_task)
+
+    def add_custom_setup_provisioning_step(self, setup_task: Callable):
+        self.custom_setup_steps.append(setup_task)
+
+    def run_manual_setup_tasks(self):
+        for fn in self.custom_setup_steps:
+            fn()

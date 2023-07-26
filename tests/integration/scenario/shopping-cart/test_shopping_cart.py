@@ -10,6 +10,9 @@ from localstack.utils.files import load_file
 LOG = logging.getLogger(__name__)
 
 
+@pytest.mark.xfail(
+    reason="requires pro",
+)
 class TestShoppingCartScenario:
     product_api: str
     cart_api: str

@@ -1,3 +1,7 @@
+"""
+This scenario tests is based on the aws-sample aws-sdk-js-notes app (https://github.com/aws-samples/aws-sdk-js-notes-app),
+which was adapted to work with LocalStack https://github.com/localstack-samples/sample-notes-app-dynamodb-lambda-apigateway.
+"""
 import copy
 import json
 import logging
@@ -6,19 +10,20 @@ import shutil
 import tempfile
 import zipfile
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Callable
 
 import aws_cdk as cdk
 import aws_cdk.aws_apigateway as apigw
-import aws_cdk.aws_cognito as cognito
 import aws_cdk.aws_dynamodb as dynamodb
-import aws_cdk.aws_iam as iam
 import aws_cdk.aws_lambda as awslambda
-import aws_cdk.aws_s3 as s3
 import pytest
 import requests
 from constructs import Construct
 
-from localstack.testing.scenario.provisioning import InfraProvisioner
+if TYPE_CHECKING:
+    from mypy_boto3_s3 import S3Client
+
+from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
 
 LOG = logging.getLogger(__name__)
 
@@ -74,6 +79,23 @@ def _add_endpoints(
                     grant_actions=[endpoint.grant_actions],
                 ).handler
             ),
+        )
+
+
+def setup_lambdas(
+    s3_client: "S3Client", create_archive_for_lambda_resource: Callable, bucket_name: str
+):
+    s3_client.create_bucket(Bucket=bucket_name)
+    lambda_notes = ["createNote", "deleteNote", "getNote", "listNotes", "updateNote"]
+    object_keys = []
+    for note in lambda_notes:
+        archive = create_archive_for_lambda_resource(lambda_name=note)
+        key = f"{note}.zip"
+        object_keys.append({"Key": key})
+        s3_client.upload_file(
+            Filename=archive,
+            Bucket=bucket_name,
+            Key=key,
         )
 
 
@@ -138,38 +160,22 @@ class TestNoteTakingScenario:
 
     @pytest.fixture(scope="class", autouse=True)
     def infrastructure(self, aws_client, create_archive_for_lambda_resource):
-        provisioner = InfraProvisioner(aws_client)
+        infra = InfraProvisioner(aws_client)
         app = cdk.App()
         stack = cdk.Stack(app, "NoteTakingStack")
 
         # TODO how to skip creation if still have the cdk app deployed?
+        bucket_name = "notes-sample-scenario-test"
 
         # stack definition
         # manually create s3 bucket + upload lambda
-        bucket_name = "notes-sample-scenario-test"
-        aws_client.s3.create_bucket(Bucket=bucket_name)
-        lambda_notes = ["createNote", "deleteNote", "getNote", "listNotes", "updateNote"]
-        object_keys = []
-        for note in lambda_notes:
-            archive = create_archive_for_lambda_resource(lambda_name=note)
-            key = f"{note}.zip"
-            object_keys.append({"Key": key})
-            aws_client.s3.upload_file(
-                Filename=archive,
-                Bucket=bucket_name,
-                Key=key,
-            )
-
+        infra.add_custom_setup_provisioning_step(
+            lambda: setup_lambdas(aws_client.s3, create_archive_for_lambda_resource, bucket_name)
+        )
         # add custom tear down for deleting bucket + content (not using fixture, because we might want to keep the state
         #   during test development)
-        def bucket_cleanup():
-            try:
-                aws_client.s3.delete_objects(Bucket=bucket_name, Delete={"Objects": object_keys})
-                aws_client.s3.delete_bucket(Bucket=bucket_name)
-            except Exception as e:
-                LOG.debug("error cleaning up bucket %s: %s", bucket_name, e)
-
-        provisioner.add_custom_teardown(bucket_cleanup)
+        infra.add_custom_teardown(lambda: cleanup_s3_bucket(aws_client.s3, bucket_name))
+        infra.add_custom_teardown(lambda: aws_client.s3.delete_bucket(Bucket=bucket_name))
 
         table = dynamodb.Table(
             stack,
@@ -217,8 +223,13 @@ class TestNoteTakingScenario:
         )
 
         # TODO this seems to belong to audio upload/transcription and is currently not part of the app
-        # TODO this bucket will not be automatically deleted when deleting the stack
-        files_bucket = s3.Bucket(stack, "files_bucket")
+
+        """
+        files_bucket = s3.Bucket(
+            stack,
+            "files_bucket",
+            removal_policy=cdk.RemovalPolicy.DESTROY,
+        )
         files_bucket.add_cors_rule(
             allowed_origins=apigw.Cors.ALL_ORIGINS,
             allowed_methods=[
@@ -228,6 +239,7 @@ class TestNoteTakingScenario:
             ],
             allowed_headers=["*"],
         )
+        # TODO requires pro
         identity_pool = cognito.CfnIdentityPool(
             stack, "identity-pool", allow_unauthenticated_identities=True
         )
@@ -271,15 +283,16 @@ class TestNoteTakingScenario:
             roles={"unauthenticated": unauthenticated_role.role_arn},
         )
         cdk.CfnOutput(stack, "FilesBucket", value=files_bucket.bucket_name)
-        cdk.CfnOutput(stack, "GatewayUrl", value=api.url)
         cdk.CfnOutput(stack, "IdentityPoolId", value=identity_pool.ref)
+        """
+
+        cdk.CfnOutput(stack, "GatewayUrl", value=api.url)
         cdk.CfnOutput(stack, "Region", value=stack.region)
 
         # provisioning
-        provisioner.add_cdk_stack(stack)
-        provisioner.provision()
-        yield provisioner
-        provisioner.teardown()
+        infra.add_cdk_stack(stack)  # autoclean_buckets=True
+        with infra.provisioner(skip_teardown=False) as prov:
+            yield prov
 
     def test_notes_rest_api(self, infrastructure):
         outputs = infrastructure.get_stack_outputs("NoteTakingStack")
