@@ -28,17 +28,10 @@ class TestS3NotificationsToLambda:
         create_lambda_function,
         create_role,
         dynamodb_create_table,
-        dynamodb_resource,
         snapshot,
         aws_client,
     ):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformer(
-            [
-                snapshot.transform.jsonpath("$..s3.bucket.name", "bucket-name"),
-                snapshot.transform.jsonpath("$..s3.object.key", "object-key"),
-            ]
-        )
+        snapshot.add_transformer(snapshot.transform.s3_dynamodb_notifications())
 
         bucket_name = s3_create_bucket()
         function_name = f"func-{short_uid()}"
@@ -95,10 +88,8 @@ class TestS3NotificationsToLambda:
         # put an object
         aws_client.s3.put_object(Bucket=bucket_name, Key=table_name, Body="something..")
 
-        table = dynamodb_resource.Table(table_name)
-
         def check_table():
-            rs = table.scan()
+            rs = aws_client.dynamodb.scan(TableName=table_name)
             assert len(rs["Items"]) == 1
             event = rs["Items"][0]["data"]
             snapshot.match("table_content", event)
@@ -122,19 +113,12 @@ class TestS3NotificationsToLambda:
         s3_create_bucket,
         create_lambda_function,
         dynamodb_create_table,
-        dynamodb_resource,
         create_role,
         snapshot,
         aws_client,
     ):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformer(
-            [
-                snapshot.transform.jsonpath("$..s3.bucket.name", "bucket-name"),
-                snapshot.transform.jsonpath("$..s3.object.key", "object-key"),
-                snapshot.transform.key_value("uuid", "<uuid>", reference_replacement=False),
-            ]
-        )
+        snapshot.add_transformer(snapshot.transform.s3_dynamodb_notifications())
+
         bucket_name = s3_create_bucket()
         function_name = "func-%s" % short_uid()
         table_name = "table-%s" % short_uid()
@@ -199,13 +183,11 @@ class TestS3NotificationsToLambda:
             files={"file": b"by post method 1"},
         )
 
-        table = dynamodb_resource.Table(table_name)
-
         def check_table():
-            rs = table.scan()
+            rs = aws_client.dynamodb.scan(TableName=table_name)
+            items = sorted(rs["Items"], key=lambda x: x["data"]["M"]["eventName"]["S"])
             assert len(rs["Items"]) == 2
-            rs["Items"] = sorted(rs["Items"], key=lambda x: x["data"]["eventName"])
-            snapshot.match("items", rs["Items"])
+            snapshot.match("items", items)
 
         retry(check_table, retries=20, sleep=2)
 

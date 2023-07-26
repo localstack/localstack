@@ -491,7 +491,6 @@ def test_create_execute_api_vpc_endpoint(
     default_vpc,
     create_lambda_function,
     ec2_create_security_group,
-    dynamodb_resource,
     snapshot,
     aws_client,
 ):
@@ -512,10 +511,9 @@ def test_create_execute_api_vpc_endpoint(
     table_name = table["TableName"]
 
     # insert items
-    dynamodb_table = dynamodb_resource.Table(table_name)
     item_ids = ("test", "test2", "test 3")
     for item_id in item_ids:
-        dynamodb_table.put_item(Item={"id": item_id})
+        aws_client.dynamodb.put_item(TableName=table_name, Item={"id": {"S": item_id}})
 
     # construct request mapping template
     request_templates = {APPLICATION_JSON: json.dumps({"TableName": table_name})}

@@ -5,6 +5,7 @@ import os
 import re
 import socket
 import threading
+import warnings
 from functools import lru_cache
 from typing import Dict, Optional, Union
 
@@ -226,6 +227,10 @@ def connect_to_resource(
     """
     Generic method to obtain an AWS service resource using boto3, based on environment, region, or custom endpoint_url.
     """
+    warnings.warn(
+        "`connect_to_resource` is obsolete. Use `localstack.aws.connect`", DeprecationWarning
+    )
+
     return connect_to_service(
         service_name,
         client=False,
@@ -248,6 +253,11 @@ def connect_to_resource_external(
     """
     Generic method to obtain an AWS service resource using boto3, based on environment, region, or custom endpoint_url.
     """
+    warnings.warn(
+        "`connect_to_resource_external` is obsolete. Use `localstack.aws.connect`",
+        DeprecationWarning,
+    )
+
     return create_external_boto_client(
         service_name,
         client=False,

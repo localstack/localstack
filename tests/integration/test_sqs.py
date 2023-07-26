@@ -3109,14 +3109,14 @@ class TestSqsProvider:
 
     @pytest.mark.only_localstack
     def test_list_queues_multi_region_without_endpoint_strategy(
-        self, create_boto_client, cleanups, monkeypatch
+        self, aws_client_factory, cleanups, monkeypatch
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
 
         region1 = "us-east-1"
         region2 = "eu-central-1"
-        region1_client = create_boto_client("sqs", region_name=region1)
-        region2_client = create_boto_client("sqs", region_name=region2)
+        region1_client = aws_client_factory(region_name=region1).sqs
+        region2_client = aws_client_factory(region_name=region2).sqs
 
         queue1_name = f"queue-region1-{short_uid()}"
         queue2_name = f"queue-region2-{short_uid()}"
@@ -3138,15 +3138,15 @@ class TestSqsProvider:
 
     @pytest.mark.aws_validated
     def test_list_queues_multi_region_with_endpoint_strategy_domain(
-        self, create_boto_client, cleanups, monkeypatch
+        self, aws_client_factory, cleanups, monkeypatch
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")
 
         region1 = "us-east-1"
         region2 = "eu-central-1"
 
-        region1_client = create_boto_client("sqs", region_name=region1)
-        region2_client = create_boto_client("sqs", region_name=region2)
+        region1_client = aws_client_factory(region_name=region1).sqs
+        region2_client = aws_client_factory(region_name=region2).sqs
 
         queue_name = f"queue-{short_uid()}"
 
@@ -3166,11 +3166,11 @@ class TestSqsProvider:
         assert queue2_url in region2_client.list_queues().get("QueueUrls", [])
 
     @pytest.mark.aws_validated
-    def test_get_queue_url_multi_region(self, create_boto_client, cleanups, monkeypatch):
+    def test_get_queue_url_multi_region(self, aws_client_factory, cleanups, monkeypatch):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")
 
-        region1_client = create_boto_client("sqs", region_name="us-east-1")
-        region2_client = create_boto_client("sqs", region_name="eu-central-1")
+        region1_client = aws_client_factory(region_name="us-east-1").sqs
+        region2_client = aws_client_factory(region_name="eu-central-1").sqs
 
         queue_name = f"queue-{short_uid()}"
 
@@ -3861,7 +3861,7 @@ class TestSqsQueryApi:
         self,
         strategy,
         sqs_http_client,
-        create_boto_client,
+        aws_client_factory,
         aws_http_client_factory,
         monkeypatch,
         cleanups,
@@ -3872,8 +3872,8 @@ class TestSqsQueryApi:
         region1 = "us-west-1"
         region2 = "eu-north-1"
 
-        sqs_region1 = create_boto_client("sqs", region1)
-        sqs_region2 = create_boto_client("sqs", region2)
+        sqs_region1 = aws_client_factory(region_name=region1).sqs
+        sqs_region2 = aws_client_factory(region_name=region2).sqs
 
         queue_region1 = sqs_region1.create_queue(QueueName=queue_name)["QueueUrl"]
         cleanups.append(lambda: sqs_region1.delete_queue(QueueUrl=queue_region1))

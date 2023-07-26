@@ -1350,11 +1350,9 @@ class TestLambdaAlias:
 
     @pytest.mark.aws_validated
     def test_notfound_and_invalid_routingconfigs(
-        self, create_boto_client, create_lambda_function_aws, snapshot, lambda_su_role, aws_client
+        self, aws_client_factory, create_lambda_function_aws, snapshot, lambda_su_role, aws_client
     ):
-        lambda_client = create_boto_client(
-            "lambda", additional_config=Config(parameter_validation=False)
-        )
+        lambda_client = aws_client_factory(config=Config(parameter_validation=False)).awslambda
         function_name = f"alias-fn-{short_uid()}"
 
         create_response = create_lambda_function_aws(
@@ -2008,13 +2006,11 @@ class TestLambdaEventInvokeConfig:
         snapshot,
         lambda_su_role,
         account_id,
-        create_boto_client,
+        aws_client_factory,
         aws_client,
     ):
         """some parts could probably be split apart (e.g. overwriting with update)"""
-        lambda_client = create_boto_client(
-            "lambda", additional_config=Config(parameter_validation=False)
-        )
+        lambda_client = aws_client_factory(config=Config(parameter_validation=False)).awslambda
         snapshot.add_transformer(
             SortingTransformer(
                 key="FunctionEventInvokeConfigs", sorting_fn=lambda conf: conf["FunctionArn"]
@@ -2446,11 +2442,9 @@ class TestLambdaProvisionedConcurrency:
     # TODO: test shorthand ARN
     @pytest.mark.aws_validated
     def test_provisioned_concurrency_exceptions(
-        self, create_boto_client, create_lambda_function, snapshot, aws_client
+        self, aws_client, aws_client_factory, create_lambda_function, snapshot
     ):
-        lambda_client = create_boto_client(
-            "lambda", additional_config=Config(parameter_validation=False)
-        )
+        lambda_client = aws_client_factory(config=Config(parameter_validation=False)).awslambda
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,

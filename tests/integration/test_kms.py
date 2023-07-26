@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
-from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME, TEST_AWS_REGION_NAME
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.utils.strings import short_uid, to_str
 
@@ -76,15 +76,15 @@ class TestKMS:
         snapshot.match("create_alias", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_create_key(self, kms_client_for_region, kms_create_key, snapshot, aws_client):
-        region = "us-east-1"
-        kms_client = kms_client_for_region(region)
-        account_id = aws_client.sts.get_caller_identity()["Account"]
+    def test_create_key(
+        self, kms_client_for_region, kms_create_key, snapshot, aws_client, account_id
+    ):
+        kms_client = kms_client_for_region(TEST_AWS_REGION_NAME)
 
         key_ids_before = _get_all_key_ids(kms_client)
 
         key_id = kms_create_key(
-            region=region, Description="test key 123", KeyUsage="ENCRYPT_DECRYPT"
+            region_name=TEST_AWS_REGION_NAME, Description="test key 123", KeyUsage="ENCRYPT_DECRYPT"
         )["KeyId"]
         assert key_id not in key_ids_before
 
@@ -95,17 +95,17 @@ class TestKMS:
         snapshot.match("describe-key", response)
 
         assert response["KeyId"] == key_id
-        assert f":{region}:" in response["Arn"]
+        assert f":{TEST_AWS_REGION_NAME}:" in response["Arn"]
         assert f":{account_id}:" in response["Arn"]
 
     @pytest.mark.aws_validated
     def test_get_key_in_different_region(self, kms_client_for_region, kms_create_key, snapshot):
-        client_region = "us-east-1"
-        key_region = "us-west-2"
+        client_region = TEST_AWS_REGION_NAME
+        key_region = SECONDARY_TEST_AWS_REGION_NAME
         us_east_1_kms_client = kms_client_for_region(client_region)
         us_west_2_kms_client = kms_client_for_region(key_region)
 
-        response = kms_create_key(region=key_region, Description="test key 123")
+        response = kms_create_key(region_name=key_region, Description="test key 123")
         key_id = response["KeyId"]
         key_arn = response["Arn"]
 
@@ -377,9 +377,9 @@ class TestKMS:
     @pytest.mark.parametrize("number_of_bytes", [None, 0, 1025])
     @pytest.mark.aws_validated
     def test_generate_random_invalid_number_of_bytes(
-        self, create_boto_client, snapshot, number_of_bytes
+        self, aws_client_factory, snapshot, number_of_bytes
     ):
-        kms_client = create_boto_client("kms", additional_config=Config(parameter_validation=False))
+        kms_client = aws_client_factory(config=Config(parameter_validation=False)).kms
 
         with pytest.raises(ClientError) as e:
             kms_client.generate_random(NumberOfBytes=number_of_bytes)
@@ -669,13 +669,15 @@ class TestKMS:
     def test_replicate_key(
         self, kms_client_for_region, kms_create_key, kms_replicate_key, snapshot
     ):
-        region_to_replicate_from = "us-east-1"
-        region_to_replicate_to = "us-west-1"
+        region_to_replicate_from = TEST_AWS_REGION_NAME
+        region_to_replicate_to = SECONDARY_TEST_AWS_REGION_NAME
         us_east_1_kms_client = kms_client_for_region(region_to_replicate_from)
         us_west_1_kms_client = kms_client_for_region(region_to_replicate_to)
 
         key_id = kms_create_key(
-            region=region_to_replicate_from, MultiRegion=True, Description="test replicated key"
+            region_name=region_to_replicate_from,
+            MultiRegion=True,
+            Description="test replicated key",
         )["KeyId"]
 
         with pytest.raises(ClientError) as e:
@@ -746,10 +748,7 @@ class TestKMS:
         assert alias is not None
         assert alias["TargetKeyId"] == new_key_id
 
-    # Fails in AWS, as the principal is invalid there.
-    # Maybe would work if get_aws_account_id() starts returning an actual AWS account ID.
-    @pytest.mark.only_localstack
-    def test_get_put_list_key_policies(self, kms_create_key, aws_client):
+    def test_get_put_list_key_policies(self, kms_create_key, aws_client, account_id):
         base_policy = {
             "Version": "2012-10-17",
             "Id": "key-default-1",
@@ -757,14 +756,14 @@ class TestKMS:
                 {
                     "Sid": "This is the default key policy",
                     "Effect": "Allow",
-                    "Principal": {"AWS": f"arn:aws:iam::{get_aws_account_id()}:root"},
+                    "Principal": {"AWS": f"arn:aws:iam::{account_id}:root"},
                     "Action": "kms:*",
                     "Resource": "*",
                 },
                 {
                     "Sid": "This is some additional stuff to look special",
                     "Effect": "Allow",
-                    "Principal": {"AWS": f"arn:aws:iam::{get_aws_account_id()}:root"},
+                    "Principal": {"AWS": f"arn:aws:iam::{account_id}:root"},
                     "Action": "kms:*",
                     "Resource": "*",
                 },
@@ -782,15 +781,15 @@ class TestKMS:
         response = aws_client.kms.list_key_policies(KeyId=key_id)
         assert response.get("PolicyNames") == ["default"]
         assert response.get("Truncated") is False
-        assert (
-            aws_client.kms.get_key_policy(KeyId=key_id, PolicyName="default")["Policy"]
-            == policy_one
-        )
+
+        key_policy = aws_client.kms.get_key_policy(KeyId=key_id, PolicyName="default")["Policy"]
+        # AWS policy string has newlines littered in the response. The JSON load/dump sanitises the policy string.
+        assert json.dumps(json.loads(key_policy)) == policy_one
+
         aws_client.kms.put_key_policy(KeyId=key_id, PolicyName="default", Policy=policy_two)
-        assert (
-            aws_client.kms.get_key_policy(KeyId=key_id, PolicyName="default")["Policy"]
-            == policy_two
-        )
+
+        key_policy = aws_client.kms.get_key_policy(KeyId=key_id, PolicyName="default")["Policy"]
+        assert json.dumps(json.loads(key_policy)) == policy_two
 
     @pytest.mark.aws_validated
     def test_tag_untag_list_tags(self, kms_create_key, aws_client):
@@ -859,12 +858,11 @@ class TestKMS:
 
     @pytest.mark.aws_validated
     def test_hmac_create_key(self, kms_client_for_region, kms_create_key, snapshot):
-        region = "us-east-1"
-        kms_client = kms_client_for_region(region)
+        kms_client = kms_client_for_region(TEST_AWS_REGION_NAME)
         key_ids_before = _get_all_key_ids(kms_client)
 
         response = kms_create_key(
-            region=region,
+            region_name=TEST_AWS_REGION_NAME,
             Description="test key",
             KeySpec="HMAC_256",
             KeyUsage="GENERATE_VERIFY_MAC",
@@ -891,7 +889,7 @@ class TestKMS:
 
         with pytest.raises(ClientError) as e:
             kms_create_key(
-                region="us-east-1",
+                region_name=TEST_AWS_REGION_NAME,
                 Description="test invalid HMAC spec",
                 KeySpec="HMAC_256",
                 KeyUsage="RANDOM",

@@ -162,7 +162,6 @@ class TestDynamoDBEventSourceMapping:
     def test_disabled_dynamodb_event_source_mapping(
         self,
         create_lambda_function,
-        dynamodb_resource,
         dynamodb_create_table,
         lambda_su_role,
         cleanups,
@@ -174,8 +173,8 @@ class TestDynamoDBEventSourceMapping:
         function_name = f"lambda_func-{short_uid()}"
         ddb_table = f"ddb_table-{short_uid()}"
         items = [
-            {"id": short_uid(), "data": "data1"},
-            {"id": short_uid(), "data": "data2"},
+            {"id": {"S": short_uid()}, "data": {"S": "data1"}},
+            {"id": {"S": short_uid()}, "data": {"S": "data2"}},
         ]
         create_lambda_function(
             func_name=function_name,
@@ -200,9 +199,9 @@ class TestDynamoDBEventSourceMapping:
         _await_event_source_mapping_enabled(aws_client.awslambda, uuid)
 
         assert wait_for_dynamodb_stream_ready(latest_stream_arn)
-        table = dynamodb_resource.Table(ddb_table)
 
-        table.put_item(Item=items[0])
+        aws_client.dynamodb.put_item(TableName=ddb_table, Item=items[0])
+
         # Lambda should be invoked 1 time
         retry(
             check_expected_lambda_log_events_length,
@@ -218,7 +217,7 @@ class TestDynamoDBEventSourceMapping:
         )
         snapshot.match("update_event_source_mapping_result", update_event_source_mapping_result)
         time.sleep(2)
-        table.put_item(Item=items[1])
+        aws_client.dynamodb.put_item(TableName=ddb_table, Item=items[1])
         # lambda no longer invoked, still have 1 event
         check_expected_lambda_log_events_length(
             expected_length=1, function_name=function_name, logs_client=aws_client.logs

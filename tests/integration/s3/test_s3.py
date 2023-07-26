@@ -122,7 +122,7 @@ def patch_s3_skip_signature_validation_false(monkeypatch):
 
 
 @pytest.fixture
-def s3_create_bucket_with_client(s3_resource):
+def s3_create_bucket_with_client(s3_empty_bucket, aws_client):
     buckets = []
 
     def factory(s3_client, **kwargs) -> str:
@@ -138,10 +138,8 @@ def s3_create_bucket_with_client(s3_resource):
     # cleanup
     for bucket in buckets:
         try:
-            bucket = s3_resource.Bucket(bucket)
-            bucket.objects.all().delete()
-            bucket.object_versions.all().delete()
-            bucket.delete()
+            s3_empty_bucket(bucket)
+            aws_client.s3.delete_bucket(Bucket=bucket)
         except Exception as e:
             LOG.debug(f"error cleaning up bucket {bucket}: {e}")
 
@@ -478,7 +476,7 @@ class TestS3:
     @pytest.mark.aws_validated
     # TODO list-buckets contains other buckets when running in CI
     @pytest.mark.skip_snapshot_verify(paths=["$..Prefix", "$..list-buckets.Buckets"])
-    def test_delete_bucket_with_content(self, s3_resource, s3_bucket, snapshot, aws_client):
+    def test_delete_bucket_with_content(self, s3_bucket, s3_empty_bucket, snapshot, aws_client):
 
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = s3_bucket
@@ -492,9 +490,8 @@ class TestS3:
         snapshot.match("list-objects", resp)
         assert 10 == len(resp["Contents"])
 
-        bucket = s3_resource.Bucket(bucket_name)
-        bucket.objects.all().delete()
-        bucket.delete()
+        s3_empty_bucket(bucket_name)
+        aws_client.s3.delete_bucket(Bucket=bucket_name)
 
         resp = aws_client.s3.list_buckets()
         # TODO - this fails in the CI pipeline and is currently skipped from verification
@@ -569,24 +566,24 @@ class TestS3:
         assert response["Body"].read() == b"abc123"
 
     @pytest.mark.aws_validated
-    def test_resource_object_with_slashes_in_key(self, s3_resource, s3_bucket, aws_client):
-        s3_resource.Object(s3_bucket, "/foo").put(Body="foobar")
-        s3_resource.Object(s3_bucket, "bar").put(Body="barfoo")
-        s3_resource.Object(s3_bucket, "/bar/foo/").put(Body="test")
+    def test_resource_object_with_slashes_in_key(self, s3_bucket, aws_client):
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="/foo", Body=b"foobar")
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="bar", Body=b"barfoo")
+        aws_client.s3.put_object(Bucket=s3_bucket, Key="/bar/foo/", Body=b"test")
 
         with pytest.raises(ClientError) as e:
-            s3_resource.Object(s3_bucket, "foo").get()
+            aws_client.s3.get_object(Bucket=s3_bucket, Key="foo")
         e.match("NoSuchKey")
 
         with pytest.raises(ClientError) as e:
-            s3_resource.Object(s3_bucket, "/bar").get()
+            aws_client.s3.get_object(Bucket=s3_bucket, Key="/bar")
         e.match("NoSuchKey")
 
-        response = s3_resource.Object(s3_bucket, "/foo").get()
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key="/foo")
         assert response["Body"].read() == b"foobar"
-        response = s3_resource.Object(s3_bucket, "bar").get()
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key="bar")
         assert response["Body"].read() == b"barfoo"
-        response = s3_resource.Object(s3_bucket, "/bar/foo/").get()
+        response = aws_client.s3.get_object(Bucket=s3_bucket, Key="/bar/foo/")
         assert response["Body"].read() == b"test"
 
     @pytest.mark.aws_validated
@@ -1062,12 +1059,11 @@ class TestS3:
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..ContentLanguage", "$..Error.RequestID"]
     )
-    def test_get_object_after_deleted_in_versioned_bucket(
-        self, s3_bucket, s3_resource, snapshot, aws_client
-    ):
+    def test_get_object_after_deleted_in_versioned_bucket(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
-        bucket = s3_resource.Bucket(s3_bucket)
-        bucket.Versioning().enable()
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
 
         key = "my-key"
         aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"abcdefgh")
@@ -3738,7 +3734,7 @@ class TestS3:
             Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
         )
         # create key in a different region than the bucket
-        kms_key = kms_create_key(region="us-east-1")
+        kms_key = kms_create_key(region_name="us-east-1")
         # snapshot the KMS key to save the UUID for replacement in Error message.
         snapshot.match("create-kms-key", kms_key)
 
@@ -7170,7 +7166,7 @@ class TestS3DeepArchive:
     """
 
     @pytest.mark.aws_validated
-    def test_storage_class_deep_archive(self, s3_resource, s3_bucket, tmpdir, aws_client):
+    def test_storage_class_deep_archive(self, s3_bucket, tmpdir, aws_client):
         key = "my-key"
 
         transfer_config = TransferConfig(multipart_threshold=5 * KB, multipart_chunksize=1 * KB)
@@ -7191,11 +7187,8 @@ class TestS3DeepArchive:
         upload_file(9)
         upload_file(15)
 
-        objects = s3_resource.Bucket(s3_bucket).objects.all()
-        keys = []
-        for obj in objects:
-            keys.append(obj.key)
-            assert obj.storage_class == "DEEP_ARCHIVE"
+        for obj in aws_client.s3.list_objects_v2(Bucket=s3_bucket)["Contents"]:
+            assert obj["StorageClass"] == "DEEP_ARCHIVE"
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
