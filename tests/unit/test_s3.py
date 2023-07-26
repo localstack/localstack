@@ -14,8 +14,8 @@ from localstack.http import Request
 from localstack.services.infra import patch_instance_tracker_meta
 from localstack.services.s3 import presigned_url
 from localstack.services.s3 import utils as s3_utils_asf
-from localstack.services.s3.legacy import multipart_content, s3_listener, s3_starter, s3_utils
 from localstack.services.s3.codec import AwsChunkedDecoder
+from localstack.services.s3.legacy import multipart_content, s3_listener, s3_starter, s3_utils
 from localstack.utils.strings import short_uid
 
 
