@@ -8,7 +8,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
 
-@Markers.parity.aws_validated
+@markers.parity.aws_validated
 def test_delete_role_detaches_role_policy(deploy_cfn_template, aws_client):
     role_name = f"LsRole{short_uid()}"
     stack = deploy_cfn_template(
@@ -36,7 +36,7 @@ def test_delete_role_detaches_role_policy(deploy_cfn_template, aws_client):
     assert e.value.response.get("Error").get("Code") == "NoSuchEntity"
 
 
-@Markers.parity.aws_validated
+@markers.parity.aws_validated
 def test_policy_attachments(deploy_cfn_template, aws_client):
     role_name = f"role-{short_uid()}"
     group_name = f"group-{short_uid()}"
