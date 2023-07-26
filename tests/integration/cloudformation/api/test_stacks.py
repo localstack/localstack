@@ -6,7 +6,7 @@ import pytest
 import yaml
 
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -14,7 +14,7 @@ from localstack.utils.sync import retry, wait_until
 
 
 class TestStacksApi:
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_stack_lifecycle(self, is_stack_updated, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.add_transformer(snapshot.transform.key_value("ParameterValue", "parameter-value"))
@@ -52,7 +52,7 @@ class TestStacksApi:
         )
         snapshot.match("deletion", deletion_description)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_stack_description_special_chars(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
@@ -72,7 +72,7 @@ class TestStacksApi:
         ]
         snapshot.match("describe_stack", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_stack_name_creation(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
@@ -88,7 +88,7 @@ class TestStacksApi:
 
             snapshot.match("stack_response", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.parametrize("fileformat", ["yaml", "json"])
     def test_get_template(self, deploy_cfn_template, snapshot, fileformat, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -114,8 +114,8 @@ class TestStacksApi:
         )
         snapshot.match("template_processed", template_processed)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=["$..ParameterValue", "$..PhysicalResourceId", "$..Capabilities"]
     )
     def test_stack_update_resources(
@@ -224,7 +224,7 @@ class TestStacksApi:
         assert "UpdateStack" in error_message
         assert "No updates are to be performed." in error_message
 
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..StackEvents"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..StackEvents"])
     def test_list_events_after_deployment(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(SortingTransformer("StackEvents", lambda x: x["Timestamp"]))
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -236,7 +236,7 @@ class TestStacksApi:
         response = aws_client.cloudformation.describe_stack_events(StackName=stack.stack_name)
         snapshot.match("events", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skip(reason="disable rollback not supported")
     @pytest.mark.parametrize("rollback_disabled, length_expected", [(False, 0), (True, 1)])
     def test_failure_options_for_stack_creation(
@@ -278,7 +278,7 @@ class TestStacksApi:
 
     # TODO finish this test
     @pytest.mark.skip(reason="disable rollback not enabled")
-    # @Markers.parity.aws_validated
+    # @markers.parity.aws_validated
     @pytest.mark.parametrize("rollback_disabled, length_expected", [(False, 2), (True, 1)])
     def test_failure_options_for_stack_update(self, rollback_disabled, length_expected, aws_client):
         stack_name = f"stack-{short_uid()}"
@@ -340,7 +340,7 @@ def stack_process_is_finished(cfn_client, stack_name):
     )
 
 
-@Markers.parity.aws_validated
+@markers.parity.aws_validated
 @pytest.mark.skip(reason="Not Implemented")
 def test_linting_error_during_creation(snapshot, aws_client):
     stack_name = f"stack-{short_uid()}"
@@ -355,7 +355,7 @@ def test_linting_error_during_creation(snapshot, aws_client):
     snapshot.match("error", error_response)
 
 
-@Markers.parity.aws_validated
+@markers.parity.aws_validated
 @pytest.mark.skip(reason="feature not implemented")
 def test_notifications(
     deploy_cfn_template,
@@ -417,7 +417,7 @@ def test_notifications(
     retry(_assert_messages, retries=10, sleep=2)
 
 
-@Markers.parity.aws_validated
+@markers.parity.aws_validated
 @pytest.mark.skip(reason="feature not implemented")
 def test_prevent_stack_update(deploy_cfn_template, snapshot, aws_client):
     template = load_file(
@@ -463,7 +463,7 @@ def test_prevent_stack_update(deploy_cfn_template, snapshot, aws_client):
         aws_client.cloudformation.delete_stack(StackName=stack.stack_name)
 
 
-@Markers.parity.aws_validated
+@markers.parity.aws_validated
 @pytest.mark.skip(reason="feature not implemented")
 def test_prevent_resource_deletion(deploy_cfn_template, snapshot, aws_client):
     template = load_file(
@@ -477,8 +477,8 @@ def test_prevent_resource_deletion(deploy_cfn_template, snapshot, aws_client):
     aws_client.sns.get_topic_attributes(TopicArn=stack.outputs["TopicArn"])
 
 
-@Markers.parity.aws_validated
-@Markers.snapshot.skip_snapshot_verify(
+@markers.parity.aws_validated
+@markers.snapshot.skip_snapshot_verify(
     paths=[
         # parameters may be out of order
         "$..Stacks..Parameters",
@@ -552,7 +552,7 @@ def test_updating_an_updated_stack_sets_status(deploy_cfn_template, snapshot, aw
     snapshot.match("describe-result", res)
 
 
-@Markers.parity.aws_validated
+@markers.parity.aws_validated
 def test_update_termination_protection(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.key_value("ParameterValue", "parameter-value"))
@@ -577,7 +577,7 @@ def test_update_termination_protection(deploy_cfn_template, snapshot, aws_client
     snapshot.match("describe-stack-2", res)
 
 
-@Markers.parity.aws_validated
+@markers.parity.aws_validated
 def test_events_resource_types(deploy_cfn_template, snapshot, aws_client):
     template_path = os.path.join(
         os.path.dirname(__file__), "../../templates/cfn_cdk_sample_app.yaml"
@@ -592,7 +592,7 @@ def test_events_resource_types(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("resource_types", resource_types)
 
 
-@Markers.parity.aws_validated
+@markers.parity.aws_validated
 def test_list_parameter_type(aws_client, deploy_cfn_template, cleanups, lambda_su_role):
     stack_name = f"test-stack-{short_uid()}"
     cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))

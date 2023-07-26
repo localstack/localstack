@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from tests.integration.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
 )
@@ -13,7 +13,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@Markers.snapshot.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..loggingConfiguration",
         "$..tracingConfiguration",
@@ -24,7 +24,7 @@ pytestmark = pytest.mark.skipif(
     ]
 )
 class TestTaskServiceAwsSdk:
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..SecretList"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..SecretList"])
     def test_list_secrets(
         self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot
     ):

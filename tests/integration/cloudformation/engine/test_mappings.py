@@ -2,16 +2,16 @@ import os
 
 import pytest
 
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
 THIS_DIR = os.path.dirname(__file__)
 
 
-@Markers.snapshot.skip_snapshot_verify
+@markers.snapshot.skip_snapshot_verify
 class TestCloudFormationMappings:
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_simple_mapping_working(self, aws_client, deploy_cfn_template):
         """
         A very simple test to deploy a resource with a name depending on a value that needs to be looked up from the mapping
@@ -41,7 +41,7 @@ class TestCloudFormationMappings:
             if expected_topic_name in t["TopicArn"]
         ]
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skip(reason="not implemented")
     def test_mapping_with_nonexisting_key(self, aws_client, cleanups, snapshot):
         """
@@ -68,7 +68,7 @@ class TestCloudFormationMappings:
             )
         snapshot.match("mapping_nonexisting_key_exc", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skip(reason="not implemented")
     def test_mapping_with_invalid_refs(self, aws_client, deploy_cfn_template, cleanups, snapshot):
         """
@@ -99,7 +99,7 @@ class TestCloudFormationMappings:
             )
         snapshot.match("mapping_invalid_ref_exc", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skip(reason="not implemented")
     def test_mapping_maximum_nesting_depth(self, aws_client, cleanups, snapshot):
         """
@@ -127,7 +127,7 @@ class TestCloudFormationMappings:
             )
         snapshot.match("mapping_maximum_level_exc", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skip(reason="not implemented")
     def test_mapping_minimum_nesting_depth(self, aws_client, cleanups, snapshot):
         """

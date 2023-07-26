@@ -1,6 +1,6 @@
 import pytest
 
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from tests.integration.stepfunctions.utils import is_old_provider
 from tests.integration.stepfunctions.v2.choice_operators.utils import (
     TYPE_COMPARISONS,
@@ -15,7 +15,7 @@ pytestmark = pytest.mark.skipif(
 # TODO: test for validation errors, and boundary testing.
 
 
-@Markers.snapshot.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestIsOperators:

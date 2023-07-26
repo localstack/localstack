@@ -9,7 +9,7 @@ from botocore.exceptions import ClientError
 
 import localstack.config as config
 from localstack.services.ses.provider import EMAILS_ENDPOINT
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 SAMPLE_TEMPLATE = {
@@ -341,9 +341,9 @@ class TestSES:
         assert original_rule_set["Rules"] == rule_set["Rules"]
         assert [x["Name"] for x in rule_set["Rules"]] == rule_names
 
-    @Markers.parity.only_localstack
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.only_localstack
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Message.delivery.processingTimeMillis",
             "$..Message.delivery.reportingMTA",
@@ -422,9 +422,9 @@ class TestSES:
         messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
 
-    @Markers.parity.only_localstack
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.only_localstack
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Message.delivery.processingTimeMillis",
             "$..Message.delivery.reportingMTA",
@@ -503,9 +503,9 @@ class TestSES:
         messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
 
-    @Markers.parity.only_localstack
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.only_localstack
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Message.delivery.processingTimeMillis",
             "$..Message.delivery.reportingMTA",
@@ -605,8 +605,8 @@ class TestSES:
             )
         snapshot.match("create-error", e_info.value.response)
 
-    @Markers.parity.only_localstack
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.only_localstack
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Signature",
             "$..SigningCertURL",
@@ -760,8 +760,8 @@ class TestSES:
             )
         snapshot.match("delete-error", e_info.value.response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..Error.Type"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Type"])
     @pytest.mark.parametrize(
         "tag_name,tag_value",
         [

@@ -44,7 +44,7 @@ from localstack.services.awslambda.lambda_utils import (
 from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3.utils import parse_expiration_header
 from localstack.testing.aws.util import is_aws_cloud
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -260,7 +260,7 @@ def _filter_header(param: dict) -> dict:
 
 
 class TestS3:
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER,
         reason="exceptions not raised",
@@ -344,7 +344,7 @@ class TestS3:
         response = aws_client.s3.get_bucket_replication(Bucket=bucket_src)
         snapshot.match("get-bucket-replication", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER,
         reason="exceptions not raised",
@@ -422,8 +422,8 @@ class TestS3:
         response = aws_client.s3.get_bucket_replication(Bucket=bucket_src)
         snapshot.match("get-bucket-replication", response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=["$..VersionId", "$..ContentLanguage", "$..BucketKeyEnabled"],
     )
@@ -461,7 +461,7 @@ class TestS3:
         response = aws_client.s3.get_object(Bucket=s3_bucket, Key="copiedkey")
         snapshot.match("get-copied-object", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_region_header_exists(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = s3_create_bucket(
@@ -474,9 +474,9 @@ class TestS3:
         assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == "eu-west-1"
         snapshot.match("list_objects_v2", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     # TODO list-buckets contains other buckets when running in CI
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..Prefix", "$..list-buckets.Buckets"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Prefix", "$..list-buckets.Buckets"])
     def test_delete_bucket_with_content(self, s3_bucket, s3_empty_bucket, snapshot, aws_client):
 
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -499,8 +499,8 @@ class TestS3:
         snapshot.match("list-buckets", resp)
         assert bucket_name not in [b["Name"] for b in resp["Buckets"]]
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
     )
     def test_put_and_get_object_with_utf8_key(self, s3_bucket, snapshot, aws_client):
@@ -514,8 +514,8 @@ class TestS3:
         snapshot.match("get-object", response)
         assert response["Body"].read() == b"abc123"
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_asf_provider,
         paths=[
             "$..HTTPHeaders.connection",
@@ -524,7 +524,7 @@ class TestS3:
             "$..HTTPHeaders.content-type",  # application/xml but should not be set
         ],
     )  # for ASF we currently always set 'close'
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
             "$..HTTPHeaders.access-control-allow-origin",
@@ -566,7 +566,7 @@ class TestS3:
         snapshot.match("get-object-headers", response["ResponseMetadata"])
         assert response["Body"].read() == b"abc123"
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_resource_object_with_slashes_in_key(self, s3_bucket, aws_client):
         aws_client.s3.put_object(Bucket=s3_bucket, Key="/foo", Body=b"foobar")
         aws_client.s3.put_object(Bucket=s3_bucket, Key="bar", Body=b"barfoo")
@@ -587,7 +587,7 @@ class TestS3:
         response = aws_client.s3.get_object(Bucket=s3_bucket, Key="/bar/foo/")
         assert response["Body"].read() == b"test"
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_metadata_header_character_decoding(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         # Object metadata keys should accept keys with underscores
@@ -602,8 +602,8 @@ class TestS3:
         # note that casing is removed (since headers are case-insensitive)
         assert metadata_saved == {"test_meta_1": "foo", "__meta_2": "bar"}
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
     )
     def test_upload_file_multipart(self, s3_bucket, tmpdir, snapshot, aws_client):
@@ -623,8 +623,8 @@ class TestS3:
         assert obj["Body"].read() == data, f"body did not contain expected data {obj}"
         snapshot.match("get_object", obj)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     @pytest.mark.parametrize("key", ["file%2Fname", "test@key/"])
     def test_put_get_object_special_character(self, s3_bucket, aws_client, snapshot, key):
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -639,7 +639,7 @@ class TestS3:
         resp = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
         snapshot.match("del-object-special-char", resp)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.parametrize("delimiter", ["/", "%2F"])
     def test_list_objects_with_prefix(self, s3_create_bucket, delimiter, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -672,8 +672,8 @@ class TestS3:
 
         assert is_sub_dict(sub_dict, response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..EncodingType", "$..VersionIdMarker"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..EncodingType", "$..VersionIdMarker"])
     def test_list_objects_versions_with_prefix(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         objects = [
@@ -703,7 +703,7 @@ class TestS3:
             )
             snapshot.match(f"list-object-version-{param['Id']}", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_list_objects_v2_with_prefix(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         keys = ["test/foo/bar/123" "test/foo/bar/456", "test/bar/foo/123"]
@@ -725,8 +725,8 @@ class TestS3:
         )
         snapshot.match("list-objects-v2-3", response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_get_object_no_such_bucket(self, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         with pytest.raises(ClientError) as e:
@@ -734,16 +734,16 @@ class TestS3:
 
         snapshot.match("expected_error", e.value.response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..RequestID")
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..RequestID")
     def test_delete_bucket_no_such_bucket(self, snapshot, aws_client):
         with pytest.raises(ClientError) as e:
             aws_client.s3.delete_bucket(Bucket="does-not-exist-localstack-test")
 
         snapshot.match("expected_error", e.value.response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_get_bucket_notification_configuration_no_such_bucket(self, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         with pytest.raises(ClientError) as e:
@@ -753,7 +753,7 @@ class TestS3:
 
         snapshot.match("expected_error", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER,
         reason="currently not implemented in moto, see https://github.com/localstack/localstack/issues/6217",
@@ -786,8 +786,8 @@ class TestS3:
         )
         snapshot.match("object-attrs-multiparts-2-parts", response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..ServerSideEncryption",
             "$..DeleteMarker",
@@ -835,15 +835,15 @@ class TestS3:
         )
         snapshot.match("get-object-attrs-v1", response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..ServerSideEncryption",  # missing from the response as it's default in AWS now
             "$..NextKeyMarker",  # not returned by LocalStack yet
             "$..NextUploadIdMarker",
         ]
     )
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..Error.RequestID"]
     )
     def test_multipart_and_list_parts(self, s3_bucket, snapshot, aws_client):
@@ -905,7 +905,7 @@ class TestS3:
         list_multipart_uploads = aws_client.s3.list_multipart_uploads(Bucket=s3_bucket)
         snapshot.match("list-all-uploads-completed", list_multipart_uploads)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_multipart_no_such_upload(self, s3_bucket, snapshot, aws_client):
         fake_upload_id = "fakeid"
         fake_key = "fake-key"
@@ -932,8 +932,8 @@ class TestS3:
             )
         snapshot.match("abort-exc", e.value.response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
     )
     def test_put_and_get_object_with_hash_prefix(self, s3_bucket, snapshot, aws_client):
@@ -948,8 +948,8 @@ class TestS3:
         snapshot.match("get-object", response)
         assert response["Body"].read() == content
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=["$..Error.ActualObjectSize", "$..Error.RangeRequested", "$..Error.Message"],
     )
@@ -961,8 +961,8 @@ class TestS3:
             aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=1024-4096")
         snapshot.match("exc", e.value.response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Error.Key", "$..Error.RequestID"]
     )
     def test_range_key_not_exists(self, s3_bucket, snapshot, aws_client):
@@ -972,7 +972,7 @@ class TestS3:
 
         snapshot.match("exc", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_create_bucket_via_host_name(self, s3_vhost_client, aws_client):
         # TODO check redirection (happens in AWS because of region name), should it happen in LS?
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html#VirtualHostingBackwardsCompatibility
@@ -990,7 +990,7 @@ class TestS3:
         finally:
             s3_vhost_client.delete_bucket(Bucket=bucket_name)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_put_and_get_bucket_policy(self, s3_bucket, snapshot, aws_client):
         # just for the joke: Response syntax HTTP/1.1 200
         # sample response: HTTP/1.1 204 No Content
@@ -1017,7 +1017,7 @@ class TestS3:
         snapshot.match("get-bucket-policy", response)
         assert policy == json.loads(response["Policy"])
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER,
         reason="see https://github.com/localstack/localstack/issues/5769",
@@ -1040,8 +1040,8 @@ class TestS3:
         object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=key)
         snapshot.match("deleted-object-tags", object_tags)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER,
         reason="see https://github.com/localstack/localstack/issues/6218",
@@ -1056,8 +1056,8 @@ class TestS3:
             aws_client.s3.head_object(Bucket=s3_bucket, Key="doesnotexist")
         snapshot.match("head-object-404", e.value.response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..ContentLanguage", "$..Error.RequestID"]
     )
     def test_get_object_after_deleted_in_versioned_bucket(self, s3_bucket, snapshot, aws_client):
@@ -1079,9 +1079,9 @@ class TestS3:
 
         snapshot.match("get-object-after-delete", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256"])
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
             "$.get-object-with-checksum.*",  # not implemented in legacy provider
@@ -1154,10 +1154,10 @@ class TestS3:
         )
         snapshot.match("get-object-with-checksum", get_object_with_checksum)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", None])
     @pytest.mark.xfail(condition=LEGACY_S3_PROVIDER, reason="Patched only in ASF provider")
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_get_object_checksum(self, s3_bucket, snapshot, algorithm, aws_client):
         key = "test-checksum-retrieval"
         body = b"test-checksum"
@@ -1188,7 +1188,7 @@ class TestS3:
         )
         snapshot.match("get-object-attrs", object_attrs)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(condition=LEGACY_S3_PROVIDER, reason="Patched only in ASF provider")
     def test_s3_checksum_with_content_encoding(self, s3_bucket, snapshot, aws_client):
         data = "1234567890 " * 100
@@ -1229,8 +1229,8 @@ class TestS3:
         )
         snapshot.match("get-object-attrs", object_attrs)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
     def test_s3_copy_metadata_replace(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
@@ -1262,8 +1262,8 @@ class TestS3:
         head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key_copy)
         snapshot.match("head_object_copy", head_object)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_copy_metadata_directive_copy(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
@@ -1293,8 +1293,8 @@ class TestS3:
         head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key_copy)
         snapshot.match("head-object-copy", head_object)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
     def test_s3_copy_content_type_and_metadata(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "source-object"
@@ -1338,8 +1338,8 @@ class TestS3:
         head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key_copy)
         snapshot.match("head_object_second_copy", head_object)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_copy_object_in_place(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(
@@ -1411,8 +1411,8 @@ class TestS3:
             )
         snapshot.match("copy-object-in-place-with-acl", e.value.response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_copy_object_in_place_storage_class(self, s3_bucket, snapshot, aws_client):
         # this test will validate that setting StorageClass (even the same as source) allows a copy in place
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -1451,8 +1451,8 @@ class TestS3:
         )
         snapshot.match("object-attrs-after-copy", object_attrs)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..ServerSideEncryption",
             "$..SSEKMSKeyId",  # TODO: fix this in moto, when not providing a KMS key, it should use AWS managed one
@@ -1513,7 +1513,7 @@ class TestS3:
         head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("head-copy-with-aes", head_object)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_copy_in_place_with_bucket_encryption(self, aws_client, s3_bucket, snapshot):
         response = aws_client.s3.put_bucket_encryption(
             Bucket=s3_bucket,
@@ -1543,8 +1543,8 @@ class TestS3:
         )
         snapshot.match("copy-obj", response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_copy_object_in_place_metadata_directive(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "source-object"
@@ -1616,8 +1616,8 @@ class TestS3:
         head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("head-replace-directive-empty", head_object)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_copy_object_in_place_website_redirect_location(
         self, s3_bucket, snapshot, aws_client
     ):
@@ -1648,8 +1648,8 @@ class TestS3:
         head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("head-object-after-copy", head_object)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_copy_object_legal_hold(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "source-object"
@@ -1686,8 +1686,8 @@ class TestS3:
                     Bucket=bucket_name, Key=key, LegalHold={"Status": "OFF"}
                 )
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_copy_object_lock(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "source-object"
@@ -1718,8 +1718,8 @@ class TestS3:
         head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=dest_key)
         snapshot.match("head-dest-key", head_object)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_copy_object_storage_class(self, s3_bucket, snapshot, aws_client):
         # this test will validate that setting StorageClass (even the same as source) allows a copy in place
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -1768,9 +1768,9 @@ class TestS3:
             )
         snapshot.match("exc-invalid-request-storage-class", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256"])
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_copy_object_with_checksum(self, s3_create_bucket, snapshot, aws_client, algorithm):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "source-object"
@@ -1818,8 +1818,8 @@ class TestS3:
         )
         snapshot.match("copy-object-to-dest-keep-checksum", resp)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_copy_object_preconditions(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "source-object"
@@ -1915,9 +1915,9 @@ class TestS3:
         )
         snapshot.match("copy-success", copy_obj_all_positive)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     # behaviour is wrong in Legacy, we inherit Bucket ACL
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=["$..Grants..Grantee.DisplayName", "$.permission-acl-key1.Grants"],
     )
@@ -1951,8 +1951,8 @@ class TestS3:
         s3_multipart_upload(bucket=bucket_name, key="acl-key2", acl="public-read-write")
         check_permissions("acl-key2")
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Grants..Grantee.DisplayName", "$..Grants..Grantee.ID"]
     )
     def test_s3_bucket_acl(self, s3_create_bucket, snapshot, aws_client):
@@ -2005,7 +2005,7 @@ class TestS3:
         response = aws_client.s3.get_bucket_acl(Bucket=bucket_name)
         snapshot.match("get-bucket-acp-acl", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(LEGACY_S3_PROVIDER, reason="Behaviour not implemented in legacy provider")
     def test_s3_bucket_acl_exceptions(self, s3_bucket, snapshot, aws_client):
         list_bucket_output = aws_client.s3.list_buckets()
@@ -2129,9 +2129,9 @@ class TestS3:
 
         snapshot.match("put-bucket-two-type-acl-acp", e.value.response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..Restore"])
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Restore"])
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
             "$..AcceptRanges",
@@ -2185,8 +2185,8 @@ class TestS3:
         assert resp["Expires"] > datetime.datetime.now(ZoneInfo("GMT"))
         snapshot.match("get-object-not-yet-expired", resp)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
             "$..ContentLanguage",
@@ -2205,11 +2205,11 @@ class TestS3:
         response = aws_client.s3.get_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("get_object", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER, reason="Get 404 Not Found instead of NoSuchBucket"
     )
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..Error.BucketName"])
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..Error.BucketName"])
     def test_bucket_availability(self, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         # make sure to have a non created bucket, got some AccessDenied against AWS
@@ -2222,7 +2222,7 @@ class TestS3:
             aws_client.s3.get_bucket_replication(Bucket=bucket_name)
         snapshot.match("bucket-replication", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_location_path_url(self, s3_create_bucket, account_id, snapshot, aws_client):
         region = "us-east-2"
         bucket_name = s3_create_bucket(
@@ -2240,8 +2240,8 @@ class TestS3:
         content = to_str(response.content)
         assert re.match(r"^<\?xml [^>]+>\n<.*", content, flags=re.MULTILINE)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..Error.RequestID"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..Error.RequestID"])
     def test_different_location_constraint(
         self,
         s3_create_bucket,
@@ -2291,8 +2291,8 @@ class TestS3:
 
         snapshot.match("get_bucket_location_non_existent_bucket", exc.value.response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
             "$..ContentLanguage",
@@ -2319,8 +2319,8 @@ class TestS3:
         response = s3_anon_client.get_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("get_object", response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..ContentLanguage", "$..VersionId", "$..AcceptRanges"]
     )
     def test_putobject_with_multiple_keys(self, s3_create_bucket, snapshot, aws_client):
@@ -2334,8 +2334,8 @@ class TestS3:
         result = aws_client.s3.get_object(Bucket=bucket, Key=key_by_path)
         snapshot.match("get_object", result)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
             "$..ContentLanguage",
@@ -2360,7 +2360,7 @@ class TestS3:
         assert chunk_size == len(content)
         snapshot.match("get-object", resp)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_download_fileobj_multiple_range_requests(self, s3_bucket, aws_client):
         object_key = "test-download_fileobj"
 
@@ -2376,7 +2376,7 @@ class TestS3:
         aws_client.s3.download_fileobj(Bucket=s3_bucket, Key=object_key, Fileobj=test_fileobj)
         assert body == test_fileobj.getvalue()
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_get_range_object_headers(self, s3_bucket, aws_client):
         object_key = "sample.bin"
         chunk_size = 1024
@@ -2402,7 +2402,7 @@ class TestS3:
         # Do not send a content-encoding header as discussed in Issue #3608
         assert "content-encoding" not in resp_headers
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_put_object_chunked_newlines(self, s3_bucket, aws_client):
         # Boto still does not support chunk encoding, which means we can't test with the client nor
         # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
@@ -2430,7 +2430,7 @@ class TestS3:
         assert len(body) == len(str(download_file_object))
         assert body == str(download_file_object)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     @pytest.mark.xfail(
         reason="Not implemented in other providers than stream",
         condition=not STREAM_S3_PROVIDER,
@@ -2478,7 +2478,7 @@ class TestS3:
         assert request.status_code == 400
         assert "Value for x-amz-checksum-sha256 header is invalid." in request.text
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_upload_part_chunked_newlines_valid_etag(self, s3_bucket, aws_client):
         # Boto still does not support chunk encoding, which means we can't test with the client nor
         # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
@@ -2536,7 +2536,7 @@ class TestS3:
         completed_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
         assert completed_object["Body"].read() == to_bytes(body)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_virtual_host_proxy_does_not_decode_gzip(self, aws_client, s3_bucket):
         # Write contents to memory rather than a file.
         data = "123gzipfile"
@@ -2559,7 +2559,7 @@ class TestS3:
         raw_data = b"".join(chunk for chunk in gzip_response.raw.stream(1024, decode_content=False))
         assert raw_data == raw_gzip
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_put_object_with_md5_and_chunk_signature(self, s3_bucket, aws_client):
         # Boto still does not support chunk encoding, which means we can't test with the client nor
         # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
@@ -2603,8 +2603,8 @@ class TestS3:
         result = requests.put(url, data=object_data_chunked, headers=headers)
         assert result.status_code == 200, (result, result.content)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
     )
     def test_delete_object_tagging(self, s3_bucket, snapshot, aws_client):
@@ -2619,7 +2619,7 @@ class TestS3:
         s3_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("get-obj-after-tag-deletion", s3_obj)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="Not implemented in old provider")
     def test_delete_non_existing_keys_quiet(self, s3_bucket, snapshot, aws_client):
         object_key = "test-key-nonexistent"
@@ -2635,8 +2635,8 @@ class TestS3:
         assert "Deleted" not in response
         assert "Errors" not in response
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
     def test_delete_non_existing_keys(self, s3_bucket, snapshot, aws_client):
         object_key = "test-key-nonexistent"
         aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
@@ -2651,8 +2651,8 @@ class TestS3:
         assert len(response["Deleted"]) == 3
         assert "Errors" not in response
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         path=[
             "$..Deleted..VersionId",  # we cannot guarantee order nor we can sort it
             "$..Delimiter",
@@ -2660,7 +2660,7 @@ class TestS3:
             "$..VersionIdMarker",
         ]
     )
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
     def test_delete_keys_in_versioned_bucket(self, s3_bucket, snapshot, aws_client):
         # see https://docs.aws.amazon.com/AmazonS3/latest/userguide/DeletingObjectVersions.html
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -2712,8 +2712,8 @@ class TestS3:
         )
         snapshot.match("delete-object-delete-marker", response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=["$..Error.RequestID"]
     )  # fixme RequestID not in AWS response
     def test_delete_non_existing_keys_in_non_existing_bucket(self, snapshot, aws_client):
@@ -2725,15 +2725,15 @@ class TestS3:
         assert "NoSuchBucket" == e.value.response["Error"]["Code"]
         snapshot.match("error-non-existent-bucket", e.value.response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..ServerSideEncryption",
             "$..Deleted..DeleteMarker",  # TODO: missing from response, not implemented in moto
             "$..Deleted..DeleteMarkerVersionId",
         ]
     )
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
     def test_put_object_acl_on_delete_marker(self, s3_bucket, snapshot, aws_client):
         # see https://docs.aws.amazon.com/AmazonS3/latest/userguide/DeletingObjectVersions.html
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -2759,7 +2759,7 @@ class TestS3:
             aws_client.s3.put_object_acl(Bucket=s3_bucket, Key=object_key, ACL="public-read")
         snapshot.match("key-delete-marker", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_s3_request_payer(self, s3_bucket, snapshot, aws_client):
         response = aws_client.s3.put_bucket_request_payment(
             Bucket=s3_bucket, RequestPaymentConfiguration={"Payer": "Requester"}
@@ -2771,8 +2771,8 @@ class TestS3:
         snapshot.match("get-bucket-request-payment", response)
         assert "Requester" == response["Payer"]
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_s3_request_payer_exceptions(self, s3_bucket, snapshot, aws_client):
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_request_payment(
@@ -2787,8 +2787,8 @@ class TestS3:
         #     )
         # snapshot.match("wrong-bucket-name", e.value.response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=["$..Error.RequestID", "$..Grants..Grantee.DisplayName"]
     )
     def test_bucket_exists(self, s3_bucket, snapshot, aws_client):
@@ -2820,8 +2820,8 @@ class TestS3:
             aws_client.s3.get_bucket_acl(Bucket="bucket-not-exists")
         snapshot.match("get-bucket-not-exists", e.value.response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=["$..VersionId", "$..ContentLanguage", "$..Error.RequestID"],
     )
@@ -2839,7 +2839,7 @@ class TestS3:
             aws_client.s3.get_object(Bucket=bucket_name, Key="camelcasekey")
         snapshot.match("wrong-case-key", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_s3_download_object_with_lambda(
         self, s3_create_bucket, create_lambda_function, lambda_su_role, aws_client
     ):
@@ -2882,8 +2882,8 @@ class TestS3:
             logs_client=aws_client.logs,
         )
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..Error.RequestID"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..Error.RequestID"])
     def test_precondition_failed_error(self, s3_create_bucket, snapshot, aws_client):
         bucket = f"bucket-{short_uid()}"
 
@@ -2895,7 +2895,7 @@ class TestS3:
 
         snapshot.match("get-object-if-match", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(reason="Error format is wrong and missing keys")
     def test_s3_invalid_content_md5(self, s3_bucket, snapshot, aws_client):
         # put object with invalid content MD5
@@ -2911,8 +2911,8 @@ class TestS3:
                 )
             snapshot.match(f"md5-error-{index}", e.value.response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
     )
     def test_s3_upload_download_gzip(self, s3_bucket, snapshot, aws_client):
@@ -2942,8 +2942,8 @@ class TestS3:
 
         assert downloaded_data == data
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
     def test_multipart_copy_object_etag(self, s3_bucket, s3_multipart_upload, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -2968,8 +2968,8 @@ class TestS3:
         # etags should be different
         assert copy_etag != multipart_etag
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
     def test_set_external_hostname(
         self, s3_bucket, s3_multipart_upload, monkeypatch, snapshot, aws_client
     ):
@@ -3004,7 +3004,7 @@ class TestS3:
         assert response.status_code == 200
         assert to_str(response.content) == content
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_s3_hostname_with_subdomain(self, aws_http_client_factory, aws_client):
         """
         This particular test validates the fix for localstack#7424
@@ -3024,9 +3024,9 @@ class TestS3:
         assert resp.ok
         assert b"<Bucket" in resp.content
 
-    @Markers.skip_offline
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
+    @markers.skip_offline
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
     def test_s3_lambda_integration(
         self,
         create_lambda_function,
@@ -3065,8 +3065,8 @@ class TestS3:
         response = aws_client.s3.head_object(Bucket=function_name, Key="key.png")
         snapshot.match("head_object", response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_s3_uppercase_bucket_name(self, s3_create_bucket, snapshot, aws_client):
         # bucket name should be lower-case
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -3075,7 +3075,7 @@ class TestS3:
             s3_create_bucket(Bucket=bucket_name)
         snapshot.match("uppercase-bucket", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_create_bucket_with_existing_name(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = f"bucket-{short_uid()}"
@@ -3093,7 +3093,7 @@ class TestS3:
             e.match("BucketAlreadyOwnedByYou")
             snapshot.match(f"create-bucket-{loc_constraint}", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         reason="asf provider: routing for region-path style not working; "
         "both provider: return 200 for other regions (no redirects)"
@@ -3124,7 +3124,7 @@ class TestS3:
         assert response.status_code == 200
         assert response.history[0].status_code == 307
 
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..Error.RequestID"]
     )
     def test_bucket_does_not_exist(self, s3_vhost_client, snapshot, aws_client):
@@ -3162,12 +3162,12 @@ class TestS3:
         response = requests.get(bucket_url)
         assert response.status_code == 404
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not LEGACY_S3_PROVIDER,
         paths=["$..x-amz-access-point-alias", "$..x-amz-id-2"],
     )
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER,
         paths=[
             "$..x-amz-access-point-alias",
@@ -3228,8 +3228,8 @@ class TestS3:
             aws_client.s3.delete_bucket(Bucket=bucket_1)
             aws_client.s3.delete_bucket(Bucket=bucket_2)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER, reason="virtual-host url for bucket with dots not supported"
     )
@@ -3280,9 +3280,9 @@ class TestS3:
         snapshot.match("request_path_headers", dict(response_path_style.headers))
         assert content_vhost == content_path_style
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..Prefix"])
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Prefix"])
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..ContentLanguage", "$..VersionId"]
     )
     def test_s3_put_more_than_1000_items(self, s3_create_bucket, snapshot, aws_client):
@@ -3323,8 +3323,8 @@ class TestS3:
         snapshot.match("list-objects-next_marker", resp)
         assert 10 == len(resp["Contents"])
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..Prefix"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Prefix"])
     def test_s3_list_objects_empty_marker(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = "test" + short_uid()
@@ -3332,8 +3332,8 @@ class TestS3:
         resp = aws_client.s3.list_objects(Bucket=bucket_name, Marker="")
         snapshot.match("list-objects", resp)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
     def test_upload_big_file(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = f"bucket-{short_uid()}"
@@ -3356,8 +3356,8 @@ class TestS3:
         rs = aws_client.s3.head_object(Bucket=bucket_name, Key=key2)
         snapshot.match("head_object_key2", rs)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
     )
     def test_get_bucket_versioning_order(self, s3_create_bucket, snapshot, aws_client):
@@ -3385,8 +3385,8 @@ class TestS3:
 
         snapshot.match("list_object_versions", rs)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..ContentLanguage", "$..VersionId"]
     )
     def test_etag_on_get_object_call(self, s3_create_bucket, snapshot, aws_client):
@@ -3409,8 +3409,8 @@ class TestS3:
         )
         snapshot.match("get_object_range", rs)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
     )
     def test_s3_delete_object_with_version_id(self, s3_create_bucket, snapshot, aws_client):
@@ -3460,11 +3460,11 @@ class TestS3:
         rs = aws_client.s3.get_bucket_versioning(Bucket=bucket_name)
         snapshot.match("get_bucket_versioning_suspended", rs)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
     )
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=["$..ContentLanguage", "$..VersionId"],
     )
@@ -3544,7 +3544,7 @@ class TestS3:
             assert list_obj_post_versioned["Versions"][1]["VersionId"] is not None
             assert list_obj_post_versioned["Versions"][2]["VersionId"] is not None
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(reason="ACL behaviour is not implemented, see comments")
     def test_s3_batch_delete_objects_using_requests_with_acl(
         self, s3_create_bucket, snapshot, aws_client
@@ -3600,8 +3600,8 @@ class TestS3:
         assert len(response["Contents"]) == 1
         snapshot.match("list-remaining-objects", response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..DeleteResult.Deleted..VersionId",
             "$..Prefix",
@@ -3659,13 +3659,13 @@ class TestS3:
         response = aws_client.s3.list_objects(Bucket=bucket_name)
         snapshot.match("list-remaining-objects", response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Prefix",
         ]
     )
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Deleted..VersionId")
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Deleted..VersionId")
     def test_s3_batch_delete_objects(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(snapshot.transform.key_value("Key"))
@@ -3681,8 +3681,8 @@ class TestS3:
         response = aws_client.s3.list_objects(Bucket=s3_bucket)
         snapshot.match("list-remaining-objects", response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
     def test_s3_get_object_header_overrides(self, s3_bucket, snapshot, aws_client):
         # Signed requests may include certain header overrides in the querystring
         # https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html
@@ -3702,7 +3702,7 @@ class TestS3:
         )
         snapshot.match("get-object", response)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="Testing new ASF handler behaviour")
     def test_virtual_host_proxying_headers(self, s3_bucket, aws_client):
         # forwarding requests from virtual host to path addressed will double add server specific headers
@@ -3721,7 +3721,7 @@ class TestS3:
         assert len(proxied_response.headers["server"].split(",")) == 1
         assert len(proxied_response.headers["date"].split(",")) == 2  # coma in the date
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
     )
@@ -3851,8 +3851,8 @@ class TestS3:
             )
         snapshot.match("copy-obj-wrong-kms-key", e.value.response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..ETag",  # the ETag is different as we don't encrypt the object with the KMS key
         ]
@@ -3944,11 +3944,11 @@ class TestS3:
             )
         snapshot.match("get-obj-pending-deletion-key", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
     )
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_complete_multipart_parts_order(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -4036,7 +4036,7 @@ class TestS3:
         )
         snapshot.match("complete-multipart-with-step-2", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.parametrize(
         "storage_class",
         [
@@ -4067,7 +4067,7 @@ class TestS3:
         )
         snapshot.match("get-object-storage-class", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
     )
@@ -4093,7 +4093,7 @@ class TestS3:
             )
         snapshot.match("create-multipart-outposts-exc", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_response_structure(self, aws_http_client_factory, s3_bucket, aws_client):
         """
         Test that the response structure is correct for the S3 API
@@ -4178,7 +4178,7 @@ class TestS3:
         resp_dict = xmltodict.parse(resp.content)
         assert resp_dict["Tagging"]["TagSet"] == {"Tag": {"Key": "tag1", "Value": "tag1"}}
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_s3_delete_objects_trailing_slash(self, aws_http_client_factory, s3_bucket, aws_client):
         object_key = "key-to-delete-trailing-slash"
         # create an object to delete
@@ -4205,7 +4205,7 @@ class TestS3:
         assert "DeleteResult" in resp_dict
         assert resp_dict["DeleteResult"]["Deleted"]["Key"] == object_key
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(reason="Behaviour not implemented yet")
     def test_complete_multipart_parts_checksum(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
@@ -4292,7 +4292,7 @@ class TestS3:
         )
         snapshot.match("get-object-attrs", object_attrs)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(reason="Behaviour not implemented yet")
     def test_multipart_parts_checksum_exceptions(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
@@ -4371,8 +4371,8 @@ class TestS3:
             )
         snapshot.match("upload-part-no-checksum-exc", e.value.response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..ServerSideEncryption",
             "$..NextKeyMarker",
@@ -4416,13 +4416,13 @@ class TestS3:
         response = aws_client.s3.list_multipart_uploads(Bucket=s3_bucket, Delimiter="/")
         snapshot.match("list-uploads-delimiter", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skip(
         reason="Behaviour not implemented yet: https://github.com/localstack/localstack/issues/6882"
     )
     # there is currently no server side encryption is place in LS, ETag will be different
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..ContentLanguage", "$..SSEKMSKeyId", "$..VersionId"]
     )
     def test_s3_multipart_upload_sse(
@@ -4464,13 +4464,13 @@ class TestS3:
         response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
         snapshot.match("get-obj", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skip(
         reason="Behaviour not implemented yet: https://github.com/localstack/localstack/issues/6882"
     )
     # there is currently no server side encryption is place in LS, ETag will be different
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=["$..ContentLanguage", "$..SSEKMSKeyId", "$..VersionId", "$..KMSMasterKeyID"],
     )
@@ -4530,13 +4530,13 @@ class TestS3:
         response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_after_set)
         snapshot.match("get-obj-after-setting", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skip(
         reason="Behaviour not implemented yet: https://github.com/localstack/localstack/issues/6882"
     )
     # there is currently no server side encryption is place in LS, ETag will be different
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=["$..ContentLanguage", "$..SSEKMSKeyId", "$..VersionId", "$..KMSMasterKeyID"],
     )
@@ -4604,7 +4604,7 @@ class TestS3:
         response = aws_client.s3.get_object(Bucket=bucket_1, Key=key_name)
         snapshot.match("get-obj-default-kms-s3-key-from-bucket", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_s3_analytics_configurations(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(
             [
@@ -4711,8 +4711,8 @@ class TestS3:
         response = aws_client.s3.list_bucket_analytics_configurations(Bucket=bucket)
         snapshot.match("list_config_with_storage_analysis_2", response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_s3_legal_hold_lock_versioned(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "locked-object"
@@ -4794,7 +4794,7 @@ class TestS3:
             VersionId=version_id_2,
         )
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_s3_intelligent_tier_config(self, aws_client, s3_create_bucket, snapshot):
         bucket = s3_create_bucket()
         intelligent_tier_configuration = {
@@ -4889,7 +4889,7 @@ class TestS3:
         response = aws_client.s3.list_bucket_intelligent_tiering_configurations(Bucket=bucket)
         snapshot.match("list_bucket_intelligent_tiering_configurations_3", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_s3_get_object_headers(self, aws_client, s3_create_bucket, snapshot):
         bucket = s3_create_bucket()
         key = "en-gb.wav"
@@ -4921,7 +4921,7 @@ class TestS3:
             aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch="etag")
         snapshot.match("if_match_err_1", e.value.response["Error"])
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_s3_object_hold(self, aws_client, s3_create_bucket, snapshot):
         bucket_name_with_lock = f"bucket-with-lock-{short_uid()}"
         bucket_name_without_lock = f"bucket-without-lock-{short_uid()}"
@@ -5022,7 +5022,7 @@ class TestS3:
             )
         snapshot.match("put_object_retention_5", exc.value.response["Error"])
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_put_bucket_logging(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(
             [
@@ -5055,7 +5055,7 @@ class TestS3:
         resp = aws_client.s3.get_bucket_logging(Bucket=bucket_name)
         snapshot.match("get-bucket-logging", resp)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_put_bucket_logging_accept_wrong_grants(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
 
@@ -5098,7 +5098,7 @@ class TestS3:
         resp = aws_client.s3.get_bucket_logging(Bucket=bucket_name)
         snapshot.match("get-bucket-logging", resp)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_put_bucket_logging_wrong_target(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
         bucket_name = s3_create_bucket()
@@ -5132,7 +5132,7 @@ class TestS3:
         snapshot.match("put-bucket-logging-non-existent-bucket", e.value.response)
         assert e.value.response["Error"]["TargetBucket"] == nonexistent_target_bucket
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_s3_inventory_report_crud(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.resource_name())
         src_bucket = s3_create_bucket()
@@ -5203,7 +5203,7 @@ class TestS3:
             )
         snapshot.match("get-nonexistent-inv-config", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_s3_put_inventory_report_exceptions(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.resource_name())
         src_bucket = s3_create_bucket()
@@ -5273,7 +5273,7 @@ class TestS3:
             _put_bucket_inventory_configuration(inv_config)
         snapshot.match("wrong-optional-field", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_put_bucket_inventory_config_order(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.resource_name())
         src_bucket = s3_create_bucket()
@@ -5374,7 +5374,7 @@ class TestS3MultiAccounts:
 
 
 class TestS3TerraformRawRequests:
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_terraform_request_sequence(self, aws_client):
 
         reqs = load_file(os.path.join(os.path.dirname(__file__), "../files", "s3.requests.txt"))
@@ -5397,7 +5397,7 @@ class TestS3PresignedUrl:
 
     # # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
     # # may not be suitable for parallel execution
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_presign_with_additional_query_params(
         self, s3_bucket, patch_s3_skip_signature_validation_false, aws_client
     ):
@@ -5424,7 +5424,7 @@ class TestS3PresignedUrl:
         finally:
             s3_presigned_client.meta.events.unregister("before-sign.s3.GetObject", add_query_param)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_presign_check_signature_validation_for_port_permutation(
         self, s3_bucket, patch_s3_skip_signature_validation_false, aws_client
     ):
@@ -5453,8 +5453,8 @@ class TestS3PresignedUrl:
             response = requests.get(presign_url, headers={"host": host_no_port})
             assert b"test-value" == response._content
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage", "$..Expires"]
     )
     def test_put_object(self, s3_bucket, snapshot, aws_client):
@@ -5473,7 +5473,7 @@ class TestS3PresignedUrl:
         assert response["Body"].read() == b"something"
         snapshot.match("get_object", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         reason="failing sporadically with new HTTP gateway (only in CI)",
     )
@@ -5503,9 +5503,9 @@ class TestS3PresignedUrl:
         downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
         assert downloaded_object["Body"].read() == body
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     # old provider does not raise the right exception
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
     def test_post_request_expires(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
         # presign a post with a short expiry time
@@ -5531,7 +5531,7 @@ class TestS3PresignedUrl:
         snapshot.match("exception", exception)
         assert response.status_code in [400, 403]
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER,
         reason="Legacy S3 provider does not skip the signature validation",
@@ -5561,7 +5561,7 @@ class TestS3PresignedUrl:
         assert response.status_code == 200
         assert b"test-value" == response.content
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER, reason="Policy is not validated in legacy provider"
     )
@@ -5610,7 +5610,7 @@ class TestS3PresignedUrl:
         )
         assert exception["Error"]["StringToSign"] == presigned_request["fields"]["policy"]
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER, reason="Signature is not validated in legacy provider"
     )
@@ -5654,7 +5654,7 @@ class TestS3PresignedUrl:
         exception["StatusCode"] = response.status_code
         snapshot.match("exception-missing-signature", exception)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER, reason="Policy is not validated in legacy provider"
     )
@@ -5715,7 +5715,7 @@ class TestS3PresignedUrl:
         exception["StatusCode"] = response.status_code
         snapshot.match("exception-no-sig-related-fields", exception)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_delete_has_empty_content_length_header(self, s3_bucket, aws_client):
         for encoding in None, "gzip":
             # put object
@@ -5743,7 +5743,7 @@ class TestS3PresignedUrl:
                 None,
             ], f"Unexpected content-length in headers {response.headers}"
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_head_has_correct_content_length_header(self, s3_bucket, aws_client):
         body = "something body \n \n\r"
         # put object
@@ -5761,8 +5761,8 @@ class TestS3PresignedUrl:
         response = requests.head(url, verify=False)
         assert response.headers.get("content-length") == str(len(body))
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Expires", "$..AcceptRanges"]
     )
     def test_put_url_metadata(self, s3_bucket, snapshot, aws_client):
@@ -5789,7 +5789,7 @@ class TestS3PresignedUrl:
         assert response.get("Metadata", {}).get("foo") == "bar"
         snapshot.match("head_object", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_get_object_ignores_request_body(self, s3_bucket, aws_client):
         key = "foo-key"
         body = "foobar"
@@ -5804,7 +5804,7 @@ class TestS3PresignedUrl:
         assert response.status_code == 200
         assert response.text == body
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.parametrize(
         "signature_version, verify_signature",
         [
@@ -5814,7 +5814,7 @@ class TestS3PresignedUrl:
             ("s3v4", False),
         ],
     )
-    @Markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
     def test_put_object_with_md5_and_chunk_signature_bad_headers(
         self,
         s3_create_bucket,
@@ -5886,7 +5886,7 @@ class TestS3PresignedUrl:
         else:
             assert b"AccessDenied" in result.content
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_s3_get_response_default_content_type(self, s3_bucket, aws_client):
         # When no content type is provided by a PUT request
         # 'binary/octet-stream' should be used
@@ -5903,9 +5903,9 @@ class TestS3PresignedUrl:
         response = requests.get(url, verify=False)
         assert response.headers["content-type"] == "binary/octet-stream"
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         path=["$..Error.Expires"],
     )
@@ -5955,9 +5955,9 @@ class TestS3PresignedUrl:
         assert resp.status_code == 200
         assert to_str(resp.content) == "something"
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         path=["$..Error.Message"],
     )
@@ -6068,7 +6068,7 @@ class TestS3PresignedUrl:
         exception["StatusCode"] = response.status_code
         snapshot.match("wrong-content-encoding-response", exception)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_s3_put_presigned_url_same_header_and_qs_parameter(
         self, s3_bucket, snapshot, patch_s3_skip_signature_validation_false, aws_client
     ):
@@ -6129,9 +6129,9 @@ class TestS3PresignedUrl:
         exception["StatusCode"] = response.status_code
         snapshot.match("override-signed-qs", exception)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
             "$..Error.Code",
@@ -6185,7 +6185,7 @@ class TestS3PresignedUrl:
         exception["StatusCode"] = resp.status_code
         snapshot.match("missing-param-exception", exception)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_s3_get_response_content_type_same_as_upload_and_range(self, s3_bucket, aws_client):
         # put object
         object_key = "foo/bar/key-by-hostname"
@@ -6211,7 +6211,7 @@ class TestS3PresignedUrl:
         # test we only get the first 18 bytes from the object
         assert "something something" == to_str(response.content)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         reason="sporadically failing in CI: presigned-post does not set the body, and then etag is wrong"
     )
@@ -6256,7 +6256,7 @@ class TestS3PresignedUrl:
         assert json_response["Key"] == "key-my-file"
         assert json_response["ETag"] == etag
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(condition=LEGACY_S3_PROVIDER, reason="not supported in legacy provider")
     def test_s3_presigned_post_success_action_redirect(self, s3_bucket, aws_client):
         # a security policy is required if the bucket is not publicly writable
@@ -6314,7 +6314,7 @@ class TestS3PresignedUrl:
         )
         assert response.status_code == 204
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_presigned_url_with_session_token(
         self, s3_create_bucket_with_client, patch_s3_skip_signature_validation_false, aws_client
     ):
@@ -6345,7 +6345,7 @@ class TestS3PresignedUrl:
         response = requests.get(presigned_url)
         assert response._content == b"test-value"
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
     def test_s3_get_response_header_overrides(
         self, s3_bucket, signature_version, patch_s3_skip_signature_validation_false, aws_client
@@ -6387,7 +6387,7 @@ class TestS3PresignedUrl:
         possible_date_formats = ["2015-10-21T07:28:00Z", expiry_date]
         assert headers["expires"] in possible_date_formats
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_s3_copy_md5(self, s3_bucket, snapshot, s3_presigned_client, monkeypatch, aws_client):
         if not is_aws_cloud() and not LEGACY_S3_PROVIDER:
             monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
@@ -6417,7 +6417,7 @@ class TestS3PresignedUrl:
         request_response = requests.put(url, verify=False)
         assert request_response.status_code == 200
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     @pytest.mark.parametrize("case_sensitive_headers", [True, False])
     def test_s3_get_response_case_sensitive_headers(
         self, s3_bucket, case_sensitive_headers, aws_client
@@ -6450,8 +6450,8 @@ class TestS3PresignedUrl:
             ("s3v4", True),
         ],
     )
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         path=["$..Error.Expires"],
     )
@@ -6495,8 +6495,8 @@ class TestS3PresignedUrl:
             ("s3v4", True),
         ],
     )
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         path=["$..Error.Expires"],
     )
@@ -6609,7 +6609,7 @@ class TestS3PresignedUrl:
             ("s3v4", True),
         ],
     )
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_presigned_url_signature_authentication_multi_part(
         self,
         s3_create_bucket,
@@ -6669,7 +6669,7 @@ class TestS3PresignedUrl:
         assert response.status_code == 200
         assert response.content == data
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_presigned_url_v4_x_amz_in_qs(
         self,
         s3_bucket,
@@ -6728,7 +6728,7 @@ class TestS3PresignedUrl:
         )
         assert response.status_code == 200
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(
         condition=is_old_provider(),
         reason="behaviour not properly implemented in the legacy provider",
@@ -6805,7 +6805,7 @@ class TestS3PresignedUrl:
         )
         assert response.status_code == 200
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         condition=is_old_provider(),
         reason="Not implemented in legacy provider",
@@ -6890,10 +6890,10 @@ class TestS3PresignedUrl:
     reason="ASF provider is tested in test_s3_cors.py, this will be deprecated",
 )
 class TestS3Cors:
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     # TODO x-amzn-requestid should be 'x-amz-request-id'
     # TODO "Vary" contains more in AWS, other params are added additional in LocalStack
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Access-Control-Allow-Headers",
             "$..Connection",
@@ -7010,8 +7010,8 @@ class TestS3Cors:
         assert result.status_code == 200
         snapshot.match("raw-response-headers-4", dict(result.headers))
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Access-Control-Allow-Headers",
             "$..Connection",
@@ -7082,7 +7082,7 @@ class TestS3Cors:
         assert 200 == response.status_code
         snapshot.match("raw-response-headers-2", dict(response.headers))
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         reason="Access-Control-Allow-Origin returns Origin value in LS",
     )
@@ -7118,7 +7118,7 @@ class TestS3Cors:
             response.headers["Access-Control-Allow-Origin"] == "*"
         )  # returns http://localhost in LS
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.xfail(
         reason="Behaviour diverges from AWS, Access-Control-* headers always added",
     )
@@ -7166,7 +7166,7 @@ class TestS3DeepArchive:
     Test to cover DEEP_ARCHIVE Storage Class functionality.
     """
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_storage_class_deep_archive(self, s3_bucket, tmpdir, aws_client):
         key = "my-key"
 
@@ -7191,8 +7191,8 @@ class TestS3DeepArchive:
         for obj in aws_client.s3.list_objects_v2(Bucket=s3_bucket)["Contents"]:
             assert obj["StorageClass"] == "DEEP_ARCHIVE"
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
             "$..Error.Message",  # TODO AWS does not include dot at the end
@@ -7254,7 +7254,7 @@ class TestS3StaticWebsiteHosting:
     Test to cover StaticWebsiteHosting functionality.
     """
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_s3_static_website_index(self, s3_create_bucket, aws_client):
         bucket_name = f"bucket-{short_uid()}"
 
@@ -7280,7 +7280,7 @@ class TestS3StaticWebsiteHosting:
         assert response.status_code == 200
         assert response.text == "index"
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_s3_static_website_hosting(self, s3_create_bucket, aws_client):
         bucket_name = f"bucket-{short_uid()}"
 
@@ -7394,7 +7394,7 @@ class TestS3StaticWebsiteHosting:
         assert response.status_code == 200
         assert response.headers["etag"] == actual_key_obj["ETag"]
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
         reason="Legacy S3 provider does not provide proper website support",
@@ -7421,7 +7421,7 @@ class TestS3StaticWebsiteHosting:
         assert response.status_code == 404
         snapshot.match("no-such-website-config-key", response.text)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
         reason="Legacy S3 provider does not provide proper website support",
@@ -7468,7 +7468,7 @@ class TestS3StaticWebsiteHosting:
         req = requests.post(website_url, data="test")
         assert req.status_code == 405
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
         reason="Legacy S3 provider does not provide proper website redirection",
@@ -7523,7 +7523,7 @@ class TestS3StaticWebsiteHosting:
         assert response.status_code == 404
         snapshot.match("404-with-trailing-slash", response.text)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
         reason="Legacy S3 provider does not provide proper website support",
@@ -7569,7 +7569,7 @@ class TestS3StaticWebsiteHosting:
         assert response.status_code == 404
         assert response.text == "error"
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_object_website_redirect_location(self, s3_create_bucket, aws_client):
         bucket_name = f"bucket-{short_uid()}"
 
@@ -7611,7 +7611,7 @@ class TestS3StaticWebsiteHosting:
         assert response.status_code == 200
         assert response.text == "error"
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
         reason="Legacy S3 provider does not provide website routing rules",
@@ -7697,7 +7697,7 @@ class TestS3StaticWebsiteHosting:
         assert response.status_code == 200
         assert response.text == "redirected-both"
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
         reason="Legacy S3 provider does not provide website routing rules",
@@ -7758,7 +7758,7 @@ class TestS3StaticWebsiteHosting:
         response = requests.get(f"{website_url}/code/key", allow_redirects=False)
         assert response.status_code == 307
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER,
         reason="Legacy S3 provider does not provide website routing rules",
@@ -7831,7 +7831,7 @@ class TestS3StaticWebsiteHosting:
         assert response.status_code == 404
         assert response.text == "error"
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER,
         reason="Legacy S3 provider does not provide website routing rules",
@@ -7902,12 +7902,12 @@ class TestS3StaticWebsiteHosting:
         assert response.status_code == 200
         assert response.text == "index"
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
         reason="Legacy S3 provider does not provide website configuration validation",
     )
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         # todo: serializer issue with empty node, very tricky one...
         paths=["$.invalid-website-conf-1.Error.ArgumentValue"]
     )
@@ -7979,7 +7979,7 @@ class TestS3StaticWebsiteHosting:
             except ClientError as e:
                 snapshot.match(f"invalid-website-conf-{index}", e.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_crud_website_configuration(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
 
@@ -8003,7 +8003,7 @@ class TestS3StaticWebsiteHosting:
         with pytest.raises(ClientError):
             aws_client.s3.get_bucket_website(Bucket=s3_bucket)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
         reason="Legacy S3 provider does not provide website redirection",
@@ -8072,7 +8072,7 @@ class TestS3StaticWebsiteHosting:
 
 
 class TestS3Routing:
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     @pytest.mark.parametrize(
         "domain, use_virtual_address",
         [
@@ -8149,7 +8149,7 @@ class TestS3BucketPolicies:
 
 
 class TestS3BucketLifecycle:
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_delete_bucket_lifecycle_configuration(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         with pytest.raises(ClientError) as e:
@@ -8182,7 +8182,7 @@ class TestS3BucketLifecycle:
             aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
         snapshot.match("get-bucket-lifecycle-exc-2", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_delete_lifecycle_configuration_on_bucket_deletion(
         self, s3_create_bucket, snapshot, aws_client
     ):
@@ -8211,7 +8211,7 @@ class TestS3BucketLifecycle:
             aws_client.s3.get_bucket_lifecycle_configuration(Bucket=bucket_name)
         snapshot.match("get-bucket-lifecycle-exc", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_put_bucket_lifecycle_conf_exc(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             snapshot.transform.key_value("ArgumentValue", value_replacement="datetime")
@@ -8337,7 +8337,7 @@ class TestS3BucketLifecycle:
 
         snapshot.match("duplicate-tag-keys", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_bucket_lifecycle_configuration_date(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -8364,8 +8364,8 @@ class TestS3BucketLifecycle:
         result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
         snapshot.match("get-bucket-lifecycle-conf", result)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_bucket_lifecycle_configuration_object_expiry(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -8410,8 +8410,8 @@ class TestS3BucketLifecycle:
         # use a bit of margin for the 7 days expiration, as it can depend on the time of day, but at least we validate
         assert 6 <= (parsed_exp_date - last_modified).days <= 8
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_bucket_lifecycle_configuration_object_expiry_versioned(
         self, s3_bucket, snapshot, aws_client
     ):
@@ -8495,8 +8495,8 @@ class TestS3BucketLifecycle:
             <= current_exp_days + 1
         )
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_object_expiry_after_bucket_lifecycle_configuration(
         self, s3_bucket, snapshot, aws_client
     ):
@@ -8539,8 +8539,8 @@ class TestS3BucketLifecycle:
         response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
         snapshot.match("head-object-expiry-after", response)
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_bucket_lifecycle_multiple_rules(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -8603,8 +8603,8 @@ class TestS3BucketLifecycle:
         snapshot.match("put-object-no-match", put_object_3)
         assert "Expiration" not in put_object_3
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_bucket_lifecycle_object_size_rules(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -8664,8 +8664,8 @@ class TestS3BucketLifecycle:
         snapshot.match("put-object-no-match", put_object_3)
         assert "Expiration" not in put_object_3
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     def test_bucket_lifecycle_tag_rules(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [

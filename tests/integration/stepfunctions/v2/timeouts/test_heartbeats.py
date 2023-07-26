@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.templates.timeouts.timeout_templates import (
@@ -15,7 +15,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@Markers.snapshot.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..loggingConfiguration",
         "$..tracingConfiguration",
@@ -25,7 +25,7 @@ pytestmark = pytest.mark.skipif(
     ]
 )
 class TestHeartbeats:
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     def test_heartbeat_timeout(
         self,
         aws_client,
@@ -63,7 +63,7 @@ class TestHeartbeats:
             exec_input,
         )
 
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     def test_heartbeat_path_timeout(
         self,
         aws_client,
@@ -105,7 +105,7 @@ class TestHeartbeats:
             exec_input,
         )
 
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     def test_heartbeat_no_timeout(
         self,
         aws_client,

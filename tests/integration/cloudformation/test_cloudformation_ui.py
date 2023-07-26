@@ -1,12 +1,12 @@
 import requests
 
 from localstack import config
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 
 CLOUDFORMATION_UI_PATH = "/_localstack/cloudformation/deploy"
 
 
-@Markers.parity.only_localstack
+@markers.parity.only_localstack
 class TestCloudFormationUi:
     def test_get_cloudformation_ui(self):
         cfn_ui_url = config.get_edge_url() + CLOUDFORMATION_UI_PATH

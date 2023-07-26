@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.templates.base.base_templates import BaseTemplate as BT
@@ -20,7 +20,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@Markers.snapshot.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..loggingConfiguration",
         "$..tracingConfiguration",

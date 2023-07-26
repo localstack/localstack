@@ -19,7 +19,7 @@ from localstack.testing.aws.lambda_utils import (
     s3_lambda_permission,
 )
 from localstack.testing.aws.util import is_aws_cloud
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import retry
@@ -45,7 +45,7 @@ def _snapshot_transformers(snapshot):
     )
 
 
-@Markers.snapshot.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..Records..eventID",
         "$..Records..kinesis.kinesisSchemaVersion",
@@ -62,7 +62,7 @@ def _snapshot_transformers(snapshot):
     ],
 )
 class TestKinesisSource:
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_create_kinesis_event_source_mapping(
         self,
         create_lambda_function,
@@ -126,7 +126,7 @@ class TestKinesisSource:
 
     # FIXME remove usage of this config value with 2.0
     @patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(
         condition=is_new_provider(), reason="deprecated config that only works in legacy provider"
     )
@@ -195,7 +195,7 @@ class TestKinesisSource:
 
         assert (invocation_events[1]["executionStart"] - invocation_events[0]["executionStart"]) > 5
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_kinesis_event_source_trim_horizon(
         self,
         create_lambda_function,
@@ -258,7 +258,7 @@ class TestKinesisSource:
         )
         snapshot.match("invocation_events", invocation_events)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_disable_kinesis_event_source_mapping(
         self,
         create_lambda_function,
@@ -331,7 +331,7 @@ class TestKinesisSource:
             aws_client.logs, function_name, expected_num_events=1, retries=10
         )
 
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfFirstRecord",
             "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfLastRecord",
@@ -341,7 +341,7 @@ class TestKinesisSource:
             "$..Messages..Body.responseContext.statusCode",
         ],
     )
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Messages..Body.requestContext.functionArn",
             # destination config arn missing, which leads to those having wrong resource ids
@@ -350,7 +350,7 @@ class TestKinesisSource:
         ],
         condition=is_old_provider,
     )
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,
         create_lambda_function,

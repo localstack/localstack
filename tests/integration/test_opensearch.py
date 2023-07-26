@@ -25,7 +25,7 @@ from localstack.services.opensearch.cluster_manager import (
     create_cluster_manager,
 )
 from localstack.services.opensearch.packages import opensearch_package
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.utils.common import call_safe, poll_condition, retry
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid, start_worker_thread
@@ -85,7 +85,7 @@ def try_cluster_health(cluster_url: str):
     ], "expected cluster state to be in a valid state"
 
 
-@Markers.skip_offline
+@markers.skip_offline
 class TestOpensearchProvider:
     """
     Because this test reuses the localstack instance for each test, all tests are performed with
@@ -337,7 +337,7 @@ class TestOpensearchProvider:
         finally:
             aws_client.opensearch.delete_domain(DomainName=domain_name)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     @pytest.mark.parametrize(
         "engine_version",
         # Test once per major version
@@ -436,7 +436,7 @@ class TestOpensearchProvider:
         test_user_client.create("new-index2", id="new-index-id2", body={})
         test_user_client.index(test_index_name, body={"test-key1": "test-value1"})
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_create_domain_with_invalid_name(self, aws_client):
         with pytest.raises(botocore.exceptions.ClientError) as e:
             aws_client.opensearch.create_domain(
@@ -448,7 +448,7 @@ class TestOpensearchProvider:
             aws_client.opensearch.create_domain(DomainName="abc#")  # no special characters allowed
         assert e.value.response["Error"]["Code"] == "ValidationException"
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_exception_header_field(self, aws_client):
         """Test if the error response correctly sets the error code in the headers (see #6304)."""
         with pytest.raises(botocore.exceptions.ClientError) as e:
@@ -591,7 +591,7 @@ class TestOpensearchProvider:
         assert domain_name in domain_names
 
 
-@Markers.skip_offline
+@markers.skip_offline
 class TestEdgeProxiedOpensearchCluster:
     def test_route_through_edge(self):
         cluster_id = f"domain-{short_uid()}"
@@ -678,7 +678,7 @@ class TestEdgeProxiedOpensearchCluster:
         assert response.status_code == 200
 
 
-@Markers.skip_offline
+@markers.skip_offline
 class TestMultiClusterManager:
     def test_multi_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
@@ -725,7 +725,7 @@ class TestMultiClusterManager:
             call_safe(cluster_1.shutdown)
 
 
-@Markers.skip_offline
+@markers.skip_offline
 class TestMultiplexingClusterManager:
     def test_multiplexing_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
@@ -772,7 +772,7 @@ class TestMultiplexingClusterManager:
             call_safe(cluster_1.shutdown)
 
 
-@Markers.skip_offline
+@markers.skip_offline
 class TestSingletonClusterManager:
     def test_endpoint_strategy_port_singleton_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
@@ -817,7 +817,7 @@ class TestSingletonClusterManager:
             call_safe(cluster_1.shutdown)
 
 
-@Markers.skip_offline
+@markers.skip_offline
 class TestCustomBackendManager:
     def test_custom_backend(self, httpserver, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")

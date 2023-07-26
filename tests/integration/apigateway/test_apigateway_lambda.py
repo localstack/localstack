@@ -5,7 +5,7 @@ import requests
 from botocore.exceptions import ClientError
 
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -14,8 +14,8 @@ from tests.integration.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
 from tests.integration.awslambda.test_lambda import TEST_LAMBDA_AWS_PROXY, TEST_LAMBDA_PYTHON_ECHO
 
 
-@Markers.parity.aws_validated
-@Markers.snapshot.skip_snapshot_verify(
+@markers.parity.aws_validated
+@markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..body",
         "$..headers.Accept",
@@ -235,7 +235,7 @@ def test_lambda_aws_proxy_integration(
     snapshot.match("invocation-payload-with-params-encoding-multi", responses.json())
 
 
-@Markers.parity.aws_validated
+@markers.parity.aws_validated
 def test_lambda_aws_integration(
     create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client
 ):
@@ -315,7 +315,7 @@ def test_lambda_aws_integration(
     snapshot.match("lambda-aws-integration", response_data)
 
 
-@Markers.parity.aws_validated
+@markers.parity.aws_validated
 def test_lambda_aws_integration_with_request_template(
     create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client
 ):

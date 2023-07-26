@@ -5,7 +5,7 @@ import pytest
 import requests
 
 from localstack import config
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import load_file
@@ -101,14 +101,14 @@ class TestCdkInit:
 
 
 class TestCdkSampleApp:
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Attributes.Policy.Statement..Condition",
             "$..Attributes.Policy.Statement..Resource",
             "$..StackResourceSummaries..PhysicalResourceId",
         ]
     )
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_cdk_sample(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.add_transformer(snapshot.transform.sqs_api())

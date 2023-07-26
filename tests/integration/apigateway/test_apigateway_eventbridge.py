@@ -2,7 +2,7 @@ import json
 
 import requests
 
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.integration.apigateway.apigateway_fixtures import (
@@ -17,7 +17,7 @@ from tests.integration.apigateway.apigateway_fixtures import (
 from tests.integration.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
 
 
-@Markers.parity.aws_validated
+@markers.parity.aws_validated
 def test_apigateway_to_eventbridge(
     aws_client, create_rest_apigw, create_role_with_policy, region, account_id, snapshot
 ):

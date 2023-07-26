@@ -4,7 +4,7 @@ import requests
 
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.util import is_aws_cloud
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -18,8 +18,8 @@ class TestApiGatewayCommon:
     requests/responses from the API.
     """
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$.invalid-request-body.Type",
         ]
@@ -250,8 +250,8 @@ class TestApiGatewayCommon:
         response_get = requests.get(url)
         assert response_get.ok
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$.create-usage-plan.throttle.rateLimit",  # TODO: wrong type, should be `float` but is `int`
         ]

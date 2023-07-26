@@ -9,7 +9,7 @@ from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from tests.integration.awslambda.functions import lambda_integration
@@ -17,11 +17,11 @@ from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON
 
 
 class TestLambdaDLQ:
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..DeadLetterConfig", "$..result"])
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(paths=["$..DeadLetterConfig", "$..result"])
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
     )
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_dead_letter_queue(
         self,
         create_lambda_function,
@@ -94,7 +94,7 @@ class TestLambdaDLQ:
 
 
 class TestLambdaDestinationSqs:
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
             "$..context",
@@ -113,7 +113,7 @@ class TestLambdaDestinationSqs:
             {lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1},
         ],
     )
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_assess_lambda_destination_invocation(
         self,
         payload,
@@ -225,9 +225,9 @@ class TestLambdaDestinationSqs:
         receive_message_result = retry(receive_message, retries=120, sleep=3)
         snapshot.match("receive_message_result", receive_message_result)
 
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..Body.requestContext.functionArn"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Body.requestContext.functionArn"])
     @pytest.mark.xfail(condition=is_old_provider(), reason="only works with new provider")
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_retries(
         self,
         snapshot,
@@ -340,11 +340,11 @@ class TestLambdaDestinationSqs:
         assert len(request_ids) == 3  # gather invocation ID from all 3 invocations
         assert len(set(request_ids)) == 1  # all 3 are equal
 
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         paths=["$..SenderId", "$..Body.requestContext.functionArn"]
     )
     @pytest.mark.xfail(condition=is_old_provider(), reason="only works with new provider")
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_maxeventage(
         self,
         snapshot,

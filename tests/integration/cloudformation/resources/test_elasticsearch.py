@@ -1,4 +1,4 @@
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 TEST_TEMPLATE_10 = """
@@ -37,7 +37,7 @@ Outputs:
 """
 
 
-@Markers.skip_offline
+@markers.skip_offline
 def test_cfn_handle_elasticsearch_domain(deploy_cfn_template, aws_client):
     domain_name = f"es-{short_uid()}"
 

@@ -4,7 +4,7 @@ import os
 import pytest
 
 from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
 
@@ -82,8 +82,8 @@ def test_policy_attachments(deploy_cfn_template, aws_client):
     assert policy["Statement"][0]["Principal"] == {"Service": "elasticbeanstalk.amazonaws.com"}
 
 
-@Markers.parity.aws_validated
-@Markers.snapshot.skip_snapshot_verify(paths=["$..User.Tags"])
+@markers.parity.aws_validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..User.Tags"])
 def test_iam_username_defaultname(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.iam_api())
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -107,7 +107,7 @@ def test_iam_username_defaultname(deploy_cfn_template, snapshot, aws_client):
 
 
 @pytest.mark.skip(reason="not correctly implemented at the moment")
-@Markers.parity.aws_validated
+@markers.parity.aws_validated
 def test_iam_user_access_key(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformers_list(
         [
@@ -146,7 +146,7 @@ def test_iam_user_access_key(deploy_cfn_template, snapshot, aws_client):
     assert stack2.outputs["SecretAccessKey"] != stack.outputs["SecretAccessKey"]
 
 
-@Markers.parity.aws_validated
+@markers.parity.aws_validated
 def test_update_inline_policy(deploy_cfn_template, snapshot, aws_client):
 
     snapshot.add_transformer(snapshot.transform.iam_api())
@@ -203,8 +203,8 @@ def test_update_inline_policy(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("role_updated_inline_policy", role_updated_inline_policy_resource)
 
 
-@Markers.parity.aws_validated
-@Markers.snapshot.skip_snapshot_verify(
+@markers.parity.aws_validated
+@markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..Policy.Description",
         "$..Policy.IsAttachable",

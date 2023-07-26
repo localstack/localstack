@@ -1,12 +1,12 @@
 import os.path
 
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 
 
-@Markers.parity.aws_validated
-@Markers.snapshot.skip_snapshot_verify(paths=["$..Destinations"])
+@markers.parity.aws_validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..Destinations"])
 def test_firehose_stack_with_kinesis_as_source(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
 

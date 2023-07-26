@@ -6,7 +6,7 @@ from typing import Any, TypedDict
 import pytest
 
 from localstack.aws.api.stepfunctions import ExecutionStatus
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.utils.sync import wait_until
 from tests.integration.stepfunctions.utils import is_old_provider
 
@@ -23,7 +23,7 @@ class RunConfig(TypedDict):
     condition=not is_old_provider() and os.environ.get("TEST_TARGET") != "AWS_CLOUD",
     reason="Not supported yet.",
 )
-@Markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..tracingConfiguration"])
 class TestFundamental:
     @staticmethod
     def _record_execution(
@@ -62,7 +62,7 @@ class TestFundamental:
         if assert_state:
             assert describe_ex_done["status"] == assert_state
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_path_based_on_data(self, deploy_cfn_template, sfn_snapshot, aws_client):
         """
         Based on the "path-based-on-data" sample workflow on serverlessland.com
@@ -111,7 +111,7 @@ class TestFundamental:
                 aws_client.stepfunctions, sfn_snapshot, statemachine_arn, run_config
             )
 
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
             "$..taskFailedEventDetails.resource",
@@ -120,7 +120,7 @@ class TestFundamental:
             "$..previousEventId",
         ],
     )
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_wait_for_callback(self, deploy_cfn_template, sfn_snapshot, aws_client):
         """
         Based on the "wait-for-callback" sample workflow on serverlessland.com
@@ -169,10 +169,10 @@ class TestFundamental:
                 aws_client.stepfunctions, sfn_snapshot, statemachine_arn, run_config
             )
 
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Headers", "$..StatusText"]
     )
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_step_functions_calling_api_gateway(
         self, deploy_cfn_template, sfn_snapshot, aws_client
     ):

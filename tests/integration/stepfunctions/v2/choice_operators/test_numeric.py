@@ -2,7 +2,7 @@ from typing import Any, Final
 
 import pytest
 
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from tests.integration.stepfunctions.utils import is_old_provider
 from tests.integration.stepfunctions.v2.choice_operators.utils import (
     create_and_test_comparison_function,
@@ -32,7 +32,7 @@ TYPE_COMPARISONS_VARS: Final[list[Any]] = [
 ]
 
 
-@Markers.snapshot.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestNumerics:

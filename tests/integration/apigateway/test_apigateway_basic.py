@@ -27,7 +27,7 @@ from localstack.services.apigateway.helpers import (
 )
 from localstack.services.awslambda.lambda_api import add_event_source, use_docker
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack, queries
 from localstack.utils.aws import resources as resource_util
@@ -155,7 +155,7 @@ class TestAPIGateway:
     }
     TEST_API_GATEWAY_AUTHORIZER_OPS = [{"op": "replace", "path": "/name", "value": "test1"}]
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_delete_rest_api_with_invalid_id(self, aws_client):
         with pytest.raises(ClientError) as e:
             aws_client.apigateway.delete_rest_api(restApiId="foobar")
@@ -388,7 +388,7 @@ class TestAPIGateway:
         # TODO this should not only be empty, but the key should not exist (like in aws)
         assert not body.get("requestContext").get("authorizer")
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_api_gateway_lambda_integration_aws_type(
         self, create_lambda_function, create_rest_apigw, aws_client
     ):
@@ -1139,7 +1139,7 @@ class TestAPIGateway:
             # when the api key is passed as part of the header
             assert 200 == response.status_code
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.parametrize("action", ["StartExecution", "DeleteStateMachine"])
     def test_apigateway_with_step_function_integration(
         self,
@@ -1708,7 +1708,7 @@ class TestAPIGateway:
         apigw_client.create_deployment(restApiId=api_id, stageName=stage_name)
         return api_id
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.parametrize("stage_name", ["local", "dev"])
     def test_apigw_stage_variables(
         self, create_lambda_function, create_rest_apigw, stage_name, aws_client

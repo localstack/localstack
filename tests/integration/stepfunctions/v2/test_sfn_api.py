@@ -4,7 +4,7 @@ import pytest
 
 from localstack.aws.api.stepfunctions import StateMachineType
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.lambda_functions import lambda_functions
@@ -24,7 +24,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@Markers.snapshot.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestSnfApi:
@@ -313,7 +313,7 @@ class TestSnfApi:
             aws_client.stepfunctions.start_execution(stateMachineArn=state_machine_arn_invalid)
         sfn_snapshot.match("start_exec_of_deleted", resource_not_found.value.response)
 
-    @Markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
     def test_invalid_start_execution_input(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):

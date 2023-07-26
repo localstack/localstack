@@ -14,7 +14,7 @@ from localstack.aws.api.dynamodb import (
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack, queries, resources
@@ -42,7 +42,7 @@ def transcribe_snapshot_transformer(snapshot):
 
 
 class TestDynamoDB:
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_non_ascii_chars(self, aws_client):
         resources.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
 
@@ -68,7 +68,7 @@ class TestDynamoDB:
         # clean up
         delete_table(TEST_DDB_TABLE_NAME)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_large_data_download(self, aws_client):
         resources.create_dynamodb_table(TEST_DDB_TABLE_NAME_2, partition_key=PARTITION_KEY)
 
@@ -85,7 +85,7 @@ class TestDynamoDB:
         # clean up
         delete_table(TEST_DDB_TABLE_NAME_2)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_time_to_live(self, aws_client):
         resources.create_dynamodb_table(TEST_DDB_TABLE_NAME_3, partition_key=PARTITION_KEY)
 
@@ -145,7 +145,7 @@ class TestDynamoDB:
         # clean up
         delete_table(TEST_DDB_TABLE_NAME_3)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_list_tags_of_resource(self, aws_client):
         table_name = "ddb-table-%s" % short_uid()
 
@@ -183,7 +183,7 @@ class TestDynamoDB:
 
         delete_table(table_name)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_stream_spec_and_region_replacement(self, aws_client):
         ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
         kinesis = aws_stack.create_external_boto_client("kinesis")
@@ -224,7 +224,7 @@ class TestDynamoDB:
         # assert stream has been deleted
         retry(_assert_stream_deleted, sleep=0.4, retries=5)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_multiple_update_expressions(self, aws_client):
         resources.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
 
@@ -282,7 +282,7 @@ class TestDynamoDB:
             )
         assert ctx.match("ValidationException")
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_invalid_query_index(self, aws_client):
         """Raises an exception when a query requests ALL_ATTRIBUTES,
         but the index does not have a ProjectionType of ALL"""
@@ -322,7 +322,7 @@ class TestDynamoDB:
         # clean up
         delete_table(table_name)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_valid_query_index(self, aws_client):
         """Query requests ALL_ATTRIBUTES and the named index has a ProjectionType of ALL,
         no exception should be raised."""
@@ -370,7 +370,7 @@ class TestDynamoDB:
         # clean up
         delete_table(table_name)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_valid_local_secondary_index(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
@@ -413,7 +413,7 @@ class TestDynamoDB:
         transformed_dict = SortingTransformer("Items", lambda x: x).transform(result)
         snapshot.match("Items", transformed_dict)
 
-    @Markers.parity.only_localstack(reason="AWS has a 20 GSI limit")
+    @markers.parity.only_localstack(reason="AWS has a 20 GSI limit")
     def test_more_than_20_global_secondary_indexes(
         self, dynamodb_create_table_with_parameters, aws_client
     ):
@@ -439,7 +439,7 @@ class TestDynamoDB:
         table = aws_client.dynamodb.describe_table(TableName=table_name)
         assert len(table["Table"]["GlobalSecondaryIndexes"]) == num_gsis
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_return_values_in_put_item(self, snapshot, aws_client):
         resources.create_dynamodb_table(
             TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY, client=aws_client.dynamodb
@@ -485,7 +485,7 @@ class TestDynamoDB:
         # cleanup
         aws_client.dynamodb.delete_table(TableName=TEST_DDB_TABLE_NAME)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_empty_and_binary_values(self, snapshot, aws_client):
         table_name = f"table-{short_uid()}"
         resources.create_dynamodb_table(
@@ -505,7 +505,7 @@ class TestDynamoDB:
         # clean up
         aws_client.dynamodb.delete_table(TableName=table_name)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_batch_write_binary(self, dynamodb_create_table_with_parameters, snapshot, aws_client):
         table_name = f"table_batch_binary_{short_uid()}"
         dynamodb_create_table_with_parameters(
@@ -544,7 +544,7 @@ class TestDynamoDB:
         )
         snapshot.match("Response", response)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_binary_data_with_stream(
         self, wait_for_stream_ready, dynamodb_create_table_with_parameters, aws_client
     ):
@@ -572,7 +572,7 @@ class TestDynamoDB:
         assert 1 == len(json_records)
         assert "Data" in json_records[0]
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_dynamodb_stream_shard_iterator(
         self, wait_for_stream_ready, dynamodb_create_table_with_parameters
     ):
@@ -612,7 +612,7 @@ class TestDynamoDB:
         )
         assert "ShardIterator" in response
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_dynamodb_create_table_with_class(
         self, dynamodb_create_table_with_parameters, aws_client
     ):
@@ -638,7 +638,7 @@ class TestDynamoDB:
         result = aws_client.dynamodb.describe_table(TableName=table_name)
         assert result["Table"]["TableClassSummary"]["TableClass"] == "STANDARD_INFREQUENT_ACCESS"
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_dynamodb_execute_transaction(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
@@ -662,7 +662,7 @@ class TestDynamoDB:
         )
         snapshot.match("TableScan", transformed_dict)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_dynamodb_batch_execute_statement(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
@@ -696,7 +696,7 @@ class TestDynamoDB:
 
         aws_client.dynamodb.delete_table(TableName=table_name)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_dynamodb_partiql_missing(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
@@ -724,7 +724,7 @@ class TestDynamoDB:
         assert len(items) == 0
         aws_client.dynamodb.delete_table(TableName=table_name)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_dynamodb_stream_stream_view_type(self):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
         ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
@@ -802,7 +802,7 @@ class TestDynamoDB:
         # clean up
         delete_table(table_name)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_dynamodb_with_kinesis_stream(self):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
         # Create Kinesis stream in another account to test that integration works cross-account
@@ -899,7 +899,7 @@ class TestDynamoDB:
         delete_table(table_name)
         kinesis.delete_stream(StreamName=stream_name)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_global_tables_version_2019(
         self, aws_client, aws_client_factory, cleanups, dynamodb_wait_for_table_active
     ):
@@ -1012,7 +1012,7 @@ class TestDynamoDB:
         response = dynamodb_ap_south_1.describe_table(TableName=table_name)
         assert len(response["Table"]["Replicas"]) == 0
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_global_tables(self):
         resources.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
@@ -1058,7 +1058,7 @@ class TestDynamoDB:
             dynamodb.describe_global_table(GlobalTableName="invalid-table-name")
         assert ctx.match("GlobalTableNotFoundException")
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_create_duplicate_table(self, dynamodb_create_table_with_parameters, snapshot):
         table_name = f"test_table_{short_uid()}"
 
@@ -1080,7 +1080,7 @@ class TestDynamoDB:
             )
         snapshot.match("Error", ctx.value)
 
-    @Markers.parity.only_localstack(
+    @markers.parity.only_localstack(
         reason="timing issues - needs a check to see if table is successfully deleted"
     )
     def test_delete_table(self, dynamodb_create_table, aws_client):
@@ -1107,7 +1107,7 @@ class TestDynamoDB:
             aws_client.dynamodb.delete_table(TableName=table_name)
         assert ctx.match("ResourceNotFoundException")
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_transaction_write_items(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
@@ -1147,7 +1147,7 @@ class TestDynamoDB:
         )
         snapshot.match("Response", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_transaction_write_canceled(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
@@ -1180,7 +1180,7 @@ class TestDynamoDB:
             )
         snapshot.match("Error", ctx.value)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_transaction_write_binary_data(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
@@ -1213,7 +1213,7 @@ class TestDynamoDB:
         ]
         snapshot.match("GetItem", item)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_transact_get_items(self, dynamodb_create_table, snapshot, aws_client):
         table_name = f"test-ddb-table-{short_uid()}"
         dynamodb_create_table(
@@ -1226,7 +1226,7 @@ class TestDynamoDB:
         )
         snapshot.match("TransactGetItems", result)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_batch_write_items(self, dynamodb_create_table_with_parameters, snapshot, aws_client):
         table_name = f"test-ddb-table-{short_uid()}"
         dynamodb_create_table_with_parameters(
@@ -1325,7 +1325,7 @@ class TestDynamoDB:
 
         retry(check_expected_records, retries=5, sleep=1, sleep_before=2)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_query_on_deleted_resource(self, dynamodb_create_table, aws_client):
         table_name = f"ddb-table-{short_uid()}"
         partition_key = "username"
@@ -1349,7 +1349,7 @@ class TestDynamoDB:
             )
         assert ctx.match("ResourceNotFoundException")
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_dynamodb_pay_per_request(self, dynamodb_create_table_with_parameters, snapshot):
         table_name = f"ddb-table-{short_uid()}"
 
@@ -1363,7 +1363,7 @@ class TestDynamoDB:
             )
         snapshot.match("Error", e.value)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_dynamodb_create_table_with_sse_specification(
         self, dynamodb_create_table_with_parameters
     ):
@@ -1386,8 +1386,8 @@ class TestDynamoDB:
         assert result["TableDescription"]["SSEDescription"]["Status"] == "ENABLED"
         assert result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"] == kms_master_key_arn
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..KeyMetadata..KeyUsage",
             "$..KeyMetadata..MultiRegion",
@@ -1415,7 +1415,7 @@ class TestDynamoDB:
         result = aws_client.kms.describe_key(KeyId=kms_master_key_arn)
         snapshot.match("KMSDescription", result)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_dynamodb_get_batch_items(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
@@ -1433,7 +1433,7 @@ class TestDynamoDB:
         )
         snapshot.match("Response", result)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_dynamodb_streams_describe_with_exclusive_start_shard_id(
         self, aws_client, dynamodb_create_table
     ):
@@ -1459,7 +1459,7 @@ class TestDynamoDB:
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert len(response["StreamDescription"]["Shards"]) == 0
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_dynamodb_streams_shard_iterator_format(
         self,
         dynamodb_create_table,
@@ -1498,7 +1498,7 @@ class TestDynamoDB:
         assert _matches(shard_iterator)
         assert not get_records_result["Records"]
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_dynamodb_idempotent_writing(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
@@ -1534,7 +1534,7 @@ class TestDynamoDB:
         response = _transact_write({"name": {"S": "name1"}, "id": {"S": "id1"}})
         snapshot.match("Response2", response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_batch_write_not_matching_schema(
         self,
         dynamodb_create_table_with_parameters,
@@ -1573,7 +1573,7 @@ class TestDynamoDB:
         ctx.match("ResourceNotFoundException")
         assert "retries" not in str(ctx)
 
-    @Markers.parity.only_localstack
+    @markers.parity.only_localstack
     def test_nosql_workbench_localhost_region(
         self, dynamodb_create_table, aws_client, aws_client_factory
     ):
@@ -1588,8 +1588,8 @@ class TestDynamoDB:
         table = client.describe_table(TableName=table_name)
         assert table.get("Table")
 
-    @Markers.parity.only_localstack(reason="wait_for_stream_ready of kinesis stream")
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.only_localstack(reason="wait_for_stream_ready of kinesis stream")
+    @markers.snapshot.skip_snapshot_verify(
         paths=["$..eventID", "$..SequenceNumber", "$..SizeBytes"]
     )
     def test_data_encoding_consistency(
@@ -1661,7 +1661,7 @@ class TestDynamoDB:
         ]
         snapshot.match("GetRecordsAfterUpdate", records[1]["dynamodb"]["NewImage"])
 
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..PointInTimeRecoveryDescription..EarliestRestorableDateTime",
             "$..PointInTimeRecoveryDescription..LatestRestorableDateTime",

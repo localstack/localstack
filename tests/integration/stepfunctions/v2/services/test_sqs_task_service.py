@@ -3,7 +3,7 @@ import json
 import pytest
 
 from localstack.aws.api.sqs import MessageSystemAttributeNameForSends
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.templates.services.services_templates import (
@@ -16,7 +16,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@Markers.snapshot.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..loggingConfiguration",
         "$..tracingConfiguration",

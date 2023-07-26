@@ -1,10 +1,10 @@
 import os
 
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 
 
-@Markers.parity.aws_validated
-@Markers.snapshot.skip_snapshot_verify(
+@markers.parity.aws_validated
+@markers.snapshot.skip_snapshot_verify(
     paths=["$..ResourceIdentifierSummaries..ResourceIdentifiers"]
 )
 def test_get_template_summary(deploy_cfn_template, snapshot, aws_client):

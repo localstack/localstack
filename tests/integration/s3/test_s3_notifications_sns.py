@@ -7,7 +7,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.config import LEGACY_S3_PROVIDER
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
@@ -101,8 +101,8 @@ def sqs_collect_sns_messages(
 
 
 class TestS3NotificationsToSns:
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
     )
     def test_object_created_put(
@@ -165,8 +165,8 @@ class TestS3NotificationsToSns:
         assert event["s3"]["object"]["key"] == key_name
         assert event["s3"]["object"]["size"] == len("second event")
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER,
         paths=["$..Message.Records..s3.object.eTag", "$..Message.Records..s3.object.versionId"],
     )
@@ -231,8 +231,8 @@ class TestS3NotificationsToSns:
         assert event["s3"]["bucket"]["name"] == bucket_name
         assert event["s3"]["object"]["key"] == test_key2
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..Error.BucketName"]
     )
     def test_bucket_not_exist(self, account_id, snapshot, aws_client):
@@ -256,9 +256,9 @@ class TestS3NotificationsToSns:
             )
         snapshot.match("bucket_not_exists", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="no validation implemented")
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not LEGACY_S3_PROVIDER,
         paths=["$..Error.ArgumentName", "$..Error.ArgumentValue"],
     )

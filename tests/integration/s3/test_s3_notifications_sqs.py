@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 
 from localstack.config import LEGACY_S3_PROVIDER
 from localstack.testing.aws.util import is_aws_cloud
-from localstack.testing.pytest.marking import Markers
+from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -151,8 +151,8 @@ def sqs_collect_s3_events(
 
 
 class TestS3NotificationsToSQS:
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag"]
     )
     def test_object_created_put(
@@ -202,8 +202,8 @@ class TestS3NotificationsToSQS:
         assert events[1]["s3"]["object"]["versionId"]
         assert obj1["VersionId"] == events[1]["s3"]["object"]["versionId"]
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
     )
     def test_object_created_copy(
@@ -246,8 +246,8 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["bucket"]["name"] == bucket_name
         assert events[0]["s3"]["object"]["key"] == dest_key
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER,
         paths=["$..s3.object.eTag", "$..s3.object.versionId", "$..s3.object.size"],
     )
@@ -306,7 +306,7 @@ class TestS3NotificationsToSQS:
         assert events[2]["s3"]["object"]["key"] == src_key
 
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="Not implemented in old provider")
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_delete_objects(
         self,
         s3_create_bucket,
@@ -347,8 +347,8 @@ class TestS3NotificationsToSQS:
         assert events[2]["s3"]["bucket"]["name"] == bucket_name
         assert events[2]["s3"]["object"]["key"] == key
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
     )
     def test_object_created_complete_multipart_upload(
@@ -388,8 +388,8 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["key"] == key
         assert events[0]["s3"]["object"]["size"] == file.size()
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
     )
     def test_key_encoding(
@@ -419,8 +419,8 @@ class TestS3NotificationsToSQS:
         assert events[0]["eventName"] == "ObjectCreated:Put"
         assert events[0]["s3"]["object"]["key"] == key_encoded
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
     )
     def test_object_created_put_with_presigned_url_upload(
@@ -450,8 +450,8 @@ class TestS3NotificationsToSQS:
         assert events[0]["eventName"] == "ObjectCreated:Put"
         assert events[0]["s3"]["object"]["key"] == key
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER,
         paths=[
             "$..s3.object.eTag",
@@ -505,8 +505,8 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["bucket"]["name"] == bucket_name
         assert events[0]["s3"]["object"]["key"] == dest_key
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER,
         paths=[
             "$..s3.object.eTag",
@@ -565,8 +565,8 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["bucket"]["name"] == bucket_name
         assert events[0]["s3"]["object"]["key"] == dest_key
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
     )
     def test_xray_header(
@@ -635,8 +635,8 @@ class TestS3NotificationsToSQS:
         )
         snapshot.match("receive_messages", {"messages": messages})
 
-    @Markers.parity.aws_validated
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER,
         paths=[
             "$..QueueConfigurations..Filter",
@@ -761,7 +761,7 @@ class TestS3NotificationsToSQS:
         assert [event] == config["Events"]
         assert filter_rules == config["Filter"]["Key"]
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_filter_rules_case_insensitive(
         self, s3_create_bucket, sqs_create_queue, snapshot, aws_client
     ):
@@ -808,15 +808,15 @@ class TestS3NotificationsToSQS:
         assert rules[1]["Name"] in valid
         snapshot.match("bucket_notification_configuration", response)
 
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not LEGACY_S3_PROVIDER,
         paths=["$..Error.ArgumentName", "$..Error.ArgumentValue"],
     )  # TODO: add to exception for ASF
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER,
         paths=["$..Error.RequestID"],
     )
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     def test_bucket_notification_with_invalid_filter_rules(
         self, s3_create_bucket, sqs_create_queue, snapshot, aws_client
     ):
@@ -842,13 +842,13 @@ class TestS3NotificationsToSQS:
             )
         snapshot.match("invalid_filter_name", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="no validation implemented")
     # AWS seems to return "ArgumentName" (without the number) if the request fails a basic verification
     # -  basically everything it can check isolated of the structure of the request
     # and then the "ArgumentNameX" (with the number) for each verification against the target services
     # e.g. queues not existing, no permissions etc.
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not LEGACY_S3_PROVIDER,
         paths=[
             "$..Error.ArgumentName1",
@@ -902,9 +902,9 @@ class TestS3NotificationsToSQS:
         config = aws_client.s3.get_bucket_notification_configuration(Bucket=bucket_name)
         snapshot.match("skip_destination_validation", config)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="no validation implemented")
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not LEGACY_S3_PROVIDER,
         paths=[
             "$..Error.ArgumentName",
@@ -959,7 +959,7 @@ class TestS3NotificationsToSQS:
             )
         snapshot.match("multiple-queues-do-not-exist", e.value.response)
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
     def test_object_put_acl(
         self,
@@ -1019,9 +1019,9 @@ class TestS3NotificationsToSQS:
         events.sort(key=lambda x: x["eventTime"])
         snapshot.match("receive_messages", {"messages": events})
 
-    @Markers.parity.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
-    @Markers.snapshot.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..messages[1].requestParameters.sourceIPAddress",  # AWS IP address is different as its internal
         ],
