@@ -431,6 +431,8 @@ class LegacyResourceProvider(ResourceProvider):
                 "PhysicalResourceId": self.all_resources[request.logical_resource_id].get(
                     "PhysicalResourceId"
                 ),
+                "_state_": request.previous_state,
+                "LogicalResourceId": request.logical_resource_id,
             },
             region_name=request.region_name,
         )

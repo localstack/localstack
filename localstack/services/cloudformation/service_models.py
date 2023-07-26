@@ -101,7 +101,12 @@ class GenericBaseModel:
             return state
         except Exception as e:
             if not check_not_found_exception(e, self.resource_type, self.properties):
-                LOG.debug("Unable to fetch state for resource %s: %s", self, e)
+                LOG.warning(
+                    "Unable to fetch state for resource %s: %s",
+                    self,
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
 
     # TODO: remove
     def update_state(self, details):
