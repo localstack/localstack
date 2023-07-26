@@ -8,7 +8,6 @@ class AwsChunkedDecoder(io.RawIOBase):
     without worrying about implementation details of `aws-chunked`.
     It needs to expose the trailing headers, which will be available once the stream is fully read.
     You can also directly pass the S3 Object, so the stream would set the checksum value once it's done.
-    TODO: should we register callback instead of passing the object?
     See `aws-chunked` format here: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-streaming.html
     """
 
@@ -23,12 +22,17 @@ class AwsChunkedDecoder(io.RawIOBase):
         self._decoded_length = decoded_content_length  # Length of the encoded object
         self._new_chunk = True
         self._end_chunk = False
+        self._trailing_set = False
         self._chunk_size = 0
         self._trailing_headers = {}
         self.s3_object = s3_object
 
     @property
     def trailing_headers(self):
+        if not self._trailing_set:
+            raise AttributeError(
+                "The stream has not been fully read yet, the trailing headers are not available."
+            )
         return self._trailing_headers
 
     def seekable(self):
@@ -45,8 +49,8 @@ class AwsChunkedDecoder(io.RawIOBase):
         Read from the underlying stream, and return at most `size` decoded bytes.
         If a chunk is smaller than `size`, we will return less than asked, but we will always return data if there
         are chunks left
-        :param size:
-        :return:
+        :param size: amount to read, please note that it can return less than asked
+        :return: bytes from the underlying stream
         """
         if size < 0:
             return self.readall()
@@ -78,7 +82,7 @@ class AwsChunkedDecoder(io.RawIOBase):
         data = self._stream.read(amount)
 
         if data == b"":
-            raise EOFError("Encoded file ended before the " "end-of-stream marker was reached")
+            raise EOFError("Encoded file ended before the end-of-stream marker was reached")
 
         read = len(data)
         self._chunk_size -= read
@@ -106,6 +110,7 @@ class AwsChunkedDecoder(io.RawIOBase):
             if trailing_header := line.strip():
                 header_key, header_value = trailing_header.decode("utf-8").split(":", maxsplit=1)
                 self._trailing_headers[header_key.lower()] = header_value.strip()
+        self._trailing_set = True
 
     def _set_checksum_value(self):
         """

@@ -976,3 +976,19 @@ class TestS3AwsChunkedDecoder:
         assert stream.read(chunk_size + 1000) == total_body[:chunk_size]
         # assert that even if we read more, when accessing the rest, we're still at the same position
         assert stream.read(10) == total_body[chunk_size : chunk_size + 10]
+
+    def test_s3_aws_chunked_decoder_access_trailing(self):
+        body = "Hello\r\n\r\n\r\n\r\n"
+        decoded_content_length = len(body)
+        data = (
+            "d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
+            f"{body}\r\n0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
+        )
+
+        stream = AwsChunkedDecoder(BytesIO(data.encode()), decoded_content_length)
+        with pytest.raises(AttributeError) as e:
+            _ = stream.trailing_headers
+        e.match("The stream has not been fully read yet, the trailing headers are not available.")
+
+        stream.read()
+        assert stream.trailing_headers == {}

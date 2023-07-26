@@ -139,7 +139,8 @@ class S3ProviderStream(S3Provider):
         try:
             key_object.value = body
         except Exception:
-            # cleanup the created key in case we can't set the value
+            # the value attribute has a setter method which will validate the object checksum, so it can raise
+            # exceptions. We catch any exception happening so that we can properly clean up in case that happens.
             moto_backend.delete_object(
                 bucket_name=request["Bucket"],
                 key_name=request["Key"],
