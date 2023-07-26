@@ -287,7 +287,7 @@ class TestDockerExecutors:
         assert 1 == status
 
         container_network = executor.get_docker_container_network(func_arn)
-        assert "bridge" in container_network
+        assert "bridge" == container_network
 
         executor.cleanup()
         status = executor.get_docker_container_status(func_arn)
