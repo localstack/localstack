@@ -1,6 +1,6 @@
-import unittest
+import pytest
 
-from localstack.utils.aws import aws_stack
+from localstack.constants import AWS_REGION_US_EAST_1
 
 TEST_SUPPORT_CASE = {
     "subject": "Urgent - DynamoDB is down",
@@ -11,15 +11,15 @@ TEST_SUPPORT_CASE = {
 }
 
 
-class TestConfigService(unittest.TestCase):
-    def setUp(self):
+class TestConfigService:
+    @pytest.fixture
+    def support_client(self, aws_client_factory):
         # support is only available in us-east-1
-        self.support_client = aws_stack.create_external_boto_client(
-            "support", region_name="us-east-1"
-        )
+        return aws_client_factory(region_name=AWS_REGION_US_EAST_1).support
 
-    def create_case(self):
-        response = self.support_client.create_case(
+    @pytest.fixture
+    def case_id_test(self, support_client) -> str:
+        response = support_client.create_case(
             subject=TEST_SUPPORT_CASE["subject"],
             serviceCode=TEST_SUPPORT_CASE["serviceCode"],
             severityCode="low",
@@ -31,15 +31,13 @@ class TestConfigService(unittest.TestCase):
         )
         return response["caseId"]
 
-    def test_create_support_case(self):
-        test_case_id = self.create_case()
-        support_cases = self.support_client.describe_cases()["cases"]
-        self.assertEqual(1, len(support_cases))
-        self.assertEqual(test_case_id, support_cases[0]["caseId"])
+    def test_create_support_case(self, support_client, case_id_test):
+        support_cases = support_client.describe_cases()["cases"]
+        assert len(support_cases) == 1
+        assert support_cases[0]["caseId"] == case_id_test
         for key in TEST_SUPPORT_CASE.keys():
-            self.assertEqual(TEST_SUPPORT_CASE[key], support_cases[0][key])
+            assert support_cases[0][key] == TEST_SUPPORT_CASE[key]
 
-    def test_resolve_case(self):
-        test_case_id = self.create_case()
-        response = self.support_client.resolve_case(caseId=test_case_id)
-        self.assertEqual("resolved", response["finalCaseStatus"])
+    def test_resolve_case(self, support_client, case_id_test):
+        response = support_client.resolve_case(caseId=case_id_test)
+        assert response["finalCaseStatus"] == "resolved"
