@@ -5,7 +5,6 @@ import socket
 import subprocess
 import tempfile
 import time
-from dataclasses import dataclass
 from typing import Any, Dict, List, Mapping, Optional, Tuple, TypeVar, Union
 
 from localstack import constants
@@ -494,18 +493,35 @@ HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
 LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
 
 
-@dataclass
 class HostAndPort:
+    """
+    Definition of an address for a server to listen to.
+
+    Includes a `parse` method to convert from `str`, allowing for default fallbacks, as well as
+    some helper methods to help tests - particularly testing for equality and a hash function
+    so that `HostAndPort` instances can be used as keys to dictionaries.
+    """
+
     host: str
-    port: Optional[int]
+    port: int
+
+    def __init__(self, host: str, port: int):
+        self.host = host
+        self.port = port
 
     @classmethod
     def parse(
         cls,
         input: str,
-        default_host: Optional[str] = None,
-        default_port: Optional[int] = None,
+        default_host: str,
+        default_port: int,
     ) -> "HostAndPort":
+        """
+        Parse a `HostAndPort` from strings like:
+            - 0.0.0.0:4566 -> host=0.0.0.0, port=4566
+            - 0.0.0.0      -> host=0.0.0.0, port=`default_port`
+            - :4566        -> host=`default_host`, port=4566
+        """
         host, port = default_host, default_port
         if ":" in input:
             hostname, port_s = input.split(":", 1)
@@ -520,17 +536,13 @@ class HostAndPort:
                 host = input.strip()
 
         # validation
-        if host is None:
-            raise ValueError("could not parse hostname")
-
         if port < 0 or port >= 2**16:
             raise ValueError("port out of range")
 
         return cls(host=host, port=port)
 
-    def is_unprivileged(self) -> Optional[bool]:
-        if self.port is not None:
-            return self.port >= 1024
+    def is_unprivileged(self) -> bool:
+        return self.port >= 1024
 
     def __hash__(self) -> int:
         return hash((self.host, self.port))
@@ -540,12 +552,15 @@ class HostAndPort:
         if isinstance(other, self.__class__):
             return self.host == other.host and self.port == other.port
         elif isinstance(other, str):
-            return self == self.parse(other)
+            return str(self) == other
         else:
             raise TypeError(f"cannot compare {self.__class__} to {other.__class__}")
 
     def __str__(self) -> str:
         return f"{self.host}:{self.port}" if self.port is not None else self.host
+
+    def __repr__(self) -> str:
+        return f"HostAndPort(host={self.host}, port={self.port})"
 
 
 def populate_legacy_edge_configuration(
@@ -609,13 +624,6 @@ def populate_legacy_edge_configuration(
     )
 
     return localstack_host, gateway_listen, edge_bind_host, edge_port, edge_port_http
-
-
-def get_gateway_listen(gateway_listen: str) -> List[HostAndPort]:
-    result = []
-    for bind_address in gateway_listen.split(","):
-        result.append(HostAndPort.parse(bind_address))
-    return result
 
 
 # How to access LocalStack

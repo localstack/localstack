@@ -196,32 +196,6 @@ class TestEdgeVariablesDerivedCorrectly:
         assert edge_port_http == 0
         assert edge_bind_host == "0.0.0.0"
 
-    @pytest.mark.parametrize(
-        "input,hosts_and_ports",
-        [
-            ("0.0.0.0:9999", [("0.0.0.0", 9999)]),
-            (
-                "0.0.0.0:9999,127.0.0.1:443",
-                [
-                    ("0.0.0.0", 9999),
-                    ("127.0.0.1", 443),
-                ],
-            ),
-            (
-                "0.0.0.0:9999,127.0.0.1:443",
-                [
-                    ("0.0.0.0", 9999),
-                    ("127.0.0.1", 443),
-                ],
-            ),
-        ],
-    )
-    def test_gateway_listen_parsed(self, input, hosts_and_ports):
-        res = config.get_gateway_listen(input)
-
-        expected = [config.HostAndPort(host=host, port=port) for (host, port) in hosts_and_ports]
-        assert res == expected
-
     def test_legacy_variables_override_if_given(self, default_ip):
         environment = {
             "EDGE_BIND_HOST": "192.168.0.1",
@@ -244,22 +218,31 @@ class TestEdgeVariablesDerivedCorrectly:
         assert edge_port == 10101
         assert edge_port_http == 20202
 
+
+class TestHostAndPort:
+    def test_parsing_hostname_and_ip(self):
+        h = config.HostAndPort.parse("0.0.0.0:1000", default_host="", default_port=0)
+        assert h == HostAndPort(host="0.0.0.0", port=1000)
+
+    def test_parsing_with_default_host(self):
+        h = config.HostAndPort.parse(":1000", default_host="192.168.0.1", default_port=0)
+        assert h == HostAndPort(host="192.168.0.1", port=1000)
+
+    def test_parsing_with_default_port(self):
+        h = config.HostAndPort.parse("1.2.3.4", default_host="", default_port=9876)
+        assert h == HostAndPort(host="1.2.3.4", port=9876)
+
     def test_invalid_port(self):
         with pytest.raises(ValueError) as exc_info:
-            config.HostAndPort.parse("0.0.0.0:not-a-port")
+            config.HostAndPort.parse("0.0.0.0:not-a-port", default_host="127.0.0.1", default_port=0)
 
         assert "specified port not-a-port not a number" in str(exc_info)
 
-    # test edge cases
-    def test_empty_hostname(self):
-        with pytest.raises(ValueError) as exc_info:
-            config.HostAndPort.parse(f":{1000}")
-
-        assert "could not parse hostname" in str(exc_info)
-
-    @pytest.mark.parametrize("port", [-1000, 100_000])
+    @pytest.mark.parametrize("port", [-1000, -1, 2**16, 100_000])
     def test_port_out_of_range(self, port):
         with pytest.raises(ValueError) as exc_info:
-            config.HostAndPort.parse(f"localhost:{port}")
+            config.HostAndPort.parse(
+                f"localhost:{port}", default_host="localhost", default_port=1234
+            )
 
         assert "port out of range" in str(exc_info)
