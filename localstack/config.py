@@ -600,7 +600,7 @@ class HostAndPort:
             raise TypeError(f"cannot compare {self.__class__} to {other.__class__}")
 
     def __str__(self) -> str:
-        return f"{self.host}:{self.port}"
+        return f"{self.host}:{self.port}" if self.port is not None else self.host
 
 
 def get_gateway_listen(gateway_listen: str) -> List[HostAndPort]:
