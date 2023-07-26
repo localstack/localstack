@@ -494,61 +494,6 @@ HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
 LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
 
 
-def populate_legacy_edge_configuration(
-    environment: Dict[str, str]
-) -> Tuple["HostAndPort", List["HostAndPort"], str, int, int]:
-    if is_in_docker:
-        default_ip = "0.0.0.0"
-    else:
-        default_ip = "127.0.0.1"
-
-    localstack_host_raw = environment.get("LOCALSTACK_HOST")
-    gateway_listen_raw = environment.get("GATEWAY_LISTEN")
-
-    # new for v2
-    # populate LOCALSTACK_HOST first since GATEWAY_LISTEN may be derived from LOCALSTACK_HOST
-    localstack_host = localstack_host_raw
-    if localstack_host is None:
-        localstack_host = HostAndPort(
-            host=constants.LOCALHOST_HOSTNAME, port=constants.DEFAULT_PORT_EDGE
-        )
-    else:
-        localstack_host = HostAndPort.parse(
-            localstack_host,
-            default_host=constants.LOCALHOST_HOSTNAME,
-        )
-
-    # parse gateway listen from multiple components
-    if gateway_listen_raw is not None:
-        gateway_listen = []
-        for address in gateway_listen_raw.split(","):
-            gateway_listen.append(HostAndPort.parse(address.strip(), default_host=default_ip))
-    else:
-        # default to existing behaviour
-        gateway_listen = [HostAndPort(host=default_ip, port=localstack_host.port)]
-
-    assert gateway_listen is not None
-    assert localstack_host is not None
-
-    def legacy_fallback(envar_name: str, default: T) -> T:
-        result = default
-        result_raw = environment.get(envar_name)
-        if result_raw is not None and gateway_listen_raw is None:
-            result = result_raw
-
-        return result
-
-    # derive legacy variables from GATEWAY_LISTEN unless GATEWAY_LISTEN is not given and
-    # legacy variables are
-    edge_bind_host = legacy_fallback("EDGE_BIND_HOST", gateway_listen[0].host)
-    edge_port = int(legacy_fallback("EDGE_PORT", gateway_listen[0].port))
-    edge_port_http = int(
-        legacy_fallback("EDGE_PORT_HTTP", 0),
-    )
-
-    return localstack_host, gateway_listen, edge_bind_host, edge_port, edge_port_http
-
-
 @dataclass
 class HostAndPort:
     host: str
@@ -601,6 +546,61 @@ class HostAndPort:
 
     def __str__(self) -> str:
         return f"{self.host}:{self.port}" if self.port is not None else self.host
+
+
+def populate_legacy_edge_configuration(
+    environment: Dict[str, str]
+) -> Tuple[HostAndPort, List[HostAndPort], str, int, int]:
+    if is_in_docker:
+        default_ip = "0.0.0.0"
+    else:
+        default_ip = "127.0.0.1"
+
+    localstack_host_raw = environment.get("LOCALSTACK_HOST")
+    gateway_listen_raw = environment.get("GATEWAY_LISTEN")
+
+    # new for v2
+    # populate LOCALSTACK_HOST first since GATEWAY_LISTEN may be derived from LOCALSTACK_HOST
+    localstack_host = localstack_host_raw
+    if localstack_host is None:
+        localstack_host = HostAndPort(
+            host=constants.LOCALHOST_HOSTNAME, port=constants.DEFAULT_PORT_EDGE
+        )
+    else:
+        localstack_host = HostAndPort.parse(
+            localstack_host,
+            default_host=constants.LOCALHOST_HOSTNAME,
+        )
+
+    # parse gateway listen from multiple components
+    if gateway_listen_raw is not None:
+        gateway_listen = []
+        for address in gateway_listen_raw.split(","):
+            gateway_listen.append(HostAndPort.parse(address.strip(), default_host=default_ip))
+    else:
+        # default to existing behaviour
+        gateway_listen = [HostAndPort(host=default_ip, port=localstack_host.port)]
+
+    assert gateway_listen is not None
+    assert localstack_host is not None
+
+    def legacy_fallback(envar_name: str, default: T) -> T:
+        result = default
+        result_raw = environment.get(envar_name)
+        if result_raw is not None and gateway_listen_raw is None:
+            result = result_raw
+
+        return result
+
+    # derive legacy variables from GATEWAY_LISTEN unless GATEWAY_LISTEN is not given and
+    # legacy variables are
+    edge_bind_host = legacy_fallback("EDGE_BIND_HOST", gateway_listen[0].host)
+    edge_port = int(legacy_fallback("EDGE_PORT", gateway_listen[0].port))
+    edge_port_http = int(
+        legacy_fallback("EDGE_PORT_HTTP", 0),
+    )
+
+    return localstack_host, gateway_listen, edge_bind_host, edge_port, edge_port_http
 
 
 def get_gateway_listen(gateway_listen: str) -> List[HostAndPort]:
