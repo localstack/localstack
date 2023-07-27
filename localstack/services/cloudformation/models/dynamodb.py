@@ -90,10 +90,13 @@ class DynamoDBTable(GenericBaseModel):
     @classmethod
     def get_deploy_templates(cls):
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
-            resource["PhysicalResourceId"] = result["TableDescription"]["TableName"]
-            resource["Properties"]["Arn"] = result["TableArn"]
-            if stream_arn := result["TableDescription"].get("LatestStreamArn"):
+            table_name = result["TableDescription"]["TableName"]
+            connect_to().dynamodb.get_waiter("table_exists").wait(TableName=table_name)
+            desc_table = connect_to().dynamodb.describe_table(TableName=table_name)
+            resource["Properties"]["Arn"] = desc_table["Table"]["TableArn"]
+            if stream_arn := desc_table["Table"].get("LatestStreamArn"):
                 resource["Properties"]["StreamArn"] = stream_arn
+            resource["PhysicalResourceId"] = table_name
 
         return {
             "create": [
