@@ -76,16 +76,6 @@ class DynamoDBTable(GenericBaseModel):
     def cloudformation_type():
         return "AWS::DynamoDB::Table"
 
-    def get_cfn_attribute(self, attribute_name):
-        actual_attribute = "LatestStreamArn" if attribute_name == "StreamArn" else attribute_name
-        if attribute_name == "Arn":
-            return self.props.get("TableArn", self.props.get("Table", {}).get("TableArn"))
-        value = self.props.get("Table", {}).get(actual_attribute)
-        if value:
-            return value
-
-        return super(DynamoDBTable, self).get_cfn_attribute(attribute_name)
-
     def fetch_state(self, stack_name, resources):
         table_name = self.props.get("TableName") or self.logical_resource_id
         return connect_to().dynamodb.describe_table(TableName=table_name)
@@ -101,7 +91,9 @@ class DynamoDBTable(GenericBaseModel):
     def get_deploy_templates(cls):
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = result["TableDescription"]["TableName"]
-            resource["Properties"]["Table"] = result["TableDescription"]
+            resource["Properties"]["Arn"] = result["TableArn"]
+            if stream_arn := result["TableDescription"].get("LatestStreamArn"):
+                resource["Properties"]["StreamArn"] = stream_arn
 
         return {
             "create": [
