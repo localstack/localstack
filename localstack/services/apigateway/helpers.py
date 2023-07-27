@@ -1,5 +1,6 @@
 import contextlib
 import copy
+import hashlib
 import json
 import logging
 import re
@@ -47,7 +48,7 @@ from localstack.utils.aws import resources as resource_utils
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
-from localstack.utils.strings import long_uid, short_uid, to_str
+from localstack.utils.strings import long_uid, short_uid, to_bytes, to_str
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 from localstack.utils.urls import localstack_host
 
@@ -1554,3 +1555,21 @@ def log_template(
         response_headers=response_headers,
         status_code=status_code,
     )
+
+
+def get_domain_name_hash(domain_name: str) -> str:
+    """
+    Return a hash of the given domain name, which help construct regional domain names for APIs.
+    TODO: use this in the future to dispatch API Gateway API invocations made to the regional domain name
+    """
+    return hashlib.shake_128(to_bytes(domain_name)).hexdigest(4)
+
+
+def get_regional_domain_name(domain_name: str) -> str:
+    """
+    Return the regional domain name for the given domain name.
+    In real AWS, this would look something like: "d-oplm2qchq0.execute-api.us-east-1.amazonaws.com"
+    In LocalStack, we're returning this format: "d-<domain_hash>.execute-api.localhost.localstack.cloud"
+    """
+    domain_name_hash = get_domain_name_hash(domain_name)
+    return f"d-{domain_name_hash}.execute-api.{LOCALHOST_HOSTNAME}"

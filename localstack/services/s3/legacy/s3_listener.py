@@ -27,8 +27,8 @@ from localstack.config import get_protocol as get_service_protocol
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.generic_proxy import append_cors_headers as _append_default_cors_headers
 from localstack.services.generic_proxy import is_cors_origin_allowed
-from localstack.services.s3 import multipart_content
-from localstack.services.s3.s3_utils import (
+from localstack.services.s3.legacy import multipart_content
+from localstack.services.s3.legacy.s3_utils import (
     ALLOWED_HEADER_OVERRIDES,
     SIGNATURE_V2_PARAMS,
     SIGNATURE_V4_PARAMS,

@@ -30,6 +30,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.utils.threads import TMP_THREADS
 
 LOG = logging.getLogger(__name__)
 
@@ -108,7 +109,9 @@ class ItemProcessor(EvalComponent):
             worker = ItemProcessorWorker(
                 work_name=state_name, job_pool=job_pool, env=env, item_selector=item_selector
             )
-            threading.Thread(target=worker.eval).start()
+            worker_thread = threading.Thread(target=worker.eval)
+            TMP_THREADS.append(worker_thread)
+            worker_thread.start()
 
         job_pool.await_jobs()
 

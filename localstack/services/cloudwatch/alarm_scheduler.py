@@ -95,9 +95,8 @@ class AlarmScheduler:
         """
         Only used re-create persistent state. Reschedules alarms that already exist
         """
-        service = "cloudwatch"
-        for region in aws_stack.get_valid_regions_for_service(service):
-            client = connect_to(region_name=region).get_client(service)
+        for region in aws_stack.get_valid_regions_for_service("cloudwatch"):
+            client = connect_to(region_name=region).cloudwatch
             result = client.describe_alarms()
             for metric_alarm in result["MetricAlarms"]:
                 arn = metric_alarm["AlarmArn"]

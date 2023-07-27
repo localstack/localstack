@@ -1,5 +1,5 @@
 {
-  "tests/integration/cloudformation/resources/test_iam.py::test_iam_username_defaultname": {
+  "tests/integration/cloudformation/resource_providers/iam/test_iam.py::test_iam_username_defaultname": {
     "recorded-date": "31-05-2022, 11:29:45",
     "recorded-content": {
       "get_iam_user": {
@@ -17,7 +17,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_iam.py::test_managed_policy_with_empty_resource": {
+  "tests/integration/cloudformation/resource_providers/iam/test_iam.py::test_managed_policy_with_empty_resource": {
     "recorded-date": "11-07-2023, 18:10:41",
     "recorded-content": {
       "outputs": {
@@ -47,8 +47,8 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_iam.py::test_iam_user_access_key": {
-    "recorded-date": "06-01-2023, 11:55:42",
+  "tests/integration/cloudformation/resource_providers/iam/test_iam.py::test_iam_user_access_key": {
+    "recorded-date": "11-07-2023, 08:23:54",
     "recorded-content": {
       "key_outputs": {
         "AccessKeyId": "<key-id:1>",
@@ -61,12 +61,6 @@
         "UserName": "<user-name:1>"
       },
       "access_key_updated": {
-        "AccessKeyId": "<key-id:1>",
-        "CreateDate": "datetime",
-        "Status": "Inactive",
-        "UserName": "<user-name:1>"
-      },
-      "access_key_serial_updated": {
         "AccessKeyId": "<key-id:2>",
         "CreateDate": "datetime",
         "Status": "Inactive",
@@ -74,7 +68,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_iam.py::test_update_inline_policy": {
+  "tests/integration/cloudformation/resource_providers/iam/test_iam.py::test_update_inline_policy": {
     "recorded-date": "05-04-2023, 11:55:22",
     "recorded-content": {
       "user_inline_policy": {

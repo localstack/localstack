@@ -101,8 +101,9 @@ class ArnPartitionRewriteHandler(Handler):
             get_full_raw_path(request), self.DEFAULT_INBOUND_PARTITION, encoded=True
         )
         parsed_forward_rewritten_path = urlparse(full_forward_rewritten_path)
+        body_is_encoded = request.mimetype == "application/x-www-form-urlencoded"
         forward_rewritten_body = self._adjust_partition(
-            restore_payload(request), self.DEFAULT_INBOUND_PARTITION
+            restore_payload(request), self.DEFAULT_INBOUND_PARTITION, encoded=body_is_encoded
         )
         forward_rewritten_headers = self._adjust_partition(
             dict(request.headers), self.DEFAULT_INBOUND_PARTITION

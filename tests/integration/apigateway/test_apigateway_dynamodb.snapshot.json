@@ -16,7 +16,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[PutItem]": {
-    "recorded-date": "13-03-2023, 02:22:24",
+    "recorded-date": "13-07-2023, 17:42:32",
     "recorded-content": {
       "result-put-item": {
         "content": {},
@@ -27,7 +27,7 @@
           "date": "date",
           "x-amz-apigw-id": "x-amz-apigw-id",
           "x-amzn-requestid": "<uuid:1>",
-          "x-amzn-trace-id": "Root=1-640e7acf-674ae59b522ff9c06fea37a5"
+          "x-amzn-trace-id": "Root=1-64afea30-071faf0f47e3d54345a9d14c"
         },
         "status_code": 200
       },
@@ -35,16 +35,24 @@
         "Count": 4,
         "Items": [
           {
-            "id": "test"
+            "id": {
+              "S": "test"
+            }
           },
           {
-            "id": "test 3"
+            "id": {
+              "S": "test 3"
+            }
           },
           {
-            "id": "test-new"
+            "id": {
+              "S": "test-new"
+            }
           },
           {
-            "id": "test2"
+            "id": {
+              "S": "test2"
+            }
           }
         ],
         "ScannedCount": 4,
@@ -56,7 +64,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[Query]": {
-    "recorded-date": "13-03-2023, 02:22:51",
+    "recorded-date": "13-07-2023, 17:42:55",
     "recorded-content": {
       "result-test": {
         "content": {
@@ -77,7 +85,7 @@
           "date": "date",
           "x-amz-apigw-id": "x-amz-apigw-id",
           "x-amzn-requestid": "<uuid:1>",
-          "x-amzn-trace-id": "Root=1-640e7ae9-63faf1aa71313dd3638b68fd"
+          "x-amzn-trace-id": "Root=1-64afea44-3087b2f50c440c1958c4d62e"
         },
         "status_code": 200
       },
@@ -100,7 +108,7 @@
           "date": "date",
           "x-amz-apigw-id": "x-amz-apigw-id",
           "x-amzn-requestid": "<uuid:2>",
-          "x-amzn-trace-id": "Root=1-640e7aea-3141cade370b3d0a307558d7"
+          "x-amzn-trace-id": "Root=1-64afea45-042992a06f6ed5b8512a1bc6"
         },
         "status_code": 200
       },
@@ -123,7 +131,7 @@
           "date": "date",
           "x-amz-apigw-id": "x-amz-apigw-id",
           "x-amzn-requestid": "<uuid:3>",
-          "x-amzn-trace-id": "Root=1-640e7aeb-62aa98f1427ab3504b23771a"
+          "x-amzn-trace-id": "Root=1-64afea46-0c6bb92d132f00cf6e2cbfbd"
         },
         "status_code": 200
       },
@@ -140,14 +148,14 @@
           "date": "date",
           "x-amz-apigw-id": "x-amz-apigw-id",
           "x-amzn-requestid": "<uuid:4>",
-          "x-amzn-trace-id": "Root=1-640e7aeb-33847b555b7774d60c9f709b"
+          "x-amzn-trace-id": "Root=1-64afea47-761db52e7db84de239ed6b83"
         },
         "status_code": 200
       }
     }
   },
   "tests/integration/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[Scan]": {
-    "recorded-date": "13-03-2023, 02:23:19",
+    "recorded-date": "13-07-2023, 17:43:27",
     "recorded-content": {
       "result-scan": {
         "content": {
@@ -178,7 +186,7 @@
           "date": "date",
           "x-amz-apigw-id": "x-amz-apigw-id",
           "x-amzn-requestid": "<uuid:1>",
-          "x-amzn-trace-id": "Root=1-640e7b07-282a1bd72aee4edd60d1a4ef"
+          "x-amzn-trace-id": "Root=1-64afea67-52a2416b7311ba37074f6a8e"
         },
         "status_code": 200
       }

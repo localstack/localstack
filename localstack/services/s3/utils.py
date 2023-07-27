@@ -18,6 +18,7 @@ from localstack.aws.api import CommonServiceException, RequestContext, ServiceEx
 from localstack.aws.api.s3 import (
     BucketName,
     ChecksumAlgorithm,
+    CopySource,
     InvalidArgument,
     LifecycleExpiration,
     LifecycleRule,
@@ -59,6 +60,7 @@ S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expr
 ).format(
     REGION_REGEX, REGION_REGEX, PORT_REGEX
 )
+_s3_virtual_host_regex = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
 
 PATTERN_UUID = re.compile(
     r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
@@ -75,11 +77,18 @@ class InvalidRequest(ServiceException):
 
 
 def extract_bucket_key_version_id_from_copy_source(
-    copy_source: str,
+    copy_source: CopySource,
 ) -> tuple[BucketName, ObjectKey, Optional[str]]:
+    """
+    Utility to parse bucket name, object key and optionally its versionId. It accepts the CopySource format:
+    - <bucket-name/<object-key>?versionId=<version-id>, used for example in CopySource for CopyObject
+    :param copy_source: the S3 CopySource to parse
+    :return: parsed BucketName, ObjectKey and optionally VersionId
+    """
     copy_source_parsed = urlparser.urlparse(copy_source)
     src_bucket, src_key = urlparser.unquote(copy_source_parsed.path).lstrip("/").split("/", 1)
     src_version_id = urlparser.parse_qs(copy_source_parsed.query).get("versionId", [None])[0]
+
     return src_bucket, src_key, src_version_id
 
 
@@ -234,7 +243,23 @@ def is_valid_canonical_id(canonical_id: str) -> bool:
         return False
 
 
-def forwarded_from_virtual_host_addressed_request(headers: Dict[str, str]) -> bool:
+def uses_host_addressing(headers: Dict[str, str]) -> bool:
+    """
+    Determines if the request is targetting S3 with virtual host addressing
+    :param headers: the request headers
+    :return: whether the request targets S3 with virtual host addressing
+    """
+    host = headers.get("host", "")
+
+    # try to extract the bucket from the hostname (the "in" check is a minor optimization, as the regex is very greedy)
+    return (
+        True
+        if ".s3" in host and ((match := _s3_virtual_host_regex.match(host)) and match.group(3))
+        else False
+    )
+
+
+def forwarded_from_virtual_host_addressed_request(headers: dict[str, str]) -> bool:
     """
     Determines if the request was forwarded from a v-host addressing style into a path one
     """
@@ -244,6 +269,36 @@ def forwarded_from_virtual_host_addressed_request(headers: Dict[str, str]) -> bo
 
     # checks whether there is a bucket name. This is sort of hacky
     return True if match and match.group(3) else False
+
+
+def extract_bucket_name_and_key_from_headers_and_path(
+    headers: dict[str, str], path: str
+) -> tuple[Optional[str], Optional[str]]:
+    """
+    Extract the bucket name and the object key from a request headers and path. This works with both virtual host
+    and path style requests.
+    :param headers: the request headers, used to get the Host
+    :param path: the request path
+    :return: if found, the bucket name and object key
+    """
+    bucket_name = None
+    object_key = None
+    host = headers.get("host", "")
+    if ".s3" in host:
+        vhost_match = _s3_virtual_host_regex.match(host)
+        if vhost_match and vhost_match.group(3):
+            bucket_name = vhost_match.group(3)
+            split = path.split("/", maxsplit=1)
+            if len(split) > 1:
+                object_key = split[1]
+    else:
+        path_without_params = path.partition("?")[0]
+        bucket_name = path_without_params.split("/", maxsplit=2)[1]
+        split = path.split("/", maxsplit=2)
+        if len(split) > 2:
+            object_key = split[2]
+
+    return bucket_name, object_key
 
 
 def get_bucket_from_moto(
@@ -291,6 +346,12 @@ def get_key_from_moto_bucket(
                 )
 
     return fake_key
+
+
+def normalize_bucket_name(bucket_name):
+    bucket_name = bucket_name or ""
+    bucket_name = bucket_name.lower()
+    return bucket_name
 
 
 def get_bucket_and_key_from_s3_uri(s3_uri: str) -> Tuple[str, Optional[str]]:

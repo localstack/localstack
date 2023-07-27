@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from localstack.testing.pytest import markers
 from tests.integration.stepfunctions.conftest import SfnNoneRecursiveParallelTransformer
 from tests.integration.stepfunctions.templates.scenarios.scenarios_templates import (
     ScenariosTemplate as ST,
@@ -13,7 +14,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestBaseScenarios:

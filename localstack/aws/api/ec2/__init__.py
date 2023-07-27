@@ -224,6 +224,7 @@ NetworkInterfaceId = str
 NetworkInterfacePermissionId = str
 NetworkPerformance = str
 NextToken = str
+NitroTpmSupportedVersionType = str
 OfferingId = str
 OutpostArn = str
 PlacementGroupArn = str
@@ -2207,6 +2208,11 @@ class NetworkInterfaceType(str):
 
 
 class NitroEnclavesSupport(str):
+    unsupported = "unsupported"
+    supported = "supported"
+
+
+class NitroTpmSupport(str):
     unsupported = "unsupported"
     supported = "supported"
 
@@ -10731,6 +10737,13 @@ class DescribeInstanceTypesRequest(ServiceRequest):
     NextToken: Optional[NextToken]
 
 
+NitroTpmSupportedVersionsList = List[NitroTpmSupportedVersionType]
+
+
+class NitroTpmInfo(TypedDict, total=False):
+    SupportedVersions: Optional[NitroTpmSupportedVersionsList]
+
+
 class InferenceDeviceInfo(TypedDict, total=False):
     Count: Optional[InferenceDeviceCount]
     Name: Optional[InferenceDeviceName]
@@ -10911,6 +10924,8 @@ class InstanceTypeInfo(TypedDict, total=False):
     AutoRecoverySupported: Optional[AutoRecoveryFlag]
     SupportedBootModes: Optional[BootModeTypeList]
     NitroEnclavesSupport: Optional[NitroEnclavesSupport]
+    NitroTpmSupport: Optional[NitroTpmSupport]
+    NitroTpmInfo: Optional[NitroTpmInfo]
 
 
 InstanceTypeInfoList = List[InstanceTypeInfo]

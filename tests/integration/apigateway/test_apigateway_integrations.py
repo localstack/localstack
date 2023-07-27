@@ -16,6 +16,7 @@ from localstack.services.apigateway.helpers import path_based_url
 from localstack.services.awslambda.lambda_utils import get_main_endpoint_from_container
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest import markers
 from localstack.testing.pytest.fixtures import PUBLIC_HTTP_ECHO_SERVER_URL
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry
@@ -78,7 +79,7 @@ def status_code_http_server(httpserver: HTTPServer):
     return http_endpoint
 
 
-@pytest.mark.aws_validated
+@markers.parity.aws_validated
 def test_http_integration_status_code_selection(
     create_rest_apigw, aws_client, status_code_http_server
 ):
@@ -161,7 +162,7 @@ def test_http_integration_status_code_selection(
     )
 
 
-@pytest.mark.aws_validated
+@markers.parity.aws_validated
 def test_put_integration_responses(create_rest_apigw, aws_client, echo_http_server_post, snapshot):
     snapshot.add_transformers_list(
         [
@@ -481,7 +482,7 @@ def create_vpc_endpoint(default_vpc, aws_client):
             aws_client.ec2.delete_vpc_endpoints(VpcEndpointIds=[endpoint])
 
 
-@pytest.mark.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     paths=["$..endpointConfiguration.types", "$..policy.Statement..Resource"]
 )
 def test_create_execute_api_vpc_endpoint(
@@ -491,7 +492,6 @@ def test_create_execute_api_vpc_endpoint(
     default_vpc,
     create_lambda_function,
     ec2_create_security_group,
-    dynamodb_resource,
     snapshot,
     aws_client,
 ):
@@ -512,10 +512,9 @@ def test_create_execute_api_vpc_endpoint(
     table_name = table["TableName"]
 
     # insert items
-    dynamodb_table = dynamodb_resource.Table(table_name)
     item_ids = ("test", "test2", "test 3")
     for item_id in item_ids:
-        dynamodb_table.put_item(Item={"id": item_id})
+        aws_client.dynamodb.put_item(TableName=table_name, Item={"id": {"S": item_id}})
 
     # construct request mapping template
     request_templates = {APPLICATION_JSON: json.dumps({"TableName": table_name})}

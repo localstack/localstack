@@ -80,9 +80,7 @@ def scheduled_test_lambda(aws_client):
 
 @pytest.mark.usefixtures("scheduled_test_lambda")
 class TestIntegration:
-    def test_firehose_s3(
-        self, s3_resource, firehose_create_delivery_stream, s3_create_bucket, aws_client
-    ):
+    def test_firehose_s3(self, firehose_create_delivery_stream, s3_create_bucket, aws_client):
         stream_name = f"fh-stream-{short_uid()}"
         bucket_name = s3_create_bucket()
 
@@ -102,8 +100,9 @@ class TestIntegration:
         assert stream_name in aws_client.firehose.list_delivery_streams()["DeliveryStreamNames"]
         tags = aws_client.firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
         assert TEST_TAGS == tags["Tags"]
+
         # create target S3 bucket
-        s3_resource.create_bucket(Bucket=bucket_name)
+        aws_client.s3.create_bucket(Bucket=bucket_name)
 
         # put records
         aws_client.firehose.put_record(
@@ -153,7 +152,7 @@ class TestIntegration:
         for key in all_objects.keys():
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
-    def test_firehose_kinesis_to_s3(self, s3_resource, kinesis_create_stream, aws_client):
+    def test_firehose_kinesis_to_s3(self, kinesis_create_stream, aws_client):
         stream_name = f"fh-stream-{short_uid()}"
 
         kinesis_stream_name = kinesis_create_stream()
@@ -188,7 +187,7 @@ class TestIntegration:
         retry(_assert_active, sleep=1, retries=30)
 
         # create target S3 bucket
-        s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
+        aws_client.s3.create_bucket(Bucket=TEST_BUCKET_NAME)
 
         # put records
         aws_client.kinesis.put_record(
@@ -635,7 +634,6 @@ class TestLambdaOutgoingSdkCalls:
         create_lambda_function,
         dynamodb_create_table,
         runtime,
-        dynamodb_resource,
         lambda_su_role,
         aws_client,
     ):
@@ -670,13 +668,13 @@ class TestLambdaOutgoingSdkCalls:
 
         aws_client.awslambda.invoke(FunctionName=function_name, Payload=json.dumps(event))
 
-        rs = dynamodb_resource.Table(table_name).scan()
+        rs = aws_client.dynamodb.scan(TableName=table_name)
 
         items = rs["Items"]
 
         assert len(items) == len(data.keys())
         for item in items:
-            assert data[item["id"]] == item["data"]
+            assert data[item["id"]["S"]] == item["data"]["S"]
 
     @parametrize_python_runtimes
     def test_lambda_start_stepfunctions_execution(

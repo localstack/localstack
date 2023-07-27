@@ -141,6 +141,11 @@ class ServiceLevelClientFactory(TypedServiceClientFactory):
         self._factory = factory
         self._client_creation_params = client_creation_params
 
+    def get_client(self, service: str):
+        return MetadataRequestInjector(
+            client=self._factory.get_client(service_name=service, **self._client_creation_params)
+        )
+
     def __getattr__(self, service: str):
         service = attribute_name_to_service_name(service)
         return MetadataRequestInjector(

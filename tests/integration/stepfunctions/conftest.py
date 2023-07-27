@@ -47,7 +47,7 @@ class SfnNoneRecursiveParallelTransformer:
                 HistoryEventType.ParallelStateExited,
                 HistoryEventType.ParallelStateFailed,
             }:
-                events[start_idx:i] = sorted(sublist, key=lambda e: to_json_str(e))
+                events[start_idx:i] = sorted(sublist, key=to_json_str)
                 in_sublist = False
             elif event_type == HistoryEventType.ParallelStateStarted:
                 in_sublist = True

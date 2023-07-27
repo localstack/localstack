@@ -1037,6 +1037,11 @@ PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 # Show exceptions for CloudFormation deploy errors
 CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
 
+# How localstack will react to encountering unsupported resource types.
+# By default unsupported resource types will be ignored.
+# EXPERIMENTAL
+CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES = is_env_not_false("CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES")
+
 # Selectively enable/disable new resource providers
 # e.g. CFN_RESOURCE_PROVIDER_OVERRIDES='{"AWS::Lambda::Version": "GenericBaseModel","AWS::Lambda::Function": "ResourceProvider"}'
 CFN_RESOURCE_PROVIDER_OVERRIDES = os.environ.get("CFN_RESOURCE_PROVIDER_OVERRIDES", "{}")
@@ -1049,6 +1054,7 @@ CFN_RESOURCE_PROVIDER_OVERRIDES = os.environ.get("CFN_RESOURCE_PROVIDER_OVERRIDE
 CONFIG_ENV_VARS = [
     "ALLOW_NONSTANDARD_REGIONS",
     "BUCKET_MARKER_LOCAL",
+    "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
     "CFN_VERBOSE_ERRORS",
     "CFN_RESOURCE_PROVIDER_OVERRIDES",
     "CI",
