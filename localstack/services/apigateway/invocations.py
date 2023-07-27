@@ -34,12 +34,22 @@ from localstack.services.apigateway.integration import (
     StepFunctionIntegration,
 )
 from localstack.services.apigateway.models import ApiGatewayStore
+from localstack.utils.aws.aws_responses import requests_response
 
 LOG = logging.getLogger(__name__)
 
 
 class AuthorizationError(Exception):
-    pass
+    message: str
+    status_code: int
+
+    def __init__(self, message: str, status_code: int):
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+
+    def to_response(self):
+        return requests_response({"message": self.message}, status_code=self.status_code)
 
 
 class RequestValidator:
@@ -229,8 +239,13 @@ def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
     try:
         return invoke_rest_api(invocation_context)
     except AuthorizationError as e:
-        api_id = invocation_context.api_id
-        return make_error_response("Not authorized to invoke REST API %s: %s" % (api_id, e), 403)
+        LOG.warning(
+            "Authorization error while invoking API Gateway ID %s: %s",
+            invocation_context.api_id,
+            e,
+            exc_info=LOG.isEnabledFor(logging.DEBUG),
+        )
+        return e.to_response()
 
 
 def invoke_rest_api(invocation_context: ApiInvocationContext):
@@ -250,7 +265,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
 
     api_key_required = resource.get("resourceMethods", {}).get(method, {}).get("apiKeyRequired")
     if api_key_required and not is_api_key_valid(invocation_context):
-        return make_error_response("Forbidden", 403)
+        raise AuthorizationError("Forbidden", 403)
 
     resource_methods = resource.get("resourceMethods", {})
     resource_method = resource_methods.get(method, {})
