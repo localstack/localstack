@@ -84,7 +84,16 @@ class GenericBaseModel:
 
     def get_cfn_attribute(self, attribute_name):
         """Retrieve the given CF attribute for this resource"""
-        return self.props.get(attribute_name)
+        prop_candidate = self.props.get(attribute_name)
+        if prop_candidate:
+            return prop_candidate
+
+        if "." in attribute_name:
+            parts = attribute_name.split(".")
+            attribute = self.props
+            for part in parts:
+                attribute = attribute.get(part)
+            return attribute
 
     # ---------------------
     # GENERIC UTIL METHODS
