@@ -13,6 +13,7 @@ from localstack.aws.api.cloudformation import Capability
 from localstack.aws.connect import ServiceLevelClientFactory
 
 LOG = logging.getLogger(__name__)
+CDK_BOOTSTRAP_PARAM = "/cdk-bootstrap/hnb659fds/version"
 
 
 def cleanup_s3_bucket(s3_client: "S3Client", bucket_name: str):
@@ -112,6 +113,11 @@ class InfraProvisioner:
             self.aws_client.cloudformation.get_waiter("stack_delete_complete").wait(
                 StackName=stack_name, WaiterConfig={"Delay": 1}
             )
+        # TODO proper handling of ssm parameter
+        try:
+            self.aws_client.ssm.delete_parameter(Name=CDK_BOOTSTRAP_PARAM)
+        except Exception:
+            pass
 
     def add_cdk_stack(self, cdk_stack: cdk.Stack, autoclean_buckets: Optional[bool] = True):
         """
@@ -143,11 +149,9 @@ class InfraProvisioner:
     def bootstrap_cdk(self):
         # TODO: add proper bootstrap template to deploy here if there's no parameter yet
         try:
-            self.aws_client.ssm.get_parameter(Name="/cdk-bootstrap/hnb659fds/version")
+            self.aws_client.ssm.get_parameter(Name=CDK_BOOTSTRAP_PARAM)
         except self.aws_client.ssm.exceptions.ParameterNotFound:
-            self.aws_client.ssm.put_parameter(
-                Name="/cdk-bootstrap/hnb659fds/version", Type="String", Value="10"
-            )
+            self.aws_client.ssm.put_parameter(Name=CDK_BOOTSTRAP_PARAM, Type="String", Value="10")
 
     def add_custom_teardown(self, cleanup_task: Callable):
         self.custom_cleanup_steps.append(cleanup_task)
