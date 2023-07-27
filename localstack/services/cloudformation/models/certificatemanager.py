@@ -50,8 +50,7 @@ class CertificateManagerCertificate(GenericBaseModel):
 
             return result
 
-        def _handle_result(result, resource_id, resources, resource_type):
-            resource = resources[resource_id]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["Properties"]["CertificateArn"] = resource["PhysicalResourceId"] = result[
                 "CertificateArn"
             ]

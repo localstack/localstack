@@ -17,8 +17,7 @@ class KinesisStreamConsumer(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result, resource_id, resources, resource_type):
-            resource = resources[resource_id]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = result["Consumer"]["ConsumerARN"]
             resource["Properties"]["ConsumerARN"] = result["Consumer"]["ConsumerARN"]
             resource["Properties"]["ConsumerCreationTimestamp"] = result["Consumer"][

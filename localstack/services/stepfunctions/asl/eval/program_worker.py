@@ -6,6 +6,7 @@ from localstack.aws.api.stepfunctions import Timestamp
 from localstack.services.stepfunctions.asl.component.program.program import Program
 from localstack.services.stepfunctions.asl.eval.count_down_latch import CountDownLatch
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.utils.threads import TMP_THREADS
 
 LOG = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ class ProgramWorker:
             raise RuntimeError("Call to ProgramWorker.eval whilst another job is running.")
         self.env_frame = env_frame
         self._worker_thread = threading.Thread(target=self._worker_routine, args=(program, latch))
+        TMP_THREADS.append(self._worker_thread)
         self._worker_thread.start()
 
     def stop(self, stop_date: Timestamp, cause: Optional[str], error: Optional[str]) -> None:

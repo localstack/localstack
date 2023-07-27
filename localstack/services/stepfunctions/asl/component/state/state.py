@@ -85,7 +85,7 @@ class CommonStateField(EvalComponent, ABC):
         else:
             LOG.error(f"Could not handle ContinueWith type of '{type(self.continue_with)}'.")
 
-    def _get_state_entered_even_details(self, env: Environment) -> StateEnteredEventDetails:
+    def _get_state_entered_event_details(self, env: Environment) -> StateEnteredEventDetails:
         return StateEnteredEventDetails(
             name=self.name,
             input=to_json_str(env.inp),
@@ -111,7 +111,7 @@ class CommonStateField(EvalComponent, ABC):
         env.event_history.add_event(
             hist_type_event=self.state_entered_event_type,
             event_detail=EventDetails(
-                stateEnteredEventDetails=self._get_state_entered_even_details(env=env)
+                stateEnteredEventDetails=self._get_state_entered_event_details(env=env)
             ),
         )
 

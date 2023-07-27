@@ -71,8 +71,7 @@ class Route53RecordSet(GenericBaseModel):
                 hosted_zone_id = hosted_zone.get("Id")
             return hosted_zone_id
 
-        def _handle_result(result, resource_id, resources, resource_type):
-            resource = resources[resource_id]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = resource["Properties"]["Name"]
 
         return {

@@ -2462,21 +2462,28 @@ class TestS3:
                 "x-amz-trailer-signature:712fb67227583c88ac32f468fc30a249cf9ceeb0d0e947ea5e5209a10b99181c\r\n\r\n"
             )
 
-        # put object
         url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}"
-        valid_data = get_data(body, valid_checksum)
-        requests.put(url, valid_data, headers=headers, verify=False)
-        # get object and assert content length
-        downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
-        download_file_object = to_str(downloaded_object["Body"].read())
-        assert len(body) == len(str(download_file_object))
-        assert body == str(download_file_object)
 
         # test with wrong checksum
         wrong_data = get_data(body, "wrongchecksum")
         request = requests.put(url, wrong_data, headers=headers, verify=False)
         assert request.status_code == 400
         assert "Value for x-amz-checksum-sha256 header is invalid." in request.text
+
+        # assert the object has not been created
+        with pytest.raises(ClientError):
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+
+        # put object with good checksum
+        valid_data = get_data(body, valid_checksum)
+        req = requests.put(url, valid_data, headers=headers, verify=False)
+        assert req.ok
+
+        # get object and assert content length
+        downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        download_file_object = to_str(downloaded_object["Body"].read())
+        assert len(body) == len(str(download_file_object))
+        assert body == str(download_file_object)
 
     @markers.parity.only_localstack
     def test_upload_part_chunked_newlines_valid_etag(self, s3_bucket, aws_client):
