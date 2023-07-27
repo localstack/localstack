@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
@@ -13,7 +14,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..loggingConfiguration",
         "$..tracingConfiguration",
@@ -30,9 +31,9 @@ class TestTaskServiceDynamoDB:
         create_iam_role_for_sfn,
         create_state_machine,
         dynamodb_create_table,
-        snapshot,
+        sfn_snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.dynamodb_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.dynamodb_api())
 
         table_name = f"sfn_test_table_{short_uid()}"
         dynamodb_create_table(table_name=table_name, partition_key="id", client=aws_client.dynamodb)
@@ -51,7 +52,7 @@ class TestTaskServiceDynamoDB:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -62,9 +63,9 @@ class TestTaskServiceDynamoDB:
         create_iam_role_for_sfn,
         create_state_machine,
         dynamodb_create_table,
-        snapshot,
+        sfn_snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.dynamodb_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.dynamodb_api())
 
         table_name = f"sfn_test_table_{short_uid()}"
         dynamodb_create_table(table_name=table_name, partition_key="id", client=aws_client.dynamodb)
@@ -83,7 +84,7 @@ class TestTaskServiceDynamoDB:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
@@ -94,9 +95,9 @@ class TestTaskServiceDynamoDB:
         create_iam_role_for_sfn,
         create_state_machine,
         dynamodb_create_table,
-        snapshot,
+        sfn_snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.dynamodb_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.dynamodb_api())
 
         table_name = f"sfn_test_table_{short_uid()}"
         dynamodb_create_table(table_name=table_name, partition_key="id", client=aws_client.dynamodb)
@@ -117,7 +118,7 @@ class TestTaskServiceDynamoDB:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
