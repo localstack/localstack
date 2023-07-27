@@ -435,7 +435,11 @@ def start_proxy(
 
         listen = f"{constants.LOCALHOST_IP}:{destination_port}"
     else:
-        listen_hosts = parse_gateway_listen(listen_str)
+        listen_hosts = parse_gateway_listen(
+            listen_str,
+            default_host=constants.LOCALHOST_IP,
+            default_port=constants.DEFAULT_PORT_EDGE,
+        )
         listen = listen_hosts[0]
     return do_start_tcp_proxy(listen, target_address, asynchronous)
 
@@ -461,7 +465,10 @@ def do_start_tcp_proxy(
 
 def start_edge(listen_str: str, use_ssl: bool = True, asynchronous: bool = False):
     if listen_str:
-        listen = parse_gateway_listen(listen_str)
+        default_ip = "0.0.0.0" if config.is_in_docker() else "127.0.0.1"
+        listen = parse_gateway_listen(
+            listen_str, default_host=default_ip, default_port=constants.DEFAULT_PORT_EDGE
+        )
     else:
         listen = config.GATEWAY_LISTEN
 
@@ -527,10 +534,10 @@ def env_vars_to_string(env_vars: Dict) -> str:
     return " ".join(f"{k}='{v}'" for k, v in env_vars.items())
 
 
-def parse_gateway_listen(listen: str) -> List[HostAndPort]:
+def parse_gateway_listen(listen: str, default_host: str, default_port: int) -> List[HostAndPort]:
     addresses = []
     for address in listen.split(","):
-        addresses.append(HostAndPort.parse(address))
+        addresses.append(HostAndPort.parse(address, default_host, default_port))
     return addresses
 
 
