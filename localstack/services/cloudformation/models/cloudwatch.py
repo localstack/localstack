@@ -8,11 +8,6 @@ class CloudWatchAlarm(GenericBaseModel):
     def cloudformation_type():
         return "AWS::CloudWatch::Alarm"
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Arn":
-            return self.props.get("AlarmArn")
-        return super(CloudWatchAlarm, self).get_cfn_attribute(attribute_name)
-
     def _response_name(self):
         return "MetricAlarms"
 
@@ -37,6 +32,11 @@ class CloudWatchAlarm(GenericBaseModel):
     @classmethod
     def get_deploy_templates(cls):
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            alarms = connect_to().cloudwatch.describe_alarms(
+                AlarmNames=[resource["Properties"]["AlarmName"]]
+            )
+            arn = alarms["MetricAlarms"][0]["AlarmArn"]
+            resource["Properties"]["Arn"] = arn
             resource["PhysicalResourceId"] = resource["Properties"]["AlarmName"]
 
         def get_delete_params(
