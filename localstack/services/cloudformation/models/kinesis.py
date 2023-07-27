@@ -36,10 +36,10 @@ class KinesisStream(GenericBaseModel):
     def cloudformation_type():
         return "AWS::Kinesis::Stream"
 
-    def fetch_state(self, stack_name, resources):
-        stream_name = self.props["Name"]
-        result = connect_to().kinesis.describe_stream(StreamName=stream_name)
-        return result
+    # def fetch_state(self, stack_name, resources):
+    #     stream_name = self.props["Name"]
+    #     result = connect_to().kinesis.describe_stream(StreamName=stream_name)
+    #     return result
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -63,12 +63,11 @@ class KinesisStream(GenericBaseModel):
             client = connect_to().kinesis
             stream_name = resource["Properties"]["Name"]
 
-            description = client.describe_stream(StreamName=stream_name)
-            while description["StreamDescription"]["StreamStatus"] != "ACTIVE":
-                description = client.describe_stream(StreamName=stream_name)
+            client.get_waiter("stream_exists").wait(StreamName=stream_name)
 
-            resource["PhysicalResourceId"] = stream_name
+            description = client.describe_stream(StreamName=stream_name)
             resource["Properties"]["Arn"] = description["StreamDescription"]["StreamARN"]
+            resource["PhysicalResourceId"] = stream_name
 
         return {
             "create": {
