@@ -10,7 +10,7 @@ from localstack.utils.files import load_file
 LOG = logging.getLogger(__name__)
 
 
-@pytest.mark.xfail(
+@pytest.mark.skip(
     reason="requires pro",
 )
 class TestShoppingCartScenario:

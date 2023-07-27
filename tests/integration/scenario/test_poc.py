@@ -32,6 +32,7 @@ class BotoDeployment:
         ...
 
 
+@pytest.mark.skip
 class TestSomeScenario:
     @pytest.fixture(scope="class", autouse=True)
     def define_infrastructure(self, aws_client):

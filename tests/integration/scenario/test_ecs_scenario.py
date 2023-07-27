@@ -6,7 +6,7 @@ import requests
 from localstack.testing.scenario.provisioning import InfraProvisioner
 
 
-@pytest.mark.xfail(
+@pytest.mark.skip(
     reason="requires pro",
 )
 class TestEcsScenario:
