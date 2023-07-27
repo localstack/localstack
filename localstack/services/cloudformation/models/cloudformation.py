@@ -15,12 +15,12 @@ class CloudFormationStack(GenericBaseModel):
     def cloudformation_type():
         return "AWS::CloudFormation::Stack"
 
-    def fetch_state(self, stack_name, resources):
-        client = connect_to().cloudformation
-        child_stack_name = self.props["StackName"]
-        result = client.describe_stacks(StackName=child_stack_name)
-        result = (result.get("Stacks") or [None])[0]
-        return result
+    # def fetch_state(self, stack_name, resources):
+    #     client = connect_to().cloudformation
+    #     child_stack_name = self.props["StackName"]
+    #     result = client.describe_stacks(StackName=child_stack_name)
+    #     result = (result.get("Stacks") or [None])[0]
+    #     return result
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
