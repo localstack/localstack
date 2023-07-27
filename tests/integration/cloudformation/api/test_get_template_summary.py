@@ -1,10 +1,12 @@
 import os
 
-import pytest
+from localstack.testing.pytest import markers
 
 
-@pytest.mark.aws_validated
-@pytest.mark.skip_snapshot_verify(paths=["$..ResourceIdentifierSummaries..ResourceIdentifiers"])
+@markers.parity.aws_validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..ResourceIdentifierSummaries..ResourceIdentifiers"]
+)
 def test_get_template_summary(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.sns_api())

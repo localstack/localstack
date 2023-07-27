@@ -5,6 +5,7 @@ from requests.structures import CaseInsensitiveDict
 from localstack.aws.api.apigateway import (
     Authorizer,
     DocumentationPart,
+    DomainName,
     GatewayResponse,
     Model,
     RequestValidator,
@@ -64,6 +65,9 @@ class ApiGatewayStore(BaseStore):
 
     # maps cert ID to client certificate details
     client_certificates: Dict[str, Dict] = LocalAttribute(default=dict)
+
+    # maps domain name to domain name model
+    domain_names: Dict[str, DomainName] = LocalAttribute(default=dict)
 
     # maps resource ARN to tags
     TAGS: Dict[str, Dict[str, str]] = CrossRegionAttribute(default=dict)

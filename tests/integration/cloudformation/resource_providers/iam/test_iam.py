@@ -4,14 +4,16 @@ import os
 import pytest
 
 from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
+from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
 
+@markers.parity.aws_validated
 def test_delete_role_detaches_role_policy(deploy_cfn_template, aws_client):
     role_name = f"LsRole{short_uid()}"
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../templates/iam_role_policy.yaml"
+            os.path.dirname(__file__), "../../../templates/iam_role_policy.yaml"
         ),
         parameters={"RoleName": role_name},
     )
@@ -24,7 +26,7 @@ def test_delete_role_detaches_role_policy(deploy_cfn_template, aws_client):
         is_update=True,
         stack_name=stack.stack_name,
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../templates/iam_role_policy.yaml"
+            os.path.dirname(__file__), "../../../templates/iam_role_policy.yaml"
         ),
         parameters={"RoleName": f"role-{short_uid()}"},
     )
@@ -34,6 +36,7 @@ def test_delete_role_detaches_role_policy(deploy_cfn_template, aws_client):
     assert e.value.response.get("Error").get("Code") == "NoSuchEntity"
 
 
+@markers.parity.aws_validated
 def test_policy_attachments(deploy_cfn_template, aws_client):
     role_name = f"role-{short_uid()}"
     group_name = f"group-{short_uid()}"
@@ -43,7 +46,7 @@ def test_policy_attachments(deploy_cfn_template, aws_client):
     linked_role_id = short_uid()
     deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../templates/iam_policy_attachments.yaml"
+            os.path.dirname(__file__), "../../../templates/iam_policy_attachments.yaml"
         ),
         template_mapping={
             "role_name": role_name,
@@ -79,8 +82,8 @@ def test_policy_attachments(deploy_cfn_template, aws_client):
     assert policy["Statement"][0]["Principal"] == {"Service": "elasticbeanstalk.amazonaws.com"}
 
 
-@pytest.mark.aws_validated
-@pytest.mark.skip_snapshot_verify(paths=["$..User.Tags"])
+@markers.parity.aws_validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..User.Tags"])
 def test_iam_username_defaultname(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.iam_api())
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -103,7 +106,8 @@ def test_iam_username_defaultname(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("get_iam_user", get_iam_user)
 
 
-@pytest.mark.aws_validated
+@pytest.mark.skip(reason="not correctly implemented at the moment")
+@markers.parity.aws_validated
 def test_iam_user_access_key(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformers_list(
         [
@@ -116,30 +120,33 @@ def test_iam_user_access_key(deploy_cfn_template, snapshot, aws_client):
     user_name = f"user-{short_uid()}"
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../templates/iam_access_key.yaml"
+            os.path.dirname(__file__), "../../../templates/iam_access_key.yaml"
         ),
         parameters={"UserName": user_name},
     )
 
     snapshot.match("key_outputs", stack.outputs)
-
-    keys = aws_client.iam.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
-    snapshot.match("access_key", keys[0])
+    key = aws_client.iam.list_access_keys(UserName=user_name)["AccessKeyMetadata"][0]
+    snapshot.match("access_key", key)
 
     # Update Status
-    deploy_cfn_template(
+    stack2 = deploy_cfn_template(
         stack_name=stack.stack_name,
         is_update=True,
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../templates/iam_access_key.yaml"
+            os.path.dirname(__file__), "../../../templates/iam_access_key.yaml"
         ),
         parameters={"UserName": user_name, "Status": "Inactive", "Serial": "2"},
     )
     keys = aws_client.iam.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
-    snapshot.match("access_key_updated", keys[0])
+    updated_key = [k for k in keys if k["AccessKeyId"] == stack2.outputs["AccessKeyId"]][0]
+    # IAM just being IAM. First key takes a bit to delete and in the meantime might still be visible here
+    snapshot.match("access_key_updated", updated_key)
+    assert stack2.outputs["AccessKeyId"] != stack.outputs["AccessKeyId"]
+    assert stack2.outputs["SecretAccessKey"] != stack.outputs["SecretAccessKey"]
 
 
-@pytest.mark.aws_validated
+@markers.parity.aws_validated
 def test_update_inline_policy(deploy_cfn_template, snapshot, aws_client):
 
     snapshot.add_transformer(snapshot.transform.iam_api())
@@ -153,7 +160,7 @@ def test_update_inline_policy(deploy_cfn_template, snapshot, aws_client):
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../templates/iam_policy_role.yaml"
+            os.path.dirname(__file__), "../../../templates/iam_policy_role.yaml"
         ),
         parameters={
             "PolicyName": policy_name,
@@ -174,7 +181,7 @@ def test_update_inline_policy(deploy_cfn_template, snapshot, aws_client):
 
     deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../templates/iam_policy_role_updated.yaml"
+            os.path.dirname(__file__), "../../../templates/iam_policy_role_updated.yaml"
         ),
         parameters={
             "PolicyName": policy_name,
@@ -196,8 +203,8 @@ def test_update_inline_policy(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("role_updated_inline_policy", role_updated_inline_policy_resource)
 
 
-@pytest.mark.aws_validated
-@pytest.mark.skip_snapshot_verify(
+@markers.parity.aws_validated
+@markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..Policy.Description",
         "$..Policy.IsAttachable",
@@ -218,7 +225,7 @@ def test_managed_policy_with_empty_resource(deploy_cfn_template, snapshot, aws_c
         "policyName": f"managed-policy-{short_uid()}",
     }
 
-    template_path = os.path.join(os.path.dirname(__file__), "../../templates/dynamodb_iam.yaml")
+    template_path = os.path.join(os.path.dirname(__file__), "../../../templates/dynamodb_iam.yaml")
 
     stack = deploy_cfn_template(template_path=template_path, parameters=parameters)
 

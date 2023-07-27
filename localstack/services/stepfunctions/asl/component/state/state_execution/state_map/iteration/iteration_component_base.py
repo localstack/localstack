@@ -23,6 +23,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.utils.threads import TMP_THREADS
 
 
 class DistributedIterationComponentEvalInput:
@@ -72,7 +73,9 @@ class DistributedIterationComponent(IterationComponent, abc.ABC):
         )
         for _ in range(number_of_workers):
             worker = self._create_worker(env=env)
-            threading.Thread(target=worker.eval).start()
+            worker_thread = threading.Thread(target=worker.eval)
+            TMP_THREADS.append(worker_thread)
+            worker_thread.start()
 
         self._job_pool.await_jobs()
 

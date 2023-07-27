@@ -5,6 +5,7 @@ import re
 from copy import deepcopy
 from typing import Callable, List
 
+from localstack import config
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import select_attributes, short_uid
@@ -253,3 +254,32 @@ def dump_resource_as_json(resource: dict) -> str:
 
 def get_action_name_for_resource_change(res_change: str) -> str:
     return {"Add": "CREATE", "Remove": "DELETE", "Modify": "UPDATE"}.get(res_change)
+
+
+def check_not_found_exception(e, resource_type, resource, resource_status=None):
+    # we expect this to be a "not found" exception
+    markers = [
+        "NoSuchBucket",
+        "ResourceNotFound",
+        "NoSuchEntity",
+        "NotFoundException",
+        "404",
+        "not found",
+        "not exist",
+    ]
+
+    markers_hit = [m for m in markers if m in str(e)]
+    if not markers_hit:
+        LOG.warning(
+            "Unexpected error processing resource type %s: Exception: %s - %s - status: %s",
+            resource_type,
+            str(e),
+            resource,
+            resource_status,
+        )
+        if config.CFN_VERBOSE_ERRORS:
+            raise e
+        else:
+            return False
+
+    return True

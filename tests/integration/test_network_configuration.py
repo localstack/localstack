@@ -1,3 +1,5 @@
+from localstack.testing.pytest import markers
+
 """
 This test file captures the _current_ state of returning URLs before making
 sweeping changes. This is to ensure that the refactoring does not cause
@@ -18,7 +20,7 @@ from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.utils.files import new_tmp_file, save_file
 from localstack.utils.strings import short_uid
 
-pytestmark = [pytest.mark.only_localstack]
+pytestmark = [markers.parity.only_localstack]
 
 
 class TestOpenSearch:
@@ -69,7 +71,7 @@ class TestS3:
         condition=config.LEGACY_S3_PROVIDER, reason="Not implemented for legacy provider"
     )
     def test_non_us_east_1_location(
-        self, s3_resource, cleanups, assert_host_customisation, aws_client
+        self, s3_empty_bucket, cleanups, assert_host_customisation, aws_client
     ):
         bucket_name = f"bucket-{short_uid()}"
         res = aws_client.s3.create_bucket(
@@ -80,10 +82,8 @@ class TestS3:
         )
 
         def cleanup():
-            bucket = s3_resource.Bucket(bucket_name)
-            bucket.objects.all().delete()
-            bucket.object_versions.all().delete()
-            bucket.delete()
+            s3_empty_bucket(bucket_name)
+            aws_client.s3.delete_bucket(Bucket=bucket_name)
 
         cleanups.append(cleanup)
 

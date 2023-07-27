@@ -29,6 +29,7 @@ def create_s3_bucket(bucket_name: str, s3_client=None):
     return s3_client.create_bucket(Bucket=bucket_name, **kwargs)
 
 
+# TODO: convert this into a fixture?
 def create_dynamodb_table(
     table_name: str,
     partition_key: str,
