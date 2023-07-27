@@ -46,7 +46,7 @@ class StatePass(CommonStateField):
         if self.result_path is None:
             self.result_path = ResultPath(result_path_src=ResultPath.DEFAULT_PATH)
 
-    def _get_state_entered_even_details(self, env: Environment) -> StateEnteredEventDetails:
+    def _get_state_entered_event_details(self, env: Environment) -> StateEnteredEventDetails:
         return StateEnteredEventDetails(
             name=self.name,
             input=to_json_str(env.inp, separators=(",", ":")),
