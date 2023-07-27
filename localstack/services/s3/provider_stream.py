@@ -351,6 +351,11 @@ class StreamedFakeKey(s3_models.FakeKey):
     """
 
     def __init__(self, name: str, value: IO[bytes], *args, **kwargs):
+        # returning values from the underlying stream. It has write priority, which will lock future readers until
+        # writing is done
+        key_lock = rwlock.RWLockWrite()
+        self.write_lock = key_lock.gen_wlock()
+        self.read_lock = key_lock.gen_rlock()
         # when we set the value to nothing to first initialize the key for `PutObject` until we pull all logic in the
         # provider
         if not value or isinstance(value, bytes):
@@ -358,11 +363,6 @@ class StreamedFakeKey(s3_models.FakeKey):
         super(StreamedFakeKey, self).__init__(name, value, *args, **kwargs)
         self.is_latest = True
         # initialize a read/write lock, allowing S3 to properly lock writes if any thread is currently iterating and
-        # returning values from the underlying stream. It has write priority, which will lock future readers until
-        # writing is done
-        key_lock = rwlock.RWLockWrite()
-        self.write_lock = key_lock.gen_wlock()
-        self.read_lock = key_lock.gen_rlock()
 
     @property
     def value(self) -> IO[bytes]:
