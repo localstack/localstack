@@ -242,14 +242,16 @@ class S3ProviderStream(S3Provider):
         )
         if checksum_algorithm:
             # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
-            dest_key_object = get_key_from_moto_bucket(dest_moto_bucket, key=request["Key"])
+            dest_key_object: StreamedFakeKey = get_key_from_moto_bucket(
+                dest_moto_bucket, key=request["Key"]
+            )
             dest_key_object.checksum_algorithm = checksum_algorithm
 
             if not source_key_object.checksum_value:
                 stream_value: SpooledTemporaryFile = dest_key_object.value
                 checksum = get_s3_checksum(checksum_algorithm)
 
-                with dest_key_object.lock:
+                with dest_key_object.lock, dest_key_object.read_lock:
                     while data := stream_value.read(4096):
                         checksum.update(data)
                     stream_value.seek(0)
@@ -366,6 +368,7 @@ class StreamedFakeKey(s3_models.FakeKey):
 
     @property
     def value(self) -> IO[bytes]:
+        self._value_buffer.seek(0)
         return self._value_buffer
 
     @value.setter
