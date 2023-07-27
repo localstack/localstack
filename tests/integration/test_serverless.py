@@ -21,16 +21,10 @@ class TestServerless:
             # install dependencies
             run(["npm", "install"], cwd=base_dir)
 
-        # list apigateway before sls deployment
-        apigw_client = aws_stack.create_external_boto_client("apigateway")
-        apis = apigw_client.get_rest_apis()["items"]
-
-        existing_api_ids = [api["id"] for api in apis]
-
         # deploy serverless app
         run(["npm", "run", "deploy", "--", f"--region={aws_stack.get_region()}"], cwd=base_dir)
 
-        yield existing_api_ids
+        yield
 
         # TODO uncomment once removal via the sls plugin is fixed
         # run('cd %s; npm run undeploy -- --region=%s' % (cls.get_base_dir(), aws_stack.get_region()))
@@ -148,7 +142,6 @@ class TestServerless:
     @markers.skip_offline
     def test_apigateway_deployed(self, setup):
         function_name = "sls-test-local-router"
-        existing_api_ids = setup
 
         lambda_client = aws_stack.create_external_boto_client("lambda")
 
@@ -158,7 +151,7 @@ class TestServerless:
 
         apigw_client = aws_stack.create_external_boto_client("apigateway")
         apis = apigw_client.get_rest_apis()["items"]
-        api_ids = [api["id"] for api in apis if api["id"] not in existing_api_ids]
+        api_ids = [api["id"] for api in apis]
         assert 1 == len(api_ids)
 
         resources = apigw_client.get_resources(restApiId=api_ids[0])["items"]
