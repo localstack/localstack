@@ -30,7 +30,13 @@ def shorthand_constructor(loader: yaml.Loader, tag_suffix: str, node: yaml.Node)
     !Select [2, !Split [",", !ImportValue AccountSubnetIDs]]
     shorthand: 2 => canonical "2"
     """
-    fn_name = "Ref" if tag_suffix == "Ref" else f"Fn::{tag_suffix}"
+    match tag_suffix:
+        case "Ref":
+            fn_name = "Ref"
+        case "Condition":
+            fn_name = "Condition"
+        case _:
+            fn_name = f"Fn::{tag_suffix}"
 
     if tag_suffix == "GetAtt" and isinstance(node, yaml.ScalarNode):
         # !GetAtt A.B.C => {"Fn::GetAtt": ["A", "B.C"]}
