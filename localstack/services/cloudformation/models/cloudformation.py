@@ -52,15 +52,15 @@ class CloudFormationStack(GenericBaseModel):
             return result
 
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
-            resource["PhysicalResourceId"] = result["StackId"]
             connect_to().cloudformation.get_waiter("stack_create_complete").wait(
                 StackName=result["StackId"]
             )
+            resource["PhysicalResourceId"] = result["StackId"]
             # set outputs
             stack_details = connect_to().cloudformation.describe_stacks(
                 StackName=result["StackId"]
             )["Stacks"][0]
-            if outputs := stack_details["Outputs"]:
+            if outputs := stack_details.get("Outputs"):
                 resource["Properties"]["Outputs"] = {
                     o["OutputKey"]: o["OutputValue"] for o in outputs
                 }
