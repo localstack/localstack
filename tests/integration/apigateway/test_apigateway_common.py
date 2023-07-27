@@ -370,6 +370,9 @@ class TestUsagePlans:
 
         retry(_assert_with_key, retries=retries, sleep=sleep, expected_status_code=403)
 
+        for usage_plan in aws_client.apigateway.get_usage_plans()["items"]:
+            aws_client.apigateway.delete_usage_plan(usagePlanId=usage_plan["id"])
+
     @markers.parity.aws_validated
     def test_usage_plan_crud(self, create_rest_apigw, snapshot, aws_client, echo_http_server_post):
         snapshot.add_transformer(snapshot.transform.key_value("id", reference_replacement=True))
