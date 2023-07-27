@@ -76,7 +76,7 @@ class TestLambdaFallbackUrl:
                 config.LAMBDA_FORWARD_URL = ""
 
     def test_forward_to_fallback_url_dynamodb(self):
-        db_table = "lambda-records"
+        db_table = f"lambda-records-{short_uid()}"
         ddb_client = aws_stack.create_external_boto_client("dynamodb")
 
         def num_items():
@@ -153,18 +153,18 @@ class TestLambdaFallbackUrl:
         lambda_client = aws_stack.create_external_boto_client("lambda")
         ddb_client = aws_stack.create_external_boto_client("dynamodb")
 
-        db_table = "lambda-records"
+        db_table = f"lambda-records-{short_uid()}"
         config.LAMBDA_FALLBACK_URL = f"dynamodb://{db_table}"
 
         lambda_client.invoke(
-            FunctionName="non-existing-lambda",
+            FunctionName="invalid-lambda",
             Payload=b"{}",
             InvocationType="RequestResponse",
         )
 
         def check_item():
             result = run_safe(ddb_client.scan, TableName=db_table)
-            assert "non-existing-lambda" == result["Items"][0]["function_name"]["S"]
+            assert "invalid-lambda" == result["Items"][0]["function_name"]["S"]
 
         retry(check_item)
 

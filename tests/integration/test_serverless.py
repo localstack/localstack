@@ -3,6 +3,7 @@ import os
 
 import pytest
 
+from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import retry, run
@@ -22,7 +23,7 @@ class TestServerless:
             run(["npm", "install"], cwd=base_dir)
 
         # deploy serverless app
-        run(["npm", "run", "deploy", "--", f"--region={aws_stack.get_region()}"], cwd=base_dir)
+        run(["npm", "run", "deploy", "--", f"--region={TEST_AWS_REGION_NAME}"], cwd=base_dir)
 
         yield
 
