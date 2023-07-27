@@ -153,11 +153,8 @@ class ExecutionState(CommonStateField, abc.ABC):
         match res:
             case RetryOutcome.CanRetry:
                 self._eval_state(env)
-            case RetryOutcome.CannotRetry:
-                # TODO: error type.
-                raise RuntimeError("Reached maximum Retry attempts.")
-            case RetryOutcome.NoRetrier:
-                raise RuntimeError(f"No Retriers when dealing with exception '{ex}'.")
+            case _:
+                self._terminate_with_event(failure_event=failure_event, env=env)
 
     def _handle_catch(self, ex: Exception, env: Environment) -> None:
         failure_event: FailureEvent = self._from_error(env=env, ex=ex)

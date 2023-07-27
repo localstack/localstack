@@ -1,11 +1,22 @@
 from typing import Optional
 
-from localstack.aws.api.stepfunctions import HistoryEventType
+from localstack.aws.api.stepfunctions import HistoryEventType, MapStateStartedEventDetails
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
+from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import (
+    CatchOutcome,
+    CatchOutcomeNotCaught,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
+    CustomErrorName,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
+    FailureEvent,
+)
 from localstack.services.stepfunctions.asl.component.common.path.items_path import ItemsPath
 from localstack.services.stepfunctions.asl.component.common.path.result_path import ResultPath
 from localstack.services.stepfunctions.asl.component.common.result_selector import ResultSelector
 from localstack.services.stepfunctions.asl.component.common.retry.retry_decl import RetryDecl
+from localstack.services.stepfunctions.asl.component.common.retry.retry_outcome import RetryOutcome
 from localstack.services.stepfunctions.asl.component.state.state_execution.execute_state import (
     ExecutionState,
 )
@@ -16,8 +27,8 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     MaxConcurrency,
 )
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
-from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import Item, Map
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 
 
 class StateMap(ExecutionState):
@@ -50,16 +61,58 @@ class StateMap(ExecutionState):
         if not self.item_processor:
             raise ValueError(f"Missing ItemProcessor definition in props '{state_props}'.")
 
-    def _eval_body(self, env: Environment) -> None:
-        env.context_object_manager.context_object["Map"] = Map(
-            Item=Item(Index=-1, Value="Unsupported")
+    def _handle_retry(self, ex: Exception, env: Environment) -> None:
+        failure_event: FailureEvent = self._from_error(env=env, ex=ex)
+        env.stack.append(failure_event.error_name)
+
+        self.retry.eval(env)
+        res: RetryOutcome = env.stack.pop()
+
+        match res:
+            case RetryOutcome.CanRetry:
+                self._eval_state(env)
+            case _:
+                env.event_history.add_event(hist_type_event=HistoryEventType.MapStateFailed)
+                self._terminate_with_event(failure_event=failure_event, env=env)
+
+    def _handle_catch(self, ex: Exception, env: Environment) -> None:
+        env.event_history.add_event(hist_type_event=HistoryEventType.MapStateFailed)
+
+        failure_event: FailureEvent = self._from_error(env=env, ex=ex)
+
+        env.stack.append(failure_event)
+
+        self.catch.eval(env)
+        res: CatchOutcome = env.stack.pop()
+
+        if isinstance(res, CatchOutcomeNotCaught):
+            self._terminate_with_event(failure_event=failure_event, env=env)
+
+    def _handle_uncaught(self, ex: Exception, env: Environment):
+        env.event_history.add_event(hist_type_event=HistoryEventType.MapStateFailed)
+        failure_event = FailureEvent(
+            error_name=CustomErrorName(HistoryEventType.MapStateFailed),
+            event_type=HistoryEventType.MapStateFailed,
         )
-        super(StateMap, self)._eval_body(env=env)
-        env.context_object_manager.context_object["Map"] = None
+        self._terminate_with_event(failure_event, env)
 
     def _eval_execution(self, env: Environment) -> None:
-        # Reduce the input to the list of items.
         self.items_path.eval(env)
+        input_list = env.stack.pop()
 
-        # Launch the item processor.
+        input_list_len = len(input_list)
+        env.event_history.add_event(
+            hist_type_event=HistoryEventType.MapStateStarted,
+            event_detail=EventDetails(
+                mapStateStartedEventDetails=MapStateStartedEventDetails(length=input_list_len)
+            ),
+        )
+
+        env.stack.append(self.name)
+        env.stack.append(self.max_concurrency.num)
+        env.stack.append(input_list)
+
         self.item_processor.eval(env)
+        env.event_history.add_event(
+            hist_type_event=HistoryEventType.MapStateSucceeded,
+        )

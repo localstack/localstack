@@ -28,10 +28,12 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     StateMachine as ContextObjectStateMachine,
 )
-from localstack.services.stepfunctions.asl.eval.programstate.program_ended import ProgramEnded
-from localstack.services.stepfunctions.asl.eval.programstate.program_error import ProgramError
-from localstack.services.stepfunctions.asl.eval.programstate.program_state import ProgramState
-from localstack.services.stepfunctions.asl.eval.programstate.program_stopped import ProgramStopped
+from localstack.services.stepfunctions.asl.eval.program_state import (
+    ProgramEnded,
+    ProgramError,
+    ProgramState,
+    ProgramStopped,
+)
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.execution_worker import ExecutionWorker
 from localstack.services.stepfunctions.backend.execution_worker_comm import ExecutionWorkerComm
