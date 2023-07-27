@@ -49,10 +49,8 @@ class ElasticsearchDomain(GenericBaseModel):
                 cluster_config.setdefault("WarmType", "ultrawarm1.medium.elasticsearch")
             return result
 
-        def _handle_result(result, resource_id, resources, resource_type):
-            resource = resources[resource_id]
-
-            domain_name = resource["Properties"].get("DomainName", resource_id)
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            domain_name = resource["Properties"].get("DomainName", logical_resource_id)
             resource["PhysicalResourceId"] = domain_name
             # TODO: wait for resource
             describe_result = connect_to().es.describe_elasticsearch_domain(DomainName=domain_name)[

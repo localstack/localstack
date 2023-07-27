@@ -252,8 +252,8 @@ class LambdaEventSourceMapping(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["UUID"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["UUID"]
 
         return {
             "create": {"function": "create_event_source_mapping", "result_handler": _handle_result},
@@ -351,10 +351,8 @@ class LambdaEventInvokeConfig(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = str(
-                uuid.uuid4()
-            )  # TODO: not actually a UUIDv4
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = str(uuid.uuid4())  # TODO: not actually a UUIDv4
             # example format: 6403f864-a20b-4373-ac8f-f8d888f6bc0f
 
         return {
@@ -399,10 +397,10 @@ class LambdaUrl(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["FunctionArn"]
-            resources[resource_id]["Properties"]["FunctionArn"] = result["FunctionArn"]
-            resources[resource_id]["Properties"]["FunctionUrl"] = result["FunctionUrl"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["FunctionArn"]
+            resource["Properties"]["FunctionArn"] = result["FunctionArn"]
+            resource["Properties"]["FunctionUrl"] = result["FunctionUrl"]
 
         return {
             "create": {
@@ -505,8 +503,8 @@ class LambdaLayerVersion(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["LayerVersionArn"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["LayerVersionArn"]
 
         return {"create": {"function": "publish_layer_version", "result_handler": _handle_result}}
 

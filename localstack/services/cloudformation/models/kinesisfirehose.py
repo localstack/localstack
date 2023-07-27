@@ -14,11 +14,9 @@ class FirehoseDeliveryStream(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result, resource_id, resources, resource_type):
-            resources[resource_id]["Properties"]["Arn"] = result["DeliveryStreamARN"]
-            resources[resource_id]["PhysicalResourceId"] = resources[resource_id]["Properties"][
-                "DeliveryStreamName"
-            ]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["Properties"]["Arn"] = result["DeliveryStreamARN"]
+            resource["PhysicalResourceId"] = resource["Properties"]["DeliveryStreamName"]
 
         return {
             "create": {
