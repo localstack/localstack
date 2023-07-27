@@ -25,7 +25,7 @@ from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import cache_dir, mkdir
 from localstack.utils.functions import call_safe
-from localstack.utils.run import run, to_str
+from localstack.utils.run import is_command_available, run, to_str
 from localstack.utils.serving import Server
 from localstack.utils.sync import poll_condition
 from localstack.utils.tail import FileListener
@@ -267,8 +267,15 @@ def validate_localstack_config(name: str):
     compose_file_name = name if os.path.isabs(name) else os.path.join(dirname, name)
     warns = []
 
+    # some systems do not have "docker-compose" aliased to "docker compose", and older systems do not have
+    # "docker compose" at all. By preferring the old way and falling back on the new, we should get docker compose in
+    # any way, if installed
+    if is_command_available("docker-compose"):
+        compose_command = ["docker-compose"]
+    else:
+        compose_command = ["docker", "compose"]
     # validating docker-compose file
-    cmd = ["docker-compose", "-f", compose_file_name, "config"]
+    cmd = [*compose_command, "-f", compose_file_name, "config"]
     try:
         run(cmd, shell=False, print_error=False)
     except CalledProcessError as e:

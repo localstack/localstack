@@ -327,6 +327,32 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def s3_dynamodb_notifications():
+        return [
+            TransformerUtility.jsonpath("$..uuid.S", "uuid"),
+            TransformerUtility.jsonpath("$..M.requestParameters.M.sourceIPAddress.S", "ip-address"),
+            TransformerUtility.jsonpath(
+                "$..M.responseElements.M.x-amz-id-2.S", "amz-id", reference_replacement=False
+            ),
+            TransformerUtility.jsonpath(
+                "$..M.responseElements.M.x-amz-request-id.S",
+                "amz-request-id",
+                reference_replacement=False,
+            ),
+            TransformerUtility.jsonpath("$..M.s3.M.bucket.M.name.S", "bucket-name"),
+            TransformerUtility.jsonpath("$..M.s3.M.bucket.M.arn.S", "bucket-arn"),
+            TransformerUtility.jsonpath(
+                "$..M.s3.M.bucket.M.ownerIdentity.M.principalId.S", "principal-id"
+            ),
+            TransformerUtility.jsonpath("$..M.s3.M.configurationId.S", "config-id"),
+            TransformerUtility.jsonpath("$..M.s3.M.object.M.key.S", "object-key"),
+            TransformerUtility.jsonpath(
+                "$..M.s3.M.object.M.sequencer.S", "sequencer", reference_replacement=False
+            ),
+            TransformerUtility.jsonpath("$..M.userIdentity.M.principalId.S", "principal-id"),
+        ]
+
+    @staticmethod
     def kinesis_api():
         """
         :return: array with Transformers, for kinesis api.

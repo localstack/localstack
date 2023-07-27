@@ -1,6 +1,5 @@
 import copy
 import datetime
-import io
 import logging
 import os
 from collections import defaultdict
@@ -151,6 +150,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3 import constants as s3_constants
+from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
 from localstack.services.s3.models import S3Store, get_moto_s3_backend, s3_stores
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
@@ -162,7 +162,6 @@ from localstack.services.s3.presigned_url import (
 from localstack.services.s3.utils import (
     _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
-    decode_aws_chunked_object,
     extract_bucket_key_version_id_from_copy_source,
     get_bucket_from_moto,
     get_header_name,
@@ -819,18 +818,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if body and content_sha_256 and content_sha_256.startswith("STREAMING-"):
             # this is a chunked request, we need to properly decode it while setting the key value
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
-            buffer = io.BytesIO()
-            # this will decode the original stream into `buffer`
-            decode_aws_chunked_object(
-                stream=body,
-                buffer=buffer,
-                content_length=decoded_content_length,
-            )
-            buffer.seek(0)
-            # read the buffer value now that's decoded
-            part = buffer.getvalue()
-        else:
-            part = body.read() if body else b""
+            body = AwsChunkedDecoder(body, decoded_content_length)
+
+        part = body.read() if body else b""
 
         # we are directly using moto backend and not calling moto because to get the response, moto calls
         # key.response_dict, which in turns tries to access the tags of part, indirectly creating a BackendDict

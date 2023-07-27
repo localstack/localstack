@@ -149,6 +149,7 @@ class SNSSubscription(GenericBaseModel):
             attrs = [
                 "DeliveryPolicy",
                 "FilterPolicy",
+                "FilterPolicyScope",
                 "RawMessageDelivery",
                 "RedrivePolicy",
             ]

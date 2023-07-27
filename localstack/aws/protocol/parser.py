@@ -1047,7 +1047,7 @@ class S3RequestParser(RestXMLRequestParser):
 
         @staticmethod
         def _is_vhost_address(request: HttpRequest) -> bool:
-            from localstack.services.s3.s3_utils import uses_host_addressing
+            from localstack.services.s3.utils import uses_host_addressing
 
             return uses_host_addressing(request.headers)
 

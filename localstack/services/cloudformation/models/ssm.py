@@ -79,7 +79,7 @@ class SSMParameter(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result, logical_resource_id, resource):
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = resource["Properties"]["Name"]
 
         return {

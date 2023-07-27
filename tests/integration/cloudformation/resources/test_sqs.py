@@ -3,6 +3,7 @@ import os
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
@@ -19,7 +20,7 @@ def test_sqs_queue_policy(deploy_cfn_template, aws_client):
     )  # just kind of a smoke test to see if its set
 
 
-@pytest.mark.aws_validated
+@markers.parity.aws_validated
 def test_sqs_fifo_queue_generates_valid_name(deploy_cfn_template):
     result = deploy_cfn_template(
         template_path=os.path.join(

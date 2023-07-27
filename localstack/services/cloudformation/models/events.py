@@ -161,10 +161,8 @@ class EventsRule(GenericBaseModel):
             elif len(targets) > 0:
                 events.put_targets(Rule=rule_name, Targets=targets)
 
-        def _handle_result(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = resources[resource_id]["Properties"][
-                "Name"
-            ]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = resource["Properties"]["Name"]
 
         return {
             "create": [
