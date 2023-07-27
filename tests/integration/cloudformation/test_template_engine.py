@@ -247,12 +247,14 @@ class TestIntrinsicFunctions:
         zone = "us-east-1a"  # TODO parametrize
         assert zone in deployed.outputs["Zones"]
 
+    @markers.parity.aws_validated
     def test_sub_not_ready(self, deploy_cfn_template):
         template_path = os.path.join(
-            os.path.dirname(__file__), "../templates/sub_dependencites.yaml"
+            os.path.dirname(__file__), "../templates/sub_dependencies.yaml"
         )
         deploy_cfn_template(
             template_path=template_path,
+            max_wait=120,
         )
 
 
