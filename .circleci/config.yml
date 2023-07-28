@@ -286,10 +286,7 @@ jobs:
           command: docker load -i target/localstack-docker-image-amd64.tar
       - run:
           name: Run bootstrap tests
-          environment:
-            COVERAGE_FILE: target/coverage/.coverage
-            TEST_PATH: tests/bootstrap
-          command: make test-coverage
+          command: .venv/bin/python -m pytest tests/bootstrap
       - store_test_results:
           path: target/reports/
       - persist_to_workspace:
