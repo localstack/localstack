@@ -25,62 +25,64 @@ from localstack.utils.xml import strip_xmlns
 
 
 class TestEdgeAPI:
-    def test_invoke_kinesis(self):
+    def test_invoke_kinesis(self, aws_client_factory):
         edge_url = config.get_edge_url()
-        self._invoke_kinesis_via_edge(edge_url)
+        client = aws_client_factory(endpoint_url=edge_url).kinesis
+        self._invoke_kinesis_via_edge(client)
 
-    def test_invoke_dynamodb(self):
+    def test_invoke_dynamodb(self, aws_client_factory):
         edge_url = config.get_edge_url()
-        self._invoke_dynamodb_via_edge_go_sdk(edge_url)
+        client = aws_client_factory(endpoint_url=edge_url).dynamodb
+        self._invoke_dynamodb_via_edge_go_sdk(edge_url, client)
 
-    def test_invoke_dynamodbstreams(self):
+    def test_invoke_dynamodbstreams(self, aws_client_factory):
         edge_url = config.get_edge_url()
-        self._invoke_dynamodbstreams_via_edge(edge_url)
+        client = aws_client_factory(endpoint_url=edge_url).dynamodbstreams
+        self._invoke_dynamodbstreams_via_edge(client)
 
-    def test_invoke_firehose(self):
+    def test_invoke_firehose(self, aws_client_factory):
         edge_url = config.get_edge_url()
-        self._invoke_firehose_via_edge(edge_url)
+        client = aws_client_factory(endpoint_url=edge_url).firehose
+        self._invoke_firehose_via_edge(client)
 
-    def test_invoke_stepfunctions(self):
+    def test_invoke_stepfunctions(self, aws_client_factory):
         edge_url = config.get_edge_url()
-        self._invoke_stepfunctions_via_edge(edge_url)
+        client = aws_client_factory(endpoint_url=edge_url).stepfunctions
+        self._invoke_stepfunctions_via_edge(client)
 
     @pytest.mark.skipif(
         condition=not config.LEGACY_S3_PROVIDER, reason="S3 ASF provider does not have POST yet"
     )
-    def test_invoke_s3(self):
+    def test_invoke_s3(self, aws_client_factory):
         edge_url = config.get_edge_url()
-        self._invoke_s3_via_edge(edge_url)
+        client = aws_client_factory(endpoint_url=edge_url).s3
+        self._invoke_s3_via_edge(edge_url, client)
 
     @pytest.mark.xfail(reason="failing in CI")  # TODO verify this
-    def test_invoke_s3_multipart_request(self):
+    def test_invoke_s3_multipart_request(self, aws_client_factory):
         edge_url = config.get_edge_url()
-        self._invoke_s3_via_edge_multipart_form(edge_url)
+        client = aws_client_factory(endpoint_url=edge_url).s3
+        self._invoke_s3_via_edge_multipart_form(client)
 
-    def _invoke_kinesis_via_edge(self, edge_url):
-        client = aws_stack.create_external_boto_client("kinesis", endpoint_url=edge_url)
+    def _invoke_kinesis_via_edge(self, client):
         result = client.list_streams()
         assert "StreamNames" in result
 
-    def _invoke_dynamodbstreams_via_edge(self, edge_url):
-        client = aws_stack.create_external_boto_client("dynamodbstreams", endpoint_url=edge_url)
+    def _invoke_dynamodbstreams_via_edge(self, client):
         result = client.list_streams()
         assert "Streams" in result
 
-    def _invoke_firehose_via_edge(self, edge_url):
-        client = aws_stack.create_external_boto_client("firehose", endpoint_url=edge_url)
+    def _invoke_firehose_via_edge(self, client):
         result = client.list_delivery_streams()
         assert "DeliveryStreamNames" in result
 
-    def _invoke_stepfunctions_via_edge(self, edge_url):
-        client = aws_stack.create_external_boto_client("stepfunctions", endpoint_url=edge_url)
+    def _invoke_stepfunctions_via_edge(self, client):
         result = client.list_state_machines()
         assert "stateMachines" in result
 
-    def _invoke_dynamodb_via_edge_go_sdk(self, edge_url):
-        client = aws_stack.create_external_boto_client("dynamodb")
+    def _invoke_dynamodb_via_edge_go_sdk(self, edge_url, client):
         table_name = f"t-{short_uid()}"
-        resources.create_dynamodb_table(table_name, "id")
+        resources.create_dynamodb_table(table_name, "id", client=client)
 
         # emulate a request sent from the AWS Go SDK v2
         headers = {
@@ -101,8 +103,7 @@ class TestEdgeAPI:
         # clean up
         client.delete_table(TableName=table_name)
 
-    def _invoke_s3_via_edge(self, edge_url):
-        client = aws_stack.create_external_boto_client("s3", endpoint_url=edge_url)
+    def _invoke_s3_via_edge(self, edge_url, client):
         bucket_name = "edge-%s" % short_uid()
 
         client.create_bucket(Bucket=bucket_name)
@@ -134,8 +135,7 @@ class TestEdgeAPI:
         client.download_fileobj(bucket_name, object_name, result)
         assert to_str(result.getvalue()) == "file_content_123"
 
-    def _invoke_s3_via_edge_multipart_form(self, edge_url):
-        client = aws_stack.create_external_boto_client("s3", endpoint_url=edge_url)
+    def _invoke_s3_via_edge_multipart_form(self, client):
         bucket_name = "edge-%s" % short_uid()
         object_name = "testobject"
         object_data = b"testdata"
