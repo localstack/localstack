@@ -41,7 +41,7 @@ class TestDynamoDB:
         """
         This fixture returns a DynamoDB table for testing.
         """
-        table_name = "ddb-test-table"
+        table_name = f"ddb-test-table-{short_uid()}"
         resources.create_dynamodb_table(
             table_name, partition_key=PARTITION_KEY, client=aws_client.dynamodb
         )
