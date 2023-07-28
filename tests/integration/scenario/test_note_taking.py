@@ -102,9 +102,6 @@ def setup_lambdas(
 class TestNoteTakingScenario:
     @pytest.fixture(scope="class")
     def create_archive_for_lambda_resource(self):
-        existing_zip_path = os.path.join(
-            os.path.dirname(__file__), "./notes_resources/node_modules.zip"
-        )
         libs_file = os.path.join(
             os.path.dirname(__file__), "./notes_resources/lambda_sources/libs/response.js"
         )
@@ -118,8 +115,6 @@ class TestNoteTakingScenario:
             temp_dir = tempfile.mkdtemp()
             tmp_dir_list.append(temp_dir)
             # Extract the existing ZIP file contents to the temporary directory
-            with zipfile.ZipFile(existing_zip_path, "r") as existing_zip:
-                existing_zip.extractall(temp_dir)
 
             # Add the libs to the temporary directory
             new_resource_filename = os.path.basename(libs_file)
