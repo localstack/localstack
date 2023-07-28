@@ -253,7 +253,7 @@ class LambdaEventManager:
         # NOTE: something goes wrong with the custom encoder; infinite loop?
         # message = json.dumps(invocation, cls=EnhancedJSONEncoder)
         message = {
-            "payload": base64.b64encode(invocation.payload),
+            "payload": to_str(base64.b64encode(invocation.payload)),
             "invoked_arn": invocation.invoked_arn,
             "client_context": invocation.client_context,
             "invocation_type": invocation.invocation_type,
