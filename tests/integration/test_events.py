@@ -16,7 +16,7 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.utils.aws import arns, aws_stack, resources
+from localstack.utils.aws import arns, resources
 from localstack.utils.files import load_file
 from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
@@ -998,14 +998,14 @@ class TestEvents:
         aws_client.s3.delete_bucket(Bucket=s3_bucket)
         clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id)
 
-    def test_put_events_with_target_sqs_new_region(self):
-        events_client = aws_stack.create_external_boto_client("events", region_name="eu-west-1")
+    def test_put_events_with_target_sqs_new_region(self, aws_client_factory):
+        events_client = aws_client_factory(region_name="eu-west-1").events
         queue_name = "queue-{}".format(short_uid())
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
 
-        sqs_client = aws_stack.create_external_boto_client("sqs", region_name="eu-west-1")
+        sqs_client = aws_client_factory(region_name="eu-west-1").sqs
         sqs_client.create_queue(QueueName=queue_name)
         queue_arn = arns.sqs_queue_arn(queue_name)
 
@@ -1243,14 +1243,14 @@ class TestEvents:
             queue_url=queue_url,
         )
 
-    def test_put_event_without_source(self):
-        events_client = aws_stack.create_external_boto_client("events", region_name="eu-west-1")
+    def test_put_event_without_source(self, aws_client_factory):
+        events_client = aws_client_factory(region_name="eu-west-1").events
 
         response = events_client.put_events(Entries=[{"DetailType": "Test", "Detail": "{}"}])
         assert response.get("Entries")
 
-    def test_put_event_without_detail(self):
-        events_client = aws_stack.create_external_boto_client("events", region_name="eu-west-1")
+    def test_put_event_without_detail(self, aws_client_factory):
+        events_client = aws_client_factory(region_name="eu-west-1").events
 
         response = events_client.put_events(
             Entries=[
