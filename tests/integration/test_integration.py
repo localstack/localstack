@@ -529,7 +529,7 @@ class TestIntegration:
 
     def test_scheduled_lambda(self, aws_client, scheduled_test_lambda):
         def check_invocation(*args):
-            assert get_lambda_logs(scheduled_test_lambda, aws_client.awslambda)
+            assert get_lambda_logs(scheduled_test_lambda, aws_client.logs)
 
         # wait for up to 1 min for invocations to get triggered
         retry(check_invocation, retries=14, sleep=5)
