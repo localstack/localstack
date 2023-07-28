@@ -275,6 +275,36 @@ jobs:
             - repo/target/coverage/
             - repo/target/metric_reports
 
+  bootstrap-tests:
+    parameters:
+      platform:
+        description: "Platform to build for"
+        default: "amd64"
+        type: string
+      resource_class:
+        description: "CircleCI machine type to run at"
+        default: "medium"
+        type: string
+      machine_image:
+        description: "CircleCI machine type to run at"
+        default: << pipeline.parameters.ubuntu-amd64-machine-image >>
+        type: string
+    machine:
+      image: << parameters.machine_image >>
+    resource_class: << parameters.resource_class >>
+    working_directory: /tmp/workspace/repo
+    parallelism: 4
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load docker image
+          command: docker load -i target/localstack-docker-image-<< parameters.platform >>.tar
+      - run:
+          name: Run bootstrap tests
+          command: |
+            python -m pytest tests/bootstrap/
+
   capture-not-implemented:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -450,6 +480,9 @@ workflows:
           platform: amd64
           resource_class: medium
           machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
+          requires:
+            - docker-build-amd64
+      - bootstrap-tests:
           requires:
             - docker-build-amd64
       - capture-not-implemented:
