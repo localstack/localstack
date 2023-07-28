@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import base64
 import json
 import os
@@ -233,7 +232,7 @@ class TestEvents:
         clean_up(rule_name=rule_name)
 
     @markers.parity.aws_validated
-    def test_put_events_with_target_sqs(self, aws_client):
+    def test_put_events_with_target_sqs(self, aws_client, put_events_with_filter_to_sqs):
         entries = [
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
@@ -241,14 +240,12 @@ class TestEvents:
                 "Detail": json.dumps(EVENT_DETAIL),
             }
         ]
-        self._put_events_with_filter_to_sqs(
-            aws_client.events,
-            aws_client.sqs,
+        put_events_with_filter_to_sqs(
             pattern=TEST_EVENT_PATTERN,
             entries_asserts=[(entries, True)],
         )
 
-    def test_put_events_with_values_in_array(self, aws_client):
+    def test_put_events_with_values_in_array(self, aws_client, put_events_with_filter_to_sqs):
         pattern = {"detail": {"event": {"data": {"type": ["1", "2"]}}}}
         entries1 = [
             {
@@ -272,16 +269,14 @@ class TestEvents:
             }
         ]
         entries_asserts = [(entries1, True), (entries2, True), (entries3, False)]
-        self._put_events_with_filter_to_sqs(
-            aws_client.events,
-            aws_client.sqs,
+        put_events_with_filter_to_sqs(
             pattern=pattern,
             entries_asserts=entries_asserts,
             input_path="$.detail",
         )
 
     @markers.parity.aws_validated
-    def test_put_events_with_nested_event_pattern(self, aws_client):
+    def test_put_events_with_nested_event_pattern(self, aws_client, put_events_with_filter_to_sqs):
         pattern = {"detail": {"event": {"data": {"type": ["1"]}}}}
         entries1 = [
             {
@@ -305,15 +300,15 @@ class TestEvents:
             }
         ]
         entries_asserts = [(entries1, True), (entries2, False), (entries3, False)]
-        self._put_events_with_filter_to_sqs(
-            aws_client.events,
-            aws_client.sqs,
+        put_events_with_filter_to_sqs(
             pattern=pattern,
             entries_asserts=entries_asserts,
             input_path="$.detail",
         )
 
-    def test_put_events_with_target_sqs_event_detail_match(self, aws_client):
+    def test_put_events_with_target_sqs_event_detail_match(
+        self, aws_client, put_events_with_filter_to_sqs
+    ):
         entries1 = [
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
@@ -329,9 +324,7 @@ class TestEvents:
             }
         ]
         entries_asserts = [(entries1, True), (entries2, False)]
-        self._put_events_with_filter_to_sqs(
-            aws_client.events,
-            aws_client.sqs,
+        put_events_with_filter_to_sqs(
             pattern={"detail": {"EventType": ["0", "1"]}},
             entries_asserts=entries_asserts,
             input_path="$.detail",
