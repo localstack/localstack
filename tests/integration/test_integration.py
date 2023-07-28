@@ -1,17 +1,14 @@
-# -*- coding: utf-8 -*-
-
 import base64
 import json
 import logging
 import re
 import time
-from datetime import datetime, timedelta
 
 import pytest
 
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.common import (
     clone,
     load_file,
@@ -745,30 +742,3 @@ class TestLambdaOutgoingSdkCalls:
 
 def get_event_source_arn(stream_name, client) -> str:
     return client.describe_stream(StreamName=stream_name)["StreamDescription"]["StreamARN"]
-
-
-def get_lambda_invocations_count(
-    lambda_name, metric=None, period=None, start_time=None, end_time=None
-):
-    metric = get_lambda_metrics(lambda_name, metric, period, start_time, end_time)
-    if not metric["Datapoints"]:
-        return 0
-    return metric["Datapoints"][-1]["Sum"]
-
-
-def get_lambda_metrics(func_name, metric=None, period=None, start_time=None, end_time=None):
-    metric = metric or "Invocations"
-    cloudwatch = aws_stack.create_external_boto_client("cloudwatch")
-    period = period or 600
-    end_time = end_time or datetime.now()
-    if start_time is None:
-        start_time = end_time - timedelta(seconds=period)
-    return cloudwatch.get_metric_statistics(
-        Namespace="AWS/Lambda",
-        MetricName=metric,
-        Dimensions=[{"Name": "FunctionName", "Value": func_name}],
-        Period=period,
-        StartTime=start_time,
-        EndTime=end_time,
-        Statistics=["Sum"],
-    )
