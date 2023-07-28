@@ -15,6 +15,7 @@ from localstack.services.infra import patch_instance_tracker_meta
 from localstack.services.s3 import presigned_url
 from localstack.services.s3 import utils as s3_utils_asf
 from localstack.services.s3.codec import AwsChunkedDecoder
+from localstack.services.s3.constants import S3_CHUNK_SIZE
 from localstack.services.s3.legacy import multipart_content, s3_listener, s3_starter, s3_utils
 from localstack.utils.strings import short_uid
 
@@ -987,3 +988,30 @@ class TestS3AwsChunkedDecoder:
 
         stream.read()
         assert stream.trailing_headers == {}
+
+    def test_s3_aws_chunked_decoder_chunk_bigger_than_s3_chunk(self):
+        total_body = os.urandom(S3_CHUNK_SIZE * 2)
+        decoded_content_length = len(total_body)
+        chunk_size = S3_CHUNK_SIZE + 10
+        encoded_data = b""
+
+        for index in range(0, decoded_content_length, chunk_size):
+            chunk = total_body[index : min(index + chunk_size, decoded_content_length)]
+            chunk_size_hex = str(hex(len(chunk)))[2:].encode()
+            info_chunk = (
+                chunk_size_hex
+                + b";chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
+            )
+            encoded_data += info_chunk
+            encoded_data += chunk + b"\r\n"
+
+        encoded_data += b"0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
+
+        stream = AwsChunkedDecoder(BytesIO(encoded_data), decoded_content_length)
+        assert stream.read() == total_body
+
+        stream = AwsChunkedDecoder(BytesIO(encoded_data), decoded_content_length)
+        # assert that even if we read more than a chunk size, we will get max chunk_size
+        assert stream.read(chunk_size + 1000) == total_body[:chunk_size]
+        # assert that even if we read more, when accessing the rest, we're still at the same position
+        assert stream.read(10) == total_body[chunk_size : chunk_size + 10]

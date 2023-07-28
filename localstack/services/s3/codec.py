@@ -63,6 +63,7 @@ class AwsChunkedDecoder(io.RawIOBase):
             # before jumping to the new one
             self._strip_chunk_new_lines()
             self._new_chunk = True
+            self._end_chunk = False
 
         if self._new_chunk:
             # If the _new_chunk flag is set, we have to jump to the next chunk, if there's one
