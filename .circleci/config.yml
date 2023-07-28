@@ -286,7 +286,7 @@ jobs:
           command: docker load -i target/localstack-docker-image-amd64.tar
       - run:
           name: Run bootstrap tests
-          command: .venv/bin/python -m pytest tests/bootstrap
+          command: .venv/bin/python -m pytest -s tests/bootstrap
       - store_test_results:
           path: target/reports/
       - persist_to_workspace:
