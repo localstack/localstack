@@ -14,7 +14,12 @@ from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
 
 
 class StateProps(TypedProps):
-    _UNIQUE_SUBINSTANCES: Final[set[type]] = {Resource, WaitFunction, Timeout, Heartbeat}
+    _UNIQUE_SUBINSTANCES: Final[set[type]] = {
+        Resource,
+        WaitFunction,
+        Timeout,
+        Heartbeat,
+    }
     name: str
 
     def add(self, instance: Any) -> None:
