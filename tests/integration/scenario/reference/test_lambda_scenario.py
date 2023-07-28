@@ -53,7 +53,7 @@ class TestBasicLambdaInS3:
         bucket_name = "lambda-s3-bucket"
         aws_client.s3.create_bucket(Bucket=bucket_name)
         aws_client.s3.upload_file(
-            Filename=os.path.join(os.path.dirname(__file__), "./fn/handler.zip"),
+            Filename=os.path.join(os.path.dirname(__file__), "fn/handler.zip"),
             Bucket=bucket_name,
             Key="handler.zip",
         )
