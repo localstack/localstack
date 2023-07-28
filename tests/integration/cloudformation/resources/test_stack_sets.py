@@ -2,6 +2,7 @@ import os
 
 import pytest
 
+from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import wait_until
@@ -22,7 +23,7 @@ def wait_stack_set_operation(aws_client):
     return waiter
 
 
-@pytest.mark.aws_validated
+@markers.parity.aws_validated
 def test_create_stack_set_with_stack_instances(
     account_id,
     region,

@@ -17,7 +17,7 @@ from localstack.aws.protocol.parser import (
 )
 from localstack.aws.spec import load_service
 from localstack.http import Request as HttpRequest
-from localstack.services.s3 import s3_utils
+from localstack.services.s3.legacy import s3_utils
 from localstack.utils.common import to_bytes, to_str
 
 

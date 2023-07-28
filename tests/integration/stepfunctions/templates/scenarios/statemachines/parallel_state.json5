@@ -1,0 +1,56 @@
+{
+  "Comment": "PARALLEL_STATE",
+  "StartAt": "LoadInput",
+  "States": {
+    "LoadInput": {
+      "Type": "Pass",
+      "Result": [1, 2, 3, 4],
+      "Next": "ParallelState"
+    },
+    "ParallelState": {
+      "Type": "Parallel",
+      "End": true,
+      "Branches": [
+        {
+          "StartAt": "Branch1",
+          "States": {
+            "Branch1": {
+              "Type": "Pass",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Branch21",
+          "States": {
+            "Branch21": {
+              "Type": "Pass",
+              "Next": "Branch22"
+            },
+            "Branch22": {
+              "Type": "Pass",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Branch31",
+          "States": {
+            "Branch31": {
+              "Type": "Pass",
+              "Next": "Branch32"
+            },
+            "Branch32": {
+              "Type": "Pass",
+              "Next": "Branch33"
+            },
+            "Branch33": {
+              "Type": "Pass",
+              "End": true
+            }
+          }
+        }
+      ]
+    }
+  }
+}

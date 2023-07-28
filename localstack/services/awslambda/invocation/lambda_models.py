@@ -45,6 +45,7 @@ IMAGE_MAPPING = {
     "python3.8": "python:3.8",
     "python3.9": "python:3.9",
     "python3.10": "python:3.10",
+    "python3.11": "python:3.11",
     "nodejs12.x": "nodejs:12",
     "nodejs14.x": "nodejs:14",
     "nodejs16.x": "nodejs:16",

@@ -3,7 +3,11 @@ import logging
 from typing import Final
 
 import pytest
+from jsonpath_ng.ext import parse
 
+from localstack.aws.api.stepfunctions import HistoryEventType
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.testing.snapshots.transformer import TransformContext
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.templates.callbacks.callback_templates import CallbackTemplates
 from tests.integration.stepfunctions.utils import await_execution_success
@@ -15,6 +19,56 @@ LOG = logging.getLogger(__name__)
 def sfn_snapshot(snapshot):
     snapshot.add_transformers_list(snapshot.transform.stepfunctions_api())
     return snapshot
+
+
+class SfnNoneRecursiveParallelTransformer:
+    """
+    Normalises a sublist of events triggered in by a Parallel state to be order-independent.
+    """
+
+    def __init__(self, events_jsonpath: str = "$..events"):
+        self.events_jsonpath: str = events_jsonpath
+
+    @staticmethod
+    def _normalise_events(events: list[dict]) -> None:
+        start_idx = None
+        sublist = list()
+        in_sublist = False
+        for i, event in enumerate(events):
+            event_type = event.get("type")
+            if event_type is None:
+                LOG.debug(f"No 'type' in event item '{event}'.")
+                in_sublist = False
+
+            elif event_type in {
+                None,
+                HistoryEventType.ParallelStateSucceeded,
+                HistoryEventType.ParallelStateAborted,
+                HistoryEventType.ParallelStateExited,
+                HistoryEventType.ParallelStateFailed,
+            }:
+                events[start_idx:i] = sorted(sublist, key=to_json_str)
+                in_sublist = False
+            elif event_type == HistoryEventType.ParallelStateStarted:
+                in_sublist = True
+                sublist = []
+                start_idx = i + 1
+            elif in_sublist:
+                event["id"] = (0,)
+                event["previousEventId"] = 0
+                sublist.append(event)
+
+    def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
+        pattern = parse("$..events")
+        events = pattern.find(input_data)
+        if not events:
+            LOG.debug(f"No Stepfunctions 'events' for jsonpath '{self.events_jsonpath}'.")
+            return input_data
+
+        for events_data in events:
+            self._normalise_events(events_data.value)
+
+        return input_data
 
 
 @pytest.fixture

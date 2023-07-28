@@ -1,3 +1,4 @@
+import copy
 from typing import Final
 
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
@@ -13,6 +14,6 @@ class ItemsPath(EvalComponent):
 
     def _eval_body(self, env: Environment) -> None:
         if self.items_path_src != ItemsPath.DEFAULT_PATH:
-            value = env.stack.pop()
+            value = copy.deepcopy(env.stack[-1])
             value = JSONPathUtils.extract_json(self.items_path_src, value)
             env.stack.append(value)

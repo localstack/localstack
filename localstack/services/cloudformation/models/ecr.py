@@ -21,13 +21,6 @@ class ECRRepository(GenericBaseModel):
     def cloudformation_type():
         return "AWS::ECR::Repository"
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Arn":
-            return self.props.get("repositoryArn")
-        if attribute_name == "RepositoryUri":
-            return self.props.get("repositoryUri")
-        return super(ECRRepository, self).get_cfn_attribute(attribute_name)
-
     def fetch_state(self, stack_name, resources):
         repo_name = default_repos_per_stack.get(stack_name)
         if repo_name:
@@ -60,8 +53,8 @@ class ECRRepository(GenericBaseModel):
             resource["PhysicalResourceId"] = arns.get_ecr_repository_arn(repo_name)
 
             # add in some properties required for GetAtt and Ref
-            resource["Properties"]["repositoryArn"] = arns.get_ecr_repository_arn(repo_name)
-            resource["Properties"]["repositoryUri"] = "http://localhost:4566"
+            resource["Properties"]["Arn"] = arns.get_ecr_repository_arn(repo_name)
+            resource["Properties"]["RepositoryUri"] = "http://localhost:4566"
 
         return {
             "create": {

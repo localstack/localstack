@@ -5,6 +5,7 @@ import os
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
@@ -118,7 +119,7 @@ def test_get_domain_name(aws_client):
     assert result["domainNameStatus"] == "AVAILABLE"
 
 
-@pytest.mark.aws_validated
+@markers.parity.aws_validated
 def test_get_api_keys(aws_client):
     api_key_name = f"test-key-{short_uid()}"
     api_key_name_2 = f"test-key-{short_uid()}"

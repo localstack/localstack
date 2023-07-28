@@ -159,10 +159,6 @@ class IAMAccessKey(GenericBaseModel):
     def cloudformation_type():
         return "AWS::IAM::AccessKey"
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "SecretAccessKey":
-            return self.props.get("SecretAccessKey")
-
     def fetch_state(self, stack_name, resources):
         user_name = self.props.get("UserName")
         access_key_id = self.physical_resource_id
@@ -221,11 +217,6 @@ class IAMRole(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::IAM::Role"
-
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Arn":
-            return self.props.get("Arn")
-        return super(IAMRole, self).get_cfn_attribute(attribute_name)
 
     def fetch_state(self, stack_name, resources):
         role_name = self.props.get("RoleName")
@@ -357,6 +348,7 @@ class IAMRole(GenericBaseModel):
     def get_deploy_templates(cls):
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = result["Role"]["RoleName"]
+            resource["Properties"]["Arn"] = result["Role"]["Arn"]
 
         return {
             "create": [

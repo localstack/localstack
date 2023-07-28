@@ -18,10 +18,12 @@ from localstack.services.stepfunctions.asl.component.state.state import CommonSt
 from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.asl.eval.programstate.program_ended import ProgramEnded
-from localstack.services.stepfunctions.asl.eval.programstate.program_error import ProgramError
-from localstack.services.stepfunctions.asl.eval.programstate.program_state import ProgramState
-from localstack.services.stepfunctions.asl.eval.programstate.program_stopped import ProgramStopped
+from localstack.services.stepfunctions.asl.eval.program_state import (
+    ProgramEnded,
+    ProgramError,
+    ProgramState,
+    ProgramStopped,
+)
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.utils.collections import select_from_typed_dict
 
@@ -60,10 +62,14 @@ class Program(EvalComponent):
                 )
             )
 
+        # If the program is evaluating within a frames then these are not allowed to produce program termination states.
+        if env.is_frame():
+            return
+
         program_state: ProgramState = env.program_state()
         if isinstance(program_state, ProgramError):
             exec_failed_event_details = select_from_typed_dict(
-                typed_dict=ExecutionFailedEventDetails, obj=program_state.error
+                typed_dict=ExecutionFailedEventDetails, obj=program_state.error or dict()
             )
             env.event_history.add_event(
                 hist_type_event=HistoryEventType.ExecutionFailed,
@@ -83,7 +89,7 @@ class Program(EvalComponent):
                 hist_type_event=HistoryEventType.ExecutionSucceeded,
                 event_detail=EventDetails(
                     executionSucceededEventDetails=ExecutionSucceededEventDetails(
-                        output=to_json_str(env.inp),
+                        output=to_json_str(env.inp, separators=(",", ":")),
                         outputDetails=HistoryEventExecutionDataDetails(
                             truncated=False  # Always False for api calls.
                         ),

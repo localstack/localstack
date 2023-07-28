@@ -15,32 +15,12 @@ class CloudFormationStack(GenericBaseModel):
     def cloudformation_type():
         return "AWS::CloudFormation::Stack"
 
-    def fetch_state(self, stack_name, resources):
-        client = connect_to().cloudformation
-        child_stack_name = self.props["StackName"]
-        result = client.describe_stacks(StackName=child_stack_name)
-        result = (result.get("Stacks") or [None])[0]
-        return result
-
-    def get_cfn_attribute(self, attribute_name: str):
-        if attribute_name.startswith("Outputs."):
-            parts = attribute_name.split(".")
-            if len(parts) > 2:
-                raise Exception(
-                    f"Too many parts for stack output reference found: {attribute_name=}"
-                )
-            output_key = parts[1]
-            if "Outputs" not in self.props:
-                return None
-            candidates = [
-                o["OutputValue"] for o in self.props["Outputs"] if o["OutputKey"] == output_key
-            ]
-            if len(candidates) == 1:
-                return candidates[0]
-            else:
-                raise Exception(f"Too many output values found for key {output_key=}")
-
-        return super(CloudFormationStack, self).get_cfn_attribute(attribute_name)
+    # def fetch_state(self, stack_name, resources):
+    #     client = connect_to().cloudformation
+    #     child_stack_name = self.props["StackName"]
+    #     result = client.describe_stacks(StackName=child_stack_name)
+    #     result = (result.get("Stacks") or [None])[0]
+    #     return result
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -72,16 +52,18 @@ class CloudFormationStack(GenericBaseModel):
             return result
 
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
-            resource["PhysicalResourceId"] = result["StackId"]
             connect_to().cloudformation.get_waiter("stack_create_complete").wait(
                 StackName=result["StackId"]
             )
+            resource["PhysicalResourceId"] = result["StackId"]
             # set outputs
             stack_details = connect_to().cloudformation.describe_stacks(
                 StackName=result["StackId"]
             )["Stacks"][0]
-            if "Outputs" in stack_details:
-                resource["Properties"]["Outputs"] = stack_details["Outputs"]
+            if outputs := stack_details.get("Outputs"):
+                resource["Properties"]["Outputs"] = {
+                    o["OutputKey"]: o["OutputValue"] for o in outputs
+                }
 
         return {
             "create": {
