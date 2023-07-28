@@ -32,12 +32,20 @@ class AssignmentService(OtherServiceEndpoint):
     def get_environment(
         self, function_version: FunctionVersion, provisioning_type: InitializationType
     ) -> ContextManager[ExecutionEnvironment]:
-        # TODO: re-use existing ones if available
-        execution_environment = self.start_environment(function_version)
         version_arn = function_version.qualified_arn
-        self.environments[version_arn].append(execution_environment)
-        try:
+        for environment in self.environments[version_arn]:
+            try:
+                environment.reserve()
+                execution_environment = environment
+                break
+            except InvalidStatusException:
+                pass
+        else:
+            execution_environment = self.start_environment(function_version)
+            self.environments[version_arn].append(execution_environment)
             execution_environment.reserve()
+
+        try:
             yield execution_environment
             execution_environment.release()
         except InvalidStatusException as invalid_e:
@@ -90,6 +98,7 @@ class AssignmentService(OtherServiceEndpoint):
     def stop_environments_for_version(self, function_version: FunctionVersion):
         for env in self.environments.get(function_version.qualified_arn, []):
             self.stop_environment(env)
+
 
 # class PlacementService:
 #
