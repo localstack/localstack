@@ -296,7 +296,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_common.py::TestUsagePlans::test_usage_plan_crud": {
-    "recorded-date": "27-07-2023, 17:57:22",
+    "recorded-date": "28-07-2023, 08:30:23",
     "recorded-content": {
       "create-usage-plan": {
         "apiStages": [
@@ -307,7 +307,7 @@
         ],
         "description": "<description:1>",
         "id": "<id:1>",
-        "name": "test-usage-plan-176fa351",
+        "name": "<name:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -322,7 +322,7 @@
         ],
         "description": "<description:1>",
         "id": "<id:1>",
-        "name": "test-usage-plan-176fa351",
+        "name": "<name:1>",
         "tags": {},
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -334,36 +334,13 @@
           {
             "apiStages": [
               {
-                "apiId": "<api-id:2>",
-                "stage": "dev"
-              }
-            ],
-            "description": "<description:2>",
-            "id": "<id:2>",
-            "name": "test-plan-ae4de511",
-            "quota": {
-              "limit": 10,
-              "offset": 0,
-              "period": "DAY"
-            },
-            "tags": {
-              "tag_key": "tag_value"
-            },
-            "throttle": {
-              "burstLimit": 1,
-              "rateLimit": 2.0
-            }
-          },
-          {
-            "apiStages": [
-              {
                 "apiId": "<api-id:1>",
                 "stage": "dev"
               }
             ],
             "description": "<description:1>",
             "id": "<id:1>",
-            "name": "test-usage-plan-176fa351"
+            "name": "<name:1>"
           }
         ],
         "ResponseMetadata": {
@@ -380,7 +357,7 @@
         ],
         "description": "<description:1>",
         "id": "<id:1>",
-        "name": "test-usage-plan-176fa351",
+        "name": "<name:1>",
         "tags": {},
         "throttle": {
           "burstLimit": 100,
