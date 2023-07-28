@@ -25,11 +25,6 @@ from .test_kinesis import get_shard_iterator
 
 PARTITION_KEY = "id"
 
-# TODO: These constants should be fixtures that also do cleanup
-TEST_DDB_TABLE_NAME = "test-ddb-table-1"
-TEST_DDB_TABLE_NAME_2 = "test-ddb-table-2"
-TEST_DDB_TABLE_NAME_3 = "test-ddb-table-3"
-
 TEST_DDB_TAGS = [
     {"Key": "Name", "Value": "test-table"},
     {"Key": "TestKey", "Value": "true"},
@@ -42,10 +37,22 @@ def transcribe_snapshot_transformer(snapshot):
 
 
 class TestDynamoDB:
-    @markers.parity.only_localstack
-    def test_non_ascii_chars(self, aws_client):
-        resources.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+    @pytest.fixture
+    def ddb_test_table(self, aws_client) -> str:
+        """
+        This fixture returns a DynamoDB table for testing.
+        """
+        table_name = f"ddb-test-table-{short_uid()}"
+        resources.create_dynamodb_table(
+            table_name, partition_key=PARTITION_KEY, client=aws_client.dynamodb
+        )
 
+        yield table_name
+
+        aws_client.dynamodb.delete_table(TableName=table_name)
+
+    @markers.parity.only_localstack
+    def test_non_ascii_chars(self, aws_client, ddb_test_table):
         # write some items containing non-ASCII characters
         items = {
             "id1": {PARTITION_KEY: {"S": "id1"}, "data": {"S": "foobar123 ✓"}},
@@ -53,11 +60,11 @@ class TestDynamoDB:
             "id3": {PARTITION_KEY: {"S": "id3"}, "data": {"S": "foobar123 ¢"}},
         }
         for _, item in items.items():
-            aws_client.dynamodb.put_item(TableName=TEST_DDB_TABLE_NAME, Item=item)
+            aws_client.dynamodb.put_item(TableName=ddb_test_table, Item=item)
 
         for item_id in items.keys():
             item = aws_client.dynamodb.get_item(
-                TableName=TEST_DDB_TABLE_NAME, Key={PARTITION_KEY: {"S": item_id}}
+                TableName=ddb_test_table, Key={PARTITION_KEY: {"S": item_id}}
             )["Item"]
 
             # need to fix up the JSON and convert str to unicode for Python 2
@@ -65,30 +72,20 @@ class TestDynamoDB:
             item2 = json_safe(items[item_id])
             assert item1 == item2
 
-        # clean up
-        delete_table(TEST_DDB_TABLE_NAME)
-
     @markers.parity.only_localstack
-    def test_large_data_download(self, aws_client):
-        resources.create_dynamodb_table(TEST_DDB_TABLE_NAME_2, partition_key=PARTITION_KEY)
-
+    def test_large_data_download(self, aws_client, ddb_test_table):
         # Create a large amount of items
         num_items = 20
         for i in range(0, num_items):
             item = {PARTITION_KEY: {"S": "id%s" % i}, "data1": {"S": "foobar123 " * 1000}}
-            aws_client.dynamodb.put_item(TableName=TEST_DDB_TABLE_NAME_2, Item=item)
+            aws_client.dynamodb.put_item(TableName=ddb_test_table, Item=item)
 
         # Retrieve the items. The data will be transmitted to the client with chunked transfer encoding
-        result = aws_client.dynamodb.scan(TableName=TEST_DDB_TABLE_NAME_2)
+        result = aws_client.dynamodb.scan(TableName=ddb_test_table)
         assert len(result["Items"]) == num_items
 
-        # clean up
-        delete_table(TEST_DDB_TABLE_NAME_2)
-
     @markers.parity.only_localstack
-    def test_time_to_live(self, aws_client):
-        resources.create_dynamodb_table(TEST_DDB_TABLE_NAME_3, partition_key=PARTITION_KEY)
-
+    def test_time_to_live(self, aws_client, ddb_test_table):
         # Insert some items to the table
         items = {
             "id1": {PARTITION_KEY: {"S": "id1"}, "data": {"S": "IT IS"}},
@@ -97,53 +94,50 @@ class TestDynamoDB:
         }
 
         for _, item in items.items():
-            aws_client.dynamodb.put_item(TableName=TEST_DDB_TABLE_NAME_3, Item=item)
+            aws_client.dynamodb.put_item(TableName=ddb_test_table, Item=item)
 
         # Describe TTL when still unset
-        response = testutil.send_describe_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3)
+        response = testutil.send_describe_dynamodb_ttl_request(ddb_test_table)
         assert response.status_code == 200
         assert (
             json.loads(response._content)["TimeToLiveDescription"]["TimeToLiveStatus"] == "DISABLED"
         )
 
         # Enable TTL for given table
-        response = testutil.send_update_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3, True)
+        response = testutil.send_update_dynamodb_ttl_request(ddb_test_table, True)
         assert response.status_code == 200
         assert json.loads(response._content)["TimeToLiveSpecification"]["Enabled"]
 
         # Describe TTL status after being enabled.
-        response = testutil.send_describe_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3)
+        response = testutil.send_describe_dynamodb_ttl_request(ddb_test_table)
         assert response.status_code == 200
         assert (
             json.loads(response._content)["TimeToLiveDescription"]["TimeToLiveStatus"] == "ENABLED"
         )
 
         # Disable TTL for given table
-        response = testutil.send_update_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3, False)
+        response = testutil.send_update_dynamodb_ttl_request(ddb_test_table, False)
         assert response.status_code == 200
         assert not json.loads(response._content)["TimeToLiveSpecification"]["Enabled"]
 
         # Describe TTL status after being disabled.
-        response = testutil.send_describe_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3)
+        response = testutil.send_describe_dynamodb_ttl_request(ddb_test_table)
         assert response.status_code == 200
         assert (
             json.loads(response._content)["TimeToLiveDescription"]["TimeToLiveStatus"] == "DISABLED"
         )
 
         # Enable TTL for given table again
-        response = testutil.send_update_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3, True)
+        response = testutil.send_update_dynamodb_ttl_request(ddb_test_table, True)
         assert response.status_code == 200
         assert json.loads(response._content)["TimeToLiveSpecification"]["Enabled"]
 
         # Describe TTL status after being enabled again.
-        response = testutil.send_describe_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3)
+        response = testutil.send_describe_dynamodb_ttl_request(ddb_test_table)
         assert response.status_code == 200
         assert (
             json.loads(response._content)["TimeToLiveDescription"]["TimeToLiveStatus"] == "ENABLED"
         )
-
-        # clean up
-        delete_table(TEST_DDB_TABLE_NAME_3)
 
     @markers.parity.only_localstack
     def test_list_tags_of_resource(self, aws_client):
@@ -225,16 +219,14 @@ class TestDynamoDB:
         retry(_assert_stream_deleted, sleep=0.4, retries=5)
 
     @markers.parity.only_localstack
-    def test_multiple_update_expressions(self, aws_client):
-        resources.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
-
+    def test_multiple_update_expressions(self, aws_client, ddb_test_table):
         item_id = short_uid()
         aws_client.dynamodb.put_item(
-            TableName=TEST_DDB_TABLE_NAME,
+            TableName=ddb_test_table,
             Item={PARTITION_KEY: {"S": item_id}, "data": {"S": "foobar123 ✓"}},
         )
         response = aws_client.dynamodb.update_item(
-            TableName=TEST_DDB_TABLE_NAME,
+            TableName=ddb_test_table,
             Key={PARTITION_KEY: {"S": item_id}},
             UpdateExpression="SET attr1 = :v1, attr2 = :v2",
             ExpressionAttributeValues={":v1": {"S": "value1"}, ":v2": {"S": "value2"}},
@@ -242,7 +234,7 @@ class TestDynamoDB:
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         item = aws_client.dynamodb.get_item(
-            TableName=TEST_DDB_TABLE_NAME, Key={PARTITION_KEY: {"S": item_id}}
+            TableName=ddb_test_table, Key={PARTITION_KEY: {"S": item_id}}
         )["Item"]
         assert item["attr1"] == {"S": "value1"}
         assert item["attr2"] == {"S": "value2"}
@@ -267,14 +259,14 @@ class TestDynamoDB:
 
         # for each index
         aws_client.dynamodb.update_table(
-            TableName=TEST_DDB_TABLE_NAME,
+            TableName=ddb_test_table,
             AttributeDefinitions=attributes,
             GlobalSecondaryIndexUpdates=user_id_idx,
         )
 
         with pytest.raises(Exception) as ctx:
             aws_client.dynamodb.query(
-                TableName=TEST_DDB_TABLE_NAME,
+                TableName=ddb_test_table,
                 IndexName="id-index",
                 KeyConditionExpression=f"{PARTITION_KEY} = :item",
                 ExpressionAttributeValues={":item": {"S": item_id}},
@@ -440,11 +432,7 @@ class TestDynamoDB:
         assert len(table["Table"]["GlobalSecondaryIndexes"]) == num_gsis
 
     @markers.parity.aws_validated
-    def test_return_values_in_put_item(self, snapshot, aws_client):
-        resources.create_dynamodb_table(
-            TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY, client=aws_client.dynamodb
-        )
-
+    def test_return_values_in_put_item(self, snapshot, aws_client, ddb_test_table):
         # items which are being used to put in the table
         item1 = {PARTITION_KEY: {"S": "id1"}, "data": {"S": "foobar"}}
         item1b = {PARTITION_KEY: {"S": "id1"}, "data": {"S": "barfoo"}}
@@ -453,37 +441,34 @@ class TestDynamoDB:
         # there is no data present in the table already so even if return values
         # is set to 'ALL_OLD' as there is no data it will not return any data.
         response = aws_client.dynamodb.put_item(
-            TableName=TEST_DDB_TABLE_NAME, Item=item1, ReturnValues="ALL_OLD"
+            TableName=ddb_test_table, Item=item1, ReturnValues="ALL_OLD"
         )
         snapshot.match("PutFirstItem", response)
 
         # now the same data is present so when we pass return values as 'ALL_OLD'
         # it should give us attributes
         response = aws_client.dynamodb.put_item(
-            TableName=TEST_DDB_TABLE_NAME, Item=item1, ReturnValues="ALL_OLD"
+            TableName=ddb_test_table, Item=item1, ReturnValues="ALL_OLD"
         )
         snapshot.match("PutFirstItemOLD", response)
 
         # now a previous version of data is present, so when we pass return
         # values as 'ALL_OLD' it should give us the old attributes
         response = aws_client.dynamodb.put_item(
-            TableName=TEST_DDB_TABLE_NAME, Item=item1b, ReturnValues="ALL_OLD"
+            TableName=ddb_test_table, Item=item1b, ReturnValues="ALL_OLD"
         )
         snapshot.match("PutFirstItemB", response)
 
         # we do not have any same item as item2 already so when we add this by default
         # return values is set to None so no Attribute values should be returned
-        response = aws_client.dynamodb.put_item(TableName=TEST_DDB_TABLE_NAME, Item=item2)
+        response = aws_client.dynamodb.put_item(TableName=ddb_test_table, Item=item2)
         snapshot.match("PutSecondItem", response)
 
         # in this case we already have item2 in the table so on this request
         # it should not return any data as return values is set to None so no
         # Attribute values should be returned
-        response = aws_client.dynamodb.put_item(TableName=TEST_DDB_TABLE_NAME, Item=item2)
+        response = aws_client.dynamodb.put_item(TableName=ddb_test_table, Item=item2)
         snapshot.match("PutSecondItemReturnNone", response)
-
-        # cleanup
-        aws_client.dynamodb.delete_table(TableName=TEST_DDB_TABLE_NAME)
 
     @markers.parity.aws_validated
     def test_empty_and_binary_values(self, snapshot, aws_client):
@@ -1013,8 +998,7 @@ class TestDynamoDB:
         assert len(response["Table"]["Replicas"]) == 0
 
     @markers.parity.only_localstack
-    def test_global_tables(self):
-        resources.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+    def test_global_tables(self, ddb_test_table):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
 
         # create global table
@@ -1024,13 +1008,13 @@ class TestDynamoDB:
             {"RegionName": "eu-central-1"},
         ]
         response = dynamodb.create_global_table(
-            GlobalTableName=TEST_DDB_TABLE_NAME, ReplicationGroup=regions
+            GlobalTableName=ddb_test_table, ReplicationGroup=regions
         )["GlobalTableDescription"]
         assert "ReplicationGroup" in response
         assert len(response["ReplicationGroup"]) == len(regions)
 
         # describe global table
-        response = dynamodb.describe_global_table(GlobalTableName=TEST_DDB_TABLE_NAME)[
+        response = dynamodb.describe_global_table(GlobalTableName=ddb_test_table)[
             "GlobalTableDescription"
         ]
         assert "ReplicationGroup" in response
@@ -1043,16 +1027,14 @@ class TestDynamoDB:
             {"Delete": {"RegionName": "us-west-1"}},
         ]
         response = dynamodb.update_global_table(
-            GlobalTableName=TEST_DDB_TABLE_NAME, ReplicaUpdates=updates
+            GlobalTableName=ddb_test_table, ReplicaUpdates=updates
         )["GlobalTableDescription"]
         assert "ReplicationGroup" in response
         assert len(response["ReplicationGroup"]) == len(regions) + 1
 
         # assert exceptions for invalid requests
         with pytest.raises(Exception) as ctx:
-            dynamodb.create_global_table(
-                GlobalTableName=TEST_DDB_TABLE_NAME, ReplicationGroup=regions
-            )
+            dynamodb.create_global_table(GlobalTableName=ddb_test_table, ReplicationGroup=regions)
         assert ctx.match("GlobalTableAlreadyExistsException")
         with pytest.raises(Exception) as ctx:
             dynamodb.describe_global_table(GlobalTableName="invalid-table-name")
