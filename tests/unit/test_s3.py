@@ -17,6 +17,7 @@ from localstack.services.s3 import utils as s3_utils_asf
 from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.constants import S3_CHUNK_SIZE
 from localstack.services.s3.legacy import multipart_content, s3_listener, s3_starter, s3_utils
+from localstack.services.s3.storage import TemporaryStorageBackend
 from localstack.utils.strings import short_uid
 
 
@@ -1015,3 +1016,18 @@ class TestS3AwsChunkedDecoder:
         assert stream.read(chunk_size + 1000) == total_body[:chunk_size]
         # assert that even if we read more, when accessing the rest, we're still at the same position
         assert stream.read(10) == total_body[chunk_size : chunk_size + 10]
+
+
+class TestS3TemporaryStorageBackend:
+    def test_get_fileobj_no_bucket(self):
+        temp_storage_backend = TemporaryStorageBackend()
+        fileobj = temp_storage_backend.get_key_fileobj(
+            bucket_name="test-bucket", object_key="test-key"
+        )
+        fileobj.write(b"abc")
+        fileobj.seek(0)
+
+        assert fileobj.read() == b"abc"
+
+        temp_storage_backend.delete_key_fileobj(bucket_name="test-bucket", object_key="test-key")
+        assert fileobj.closed

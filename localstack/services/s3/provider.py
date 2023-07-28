@@ -152,6 +152,13 @@ from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
+from localstack.services.s3.exceptions import (
+    InvalidRequest,
+    MalformedACLError,
+    MalformedXML,
+    NoSuchConfiguration,
+    UnexpectedContent,
+)
 from localstack.services.s3.models import S3Store, get_moto_s3_backend, s3_stores
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
 from localstack.services.s3.presigned_url import (
@@ -195,33 +202,6 @@ os.environ[
 MOTO_CANONICAL_USER_ID = "75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a"
 # max file size for S3 objects kept in memory (500 KB by default)
 S3_MAX_FILE_SIZE_BYTES = 512 * 1024
-
-
-class MalformedXML(CommonServiceException):
-    def __init__(self, message=None):
-        if not message:
-            message = "The XML you provided was not well-formed or did not validate against our published schema"
-        super().__init__("MalformedXML", status_code=400, message=message)
-
-
-class MalformedACLError(CommonServiceException):
-    def __init__(self, message=None):
-        super().__init__("MalformedACLError", status_code=400, message=message)
-
-
-class InvalidRequest(CommonServiceException):
-    def __init__(self, message=None):
-        super().__init__("InvalidRequest", status_code=400, message=message)
-
-
-class UnexpectedContent(CommonServiceException):
-    def __init__(self, message=None):
-        super().__init__("UnexpectedContent", status_code=400, message=message)
-
-
-class NoSuchConfiguration(CommonServiceException):
-    def __init__(self, message=None):
-        super().__init__("NoSuchConfiguration", status_code=404, message=message)
 
 
 def get_full_default_bucket_location(bucket_name):

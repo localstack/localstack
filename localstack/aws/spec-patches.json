@@ -129,6 +129,44 @@
     },
     {
       "op": "add",
+      "path": "/shapes/NoSuchKey/members/DeleteMarker",
+      "value": {
+        "shape": "DeleteMarker",
+        "location": "header",
+        "locationName": "x-amz-delete-marker"
+      }
+    },
+      {
+      "op": "add",
+      "path": "/shapes/NoSuchKey/members/VersionId",
+      "value": {
+        "shape": "ObjectVersionId",
+        "location": "header",
+        "locationName": "x-amz-version-id"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchVersion",
+      "value": {
+        "type": "structure",
+        "members": {
+          "VersionId": {
+            "shape": "ObjectVersionId"
+          },
+          "Key": {
+            "shape": "ObjectKey"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p></p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
       "path": "/shapes/PreconditionFailed",
       "value": {
         "type": "structure",
@@ -749,13 +787,6 @@
     },
     {
       "op": "add",
-      "path": "/shapes/Method",
-      "value": {
-        "type": "string"
-      }
-    },
-    {
-      "op": "add",
       "path": "/shapes/ResourceType",
       "value": {
         "type": "string"
@@ -768,10 +799,25 @@
         "type": "structure",
         "members": {
           "Method": {
-            "shape": "Method"
+            "shape": "HttpMethod"
           },
           "ResourceType": {
             "shape": "ResourceType"
+          },
+          "DeleteMarker": {
+            "shape": "DeleteMarker",
+            "location": "header",
+            "locationName": "x-amz-delete-marker"
+          },
+          "VersionId": {
+            "shape": "ObjectVersionId",
+            "location": "header",
+            "locationName": "x-amz-version-id"
+          },
+          "Allow": {
+            "shape": "HttpMethod",
+            "location": "header",
+            "locationName": "allow"
           }
         },
         "error": {
@@ -865,6 +911,23 @@
       "op": "add",
       "path": "/operations/PutBucketIntelligentTieringConfiguration/http/responseCode",
       "value": 204
+    },
+    {
+      "op": "add",
+      "path": "/shapes/BucketNotEmpty",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 409
+        },
+        "documentation": "<p>The bucket you tried to delete is not empty</p>",
+        "exception": true
+      }
     }
   ]
 }
