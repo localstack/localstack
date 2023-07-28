@@ -2,6 +2,7 @@
 import contextlib
 import logging
 from collections import defaultdict
+from concurrent.futures._base import Future
 from typing import ContextManager
 
 from localstack.services.lambda_.invocation.execution_environment import (
@@ -17,23 +18,32 @@ from localstack.services.lambda_.invocation.lambda_models import (
 LOG = logging.getLogger(__name__)
 
 
+class AssignmentException(Exception):
+    pass
+
+
 class AssignmentService(OtherServiceEndpoint):
     """
     scope: LocalStack global
     """
 
-    # function_version (fully qualified function ARN) => runtime_environment
-    environments: dict[str, list[ExecutionEnvironment]]
+    # function_version (fully qualified function ARN) => runtime_environment_id => runtime_environment
+    environments: dict[str, dict[str, ExecutionEnvironment]]
 
     def __init__(self):
-        self.environments = defaultdict(list)
+        self.environments = defaultdict(dict)
 
     @contextlib.contextmanager
     def get_environment(
         self, function_version: FunctionVersion, provisioning_type: InitializationType
     ) -> ContextManager[ExecutionEnvironment]:
         version_arn = function_version.qualified_arn
-        for environment in self.environments[version_arn]:
+        applicable_envs = (
+            env
+            for env in self.environments[version_arn].values()
+            if env.initialization_type == provisioning_type
+        )
+        for environment in applicable_envs:
             try:
                 environment.reserve()
                 execution_environment = environment
@@ -41,9 +51,17 @@ class AssignmentService(OtherServiceEndpoint):
             except InvalidStatusException:
                 pass
         else:
-            execution_environment = self.start_environment(function_version)
-            self.environments[version_arn].append(execution_environment)
-            execution_environment.reserve()
+            # TODO: use constant for provisioning type
+            if provisioning_type == "provisioned-concurrency":
+                raise AssignmentException(
+                    "No provisioned concurrency environment available despite lease."
+                )
+            elif provisioning_type == "on-demand":
+                execution_environment = self.start_environment(function_version)
+                self.environments[version_arn][execution_environment.id] = execution_environment
+                execution_environment.reserve()
+            else:
+                raise ValueError(f"Invalid provisioning type {provisioning_type}")
 
         try:
             yield execution_environment
@@ -71,7 +89,7 @@ class AssignmentService(OtherServiceEndpoint):
         version_arn = environment.function_version.qualified_arn
         try:
             environment.stop()
-            self.environments.get(version_arn).remove(environment)
+            self.environments.get(version_arn).pop(environment.id)
         except Exception as e:
             LOG.debug(
                 "Error while stopping environment for lambda %s, environment: %s, error: %s",
@@ -98,6 +116,36 @@ class AssignmentService(OtherServiceEndpoint):
     def stop_environments_for_version(self, function_version: FunctionVersion):
         for env in self.environments.get(function_version.qualified_arn, []):
             self.stop_environment(env)
+
+    def scale_provisioned_concurrency(
+        self, function_version: FunctionVersion, target_provisioned_environments: int
+    ) -> Future[None]:
+        version_arn = function_version.qualified_arn
+        current_provisioned_environments = [
+            e
+            for e in self.environments[version_arn].values()
+            if e.initialization_type == "provisioned-concurrency"
+        ]
+        current_provisioned_environments_count = len(current_provisioned_environments)
+        diff = target_provisioned_environments - current_provisioned_environments_count
+        if diff > 0:
+            for _ in range(diff):
+                runtime_environment = ExecutionEnvironment(
+                    function_version=function_version,
+                    initialization_type="provisioned-concurrency",
+                )
+                self.environments[version_arn][runtime_environment.id] = runtime_environment
+                # futures.append(self.provisioning_pool.submit(runtime_environment.start))
+        elif diff < 0:
+            current_provisioned_environments
+            # TODO: kill non-running first, give running ones a shutdown pill (or alike)
+            #  e.status != RuntimeStatus.RUNNING
+            # TODO: implement killing envs
+            # for e in provisioned_envs[: (diff * -1)]:
+            #     futures.append(self.provisioning_pool.submit(self.stop_environment, e))
+        else:
+            # NOOP
+            pass
 
 
 # class PlacementService:
