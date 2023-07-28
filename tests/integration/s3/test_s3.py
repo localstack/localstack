@@ -8764,9 +8764,9 @@ def _anon_client(service: str):
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         return boto3.client(service, config=conf, region_name=None)
     return connect_externally_to.get_client(
+        service_name=service,
         aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
         aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-        service=service,
         config=conf,
     )
 
