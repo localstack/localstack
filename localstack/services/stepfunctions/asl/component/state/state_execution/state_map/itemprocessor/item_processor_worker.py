@@ -1,3 +1,4 @@
+import copy
 import logging
 from typing import Final, Optional
 
@@ -8,6 +9,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
     FailureEventException,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
+    ItemSelector,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.itemprocessor.item_processor_job import (
     Job,
@@ -21,7 +25,6 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramState,
     ProgramStopped,
 )
-from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 LOG = logging.getLogger(__name__)
 
@@ -31,11 +34,19 @@ class ItemProcessorWorker:
     _work_name: Final[str]
     _job_pool: Final[JobPool]
     _env: Final[Environment]
+    _item_selector: Final[ItemSelector]
 
-    def __init__(self, work_name: str, job_pool: JobPool, env: Environment):
+    def __init__(
+        self,
+        work_name: str,
+        job_pool: JobPool,
+        env: Environment,
+        item_selector: Optional[ItemSelector],
+    ):
         self._work_name = work_name
         self._job_pool = job_pool
         self._env = env
+        self._item_selector = item_selector
 
     def eval(self):
         job: Optional[Job] = self._job_pool.next_job()
@@ -56,10 +67,16 @@ class ItemProcessorWorker:
                 f"Unexpected Runtime Error in ItemProcessor worker for input '{job.job_index}'."
             )
             try:
-                env_frame.inp = job.job_input
                 env_frame.context_object_manager.context_object["Map"] = Map(
-                    Item=Item(Index=job.job_index, Value=to_json_str(job.job_input))
+                    Item=Item(Index=job.job_index, Value=job.job_input)
                 )
+
+                env_frame.inp = job.job_input
+                if self._item_selector:
+                    map_state_input = self._env.stack[-1]
+                    env_frame.inp = copy.deepcopy(map_state_input)
+                    self._item_selector.eval(env_frame)
+                    env_frame.inp = env_frame.stack.pop()
 
                 job.job_program.eval(env_frame)
 

@@ -9,6 +9,9 @@ from localstack.services.stepfunctions.asl.component.common.comment import Comme
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.component.program.program import Program
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
+    ItemSelector,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.itemprocessor.item_processor_job import (
     Job,
     JobPool,
@@ -32,8 +35,26 @@ from localstack.utils.threads import TMP_THREADS
 LOG = logging.getLogger(__name__)
 
 
-class ItemProcessor(EvalComponent):
+class ItemProcessorEvalInput:
+    state_name: Final[str]
+    max_concurrency: Final[int]
+    input_items: Final[list[json]]
+    item_selector: Final[Optional[ItemSelector]]
 
+    def __init__(
+        self,
+        state_name: str,
+        max_concurrency: int,
+        input_items: list[json],
+        item_selector: Optional[ItemSelector],
+    ):
+        self.state_name = state_name
+        self.max_concurrency = max_concurrency
+        self.input_items = input_items
+        self.item_selector = item_selector
+
+
+class ItemProcessor(EvalComponent):
     processor_config: Final[ProcessorConfig]
     start_at: Final[StartAt]
     states: Final[States]
@@ -66,27 +87,28 @@ class ItemProcessor(EvalComponent):
         return item_processor
 
     def _eval_body(self, env: Environment) -> None:
-        input_items: list[json] = env.stack.pop()
-        LOG.debug(f"[ItemProcessor] [eval]: {len(input_items)} input items.")
-        max_concurrency: int = env.stack.pop()
-        work_name: str = env.stack.pop()
-
-        # Create a sub-sfn program and launch worker.
-        input_item_prog: Final[Program] = Program(
-            start_at=self.start_at, states=self.states, comment=self.comment
-        )
+        eval_input: ItemProcessorEvalInput = env.stack.pop()
 
         # TODO:
         #  add support for support for ProcessorConfig (already parsed in this node).
-        #  add support for ItemSelector before passing input_items forward
 
-        job_pool = JobPool(job_program=input_item_prog, job_inputs=input_items)
+        state_name: str = eval_input.state_name
+        max_concurrency: int = eval_input.max_concurrency
+        input_items: list[json] = eval_input.input_items
+        item_selector: Optional[ItemSelector] = eval_input.item_selector
+
+        input_item_prog: Final[Program] = Program(
+            start_at=self.start_at, states=self.states, comment=self.comment
+        )
+        job_pool = JobPool(job_program=input_item_prog, job_inputs=eval_input.input_items)
 
         number_of_workers = (
             len(input_items) if max_concurrency == MaxConcurrency.DEFAULT else max_concurrency
         )
         for _ in range(number_of_workers):
-            worker = ItemProcessorWorker(work_name=work_name, job_pool=job_pool, env=env)
+            worker = ItemProcessorWorker(
+                work_name=state_name, job_pool=job_pool, env=env, item_selector=item_selector
+            )
             worker_thread = threading.Thread(target=worker.eval)
             TMP_THREADS.append(worker_thread)
             worker_thread.start()

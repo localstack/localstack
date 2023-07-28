@@ -1,4 +1,4 @@
-from typing import Final, Optional, TypedDict
+from typing import Any, Final, Optional, TypedDict
 
 from localstack.utils.strings import long_uid
 
@@ -30,7 +30,7 @@ class Item(TypedDict):
     # Contains the index number for the array item that is being currently processed.
     Index: int
     # Contains the array item being processed.
-    Value: Optional[str]
+    Value: Optional[Any]
 
 
 class Map(TypedDict):

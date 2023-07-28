@@ -59,6 +59,46 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    def test_map_state_item_selector(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_ITEM_SELECTOR)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    def test_map_state_item_selector_singleton(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_ITEM_SELECTOR_SINGLETON)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     def test_map_state_catch(
         self,
         aws_client,
