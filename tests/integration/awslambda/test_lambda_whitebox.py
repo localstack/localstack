@@ -17,7 +17,6 @@ from localstack.services.awslambda.lambda_api import do_set_function_code, use_d
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
 from localstack.utils.files import load_file
 from localstack.utils.functions import run_safe
 from localstack.utils.strings import short_uid, to_bytes, to_str
@@ -50,8 +49,9 @@ pytestmark = pytest.mark.skipif(
 
 class TestLambdaFallbackUrl:
     @staticmethod
-    def _run_forward_to_fallback_url(url, fallback=True, lambda_name=None, num_requests=3):
-        lambda_client = aws_stack.create_external_boto_client("lambda")
+    def _run_forward_to_fallback_url(
+        lambda_client, url, fallback=True, lambda_name=None, num_requests=3
+    ):
         if fallback:
             config.LAMBDA_FALLBACK_URL = url
         else:
@@ -75,20 +75,20 @@ class TestLambdaFallbackUrl:
             else:
                 config.LAMBDA_FORWARD_URL = ""
 
-    def test_forward_to_fallback_url_dynamodb(self):
+    def test_forward_to_fallback_url_dynamodb(self, aws_client):
         db_table = f"lambda-records-{short_uid()}"
-        ddb_client = aws_stack.create_external_boto_client("dynamodb")
+        ddb_client = aws_client.dynamodb
 
         def num_items():
             return len((run_safe(ddb_client.scan, TableName=db_table) or {"Items": []})["Items"])
 
         items_before = num_items()
-        self._run_forward_to_fallback_url("dynamodb://%s" % db_table)
+        self._run_forward_to_fallback_url(aws_client.awslambda, "dynamodb://%s" % db_table)
         items_after = num_items()
         assert items_before + 3 == items_after
 
-    def test_forward_to_fallback_url_http(self):
-        lambda_client = aws_stack.create_external_boto_client("lambda")
+    def test_forward_to_fallback_url_http(self, aws_client):
+        lambda_client = aws_client.awslambda
         lambda_result = {"result": "test123"}
 
         def _handler(_request: Request):
@@ -101,7 +101,7 @@ class TestLambdaFallbackUrl:
             http_endpoint = server.url_for("/")
 
             # test 1: forward to LAMBDA_FALLBACK_URL
-            self._run_forward_to_fallback_url(http_endpoint)
+            self._run_forward_to_fallback_url(aws_client.awslambda, http_endpoint)
 
             poll_condition(lambda: len(server.log) >= 3, timeout=10)
 
@@ -124,7 +124,7 @@ class TestLambdaFallbackUrl:
 
                 # test 2: forward to LAMBDA_FORWARD_URL
                 inv_results = self._run_forward_to_fallback_url(
-                    http_endpoint, lambda_name=lambda_name, fallback=False
+                    aws_client.awslambda, http_endpoint, lambda_name=lambda_name, fallback=False
                 )
 
                 poll_condition(lambda: len(server.log) >= 3, timeout=10)
@@ -149,9 +149,9 @@ class TestLambdaFallbackUrl:
                 # clean up / shutdown
                 lambda_client.delete_function(FunctionName=lambda_name)
 
-    def test_adding_fallback_function_name_in_headers(self):
-        lambda_client = aws_stack.create_external_boto_client("lambda")
-        ddb_client = aws_stack.create_external_boto_client("dynamodb")
+    def test_adding_fallback_function_name_in_headers(self, aws_client):
+        lambda_client = aws_client.awslambda
+        ddb_client = aws_client.dynamodb
 
         db_table = f"lambda-records-{short_uid()}"
         config.LAMBDA_FALLBACK_URL = f"dynamodb://{db_table}"
@@ -171,7 +171,7 @@ class TestLambdaFallbackUrl:
 
 class TestDockerExecutors:
     @pytest.mark.skipif(not use_docker(), reason="Only applicable with docker executor")
-    def test_additional_docker_flags(self):
+    def test_additional_docker_flags(self, aws_client):
         flags_before = config.LAMBDA_DOCKER_FLAGS
         env_value = short_uid()
         config.LAMBDA_DOCKER_FLAGS = f"-e Hello={env_value}"
@@ -183,7 +183,7 @@ class TestDockerExecutors:
                 libs=TEST_LAMBDA_LIBS,
                 func_name=function_name,
             )
-            lambda_client = aws_stack.create_external_boto_client("lambda")
+            lambda_client = aws_client.awslambda
             lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
             result = lambda_client.invoke(FunctionName=function_name, Payload="{}")
             assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
@@ -371,8 +371,8 @@ class TestDockerExecutors:
 
 
 class TestLocalExecutors:
-    def test_python3_runtime_multiple_create_with_conflicting_module(self):
-        lambda_client = aws_stack.create_external_boto_client("lambda")
+    def test_python3_runtime_multiple_create_with_conflicting_module(self, aws_client):
+        lambda_client = aws_client.awslambda
         original_do_use_docker = lambda_api.DO_USE_DOCKER
         try:
             # always use the local runner

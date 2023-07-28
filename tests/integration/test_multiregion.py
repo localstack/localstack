@@ -6,7 +6,7 @@ import requests
 from localstack import config
 from localstack.constants import PATH_USER_REQUEST
 from localstack.services.apigateway.helpers import connect_api_gateway_to_sqs
-from localstack.utils.aws import arns, aws_stack, queries
+from localstack.utils.aws import arns, queries
 from localstack.utils.common import short_uid, to_str
 
 REGION1 = "us-east-1"
@@ -16,9 +16,9 @@ REGION4 = "eu-central-1"
 
 
 class TestMultiRegion:
-    def test_multi_region_sns(self):
-        sns_1 = aws_stack.create_external_boto_client("sns", region_name=REGION1)
-        sns_2 = aws_stack.create_external_boto_client("sns", region_name=REGION2)
+    def test_multi_region_sns(self, aws_client_factory):
+        sns_1 = aws_client_factory(region_name=REGION1).sns
+        sns_2 = aws_client_factory(region_name=REGION2).sns
         len_1 = len(sns_1.list_topics()["Topics"])
         len_2 = len(sns_2.list_topics()["Topics"])
 
@@ -36,11 +36,11 @@ class TestMultiRegion:
         assert len(result2) == len_2 + 1
         assert REGION2 in result2[0]["TopicArn"]
 
-    def test_multi_region_api_gateway(self):
-        gw_1 = aws_stack.create_external_boto_client("apigateway", region_name=REGION1)
-        gw_2 = aws_stack.create_external_boto_client("apigateway", region_name=REGION2)
-        gw_3 = aws_stack.create_external_boto_client("apigateway", region_name=REGION3)
-        sqs_1 = aws_stack.create_external_boto_client("sqs", region_name=REGION1)
+    def test_multi_region_api_gateway(self, aws_client_factory):
+        gw_1 = aws_client_factory(region_name=REGION1).apigateway
+        gw_2 = aws_client_factory(region_name=REGION2).apigateway
+        gw_3 = aws_client_factory(region_name=REGION3).apigateway
+        sqs_1 = aws_client_factory(region_name=REGION1).sqs
         len_1 = len(gw_1.get_rest_apis()["items"])
         len_2 = len(gw_2.get_rest_apis()["items"])
 

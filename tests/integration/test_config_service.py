@@ -2,7 +2,6 @@ import json
 
 import pytest
 
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
 TEST_CONFIG_RECORDER_NAME = "test-recorder-name"
@@ -63,11 +62,11 @@ class TestConfigService:
 
         create_configuration_recorder(iam_role_arn)
 
-        s3_client = aws_stack.create_external_boto_client("s3")
+        s3_client = aws_client.s3
         test_bucket_name = f"test-bucket-{short_uid()}"
         s3_client.create_bucket(Bucket=test_bucket_name)
 
-        sns_client = aws_stack.create_external_boto_client("sns")
+        sns_client = aws_client.sns
         sns_topic_arn = sns_client.create_topic(Name="test-sns-topic")["TopicArn"]
 
         delivery_channel_name = "test-delivery-channel"
