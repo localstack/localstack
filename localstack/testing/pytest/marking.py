@@ -33,3 +33,5 @@ class Markers:
 
     skip_offline = pytest.mark.skip_offline
     only_on_amd64 = pytest.mark.only_on_amd64
+    resource_heavy = pytest.mark.resource_heavy
+    only_in_docker = pytest.mark.only_in_docker
