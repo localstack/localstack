@@ -379,6 +379,11 @@ class TestUsagePlans:
         snapshot.add_transformer(snapshot.transform.key_value("description"))
         snapshot.add_transformer(snapshot.transform.key_value("apiId", reference_replacement=True))
 
+        # clean up any existing usage plans
+        old_usage_plans = aws_client.apigateway.get_usage_plans().get("items", [])
+        for usage_plan in old_usage_plans:
+            aws_client.apigateway.delete_usage_plan(usagePlanId=usage_plan["id"])
+
         api_id, _, root = create_rest_apigw(
             name=f"test-api-{short_uid()}",
             description="this is my api",
