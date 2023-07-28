@@ -133,6 +133,10 @@ class LambdaVersionManager:
     def update_provisioned_concurrency_config(
         self, provisioned_concurrent_executions: int
     ) -> Future[None]:
+        # V2
+        return self.assignment_service.scale_provisioned_concurrency(
+            self.function_version, provisioned_concurrent_executions
+        )
         """
         TODO: implement update while in progress (see test_provisioned_concurrency test)
         TODO: loop until diff == 0 and retry to remove/add diff environments
