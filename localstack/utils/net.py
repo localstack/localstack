@@ -174,6 +174,18 @@ def port_can_be_bound(port: IntOrPort) -> bool:
         return False
 
 
+def get_free_udp_port(blocklist: List[int] = None) -> int:
+    blocklist = blocklist or []
+    for i in range(10):
+        udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        udp.bind(("", 0))
+        addr, port = udp.getsockname()
+        udp.close()
+        if port not in blocklist:
+            return port
+    raise Exception(f"Unable to determine free TCP port with blocklist {blocklist}")
+
+
 def get_free_tcp_port(blocklist: List[int] = None) -> int:
     blocklist = blocklist or []
     for i in range(10):
