@@ -92,7 +92,7 @@ class TestLambdaDestinationScenario:
 
         aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
 
-    def test_onsuccess(self, infrastructure, aws_client):
+    def test_destination_sns(self, infrastructure, aws_client):
         outputs = infrastructure.get_stack_outputs("LambdaTestStack")
         invoke_fn_name = outputs["DestinationFunctionName"]
         collect_fn_name = outputs["CollectFunctionName"]
