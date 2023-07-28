@@ -155,7 +155,7 @@
         }
       },
       "invalid-request-body": {
-        "message": "Missing required request parameters: [issuer]"
+        "message": "Invalid request body"
       },
       "remove-validator-GET": {
         "apiKeyRequired": false,
