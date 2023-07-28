@@ -174,7 +174,7 @@ class TestDynamoDB:
         assert "Name" not in tags.keys()
         assert "NewKey" not in tags.keys()
 
-        delete_table(table_name)
+        aws_client.dynamodb.delete_table(TableName=table_name)
 
     @markers.parity.only_localstack
     def test_stream_spec_and_region_replacement(self, aws_client):
@@ -207,7 +207,7 @@ class TestDynamoDB:
             assert re.match(r"^shardId-[0-9]{20}-[a-zA-Z0-9]{1,36}$", shard["ShardId"])
 
         # clean up
-        delete_table(table_name)
+        aws_client.dynamodb.delete_table(TableName=table_name)
 
         def _assert_stream_deleted():
             stream_tables = [s["TableName"] for s in ddbstreams.list_streams()["Streams"]]
@@ -311,7 +311,7 @@ class TestDynamoDB:
         assert ctx.match("ValidationException")
 
         # clean up
-        delete_table(table_name)
+        aws_client.dynamodb.delete_table(TableName=table_name)
 
     @markers.parity.only_localstack
     def test_valid_query_index(self, aws_client):
@@ -359,7 +359,7 @@ class TestDynamoDB:
         )
 
         # clean up
-        delete_table(table_name)
+        aws_client.dynamodb.delete_table(TableName=table_name)
 
     @markers.parity.aws_validated
     def test_valid_local_secondary_index(
@@ -784,7 +784,7 @@ class TestDynamoDB:
             assert "NewImage" not in record["dynamodb"]
 
         # clean up
-        delete_table(table_name)
+        dynamodb.delete_table(TableName=table_name)
 
     @markers.parity.only_localstack
     def test_dynamodb_with_kinesis_stream(self, aws_client, secondary_aws_client):
@@ -876,7 +876,7 @@ class TestDynamoDB:
         assert destination["DestinationStatus"] == "DISABLED"
 
         # clean up
-        delete_table(table_name)
+        dynamodb.delete_table(TableName=table_name)
         kinesis.delete_stream(StreamName=stream_name)
 
     @markers.parity.only_localstack
@@ -1676,8 +1676,3 @@ class TestDynamoDB:
 
         response = aws_client.dynamodb.describe_continuous_backups(TableName=table_name)
         snapshot.match("describe-continuous-backup", response)
-
-
-def delete_table(name):
-    dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
-    dynamodb_client.delete_table(TableName=name)
