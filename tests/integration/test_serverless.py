@@ -5,7 +5,7 @@ import pytest
 
 from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.common import retry, run
 from localstack.utils.testutil import get_lambda_log_events
 
@@ -16,7 +16,7 @@ def get_base_dir() -> str:
 
 class TestServerless:
     @pytest.fixture
-    def setup(self):
+    def setup_and_teardown(self):
         base_dir = get_base_dir()
         if not os.path.exists(os.path.join(base_dir, "node_modules")):
             # install dependencies
@@ -31,8 +31,8 @@ class TestServerless:
         # run('cd %s; npm run undeploy -- --region=%s' % (cls.get_base_dir(), aws_stack.get_region()))
 
     @markers.skip_offline
-    def test_event_rules_deployed(self, setup):
-        events = aws_stack.create_external_boto_client("events")
+    def test_event_rules_deployed(self, aws_client, setup_and_teardown):
+        events = aws_client.events
         rules = events.list_rules()["Rules"]
 
         rule = ([r for r in rules if r["Name"] == "sls-test-cf-event"] or [None])[0]
@@ -48,12 +48,12 @@ class TestServerless:
         assert {"source": ["customSource"]} == json.loads(rule["EventPattern"])
 
     @markers.skip_offline
-    def test_dynamodb_stream_handler_deployed(self, setup):
+    def test_dynamodb_stream_handler_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-dynamodbStreamHandler"
         table_name = "Test"
 
-        lambda_client = aws_stack.create_external_boto_client("lambda")
-        dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
+        lambda_client = aws_client.awslambda
+        dynamodb_client = aws_client.dynamodb
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
@@ -68,13 +68,13 @@ class TestServerless:
         assert event_source_arn == resp["Table"]["LatestStreamArn"]
 
     @markers.skip_offline
-    def test_kinesis_stream_handler_deployed(self, setup):
+    def test_kinesis_stream_handler_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-kinesisStreamHandler"
         function_name2 = "sls-test-local-kinesisConsumerHandler"
         stream_name = "KinesisTestStream"
 
-        lambda_client = aws_stack.create_external_boto_client("lambda")
-        kinesis_client = aws_stack.create_external_boto_client("kinesis")
+        lambda_client = aws_client.awslambda
+        kinesis_client = aws_client.kinesis
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
@@ -97,12 +97,12 @@ class TestServerless:
         retry(assert_invocations, sleep=2, retries=20)
 
     @markers.skip_offline
-    def test_queue_handler_deployed(self, setup):
+    def test_queue_handler_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-queueHandler"
         queue_name = "sls-test-local-CreateQueue"
 
-        lambda_client = aws_stack.create_external_boto_client("lambda")
-        sqs_client = aws_stack.create_external_boto_client("sqs")
+        lambda_client = aws_client.awslambda
+        sqs_client = aws_client.sqs
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
@@ -124,10 +124,10 @@ class TestServerless:
         assert 3 == redrive_policy["maxReceiveCount"]
 
     @markers.skip_offline
-    def test_lambda_with_configs_deployed(self, setup):
+    def test_lambda_with_configs_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-test"
 
-        lambda_client = aws_stack.create_external_boto_client("lambda")
+        lambda_client = aws_client.awslambda
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
@@ -141,16 +141,16 @@ class TestServerless:
         assert 7200 == resp.get("MaximumEventAgeInSeconds")
 
     @markers.skip_offline
-    def test_apigateway_deployed(self, setup):
+    def test_apigateway_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-router"
 
-        lambda_client = aws_stack.create_external_boto_client("lambda")
+        lambda_client = aws_client.awslambda
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
         assert "handler.createHttpRouter" == function["Handler"]
 
-        apigw_client = aws_stack.create_external_boto_client("apigateway")
+        apigw_client = aws_client.apigateway
         apis = apigw_client.get_rest_apis()["items"]
         api_ids = [api["id"] for api in apis]
         assert 1 == len(api_ids)
@@ -169,8 +169,8 @@ class TestServerless:
             )
 
     @markers.skip_offline
-    def test_s3_bucket_deployed(self, setup):
-        s3_client = aws_stack.create_external_boto_client("s3")
+    def test_s3_bucket_deployed(self, aws_client, setup_and_teardown):
+        s3_client = aws_client.s3
         bucket_name = "testing-bucket"
         response = s3_client.head_bucket(Bucket=bucket_name)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
