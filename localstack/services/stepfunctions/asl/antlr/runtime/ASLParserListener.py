@@ -530,6 +530,24 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#iterator_decl.
+    def enterIterator_decl(self, ctx:ASLParser.Iterator_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#iterator_decl.
+    def exitIterator_decl(self, ctx:ASLParser.Iterator_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#iterator_decl_item.
+    def enterIterator_decl_item(self, ctx:ASLParser.Iterator_decl_itemContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#iterator_decl_item.
+    def exitIterator_decl_item(self, ctx:ASLParser.Iterator_decl_itemContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#item_selector_decl.
     def enterItem_selector_decl(self, ctx:ASLParser.Item_selector_declContext):
         pass

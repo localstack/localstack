@@ -16,13 +16,6 @@ class SecretsManagerSecret(GenericBaseModel):
     def cloudformation_type():
         return "AWS::SecretsManager::Secret"
 
-    def get_cfn_attribute(self, attribute_name: str):
-        match attribute_name:
-            case "Id":
-                return self.props.get("ARN")
-
-        return super(SecretsManagerSecret, self).get_cfn_attribute(attribute_name)
-
     def fetch_state(self, stack_name, resources):
         secret_name = self.props.get("Name") or self.logical_resource_id
         result = connect_to().secretsmanager.describe_secret(SecretId=secret_name)
@@ -112,7 +105,7 @@ class SecretsManagerSecret(GenericBaseModel):
             return result
 
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
-            resource["Properties"]["ARN"] = result["ARN"]
+            resource["Properties"]["Id"] = result["ARN"]
             resource["PhysicalResourceId"] = result["ARN"]
 
         return {

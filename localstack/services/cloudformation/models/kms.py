@@ -2,18 +2,12 @@ import json
 
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import arns
 
 
 class KMSKey(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::KMS::Key"
-
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Arn":
-            return arns.kms_key_arn(self.physical_resource_id)
-        return super(KMSKey, self).get_cfn_attribute(attribute_name)
 
     def fetch_state(self, stack_name, resources):
         client = connect_to().kms
@@ -58,6 +52,7 @@ class KMSKey(GenericBaseModel):
 
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = result["KeyMetadata"]["KeyId"]
+            resource["Properties"]["Arn"] = result["KeyMetadata"]["Arn"]
 
         return {
             "create": [

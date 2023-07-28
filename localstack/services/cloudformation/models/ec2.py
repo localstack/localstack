@@ -10,6 +10,30 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.strings import str_to_bool
 
 
+def _get_default_security_group_for_vpc(ec2_client, vpc_id: str) -> str:
+    sgs = ec2_client.describe_security_groups(
+        Filters=[
+            {"Name": "group-name", "Values": ["default"]},
+            {"Name": "vpc-id", "Values": [vpc_id]},
+        ]
+    )["SecurityGroups"]
+    if len(sgs) != 1:
+        raise Exception(f"There should only be one default group for this VPC ({vpc_id=})")
+    return sgs[0]["GroupId"]
+
+
+def _get_default_acl_for_vpc(ec2_client, vpc_id: str) -> str:
+    acls = ec2_client.describe_network_acls(
+        Filters=[
+            {"Name": "default", "Values": ["true"]},
+            {"Name": "vpc-id", "Values": [vpc_id]},
+        ]
+    )["NetworkAcls"]
+    if len(acls) != 1:
+        raise Exception(f"There should only be one default network ACL for this VPC ({vpc_id=})")
+    return acls[0]["NetworkAclId"]
+
+
 class EC2RouteTable(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
@@ -103,11 +127,6 @@ class EC2InternetGateway(GenericBaseModel):
             InternetGatewayIds=[self.physical_resource_id]
         )["InternetGateways"]
         return gateways[0] if gateways else None
-
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "InternetGatewayId":
-            return self.props.get("InternetGatewayId")
-        return super(EC2InternetGateway, self).get_cfn_attribute(attribute_name)
 
     @staticmethod
     def get_deploy_templates():
@@ -231,11 +250,6 @@ class SecurityGroup(GenericBaseModel):
             resp = client.describe_security_groups(GroupNames=[group_name])
         return (resp["SecurityGroups"] or [None])[0]
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "GroupId":
-            return self.props.get("GroupId")
-        return super(SecurityGroup, self).get_cfn_attribute(attribute_name)
-
     @staticmethod
     def add_defaults(resource, stack_name: str):
         role_name = resource.get("Properties", {}).get("GroupName")
@@ -283,11 +297,6 @@ class EC2Subnet(GenericBaseModel):
         ]
         subnets = client.describe_subnets(Filters=filters)["Subnets"]
         return (subnets or [None])[0]
-
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "SubnetId":
-            return self.props.get("SubnetId")
-        return super(EC2Subnet, self).get_cfn_attribute(attribute_name)
 
     @classmethod
     def get_deploy_templates(cls):
@@ -366,35 +375,6 @@ class EC2VPC(GenericBaseModel):
             )
             return (resp["Vpcs"] or [None])[0]
 
-    def get_cfn_attribute(self, attribute_name):
-        ec2_client = connect_to().ec2
-        vpc_id = self.props["VpcId"]
-
-        if attribute_name == "DefaultSecurityGroup":
-            sgs = ec2_client.describe_security_groups(
-                Filters=[
-                    {"Name": "group-name", "Values": ["default"]},
-                    {"Name": "vpc-id", "Values": [vpc_id]},
-                ]
-            )["SecurityGroups"]
-            if len(sgs) != 1:
-                raise Exception(f"There should only be one default group for this VPC ({vpc_id=})")
-            return sgs[0]["GroupId"]
-        elif attribute_name == "DefaultNetworkAcl":
-            acls = ec2_client.describe_network_acls(
-                Filters=[
-                    {"Name": "default", "Values": ["true"]},
-                    {"Name": "vpc-id", "Values": [vpc_id]},
-                ]
-            )["NetworkAcls"]
-            if len(acls) != 1:
-                raise Exception(
-                    f"There should only be one default network ACL for this VPC ({vpc_id=})"
-                )
-            return acls[0]["NetworkAclId"]
-        else:
-            return super(EC2VPC, self).get_cfn_attribute(attribute_name)
-
     @classmethod
     def get_deploy_templates(cls):
         def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
@@ -419,8 +399,23 @@ class EC2VPC(GenericBaseModel):
                     ec2_client.delete_route_table(RouteTableId=rt["RouteTableId"])
 
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
-            resource["PhysicalResourceId"] = result["Vpc"]["VpcId"]
-            resource["Properties"]["VpcId"] = result["Vpc"]["VpcId"]
+            ec2_client = connect_to().ec2
+            vpc_id = result["Vpc"]["VpcId"]
+
+            resource["Properties"]["VpcId"] = vpc_id
+            resource["Properties"]["CidrBlock"] = result["Vpc"]["CidrBlock"]
+            resource["Properties"]["CidrBlockAssociations"] = [
+                cba["CidrBlock"] for cba in result["Vpc"]["CidrBlockAssociationSet"]
+            ]
+            # resource["Properties"]["Ipv6CidrBlocks"] = ?
+            resource["Properties"]["DefaultNetworkAcl"] = _get_default_acl_for_vpc(
+                ec2_client, vpc_id
+            )
+            resource["Properties"]["DefaultSecurityGroup"] = _get_default_security_group_for_vpc(
+                ec2_client, vpc_id
+            )
+
+            resource["PhysicalResourceId"] = vpc_id
 
         return {
             "create": {
@@ -532,22 +527,19 @@ class EC2Instance(GenericBaseModel):
         if max_count is None:
             props["MaxCount"] = 1
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "PublicIp":
-            return self.props.get("PublicIpAddress") or "127.0.0.1"
-        if attribute_name == "PublicDnsName":
-            return self.props.get("PublicDnsName")
-        if attribute_name == "AvailabilityZone":
-            return (
-                self.props.get("Placement", {}).get("AvailabilityZone")
-                or f"{aws_stack.get_region()}a"
-            )
-        return super(EC2Instance, self).get_cfn_attribute(attribute_name)
-
     @staticmethod
     def get_deploy_templates():
         # TODO: validate again
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            instance = result["Instances"][0]
+            resource["Properties"]["PublicIp"] = instance.get("PublicIpAddress") or "127.0.0.1"
+            resource["Properties"]["PublicDnsName"] = instance.get("PublicDnsName")
+            resource["Properties"]["PrivateIp"] = instance.get("PrivateIpAddress") or "127.0.0.1"
+            resource["Properties"]["PrivateDnsName"] = instance.get("PrivateDnsName")
+            resource["Properties"]["AvailabilityZone"] = (
+                instance.get("Placement", {}).get("AvailabilityZone")
+                or f"{aws_stack.get_region()}a"
+            )
             resource["PhysicalResourceId"] = result["Instances"][0]["InstanceId"]
 
         return {
