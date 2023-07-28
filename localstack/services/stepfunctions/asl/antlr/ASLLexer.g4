@@ -93,6 +93,7 @@ MODE: '"Mode"';
 INLINE: '"INLINE"';
 
 ITEMPROCESSOR: '"ItemProcessor"';
+ITEMSELECTOR: '"ItemSelector"';
 MAXCONCURRENCY: '"MaxConcurrency"';
 
 RESOURCE: '"Resource"';

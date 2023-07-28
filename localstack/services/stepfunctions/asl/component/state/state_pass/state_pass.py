@@ -1,12 +1,18 @@
 from typing import Optional
 
-from localstack.aws.api.stepfunctions import HistoryEventType
+from localstack.aws.api.stepfunctions import (
+    HistoryEventExecutionDataDetails,
+    HistoryEventType,
+    StateEnteredEventDetails,
+    StateExitedEventDetails,
+)
 from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
 from localstack.services.stepfunctions.asl.component.common.path.result_path import ResultPath
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
 from localstack.services.stepfunctions.asl.component.state.state_pass.result import Result
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
 class StatePass(CommonStateField):
@@ -40,10 +46,25 @@ class StatePass(CommonStateField):
         if self.result_path is None:
             self.result_path = ResultPath(result_path_src=ResultPath.DEFAULT_PATH)
 
-    def _eval_state(self, env: Environment) -> None:
-        if self.name == "ParseBody":
-            print(self.name)
+    def _get_state_entered_event_details(self, env: Environment) -> StateEnteredEventDetails:
+        return StateEnteredEventDetails(
+            name=self.name,
+            input=to_json_str(env.inp, separators=(",", ":")),
+            inputDetails=HistoryEventExecutionDataDetails(
+                truncated=False  # Always False for api calls.
+            ),
+        )
 
+    def _get_state_exited_event_details(self, env: Environment) -> StateExitedEventDetails:
+        return StateExitedEventDetails(
+            name=self.name,
+            output=to_json_str(env.inp, separators=(",", ":")),
+            outputDetails=HistoryEventExecutionDataDetails(
+                truncated=False  # Always False for api calls.
+            ),
+        )
+
+    def _eval_state(self, env: Environment) -> None:
         if self.parameters:
             self.parameters.eval(env=env)
 

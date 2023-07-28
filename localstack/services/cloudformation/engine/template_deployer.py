@@ -331,6 +331,10 @@ def _resolve_refs_recursively(
                 val = resolve_refs_recursively(
                     stack_name, resources, mappings, conditions, parameters, val
                 )
+                if not isinstance(val, str):
+                    # We don't have access to the resource that's a dependency in this case,
+                    # so do the best we can with the resource ids
+                    raise DependencyNotYetSatisfied(resource_ids=key, message="")
                 result = result.replace("${%s}" % key, val)
 
             # resolve placeholders

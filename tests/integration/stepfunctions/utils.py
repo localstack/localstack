@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Callable, Final
 
-from localstack.aws.api.stepfunctions import ExecutionStatus, HistoryEventList
+from localstack.aws.api.stepfunctions import ExecutionStatus, HistoryEventList, HistoryEventType
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
@@ -106,10 +106,13 @@ def await_execution_terminated(stepfunctions_client, execution_arn: str):
     def _check_last_is_terminal(events: HistoryEventList) -> bool:
         if len(events) > 0:
             last_event = events[-1]
-            return (
-                "executionSucceededEventDetails" in last_event
-                or "executionFailedEventDetails" in last_event
-            )
+            last_event_type = last_event.get("type")
+            return last_event_type is None or last_event_type in {
+                HistoryEventType.ExecutionFailed,
+                HistoryEventType.ExecutionAborted,
+                HistoryEventType.ExecutionTimedOut,
+                HistoryEventType.ExecutionSucceeded,
+            }
         return False
 
     _await_on_execution_events(

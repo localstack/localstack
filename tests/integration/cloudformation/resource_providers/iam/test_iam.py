@@ -4,10 +4,11 @@ import os
 import pytest
 
 from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
+from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
 
-@pytest.mark.aws_validated
+@markers.parity.aws_validated
 def test_delete_role_detaches_role_policy(deploy_cfn_template, aws_client):
     role_name = f"LsRole{short_uid()}"
     stack = deploy_cfn_template(
@@ -35,7 +36,7 @@ def test_delete_role_detaches_role_policy(deploy_cfn_template, aws_client):
     assert e.value.response.get("Error").get("Code") == "NoSuchEntity"
 
 
-@pytest.mark.aws_validated
+@markers.parity.aws_validated
 def test_policy_attachments(deploy_cfn_template, aws_client):
     role_name = f"role-{short_uid()}"
     group_name = f"group-{short_uid()}"
@@ -81,8 +82,8 @@ def test_policy_attachments(deploy_cfn_template, aws_client):
     assert policy["Statement"][0]["Principal"] == {"Service": "elasticbeanstalk.amazonaws.com"}
 
 
-@pytest.mark.aws_validated
-@pytest.mark.skip_snapshot_verify(paths=["$..User.Tags"])
+@markers.parity.aws_validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..User.Tags"])
 def test_iam_username_defaultname(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.iam_api())
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -106,7 +107,7 @@ def test_iam_username_defaultname(deploy_cfn_template, snapshot, aws_client):
 
 
 @pytest.mark.skip(reason="not correctly implemented at the moment")
-@pytest.mark.aws_validated
+@markers.parity.aws_validated
 def test_iam_user_access_key(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformers_list(
         [
@@ -145,7 +146,7 @@ def test_iam_user_access_key(deploy_cfn_template, snapshot, aws_client):
     assert stack2.outputs["SecretAccessKey"] != stack.outputs["SecretAccessKey"]
 
 
-@pytest.mark.aws_validated
+@markers.parity.aws_validated
 def test_update_inline_policy(deploy_cfn_template, snapshot, aws_client):
 
     snapshot.add_transformer(snapshot.transform.iam_api())
@@ -202,8 +203,8 @@ def test_update_inline_policy(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("role_updated_inline_policy", role_updated_inline_policy_resource)
 
 
-@pytest.mark.aws_validated
-@pytest.mark.skip_snapshot_verify(
+@markers.parity.aws_validated
+@markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..Policy.Description",
         "$..Policy.IsAttachable",

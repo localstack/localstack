@@ -4,6 +4,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.constants import APPLICATION_JSON
+from localstack.testing.pytest import markers
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.sync import retry
 from tests.integration.apigateway.apigateway_fixtures import (
@@ -13,9 +14,9 @@ from tests.integration.apigateway.apigateway_fixtures import (
 from tests.integration.apigateway.conftest import DEFAULT_STAGE_NAME
 
 
-@pytest.mark.aws_validated
+@markers.parity.aws_validated
 @pytest.mark.parametrize("ddb_action", ["PutItem", "Query", "Scan"])
-@pytest.mark.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..headers.connection",
         "$..headers.x-amz-apigw-id",
@@ -114,7 +115,7 @@ def test_rest_api_to_dynamodb_integration(
         snapshot.match("result-scan", result)
 
 
-@pytest.mark.aws_validated
+@markers.parity.aws_validated
 def test_error_aws_proxy_not_supported(create_rest_api_with_integration, snapshot, aws_client):
     region_name = aws_client.apigateway.meta.region_name
     integration_uri = f"arn:aws:apigateway:{region_name}:dynamodb:action/Query"

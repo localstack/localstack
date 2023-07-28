@@ -9,6 +9,7 @@ from localstack.constants import (
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.services.events.provider import TEST_EVENTS_CACHE
+from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns
 from localstack.utils.files import load_file
@@ -638,7 +639,7 @@ def test_multiregion_nested(aws_client_factory, region_name, statemachine_defini
         client1.delete_state_machine(stateMachineArn=child_machine_arn)
 
 
-@pytest.mark.aws_validated
+@markers.parity.aws_validated
 def test_default_logging_configuration(create_state_machine, aws_client):
     role_name = f"role_name-{short_uid()}"
     try:

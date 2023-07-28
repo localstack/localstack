@@ -6,6 +6,7 @@ from botocore.exceptions import ClientError
 
 from localstack.config import LEGACY_S3_PROVIDER
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
+from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.strings import short_uid
@@ -18,8 +19,8 @@ TEST_LAMBDA_PYTHON_TRIGGERED_S3 = os.path.join(
 
 
 class TestS3NotificationsToLambda:
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
     )
     def test_create_object_put_via_dynamodb(
@@ -96,12 +97,12 @@ class TestS3NotificationsToLambda:
 
         retry(check_table, retries=5, sleep=1)
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER,
         paths=["$..data.s3.object.eTag", "$..data.s3.object.versionId", "$..data.s3.object.size"],
     )
-    @pytest.mark.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not LEGACY_S3_PROVIDER,
         paths=[
             "$..data.s3.object.eTag",
@@ -191,9 +192,9 @@ class TestS3NotificationsToLambda:
 
         retry(check_table, retries=20, sleep=2)
 
-    @pytest.mark.aws_validated
+    @markers.parity.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="no validation implemented")
-    @pytest.mark.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not LEGACY_S3_PROVIDER,
         paths=[
             "$..Error.ArgumentName1",

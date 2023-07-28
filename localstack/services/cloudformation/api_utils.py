@@ -2,11 +2,12 @@ import logging
 import re
 from urllib.parse import urlparse
 
-from requests.structures import CaseInsensitiveDict
-
 from localstack import config, constants
 from localstack.aws.connect import connect_to
-from localstack.services.s3 import s3_listener, s3_utils
+from localstack.services.s3.utils import (
+    extract_bucket_name_and_key_from_headers_and_path,
+    normalize_bucket_name,
+)
 from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests
 from localstack.utils.strings import to_str
@@ -80,12 +81,11 @@ def convert_s3_to_local_url(url: str) -> str:
     url_parsed = urlparse(url)
     path = url_parsed.path
 
-    headers = CaseInsensitiveDict({"Host": url_parsed.netloc})
-    bucket_name = s3_utils.extract_bucket_name(headers, path)
-    key_name = s3_utils.extract_key_name(headers, path)
+    headers = {"host": url_parsed.netloc}
+    bucket_name, key_name = extract_bucket_name_and_key_from_headers_and_path(headers, path)
 
     # note: make sure to normalize the bucket name here!
-    bucket_name = s3_listener.normalize_bucket_name(bucket_name)
+    bucket_name = normalize_bucket_name(bucket_name)
     local_url = f"{config.service_url('s3')}/{bucket_name}/{key_name}"
     return local_url
 
