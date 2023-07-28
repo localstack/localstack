@@ -78,11 +78,6 @@ class LambdaFunction(GenericBaseModel):
             }
         return client.update_function_configuration(**update_config_props)
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Arn":
-            return self.props.get("Arn", self.props.get("Configuration", {}).get("FunctionArn"))
-        return super(LambdaFunction, self).get_cfn_attribute(attribute_name)
-
     @staticmethod
     def add_defaults(resource, stack_name: str):
         func_name = resource.get("Properties", {}).get("FunctionName")
@@ -198,11 +193,6 @@ class LambdaFunctionVersion(GenericBaseModel):
         lambda_client = connect_to().awslambda
         return lambda_client.get_function(FunctionName=function_name, Qualifier=qualifier)
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Version":
-            return self.props.get("Version")
-        return super(LambdaFunctionVersion, self).get_cfn_attribute(attribute_name)
-
     @staticmethod
     def get_deploy_templates():
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
@@ -246,14 +236,11 @@ class LambdaEventSourceMapping(GenericBaseModel):
             raise Exception("ResourceNotFound")
         return mapping[0]
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Id":
-            return self.props.get("UUID")
-
     @staticmethod
     def get_deploy_templates():
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
             resource["PhysicalResourceId"] = result["UUID"]
+            resource["Properties"]["Id"] = result["UUID"]
 
         return {
             "create": {"function": "create_event_source_mapping", "result_handler": _handle_result},
@@ -384,16 +371,6 @@ class LambdaUrl(GenericBaseModel):
             kwargs["Qualifier"] = qualifier
 
         return client.get_function_url_config(**kwargs)
-
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "FunctionArn":
-            return self.props.get("TargetFunctionArn")
-        if attribute_name == "FunctionUrl":
-            url_config = connect_to().awslambda.get_function_url_config(
-                FunctionName=self.props.get("TargetFunctionArn")
-            )
-            return url_config["FunctionUrl"]
-        return super(LambdaUrl, self).get_cfn_attribute(attribute_name)
 
     @staticmethod
     def get_deploy_templates():

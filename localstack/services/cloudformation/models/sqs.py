@@ -67,11 +67,6 @@ class SQSQueue(GenericBaseModel):
     def cloudformation_type(cls):
         return "AWS::SQS::Queue"
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Arn":
-            return arns.sqs_queue_arn(self.properties["QueueName"])
-        return super().get_cfn_attribute(attribute_name)
-
     def fetch_state(self, stack_name, resources):
         queue_name = self.props["QueueName"]
         sqs_client = connect_to().sqs
