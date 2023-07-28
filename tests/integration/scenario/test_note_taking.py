@@ -164,16 +164,13 @@ class TestNoteTakingScenario:
         app = cdk.App()
         stack = cdk.Stack(app, "NoteTakingStack")
 
-        # TODO how to skip creation if still have the cdk app deployed?
         bucket_name = "notes-sample-scenario-test"
 
-        # stack definition
         # manually create s3 bucket + upload lambda
         infra.add_custom_setup_provisioning_step(
             lambda: setup_lambdas(aws_client.s3, create_archive_for_lambda_resource, bucket_name)
         )
-        # add custom tear down for deleting bucket + content (not using fixture, because we might want to keep the state
-        #   during test development)
+        # add custom tear down for deleting bucket + content
         infra.add_custom_teardown(lambda: cleanup_s3_bucket(aws_client.s3, bucket_name))
         infra.add_custom_teardown(lambda: aws_client.s3.delete_bucket(Bucket=bucket_name))
 
@@ -222,7 +219,7 @@ class TestNoteTakingScenario:
             ],
         )
 
-        # TODO this seems to belong to audio upload/transcription and is currently not part of the app
+        # TODO enhance app by using audio upload and transcribe feature, sign-up, etc
 
         """
         files_bucket = s3.Bucket(
@@ -289,10 +286,11 @@ class TestNoteTakingScenario:
         cdk.CfnOutput(stack, "GatewayUrl", value=api.url)
         cdk.CfnOutput(stack, "Region", value=stack.region)
 
-        # provisioning
         infra.add_cdk_stack(stack)
+
         # set skip_teardown=True to prevent the stack to be deleted
         with infra.provisioner(skip_teardown=False) as prov:
+            # here we could add some initial setup, e.g. pre-filling the app with data
             yield prov
 
     def test_notes_rest_api(self, infrastructure):

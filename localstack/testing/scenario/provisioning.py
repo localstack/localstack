@@ -84,7 +84,7 @@ class InfraProvisioner:
                 StackName=stack_name, WaiterConfig={"Delay": 1}
             )
             describe_stack = self.aws_client.cloudformation.describe_stacks(StackName=stack_name)
-            outputs = describe_stack["Stacks"][0]["Outputs"]
+            outputs = describe_stack["Stacks"][0].get("Outputs", {})
             stack["Outputs"] = {o["OutputKey"]: o["OutputValue"] for o in outputs}
 
             if stack["AutoCleanS3"]:
