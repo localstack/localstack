@@ -200,7 +200,9 @@ class TestDynamoDB:
         assert len(stream_tables) == 0
 
         # assert stream has been created
-        stream_tables = [s["TableName"] for s in ddbstreams.list_streams(TableName=table_name)["Streams"]]
+        stream_tables = [
+            s["TableName"] for s in ddbstreams.list_streams(TableName=table_name)["Streams"]
+        ]
         assert table_name in stream_tables
         assert len(stream_tables) == 1
         stream_name = get_kinesis_stream_name(table_name)
