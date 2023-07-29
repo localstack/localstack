@@ -2,18 +2,12 @@ import json
 
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import arns
 
 
 class KMSKey(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::KMS::Key"
-
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Arn":
-            return arns.kms_key_arn(self.physical_resource_id)
-        return super(KMSKey, self).get_cfn_attribute(attribute_name)
 
     def fetch_state(self, stack_name, resources):
         client = connect_to().kms
@@ -56,12 +50,13 @@ class KMSKey(GenericBaseModel):
 
             return new_key
 
-        def _handle_key_result(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["KeyMetadata"]["KeyId"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["KeyMetadata"]["KeyId"]
+            resource["Properties"]["Arn"] = result["KeyMetadata"]["Arn"]
 
         return {
             "create": [
-                {"function": _create, "result_handler": _handle_key_result},
+                {"function": _create, "result_handler": _handle_result},
             ],
             "delete": {
                 # TODO Key needs to be deleted in KMS backend

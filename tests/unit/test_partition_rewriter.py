@@ -1,5 +1,6 @@
 import json
 from unittest import mock
+from urllib.parse import urlencode
 
 import pytest
 from werkzeug.wrappers import Request as WerkzeugRequest
@@ -91,6 +92,29 @@ def test_arn_partition_rewriting_in_request(internal_call, encoding, origin_part
         result.headers["some-header-with-arn"]
         == "arn:aws:apigateway:us-gov-west-1::/restapis/arn-in-header/*"
     )
+
+
+def test_arn_partition_rewriting_urlencoded_body():
+    rewrite_handler = ArnPartitionRewriteHandler()
+    data = {"some-data-with-arn": "arn:aws-us-gov:iam::000000000000:role/test-role"}
+
+    # if this test is parameterized to be an internal call, set the internal auth
+    # incoming requests should be rewritten for both, internal and external requests (in contrast to the responses!)
+    headers = {"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"}
+
+    request = Request(
+        method="POST",
+        path="/",
+        query_string="",
+        body=urlencode(data),
+        headers=headers,
+    )
+    result = rewrite_handler.modify_request(request)
+    assert result.method == "POST"
+    assert get_full_raw_path(result) == "/"
+    assert result.form.to_dict() == {
+        "some-data-with-arn": "arn:aws:iam::000000000000:role/test-role"
+    }
 
 
 def test_arn_partition_rewriting_url_encoding(httpserver, monkeypatch):

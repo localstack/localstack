@@ -103,10 +103,7 @@ class StateTaskLambda(StateTask):
             event_detail=EventDetails(lambdaFunctionScheduledEventDetails=scheduled_event_details),
         )
 
-        env.event_history.add_event(
-            hist_type_event=HistoryEventType.LambdaFunctionStarted,
-            event_detail=EventDetails(),
-        )
+        env.event_history.add_event(hist_type_event=HistoryEventType.LambdaFunctionStarted)
 
         parameters = self._eval_parameters(env=env)
         if "Payload" in parameters:

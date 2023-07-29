@@ -2462,21 +2462,28 @@ class TestS3:
                 "x-amz-trailer-signature:712fb67227583c88ac32f468fc30a249cf9ceeb0d0e947ea5e5209a10b99181c\r\n\r\n"
             )
 
-        # put object
         url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}"
-        valid_data = get_data(body, valid_checksum)
-        requests.put(url, valid_data, headers=headers, verify=False)
-        # get object and assert content length
-        downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
-        download_file_object = to_str(downloaded_object["Body"].read())
-        assert len(body) == len(str(download_file_object))
-        assert body == str(download_file_object)
 
         # test with wrong checksum
         wrong_data = get_data(body, "wrongchecksum")
         request = requests.put(url, wrong_data, headers=headers, verify=False)
         assert request.status_code == 400
         assert "Value for x-amz-checksum-sha256 header is invalid." in request.text
+
+        # assert the object has not been created
+        with pytest.raises(ClientError):
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+
+        # put object with good checksum
+        valid_data = get_data(body, valid_checksum)
+        req = requests.put(url, valid_data, headers=headers, verify=False)
+        assert req.ok
+
+        # get object and assert content length
+        downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        download_file_object = to_str(downloaded_object["Body"].read())
+        assert len(body) == len(str(download_file_object))
+        assert body == str(download_file_object)
 
     @markers.parity.only_localstack
     def test_upload_part_chunked_newlines_valid_etag(self, s3_bucket, aws_client):
@@ -8337,6 +8344,24 @@ class TestS3BucketLifecycle:
 
         snapshot.match("duplicate-tag-keys", e.value.response)
 
+        with pytest.raises(ClientError) as e:
+            lfc["Rules"] = [
+                {
+                    "ID": "expired-delete-marker-and-days",
+                    "Filter": {},
+                    "Status": "Enabled",
+                    "Expiration": {
+                        "Days": 1,
+                        "ExpiredObjectDeleteMarker": True,
+                    },
+                }
+            ]
+            aws_client.s3.put_bucket_lifecycle_configuration(
+                Bucket=s3_bucket, LifecycleConfiguration=lfc
+            )
+
+        snapshot.match("expired-delete-marker-and-days", e.value.response)
+
     @markers.parity.aws_validated
     def test_bucket_lifecycle_configuration_date(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
@@ -8747,6 +8772,41 @@ class TestS3BucketLifecycle:
         )
         snapshot.match("put-object-no-match", put_object_3)
         assert "Expiration" not in put_object_3
+
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    def test_lifecycle_expired_object_delete_marker(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value(
+                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
+                ),
+            ]
+        )
+        rule_id = "rule-marker"
+        lfc = {
+            "Rules": [
+                {
+                    "Expiration": {"ExpiredObjectDeleteMarker": True},
+                    "ID": rule_id,
+                    "Filter": {},
+                    "Status": "Enabled",
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_lifecycle_configuration(
+            Bucket=s3_bucket, LifecycleConfiguration=lfc
+        )
+        result = aws_client.s3.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+        key = "test-expired-object-delete-marker"
+        put_object = aws_client.s3.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+        snapshot.match("put-object", put_object)
+
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("head-object", response)
 
 
 def _anon_client(service: str):

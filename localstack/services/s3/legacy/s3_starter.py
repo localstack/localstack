@@ -13,7 +13,7 @@ from localstack import config
 from localstack.aws.connect import connect_to
 from localstack.services.infra import start_moto_server
 from localstack.services.s3 import constants as s3_constants
-from localstack.services.s3 import s3_listener, s3_utils
+from localstack.services.s3.legacy import s3_listener, s3_utils
 from localstack.utils.collections import get_safe
 from localstack.utils.common import get_free_tcp_port, wait_for_port_open
 from localstack.utils.patch import patch

@@ -131,12 +131,15 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.default_
 from localstack.services.stepfunctions.asl.component.state.state_choice.state_choice import (
     StateChoice,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.itemprocessor.item_processor import (
-    ItemProcessor,
-    ItemProcessorProps,
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
+    ItemSelector,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.itemprocessor.processor_config import (
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.item_processor import (
+    ItemProcessor,
     ProcessorConfig,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.iterator import (
+    Iterator,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     MaxConcurrency,
@@ -519,11 +522,22 @@ class Preprocessor(ASLParserVisitor):
         return self.visit(ctx.children[0])
 
     def visitItem_processor_decl(self, ctx: ASLParser.Item_processor_declContext) -> ItemProcessor:
-        props = ItemProcessorProps()
+        props = TypedProps()
         for child in ctx.children:
             cmp = self.visit(child)
             props.add(cmp)
         return ItemProcessor.from_props(props)
+
+    def visitIterator_decl(self, ctx: ASLParser.Iterator_declContext) -> Iterator:
+        props = TypedProps()
+        for child in ctx.children:
+            cmp = self.visit(child)
+            props.add(cmp)
+        return Iterator.from_props(props)
+
+    def visitItem_selector_decl(self, ctx: ASLParser.Item_selector_declContext) -> ItemSelector:
+        payload_tmpl: PayloadTmpl = self.visit(ctx.payload_tmpl_decl())
+        return ItemSelector(payload_tmpl=payload_tmpl)
 
     def visitRetry_decl(self, ctx: ASLParser.Retry_declContext) -> RetryDecl:
         retriers: list[RetrierDecl] = list()

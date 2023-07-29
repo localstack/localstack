@@ -3,7 +3,7 @@ import re
 from botocore.exceptions import ClientError
 
 from localstack.aws.connect import connect_to
-from localstack.config import get_edge_port_http
+from localstack.config import LEGACY_S3_PROVIDER, get_edge_port_http
 from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
 from localstack.services.cloudformation.cfn_utils import rename_params
 from localstack.services.cloudformation.deployment_utils import (
@@ -11,7 +11,10 @@ from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.services.s3 import s3_listener, s3_utils
+from localstack.services.s3.legacy.s3_listener import (
+    remove_bucket_notification as legacy_remove_bucket_notification,
+)
+from localstack.services.s3.utils import normalize_bucket_name
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import canonical_json, md5
 from localstack.utils.testutil import delete_all_s3_objects
@@ -53,13 +56,13 @@ class S3Bucket(GenericBaseModel):
 
     @staticmethod
     def normalize_bucket_name(bucket_name):
-        return s3_utils.normalize_bucket_name(bucket_name)
+        return normalize_bucket_name(bucket_name)
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
         role_name = resource.get("Properties", {}).get("BucketName")
         if not role_name:
-            resource["Properties"]["BucketName"] = s3_listener.normalize_bucket_name(
+            resource["Properties"]["BucketName"] = normalize_bucket_name(
                 generate_default_name(stack_name, resource["LogicalResourceId"])
             )
 
@@ -167,7 +170,20 @@ class S3Bucket(GenericBaseModel):
             return result
 
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
-            resource["PhysicalResourceId"] = resource["Properties"]["BucketName"]
+            bucket_name = resource["Properties"]["BucketName"]
+            resource["PhysicalResourceId"] = bucket_name
+            resource["Properties"]["Arn"] = arns.s3_bucket_arn(bucket_name)
+            domain_name = f"{bucket_name}.{S3_VIRTUAL_HOSTNAME}"
+            resource["Properties"]["DomainName"] = domain_name
+            resource["Properties"]["RegionalDomainName"] = domain_name
+            # by default (parity) s3 website only supports http
+            #   https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html
+            #   "Amazon S3 website endpoints do not support HTTPS. If you want to use HTTPS,
+            #   you can use Amazon CloudFront [...]"
+            resource["Properties"][
+                "WebsiteURL"
+            ] = f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}:{get_edge_port_http()}"
+            # resource["Properties"]["DualStackDomainName"] = ?
 
         def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
             s3 = connect_to().s3
@@ -177,7 +193,8 @@ class S3Bucket(GenericBaseModel):
                 s3.delete_bucket_policy(Bucket=bucket_name)
             except Exception:
                 pass
-            s3_listener.remove_bucket_notification(resource["PhysicalResourceId"])
+            if LEGACY_S3_PROVIDER:
+                legacy_remove_bucket_notification(resource["PhysicalResourceId"])
             # TODO: divergence from how AWS deals with bucket deletes (should throw an error)
             try:
                 delete_all_s3_objects(bucket_name)
@@ -275,7 +292,7 @@ class S3Bucket(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         props = self.props
-        bucket_name = self._get_bucket_name()
+        bucket_name = props["BucketName"]
         bucket_name = self.normalize_bucket_name(bucket_name)
         s3_client = connect_to().s3
         response = s3_client.get_bucket_location(Bucket=bucket_name)
@@ -297,23 +314,3 @@ class S3Bucket(GenericBaseModel):
             return None
 
         return response
-
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name in ["Arn"]:
-            return arns.s3_bucket_arn(self._get_bucket_name())
-        if attribute_name in ["DomainName", "RegionalDomainName"]:
-            bucket_name = self._get_bucket_name()
-            return "%s.%s" % (bucket_name, S3_VIRTUAL_HOSTNAME)
-
-        if attribute_name == "WebsiteURL":
-            bucket_name = self.props.get("BucketName")
-            # by default (parity) s3 website only supports http
-            #   https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html
-            #   "Amazon S3 website endpoints do not support HTTPS. If you want to use HTTPS,
-            #   you can use Amazon CloudFront [...]"
-            return f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}:{get_edge_port_http()}"
-
-        return super(S3Bucket, self).get_cfn_attribute(attribute_name)
-
-    def _get_bucket_name(self):
-        return self.props.get("BucketName") or self.logical_resource_id
