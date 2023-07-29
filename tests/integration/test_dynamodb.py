@@ -196,7 +196,7 @@ class TestDynamoDB:
         assert table["LatestStreamArn"].startswith(expected_arn_prefix)
 
         # test list_streams filtering
-        stream_tables = ddbstreams.list_streams(TableName="foo")
+        stream_tables = ddbstreams.list_streams(TableName="foo")["Streams"]
         assert len(stream_tables) == 0
 
         # assert stream has been created
