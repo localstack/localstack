@@ -134,12 +134,12 @@ from localstack.services.stepfunctions.asl.component.state.state_choice.state_ch
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
     ItemSelector,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.itemprocessor.item_processor import (
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.item_processor import (
     ItemProcessor,
-    ItemProcessorProps,
-)
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.itemprocessor.processor_config import (
     ProcessorConfig,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.iterator import (
+    Iterator,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     MaxConcurrency,
@@ -522,11 +522,18 @@ class Preprocessor(ASLParserVisitor):
         return self.visit(ctx.children[0])
 
     def visitItem_processor_decl(self, ctx: ASLParser.Item_processor_declContext) -> ItemProcessor:
-        props = ItemProcessorProps()
+        props = TypedProps()
         for child in ctx.children:
             cmp = self.visit(child)
             props.add(cmp)
         return ItemProcessor.from_props(props)
+
+    def visitIterator_decl(self, ctx: ASLParser.Iterator_declContext) -> Iterator:
+        props = TypedProps()
+        for child in ctx.children:
+            cmp = self.visit(child)
+            props.add(cmp)
+        return Iterator.from_props(props)
 
     def visitItem_selector_decl(self, ctx: ASLParser.Item_selector_declContext) -> ItemSelector:
         payload_tmpl: PayloadTmpl = self.visit(ctx.payload_tmpl_decl())

@@ -1,9 +1,11 @@
 from localstack.aws.api.es import CreateElasticsearchDomainRequest
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import remove_none_values
+from localstack.services.cloudformation.provider_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import arns
 from localstack.utils.collections import convert_to_typed_dict
+from localstack.utils.sync import poll_condition
 
 
 def es_add_tags_params(properties: dict, logical_resource_id: str, resource: dict, stack_name: str):
@@ -17,23 +19,18 @@ class ElasticsearchDomain(GenericBaseModel):
     def cloudformation_type():
         return "AWS::Elasticsearch::Domain"
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name in ["Arn", "DomainArn"]:
-            domain_name = self._domain_name()
-            return arns.elasticsearch_domain_arn(domain_name)
-        if attribute_name == "DomainEndpoint":
-            domain_status = self.props.get("DomainStatus", {})
-            result = domain_status.get("Endpoint")
-            if result:
-                return result
-        return super(ElasticsearchDomain, self).get_cfn_attribute(attribute_name)
-
     def fetch_state(self, stack_name, resources):
-        domain_name = self._domain_name()
+        domain_name = self.props["DomainName"]
         return connect_to().es.describe_elasticsearch_domain(DomainName=domain_name)
 
-    def _domain_name(self):
-        return self.props.get("DomainName") or self.logical_resource_id
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        # TODO: verify
+        name = resource.get("Properties", {}).get("DomainName")
+        if not name:
+            resource["Properties"]["DomainName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @staticmethod
     def get_deploy_templates():
@@ -50,13 +47,20 @@ class ElasticsearchDomain(GenericBaseModel):
             return result
 
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
-            domain_name = resource["Properties"].get("DomainName", logical_resource_id)
+            domain_name = resource["Properties"]["DomainName"]
             resource["PhysicalResourceId"] = domain_name
+            resource["Properties"]["DomainEndpoint"] = result["DomainStatus"]["Endpoint"]
+            resource["Properties"]["Arn"] = result["DomainStatus"]["ARN"]
+            resource["Properties"]["DomainArn"] = result["DomainStatus"]["ARN"]
+
             # TODO: wait for resource
-            describe_result = connect_to().es.describe_elasticsearch_domain(DomainName=domain_name)[
-                "DomainStatus"
-            ]
-            resource["Properties"]["DomainStatus"] = {"Endpoint": describe_result["Endpoint"]}
+            poll_condition(
+                lambda: connect_to().es.describe_elasticsearch_domain(DomainName=domain_name)[
+                    "DomainStatus"
+                ]["Created"],
+                timeout=120,
+                interval=1,
+            )
 
         return {
             "create": [

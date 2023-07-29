@@ -44,6 +44,7 @@ state_stmt
     | timestamp_path_decl
     | items_path_decl
     | item_processor_decl
+    | iterator_decl
     | item_selector_decl
     | max_concurrency_decl
     | timeout_seconds_decl
@@ -299,6 +300,20 @@ processor_config_decl
       | json_binding  // TODO
       )*
       RBRACE
+    ;
+
+iterator_decl
+    : ITERATOR
+      COLON
+      LBRACE
+      iterator_decl_item (COMMA iterator_decl_item)*
+      RBRACE
+    ;
+
+iterator_decl_item
+    : startat_decl
+    | states_decl
+    | comment_decl
     ;
 
 item_selector_decl
