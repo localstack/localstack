@@ -645,11 +645,11 @@ class TemplateDeployer:
                 initialize=True,
                 action="CREATE",
             )
-        except Exception:
+        except Exception as e:
             log_method = getattr(LOG, "info")
             if config.CFN_VERBOSE_ERRORS:
                 log_method = getattr(LOG, "exception")
-            log_method("Unable to create stack %s: %s", self.stack.stack_name)
+            log_method("Unable to create stack %s: %s", self.stack.stack_name, e)
             self.stack.set_stack_status("CREATE_FAILED")
             raise
 
