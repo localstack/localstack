@@ -8,7 +8,7 @@ import signal
 import threading
 import time
 from functools import wraps
-from typing import Dict, Iterable, Optional, Set
+from typing import Any, Dict, Iterable, Optional, Set
 
 from localstack import config, constants
 from localstack.config import get_edge_port_http, is_env_true
@@ -18,6 +18,8 @@ from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
     ContainerException,
+    NoSuchImage,
+    NoSuchNetwork,
     PortMappings,
     VolumeBind,
     VolumeMappings,
@@ -405,6 +407,11 @@ class LocalstackContainer:
         if self.additional_flags:
             cfg.additional_flags += " " + " ".join(self.additional_flags)
 
+        # TODO: there could be a --network flag in `additional_flags`. we solve a similar problem for the
+        #  ports using `extract_port_flags`. maybe it would be better to consolidate all this into the
+        #  ContainerConfig object, like ContainerConfig.update_from_flags(str).
+        self._ensure_container_network(cfg.network)
+
         try:
             return DOCKER_CLIENT.run_container_from_config(cfg)
         except ContainerException as e:
@@ -415,6 +422,17 @@ class LocalstackContainer:
                     "Error while starting LocalStack container: %s\n%s", e.message, to_str(e.stderr)
                 )
             raise
+
+    def _ensure_container_network(self, network: str):
+        """Makes sure the configured container network exists"""
+        if network:
+            if network in ["host", "bridge"]:
+                return
+            try:
+                DOCKER_CLIENT.inspect_network(network)
+            except NoSuchNetwork:
+                LOG.debug("Container network %s not found, creating it", network)
+                DOCKER_CLIENT.create_network(network)
 
     def truncate_log(self):
         with open(self.logfile, "wb") as fd:
@@ -546,6 +564,24 @@ def configure_container(container: LocalstackContainer):
     container.privileged = True
 
 
+def configure_container_from_cli_params(container: LocalstackContainer, params: Dict[str, Any]):
+    # TODO: consolidate with container_client.Util.parse_additional_flags
+    # network flag
+    if params.get("network"):
+        container.config.network = params.get("network")
+
+    # parse environment variable flags
+    if params.get("env"):
+        for e in params.get("env"):
+            if "=" in e:
+                k, v = e.split("=", maxsplit=1)
+                container.config.env_vars[k] = v
+            else:
+                # there's currently no way in our abstraction to only pass the variable name (as you can do
+                # in docker) so we resolve the value here.
+                container.config.env_vars[e] = os.getenv(e)
+
+
 def configure_volume_mounts(container: LocalstackContainer):
     container.volumes.add(VolumeBind(config.VOLUME_DIR, DEFAULT_VOLUME_DIR))
 
@@ -569,18 +605,29 @@ def prepare_host(console):
     hooks.prepare_host.run()
 
 
-def start_infra_in_docker():
+def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
     prepare_docker_start()
 
-    container = LocalstackContainer()
-
     # create and prepare container
+    container = LocalstackContainer()
     configure_container(container)
+    if cli_params:
+        configure_container_from_cli_params(container, cli_params or {})
+    ensure_container_image(console, container)
 
-    container.truncate_log()
+    status = console.status("Starting LocalStack container")
+    status.start()
 
     # printing the container log is the current way we're occupying the terminal
-    log_printer = FileListener(container.logfile, print)
+    def _init_log_printer(line):
+        """Prints the console rule separator on the first line, then re-configures the callback to print."""
+        status.stop()
+        console.rule("LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)")
+        print(line)
+        log_printer.callback = print
+
+    container.truncate_log()
+    log_printer = FileListener(container.logfile, callback=_init_log_printer)
     log_printer.start()
 
     # Set up signal handler, to enable clean shutdown across different operating systems.
@@ -616,7 +663,19 @@ def start_infra_in_docker():
         shutdown_handler()
 
 
-def start_infra_in_docker_detached(console):
+def ensure_container_image(console, container: LocalstackContainer):
+    try:
+        DOCKER_CLIENT.inspect_image(container.config.image_name, pull=False)
+        return
+    except NoSuchImage:
+        console.log("container image not found on host")
+
+    with console.status(f"Pulling container image {container.config.image_name}"):
+        DOCKER_CLIENT.pull_image(container.config.image_name)
+        console.log("download complete")
+
+
+def start_infra_in_docker_detached(console, cli_params: Dict[str, Any] = None):
     """
     An alternative to start_infra_in_docker where the terminal is not blocked by the follow on the logfile.
     """
@@ -631,6 +690,10 @@ def start_infra_in_docker_detached(console):
     console.log("configuring container")
     container = LocalstackContainer()
     configure_container(container)
+    if cli_params:
+        configure_container_from_cli_params(container, cli_params)
+    ensure_container_image(console, container)
+
     container.config.detach = True
     container.truncate_log()
 
