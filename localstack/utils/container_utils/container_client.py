@@ -409,7 +409,7 @@ class ContainerConfiguration:
     volumes: Optional[VolumeMappings] = None
     ports: Optional[PortMappings] = None
     entrypoint: Optional[str] = None
-    additional_flags: Optional[List[str]] = None
+    additional_flags: Optional[str] = None
     command: Optional[List[str]] = None
     env_vars: Dict[str, str] = dataclasses.field(default_factory=dict)
 

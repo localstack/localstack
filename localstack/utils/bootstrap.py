@@ -1,3 +1,4 @@
+import copy
 import functools
 import logging
 import os
@@ -7,7 +8,7 @@ import signal
 import threading
 import time
 from functools import wraps
-from typing import Dict, Iterable, List, Optional, Set
+from typing import Dict, Iterable, Optional, Set
 
 from localstack import config, constants
 from localstack.config import get_edge_port_http, is_env_true
@@ -366,12 +367,13 @@ def extract_port_flags(user_flags, port_mappings: PortMappings):
 
 
 class LocalstackContainer:
-
     config: ContainerConfiguration
 
     def __init__(self, name: str = None):
         self.config = self._get_default_configuration(name)
         self.logfile = os.path.join(config.dirs.tmp, f"{self.config.name}_container.log")
+
+        self.additional_flags = []  # TODO: see comment in run()
 
     def _get_default_configuration(self, name: str = None) -> ContainerConfiguration:
         """Returns a ContainerConfiguration populated with default values or values gathered from the
@@ -386,15 +388,25 @@ class LocalstackContainer:
             entrypoint=os.environ.get("ENTRYPOINT"),
             command=shlex.split(os.environ.get("CMD", "")) or None,
             env_vars={},
-            additional_flags=[],
         )
 
     def run(self):
         if isinstance(DOCKER_CLIENT, CmdDockerClient):
             DOCKER_CLIENT.default_run_outfile = self.logfile
 
+        # FIXME: this is pretty awkward, but additional_flags in the LocalstackContainer API was always a
+        #  list of ["-e FOO=BAR", ...], whereas in the DockerClient it is expected to be a string. so we
+        #  need to re-assemble it here. the better way would be to not use additional_flags here all
+        #  together. it is still used in ext in `configure_pro_container` which could be refactored to use
+        #  the additional port bindings.
+        cfg = copy.deepcopy(self.config)
+        if not cfg.additional_flags:
+            cfg.additional_flags = ""
+        if self.additional_flags:
+            cfg.additional_flags += " " + " ".join(self.additional_flags)
+
         try:
-            return DOCKER_CLIENT.run_container_from_config(self.config)
+            return DOCKER_CLIENT.run_container_from_config(cfg)
         except ContainerException as e:
             if LOG.isEnabledFor(logging.DEBUG):
                 LOG.exception("Error while starting LocalStack container")
@@ -414,10 +426,6 @@ class LocalstackContainer:
     @property
     def env_vars(self) -> Dict[str, str]:
         return self.config.env_vars
-
-    @property
-    def additional_flags(self) -> List[str]:
-        return self.config.additional_flags
 
     @property
     def entrypoint(self) -> Optional[str]:
