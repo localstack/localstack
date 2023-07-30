@@ -15,9 +15,9 @@ from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
+    ContainerConfiguration,
     ContainerException,
     PortMappings,
-    SimpleVolumeBind,
     VolumeBind,
     VolumeMappings,
 )
@@ -365,82 +365,36 @@ def extract_port_flags(user_flags, port_mappings: PortMappings):
     return user_flags
 
 
-# TODO merge with docker_utils.py:ContainerConfiguration
 class LocalstackContainer:
-    name: str
-    image_name: str
-    volumes: VolumeMappings
-    ports: PortMappings
-    entrypoint: str
-    additional_flags: List[str]
-    command: List[str]
 
-    privileged: bool = True
-    remove: bool = True
-    interactive: bool = False
-    tty: bool = False
-    detach: bool = False
-    inherit_env: bool = True
-
-    logfile: Optional[str] = None
-    stdin: Optional[str] = None
-    user: Optional[str] = None
-    cap_add: Optional[List[str]] = None
-    network: Optional[str] = None
-    dns: Optional[str] = None
-    workdir: Optional[str] = None
+    config: ContainerConfiguration
 
     def __init__(self, name: str = None):
-        self.name = name or config.MAIN_CONTAINER_NAME
-        self.entrypoint = os.environ.get("ENTRYPOINT", "")
-        self.command = shlex.split(os.environ.get("CMD", ""))
-        self.image_name = get_docker_image_to_start()
-        self.ports = PortMappings(bind_host=config.EDGE_BIND_HOST)
-        self.volumes = VolumeMappings()
-        self.env_vars = {}
-        self.additional_flags = []
+        self.config = self._get_default_configuration(name)
+        self.logfile = os.path.join(config.dirs.tmp, f"{self.config.name}_container.log")
 
-        self.logfile = os.path.join(config.dirs.tmp, f"{self.name}_container.log")
-
-    def _get_mount_volumes(self) -> List[SimpleVolumeBind]:
-        # FIXME: VolumeMappings should be supported by the docker client
-        mount_volumes = []
-        for volume in self.volumes:
-            if isinstance(volume, tuple):
-                mount_volumes.append(volume)
-            elif isinstance(volume, VolumeBind):
-                mount_volumes.append((volume.host_dir, volume.container_dir))
-            else:
-                raise NotImplementedError("no support for volume type %s" % type(volume))
-
-        return mount_volumes
+    def _get_default_configuration(self, name: str = None) -> ContainerConfiguration:
+        """Returns a ContainerConfiguration populated with default values or values gathered from the
+        environment for starting the LocalStack container."""
+        return ContainerConfiguration(
+            image_name=get_docker_image_to_start(),
+            name=name or config.MAIN_CONTAINER_NAME,
+            volumes=VolumeMappings(),
+            remove=True,
+            # FIXME: update with https://github.com/localstack/localstack/pull/7991
+            ports=PortMappings(bind_host=config.EDGE_BIND_HOST),
+            entrypoint=os.environ.get("ENTRYPOINT"),
+            command=shlex.split(os.environ.get("CMD", "")) or None,
+            env_vars={},
+            additional_flags=[],
+        )
 
     def run(self):
         if isinstance(DOCKER_CLIENT, CmdDockerClient):
             DOCKER_CLIENT.default_run_outfile = self.logfile
 
         try:
-            return DOCKER_CLIENT.run_container(
-                image_name=self.image_name,
-                stdin=self.stdin,
-                name=self.name,
-                entrypoint=self.entrypoint or None,
-                remove=self.remove,
-                interactive=self.interactive,
-                tty=self.tty,
-                detach=self.detach,
-                command=self.command or None,
-                mount_volumes=self._get_mount_volumes(),
-                ports=self.ports,
-                env_vars=self.env_vars,
-                user=self.user,
-                cap_add=self.cap_add,
-                network=self.network,
-                dns=self.dns,
-                additional_flags=" ".join(self.additional_flags),
-                workdir=self.workdir,
-                privileged=self.privileged,
-            )
+            return DOCKER_CLIENT.run_container_from_config(self.config)
         except ContainerException as e:
             if LOG.isEnabledFor(logging.DEBUG):
                 LOG.exception("Error while starting LocalStack container")
@@ -453,6 +407,37 @@ class LocalstackContainer:
     def truncate_log(self):
         with open(self.logfile, "wb") as fd:
             fd.write(b"")
+
+    # these properties are there to not break code that configures the container by using these values
+    # that code should ideally be refactored soon-ish to use the config instead.
+
+    @property
+    def env_vars(self) -> Dict[str, str]:
+        return self.config.env_vars
+
+    @property
+    def additional_flags(self) -> List[str]:
+        return self.config.additional_flags
+
+    @property
+    def entrypoint(self) -> Optional[str]:
+        return self.config.entrypoint
+
+    @entrypoint.setter
+    def entrypoint(self, value: str):
+        self.config.entrypoint = value
+
+    @property
+    def name(self) -> str:
+        return self.config.name
+
+    @property
+    def volumes(self) -> VolumeMappings:
+        return self.config.volumes
+
+    @property
+    def ports(self) -> PortMappings:
+        return self.config.ports
 
 
 class LocalstackContainerServer(Server):
@@ -638,7 +623,7 @@ def start_infra_in_docker_detached(console):
     console.log("configuring container")
     container = LocalstackContainer()
     configure_container(container)
-    container.detach = True
+    container.config.detach = True
     container.truncate_log()
 
     # start the Localstack container as a Server
