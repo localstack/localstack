@@ -36,9 +36,8 @@ class CloudWatchAlarm(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _handle_result(result, resource_id, resources, resource_type):
-            resource = resources[resource_id]
-            resources[resource_id]["PhysicalResourceId"] = resource["Properties"]["AlarmName"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = resource["Properties"]["AlarmName"]
 
         def get_delete_params(
             properties: dict, logical_resource_id: str, resource: dict, stack_name: str

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import inspect
 import logging
 import time
 import uuid
@@ -275,17 +274,7 @@ def resolve_resource_parameters(
 
     if callable(params):
         # resolve parameter map via custom function
-        sig = inspect.signature(params)
-        if "logical_resource_id" in sig.parameters:
-            params = params(resource_props, resource_id, resource_definition, stack_name)
-        else:
-            raise NotImplementedError(func_details)
-            params = params(
-                resource_props,
-                stack_name=stack_name,
-                resources=resources,
-                resource_id=resource_id,
-            )
+        params = params(resource_props, resource_id, resource_definition, stack_name)
     else:
         # it could be a list like ['param1', 'param2', {'apiCallParamName': 'cfResourcePropName'}]
         if isinstance(params, list):
@@ -305,22 +294,12 @@ def resolve_resource_parameters(
                 prop_keys = [prop_keys]
             for prop_key in prop_keys:
                 if callable(prop_key):
-                    sig = inspect.signature(prop_key)
-                    if "logical_resource_id" in sig.parameters:
-                        prop_value = prop_key(
-                            resource_props,
-                            resource_id,
-                            resource_definition,
-                            stack_name,
-                        )
-                    else:
-                        raise NotImplementedError
-                        prop_value = prop_key(
-                            resource_props,
-                            stack_name=stack_name,
-                            resources=resources,
-                            resource_id=resource_id,
-                        )
+                    prop_value = prop_key(
+                        resource_props,
+                        resource_id,
+                        resource_definition,
+                        stack_name,
+                    )
                 else:
                     prop_value = resource_props.get(
                         prop_key,
@@ -474,19 +453,8 @@ class LegacyResourceProvider(ResourceProvider):
             executed = False
             # TODO(srw) 3 - callable function
             if callable(func.get("function")):
-                sig = inspect.signature(func["function"])
-                if "logical_resource_id" in sig.parameters:
-                    result = func["function"](
-                        request.logical_resource_id, resource, request.stack_name
-                    )
-                else:
-                    result = func["function"](
-                        request.logical_resource_id,
-                        self.all_resources,
-                        self.resource_type,
-                        func,
-                        request.stack_name,
-                    )
+                result = func["function"](request.logical_resource_id, resource, request.stack_name)
+
                 results.append(result)
                 executed = True
             elif not executed:
@@ -528,17 +496,11 @@ class LegacyResourceProvider(ResourceProvider):
                     f"Executing callback method for {self.resource_type}:{request.logical_resource_id}"
                 )
                 result_handler = func["result_handler"]
-                sig = inspect.signature(result_handler)
-                if "logical_resource_id" in sig.parameters:
-                    result_handler(
-                        result,
-                        request.logical_resource_id,
-                        self.all_resources[request.logical_resource_id],
-                    )
-                else:
-                    result_handler(
-                        result, request.logical_resource_id, self.all_resources, self.resource_type
-                    )
+                result_handler(
+                    result,
+                    request.logical_resource_id,
+                    self.all_resources[request.logical_resource_id],
+                )
 
         if request.action.lower() == "add":
             resource_provider.resource_json["PhysicalResourceId"] = self.all_resources[

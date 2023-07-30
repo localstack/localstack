@@ -69,4 +69,6 @@ SIGNATURE_V4_PARAMS = [
 
 # The chunk size to use when iterating over and writing to S3 streams.
 # chosen as middle ground between memory usage and amount of iterations over the S3 object body
+# This is AWS recommended size when uploading chunks
+# https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-streaming.html
 S3_CHUNK_SIZE = 65536

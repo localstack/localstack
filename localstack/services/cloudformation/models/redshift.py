@@ -24,7 +24,7 @@ class RedshiftCluster(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["Cluster"]["ClusterIdentifier"]
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = result["Cluster"]["ClusterIdentifier"]
 
         return {"create": {"function": "create_cluster", "result_handler": _handle_result}}
