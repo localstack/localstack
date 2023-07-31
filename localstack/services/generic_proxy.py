@@ -52,6 +52,7 @@ CORS_ALLOWED_HEADERS = [
     "content-type",
     "etag",
     "location",
+    # AWS specific headers
     "x-amz-acl",
     "x-amz-content-sha256",
     "x-amz-date",
@@ -62,6 +63,8 @@ CORS_ALLOWED_HEADERS = [
     "x-amz-user-agent",
     "x-amz-version-id",
     "x-amzn-requestid",
+    "x-api-key",  # for API Gateway or AppSync GraphQL request
+    # LocalStack specific headers
     "x-localstack-target",
     # for AWS SDK v3
     "amz-sdk-invocation-id",

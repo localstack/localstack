@@ -195,9 +195,16 @@ class TestDynamoDB:
         assert table["TableArn"].startswith(expected_arn_prefix)
         assert table["LatestStreamArn"].startswith(expected_arn_prefix)
 
+        # test list_streams filtering
+        stream_tables = ddbstreams.list_streams(TableName="foo")["Streams"]
+        assert len(stream_tables) == 0
+
         # assert stream has been created
-        stream_tables = [s["TableName"] for s in ddbstreams.list_streams()["Streams"]]
+        stream_tables = [
+            s["TableName"] for s in ddbstreams.list_streams(TableName=table_name)["Streams"]
+        ]
         assert table_name in stream_tables
+        assert len(stream_tables) == 1
         stream_name = get_kinesis_stream_name(table_name)
         assert stream_name in kinesis.list_streams()["StreamNames"]
 

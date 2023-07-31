@@ -43,7 +43,9 @@ from localstack.aws.api.apigateway import (
     Integration,
     IntegrationResponse,
     IntegrationType,
+    ListOfApiStage,
     ListOfPatchOperation,
+    ListOfStageKeys,
     ListOfString,
     MapOfStringToBoolean,
     MapOfStringToString,
@@ -59,6 +61,7 @@ from localstack.aws.api.apigateway import (
     PutIntegrationResponseRequest,
     PutMode,
     PutRestApiRequest,
+    QuotaSettings,
     RequestValidator,
     RequestValidators,
     Resource,
@@ -70,6 +73,9 @@ from localstack.aws.api.apigateway import (
     Tags,
     TestInvokeMethodRequest,
     TestInvokeMethodResponse,
+    ThrottleSettings,
+    UsagePlan,
+    UsagePlans,
     VpcLink,
     VpcLinks,
 )
@@ -196,6 +202,27 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_container.models[ERROR_MODEL] = DEFAULT_ERROR_MODEL
 
         return response
+
+    def create_api_key(
+        self,
+        context: RequestContext,
+        name: String = None,
+        description: String = None,
+        enabled: Boolean = None,
+        generate_distinct_id: Boolean = None,
+        value: String = None,
+        stage_keys: ListOfStageKeys = None,
+        customer_id: String = None,
+        tags: MapOfStringToString = None,
+    ) -> ApiKey:
+        api_key = call_moto(context)
+
+        #  transform array of stage keys [{'restApiId': '0iscapk09u', 'stageName': 'dev'}] into
+        #  array of strings ['0iscapk09u/dev']
+        stage_keys = api_key.get("stageKeys", [])
+        api_key["stageKeys"] = [f"{sk['restApiId']}/{sk['stageName']}" for sk in stage_keys]
+
+        return api_key
 
     def get_rest_api(self, context: RequestContext, rest_api_id: String) -> RestApi:
         rest_api: RestApi = call_moto(context)
@@ -1766,6 +1793,94 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         store.rest_apis[rest_api_id].models.pop(model_name, None)
         store.rest_apis[rest_api_id].resolved_models.pop(model_name, None)
+
+    @handler("CreateUsagePlan")
+    def create_usage_plan(
+        self,
+        context: RequestContext,
+        name: String,
+        description: String = None,
+        api_stages: ListOfApiStage = None,
+        throttle: ThrottleSettings = None,
+        quota: QuotaSettings = None,
+        tags: MapOfStringToString = None,
+    ) -> UsagePlan:
+        usage_plan: UsagePlan = call_moto(context=context)
+        if not usage_plan.get("quota"):
+            usage_plan.pop("quota", None)
+
+        if not usage_plan.get("throttle"):
+            usage_plan.pop("throttle", None)
+
+        if usage_plan.get("throttle", {}).get("rateLimit"):
+            usage_plan["throttle"]["rateLimit"] = float(usage_plan["throttle"]["rateLimit"])
+
+        if usage_plan.get("throttle", {}).get("burstLimit"):
+            usage_plan["throttle"]["burstLimit"] = int(usage_plan["throttle"]["burstLimit"])
+
+        return usage_plan
+
+    def update_usage_plan(
+        self,
+        context: RequestContext,
+        usage_plan_id: String,
+        patch_operations: ListOfPatchOperation = None,
+    ) -> UsagePlan:
+        usage_plan = call_moto(context=context)
+        if not usage_plan.get("quota"):
+            usage_plan.pop("quota", None)
+
+        if not usage_plan.get("throttle"):
+            usage_plan.pop("throttle", None)
+
+        if "tags" not in usage_plan:
+            usage_plan["tags"] = {}
+
+        if usage_plan.get("throttle", {}).get("rateLimit"):
+            usage_plan["throttle"]["rateLimit"] = float(usage_plan["throttle"]["rateLimit"])
+
+        if usage_plan.get("throttle", {}).get("burstLimit"):
+            usage_plan["throttle"]["burstLimit"] = int(usage_plan["throttle"]["burstLimit"])
+
+        return usage_plan
+
+    def get_usage_plan(self, context: RequestContext, usage_plan_id: String) -> UsagePlan:
+        usage_plan: UsagePlan = call_moto(context=context)
+        if not usage_plan.get("quota"):
+            usage_plan.pop("quota", None)
+
+        if not usage_plan.get("throttle"):
+            usage_plan.pop("throttle", None)
+
+        if "tags" not in usage_plan:
+            usage_plan["tags"] = {}
+
+        return usage_plan
+
+    @handler("GetUsagePlans")
+    def get_usage_plans(
+        self,
+        context: RequestContext,
+        position: String = None,
+        key_id: String = None,
+        limit: NullableInteger = None,
+    ) -> UsagePlans:
+        usage_plans: UsagePlans = call_moto(context=context)
+        if not usage_plans.get("items"):
+            usage_plans["items"] = []
+
+        items = usage_plans["items"]
+        for up in items:
+            if not up.get("quota"):
+                up.pop("quota", None)
+
+            if not up.get("throttle"):
+                up.pop("throttle", None)
+
+            if "tags" not in up:
+                up.pop("tags", None)
+
+        return usage_plans
 
 
 # ---------------
