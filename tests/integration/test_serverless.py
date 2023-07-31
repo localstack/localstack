@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 
 import pytest
@@ -10,8 +9,6 @@ from localstack.utils.aws import arns
 from localstack.utils.common import retry, run
 from localstack.utils.testutil import get_lambda_log_events
 
-LOG = logging.getLogger(__name__)
-
 
 def get_base_dir() -> str:
     return os.path.join(os.path.dirname(__file__), "serverless")
@@ -19,27 +16,14 @@ def get_base_dir() -> str:
 
 class TestServerless:
     @pytest.fixture
-    def setup_and_teardown(self, aws_client):
+    def setup_and_teardown(self):
         base_dir = get_base_dir()
         if not os.path.exists(os.path.join(base_dir, "node_modules")):
             # install dependencies
             run(["npm", "install"], cwd=base_dir)
 
-        # REVERT THIS
-        apigw_client = aws_client.apigateway
-        apis = apigw_client.get_rest_apis()["items"]
-        existing_api_ids = [api["id"] for api in apis]
-        LOG.error("API IDs before deploy %s" % existing_api_ids)
-        # REVERT THIS
-
         # deploy serverless app
         run(["npm", "run", "deploy", "--", f"--region={TEST_AWS_REGION_NAME}"], cwd=base_dir)
-
-        # REVERT
-        apis = apigw_client.get_rest_apis()["items"]
-        post_api_ids = [api["id"] for api in apis]
-        LOG.error("API IDs after deploy %s" % post_api_ids)
-        # REVERT
 
         yield
 
@@ -169,9 +153,6 @@ class TestServerless:
         apigw_client = aws_client.apigateway
         apis = apigw_client.get_rest_apis()["items"]
         api_ids = [api["id"] for api in apis]
-
-        LOG.error(api_ids)
-
         assert 1 == len(api_ids)
 
         resources = apigw_client.get_resources(restApiId=api_ids[0])["items"]
