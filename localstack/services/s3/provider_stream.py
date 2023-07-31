@@ -251,6 +251,8 @@ class S3ProviderStream(S3Provider):
                 stream_value: SpooledTemporaryFile = dest_key_object.value
                 checksum = get_s3_checksum(checksum_algorithm)
 
+                # we are not keeping the internal position of the stream, so we need to lock the whole iteration so
+                # that it's not modified by a concurrent read
                 with dest_key_object.lock, dest_key_object.read_lock:
                     while data := stream_value.read(4096):
                         checksum.update(data)
@@ -353,18 +355,20 @@ class StreamedFakeKey(s3_models.FakeKey):
     """
 
     def __init__(self, name: str, value: IO[bytes], *args, **kwargs):
+        # initialize a read/write lock, allowing S3 to properly lock writes if any thread is currently iterating and
         # returning values from the underlying stream. It has write priority, which will lock future readers until
         # writing is done
         key_lock = rwlock.RWLockWrite()
         self.write_lock = key_lock.gen_wlock()
         self.read_lock = key_lock.gen_rlock()
+        # the key also had its own `.lock`, allowing to group `seek` and `read` operation as one atomic operation.
+
         # when we set the value to nothing to first initialize the key for `PutObject` until we pull all logic in the
         # provider
         if not value or isinstance(value, bytes):
             value = BytesIO(value or b"")
         super(StreamedFakeKey, self).__init__(name, value, *args, **kwargs)
         self.is_latest = True
-        # initialize a read/write lock, allowing S3 to properly lock writes if any thread is currently iterating and
 
     @property
     def value(self) -> IO[bytes]:
@@ -380,7 +384,7 @@ class StreamedFakeKey(s3_models.FakeKey):
         # if the etag is not set, this is the result from CopyObject, in that case we should copy the underlying
         # SpooledTemporaryFile
         if self._etag and isinstance(new_value, SpooledTemporaryFile):
-            with self.lock, self.write_lock:
+            with self.write_lock:
                 self._value_buffer.close()
                 self._value_buffer = new_value
                 self._value_buffer.seek(0, os.SEEK_END)
@@ -389,7 +393,7 @@ class StreamedFakeKey(s3_models.FakeKey):
 
             return
 
-        with self.lock, self.write_lock:
+        with self.write_lock:
             self._value_buffer.seek(0)
             self._value_buffer.truncate()
             # We have 2 cases:
@@ -462,6 +466,8 @@ class StreamedFakeMultipart(s3_models.FakeMultipart):
             md5s.extend(decode_hex(part_etag)[0])
             # to not trigger the property every time
             stream_value = part.value
+            # we are not keeping the internal position of the stream, so we need to lock the whole iteration so
+            # that it's not modified by a concurrent read
             with part.lock, part.read_lock:
                 stream_value.seek(0)
                 while data := stream_value.read(CHUNK_SIZE):
@@ -783,8 +789,11 @@ def get_generator_from_key(
 ) -> Iterator[bytes]:
     # Werkzeug will only read 1 everytime, so we control how much we return
     pos = 0
+    # this read_lock will make sure no writer is modifying the underlying stream while this generator is still open
     with read_lock:
         while True:
+            # this lock makes sure the `seek` and `read` operation are atomic and no concurrent read will modify the
+            # internal stream position between `seek` and `read`
             with key_lock:
                 key_stream.seek(pos)
                 data = key_stream.read(CHUNK_SIZE)
@@ -805,8 +814,11 @@ def get_range_generator_from_stream(
 ) -> Iterator[bytes]:
     pos = start
     max_length = requested_length
+    # this read_lock will make sure no writer is modifying the underlying stream while this generator is still open
     with read_lock:
         while True:
+            # this lock makes sure the `seek` and `read` operation are atomic and no concurrent read will modify the
+            # internal stream position between `seek` and `read`
             with key_lock:
                 key_stream.seek(pos)
                 amount = min(max_length, CHUNK_SIZE)
