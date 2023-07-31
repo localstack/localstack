@@ -18,7 +18,7 @@ from localstack.utils.no_exit_argument_parser import NoExitArgumentParser
 if sys.version_info >= (3, 8):
     from typing import Literal, Protocol, get_args
 else:
-    from typing_extensions import Protocol, get_args, Literal
+    from typing_extensions import Literal, Protocol, get_args
 
 from localstack import config
 from localstack.utils.collections import HashableList, ensure_list
@@ -409,7 +409,7 @@ class ContainerConfiguration:
     volumes: Optional[VolumeMappings] = None
     ports: Optional[PortMappings] = None
     entrypoint: Optional[str] = None
-    additional_flags: Optional[List[str]] = None
+    additional_flags: Optional[str] = None
     command: Optional[List[str]] = None
     env_vars: Dict[str, str] = dataclasses.field(default_factory=dict)
 
@@ -836,7 +836,7 @@ class ContainerClient(metaclass=ABCMeta):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
+        mount_volumes: Optional[Union[VolumeMappings, List[SimpleVolumeBind]]] = None,
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
@@ -855,6 +855,37 @@ class ContainerClient(metaclass=ABCMeta):
 
         :return: A tuple (stdout, stderr)
         """
+
+    def run_container_from_config(
+        self, container_config: ContainerConfiguration
+    ) -> Tuple[bytes, bytes]:
+        """Like ``run_container`` but uses the parameters from the configuration."""
+
+        return self.run_container(
+            image_name=container_config.image_name,
+            stdin=container_config.stdin,
+            name=container_config.name,
+            entrypoint=container_config.entrypoint,
+            remove=container_config.remove,
+            interactive=container_config.interactive,
+            tty=container_config.tty,
+            detach=container_config.detach,
+            command=container_config.command,
+            mount_volumes=container_config.volumes,
+            ports=container_config.ports,
+            env_vars=container_config.env_vars,
+            user=container_config.user,
+            cap_add=container_config.cap_add,
+            cap_drop=container_config.cap_drop,
+            security_opt=container_config.security_opt,
+            network=container_config.network,
+            dns=container_config.dns,
+            additional_flags=container_config.additional_flags,
+            workdir=container_config.workdir,
+            platform=container_config.platform,
+            privileged=container_config.privileged,
+            ulimits=container_config.ulimits,
+        )
 
     @abstractmethod
     def exec_in_container(
