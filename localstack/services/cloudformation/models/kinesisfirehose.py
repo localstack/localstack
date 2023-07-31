@@ -1,6 +1,8 @@
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import select_parameters
+from localstack.services.cloudformation.provider_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
+from localstack.utils.sync import poll_condition
 
 
 class FirehoseDeliveryStream(GenericBaseModel):
@@ -13,10 +15,30 @@ class FirehoseDeliveryStream(GenericBaseModel):
         return connect_to().firehose.describe_delivery_stream(DeliveryStreamName=stream_name)
 
     @staticmethod
+    def add_defaults(resource, stack_name: str):
+        # TODO: validate format
+        name = resource.get("Properties", {}).get("DeliveryStreamName")
+        if not name:
+            resource["Properties"]["DeliveryStreamName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
+
+    @staticmethod
     def get_deploy_templates():
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            stream_name = resource["Properties"]["DeliveryStreamName"]
+
+            # TODO: fix the polling here and check the response, might not actually be ACTIVE
+            client = connect_to().firehose
+
+            def check_stream_state():
+                stream = client.describe_delivery_stream(DeliveryStreamName=stream_name)
+                return stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
+
+            poll_condition(check_stream_state, 45, 1)
+
             resource["Properties"]["Arn"] = result["DeliveryStreamARN"]
-            resource["PhysicalResourceId"] = resource["Properties"]["DeliveryStreamName"]
+            resource["PhysicalResourceId"] = stream_name
 
         return {
             "create": {

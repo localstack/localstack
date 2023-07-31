@@ -8,12 +8,6 @@ class LogsLogGroup(GenericBaseModel):
     def cloudformation_type():
         return "AWS::Logs::LogGroup"
 
-    def get_cfn_attribute(self, attribute_name):
-        props = self.props
-        if attribute_name == "Arn":
-            return props.get("arn")
-        return super(LogsLogGroup, self).get_cfn_attribute(attribute_name)
-
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get("LogGroupName")
         logs = connect_to().logs
@@ -31,7 +25,12 @@ class LogsLogGroup(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
-            resource["PhysicalResourceId"] = resource["Properties"]["LogGroupName"]
+            log_group_name = resource["Properties"]["LogGroupName"]
+            describe_result = connect_to().logs.describe_log_groups(
+                logGroupNamePrefix=log_group_name
+            )
+            resource["Properties"]["Arn"] = describe_result["logGroups"][0]["arn"]
+            resource["PhysicalResourceId"] = log_group_name
 
         return {
             "create": {
@@ -50,9 +49,6 @@ class LogsLogStream(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::Logs::LogStream"
-
-    def get_cfn_attribute(self, attribute_name):
-        return super(LogsLogStream, self).get_cfn_attribute(attribute_name)
 
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get("LogGroupName")

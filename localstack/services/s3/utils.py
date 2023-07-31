@@ -460,7 +460,7 @@ def get_lifecycle_rule_from_object(
     lifecycle_conf_rules: LifecycleRules, moto_object: FakeKey, object_tags: dict[str, str]
 ) -> LifecycleRule:
     for rule in lifecycle_conf_rules:
-        if "Expiration" not in rule:
+        if not (expiration := rule.get("Expiration")) or "ExpiredObjectDeleteMarker" in expiration:
             continue
 
         if not (rule_filter := rule.get("Filter")):
