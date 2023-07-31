@@ -375,7 +375,7 @@ def _print_service_table(services: Dict[str, str]) -> None:
 
 @localstack.command(name="start", short_help="Start LocalStack")
 @click.option("--docker", is_flag=True, help="Start LocalStack in a docker container [default]")
-@click.option("--host", is_flag=True, help="Start LocalStack directly on the host (Unsupported)")
+@click.option("--host", is_flag=True, help="Start LocalStack directly on the host")
 @click.option("--no-banner", is_flag=True, help="Disable LocalStack banner", default=False)
 @click.option(
     "-d", "--detached", is_flag=True, help="Start LocalStack in the background", default=False
