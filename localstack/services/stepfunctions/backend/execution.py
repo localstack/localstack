@@ -190,11 +190,34 @@ class Execution:
         exec_worker.stop(stop_date=stop_date, cause=cause, error=error)
 
     def _publish_execution_status_change_event(self):
+        input_value = (
+            dict() if not self.input_data else to_json_str(self.input_data, separators=(",", ":"))
+        )
+        output_value = self.output
+        output_details = None if output_value is None else self.output_details
         entry = PutEventsRequestEntry(
             Source="aws.states",
             Resources=[self.exec_arn],
             DetailType="Step Functions Execution Status Change",
-            Detail=to_json_str(self.to_describe_output()),
+            Detail=to_json_str(
+                # Note: this operation carries significant changes from a describe_execution request.
+                DescribeExecutionOutput(
+                    executionArn=self.exec_arn,
+                    stateMachineArn=self.state_machine.arn,
+                    stateMachineAliasArn=None,
+                    stateMachineVersionArn=None,
+                    name=self.name,
+                    status=self.exec_status,
+                    startDate=self.start_date,
+                    stopDate=self.stop_date,
+                    input=input_value,
+                    inputDetails=self.input_details,
+                    output=output_value,
+                    outputDetails=output_details,
+                    error=self.error,
+                    cause=self.cause,
+                )
+            ),
         )
         try:
             self._events_client.put_events(Entries=[entry])

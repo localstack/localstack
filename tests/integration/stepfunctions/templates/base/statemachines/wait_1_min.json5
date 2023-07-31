@@ -1,5 +1,5 @@
 {
-  "Comment": "WAIT_10_SEC",
+  "Comment": "WAIT_1_MIN",
   "StartAt": "State_1",
   "States": {
     "State_1": {
