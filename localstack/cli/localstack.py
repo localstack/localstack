@@ -675,8 +675,6 @@ def cmd_update_docker_images() -> None:
     all_images = DOCKER_CLIENT.get_docker_image_names(strip_latest=False)
     image_prefixes = [
         "localstack/",
-        "lambci/lambda:",
-        "mlupin/docker-lambda:",
         "public.ecr.aws/lambda",
     ]
     localstack_images = [
