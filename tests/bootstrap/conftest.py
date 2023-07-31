@@ -1,21 +1,16 @@
 from __future__ import annotations
 
 import logging
-import time
 from typing import Generator
 
 import pytest
 
 from localstack import config
-from localstack import constants
 from localstack.utils.container_utils.container_client import (
-    ContainerClient,
-    ContainerConfiguration,
-    ContainerException,
     PortMappings,
 )
+from localstack.utils.bootstrap import LocalstackContainer
 from localstack.utils.docker_utils import DOCKER_CLIENT
-from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -27,66 +22,29 @@ def _setup_cli_environment(monkeypatch):
     monkeypatch.setattr(config, "dirs", config.Directories.for_cli())
 
 
-class LocalStackContainer:
-    def __init__(self, client: ContainerClient, config: ContainerConfiguration):
-        self.client = client
-        self.config = config
-        self.container_id: str | None = None
-
-    def start(self) -> "LocalStackContainer":
-        self.container_id = self.client.create_container_from_config(self.config)
-        try:
-            self.client.start_container(self.container_id)
-        except ContainerException as e:
-            if LOG.isEnabledFor(logging.DEBUG):
-                LOG.exception("Error while starting LocalStack container")
-            else:
-                LOG.error(
-                    "Error while starting LocalStack container: %s\n%s", e.message, to_str(e.stderr)
-                )
-            raise
-        return self
-
-    def run(self) -> "LocalStackContainer":
-        self.start()
-        return self.wait_until_ready()
-
-    def is_up(self):
-        if self.container_id is None:
-            return False
-
-        logs = self.client.get_container_logs(self.container_id)
-        return constants.READY_MARKER_OUTPUT in logs.splitlines()
-
-    def wait_until_ready(
-        self, max_retries: int = 30, sleep_time: float = 0.2
-    ) -> "LocalStackContainer":
-        for _ in range(max_retries):
-            if self.is_up():
-                return self
-
-            time.sleep(sleep_time)
-
-        # TODO: bad error message
-        raise RuntimeError("Container did not start")
-
-    def remove(self):
-        self.client.stop_container(self.container_id, timeout=10)
-        self.client.remove_container(self.container_id, force=True, check_existence=False)
-
-
 class ContainerFactory:
     def __init__(self):
-        self.client = DOCKER_CLIENT
-        self._containers: list[LocalStackContainer] = []
+        self._containers: list[LocalstackContainer] = []
 
     def __call__(
-        self, pro: bool = False, publish: list[int] | None = None, /, **kwargs
-    ) -> LocalStackContainer:
-        config = ContainerConfiguration(**kwargs)
+        self,
+        # convenience properties
+        pro: bool = False,
+        publish: list[int] | None = None,
+        # ContainerConfig properties
+        **kwargs,
+    ) -> LocalstackContainer:
+        container = LocalstackContainer()
+
+        # allow for randomised container names
+        container.config.name = None
+
+        for key, value in kwargs.items():
+            setattr(container.config, key, value)
+
         if pro:
-            config.env_vars["GATEWAY_LISTEN"] = "0.0.0.0:4566,0.0.0.0:443"
-            config.env_vars["LOCALSTACK_API_KEY"] = "test"
+            container.config.env_vars["GATEWAY_LISTEN"] = "0.0.0.0:4566,0.0.0.0:443"
+            container.config.env_vars["LOCALSTACK_API_KEY"] = "test"
 
         port_mappings = PortMappings()
         if publish:
@@ -95,25 +53,32 @@ class ContainerFactory:
         else:
             port_mappings.add(4566)
 
-        config.ports = port_mappings
-        container = LocalStackContainer(self.client, config)
+        container.config.ports = port_mappings
         self._containers.append(container)
         return container
 
     def remove_all_containers(self):
         failures = []
         for container in self._containers:
+            if not container.id:
+                LOG.error(f"Container {container} missing container_id")
+                continue
+
+            # allow tests to stop the container manually
+            if not DOCKER_CLIENT.is_container_running(container.config.name):
+                continue
+
             try:
-                container.remove()
+                DOCKER_CLIENT.stop_container(container_name=container.id, timeout=30)
             except Exception as e:
                 failures.append((container, e))
 
         if failures:
             for container, ex in failures:
                 if LOG.isEnabledFor(logging.DEBUG):
-                    LOG.error(f"Failed to remove container {container.container_id}", exc_info=ex)
+                    LOG.error(f"Failed to remove container {container.id}", exc_info=ex)
                 else:
-                    LOG.error(f"Failed to remove container {container.container_id}")
+                    LOG.error(f"Failed to remove container {container.id}")
 
 
 @pytest.fixture(scope="session")

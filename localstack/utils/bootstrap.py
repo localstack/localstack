@@ -370,14 +370,17 @@ def extract_port_flags(user_flags, port_mappings: PortMappings):
 
 class LocalstackContainer:
     config: ContainerConfiguration
+    id: str | None
 
     def __init__(self, name: str = None):
         self.config = self._get_default_configuration(name)
         self.logfile = os.path.join(config.dirs.tmp, f"{self.config.name}_container.log")
 
         self.additional_flags = []  # TODO: see comment in run()
+        self.id = None
 
-    def _get_default_configuration(self, name: str = None) -> ContainerConfiguration:
+    @staticmethod
+    def _get_default_configuration(name: str = None) -> ContainerConfiguration:
         """Returns a ContainerConfiguration populated with default values or values gathered from the
         environment for starting the LocalStack container."""
         return ContainerConfiguration(
@@ -392,7 +395,7 @@ class LocalstackContainer:
             env_vars={},
         )
 
-    def run(self):
+    def run(self, attach: bool = True):
         if isinstance(DOCKER_CLIENT, CmdDockerClient):
             DOCKER_CLIENT.default_run_outfile = self.logfile
 
@@ -413,7 +416,21 @@ class LocalstackContainer:
         self._ensure_container_network(cfg.network)
 
         try:
-            return DOCKER_CLIENT.run_container_from_config(cfg)
+            self.id = DOCKER_CLIENT.create_container_from_config(cfg)
+        except ContainerException as e:
+            if LOG.isEnabledFor(logging.DEBUG):
+                LOG.exception("Error while creating LocalStack container")
+            else:
+                LOG.error(
+                    "Error while creating LocalStack container: %s\n%s", e.message, to_str(e.stderr)
+                )
+            raise
+
+        # populate the name so that we can check if the container is running.
+        self.config.name = DOCKER_CLIENT.get_container_name(self.id)
+
+        try:
+            return DOCKER_CLIENT.start_container(self.id, attach=attach)
         except ContainerException as e:
             if LOG.isEnabledFor(logging.DEBUG):
                 LOG.exception("Error while starting LocalStack container")
@@ -464,6 +481,15 @@ class LocalstackContainer:
     @property
     def ports(self) -> PortMappings:
         return self.config.ports
+
+    def wait_until_ready(self, timeout: float | None = None):
+        if self.id is None:
+            raise ValueError("no container id found, cannot wait until ready")
+        return poll_condition(self.is_container_running, timeout)
+
+    def is_container_running(self) -> bool:
+        logs = DOCKER_CLIENT.get_container_logs(self.id)
+        return constants.READY_MARKER_OUTPUT in logs.splitlines()
 
 
 class LocalstackContainerServer(Server):
