@@ -100,6 +100,7 @@ ResourceSignalUniqueId = str
 ResourceStatusReason = str
 ResourceToSkip = str
 ResourceType = str
+RetainExceptOnCreate = bool
 RetainStacks = bool
 RetainStacksNullable = bool
 RetainStacksOnAccountRemovalNullable = bool
@@ -440,6 +441,7 @@ class StackInstanceDetailedStatus(str):
 class StackInstanceFilterName(str):
     DETAILED_STATUS = "DETAILED_STATUS"
     LAST_OPERATION_ID = "LAST_OPERATION_ID"
+    DRIFT_STATUS = "DRIFT_STATUS"
 
 
 class StackInstanceStatus(str):
@@ -978,6 +980,7 @@ class CreateStackInput(ServiceRequest):
     Tags: Optional[Tags]
     ClientRequestToken: Optional[ClientRequestToken]
     EnableTerminationProtection: Optional[EnableTerminationProtection]
+    RetainExceptOnCreate: Optional[RetainExceptOnCreate]
 
 
 RegionList = List[Region]
@@ -1493,6 +1496,7 @@ class Stack(TypedDict, total=False):
     ParentId: Optional[StackId]
     RootId: Optional[StackId]
     DriftInformation: Optional[StackDriftInformation]
+    RetainExceptOnCreate: Optional[RetainExceptOnCreate]
 
 
 Stacks = List[Stack]
@@ -1613,6 +1617,7 @@ class ExecuteChangeSetInput(ServiceRequest):
     StackName: Optional[StackNameOrId]
     ClientRequestToken: Optional[ClientRequestToken]
     DisableRollback: Optional[DisableRollback]
+    RetainExceptOnCreate: Optional[RetainExceptOnCreate]
 
 
 class ExecuteChangeSetOutput(TypedDict, total=False):
@@ -1755,6 +1760,36 @@ class ListImportsInput(ServiceRequest):
 
 class ListImportsOutput(TypedDict, total=False):
     Imports: Optional[Imports]
+    NextToken: Optional[NextToken]
+
+
+class ListStackInstanceResourceDriftsInput(ServiceRequest):
+    StackSetName: StackSetNameOrId
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[MaxResults]
+    StackInstanceResourceDriftStatuses: Optional[StackResourceDriftStatusFilters]
+    StackInstanceAccount: Account
+    StackInstanceRegion: Region
+    OperationId: ClientRequestToken
+    CallAs: Optional[CallAs]
+
+
+class StackInstanceResourceDriftsSummary(TypedDict, total=False):
+    StackId: StackId
+    LogicalResourceId: LogicalResourceId
+    PhysicalResourceId: Optional[PhysicalResourceId]
+    PhysicalResourceIdContext: Optional[PhysicalResourceIdContext]
+    ResourceType: ResourceType
+    PropertyDifferences: Optional[PropertyDifferences]
+    StackResourceDriftStatus: StackResourceDriftStatus
+    Timestamp: Timestamp
+
+
+StackInstanceResourceDriftsSummaries = List[StackInstanceResourceDriftsSummary]
+
+
+class ListStackInstanceResourceDriftsOutput(TypedDict, total=False):
+    Summaries: Optional[StackInstanceResourceDriftsSummaries]
     NextToken: Optional[NextToken]
 
 
@@ -2086,6 +2121,7 @@ class RollbackStackInput(ServiceRequest):
     StackName: StackNameOrId
     RoleARN: Optional[RoleARN]
     ClientRequestToken: Optional[ClientRequestToken]
+    RetainExceptOnCreate: Optional[RetainExceptOnCreate]
 
 
 class RollbackStackOutput(TypedDict, total=False):
@@ -2178,6 +2214,7 @@ class UpdateStackInput(ServiceRequest):
     Tags: Optional[Tags]
     DisableRollback: Optional[DisableRollback]
     ClientRequestToken: Optional[ClientRequestToken]
+    RetainExceptOnCreate: Optional[RetainExceptOnCreate]
 
 
 class UpdateStackInstancesInput(ServiceRequest):
@@ -2337,6 +2374,7 @@ class CloudformationApi:
         tags: Tags = None,
         client_request_token: ClientRequestToken = None,
         enable_termination_protection: EnableTerminationProtection = None,
+        retain_except_on_create: RetainExceptOnCreate = None,
     ) -> CreateStackOutput:
         raise NotImplementedError
 
@@ -2607,6 +2645,7 @@ class CloudformationApi:
         stack_name: StackNameOrId = None,
         client_request_token: ClientRequestToken = None,
         disable_rollback: DisableRollback = None,
+        retain_except_on_create: RetainExceptOnCreate = None,
     ) -> ExecuteChangeSetOutput:
         raise NotImplementedError
 
@@ -2669,6 +2708,21 @@ class CloudformationApi:
     def list_imports(
         self, context: RequestContext, export_name: ExportName, next_token: NextToken = None
     ) -> ListImportsOutput:
+        raise NotImplementedError
+
+    @handler("ListStackInstanceResourceDrifts")
+    def list_stack_instance_resource_drifts(
+        self,
+        context: RequestContext,
+        stack_set_name: StackSetNameOrId,
+        stack_instance_account: Account,
+        stack_instance_region: Region,
+        operation_id: ClientRequestToken,
+        next_token: NextToken = None,
+        max_results: MaxResults = None,
+        stack_instance_resource_drift_statuses: StackResourceDriftStatusFilters = None,
+        call_as: CallAs = None,
+    ) -> ListStackInstanceResourceDriftsOutput:
         raise NotImplementedError
 
     @handler("ListStackInstances")
@@ -2791,6 +2845,7 @@ class CloudformationApi:
         stack_name: StackNameOrId,
         role_arn: RoleARN = None,
         client_request_token: ClientRequestToken = None,
+        retain_except_on_create: RetainExceptOnCreate = None,
     ) -> RollbackStackOutput:
         raise NotImplementedError
 
@@ -2862,6 +2917,7 @@ class CloudformationApi:
         tags: Tags = None,
         disable_rollback: DisableRollback = None,
         client_request_token: ClientRequestToken = None,
+        retain_except_on_create: RetainExceptOnCreate = None,
     ) -> UpdateStackOutput:
         raise NotImplementedError
 
