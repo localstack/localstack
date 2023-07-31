@@ -52,7 +52,7 @@ class TestAwsSdk:
         )
 
     @pytest.mark.skip(reason="No parameters validation for dynamodb api calls being returned.")
-    @pytest.mark.skip_snapshot_verify(paths=["$..cause"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..cause"])
     def test_dynamodb_invalid_param(
         self,
         aws_client,
@@ -78,7 +78,7 @@ class TestAwsSdk:
             exec_input,
         )
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..cause"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..cause"])
     def test_dynamodb_put_item_no_such_table(
         self,
         aws_client,
