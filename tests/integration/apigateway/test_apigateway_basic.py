@@ -1,4 +1,5 @@
 import base64
+import itertools
 import json
 import os
 import re
@@ -1096,7 +1097,7 @@ class TestAPIGateway:
         usage_plan_ids = []
         for i in range(2):
             payload = {
-                "name": "APIKEYTEST-PLAN-{}".format(i),
+                "name": f"APIKEYTEST-PLAN-{i}",
                 "description": "Description",
                 "quota": {"limit": 10, "period": "DAY", "offset": 0},
                 "throttle": {"rateLimit": 2, "burstLimit": 1},
@@ -1108,19 +1109,17 @@ class TestAPIGateway:
         api_keys = []
         key_type = "API_KEY"
         # Create multiple API Keys in each usage plan
-        for usage_plan_id in usage_plan_ids:
-            for i in range(2):
-                api_key = aws_client.apigateway.create_api_key(
-                    name="testMultipleApiKeys{}".format(i),
-                    enabled=True,
-                )
-                payload = {
-                    "usagePlanId": usage_plan_id,
-                    "keyId": api_key["id"],
-                    "keyType": key_type,
-                }
-                aws_client.apigateway.create_usage_plan_key(**payload)
-                api_keys.append(api_key["value"])
+        for usage_plan_id, i in itertools.product(usage_plan_ids, range(2)):
+            api_key = aws_client.apigateway.create_api_key(
+                name=f"testMultipleApiKeys{i}", enabled=True
+            )
+            payload = {
+                "usagePlanId": usage_plan_id,
+                "keyId": api_key["id"],
+                "keyType": key_type,
+            }
+            aws_client.apigateway.create_usage_plan_key(**payload)
+            api_keys.append(api_key["value"])
 
         response = requests.put(
             url,
@@ -1138,6 +1137,9 @@ class TestAPIGateway:
             )
             # when the api key is passed as part of the header
             assert 200 == response.status_code
+
+        for usage_plan_id in usage_plan_ids:
+            aws_client.apigateway.delete_usage_plan(usagePlanId=usage_plan_id)
 
     @markers.parity.aws_validated
     @pytest.mark.parametrize("action", ["StartExecution", "DeleteStateMachine"])

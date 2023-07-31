@@ -55,6 +55,7 @@ from localstack.aws.api.cloudformation import (
     PhysicalResourceId,
     RegisterTypeInput,
     RegisterTypeOutput,
+    RetainExceptOnCreate,
     RetainResources,
     RoleARN,
     StackName,
@@ -687,6 +688,7 @@ class CloudformationProvider(CloudformationApi):
         stack_name: StackNameOrId = None,
         client_request_token: ClientRequestToken = None,
         disable_rollback: DisableRollback = None,
+        retain_except_on_create: RetainExceptOnCreate = None,
     ) -> ExecuteChangeSetOutput:
         change_set = find_change_set(change_set_name, stack_name=stack_name)
         if not change_set:
