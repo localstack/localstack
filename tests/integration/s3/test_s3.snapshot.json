@@ -8062,7 +8062,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_put_bucket_lifecycle_conf_exc": {
-    "recorded-date": "07-07-2023, 20:42:44",
+    "recorded-date": "26-07-2023, 15:06:44",
     "recorded-content": {
       "missing-id": {
         "Error": {
@@ -8130,6 +8130,16 @@
         "Error": {
           "Code": "InvalidRequest",
           "Message": "Duplicate Tag Keys are not allowed."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "expired-delete-marker-and-days": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -8632,6 +8642,46 @@
       "put_object_retention_5": {
         "Code": "InvalidRequest",
         "Message": "Bucket is missing Object Lock Configuration"
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_lifecycle_expired_object_delete_marker": {
+    "recorded-date": "26-07-2023, 15:14:49",
+    "recorded-content": {
+      "get-bucket-lifecycle-conf": {
+        "Rules": [
+          {
+            "Expiration": "<expiration>",
+            "Filter": {},
+            "ID": "rule-marker",
+            "Status": "Enabled"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object": {
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   }

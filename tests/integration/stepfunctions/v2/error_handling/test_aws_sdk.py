@@ -52,16 +52,16 @@ class TestAwsSdk:
         )
 
     @pytest.mark.skip(reason="No parameters validation for dynamodb api calls being returned.")
-    @pytest.mark.skip_snapshot_verify(paths=["$..cause"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..cause"])
     def test_dynamodb_invalid_param(
         self,
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         dynamodb_create_table,
-        snapshot,
+        sfn_snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.dynamodb_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.dynamodb_api())
 
         template = EHT.load_sfn_template(EHT.AWS_SDK_TASK_DYNAMODB_PUT_ITEM)
         definition = json.dumps(template)
@@ -73,20 +73,20 @@ class TestAwsSdk:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..cause"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..cause"])
     def test_dynamodb_put_item_no_such_table(
         self,
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.dynamodb_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.dynamodb_api())
 
         table_name = f"no_such_sfn_test_table_{short_uid()}"
 
@@ -103,7 +103,7 @@ class TestAwsSdk:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )

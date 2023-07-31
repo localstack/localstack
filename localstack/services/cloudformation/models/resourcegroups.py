@@ -14,13 +14,10 @@ class ResourceGroupsGroup(GenericBaseModel):
         result = [g for g in result if g["Name"] == self.props["Name"]]
         return (result or [None])[0]
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Arn":
-            return self.props.get("GroupArn")
-
     @classmethod
     def get_deploy_templates(cls):
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["Properties"]["Arn"] = result["Group"]["GroupArn"]
             resource["PhysicalResourceId"] = result["Group"]["Name"]
 
         return {

@@ -9,7 +9,6 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils import common
-from localstack.utils.aws import arns
 from localstack.utils.common import short_uid
 
 
@@ -23,18 +22,12 @@ class EventConnection(GenericBaseModel):
         conn_name = self.props.get("Name")
         return client.describe_connection(Name=conn_name)
 
-    def get_cfn_attribute(self, attribute_name):
-        props = self.props
-        if attribute_name == "Name":
-            return props.get("Name")
-        if attribute_name == "Arn":
-            return props.get("ConnectionArn")
-        # TODO: handle "SecretArn" attribute
-        return super(EventConnection, self).get_cfn_attribute(attribute_name)
-
     @classmethod
     def get_deploy_templates(cls):
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["Properties"]["Arn"] = result["ConnectionArn"]
+            # TODO
+            # resource["Properties"]["SecretArn"] = ?
             resource["PhysicalResourceId"] = resource["Properties"]["Name"]
 
         return {
@@ -52,14 +45,6 @@ class EventBus(GenericBaseModel):
         event_bus_name = self.props.get("Name")
         client = connect_to().events
         return client.describe_event_bus(Name=event_bus_name)
-
-    def get_cfn_attribute(self, attribute_name):
-        props = self.props
-        if attribute_name == "Name":
-            return props.get("Name")
-        if attribute_name == "Arn":
-            return props.get("Arn")
-        return super(EventBus, self).get_cfn_attribute(attribute_name)
 
     @classmethod
     def get_deploy_templates(cls):
@@ -81,11 +66,6 @@ class EventsRule(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::Events::Rule"
-
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Arn":
-            return self.props.get("Arn") or arns.events_rule_arn(self.props.get("Name"))
-        return super(EventsRule, self).get_cfn_attribute(attribute_name)
 
     def fetch_state(self, stack_name, resources):
         rule_name = self.props.get("Name")
@@ -162,6 +142,7 @@ class EventsRule(GenericBaseModel):
                 events.put_targets(Rule=rule_name, Targets=targets)
 
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["Properties"]["Arn"] = result["RuleArn"]
             resource["PhysicalResourceId"] = resource["Properties"]["Name"]
 
         return {

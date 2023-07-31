@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.templates.errorhandling.error_handling_templates import (
     ErrorHandlingTemplate as EHT,
@@ -13,7 +14,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skip_snapshot_verify(
+@markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..loggingConfiguration",
         "$..tracingConfiguration",
@@ -81,7 +82,7 @@ class TestTaskServiceDynamoDB:
             exec_input,
         )
 
-    @pytest.mark.skip_snapshot_verify(
+    @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..error"  # TODO: LS returns a ResourceNotFoundException instead of reflecting the validation error
         ]

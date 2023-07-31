@@ -315,7 +315,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_dynamodb_invalid_param": {
-    "recorded-date": "16-05-2023, 22:31:42",
+    "recorded-date": "27-07-2023, 19:06:50",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -409,7 +409,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_dynamodb_put_item_no_such_table": {
-    "recorded-date": "16-05-2023, 22:32:03",
+    "recorded-date": "27-07-2023, 19:06:06",
     "recorded-content": {
       "get_execution_history": {
         "events": [

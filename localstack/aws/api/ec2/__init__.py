@@ -17,6 +17,7 @@ AutoRecoveryFlag = bool
 AvailabilityZoneId = str
 AvailabilityZoneName = str
 BareMetalFlag = bool
+BaselineBandwidthInGbps = float
 BaselineBandwidthInMbps = int
 BaselineIops = int
 BaselineThroughputInMBps = float
@@ -150,6 +151,7 @@ ImportSnapshotTaskId = str
 ImportTaskId = str
 InferenceDeviceCount = int
 InferenceDeviceManufacturerName = str
+InferenceDeviceMemorySize = int
 InferenceDeviceName = str
 InstanceConnectEndpointId = str
 InstanceConnectEndpointMaxResults = int
@@ -227,6 +229,7 @@ NextToken = str
 NitroTpmSupportedVersionType = str
 OfferingId = str
 OutpostArn = str
+PeakBandwidthInGbps = float
 PlacementGroupArn = str
 PlacementGroupId = str
 PlacementGroupName = str
@@ -310,6 +313,7 @@ customerGatewayConfiguration = str
 preSharedKey = str
 totalFpgaMemory = int
 totalGpuMemory = int
+totalInferenceMemory = int
 
 
 class AcceleratorManufacturer(str):
@@ -2518,6 +2522,12 @@ class RuleAction(str):
     deny = "deny"
 
 
+class SSEType(str):
+    sse_ebs = "sse-ebs"
+    sse_kms = "sse-kms"
+    none = "none"
+
+
 class SelfServicePortal(str):
     enabled = "enabled"
     disabled = "disabled"
@@ -2580,6 +2590,7 @@ class SpotInstanceState(str):
     closed = "closed"
     cancelled = "cancelled"
     failed = "failed"
+    disabled = "disabled"
 
 
 class SpotInstanceType(str):
@@ -7448,6 +7459,7 @@ class SnapshotInfo(TypedDict, total=False):
     OwnerId: Optional[String]
     SnapshotId: Optional[String]
     OutpostArn: Optional[String]
+    SseType: Optional[SSEType]
 
 
 SnapshotSet = List[SnapshotInfo]
@@ -10744,10 +10756,15 @@ class NitroTpmInfo(TypedDict, total=False):
     SupportedVersions: Optional[NitroTpmSupportedVersionsList]
 
 
+class InferenceDeviceMemoryInfo(TypedDict, total=False):
+    SizeInMiB: Optional[InferenceDeviceMemorySize]
+
+
 class InferenceDeviceInfo(TypedDict, total=False):
     Count: Optional[InferenceDeviceCount]
     Name: Optional[InferenceDeviceName]
     Manufacturer: Optional[InferenceDeviceManufacturerName]
+    MemoryInfo: Optional[InferenceDeviceMemoryInfo]
 
 
 InferenceDeviceInfoList = List[InferenceDeviceInfo]
@@ -10755,6 +10772,7 @@ InferenceDeviceInfoList = List[InferenceDeviceInfo]
 
 class InferenceAcceleratorInfo(TypedDict, total=False):
     Accelerators: Optional[InferenceDeviceInfoList]
+    TotalInferenceMemoryInMiB: Optional[totalInferenceMemory]
 
 
 PlacementGroupStrategyList = List[PlacementGroupStrategy]
@@ -10810,6 +10828,8 @@ class NetworkCardInfo(TypedDict, total=False):
     NetworkCardIndex: Optional[NetworkCardIndex]
     NetworkPerformance: Optional[NetworkPerformance]
     MaximumNetworkInterfaces: Optional[MaxNetworkInterfaces]
+    BaselineBandwidthInGbps: Optional[BaselineBandwidthInGbps]
+    PeakBandwidthInGbps: Optional[PeakBandwidthInGbps]
 
 
 NetworkCardInfoList = List[NetworkCardInfo]
@@ -12331,6 +12351,7 @@ class Snapshot(TypedDict, total=False):
     Tags: Optional[TagList]
     StorageTier: Optional[StorageTier]
     RestoreExpiryTime: Optional[MillisecondDateTime]
+    SseType: Optional[SSEType]
 
 
 SnapshotList = List[Snapshot]
@@ -13327,6 +13348,7 @@ class Volume(TypedDict, total=False):
     FastRestored: Optional[Boolean]
     MultiAttachEnabled: Optional[Boolean]
     Throughput: Optional[Integer]
+    SseType: Optional[SSEType]
 
 
 VolumeList = List[Volume]
@@ -14356,6 +14378,7 @@ class GetEbsEncryptionByDefaultRequest(ServiceRequest):
 
 class GetEbsEncryptionByDefaultResult(TypedDict, total=False):
     EbsEncryptionByDefault: Optional[Boolean]
+    SseType: Optional[SSEType]
 
 
 class IntegrateServices(TypedDict, total=False):
@@ -16904,6 +16927,7 @@ class RestoreSnapshotFromRecycleBinResult(TypedDict, total=False):
     State: Optional[SnapshotState]
     VolumeId: Optional[String]
     VolumeSize: Optional[Integer]
+    SseType: Optional[SSEType]
 
 
 class RestoreSnapshotTierRequest(ServiceRequest):

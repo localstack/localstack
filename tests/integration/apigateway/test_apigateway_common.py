@@ -8,7 +8,13 @@ from localstack.testing.pytest import markers
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
-from tests.integration.apigateway.apigateway_fixtures import api_invoke_url
+from tests.integration.apigateway.apigateway_fixtures import (
+    api_invoke_url,
+    create_rest_api_deployment,
+    create_rest_api_integration,
+    create_rest_api_stage,
+    create_rest_resource_method,
+)
 from tests.integration.awslambda.test_lambda import TEST_LAMBDA_AWS_PROXY
 
 
@@ -250,12 +256,9 @@ class TestApiGatewayCommon:
         response_get = requests.get(url)
         assert response_get.ok
 
+
+class TestUsagePlans:
     @markers.parity.aws_validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$.create-usage-plan.throttle.rateLimit",  # TODO: wrong type, should be `float` but is `int`
-        ]
-    )
     def test_api_key_required_for_methods(
         self,
         aws_client,
@@ -366,3 +369,72 @@ class TestApiGatewayCommon:
         snapshot.match("update-api-key-disabled", response)
 
         retry(_assert_with_key, retries=retries, sleep=sleep, expected_status_code=403)
+
+    @markers.parity.aws_validated
+    def test_usage_plan_crud(self, create_rest_apigw, snapshot, aws_client, echo_http_server_post):
+        snapshot.add_transformer(snapshot.transform.key_value("id", reference_replacement=True))
+        snapshot.add_transformer(snapshot.transform.key_value("name"))
+        snapshot.add_transformer(snapshot.transform.key_value("description"))
+        snapshot.add_transformer(snapshot.transform.key_value("apiId", reference_replacement=True))
+
+        # clean up any existing usage plans
+        old_usage_plans = aws_client.apigateway.get_usage_plans().get("items", [])
+        for usage_plan in old_usage_plans:
+            aws_client.apigateway.delete_usage_plan(usagePlanId=usage_plan["id"])
+
+        api_id, _, root = create_rest_apigw(
+            name=f"test-api-{short_uid()}",
+            description="this is my api",
+        )
+
+        create_rest_resource_method(
+            aws_client.apigateway,
+            restApiId=api_id,
+            resourceId=root,
+            httpMethod="GET",
+            authorizationType="none",
+        )
+
+        create_rest_api_integration(
+            aws_client.apigateway,
+            restApiId=api_id,
+            resourceId=root,
+            httpMethod="GET",
+            integrationHttpMethod="POST",
+            type="HTTP",
+            uri=echo_http_server_post,
+        )
+
+        deployment_id, _ = create_rest_api_deployment(aws_client.apigateway, restApiId=api_id)
+        stage = create_rest_api_stage(
+            aws_client.apigateway, restApiId=api_id, stageName="dev", deploymentId=deployment_id
+        )
+
+        # create usage plan
+        response = aws_client.apigateway.create_usage_plan(
+            name=f"test-usage-plan-{short_uid()}",
+            description="this is my usage plan",
+            apiStages=[
+                {"apiId": api_id, "stage": stage},
+            ],
+        )
+        snapshot.match("create-usage-plan", response)
+        usage_plan_id = response["id"]
+
+        # get usage plan
+        response = aws_client.apigateway.get_usage_plan(usagePlanId=usage_plan_id)
+        snapshot.match("get-usage-plan", response)
+
+        # get usage plans
+        response = aws_client.apigateway.get_usage_plans()
+        snapshot.match("get-usage-plans", response)
+
+        # update usage plan
+        response = aws_client.apigateway.update_usage_plan(
+            usagePlanId=usage_plan_id,
+            patchOperations=[
+                {"op": "replace", "path": "/throttle/burstLimit", "value": "100"},
+                {"op": "replace", "path": "/throttle/rateLimit", "value": "200"},
+            ],
+        )
+        snapshot.match("update-usage-plan", response)
