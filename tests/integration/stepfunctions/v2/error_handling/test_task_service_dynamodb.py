@@ -4,8 +4,8 @@ import pytest
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
-from tests.integration.stepfunctions.templates.services.services_templates import (
-    ServicesTemplates as ST,
+from tests.integration.stepfunctions.templates.errorhandling.error_handling_templates import (
+    ErrorHandlingTemplate as EHT,
 )
 from tests.integration.stepfunctions.utils import create_and_record_execution, is_old_provider
 
@@ -22,26 +22,13 @@ pytestmark = pytest.mark.skipif(
         # TODO: add support for Sdk Http metadata.
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",
+        # TODO: review LS's dynamodb error messages.
+        "$..Cause",
+        "$..cause",
     ]
 )
-class TestTaskServiceAwsSdk:
-    @markers.snapshot.skip_snapshot_verify(paths=["$..SecretList"])
-    def test_list_secrets(
-        self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot
-    ):
-        template = ST.load_sfn_template(ST.AWSSDK_LIST_SECRETS)
-        definition = json.dumps(template)
-        exec_input = json.dumps(dict())
-        create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
-            create_state_machine,
-            sfn_snapshot,
-            definition,
-            exec_input,
-        )
-
-    def test_dynamodb_put_get_item(
+class TestTaskServiceDynamoDB:
+    def test_invalid_param(
         self,
         aws_client,
         create_iam_role_for_sfn,
@@ -51,17 +38,39 @@ class TestTaskServiceAwsSdk:
     ):
         snapshot.add_transformer(snapshot.transform.dynamodb_api())
 
-        table_name = f"sfn_test_table_{short_uid()}"
-        dynamodb_create_table(table_name=table_name, partition_key="id", client=aws_client.dynamodb)
+        template = EHT.load_sfn_template(EHT.AWS_SERVICE_DYNAMODB_PUT_ITEM)
+        definition = json.dumps(template)
 
-        template = ST.load_sfn_template(ST.AWS_SDK_DYNAMODB_PUT_GET_ITEM)
+        exec_input = json.dumps(
+            {"TableName": f"no_such_sfn_test_table_{short_uid()}", "Key": None, "Item": None}
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            snapshot,
+            definition,
+            exec_input,
+        )
+
+    def test_put_item_no_such_table(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        snapshot,
+    ):
+        snapshot.add_transformer(snapshot.transform.dynamodb_api())
+
+        table_name = f"no_such_sfn_test_table_{short_uid()}"
+
+        template = EHT.load_sfn_template(EHT.AWS_SERVICE_DYNAMODB_PUT_ITEM)
         definition = json.dumps(template)
 
         exec_input = json.dumps(
             {
                 "TableName": table_name,
                 "Item": {"data": {"S": "HelloWorld"}, "id": {"S": "id1"}},
-                "Key": {"id": {"S": "id1"}},
             }
         )
         create_and_record_execution(
@@ -73,61 +82,29 @@ class TestTaskServiceAwsSdk:
             exec_input,
         )
 
-    def test_dynamodb_put_delete_item(
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..error"  # TODO: LS returns a ResourceNotFoundException instead of reflecting the validation error
+        ]
+    )
+    def test_put_item_invalid_table_name(
         self,
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
-        dynamodb_create_table,
         snapshot,
     ):
         snapshot.add_transformer(snapshot.transform.dynamodb_api())
 
-        table_name = f"sfn_test_table_{short_uid()}"
-        dynamodb_create_table(table_name=table_name, partition_key="id", client=aws_client.dynamodb)
+        table_name = f"/invalid_test_table_{short_uid()}"
 
-        template = ST.load_sfn_template(ST.AWS_SDK_DYNAMODB_PUT_DELETE_ITEM)
+        template = EHT.load_sfn_template(EHT.AWS_SERVICE_DYNAMODB_PUT_ITEM)
         definition = json.dumps(template)
 
         exec_input = json.dumps(
             {
                 "TableName": table_name,
                 "Item": {"data": {"S": "HelloWorld"}, "id": {"S": "id1"}},
-                "Key": {"id": {"S": "id1"}},
-            }
-        )
-        create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
-            create_state_machine,
-            snapshot,
-            definition,
-            exec_input,
-        )
-
-    def test_dynamodb_put_update_get_item(
-        self,
-        aws_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        dynamodb_create_table,
-        snapshot,
-    ):
-        snapshot.add_transformer(snapshot.transform.dynamodb_api())
-
-        table_name = f"sfn_test_table_{short_uid()}"
-        dynamodb_create_table(table_name=table_name, partition_key="id", client=aws_client.dynamodb)
-
-        template = ST.load_sfn_template(ST.AWS_SDK_DYNAMODB_PUT_UPDATE_GET_ITEM)
-        definition = json.dumps(template)
-
-        exec_input = json.dumps(
-            {
-                "TableName": table_name,
-                "Item": {"data": {"S": "HelloWorld"}, "id": {"S": "id1"}},
-                "Key": {"id": {"S": "id1"}},
-                "UpdateExpression": "set S=:r",
-                "ExpressionAttributeValues": {":r": {"S": "HelloWorldUpdated"}},
             }
         )
         create_and_record_execution(
