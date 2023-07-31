@@ -21,6 +21,7 @@ accountType = str
 arnType = str
 assumedRoleIdType = str
 clientTokenType = str
+contextAssertionType = str
 decodedMessageType = str
 durationSecondsType = int
 encodedMessageType = str
@@ -98,6 +99,12 @@ class RegionDisabledException(ServiceException):
     status_code: int = 403
 
 
+class ProvidedContext(TypedDict, total=False):
+    ProviderArn: Optional[arnType]
+    ContextAssertion: Optional[contextAssertionType]
+
+
+ProvidedContextsListType = List[ProvidedContext]
 tagKeyListType = List[tagKeyType]
 
 
@@ -128,6 +135,7 @@ class AssumeRoleRequest(ServiceRequest):
     SerialNumber: Optional[serialNumberType]
     TokenCode: Optional[tokenCodeType]
     SourceIdentity: Optional[sourceIdentityType]
+    ProvidedContexts: Optional[ProvidedContextsListType]
 
 
 class AssumedRoleUser(TypedDict, total=False):
@@ -268,6 +276,7 @@ class StsApi:
         serial_number: serialNumberType = None,
         token_code: tokenCodeType = None,
         source_identity: sourceIdentityType = None,
+        provided_contexts: ProvidedContextsListType = None,
     ) -> AssumeRoleResponse:
         raise NotImplementedError
 
