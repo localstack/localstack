@@ -36,6 +36,9 @@ class ContainerFactory:
     ) -> LocalstackContainer:
         container = LocalstackContainer()
 
+        # override some default configuration
+        container.config.ports = None
+
         # allow for randomised container names
         container.config.name = None
 
@@ -50,8 +53,6 @@ class ContainerFactory:
         if publish:
             for port in publish:
                 port_mappings.add(port)
-        else:
-            port_mappings.add(4566)
 
         container.config.ports = port_mappings
         self._containers.append(container)
