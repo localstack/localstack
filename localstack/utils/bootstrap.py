@@ -491,6 +491,9 @@ class LocalstackContainer:
         logs = DOCKER_CLIENT.get_container_logs(self.id)
         return constants.READY_MARKER_OUTPUT in logs.splitlines()
 
+    def exec_in_container(self, *args, **kwargs):
+        return DOCKER_CLIENT.exec_in_container(container_name_or_id=self.id, *args, **kwargs)
+
 
 class LocalstackContainerServer(Server):
     container: LocalstackContainer

@@ -1715,7 +1715,7 @@ def ec2_create_security_group(aws_client):
 
 
 @pytest.fixture
-def cleanups(aws_client):
+def cleanups():
     cleanup_fns = []
 
     yield cleanup_fns

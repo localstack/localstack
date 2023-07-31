@@ -37,7 +37,7 @@ class ContainerFactory:
         container = LocalstackContainer()
 
         # override some default configuration
-        container.config.ports = None
+        container.config.ports = PortMappings()
 
         # allow for randomised container names
         container.config.name = None
@@ -45,6 +45,7 @@ class ContainerFactory:
         for key, value in kwargs.items():
             setattr(container.config, key, value)
 
+        # handle the convenience options
         if pro:
             container.config.env_vars["GATEWAY_LISTEN"] = "0.0.0.0:4566,0.0.0.0:443"
             container.config.env_vars["LOCALSTACK_API_KEY"] = "test"
@@ -53,8 +54,9 @@ class ContainerFactory:
         if publish:
             for port in publish:
                 port_mappings.add(port)
-
         container.config.ports = port_mappings
+
+        # track the container so we can remove it later
         self._containers.append(container)
         return container
 
