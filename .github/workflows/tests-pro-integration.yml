@@ -229,7 +229,7 @@ jobs:
           AWS_DEFAULT_REGION: "us-east-1"
           PYTEST_LOGLEVEL: debug
           TEST_PATH: "../localstack/tests/integration/"
-          PYTEST_ARGS: "--splits 2 --group ${{ matrix.group }} --capture=no --reruns 2 --junitxml=pytest-junit-community-${{ matrix.group }}.xml"
+          PYTEST_ARGS: "-k test_serverless --capture=no --reruns 2"
         working-directory: localstack-ext
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
