@@ -38,7 +38,7 @@ def runner():
 def test_error_handling(runner: CliRunner, monkeypatch, exception, expected_message):
     """Test different globally handled exceptions, their status code, and error message."""
 
-    def mock_call():
+    def mock_call(*args, **kwargs):
         raise exception
 
     from localstack.utils import bootstrap
@@ -88,7 +88,7 @@ def test_start_docker_is_default(runner, monkeypatch):
 
     called = threading.Event()
 
-    def mock_call():
+    def mock_call(*args, **kwargs):
         called.set()
 
     monkeypatch.setattr(bootstrap, "start_infra_in_docker", mock_call)
@@ -101,7 +101,7 @@ def test_start_host(runner, monkeypatch):
 
     called = threading.Event()
 
-    def mock_call():
+    def mock_call(*args, **kwargs):
         called.set()
 
     monkeypatch.setattr(bootstrap, "start_infra_locally", mock_call)
