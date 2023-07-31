@@ -15,7 +15,7 @@ def get_base_dir() -> str:
 
 
 class TestServerless:
-    @pytest.fixture
+    @pytest.fixture(scope="session")
     def setup_and_teardown(self):
         base_dir = get_base_dir()
         if not os.path.exists(os.path.join(base_dir, "node_modules")):
