@@ -1,9 +1,4 @@
-from localstack.aws.api.stepfunctions import (
-    HistoryEventExecutionDataDetails,
-    HistoryEventType,
-    StateEnteredEventDetails,
-    StateExitedEventDetails,
-)
+from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.component.state.state_execution.execute_state import (
     ExecutionState,
 )
@@ -12,7 +7,6 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
 class StateParallel(ExecutionState):
@@ -26,24 +20,6 @@ class StateParallel(ExecutionState):
         super().__init__(
             state_entered_event_type=HistoryEventType.ParallelStateEntered,
             state_exited_event_type=HistoryEventType.ParallelStateExited,
-        )
-
-    def _get_state_entered_event_details(self, env: Environment) -> StateEnteredEventDetails:
-        return StateEnteredEventDetails(
-            name=self.name,
-            input=to_json_str(env.inp, separators=(",", ":")),
-            inputDetails=HistoryEventExecutionDataDetails(
-                truncated=False  # Always False for api calls.
-            ),
-        )
-
-    def _get_state_exited_event_details(self, env: Environment) -> StateExitedEventDetails:
-        return StateExitedEventDetails(
-            name=self.name,
-            output=to_json_str(env.inp, separators=(",", ":")),
-            outputDetails=HistoryEventExecutionDataDetails(
-                truncated=False  # Always False for api calls.
-            ),
         )
 
     def from_state_props(self, state_props: StateProps) -> None:

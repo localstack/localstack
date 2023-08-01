@@ -1,9 +1,15 @@
+import json
 import logging
 import os
 from typing import Callable, Final
 
-from localstack.aws.api.stepfunctions import ExecutionStatus, HistoryEventList, HistoryEventType
-from localstack.testing.snapshots.transformer import RegexTransformer
+from localstack.aws.api.stepfunctions import (
+    CreateStateMachineOutput,
+    ExecutionStatus,
+    HistoryEventList,
+    HistoryEventType,
+)
+from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 
@@ -175,16 +181,18 @@ def create_and_record_execution(
     stepfunctions_client,
     create_iam_role_for_sfn,
     create_state_machine,
-    snapshot,
+    sfn_snapshot,
     definition,
     execution_input,
 ):
-    state_machine_arn = create(create_iam_role_for_sfn, create_state_machine, snapshot, definition)
+    state_machine_arn = create(
+        create_iam_role_for_sfn, create_state_machine, sfn_snapshot, definition
+    )
 
     exec_resp = stepfunctions_client.start_execution(
         stateMachineArn=state_machine_arn, input=execution_input
     )
-    snapshot.add_transformer(snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
+    sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
     execution_arn = exec_resp["executionArn"]
 
     await_execution_terminated(
@@ -192,4 +200,67 @@ def create_and_record_execution(
     )
 
     get_execution_history = stepfunctions_client.get_execution_history(executionArn=execution_arn)
-    snapshot.match("get_execution_history", get_execution_history)
+    sfn_snapshot.match("get_execution_history", get_execution_history)
+
+
+def create_and_record_events(
+    create_iam_role_for_sfn,
+    create_state_machine,
+    sfn_events_to_sqs_queue,
+    aws_client,
+    sfn_snapshot,
+    definition,
+    execution_input,
+):
+    sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+    sfn_snapshot.add_transformers_list(
+        [
+            JsonpathTransformer(
+                jsonpath="$..detail.startDate",
+                replacement="start-date",
+                replace_reference=False,
+            ),
+            JsonpathTransformer(
+                jsonpath="$..detail.stopDate",
+                replacement="stop-date",
+                replace_reference=False,
+            ),
+            JsonpathTransformer(
+                jsonpath="$..detail.name",
+                replacement="test_event_bridge_events-{short_uid()}",
+                replace_reference=False,
+            ),
+        ]
+    )
+
+    snf_role_arn = create_iam_role_for_sfn()
+    create_output: CreateStateMachineOutput = create_state_machine(
+        name=f"test_event_bridge_events-{short_uid()}",
+        definition=definition,
+        roleArn=snf_role_arn,
+    )
+    state_machine_arn = create_output["stateMachineArn"]
+
+    queue_url = sfn_events_to_sqs_queue(state_machine_arn=state_machine_arn)
+
+    start_execution = aws_client.stepfunctions.start_execution(
+        stateMachineArn=state_machine_arn, input=execution_input
+    )
+    execution_arn = start_execution["executionArn"]
+    await_execution_terminated(
+        stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+    )
+
+    stepfunctions_events = list()
+
+    def _get_events():
+        received = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        for message in received.get("Messages", []):
+            body = json.loads(message["Body"])
+            stepfunctions_events.append(body)
+        stepfunctions_events.sort(key=lambda e: e["time"])
+        return stepfunctions_events and stepfunctions_events[-1]["detail"]["status"] != "RUNNING"
+
+    poll_condition(_get_events, timeout=60)
+
+    sfn_snapshot.match("stepfunctions_events", stepfunctions_events)
