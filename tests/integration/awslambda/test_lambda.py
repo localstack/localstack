@@ -29,7 +29,7 @@ from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils import files, platform, testutil
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
-from localstack.utils.platform import get_arch, is_arm_compatible, standardized_arch
+from localstack.utils.platform import Arch, get_arch, is_arm_compatible, standardized_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
@@ -93,17 +93,20 @@ TEST_LAMBDA_CONTEXT_REQID = os.path.join(THIS_FOLDER, "functions/lambda_context.
 
 TEST_GOLANG_LAMBDA_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/example-handler-{os}-{arch}.tar.gz"
 
+# TODO: arch conditional should only apply in CI because it prevents test execution in multi-arch environments
 PYTHON_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["python"]
-    if (not is_old_provider() or use_docker()) and get_arch() != "arm64"
+    if (not is_old_provider() or use_docker()) and get_arch() != Arch.arm64
     else [Runtime.python3_10]
 )
 NODE_TEST_RUNTIMES = (
-    RUNTIMES_AGGREGATED["nodejs"] if not is_old_provider() or use_docker() else [Runtime.nodejs16_x]
+    RUNTIMES_AGGREGATED["nodejs"]
+    if (not is_old_provider() or use_docker()) and get_arch() != Arch.arm64
+    else [Runtime.nodejs16_x]
 )
 JAVA_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["java"]
-    if (not is_old_provider() or use_docker()) and get_arch() != "arm64"
+    if (not is_old_provider() or use_docker()) and get_arch() != Arch.arm64
     else [Runtime.java11]
 )
 
