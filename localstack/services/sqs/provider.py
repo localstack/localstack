@@ -1365,7 +1365,7 @@ def message_filter_message_attributes(message: Message, names: Optional[MessageA
     https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html#SQS.Client.receive_message.
 
     :param message: The message to filter (it will be modified)
-    :param names: the attributes names/filters (can be 'All', '.*', or prefix filters like 'Foo.*')
+    :param names: the attributes names/filters (can be 'All', '.*', '*' or prefix filters like 'Foo.*')
     """
     if not message.get("MessageAttributes"):
         return
@@ -1374,7 +1374,7 @@ def message_filter_message_attributes(message: Message, names: Optional[MessageA
         del message["MessageAttributes"]
         return
 
-    if "All" in names or ".*" in names:
+    if "All" in names or ".*" in names or "*" in names:
         return
 
     attributes = message["MessageAttributes"]

@@ -1116,9 +1116,9 @@ class Util:
                 extra_hosts[hosts_split[0]] = hosts_split[1]
 
         if args.envs:
+            env_vars = env_vars if env_vars is not None else {}
             for env in args.envs:
                 lhs, _, rhs = env.partition("=")
-                env_vars = env_vars if env_vars is not None else {}
                 env_vars[lhs] = rhs
 
         if args.labels:

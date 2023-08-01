@@ -1,159 +1,180 @@
 {
   "tests/integration/test_sqs.py::TestSqsProvider::test_receive_message_message_attribute_names_filters": {
-    "recorded-date": "31-05-2022, 11:41:35",
+    "recorded-date": "06-07-2023, 11:20:02",
     "recorded-content": {
       "send_message_response": {
-        "MD5OfMessageBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
         "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
+        "MD5OfMessageBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
         "MessageId": "<uuid:1>",
         "ResponseMetadata": {
-          "HTTPStatusCode": 200,
-          "HTTPHeaders": {}
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "empty_filter": {
         "Messages": [
           {
-            "MessageId": "<uuid:1>",
-            "ReceiptHandle": "<receipt-handle:1>",
+            "Body": "msg",
             "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
-            "Body": "msg"
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
           }
         ],
         "ResponseMetadata": {
-          "HTTPStatusCode": 200,
-          "HTTPHeaders": {}
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "all_name": {
         "Messages": [
           {
-            "MessageId": "<uuid:1>",
-            "ReceiptHandle": "<receipt-handle:2>",
-            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
             "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
             "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
             "MessageAttributes": {
               "General": {
-                "StringValue": "Kenobi",
-                "DataType": "String"
+                "DataType": "String",
+                "StringValue": "Kenobi"
               },
               "Hello": {
-                "StringValue": "There",
-                "DataType": "String"
+                "DataType": "String",
+                "StringValue": "There"
               },
               "Help.Me": {
-                "StringValue": "Me",
-                "DataType": "String"
+                "DataType": "String",
+                "StringValue": "Me"
               }
-            }
+            },
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:2>"
           }
         ],
         "ResponseMetadata": {
-          "HTTPStatusCode": 200,
-          "HTTPHeaders": {}
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
-      "all_wildcard": {
-        "MessageId": "<uuid:1>",
-        "ReceiptHandle": "<receipt-handle:3>",
-        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+      "all_wildcard_asterisk": {
         "Body": "msg",
+        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
         "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
         "MessageAttributes": {
           "General": {
-            "StringValue": "Kenobi",
-            "DataType": "String"
+            "DataType": "String",
+            "StringValue": "Kenobi"
           },
           "Hello": {
-            "StringValue": "There",
-            "DataType": "String"
+            "DataType": "String",
+            "StringValue": "There"
           },
           "Help.Me": {
-            "StringValue": "Me",
-            "DataType": "String"
+            "DataType": "String",
+            "StringValue": "Me"
           }
-        }
+        },
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:3>"
+      },
+      "all_wildcard": {
+        "Body": "msg",
+        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+        "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
+        "MessageAttributes": {
+          "General": {
+            "DataType": "String",
+            "StringValue": "Kenobi"
+          },
+          "Hello": {
+            "DataType": "String",
+            "StringValue": "There"
+          },
+          "Help.Me": {
+            "DataType": "String",
+            "StringValue": "Me"
+          }
+        },
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:4>"
       },
       "only_non_existing_names": {
-        "MessageId": "<uuid:1>",
-        "ReceiptHandle": "<receipt-handle:4>",
+        "Body": "msg",
         "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
-        "Body": "msg"
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:5>"
       },
       "only_existing": {
-        "MessageId": "<uuid:1>",
-        "ReceiptHandle": "<receipt-handle:5>",
-        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
         "Body": "msg",
+        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
         "MD5OfMessageAttributes": "fca026605781cb4126a1e9044df24232",
         "MessageAttributes": {
           "General": {
-            "StringValue": "Kenobi",
-            "DataType": "String"
+            "DataType": "String",
+            "StringValue": "Kenobi"
           },
           "Hello": {
-            "StringValue": "There",
-            "DataType": "String"
+            "DataType": "String",
+            "StringValue": "There"
           }
-        }
+        },
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:6>"
       },
       "existing_and_non_existing": {
-        "MessageId": "<uuid:1>",
-        "ReceiptHandle": "<receipt-handle:6>",
-        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
         "Body": "msg",
+        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
         "MD5OfMessageAttributes": "a311262e065454b75da111d535b8dacd",
         "MessageAttributes": {
           "Hello": {
-            "StringValue": "There",
-            "DataType": "String"
+            "DataType": "String",
+            "StringValue": "There"
           }
-        }
+        },
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:7>"
       },
       "prefix_filter": {
-        "MessageId": "<uuid:1>",
-        "ReceiptHandle": "<receipt-handle:7>",
-        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
         "Body": "msg",
+        "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
         "MD5OfMessageAttributes": "83fee93c1bcd8b9a5a923ffacdc636c7",
         "MessageAttributes": {
           "Hello": {
-            "StringValue": "There",
-            "DataType": "String"
+            "DataType": "String",
+            "StringValue": "There"
           },
           "Help.Me": {
-            "StringValue": "Me",
-            "DataType": "String"
+            "DataType": "String",
+            "StringValue": "Me"
           }
-        }
+        },
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:8>"
       },
       "illegal_name_1": {
         "Messages": [
           {
-            "MessageId": "<uuid:1>",
-            "ReceiptHandle": "<receipt-handle:8>",
+            "Body": "msg",
             "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
-            "Body": "msg"
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:9>"
           }
         ],
         "ResponseMetadata": {
-          "HTTPStatusCode": 200,
-          "HTTPHeaders": {}
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "illegal_name_2": {
         "Messages": [
           {
-            "MessageId": "<uuid:1>",
-            "ReceiptHandle": "<receipt-handle:9>",
+            "Body": "msg",
             "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
-            "Body": "msg"
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:10>"
           }
         ],
         "ResponseMetadata": {
-          "HTTPStatusCode": 200,
-          "HTTPHeaders": {}
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

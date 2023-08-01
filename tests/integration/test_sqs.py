@@ -3350,6 +3350,10 @@ class TestSqsProvider:
         response = receive_message(["All"])
         assert snapshot.match("all_name", response)
 
+        # test "*"
+        response = receive_message(["*"])
+        assert snapshot.match("all_wildcard_asterisk", response["Messages"][0])
+
         # test ".*"
         response = receive_message([".*"])
         assert snapshot.match("all_wildcard", response["Messages"][0])

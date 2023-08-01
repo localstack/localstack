@@ -40,7 +40,6 @@ from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from tests.integration.apigateway.apigateway_fixtures import (
-    _client,
     api_invoke_url,
     create_rest_api_deployment,
     create_rest_api_integration,
@@ -222,8 +221,7 @@ class TestAPIGateway:
         assert len(test_data["records"]) == len(result["Records"])
 
         # clean up
-        kinesis = aws_stack.create_external_boto_client("kinesis")
-        kinesis.delete_stream(StreamName=self.TEST_STREAM_KINESIS_API_GW)
+        aws_client.kinesis.delete_stream(StreamName=self.TEST_STREAM_KINESIS_API_GW)
 
     def test_api_gateway_sqs_integration_with_event_source(self, aws_client):
         # create target SQS stream
@@ -239,7 +237,7 @@ class TestAPIGateway:
         )
 
         # create event source for sqs lambda processor
-        self.create_lambda_function(self.TEST_LAMBDA_SQS_HANDLER_NAME)
+        self.create_lambda_function(aws_client.awslambda, self.TEST_LAMBDA_SQS_HANDLER_NAME)
         event_source_data = {
             "FunctionName": self.TEST_LAMBDA_SQS_HANDLER_NAME,
             "EventSourceArn": arns.sqs_queue_arn(queue_name),
@@ -266,11 +264,8 @@ class TestAPIGateway:
         assert "b639f52308afd65866c86f274c59033f" == body_md5
 
         # clean up
-        sqs_client = aws_stack.create_external_boto_client("sqs")
-        sqs_client.delete_queue(QueueUrl=queue_url)
-
-        lambda_client = aws_stack.create_external_boto_client("lambda")
-        lambda_client.delete_function(FunctionName=self.TEST_LAMBDA_SQS_HANDLER_NAME)
+        aws_client.sqs.delete_queue(QueueUrl=queue_url)
+        aws_client.awslambda.delete_function(FunctionName=self.TEST_LAMBDA_SQS_HANDLER_NAME)
 
     def test_api_gateway_sqs_integration(self, aws_client):
         # create target SQS stream
@@ -555,6 +550,7 @@ class TestAPIGateway:
             }
         ]
         api_id = self.create_api_gateway_and_deploy(
+            aws_client.apigateway,
             integration_type="MOCK",
             integration_responses=responses,
             stage_name=self.TEST_STAGE_NAME,
@@ -579,11 +575,12 @@ class TestAPIGateway:
 
     def test_api_gateway_lambda_proxy_integration(self, aws_client):
         self._test_api_gateway_lambda_proxy_integration(
-            self.TEST_LAMBDA_PROXY_BACKEND, self.API_PATH_LAMBDA_PROXY_BACKEND
+            aws_client.awslambda, self.TEST_LAMBDA_PROXY_BACKEND, self.API_PATH_LAMBDA_PROXY_BACKEND
         )
 
     def test_api_gateway_lambda_proxy_integration_with_path_param(self, aws_client):
         self._test_api_gateway_lambda_proxy_integration(
+            aws_client.awslambda,
             self.TEST_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM,
             self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM,
         )
@@ -597,6 +594,7 @@ class TestAPIGateway:
             data["return_raw_body"] = base64.b64encode(content).decode("utf8")
 
         test_result = self._test_api_gateway_lambda_proxy_integration_no_asserts(
+            aws_client.awslambda,
             self.TEST_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64,
             self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64,
             data_mutator_fn=_mutate_data,
@@ -608,6 +606,7 @@ class TestAPIGateway:
 
     def _test_api_gateway_lambda_proxy_integration_no_asserts(
         self,
+        lambda_client,
         fn_name: str,
         path: str,
         data_mutator_fn: Optional[Callable] = None,
@@ -619,7 +618,7 @@ class TestAPIGateway:
         :param data_mutator_fn: a Callable[[Dict], None] that lets us mutate the
           data dictionary before sending it off to the lambda.
         """
-        self.create_lambda_function(fn_name)
+        self.create_lambda_function(lambda_client, fn_name)
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = arns.lambda_function_arn(fn_name)
         invocation_uri = "arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations"
@@ -660,10 +659,13 @@ class TestAPIGateway:
 
     def _test_api_gateway_lambda_proxy_integration(
         self,
+        lambda_client,
         fn_name: str,
         path: str,
     ) -> None:
-        test_result = self._test_api_gateway_lambda_proxy_integration_no_asserts(fn_name, path)
+        test_result = self._test_api_gateway_lambda_proxy_integration_no_asserts(
+            lambda_client, fn_name, path
+        )
         data, resource, result, url, path_with_replace = test_result
 
         assert result.status_code == 203
@@ -722,12 +724,14 @@ class TestAPIGateway:
 
     def test_api_gateway_lambda_proxy_integration_any_method(self, aws_client):
         self._test_api_gateway_lambda_proxy_integration_any_method(
+            aws_client.awslambda,
             self.TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD,
             self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD,
         )
 
     def test_api_gateway_lambda_proxy_integration_any_method_with_path_param(self, aws_client):
         self._test_api_gateway_lambda_proxy_integration_any_method(
+            aws_client.awslambda,
             self.TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
             self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
         )
@@ -840,7 +844,7 @@ class TestAPIGateway:
 
     def test_api_gateway_handle_domain_name(self, aws_client):
         domain_name = f"{short_uid()}.example.com"
-        apigw_client = aws_stack.create_external_boto_client("apigateway")
+        apigw_client = aws_client.apigateway
         rs = apigw_client.create_domain_name(domainName=domain_name)
         assert 201 == rs["ResponseMetadata"]["HTTPStatusCode"]
         rs = apigw_client.get_domain_name(domainName=domain_name)
@@ -848,8 +852,8 @@ class TestAPIGateway:
         assert domain_name == rs["domainName"]
         apigw_client.delete_domain_name(domainName=domain_name)
 
-    def _test_api_gateway_lambda_proxy_integration_any_method(self, fn_name, path):
-        self.create_lambda_function(fn_name)
+    def _test_api_gateway_lambda_proxy_integration_any_method(self, lambda_client, fn_name, path):
+        self.create_lambda_function(lambda_client, fn_name)
 
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = arns.lambda_function_arn(fn_name)
@@ -882,7 +886,7 @@ class TestAPIGateway:
 
         # create Lambda function
         lambda_name = f"apigw-lambda-{short_uid()}"
-        self.create_lambda_function(lambda_name)
+        self.create_lambda_function(aws_client.awslambda, lambda_name)
         lambda_uri = arns.lambda_function_arn(lambda_name)
 
         # create REST API
@@ -915,8 +919,7 @@ class TestAPIGateway:
         assert authorizer["id"] == method_response["authorizerId"]
 
         # clean up
-        lambda_client = aws_stack.create_external_boto_client("lambda")
-        lambda_client.delete_function(FunctionName=lambda_name)
+        aws_client.awslambda.delete_function(FunctionName=lambda_name)
 
     def test_base_path_mapping(self, create_rest_apigw, aws_client):
         rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
@@ -976,7 +979,7 @@ class TestAPIGateway:
             )
 
     def test_base_path_mapping_root(self, aws_client):
-        client = aws_stack.create_external_boto_client("apigateway")
+        client = aws_client.apigateway
         response = client.create_rest_api(name="my_api2", description="this is my api")
         rest_api_id = response["id"]
 
@@ -1039,7 +1042,7 @@ class TestAPIGateway:
         assert "foobar" in result["features"]
 
     def test_put_integration_dynamodb_proxy_validation_without_request_template(self, aws_client):
-        api_id = self.create_api_gateway_and_deploy()
+        api_id = self.create_api_gateway_and_deploy(aws_client.apigateway)
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
         response = requests.put(
             url,
@@ -1061,7 +1064,9 @@ class TestAPIGateway:
             )
         }
 
-        api_id = self.create_api_gateway_and_deploy(request_templates=request_templates)
+        api_id = self.create_api_gateway_and_deploy(
+            aws_client.apigateway, request_templates=request_templates
+        )
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
 
         response = requests.put(
@@ -1089,7 +1094,7 @@ class TestAPIGateway:
         }
 
         api_id = self.create_api_gateway_and_deploy(
-            request_templates=request_templates, is_api_key_required=True
+            aws_client.apigateway, request_templates=request_templates, is_api_key_required=True
         )
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
 
@@ -1368,7 +1373,7 @@ class TestAPIGateway:
         )
 
     def test_api_gateway_s3_get_integration(self, create_rest_apigw, aws_client):
-        s3_client = aws_stack.create_external_boto_client("s3")
+        s3_client = aws_client.s3
 
         bucket_name = f"test-bucket-{short_uid()}"
         apigateway_name = f"test-api-{short_uid()}"
@@ -1387,7 +1392,9 @@ class TestAPIGateway:
                 ContentType=object_content_type,
             )
 
-            self.connect_api_gateway_to_s3(bucket_name, object_name, api_id, "GET")
+            self.connect_api_gateway_to_s3(
+                aws_client.apigateway, bucket_name, object_name, api_id, "GET"
+            )
 
             aws_client.apigateway.create_deployment(restApiId=api_id, stageName="test")
             url = path_based_url(api_id, "test", f"/{object_name}")
@@ -1411,7 +1418,7 @@ class TestAPIGateway:
             }
         ]
         api_id = self.create_api_gateway_and_deploy(
-            integration_type="MOCK", integration_responses=resps
+            aws_client.apigateway, integration_type="MOCK", integration_responses=resps
         )
 
         url = path_based_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path="/")
@@ -1475,9 +1482,8 @@ class TestAPIGateway:
     # Helper methods
     # =====================================================================
 
-    def connect_api_gateway_to_s3(self, bucket_name, file_name, api_id, method):
+    def connect_api_gateway_to_s3(self, apigw_client, bucket_name, file_name, api_id, method):
         """Connects the root resource of an api gateway to the given object of an s3 bucket."""
-        apigw_client = aws_stack.create_external_boto_client("apigateway")
         s3_uri = "arn:aws:apigateway:{}:s3:path/{}/{{proxy}}".format(
             aws_stack.get_region(), bucket_name
         )
@@ -1579,9 +1585,8 @@ class TestAPIGateway:
         )
 
     @staticmethod
-    def create_lambda_function(fn_name):
+    def create_lambda_function(lambda_client, fn_name):
         testutil.create_lambda_function(handler_file=TEST_LAMBDA_PYTHON, func_name=fn_name)
-        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.get_waiter("function_active_v2").wait(FunctionName=fn_name)
 
     def test_apigw_test_invoke_method_api(
@@ -1646,6 +1651,7 @@ class TestAPIGateway:
 
     @staticmethod
     def create_api_gateway_and_deploy(
+        apigw_client,
         request_templates=None,
         response_templates=None,
         is_api_key_required=False,
@@ -1656,7 +1662,6 @@ class TestAPIGateway:
         response_templates = response_templates or {}
         request_templates = request_templates or {}
         integration_type = integration_type or "AWS"
-        apigw_client = aws_stack.create_external_boto_client("apigateway")
         response = apigw_client.create_rest_api(name="my_api", description="this is my api")
         api_id = response["id"]
         resources = apigw_client.get_resources(restApiId=api_id)
@@ -1871,9 +1876,11 @@ def test_apigw_call_api_with_aws_endpoint_url(aws_client):
 
 @pytest.mark.parametrize("method", ["GET", "ANY"])
 @pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
-def test_rest_api_multi_region(method, url_function, create_rest_apigw, aws_client):
-    apigateway_client_eu = _client("apigateway", region_name="eu-west-1")
-    apigateway_client_us = _client("apigateway", region_name="us-west-1")
+def test_rest_api_multi_region(
+    method, url_function, create_rest_apigw, aws_client, aws_client_factory
+):
+    apigateway_client_eu = aws_client_factory(region_name="eu-west-1").apigateway
+    apigateway_client_us = aws_client_factory(region_name="us-west-1").apigateway
 
     api_eu_id, _, root_resource_eu_id = create_rest_apigw(
         name="test-eu-region", region_name="eu-west-1"
@@ -1917,12 +1924,8 @@ def test_rest_api_multi_region(method, url_function, create_rest_apigw, aws_clie
         runtime=Runtime.nodejs16_x,
         region_name="us-west-1",
     )
-    lambda_eu_west_1_client = aws_stack.create_external_boto_client(
-        "lambda", region_name="eu-west-1"
-    )
-    lambda_us_west_1_client = aws_stack.create_external_boto_client(
-        "lambda", region_name="us-west-1"
-    )
+    lambda_eu_west_1_client = aws_client_factory(region_name="eu-west-1").awslambda
+    lambda_us_west_1_client = aws_client_factory(region_name="us-west-1").awslambda
     lambda_eu_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
     lambda_us_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
     lambda_eu_arn = arns.lambda_function_arn(lambda_name, region_name="eu-west-1")

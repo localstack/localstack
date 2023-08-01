@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 import traceback
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from localstack import config
 from localstack.utils.analytics.cli import publish_invocation
@@ -380,8 +380,23 @@ def _print_service_table(services: Dict[str, str]) -> None:
 @click.option(
     "-d", "--detached", is_flag=True, help="Start LocalStack in the background", default=False
 )
+@click.option(
+    "--network",
+    type=str,
+    help="The container network the LocalStack container should be started in. By default, the default docker bridge network is used.",
+    required=False,
+)
+@click.option(
+    "--env",
+    "-e",
+    help="Additional environment variables that are passed to the LocalStack container",
+    multiple=True,
+    required=False,
+)
 @publish_invocation
-def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool) -> None:
+def cmd_start(
+    docker: bool, host: bool, no_banner: bool, detached: bool, network: str = None, env: Tuple = ()
+) -> None:
     """
     Start the LocalStack runtime.
 
@@ -407,9 +422,6 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool) -> None
             console.log("starting LocalStack in host mode :laptop_computer:")
         else:
             console.log("starting LocalStack in Docker mode :whale:")
-
-    if not no_banner and not detached:
-        console.rule("LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)")
 
     if host:
         # call hooks to prepare host
@@ -440,10 +452,13 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool) -> None
         # call hooks to prepare host (note that this call should stay below the config overrides above)
         bootstrap.prepare_host(console)
 
+        # pass the parsed cli params to the start infra command
+        params = click.get_current_context().params
+
         if detached:
-            bootstrap.start_infra_in_docker_detached(console)
+            bootstrap.start_infra_in_docker_detached(console, params)
         else:
-            bootstrap.start_infra_in_docker()
+            bootstrap.start_infra_in_docker(console, params)
 
 
 @localstack.command(name="stop", short_help="Stop LocalStack")
