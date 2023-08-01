@@ -43,6 +43,7 @@ PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 # by default we use the GenericBaseModel (the legacy model), unless the resource is listed below
 # add your new provider here when you want it to be the default
 PROVIDER_DEFAULTS = {
+    "AWS::SQS::Queue": "ResourceProvider"
     # "AWS::IAM::User": "ResourceProvider",
     # "AWS::SSM::Parameter": "GenericBaseModel",
     # "AWS::OpenSearchService::Domain": "GenericBaseModel",
