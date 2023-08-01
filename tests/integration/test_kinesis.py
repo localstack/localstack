@@ -9,7 +9,6 @@ from botocore.config import Config as BotoConfig
 from botocore.exceptions import ClientError
 
 from localstack import config, constants
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.kinesis import provider as kinesis_provider
 from localstack.testing.pytest import markers
 from localstack.utils.aws import aws_stack, resources
@@ -424,17 +423,15 @@ def wait_for_consumer_ready(aws_client):
 class TestKinesisPythonClient:
     @markers.skip_offline
     def test_run_kcl(self, aws_client):
-        kinesis = aws_client.kinesis
         result = []
 
         def process_records(records):
             result.extend(records)
 
         # start Kinesis client
+        kinesis = aws_client.kinesis
         stream_name = f"test-foobar-{short_uid()}"
-        resources.create_kinesis_stream(
-            TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, stream_name, delete=True
-        )
+        resources.create_kinesis_stream(kinesis, stream_name, delete=True)
         process = kinesis_connector.listen_to_kinesis(
             stream_name=stream_name,
             listener_func=process_records,

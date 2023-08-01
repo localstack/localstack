@@ -3,7 +3,6 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import aws_stack, resources
 from localstack.utils.common import short_uid
@@ -18,7 +17,7 @@ class TestErrorInjection:
     ):
         kinesis = aws_client_factory(config=self.retry_config()).kinesis
         stream_name = f"stream-{short_uid()}"
-        resources.create_kinesis_stream(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, stream_name)
+        resources.create_kinesis_stream(kinesis, stream_name)
         wait_for_stream_ready(stream_name)
 
         try:
