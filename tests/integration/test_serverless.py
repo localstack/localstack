@@ -16,16 +16,20 @@ def get_base_dir() -> str:
 
 class TestServerless:
     @pytest.fixture(scope="session")
-    def setup_and_teardown(self):
+    def setup_and_teardown(self, aws_client):
         base_dir = get_base_dir()
         if not os.path.exists(os.path.join(base_dir, "node_modules")):
             # install dependencies
             run(["npm", "install"], cwd=base_dir)
 
+        # list apigateway before sls deployment
+        apis = aws_client.apigateway.get_rest_apis()["items"]
+        existing_api_ids = [api["id"] for api in apis]
+
         # deploy serverless app
         run(["npm", "run", "deploy", "--", f"--region={TEST_AWS_REGION_NAME}"], cwd=base_dir)
 
-        yield
+        yield existing_api_ids
 
         # TODO uncomment once removal via the sls plugin is fixed
         # run('cd %s; npm run undeploy -- --region=%s' % (cls.get_base_dir(), aws_stack.get_region()))
@@ -143,6 +147,7 @@ class TestServerless:
     @markers.skip_offline
     def test_apigateway_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-router"
+        existing_api_ids = setup_and_teardown
 
         lambda_client = aws_client.awslambda
 
@@ -152,7 +157,7 @@ class TestServerless:
 
         apigw_client = aws_client.apigateway
         apis = apigw_client.get_rest_apis()["items"]
-        api_ids = [api["id"] for api in apis]
+        api_ids = [api["id"] for api in apis if api["id"] not in existing_api_ids]
         assert 1 == len(api_ids)
 
         resources = apigw_client.get_resources(restApiId=api_ids[0])["items"]
