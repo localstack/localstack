@@ -95,7 +95,7 @@ pytestmark = markers.snapshot.skip_snapshot_verify(
 
 
 class TestNodeJSRuntimes:
-    @pytest.mark.parametrize("runtime", (Runtime.nodejs14_x, Runtime.nodejs16_x))
+    @parametrize_node_runtimes
     @pytest.mark.skipif(
         is_old_provider() and not use_docker(),
         reason="ES6 support is only guaranteed when using the docker executor",
@@ -505,7 +505,8 @@ class TestPythonRuntimes:
         assert "stackTrace" in payload
 
         if (
-            runtime in ("python3.9", "python3.10") and not is_old_provider()
+            runtime in (Runtime.python3_9, Runtime.python3_10, Runtime.python3_11)
+            and not is_old_provider()
         ):  # TODO: remove this after the legacy provider is gone
             assert "requestId" in payload
         else:
