@@ -16,8 +16,8 @@ def test_defaults(container_factory: ContainerFactory):
     port = get_free_tcp_port()
     container = container_factory()
     container.config.ports.add(port, 4566)
-    container.run(attach=False)
-    container.wait_until_ready()
+    running_container = container.run(attach=False)
+    running_container.wait_until_ready()
 
     r = requests.get(f"http://127.0.0.1:{port}/_localstack/health")
     assert r.status_code == 200
@@ -35,8 +35,8 @@ def test_gateway_listen_single_value(container_factory: ContainerFactory, cleanu
         },
     )
     container.config.ports.add(port1, 5000)
-    container.run(attach=False)
-    container.wait_until_ready()
+    running_container = container.run(attach=False)
+    running_container.wait_until_ready()
 
     # check the ports listening on 0.0.0.0
     r = requests.get(f"http://127.0.0.1:{port1}/_localstack/health")
@@ -71,8 +71,8 @@ def test_gateway_listen_multiple_values(container_factory: ContainerFactory, cle
     )
     container.config.ports.add(port1, 5000)
     container.config.ports.add(port2, 2000)
-    container.run(attach=False)
-    container.wait_until_ready()
+    running_container = container.run(attach=False)
+    running_container.wait_until_ready()
 
     # check the ports listening on 0.0.0.0
     r = requests.get(f"http://127.0.0.1:{port1}/_localstack/health")

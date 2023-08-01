@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 import functools
 import logging
@@ -370,14 +372,20 @@ def extract_port_flags(user_flags, port_mappings: PortMappings):
 
 class LocalstackContainer:
     config: ContainerConfiguration
-    id: str | None
+    running_container: RunningLocalstackContainer | None
 
     def __init__(self, name: str = None):
         self.config = self._get_default_configuration(name)
         self.logfile = os.path.join(config.dirs.tmp, f"{self.config.name}_container.log")
 
         self.additional_flags = []  # TODO: see comment in run()
-        self.id = None
+
+        # marker to access the running container
+        self.running_container = None
+
+    def truncate_log(self):
+        with open(self.logfile, "wb") as fd:
+            fd.write(b"")
 
     @staticmethod
     def _get_default_configuration(name: str = None) -> ContainerConfiguration:
@@ -395,7 +403,7 @@ class LocalstackContainer:
             env_vars={},
         )
 
-    def run(self, attach: bool = True):
+    def run(self, attach: bool = True) -> RunningLocalstackContainer:
         if isinstance(DOCKER_CLIENT, CmdDockerClient):
             DOCKER_CLIENT.default_run_outfile = self.logfile
 
@@ -416,7 +424,7 @@ class LocalstackContainer:
         self._ensure_container_network(cfg.network)
 
         try:
-            self.id = DOCKER_CLIENT.create_container_from_config(cfg)
+            id = DOCKER_CLIENT.create_container_from_config(cfg)
         except ContainerException as e:
             if LOG.isEnabledFor(logging.DEBUG):
                 LOG.exception("Error while creating LocalStack container")
@@ -426,21 +434,14 @@ class LocalstackContainer:
                 )
             raise
 
-        # populate the name so that we can check if the container is running.
-        self.config.name = DOCKER_CLIENT.get_container_name(self.id)
+        running_container = RunningLocalstackContainer(
+            id, container_config=self.config, logfile=self.logfile
+        )
+        running_container.start(attach=attach)
+        return running_container
 
-        try:
-            return DOCKER_CLIENT.start_container(self.id, attach=attach)
-        except ContainerException as e:
-            if LOG.isEnabledFor(logging.DEBUG):
-                LOG.exception("Error while starting LocalStack container")
-            else:
-                LOG.error(
-                    "Error while starting LocalStack container: %s\n%s", e.message, to_str(e.stderr)
-                )
-            raise
-
-    def _ensure_container_network(self, network: str):
+    @staticmethod
+    def _ensure_container_network(network: str):
         """Makes sure the configured container network exists"""
         if network:
             if network in ["host", "bridge"]:
@@ -450,13 +451,6 @@ class LocalstackContainer:
             except NoSuchNetwork:
                 LOG.debug("Container network %s not found, creating it", network)
                 DOCKER_CLIENT.create_network(network)
-
-    def truncate_log(self):
-        with open(self.logfile, "wb") as fd:
-            fd.write(b"")
-
-    # these properties are there to not break code that configures the container by using these values
-    # that code should ideally be refactored soon-ish to use the config instead.
 
     @property
     def env_vars(self) -> Dict[str, str]:
@@ -482,6 +476,68 @@ class LocalstackContainer:
     def ports(self) -> PortMappings:
         return self.config.ports
 
+
+class RunningLocalstackContainer:
+    """
+    Represents a LocalStack container that is running.
+    """
+
+    id: str
+    name: str
+    container_config: ContainerConfiguration
+
+    def __init__(self, id: str, container_config: ContainerConfiguration, logfile: str):
+        self.id = id
+        self.container_config = container_config
+        self.logfile = logfile
+
+        self.name = DOCKER_CLIENT.get_container_name(self.id)
+
+    def start(self, attach: bool = False):
+        try:
+            return DOCKER_CLIENT.start_container(self.id, attach=attach)
+        except ContainerException as e:
+            LOG.error(
+                "Error while starting LocalStack container: %s\n%s",
+                e.message,
+                to_str(e.stderr),
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            raise
+
+    def shutdown(self):
+        if not DOCKER_CLIENT.is_container_running(self.name):
+            return
+
+        DOCKER_CLIENT.stop_container(container_name=self.id, timeout=30)
+
+    def truncate_log(self):
+        with open(self.logfile, "wb") as fd:
+            fd.write(b"")
+
+    # these properties are there to not break code that configures the container by using these values
+    # that code should ideally be refactored soon-ish to use the config instead.
+
+    @property
+    def env_vars(self) -> Dict[str, str]:
+        return self.container_config.env_vars
+
+    @property
+    def entrypoint(self) -> Optional[str]:
+        return self.container_config.entrypoint
+
+    @entrypoint.setter
+    def entrypoint(self, value: str):
+        self.container_config.entrypoint = value
+
+    @property
+    def volumes(self) -> VolumeMappings:
+        return self.container_config.volumes
+
+    @property
+    def ports(self) -> PortMappings:
+        return self.container_config.ports
+
     def wait_until_ready(self, timeout: float | None = None):
         if self.id is None:
             raise ValueError("no container id found, cannot wait until ready")
@@ -495,14 +551,8 @@ class LocalstackContainer:
         return DOCKER_CLIENT.exec_in_container(container_name_or_id=self.id, *args, **kwargs)
 
 
-class RunningLocalstackContainer:
-    """
-    Represents a LocalStack container that is running.
-    """
-
-
 class LocalstackContainerServer(Server):
-    container: LocalstackContainer
+    container: LocalstackContainer | RunningLocalstackContainer
 
     def __init__(self, container=None) -> None:
         super().__init__(config.EDGE_PORT, config.EDGE_BIND_HOST)
@@ -534,7 +584,9 @@ class LocalstackContainerServer(Server):
                 'LocalStack container named "%s" is already running' % self.container.name
             )
 
-        return self.container.run()
+        config.dirs.mkdirs()
+        self.container = self.container.run()
+        return self.container
 
     def do_shutdown(self):
         try:
