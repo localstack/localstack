@@ -8,6 +8,7 @@ import socket
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+import boto3
 import botocore.auth
 import botocore.config
 import botocore.credentials
@@ -31,7 +32,14 @@ from localstack.services.stores import (
     LocalAttribute,
 )
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
-from localstack.testing.aws.util import get_lambda_logs, is_aws_cloud
+from localstack.testing.aws.util import (
+    base_aws_client_factory,
+    base_aws_session,
+    get_lambda_logs,
+    is_aws_cloud,
+    primary_testing_aws_client,
+    secondary_testing_aws_client,
+)
 from localstack.utils import testutil
 from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.aws.resources import create_dynamodb_table
@@ -48,6 +56,44 @@ LOG = logging.getLogger(__name__)
 
 # URL of public HTTP echo server, used primarily for AWS parity/snapshot testing
 PUBLIC_HTTP_ECHO_SERVER_URL = "http://httpbin.org"
+
+
+@pytest.fixture(scope="session")
+def aws_session() -> boto3.Session:
+    """
+    This fixture returns the Boto Session instance for testing.
+    """
+    return base_aws_session()
+
+
+@pytest.fixture(scope="session")
+def aws_client_factory(aws_session):
+    """
+    This fixture returns a client factory for testing.
+
+    Use this fixture if you need to use custom endpoint or Boto config.
+    """
+    return base_aws_client_factory(aws_session)
+
+
+@pytest.fixture(scope="session")
+def aws_client(aws_client_factory):
+    """
+    This fixture can be used to obtain Boto clients for testing.
+
+    The clients are configured with the primary testing credentials.
+    """
+    return primary_testing_aws_client(aws_client_factory)
+
+
+@pytest.fixture(scope="session")
+def secondary_aws_client(aws_client_factory):
+    """
+    This fixture can be used to obtain Boto clients for testing.
+
+    The clients are configured with the secondary testing credentials.
+    """
+    return secondary_testing_aws_client(aws_client_factory)
 
 
 @pytest.fixture(scope="class")
