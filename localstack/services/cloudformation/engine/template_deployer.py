@@ -104,10 +104,11 @@ def get_attr_from_model_instance(
 
     # If we couldn't find the attribute, this is actually an irrecoverable error.
     # After the resource has a state of CREATE_COMPLETE, all attributes should already be set.
-    if attribute_candidate is None:
-        raise Exception(
-            f"Failed to resolve attribute for Fn::GetAtt in {resource_type}: {resource_id}.{attribute_name}"
-        )  # TODO: check CFn behavior via snapshot
+    # TODO: raise here instead
+    # if attribute_candidate is None:
+    # raise Exception(
+    #     f"Failed to resolve attribute for Fn::GetAtt in {resource_type}: {resource_id}.{attribute_name}"
+    # )  # TODO: check CFn behavior via snapshot
     return attribute_candidate
 
 
