@@ -495,6 +495,12 @@ class LocalstackContainer:
         return DOCKER_CLIENT.exec_in_container(container_name_or_id=self.id, *args, **kwargs)
 
 
+class RunningLocalstackContainer:
+    """
+    Represents a LocalStack container that is running.
+    """
+
+
 class LocalstackContainerServer(Server):
     container: LocalstackContainer
 
