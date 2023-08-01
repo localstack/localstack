@@ -73,13 +73,16 @@ class NoStackUpdates(Exception):
 
 
 def get_attr_from_model_instance(
-    resource: dict, attribute_name: str, resource_type: str, resource_id: Optional[str] = None
+    resource: dict, attribute_name: str, resource_type: str, resource_id: str
 ) -> str:
     # if there's no entry in VALID_GETATT_PROPERTIES for the resource type we still default to "open" and accept anything
     valid_atts = VALID_GETATT_PROPERTIES.get(resource_type)
     if valid_atts is not None and attribute_name not in valid_atts:
+        LOG.warning(
+            f"Invalid attribute in Fn::GetAtt for {resource_type}:  | {resource_id}.{attribute_name}"
+        )
         raise Exception(
-            f"Unknown resource attribute requested in GetAtt: {resource_type} | {resource_id}.{attribute_name}"
+            f"Resource type {resource_type} does not support attribute {{{attribute_name}}}"
         )  # TODO: check CFn behavior via snapshot
 
     properties = resource.get("Properties", {})
@@ -98,7 +101,7 @@ def get_attr_from_model_instance(
     # After the resource has a state of CREATE_COMPLETE, all attributes should already be set.
     if attribute_candidate is None:
         raise Exception(
-            f"Failed to retrieve resource attribute: {resource_type} | {resource_id}.{attribute_name}"
+            f"Failed to resolve attribute for Fn::GetAtt in {resource_type}: {resource_id}.{attribute_name}"
         )  # TODO: check CFn behavior via snapshot
     return attribute_candidate
 
@@ -279,7 +282,7 @@ def _resolve_refs_recursively(
             resource = resources.get(resource_logical_id)
 
             resolved_getatt = get_attr_from_model_instance(
-                resource, attribute_name, get_resource_type(resource)
+                resource, attribute_name, get_resource_type(resource), resource_logical_id
             )
             # TODO: we should check the deployment state and not try to GetAtt from a resource that is still IN_PROGRESS or hasn't started yet.
             if resolved_getatt is None:
@@ -511,16 +514,16 @@ def resolve_placeholders_in_string(
         parts = ref_expression.split(".")
         if len(parts) >= 2:
             # Resource attributes specified => Use GetAtt to resolve
-            resource_name, _, attr_name = ref_expression.partition(".")
+            logical_resource_id, _, attr_name = ref_expression.partition(".")
             resolved = get_attr_from_model_instance(
-                resources[resource_name],
+                resources[logical_resource_id],
                 attr_name,
-                get_resource_type(resources[resource_name]),
-                resource_name,
+                get_resource_type(resources[logical_resource_id]),
+                logical_resource_id,
             )
             if resolved is None:
                 raise DependencyNotYetSatisfied(
-                    resource_ids=resource_name,
+                    resource_ids=logical_resource_id,
                     message=f"Unable to resolve attribute ref {ref_expression}",
                 )
             if not isinstance(resolved, str):
@@ -951,6 +954,7 @@ class TemplateDeployer:
 
     def apply_changes_in_loop(self, changes, stack, action=None, new_stack=None):
         def _run(*args):
+            status_reason = None
             try:
                 self.do_apply_changes_in_loop(changes, stack)
                 status = f"{action}_COMPLETE"
@@ -965,13 +969,14 @@ class TemplateDeployer:
                     traceback.format_exc(),
                 )
                 status = f"{action}_FAILED"
-            stack.set_stack_status(status)
+                status_reason = str(e)
+            stack.set_stack_status(status, status_reason)
             if isinstance(new_stack, StackChangeSet):
                 new_stack.metadata["Status"] = status
                 exec_result = "EXECUTE_FAILED" if "FAILED" in status else "EXECUTE_COMPLETE"
                 new_stack.metadata["ExecutionStatus"] = exec_result
                 result = "failed" if "FAILED" in status else "succeeded"
-                new_stack.metadata["StatusReason"] = f"Deployment {result}"
+                new_stack.metadata["StatusReason"] = status_reason or f"Deployment {result}"
 
         # run deployment in background loop, to avoid client network timeouts
         return start_worker_thread(_run)
@@ -1210,7 +1215,8 @@ def resolve_outputs(stack) -> list[dict]:
         except Exception as e:
             log_method = getattr(LOG, "debug")
             if config.CFN_VERBOSE_ERRORS:
-                log_method = getattr(LOG, "exception")
+                raise  # unresolvable outputs cause a stack failure
+                # log_method = getattr(LOG, "exception")
             log_method("Unable to resolve references in stack outputs: %s - %s", details, e)
         exports = details.get("Export") or {}
         export = exports.get("Name")

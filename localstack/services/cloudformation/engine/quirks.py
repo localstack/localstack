@@ -23,7 +23,7 @@ VALID_GETATT_PROPERTIES = {
     # Other Examples
     # "AWS::ApiGateway::Resource": ["ResourceId"],
     # "AWS::IAM::User": ["Arn"],  # TODO: not validated yet
-    # "AWS::SSM::Parameter": ["Type", "Value"],  # TODO: not validated yet
+    "AWS::SSM::Parameter": ["Type", "Value"],  # TODO: not validated yet
     # "AWS::OpenSearchService::Domain": [
     #     "AdvancedSecurityOptions.AnonymousAuthDisableDate",
     #     "Arn",
