@@ -1,6 +1,7 @@
 import logging
 import os
 import threading
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from localstack import config
@@ -20,7 +21,7 @@ class KinesisMockServer(Server):
     def __init__(
         self,
         port: int,
-        js_path: str,
+        js_path: Path,
         latency: str,
         account_id: str,
         host: str = "localhost",
@@ -57,9 +58,10 @@ class KinesisMockServer(Server):
         Helper method for creating kinesis mock invocation command
         :return: returns a tuple containing the command list and a dictionary with the environment variables
         """
-        # TODO handle KINESIS_MOCK_CERT_PATH
 
         env_vars = {
+            # Use the `server.json` packaged next to the main.js
+            "KINESIS_MOCK_CERT_PATH": str((self._js_path.parent / "server.json").absolute()),
             "KINESIS_MOCK_PLAIN_PORT": self.port,
             # Each kinesis-mock instance listens to two ports - secure and insecure.
             # LocalStack uses only one - the insecure one. Block the secure port to avoid conflicts.
@@ -138,7 +140,7 @@ class KinesisServerManager:
         """
         port = get_free_tcp_port()
         kinesismock_package.install()
-        kinesis_mock_js_path = kinesismock_package.get_installer().get_executable_path()
+        kinesis_mock_js_path = Path(kinesismock_package.get_installer().get_executable_path())
 
         # kinesis-mock stores state in json files <account_id>.json, so we can dump everything into `kinesis/`
         persist_path = os.path.join(config.dirs.data, "kinesis")
