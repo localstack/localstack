@@ -170,7 +170,11 @@ def port_can_be_bound(port: IntOrPort) -> bool:
             return False
         sock.bind(("", port.port))
         return True
+    except OSError:
+        # either the port is used or we don't have permission to bind it
+        return False
     except Exception:
+        LOG.error(f"cannot bind port {port}", exc_info=LOG.isEnabledFor(logging.DEBUG))
         return False
 
 
