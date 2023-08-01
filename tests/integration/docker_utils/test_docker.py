@@ -626,9 +626,9 @@ class TestDockerClient:
         with file_path.open(mode="w") as fd:
             fd.write("foobared\n")
 
-        docker_client.copy_into_container(c.name, str(local_path), container_path)
+        docker_client.copy_into_container(c.container_name, str(local_path), container_path)
 
-        output, _ = docker_client.start_container(c.id, attach=True)
+        output, _ = docker_client.start_container(c.container_id, attach=True)
         output = output.decode(config.DEFAULT_ENCODING)
 
         assert "foobared" in output
@@ -1318,11 +1318,11 @@ class TestDockerClient:
         dummy_container,
     ):
         docker_client.exec_in_container(
-            dummy_container.id,
+            dummy_container.container_id,
             command=["sh", "-c", f"echo TEST_CONTENT > {container_file_name}"],
         )
         docker_client.copy_from_container(
-            dummy_container.id,
+            dummy_container.container_id,
             local_path=str(local_path),
             container_path=container_file_name,
         )
