@@ -1,31 +1,11 @@
-import os
 from enum import Enum
 from typing import Dict
-
-import boto3
-import botocore
 
 from localstack.services.apigateway.helpers import host_based_url, path_based_url
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import aws_stack
 
 # TODO convert the test util functions in this file to pytest fixtures
-
-
-def _client(service, region_name=None, aws_access_key_id=None):
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        return boto3.client(service)
-    # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
-    config = (
-        botocore.config.Config(
-            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
-        )
-        if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
-        else None
-    )
-    return aws_stack.create_external_boto_client(
-        service, config=config, region_name=region_name, aws_access_key_id=aws_access_key_id
-    )
 
 
 def assert_response_status(response: Dict, status: int):
