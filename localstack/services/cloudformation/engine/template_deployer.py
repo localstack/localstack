@@ -75,6 +75,12 @@ class NoStackUpdates(Exception):
 def get_attr_from_model_instance(
     resource: dict, attribute_name: str, resource_type: str, resource_id: str
 ) -> str:
+    properties = resource.get("Properties", {})
+
+    # TODO: fix this somewhere else
+    if legacy_state := resource.get("_state_"):
+        properties = {**properties, **legacy_state}
+
     # if there's no entry in VALID_GETATT_PROPERTIES for the resource type we still default to "open" and accept anything
     valid_atts = VALID_GETATT_PROPERTIES.get(resource_type)
     if valid_atts is not None and attribute_name not in valid_atts:
@@ -85,7 +91,6 @@ def get_attr_from_model_instance(
             f"Resource type {resource_type} does not support attribute {{{attribute_name}}}"
         )  # TODO: check CFn behavior via snapshot
 
-    properties = resource.get("Properties", {})
     attribute_candidate = properties.get(attribute_name)
     if "." in attribute_name:
         if attribute_candidate:
