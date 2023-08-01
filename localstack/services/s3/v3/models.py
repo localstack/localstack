@@ -171,7 +171,8 @@ class S3Bucket:
                         Method=http_method,
                         ResourceType="DeleteMarker",
                         DeleteMarker=True,
-                        Allow="delete",
+                        Allow="DELETE",
+                        VersionId=s3_object_version.version_id,
                     )
                 return s3_object_version
 
@@ -185,6 +186,7 @@ class S3Bucket:
                     "The specified key does not exist.",
                     Key=key,
                     DeleteMarker=True,
+                    VersionId=s3_object.version_id,
                 )
 
         return s3_object
