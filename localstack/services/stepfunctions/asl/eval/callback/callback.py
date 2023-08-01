@@ -81,6 +81,7 @@ class CallbackEndpoint:
         self._notify_event = Event()
         self._outcome = None
         self.consumer_error = None
+        self._heartbeat_endpoint = None
 
     def setup_heartbeat_endpoint(self, heartbeat_seconds: int) -> HeartbeatEndpoint:
         self._heartbeat_endpoint = HeartbeatEndpoint(heartbeat_seconds=heartbeat_seconds)

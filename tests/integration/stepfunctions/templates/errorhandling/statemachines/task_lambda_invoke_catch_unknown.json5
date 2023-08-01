@@ -1,5 +1,5 @@
 {
-  "Comment": "TASK_LAMBDA_CATCH_UNKNOWN",
+  "Comment": "AWS_SDK_TASK_LAMBDA_CATCH_UNKNOWN",
   "StartAt": "Start",
   "States": {
     "Start": {
