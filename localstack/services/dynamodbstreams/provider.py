@@ -142,4 +142,6 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
     ) -> ListStreamsOutput:
         store = get_dynamodbstreams_store(context.account_id, context.region)
         result = [select_from_typed_dict(Stream, res) for res in store.ddb_streams.values()]
+        if table_name:
+            result = [res for res in result if res["TableName"] == table_name]
         return ListStreamsOutput(Streams=result)

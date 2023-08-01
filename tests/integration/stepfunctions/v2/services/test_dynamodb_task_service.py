@@ -19,19 +19,35 @@ pytestmark = pytest.mark.skipif(
         "$..loggingConfiguration",
         "$..tracingConfiguration",
         "$..previousEventId",
-        # TODO: add support for Sdk Http metadata.
+        # # TODO: add support for Sdk Http metadata.
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",
     ]
 )
-class TestTaskServiceAwsSdk:
-    @markers.snapshot.skip_snapshot_verify(paths=["$..SecretList"])
-    def test_list_secrets(
-        self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot
+class TestTaskServiceDynamoDB:
+    def test_put_get_item(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        dynamodb_create_table,
+        sfn_snapshot,
     ):
-        template = ST.load_sfn_template(ST.AWSSDK_LIST_SECRETS)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.dynamodb_api())
+
+        table_name = f"sfn_test_table_{short_uid()}"
+        dynamodb_create_table(table_name=table_name, partition_key="id", client=aws_client.dynamodb)
+
+        template = ST.load_sfn_template(ST.DYNAMODB_PUT_GET_ITEM)
         definition = json.dumps(template)
-        exec_input = json.dumps(dict())
+
+        exec_input = json.dumps(
+            {
+                "TableName": table_name,
+                "Item": {"data": {"S": "HelloWorld"}, "id": {"S": "id1"}},
+                "Key": {"id": {"S": "id1"}},
+            }
+        )
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
@@ -41,20 +57,20 @@ class TestTaskServiceAwsSdk:
             exec_input,
         )
 
-    def test_dynamodb_put_get_item(
+    def test_put_delete_item(
         self,
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         dynamodb_create_table,
-        snapshot,
+        sfn_snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.dynamodb_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.dynamodb_api())
 
         table_name = f"sfn_test_table_{short_uid()}"
         dynamodb_create_table(table_name=table_name, partition_key="id", client=aws_client.dynamodb)
 
-        template = ST.load_sfn_template(ST.AWS_SDK_DYNAMODB_PUT_GET_ITEM)
+        template = ST.load_sfn_template(ST.DYNAMODB_PUT_DELETE_ITEM)
         definition = json.dumps(template)
 
         exec_input = json.dumps(
@@ -68,57 +84,25 @@ class TestTaskServiceAwsSdk:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
 
-    def test_dynamodb_put_delete_item(
+    def test_put_update_get_item(
         self,
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         dynamodb_create_table,
-        snapshot,
+        sfn_snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.dynamodb_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.dynamodb_api())
 
         table_name = f"sfn_test_table_{short_uid()}"
         dynamodb_create_table(table_name=table_name, partition_key="id", client=aws_client.dynamodb)
 
-        template = ST.load_sfn_template(ST.AWS_SDK_DYNAMODB_PUT_DELETE_ITEM)
-        definition = json.dumps(template)
-
-        exec_input = json.dumps(
-            {
-                "TableName": table_name,
-                "Item": {"data": {"S": "HelloWorld"}, "id": {"S": "id1"}},
-                "Key": {"id": {"S": "id1"}},
-            }
-        )
-        create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
-            create_state_machine,
-            snapshot,
-            definition,
-            exec_input,
-        )
-
-    def test_dynamodb_put_update_get_item(
-        self,
-        aws_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        dynamodb_create_table,
-        snapshot,
-    ):
-        snapshot.add_transformer(snapshot.transform.dynamodb_api())
-
-        table_name = f"sfn_test_table_{short_uid()}"
-        dynamodb_create_table(table_name=table_name, partition_key="id", client=aws_client.dynamodb)
-
-        template = ST.load_sfn_template(ST.AWS_SDK_DYNAMODB_PUT_UPDATE_GET_ITEM)
+        template = ST.load_sfn_template(ST.DYNAMODB_PUT_UPDATE_GET_ITEM)
         definition = json.dumps(template)
 
         exec_input = json.dumps(
@@ -134,7 +118,7 @@ class TestTaskServiceAwsSdk:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import base64
 import json
 import os
@@ -17,7 +16,7 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.utils.aws import arns, aws_stack, resources
+from localstack.utils.aws import arns, resources
 from localstack.utils.files import load_file
 from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
@@ -159,7 +158,7 @@ class TestEvents:
         for field in expected_fields:
             assert field in event
 
-    def test_put_rule(self, aws_client):
+    def test_put_rule(self, aws_client, clean_up):
         rule_name = f"rule-{short_uid()}"
 
         aws_client.events.put_rule(Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN))
@@ -169,7 +168,7 @@ class TestEvents:
         assert json.loads(rules[0]["EventPattern"]) == TEST_EVENT_PATTERN
 
         # clean up
-        self.cleanup(rule_name=rule_name)
+        clean_up(rule_name=rule_name)
 
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
         self, aws_client
@@ -206,7 +205,7 @@ class TestEvents:
             == event_details_to_publish
         )
 
-    def test_list_tags_for_resource(self, aws_client):
+    def test_list_tags_for_resource(self, aws_client, clean_up):
         rule_name = "rule-{}".format(short_uid())
 
         rule = aws_client.events.put_rule(
@@ -230,10 +229,10 @@ class TestEvents:
         assert actual == expected
 
         # clean up
-        self.cleanup(rule_name=rule_name)
+        clean_up(rule_name=rule_name)
 
     @markers.parity.aws_validated
-    def test_put_events_with_target_sqs(self, aws_client):
+    def test_put_events_with_target_sqs(self, aws_client, put_events_with_filter_to_sqs):
         entries = [
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
@@ -241,14 +240,12 @@ class TestEvents:
                 "Detail": json.dumps(EVENT_DETAIL),
             }
         ]
-        self._put_events_with_filter_to_sqs(
-            aws_client.events,
-            aws_client.sqs,
+        put_events_with_filter_to_sqs(
             pattern=TEST_EVENT_PATTERN,
             entries_asserts=[(entries, True)],
         )
 
-    def test_put_events_with_values_in_array(self, aws_client):
+    def test_put_events_with_values_in_array(self, aws_client, put_events_with_filter_to_sqs):
         pattern = {"detail": {"event": {"data": {"type": ["1", "2"]}}}}
         entries1 = [
             {
@@ -272,16 +269,14 @@ class TestEvents:
             }
         ]
         entries_asserts = [(entries1, True), (entries2, True), (entries3, False)]
-        self._put_events_with_filter_to_sqs(
-            aws_client.events,
-            aws_client.sqs,
+        put_events_with_filter_to_sqs(
             pattern=pattern,
             entries_asserts=entries_asserts,
             input_path="$.detail",
         )
 
     @markers.parity.aws_validated
-    def test_put_events_with_nested_event_pattern(self, aws_client):
+    def test_put_events_with_nested_event_pattern(self, aws_client, put_events_with_filter_to_sqs):
         pattern = {"detail": {"event": {"data": {"type": ["1"]}}}}
         entries1 = [
             {
@@ -305,15 +300,15 @@ class TestEvents:
             }
         ]
         entries_asserts = [(entries1, True), (entries2, False), (entries3, False)]
-        self._put_events_with_filter_to_sqs(
-            aws_client.events,
-            aws_client.sqs,
+        put_events_with_filter_to_sqs(
             pattern=pattern,
             entries_asserts=entries_asserts,
             input_path="$.detail",
         )
 
-    def test_put_events_with_target_sqs_event_detail_match(self, aws_client):
+    def test_put_events_with_target_sqs_event_detail_match(
+        self, aws_client, put_events_with_filter_to_sqs
+    ):
         entries1 = [
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
@@ -329,83 +324,82 @@ class TestEvents:
             }
         ]
         entries_asserts = [(entries1, True), (entries2, False)]
-        self._put_events_with_filter_to_sqs(
-            aws_client.events,
-            aws_client.sqs,
+        put_events_with_filter_to_sqs(
             pattern={"detail": {"EventType": ["0", "1"]}},
             entries_asserts=entries_asserts,
             input_path="$.detail",
         )
 
-    def _put_events_with_filter_to_sqs(
-        self,
-        events_client,
-        sqs_client,
-        pattern: Dict,
-        entries_asserts: List[Tuple[List[Dict], bool]],
-        input_path: str = None,
-    ):
-        queue_name = f"queue-{short_uid()}"
-        rule_name = f"rule-{short_uid()}"
-        target_id = f"target-{short_uid()}"
-        bus_name = f"bus-{short_uid()}"
+    @pytest.fixture
+    def put_events_with_filter_to_sqs(self, aws_client, clean_up):
+        def _put_events_with_filter_to_sqs(
+            pattern: Dict,
+            entries_asserts: List[Tuple[List[Dict], bool]],
+            input_path: str = None,
+        ):
+            queue_name = f"queue-{short_uid()}"
+            rule_name = f"rule-{short_uid()}"
+            target_id = f"target-{short_uid()}"
+            bus_name = f"bus-{short_uid()}"
 
-        queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = self._get_queue_arn(queue_url, sqs_client)
-        policy = {
-            "Version": "2012-10-17",
-            "Id": f"sqs-eventbridge-{short_uid()}",
-            "Statement": [
-                {
-                    "Sid": f"SendMessage-{short_uid()}",
-                    "Effect": "Allow",
-                    "Principal": {"Service": "events.amazonaws.com"},
-                    "Action": "sqs:SendMessage",
-                    "Resource": queue_arn,
-                }
-            ],
-        }
-        sqs_client.set_queue_attributes(
-            QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
-        )
-
-        events_client.create_event_bus(Name=bus_name)
-        events_client.put_rule(
-            Name=rule_name,
-            EventBusName=bus_name,
-            EventPattern=json.dumps(pattern),
-        )
-        kwargs = {"InputPath": input_path} if input_path else {}
-        rs = events_client.put_targets(
-            Rule=rule_name,
-            EventBusName=bus_name,
-            Targets=[{"Id": target_id, "Arn": queue_arn, **kwargs}],
-        )
-
-        assert rs["FailedEntryCount"] == 0
-        assert rs["FailedEntries"] == []
-
-        try:
-            for entry_asserts in entries_asserts:
-                entries = entry_asserts[0]
-                for entry in entries:
-                    entry.setdefault("EventBusName", bus_name)
-                self._put_entries_assert_results_sqs(
-                    events_client,
-                    sqs_client,
-                    queue_url,
-                    entries=entries,
-                    should_match=entry_asserts[1],
-                )
-        finally:
-            self.cleanup(
-                bus_name,
-                rule_name,
-                target_id,
-                queue_url=queue_url,
-                events_client=events_client,
-                sqs_client=sqs_client,
+            sqs_client = aws_client.sqs
+            queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
+            queue_arn = self._get_queue_arn(queue_url, sqs_client)
+            policy = {
+                "Version": "2012-10-17",
+                "Id": f"sqs-eventbridge-{short_uid()}",
+                "Statement": [
+                    {
+                        "Sid": f"SendMessage-{short_uid()}",
+                        "Effect": "Allow",
+                        "Principal": {"Service": "events.amazonaws.com"},
+                        "Action": "sqs:SendMessage",
+                        "Resource": queue_arn,
+                    }
+                ],
+            }
+            sqs_client.set_queue_attributes(
+                QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
             )
+
+            events_client = aws_client.events
+            events_client.create_event_bus(Name=bus_name)
+            events_client.put_rule(
+                Name=rule_name,
+                EventBusName=bus_name,
+                EventPattern=json.dumps(pattern),
+            )
+            kwargs = {"InputPath": input_path} if input_path else {}
+            rs = events_client.put_targets(
+                Rule=rule_name,
+                EventBusName=bus_name,
+                Targets=[{"Id": target_id, "Arn": queue_arn, **kwargs}],
+            )
+
+            assert rs["FailedEntryCount"] == 0
+            assert rs["FailedEntries"] == []
+
+            try:
+                for entry_asserts in entries_asserts:
+                    entries = entry_asserts[0]
+                    for entry in entries:
+                        entry.setdefault("EventBusName", bus_name)
+                    self._put_entries_assert_results_sqs(
+                        events_client,
+                        sqs_client,
+                        queue_url,
+                        entries=entries,
+                        should_match=entry_asserts[1],
+                    )
+            finally:
+                clean_up(
+                    bus_name=bus_name,
+                    rule_name=rule_name,
+                    target_ids=target_id,
+                    queue_url=queue_url,
+                )
+
+        yield _put_events_with_filter_to_sqs
 
     def _put_entries_assert_results_sqs(
         self, events_client, sqs_client, queue_url: str, entries: List[Dict], should_match: bool
@@ -433,7 +427,7 @@ class TestEvents:
 
     # TODO: further unify/parameterize the tests for the different target types below
 
-    def test_put_events_with_target_sns(self, sns_subscription, aws_client):
+    def test_put_events_with_target_sns(self, sns_subscription, aws_client, clean_up):
         queue_name = "test-%s" % short_uid()
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
@@ -488,9 +482,9 @@ class TestEvents:
 
         # clean up
         aws_client.sns.delete_topic(TopicArn=topic_arn)
-        self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
+        clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id, queue_url=queue_url)
 
-    def test_put_events_into_event_bus(self, aws_client):
+    def test_put_events_into_event_bus(self, aws_client, clean_up):
         queue_name = "queue-{}".format(short_uid())
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
@@ -547,11 +541,13 @@ class TestEvents:
         assert actual_event["detail"] == EVENT_DETAIL
 
         # clean up
-        self.cleanup(bus_name_1, rule_name, target_id)
-        self.cleanup(bus_name_2)
+        clean_up(bus_name=bus_name_1, rule_name=rule_name, target_ids=target_id)
+        clean_up(bus_name=bus_name_2)
         aws_client.sqs.delete_queue(QueueUrl=queue_url)
 
-    def test_put_events_with_target_lambda(self, create_lambda_function, cleanups, aws_client):
+    def test_put_events_with_target_lambda(
+        self, create_lambda_function, cleanups, aws_client, clean_up
+    ):
         rule_name = f"rule-{short_uid()}"
         function_name = f"lambda-func-{short_uid()}"
         target_id = f"target-{short_uid()}"
@@ -559,7 +555,9 @@ class TestEvents:
 
         # clean up
         cleanups.append(lambda: aws_client.awslambda.delete_function(FunctionName=function_name))
-        cleanups.append(lambda: self.cleanup(bus_name, rule_name, target_id))
+        cleanups.append(
+            lambda: clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id)
+        )
 
         rs = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -609,7 +607,7 @@ class TestEvents:
         self.assert_valid_event(actual_event)
         assert actual_event["detail"] == EVENT_DETAIL
 
-    def test_rule_disable(self, aws_client):
+    def test_rule_disable(self, aws_client, clean_up):
         rule_name = "rule-{}".format(short_uid())
         aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
 
@@ -620,7 +618,7 @@ class TestEvents:
         assert response["Rules"][0]["State"] == "DISABLED"
 
         # clean up
-        self.cleanup(rule_name=rule_name)
+        clean_up(rule_name=rule_name)
 
     def test_scheduled_expression_events(
         self,
@@ -630,6 +628,7 @@ class TestEvents:
         sns_subscription,
         httpserver: HTTPServer,
         aws_client,
+        clean_up,
     ):
         httpserver.expect_request("").respond_with_data(b"", 200)
         http_endpoint = httpserver.url_for("/")
@@ -753,11 +752,11 @@ class TestEvents:
 
         # clean up
         target_ids = [topic_target_id, sm_target_id, queue_target_id, fifo_queue_target_id]
-        self.cleanup(None, rule_name, target_ids=target_ids, queue_url=queue_url)
+        clean_up(rule_name=rule_name, target_ids=target_ids, queue_url=queue_url)
         aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
 
     @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
-    def test_api_destinations(self, httpserver: HTTPServer, auth, aws_client):
+    def test_api_destinations(self, httpserver: HTTPServer, auth, aws_client, clean_up):
         token = short_uid()
         bearer = f"Bearer {token}"
 
@@ -869,7 +868,7 @@ class TestEvents:
         # clean up
         aws_client.events.delete_connection(Name=connection_name)
         aws_client.events.delete_api_destination(Name=dest_name)
-        self.cleanup(rule_name=rule_name, target_ids=target_id)
+        clean_up(rule_name=rule_name, target_ids=target_id)
 
         to_recv = 2 if auth["type"] == "OAUTH_CLIENT_CREDENTIALS" else 1
         poll_condition(lambda: len(httpserver.log) >= to_recv, timeout=5)
@@ -933,7 +932,7 @@ class TestEvents:
         assert "must have length less than or equal to 64" in message
         assert "must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]" in message
 
-    def test_put_events_with_target_firehose(self, aws_client):
+    def test_put_events_with_target_firehose(self, aws_client, clean_up):
         s3_bucket = "s3-{}".format(short_uid())
         s3_prefix = "testeventdata"
         stream_name = "firehose-{}".format(short_uid())
@@ -997,16 +996,16 @@ class TestEvents:
         # empty and delete bucket
         aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
         aws_client.s3.delete_bucket(Bucket=s3_bucket)
-        self.cleanup(bus_name, rule_name, target_id)
+        clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id)
 
-    def test_put_events_with_target_sqs_new_region(self):
-        events_client = aws_stack.create_external_boto_client("events", region_name="eu-west-1")
+    def test_put_events_with_target_sqs_new_region(self, aws_client_factory):
+        events_client = aws_client_factory(region_name="eu-west-1").events
         queue_name = "queue-{}".format(short_uid())
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
 
-        sqs_client = aws_stack.create_external_boto_client("sqs", region_name="eu-west-1")
+        sqs_client = aws_client_factory(region_name="eu-west-1").sqs
         sqs_client.create_queue(QueueName=queue_name)
         queue_arn = arns.sqs_queue_arn(queue_name)
 
@@ -1108,7 +1107,7 @@ class TestEvents:
         assert data["detail"] == EVENT_DETAIL
         self.assert_valid_event(data)
 
-    def test_put_events_with_input_path(self, aws_client):
+    def test_put_events_with_input_path(self, aws_client, clean_up):
         queue_name = f"queue-{short_uid()}"
         rule_name = f"rule-{short_uid()}"
         target_id = f"target-{short_uid()}"
@@ -1163,9 +1162,9 @@ class TestEvents:
         assert messages is None
 
         # clean up
-        self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
+        clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id, queue_url=queue_url)
 
-    def test_put_events_with_input_path_multiple(self, aws_client):
+    def test_put_events_with_input_path_multiple(self, aws_client, clean_up):
         queue_name = "queue-{}".format(short_uid())
         queue_name_1 = "queue-{}".format(short_uid())
         rule_name = "rule-{}".format(short_uid())
@@ -1237,16 +1236,21 @@ class TestEvents:
         assert messages is None
 
         # clean up
-        self.cleanup(bus_name, rule_name, [target_id, target_id_1], queue_url=queue_url)
+        clean_up(
+            bus_name=bus_name,
+            rule_name=rule_name,
+            target_ids=[target_id, target_id_1],
+            queue_url=queue_url,
+        )
 
-    def test_put_event_without_source(self):
-        events_client = aws_stack.create_external_boto_client("events", region_name="eu-west-1")
+    def test_put_event_without_source(self, aws_client_factory):
+        events_client = aws_client_factory(region_name="eu-west-1").events
 
         response = events_client.put_events(Entries=[{"DetailType": "Test", "Detail": "{}"}])
         assert response.get("Entries")
 
-    def test_put_event_without_detail(self):
-        events_client = aws_stack.create_external_boto_client("events", region_name="eu-west-1")
+    def test_put_event_without_detail(self, aws_client_factory):
+        events_client = aws_client_factory(region_name="eu-west-1").events
 
         response = events_client.put_events(
             Entries=[
@@ -1257,7 +1261,7 @@ class TestEvents:
         )
         assert response.get("Entries")
 
-    def test_trigger_event_on_ssm_change(self, aws_client):
+    def test_trigger_event_on_ssm_change(self, aws_client, clean_up):
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
 
@@ -1303,9 +1307,9 @@ class TestEvents:
         retry(assert_message, retries=7, sleep=0.3)
 
         # clean up
-        self.cleanup(rule_name=rule_name, target_ids=target_id)
+        clean_up(rule_name=rule_name, target_ids=target_id)
 
-    def test_put_event_with_content_base_rule_in_pattern(self, aws_client):
+    def test_put_event_with_content_base_rule_in_pattern(self, aws_client, clean_up):
         queue_name = f"queue-{short_uid()}"
         rule_name = f"rule-{short_uid()}"
         target_id = f"target-{short_uid()}"
@@ -1397,14 +1401,19 @@ class TestEvents:
         assert messages is None
 
         # clean up
-        self.cleanup(TEST_EVENT_BUS_NAME, rule_name, target_id, queue_url=queue_url)
+        clean_up(
+            bus_name=TEST_EVENT_BUS_NAME,
+            rule_name=rule_name,
+            target_ids=target_id,
+            queue_url=queue_url,
+        )
 
     @pytest.mark.parametrize(
         "schedule_expression", ["rate(1 minute)", "rate(1 day)", "rate(1 hour)"]
     )
     @markers.parity.aws_validated
     def test_create_rule_with_one_unit_in_singular_should_succeed(
-        self, schedule_expression, aws_client
+        self, schedule_expression, aws_client, clean_up
     ):
         rule_name = f"rule-{short_uid()}"
 
@@ -1412,7 +1421,7 @@ class TestEvents:
         try:
             aws_client.events.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
         finally:
-            self.cleanup(rule_name=rule_name, events_client=aws_client.events)
+            clean_up(rule_name=rule_name)
 
     @pytest.mark.parametrize(
         "schedule_expression", ["rate(1 minutes)", "rate(1 days)", "rate(1 hours)"]
@@ -1428,7 +1437,7 @@ class TestEvents:
 
     @markers.parity.aws_validated
     @pytest.mark.xfail
-    def test_verify_rule_event_content(self, aws_client):
+    def test_verify_rule_event_content(self, aws_client, clean_up):
         log_group_name = f"/aws/events/testLogGroup-{short_uid()}"
         rule_name = f"rule-{short_uid()}"
         target_id = f"testRuleId-{short_uid()}"
@@ -1462,11 +1471,9 @@ class TestEvents:
 
         self.assert_valid_event(event["message"])
 
-        self.cleanup(
+        clean_up(
             rule_name=rule_name,
             target_ids=target_id,
-            events_client=aws_client.events,
-            logs_client=aws_client.logs,
             log_group_name=log_group_name,
         )
 
@@ -1611,37 +1618,37 @@ class TestEvents:
         )
         return queue_attrs["Attributes"]["QueueArn"]
 
-    def cleanup(
-        self,
-        bus_name=None,
-        rule_name=None,
-        target_ids=None,
-        queue_url=None,
-        events_client=None,
-        sqs_client=None,
-        log_group_name=None,
-        logs_client=None,
-    ):
-        events_client = events_client or aws_stack.create_external_boto_client("events")
-        kwargs = {"EventBusName": bus_name} if bus_name else {}
-        if target_ids:
-            target_ids = target_ids if isinstance(target_ids, list) else [target_ids]
-            events_client.remove_targets(Rule=rule_name, Ids=target_ids, Force=True, **kwargs)
-        if rule_name:
-            events_client.delete_rule(Name=rule_name, Force=True, **kwargs)
-        if bus_name:
-            events_client.delete_event_bus(Name=bus_name)
-        if queue_url:
-            sqs_client = sqs_client or aws_stack.create_external_boto_client("sqs")
-            sqs_client.delete_queue(QueueUrl=queue_url)
-        if log_group_name:
-            logs_client = logs_client or aws_stack.create_external_boto_client("logs")
-            log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)
-            for log_stream in log_streams["logStreams"]:
-                logs_client.delete_log_stream(
-                    logGroupName=log_group_name, logStreamName=log_stream["logStreamName"]
-                )
-            logs_client.delete_log_group(logGroupName=log_group_name)
+    @pytest.fixture
+    def clean_up(self, aws_client):
+        def _clean_up(
+            bus_name=None,
+            rule_name=None,
+            target_ids=None,
+            queue_url=None,
+            log_group_name=None,
+        ):
+            events_client = aws_client.events
+            kwargs = {"EventBusName": bus_name} if bus_name else {}
+            if target_ids:
+                target_ids = target_ids if isinstance(target_ids, list) else [target_ids]
+                events_client.remove_targets(Rule=rule_name, Ids=target_ids, Force=True, **kwargs)
+            if rule_name:
+                events_client.delete_rule(Name=rule_name, Force=True, **kwargs)
+            if bus_name:
+                events_client.delete_event_bus(Name=bus_name)
+            if queue_url:
+                sqs_client = aws_client.sqs
+                sqs_client.delete_queue(QueueUrl=queue_url)
+            if log_group_name:
+                logs_client = aws_client.logs
+                log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)
+                for log_stream in log_streams["logStreams"]:
+                    logs_client.delete_log_stream(
+                        logGroupName=log_group_name, logStreamName=log_stream["logStreamName"]
+                    )
+                logs_client.delete_log_group(logGroupName=log_group_name)
+
+        yield _clean_up
 
     @markers.parity.aws_validated
     def test_put_target_id_validation(

@@ -288,6 +288,14 @@ def s3control():
 
 
 @aws_provider()
+def scheduler():
+    from localstack.services.scheduler.provider import SchedulerProvider
+
+    provider = SchedulerProvider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider()
 def secretsmanager():
     from localstack.services.secretsmanager.provider import SecretsmanagerProvider
 

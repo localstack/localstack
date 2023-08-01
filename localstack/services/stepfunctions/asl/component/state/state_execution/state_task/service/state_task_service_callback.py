@@ -1,14 +1,11 @@
+import abc
 import json
-from abc import abstractmethod
 
 from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
     HistoryEventType,
     TaskFailedEventDetails,
-    TaskScheduledEventDetails,
-    TaskStartedEventDetails,
     TaskSubmittedEventDetails,
-    TaskSucceededEventDetails,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
@@ -35,18 +32,14 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
-class StateTaskServiceCallback(StateTaskService):
+class StateTaskServiceCallback(StateTaskService, abc.ABC):
     def _get_sfn_resource(self) -> str:
         resource = super()._get_sfn_resource()
         if self.resource.condition is not None:
             resource += f".{self.resource.condition}"
         return resource
 
-    @abstractmethod
-    def _eval_service_task(self, env: Environment, parameters: dict):
-        ...
-
-    def _wait_for_task_token(self, env: Environment) -> None:  # noqa
+    def _wait_for_task_token(self, env: Environment) -> None:
         callback_id = env.context_object_manager.context_object["Task"]["Token"]
         callback_endpoint = env.callback_pool_manager.get(callback_id)
 
@@ -55,7 +48,7 @@ class StateTaskServiceCallback(StateTaskService):
             self.timeout.eval(env=env)
             timeout_seconds = env.stack.pop()
             # Although the timeout is handled already be the superclass (ExecutionState),
-            # the timeout value is specified here too, to allo this child process to terminate earlier even if
+            # the timeout value is specified here too, to allow this child process to terminate earlier even if
             # discarded by the main process.
             # Note: although this is the same timeout value, this can only decay strictly after the first timeout
             #       started as it is invoked strictly later.
@@ -115,41 +108,7 @@ class StateTaskServiceCallback(StateTaskService):
             return self._get_callback_outcome_failure_event(ex=ex)
         return super()._from_error(env=env, ex=ex)
 
-    def _eval_execution(self, env: Environment) -> None:
-        parameters = self._eval_parameters(env=env)
-        parameters_str = to_json_str(parameters)
-
-        scheduled_event_details = TaskScheduledEventDetails(
-            resource=self._get_sfn_resource(),
-            resourceType=self._get_sfn_resource_type(),
-            region=self.resource.region,
-            parameters=parameters_str,
-        )
-        if not self.timeout.is_default_value():
-            self.timeout.eval(env=env)
-            timeout_seconds = env.stack.pop()
-            scheduled_event_details["timeoutInSeconds"] = timeout_seconds
-        if self.heartbeat is not None:
-            self.heartbeat.eval(env=env)
-            heartbeat_seconds = env.stack.pop()
-            scheduled_event_details["heartbeatInSeconds"] = heartbeat_seconds
-        env.event_history.add_event(
-            hist_type_event=HistoryEventType.TaskScheduled,
-            event_detail=EventDetails(taskScheduledEventDetails=scheduled_event_details),
-        )
-
-        env.event_history.add_event(
-            hist_type_event=HistoryEventType.TaskStarted,
-            event_detail=EventDetails(
-                taskStartedEventDetails=TaskStartedEventDetails(
-                    resource=self._get_sfn_resource(), resourceType=self._get_sfn_resource_type()
-                )
-            ),
-        )
-
-        normalised_parameters = self._normalised_parameters_bindings(parameters)
-        self._eval_service_task(env=env, parameters=normalised_parameters)
-
+    def _after_eval_execution(self, env: Environment) -> None:
         if self._is_condition():
             output = env.stack[-1]
             env.event_history.add_event(
@@ -171,15 +130,4 @@ class StateTaskServiceCallback(StateTaskService):
                 case unsupported:
                     raise NotImplementedError(f"Unsupported callback type '{unsupported}'.")
 
-        output = env.stack[-1]
-        env.event_history.add_event(
-            hist_type_event=HistoryEventType.TaskSucceeded,
-            event_detail=EventDetails(
-                taskSucceededEventDetails=TaskSucceededEventDetails(
-                    resource=self._get_sfn_resource(),
-                    resourceType=self._get_sfn_resource_type(),
-                    output=to_json_str(output),
-                    outputDetails=HistoryEventExecutionDataDetails(truncated=False),
-                )
-            ),
-        )
+        super()._after_eval_execution(env=env)

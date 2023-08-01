@@ -1915,7 +1915,11 @@ def validate_lifecycle_configuration(lifecycle_conf: BucketLifecycleConfiguratio
             if len(rule_filter) > 1:
                 raise MalformedXML()
 
-        if exp_date := (rule.get("Expiration", {}).get("Date")):
+        if (expiration := rule.get("Expiration", {})) and "ExpiredObjectDeleteMarker" in expiration:
+            if len(expiration) > 1:
+                raise MalformedXML()
+
+        if exp_date := (expiration.get("Date")):
             if exp_date.timetz() != datetime.time(
                 hour=0, minute=0, second=0, microsecond=0, tzinfo=ZoneInfo("GMT")
             ):

@@ -23,6 +23,7 @@ from localstack.utils.common import camel_to_snake_case
 
 
 class StateTaskServiceAwsSdk(StateTaskServiceCallback):
+    _NORMALISED_SERVICE_NAMES = {"dynamodb": "DynamoDb"}
     _API_NAMES: dict[str, str] = {"sfn": "stepfunctions"}
     _SFN_TO_BOTO_PARAM_NORMALISERS = {
         "stepfunctions": {
@@ -53,12 +54,20 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
 
     @staticmethod
     def _normalise_service_name(service_name: str) -> str:
+        service_name_lower = service_name.lower()
+        if service_name_lower in StateTaskServiceAwsSdk._NORMALISED_SERVICE_NAMES:
+            return StateTaskServiceAwsSdk._NORMALISED_SERVICE_NAMES[service_name_lower]
         return get_service_catalog().get(service_name).service_id.replace(" ", "")
 
     @staticmethod
     def _normalise_exception_name(norm_service_name: str, ex: Exception) -> str:
         ex_name = ex.__class__.__name__
-        return f"{norm_service_name}.{norm_service_name if ex_name == 'ClientError' else ex_name}Exception"
+        norm_ex_name = (
+            f"{norm_service_name}.{norm_service_name if ex_name == 'ClientError' else ex_name}"
+        )
+        if not norm_ex_name.endswith("Exception"):
+            norm_ex_name += "Exception"
+        return norm_ex_name
 
     def _get_task_failure_event(self, error: str, cause: str) -> FailureEvent:
         return FailureEvent(
