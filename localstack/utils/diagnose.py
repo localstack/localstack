@@ -6,6 +6,7 @@ from typing import Dict, List, Union
 
 from localstack import config
 from localstack.constants import DEFAULT_VOLUME_DIR
+from localstack.services.awslambda.invocation.docker_runtime_executor import IMAGE_PREFIX
 from localstack.services.awslambda.invocation.lambda_models import IMAGE_MAPPING
 from localstack.utils import bootstrap
 from localstack.utils.analytics import usage
@@ -14,7 +15,6 @@ from localstack.utils.container_utils.container_client import NoSuchImage
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import load_file
 
-IMAGE_PREFIX = "public.ecr.aws/lambda/"
 LAMBDA_IMAGES = (f"{IMAGE_PREFIX}{postfix}" for postfix in IMAGE_MAPPING.values())
 
 
