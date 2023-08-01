@@ -16,12 +16,12 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet
 from localstack.services.cloudformation.engine.parameters import StackParameter
+from localstack.services.cloudformation.engine.quirks import VALID_GETATT_PROPERTIES
 from localstack.services.cloudformation.engine.template_utils import (
     fn_equals_type_conversion,
     get_deps_for_resource,
 )
 from localstack.services.cloudformation.resource_provider import (
-    PROVIDER_DEFAULTS,
     Credentials,
     ResourceProviderExecutor,
     ResourceProviderPayload,
@@ -73,45 +73,34 @@ class NoStackUpdates(Exception):
 
 
 def get_attr_from_model_instance(
-    resource: dict, attribute: str, resource_type: str, resource_id: Optional[str] = None
-):
-    def _use_legacy():
-        # TODO: unify legacy detection with ResourceProvider
-        provider_config = json.loads(config.CFN_RESOURCE_PROVIDER_OVERRIDES)
-        # any config overwrites take precedence over the default list
-        PROVIDER_CONFIG = {**PROVIDER_DEFAULTS, **provider_config}
-        if resource_type in PROVIDER_CONFIG:
-            return PROVIDER_CONFIG[resource_type] == "GenericBaseModel"
+    resource: dict, attribute_name: str, resource_type: str, resource_id: Optional[str] = None
+) -> str:
+    # if there's no entry in VALID_GETATT_PROPERTIES for the resource type we still default to "open" and accept anything
+    valid_atts = VALID_GETATT_PROPERTIES.get(resource_type)
+    if valid_atts is not None and attribute_name not in valid_atts:
+        raise Exception(
+            f"Unknown resource attribute requested in GetAtt: {resource_type} | {resource_id}.{attribute_name}"
+        )  # TODO: check CFn behavior via snapshot
 
-        return True
+    properties = resource.get("Properties", {})
+    attribute_candidate = properties.get(attribute_name)
+    if "." in attribute_name:
+        if attribute_candidate:
+            # in case we explicitly add a property with a dot, e.g. resource["Properties"]["Endpoint.Port"]
+            return attribute_candidate
+        parts = attribute_name.split(".")
+        attribute = properties
+        for part in parts:
+            attribute = attribute.get(part)
+        return attribute
 
-    if _use_legacy():
-        # TODO: open a PR with this branch removed to see where the legacy models are not behaving correctly
-        model_class = RESOURCE_MODELS.get(resource_type)
-        if not model_class:
-            LOG.debug('Unable to find model class for resource type "%s"', resource_type)
-            return
-        try:
-            inst = model_class(resource_name=resource_id, resource_json=resource)
-
-            if hasattr(inst, "get_cfn_attribute"):
-                try:
-                    return inst.get_cfn_attribute(attribute)
-                except Exception:
-                    if config.CFN_VERBOSE_ERRORS:
-                        LOG.exception("could not fetch cfn attribute {attribute} from resource")
-            raise Exception(
-                f'Unable to extract attribute "{attribute}" from "{resource_type}" model class {type(inst)}'
-            )
-        except Exception:
-            log_method = getattr(LOG, "debug")
-            if config.CFN_VERBOSE_ERRORS:
-                log_method = getattr(LOG, "exception")
-            log_method("Failed to retrieve resource attribute: %s.%s", resource_id, attribute)
-
-    else:
-        # TODO: write code for property GetAtt lookup
-        return resource.get("Properties", {}).get(attribute)
+    # If we couldn't find the attribute, this is actually an irrecoverable error.
+    # After the resource has a state of CREATE_COMPLETE, all attributes should already be set.
+    if attribute_candidate is None:
+        raise Exception(
+            f"Failed to retrieve resource attribute: {resource_type} | {resource_id}.{attribute_name}"
+        )  # TODO: check CFn behavior via snapshot
+    return attribute_candidate
 
 
 def resolve_ref(
