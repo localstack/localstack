@@ -143,13 +143,13 @@ def _generate_test_name(param: Any):
     ids=_generate_test_name,
 )
 def test_service_router_works_for_every_service(
-    aws_client_factory, service: ServiceModel, operation: OperationModel, caplog
+    service: ServiceModel, operation: OperationModel, caplog, aws_client_factory
 ):
     caplog.set_level("CRITICAL", "botocore")
 
     # Create a dummy request for the service router
     client = aws_client_factory(
-        service,
+        service.service_name,
         config=Config(
             connect_timeout=1_000,
             read_timeout=1_000,
