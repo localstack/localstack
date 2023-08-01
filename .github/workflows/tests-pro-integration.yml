@@ -148,8 +148,7 @@ jobs:
       - name: Install OS packages
         run: |
           sudo apt-get update
-          # TODO remove freetds-dev and libkrb5-dev after https://github.com/pymssql/pymssql/issues/372 is resolved
-          sudo apt-get install -y --allow-downgrades libsasl2-dev jq postgresql-14=14.8-0ubuntu0* postgresql-client postgresql-plpython3 freetds-dev libkrb5-dev
+          sudo apt-get install -y --allow-downgrades libsasl2-dev jq postgresql-14=14.8-0ubuntu0* postgresql-client postgresql-plpython3
 
       - name: Cache Ext Dependencies (venv)
         if: inputs.disableCaching != true
