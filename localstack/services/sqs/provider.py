@@ -77,7 +77,12 @@ from localstack.services.sqs.models import (
     StandardQueue,
     sqs_stores,
 )
-from localstack.services.sqs.utils import generate_message_id, parse_queue_url
+from localstack.services.sqs.utils import (
+    generate_message_id,
+    is_fifo_queue,
+    is_message_deduplication_id_required,
+    parse_queue_url,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.request_context import extract_region_from_headers
@@ -848,7 +853,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> SendMessageBatchResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
 
-        self._assert_batch(entries)
+        self._assert_batch(
+            entries,
+            require_fifo_queue_params=is_fifo_queue(queue),
+            require_message_deduplication_id=is_message_deduplication_id_required(queue),
+        )
         # check the total batch size first and raise BatchRequestTooLong id > DEFAULT_MAXIMUM_MESSAGE_SIZE.
         # This is checked before any messages in the batch are sent.  Raising the exception here should
         # cause error response, rather than batching error results and returning
@@ -1186,7 +1195,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                     "WSDL for a list of valid actions. "
                 )
 
-    def _assert_batch(self, batch: List) -> None:
+    def _assert_batch(
+        self,
+        batch: List,
+        *,
+        require_fifo_queue_params: bool = False,
+        require_message_deduplication_id: bool = False,
+    ) -> None:
         if not batch:
             raise EmptyBatchRequest
         if batch and (no_entries := len(batch)) > MAX_NUMBER_OF_MESSAGES:
@@ -1200,6 +1215,15 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 raise InvalidBatchEntryId(
                     "A batch entry id can only contain alphanumeric characters, hyphens and underscores. "
                     "It can be at most 80 letters long."
+                )
+            if require_message_deduplication_id and not entry.get("MessageDeduplicationId"):
+                raise InvalidParameterValue(
+                    "The queue should either have ContentBasedDeduplication enabled or "
+                    "MessageDeduplicationId provided explicitly"
+                )
+            if require_fifo_queue_params and not entry.get("MessageGroupId"):
+                raise InvalidParameterValue(
+                    "The request must contain the parameter MessageGroupId."
                 )
             if entry_id in visited:
                 raise BatchEntryIdsNotDistinct()
