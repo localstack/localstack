@@ -68,6 +68,8 @@ from localstack.services.stores import (
     CrossRegionAttribute,
     LocalAttribute,
 )
+from localstack.utils.aws import arns
+from localstack.utils.tagging import TaggingService
 
 # TODO: beware of timestamp data, we need the snapshot to be more precise for S3, with the different types
 # moto had a lot of issue with it? not sure about our parser/serializer
@@ -127,19 +129,23 @@ class S3Bucket:
 
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
         self.owner = get_owner_for_account_id(account_id)
+        self.bucket_arn = arns.s3_bucket_arn(self.name)
 
     def get_object(
         self,
         key: ObjectKey,
         version_id: ObjectVersionId = None,
-        http_method: Literal["GET", "PUT", "HEAD"] = "GET",
-    ) -> "S3Object":
+        http_method: Literal["GET", "PUT", "HEAD", "DELETE"] = "GET",
+        raise_for_delete_marker: bool = True,
+    ) -> Union["S3Object", "S3DeleteMarker"]:
         """
         :param key: the Object Key
         :param version_id: optional, the versionId of the object
         :param http_method: the HTTP method of the original call. This is necessary for the exception if the bucket is
         versioned or suspended
         see: https://docs.aws.amazon.com/AmazonS3/latest/userguide/DeleteMarker.html
+        :param raise_for_delete_marker: optional, indicates if the method should raise an exception if the found object
+        is a S3DeleteMarker. If False, it can return a S3DeleteMarker
         :return:
         :raises NoSuchKey if the object key does not exist at all, or if the object is a DeleteMarker
         :raises MethodNotAllowed if the object is a DeleteMarker and the operation is not allowed against it
@@ -168,7 +174,7 @@ class S3Bucket:
                         Key=key,
                         VersionId=version_id,
                     )
-                elif isinstance(s3_object_version, S3DeleteMarker):
+                elif raise_for_delete_marker and isinstance(s3_object_version, S3DeleteMarker):
                     raise MethodNotAllowed(
                         "The specified method is not allowed against this resource.",
                         Method=http_method,
@@ -184,7 +190,7 @@ class S3Bucket:
             if not s3_object:
                 raise NoSuchKey("The specified key does not exist.", Key=key)
 
-            elif isinstance(s3_object, S3DeleteMarker):
+            elif raise_for_delete_marker and isinstance(s3_object, S3DeleteMarker):
                 raise NoSuchKey(
                     "The specified key does not exist.",
                     Key=key,
@@ -572,6 +578,9 @@ class S3Store(BaseStore):
     buckets: dict[BucketName, S3Bucket] = CrossRegionAttribute(default=dict)
     global_bucket_map: dict[BucketName, AccountId] = CrossAccountAttribute(default=dict)
     aws_managed_kms_key_id: SSEKMSKeyId = LocalAttribute(default=str)
+
+    # static tagging service instance
+    TAGS: TaggingService = CrossAccountAttribute(default=TaggingService)
 
 
 class BucketCorsIndex:
