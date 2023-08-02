@@ -1,7 +1,7 @@
 import base64
-import dataclasses
 import json
 import logging
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -10,7 +10,7 @@ from typing import Optional
 from localstack import config
 from localstack.aws.connect import connect_to
 from localstack.services.lambda_.invocation.lambda_models import (
-    BUCKET_ACCOUNT,
+    INTERNAL_RESOURCE_ACCOUNT,
     Invocation,
     InvocationResult,
 )
@@ -24,15 +24,79 @@ from localstack.utils.time import timestamp_millis
 LOG = logging.getLogger(__name__)
 
 
-class EnhancedJSONEncoder(json.JSONEncoder):
-    def default(self, o):
-        if dataclasses.is_dataclass(o):
-            return dataclasses.asdict(o)
-        if isinstance(o, datetime):
-            return o.isoformat()
-        if isinstance(o, bytes):
-            return base64.b64encode(o)
-        return super().default(o)
+def encode_invocation(invocation: Invocation) -> str:
+    return json.dumps(
+        {
+            "payload": to_str(base64.b64encode(invocation.payload)),
+            "invoked_arn": invocation.invoked_arn,
+            "client_context": invocation.client_context,
+            "invocation_type": invocation.invocation_type,
+            "invoke_time": invocation.invoke_time.isoformat(),
+            # = invocation_id
+            "request_id": invocation.request_id,
+        }
+    )
+
+
+def decode_invocation(message: str) -> Invocation:
+    invocation_dict = json.loads(message)
+    return Invocation(
+        payload=base64.b64decode(invocation_dict["payload"]),
+        invoked_arn=invocation_dict["invoked_arn"],
+        client_context=invocation_dict["client_context"],
+        invocation_type=invocation_dict["invocation_type"],
+        invoke_time=datetime.fromisoformat(invocation_dict["invoke_time"]),
+        request_id=invocation_dict["request_id"],
+    )
+
+
+class Poller:
+    version_manager: LambdaVersionManager
+    event_queue_url: str
+    _shutdown_event: threading.Event
+
+    def __init__(self, version_manager: LambdaVersionManager, event_queue_url: str):
+        self.version_manager = version_manager
+        self.event_queue_url = event_queue_url
+        self._shutdown_event = threading.Event()
+
+    def run(self):
+        sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
+        function_timeout = self.version_manager.function_version.config.timeout
+        while not self._shutdown_event.is_set():
+            messages = sqs_client.receive_message(
+                QueueUrl=self.event_queue_url,
+                WaitTimeSeconds=2,
+                MaxNumberOfMessages=1,
+                VisibilityTimeout=function_timeout + 60,
+            )
+            if not messages["Messages"]:
+                continue
+            message = messages["Messages"][0]
+            invocation = decode_invocation(message["Body"])
+            invocation_result = self.version_manager.invoke(invocation=invocation)
+            LOG.debug(invocation_result)
+
+            sqs_client.delete_message(
+                QueueUrl=self.event_queue_url, ReceiptHandle=message["ReceiptHandle"]
+            )
+
+            # TODO: handle destinations
+            # if not invocation_result.is_error:
+            #     # success_destination(invocation_result)
+            #     continue
+
+            # TODO: handle different error cases. Behavior depends on error type:
+            # https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html
+            # if retry < 2:
+            #     time.sleep((retry + 1) * config.LAMBDA_RETRY_BASE_DELAY_SECONDS)
+            # else:
+            #     # TODO: failure destination
+            #     self.process_failure_destination(invocation, invocation_result)
+            #     return
+
+    def stop(self):
+        self._shutdown_event.set()
 
 
 class LambdaEventManager:
@@ -251,23 +315,14 @@ class LambdaEventManager:
 
     def enqueue_event(self, invocation: Invocation) -> None:
         # NOTE: something goes wrong with the custom encoder; infinite loop?
-        # message = json.dumps(invocation, cls=EnhancedJSONEncoder)
-        message = {
-            "payload": to_str(base64.b64encode(invocation.payload)),
-            "invoked_arn": invocation.invoked_arn,
-            "client_context": invocation.client_context,
-            "invocation_type": invocation.invocation_type,
-            "invoke_time": invocation.invoke_time.isoformat(),
-            # = invocation_id
-            "request_id": invocation.request_id,
-        }
-        sqs_client = connect_to(aws_access_key_id=BUCKET_ACCOUNT).sqs
-        sqs_client.send_message(QueueUrl=self.event_queue_url, MessageBody=json.dumps(message))
-        # TODO: remove old threads impl.
-        self.event_threads.submit(self.invoke, invocation)
+        message = encode_invocation(invocation)
+        sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
+        sqs_client.send_message(QueueUrl=self.event_queue_url, MessageBody=message)
+        # TODO: remove this old threads impl.
+        # self.event_threads.submit(self.invoke, invocation)
 
     def start(self) -> None:
-        sqs_client = connect_to(aws_access_key_id=BUCKET_ACCOUNT).sqs
+        sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
         fn_version_id = self.version_manager.function_version.id
         # Truncate function name to ensure queue name limit of max 80 characters
         function_name_short = fn_version_id.function_name[:47]
@@ -276,6 +331,10 @@ class LambdaEventManager:
         self.event_queue_url = create_queue_response["QueueUrl"]
 
         # TODO: start poller thread + implement poller
+        poller = Poller(self.version_manager, self.event_queue_url)
+        self.event_threads.submit(poller.run)
+
+    #     Set a limit for now, think about scaling later (because of sync invoke!)
 
     def stop(self) -> None:
         # TODO: shut down event threads + delete queue
