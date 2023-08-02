@@ -1,4 +1,5 @@
 import base64
+import dataclasses
 import json
 import logging
 import threading
@@ -24,30 +25,37 @@ from localstack.utils.time import timestamp_millis
 LOG = logging.getLogger(__name__)
 
 
-def encode_invocation(invocation: Invocation) -> str:
-    return json.dumps(
-        {
-            "payload": to_str(base64.b64encode(invocation.payload)),
-            "invoked_arn": invocation.invoked_arn,
-            "client_context": invocation.client_context,
-            "invocation_type": invocation.invocation_type,
-            "invoke_time": invocation.invoke_time.isoformat(),
-            # = invocation_id
-            "request_id": invocation.request_id,
-        }
-    )
+@dataclasses.dataclass
+class SQSQueueInvocation:
+    invocation: Invocation
+    retries: int
 
+    def encode(self) -> str:
+        return json.dumps(
+            {
+                "payload": to_str(base64.b64encode(self.invocation.payload)),
+                "invoked_arn": self.invocation.invoked_arn,
+                "client_context": self.invocation.client_context,
+                "invocation_type": self.invocation.invocation_type,
+                "invoke_time": self.invocation.invoke_time.isoformat(),
+                # = invocation_id
+                "request_id": self.invocation.request_id,
+                "retries": self.retries,
+            }
+        )
 
-def decode_invocation(message: str) -> Invocation:
-    invocation_dict = json.loads(message)
-    return Invocation(
-        payload=base64.b64decode(invocation_dict["payload"]),
-        invoked_arn=invocation_dict["invoked_arn"],
-        client_context=invocation_dict["client_context"],
-        invocation_type=invocation_dict["invocation_type"],
-        invoke_time=datetime.fromisoformat(invocation_dict["invoke_time"]),
-        request_id=invocation_dict["request_id"],
-    )
+    @classmethod
+    def decode(cls, message: str) -> "SQSQueueInvocation":
+        invocation_dict = json.loads(message)
+        invocation = Invocation(
+            payload=base64.b64decode(invocation_dict["payload"]),
+            invoked_arn=invocation_dict["invoked_arn"],
+            client_context=invocation_dict["client_context"],
+            invocation_type=invocation_dict["invocation_type"],
+            invoke_time=datetime.fromisoformat(invocation_dict["invoke_time"]),
+            request_id=invocation_dict["request_id"],
+        )
+        return cls(invocation, invocation_dict["retries"])
 
 
 class Poller:
@@ -73,7 +81,9 @@ class Poller:
             if not messages["Messages"]:
                 continue
             message = messages["Messages"][0]
-            invocation = decode_invocation(message["Body"])
+
+            sqs_invocation = SQSQueueInvocation.decode(message["Body"])
+            invocation = sqs_invocation.invocation
             invocation_result = self.version_manager.invoke(invocation=invocation)
             LOG.debug(invocation_result)
 
@@ -315,7 +325,7 @@ class LambdaEventManager:
 
     def enqueue_event(self, invocation: Invocation) -> None:
         # NOTE: something goes wrong with the custom encoder; infinite loop?
-        message = encode_invocation(invocation)
+        message = SQSQueueInvocation(invocation, 0).encode()
         sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
         sqs_client.send_message(QueueUrl=self.event_queue_url, MessageBody=message)
         # TODO: remove this old threads impl.
@@ -331,10 +341,9 @@ class LambdaEventManager:
         self.event_queue_url = create_queue_response["QueueUrl"]
 
         # TODO: start poller thread + implement poller
+        # Set a limit for now, think about scaling later (because of sync invoke!)
         poller = Poller(self.version_manager, self.event_queue_url)
         self.event_threads.submit(poller.run)
-
-    #     Set a limit for now, think about scaling later (because of sync invoke!)
 
     def stop(self) -> None:
         # TODO: shut down event threads + delete queue
