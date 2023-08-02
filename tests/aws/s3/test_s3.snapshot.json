@@ -1362,13 +1362,28 @@
     }
   },
   "tests/aws/s3/test_s3.py::TestS3::test_range_header_body_length": {
-    "recorded-date": "03-08-2023, 04:16:36",
+    "recorded-date": "07-08-2023, 16:17:23",
     "recorded-content": {
       "get-object": {
         "AcceptRanges": "bytes",
         "Body": "",
         "ContentLength": 1024,
         "ContentRange": "bytes 0-1023/2048",
+        "ContentType": "binary/octet-stream",
+        "ETag": "<e-tag:1>",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get-object-2": {
+        "AcceptRanges": "bytes",
+        "Body": "",
+        "ContentLength": 1024,
+        "ContentRange": "bytes 1024-2047/2048",
         "ContentType": "binary/octet-stream",
         "ETag": "<e-tag:1>",
         "LastModified": "datetime",

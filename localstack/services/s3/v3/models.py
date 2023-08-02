@@ -3,7 +3,7 @@ import logging
 from collections import defaultdict
 from datetime import datetime
 from secrets import token_urlsafe
-from typing import Literal, Optional, Union
+from typing import Literal, NamedTuple, Optional, Union
 
 from localstack import config
 from localstack.aws.api.s3 import (
@@ -11,6 +11,7 @@ from localstack.aws.api.s3 import (
     AnalyticsConfiguration,
     AnalyticsId,
     BucketAccelerateStatus,
+    BucketKeyEnabled,
     BucketName,
     BucketRegion,
     BucketVersioningStatus,
@@ -54,7 +55,7 @@ from localstack.aws.api.s3 import (
     WebsiteConfiguration,
     WebsiteRedirectLocation,
 )
-from localstack.services.s3.constants import S3_UPLOAD_PART_MIN_SIZE
+from localstack.services.s3.constants import DEFAULT_BUCKET_ENCRYPTION, S3_UPLOAD_PART_MIN_SIZE
 from localstack.services.s3.utils import (
     get_owner_for_account_id,
     iso_8601_datetime_without_milliseconds_s3,
@@ -65,6 +66,7 @@ from localstack.services.stores import (
     BaseStore,
     CrossAccountAttribute,
     CrossRegionAttribute,
+    LocalAttribute,
 )
 
 # TODO: beware of timestamp data, we need the snapshot to be more precise for S3, with the different types
@@ -117,7 +119,7 @@ class S3Bucket:
         self.objects = KeyStore()
         self.object_ownership = object_ownership
         self.object_lock_enabled = object_lock_enabled_for_bucket
-        self.encryption_rule = None  # TODO
+        self.encryption_rule = DEFAULT_BUCKET_ENCRYPTION
         self.creation_date = datetime.utcnow()
         self.multiparts = {}
         self.versioning_status = None
@@ -568,6 +570,7 @@ class VersionedKeyStore:
 class S3Store(BaseStore):
     buckets: dict[BucketName, S3Bucket] = CrossRegionAttribute(default=dict)
     global_bucket_map: dict[BucketName, AccountId] = CrossAccountAttribute(default=dict)
+    aws_managed_kms_key_id: SSEKMSKeyId = LocalAttribute(default=str)
 
 
 class BucketCorsIndex:
@@ -603,6 +606,12 @@ class BucketCorsIndex:
                     cors_index[bucket_name] = bucket.cors_rules
 
         return buckets, cors_index
+
+
+class EncryptionParameters(NamedTuple):
+    encryption: ServerSideEncryption
+    kms_key_id: SSEKMSKeyId
+    bucket_key_enabled: BucketKeyEnabled
 
 
 s3_stores = AccountRegionBundle[S3Store]("s3", S3Store)
