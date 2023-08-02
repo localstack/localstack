@@ -772,7 +772,6 @@ class ContainerClient(metaclass=ABCMeta):
             remove=container_config.remove,
             interactive=container_config.interactive,
             tty=container_config.tty,
-            detach=container_config.detach,
             command=container_config.command,
             mount_volumes=container_config.volumes,
             ports=container_config.ports,
