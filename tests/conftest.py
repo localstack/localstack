@@ -1,6 +1,5 @@
 import os
 
-import boto3
 import pytest
 from _pytest.config import PytestPluginManager
 from _pytest.config.argparsing import Parser
@@ -61,8 +60,13 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_offline)
 
 
+#
+# Following fixtures are defined in this file so that they are available to all test suites
+#
+
+
 @pytest.fixture(scope="session")
-def aws_session() -> boto3.Session:
+def aws_session():
     """
     This fixture returns the Boto Session instance for testing.
     """
