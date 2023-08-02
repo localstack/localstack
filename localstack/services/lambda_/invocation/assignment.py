@@ -1,9 +1,7 @@
-# assignment + placement service
 import contextlib
 import logging
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures._base import Future
+from concurrent.futures import Future, ThreadPoolExecutor
 from typing import ContextManager
 
 from localstack.services.lambda_.invocation.execution_environment import (
@@ -103,21 +101,6 @@ class AssignmentService(OtherServiceEndpoint):
                 e,
             )
 
-    # def get_most_recently_used_active_environment(self):
-    #     ...
-
-    # def count_environment_by_status(self, status: List[RuntimeStatus]) -> int:
-    #     return len(
-    #         [runtime for runtime in self.all_environments.values() if runtime.status in status]
-    #     )
-    #
-    # def ready_environment_count(self) -> int:
-    #     return self.count_environment_by_status([RuntimeStatus.READY])
-    #
-    # def active_environment_count(self) -> int:
-    #     return self.count_environment_by_status(
-    #         [RuntimeStatus.READY, RuntimeStatus.STARTING, RuntimeStatus.RUNNING]
-    #     )
     def stop_environments_for_version(self, function_version: FunctionVersion):
         for env in self.environments.get(function_version.qualified_arn, []):
             self.stop_environment(env)
@@ -131,40 +114,23 @@ class AssignmentService(OtherServiceEndpoint):
             for e in self.environments[version_arn].values()
             if e.initialization_type == "provisioned-concurrency"
         ]
-        current_provisioned_environments_count = len(current_provisioned_environments)
-        diff = target_provisioned_environments - current_provisioned_environments_count
+        # TODO: refine scaling loop to re-use existing environments instead of re-creating all
+        # current_provisioned_environments_count = len(current_provisioned_environments)
+        # diff = target_provisioned_environments - current_provisioned_environments_count
 
+        # TODO: handle case where no provisioned environment is available during scaling
+        # Most simple scaling implementation for now:
         futures = []
-        if diff > 0:
-            for _ in range(diff):
-                runtime_environment = ExecutionEnvironment(
-                    function_version=function_version,
-                    initialization_type="provisioned-concurrency",
-                )
-                self.environments[version_arn][runtime_environment.id] = runtime_environment
-                futures.append(self.provisioning_pool.submit(runtime_environment.start))
-        elif diff < 0:
-            # Most simple: killall and restart the target
-
-            # 1) kill non-executing
-            # 2) give a shutdown pill for running invocation (or kill immediately for now)
-            pass
-            # current_provisioned_environments
-            # TODO: kill non-running first, give running ones a shutdown pill (or alike)
-            #  e.status != RuntimeStatus.RUNNING
-            # TODO: implement killing envs
-            # for e in provisioned_envs[: (diff * -1)]:
-            #     futures.append(self.provisioning_pool.submit(self.stop_environment, e))
-        else:
-            # NOOP
-            pass
+        # 1) Re-create new target
+        for _ in range(target_provisioned_environments):
+            runtime_environment = ExecutionEnvironment(
+                function_version=function_version,
+                initialization_type="provisioned-concurrency",
+            )
+            self.environments[version_arn][runtime_environment.id] = runtime_environment
+            futures.append(self.provisioning_pool.submit(runtime_environment.start))
+        # 2) Kill all existing
+        for env in current_provisioned_environments:
+            futures.append(self.provisioning_pool.submit(self.stop_environment, env))
 
         return futures
-
-
-# class PlacementService:
-#
-#     def prepare_host_for_execution_environment(self):
-#
-#     def stop(self):
-#         ...

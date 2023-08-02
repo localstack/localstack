@@ -186,7 +186,7 @@ class LambdaVersionManager:
 
         """
         # lease should be specific for on-demand or provisioned, lease can return the type
-        # TODO: try/catch handle case when no lease available
+        # TODO: try/catch handle case when no lease available (e.g., reserved concurrency, worker scenario)
         with self.counting_service.get_invocation_lease(
             self.function, self.function_version
         ) as provisioning_type:  # TODO: do we need to pass more here?
