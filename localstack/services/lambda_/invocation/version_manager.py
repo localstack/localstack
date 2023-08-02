@@ -14,10 +14,7 @@ from localstack.aws.api.lambda_ import (
 from localstack.services.lambda_.invocation.assignment import AssignmentService
 from localstack.services.lambda_.invocation.counting_service import CountingService
 from localstack.services.lambda_.invocation.docker_runtime_executor import InitializationType
-from localstack.services.lambda_.invocation.execution_environment import (
-    ExecutionEnvironment,
-    RuntimeStatus,
-)
+from localstack.services.lambda_.invocation.execution_environment import ExecutionEnvironment
 from localstack.services.lambda_.invocation.lambda_models import (
     Function,
     FunctionVersion,
@@ -133,10 +130,7 @@ class LambdaVersionManager:
     def update_provisioned_concurrency_config(
         self, provisioned_concurrent_executions: int
     ) -> Future[None]:
-        # V2
-        return self.assignment_service.scale_provisioned_concurrency(
-            self.function_version, provisioned_concurrent_executions
-        )
+        # TODO: check old TODOs
         """
         TODO: implement update while in progress (see test_provisioned_concurrency test)
         TODO: loop until diff == 0 and retry to remove/add diff environments
@@ -147,6 +141,7 @@ class LambdaVersionManager:
         :param provisioned_concurrent_executions: set to 0 to stop all provisioned environments
         """
 
+        # LocalStack limitation: cannot update provisioned concurrency while another update is in progress
         if (
             self.provisioned_state
             and self.provisioned_state.status == ProvisionedConcurrencyStatusEnum.IN_PROGRESS
@@ -158,44 +153,14 @@ class LambdaVersionManager:
         if not self.provisioned_state:
             self.provisioned_state = ProvisionedConcurrencyState()
 
-        # create plan
-        current_provisioned_environments = len(
-            [
-                e
-                for e in self.all_environments.values()
-                if e.initialization_type == "provisioned-concurrency"
-            ]
-        )
-        target_provisioned_environments = provisioned_concurrent_executions
-        diff = target_provisioned_environments - current_provisioned_environments
-
         def scale_environments(*args, **kwargs):
-            futures = []
-            if diff > 0:
-                for _ in range(diff):
-                    runtime_environment = ExecutionEnvironment(
-                        function_version=self.function_version,
-                        initialization_type="provisioned-concurrency",
-                        service_endpoint=self,
-                    )
-                    self.all_environments[runtime_environment.id] = runtime_environment
-                    futures.append(self.provisioning_pool.submit(runtime_environment.start))
-
-            elif diff < 0:
-                provisioned_envs = [
-                    e
-                    for e in self.all_environments.values()
-                    if e.initialization_type == "provisioned-concurrency"
-                    and e.status != RuntimeStatus.RUNNING
-                ]
-                for e in provisioned_envs[: (diff * -1)]:
-                    futures.append(self.provisioning_pool.submit(self.stop_environment, e))
-            else:
-                return  # NOOP
+            futures = self.assignment_service.scale_provisioned_concurrency(
+                self.function_version, provisioned_concurrent_executions
+            )
 
             concurrent.futures.wait(futures)
 
-            if target_provisioned_environments == 0:
+            if provisioned_concurrent_executions == 0:
                 self.provisioned_state = None
             else:
                 self.provisioned_state.available = provisioned_concurrent_executions
