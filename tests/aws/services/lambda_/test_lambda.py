@@ -1573,6 +1573,10 @@ class TestLambdaConcurrency:
         get_provisioned_prewait = aws_client.lambda_.get_provisioned_concurrency_config(
             FunctionName=func_name, Qualifier=v1["Version"]
         )
+
+        # TODO: test invoke before provisioned concurrency actually updated
+        # maybe repeated executions to see when we get the provisioned invocation type
+
         snapshot.match("get_provisioned_prewait", get_provisioned_prewait)
         assert wait_until(concurrency_update_done(aws_client.lambda_, func_name, v1["Version"]))
         get_provisioned_postwait = aws_client.lambda_.get_provisioned_concurrency_config(
