@@ -78,25 +78,6 @@ class GenericBaseModel:
         """Set any defaults required, including auto-generating names. Must be called before deploying the resource"""
         pass
 
-    # ----------------------
-    # GENERIC BASE METHODS
-    # ----------------------
-
-    def get_cfn_attribute(self, attribute_name):
-        """Retrieve the given CF attribute for this resource"""
-        attribute_candidate = self.props.get(attribute_name)
-        if "." in attribute_name:
-            if attribute_candidate:
-                # in case we explicitly add a property with a dot, e.g. resource["Properties"]["Endpoint.Port"]
-                return attribute_candidate
-            parts = attribute_name.split(".")
-            attribute = self.props
-            for part in parts:
-                attribute = attribute.get(part)
-            return attribute
-
-        return attribute_candidate
-
     # ---------------------
     # GENERIC UTIL METHODS
     # ---------------------

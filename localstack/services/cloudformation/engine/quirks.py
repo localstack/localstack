@@ -22,23 +22,23 @@ PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
 VALID_GETATT_PROPERTIES = {
     # Other Examples
     # "AWS::ApiGateway::Resource": ["ResourceId"],
-    "AWS::IAM::User": ["Arn"],  # TODO: not validated yet
+    # "AWS::IAM::User": ["Arn"],  # TODO: not validated yet
     "AWS::SSM::Parameter": ["Type", "Value"],  # TODO: not validated yet
-    "AWS::OpenSearchService::Domain": [
-        "AdvancedSecurityOptions.AnonymousAuthDisableDate",
-        "Arn",
-        "DomainArn",
-        "DomainEndpoint",
-        "DomainEndpoints",
-        "Id",
-        "ServiceSoftwareOptions",
-        "ServiceSoftwareOptions.AutomatedUpdateDate",
-        "ServiceSoftwareOptions.Cancellable",
-        "ServiceSoftwareOptions.CurrentVersion",
-        "ServiceSoftwareOptions.Description",
-        "ServiceSoftwareOptions.NewVersion",
-        "ServiceSoftwareOptions.OptionalDeployment",
-        "ServiceSoftwareOptions.UpdateAvailable",
-        "ServiceSoftwareOptions.UpdateStatus",
-    ],  # TODO: not validated yet
+    # "AWS::OpenSearchService::Domain": [
+    #     "AdvancedSecurityOptions.AnonymousAuthDisableDate",
+    #     "Arn",
+    #     "DomainArn",
+    #     "DomainEndpoint",
+    #     "DomainEndpoints",
+    #     "Id",
+    #     "ServiceSoftwareOptions",
+    #     "ServiceSoftwareOptions.AutomatedUpdateDate",
+    #     "ServiceSoftwareOptions.Cancellable",
+    #     "ServiceSoftwareOptions.CurrentVersion",
+    #     "ServiceSoftwareOptions.Description",
+    #     "ServiceSoftwareOptions.NewVersion",
+    #     "ServiceSoftwareOptions.OptionalDeployment",
+    #     "ServiceSoftwareOptions.UpdateAvailable",
+    #     "ServiceSoftwareOptions.UpdateStatus",
+    # ],  # TODO: not validated yet
 }
