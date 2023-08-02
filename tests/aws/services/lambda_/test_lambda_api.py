@@ -3505,7 +3505,6 @@ class TestLambdaSizeLimits:
             )
         snapshot.match("invalid_param_exc", e.value.response)
 
-    @pytest.mark.skip(reason="breaks CI")  # TODO: investigate why this leads to timeouts
     @markers.aws.validated
     def test_large_lambda(self, s3_bucket, lambda_su_role, snapshot, cleanups, aws_client):
         function_name = f"test_lambda_{short_uid()}"
@@ -3531,6 +3530,9 @@ class TestLambdaSizeLimits:
             Timeout=10,
         )
         snapshot.match("create_function_large_zip", result)
+
+        # TODO: Test and fix deleting a non-active Lambda
+        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
 
     @markers.aws.validated
     def test_large_environment_variables_fails(self, create_lambda_function, snapshot, aws_client):
