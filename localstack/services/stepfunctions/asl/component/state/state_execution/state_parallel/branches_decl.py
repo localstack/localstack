@@ -34,7 +34,6 @@ class BranchesDecl(EvalComponent):
 
         result_list = list()
 
-        # Pull workers' results in LIFO order.
         for worker in reversed(worker_pool):
             env_frame = worker.env_frame
             result_list.append(env_frame.inp)

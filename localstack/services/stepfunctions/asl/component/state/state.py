@@ -88,7 +88,7 @@ class CommonStateField(EvalComponent, ABC):
     def _get_state_entered_event_details(self, env: Environment) -> StateEnteredEventDetails:
         return StateEnteredEventDetails(
             name=self.name,
-            input=to_json_str(env.inp),
+            input=to_json_str(env.inp, separators=(",", ":")),
             inputDetails=HistoryEventExecutionDataDetails(
                 truncated=False  # Always False for api calls.
             ),
@@ -97,7 +97,7 @@ class CommonStateField(EvalComponent, ABC):
     def _get_state_exited_event_details(self, env: Environment) -> StateExitedEventDetails:
         return StateExitedEventDetails(
             name=self.name,
-            output=to_json_str(env.inp),
+            output=to_json_str(env.inp, separators=(",", ":")),
             outputDetails=HistoryEventExecutionDataDetails(
                 truncated=False  # Always False for api calls.
             ),
