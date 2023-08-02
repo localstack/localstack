@@ -67,8 +67,7 @@ SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11, Runtime.java17]
 # this account will be used to store all the internal lambda function archives at
 # it should not be modified by the user, or visible to him, except as through a presigned url with the
 # get-function call.
-# TODO: rename to service account or alike as now the internal SQS queues also live here
-BUCKET_ACCOUNT = "949334387222"
+INTERNAL_RESOURCE_ACCOUNT = "949334387222"
 
 
 # TODO: maybe we should make this more "transient" by always initializing to Pending and *not* persisting it?
@@ -181,7 +180,7 @@ class S3Code(ArchiveCode):
         """
         s3_client = connect_to(
             region_name=AWS_REGION_US_EAST_1,
-            aws_access_key_id=BUCKET_ACCOUNT,
+            aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT,
         ).s3
         extra_args = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
         s3_client.download_fileobj(
@@ -195,7 +194,7 @@ class S3Code(ArchiveCode):
         """
         s3_client = connect_to(
             region_name=AWS_REGION_US_EAST_1,
-            aws_access_key_id=BUCKET_ACCOUNT,
+            aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT,
             endpoint_url=endpoint_url,
         ).s3
         params = {"Bucket": self.s3_bucket, "Key": self.s3_key}
@@ -257,7 +256,7 @@ class S3Code(ArchiveCode):
         self.destroy_cached()
         s3_client = connect_to(
             region_name=AWS_REGION_US_EAST_1,
-            aws_access_key_id=BUCKET_ACCOUNT,
+            aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT,
         ).s3
         kwargs = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
         try:
