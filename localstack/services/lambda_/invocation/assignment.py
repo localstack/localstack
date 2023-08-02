@@ -76,17 +76,22 @@ class AssignmentService(OtherServiceEndpoint):
             LOG.error("Failed invocation %s", e)
             execution_environment.errored()
 
-    def start_environment(self, function_version: FunctionVersion):
+    def start_environment(self, function_version: FunctionVersion) -> ExecutionEnvironment:
         LOG.debug("Starting new environment")
-        runtime_environment = ExecutionEnvironment(
+        execution_environment = ExecutionEnvironment(
             function_version=function_version,
             initialization_type="on-demand",
+            on_timeout=self.on_timeout,
         )
         try:
-            runtime_environment.start()
+            execution_environment.start()
         except Exception as e:
             LOG.error(f"Could not start new environment: {e}")
-        return runtime_environment
+        return execution_environment
+
+    def on_timeout(self, version_arn: str, environment_id: str) -> None:
+        """Callback for deleting environment after function times out"""
+        del self.environments[version_arn][environment_id]
 
     def stop_environment(self, environment: ExecutionEnvironment) -> None:
         version_arn = environment.function_version.qualified_arn
@@ -123,12 +128,13 @@ class AssignmentService(OtherServiceEndpoint):
         futures = []
         # 1) Re-create new target
         for _ in range(target_provisioned_environments):
-            runtime_environment = ExecutionEnvironment(
+            execution_environment = ExecutionEnvironment(
                 function_version=function_version,
                 initialization_type="provisioned-concurrency",
+                on_timeout=self.on_timeout,
             )
-            self.environments[version_arn][runtime_environment.id] = runtime_environment
-            futures.append(self.provisioning_pool.submit(runtime_environment.start))
+            self.environments[version_arn][execution_environment.id] = execution_environment
+            futures.append(self.provisioning_pool.submit(execution_environment.start))
         # 2) Kill all existing
         for env in current_provisioned_environments:
             futures.append(self.provisioning_pool.submit(self.stop_environment, env))

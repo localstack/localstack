@@ -7,7 +7,7 @@ import time
 from datetime import date, datetime
 from enum import Enum, auto
 from threading import RLock, Timer
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional
 
 from localstack import config
 from localstack.aws.api.lambda_ import TracingMode
@@ -63,6 +63,7 @@ class ExecutionEnvironment:
         self,
         function_version: FunctionVersion,
         initialization_type: InitializationType,
+        on_timeout: Callable[[str, str], None],
     ):
         self.id = generate_runtime_id()
         self.status = RuntimeStatus.INACTIVE
@@ -73,6 +74,7 @@ class ExecutionEnvironment:
         self.last_returned = datetime.min
         self.startup_timer = None
         self.keepalive_timer = Timer(0, lambda *args, **kwargs: None)
+        self.on_timeout = on_timeout
 
     def get_log_group_name(self) -> str:
         return f"/aws/lambda/{self.function_version.id.function_name}"
@@ -215,7 +217,6 @@ class ExecutionEnvironment:
             self.status = RuntimeStatus.RUNNING
             self.keepalive_timer.cancel()
 
-    # TODO: notify assignment service if this timer triggers => need to remove out of list!
     def keepalive_passed(self) -> None:
         LOG.debug(
             "Executor %s for function %s hasn't received any invocations in a while. Stopping.",
@@ -223,6 +224,8 @@ class ExecutionEnvironment:
             self.function_version.qualified_arn,
         )
         self.stop()
+        # Notify assignment service via callback to remove from environments list
+        self.on_timeout(self.function_version.qualified_arn, self.id)
 
     def timed_out(self) -> None:
         LOG.warning(
