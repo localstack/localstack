@@ -43,7 +43,7 @@ class TestLambdaDLQ:
         lambda_su_role,
         snapshot,
         aws_client,
-        monkeypatch
+        monkeypatch,
     ):
         if not is_aws_cloud():
             monkeypatch.setattr(config, "LAMBDA_RETRY_BASE_DELAY_SECONDS", 5)
