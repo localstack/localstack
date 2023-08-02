@@ -1,4 +1,5 @@
 import base64
+import copy
 import datetime
 import logging
 from secrets import token_urlsafe
@@ -72,6 +73,7 @@ from localstack.aws.api.s3 import (
     MultipartUploadId,
     NoSuchBucket,
     NoSuchUpload,
+    NotificationConfiguration,
     Object,
     ObjectIdentifier,
     ObjectKey,
@@ -90,6 +92,7 @@ from localstack.aws.api.s3 import (
     S3Api,
     ServerSideEncryption,
     ServerSideEncryptionConfiguration,
+    SkipValidation,
     SSECustomerAlgorithm,
     SSECustomerKey,
     SSECustomerKeyMD5,
@@ -112,6 +115,7 @@ from localstack.services.s3.exceptions import (
     InvalidRequest,
     MalformedXML,
 )
+from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
 from localstack.services.s3.utils import (
     add_expiration_days_to_datetime,
     create_s3_kms_managed_key_for_region,
@@ -153,6 +157,47 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def __init__(self) -> None:
         super().__init__()
         self._storage_backend = EphemeralS3ObjectStore()
+        self._notification_dispatcher = NotificationDispatcher()
+
+    def on_before_stop(self):
+        self._notification_dispatcher.shutdown()
+
+    def _notify(
+        self,
+        context: RequestContext,
+        s3_bucket: S3Bucket,
+        s3_object: S3Object | S3DeleteMarker = None,
+        s3_notif_ctx: S3EventNotificationContext = None,
+    ):
+        """
+        :param context: the RequestContext, to retrieve more information about the incoming notification
+        :param s3_bucket: the S3Bucket object
+        :param s3_object: the S3Object object if S3EventNotificationContext is not given
+        :param s3_notif_ctx: S3EventNotificationContext, in case we need specific data only available in the API call
+        :return:
+        """
+        if s3_bucket.notification_configuration:
+            if not s3_notif_ctx:
+                s3_notif_ctx = S3EventNotificationContext.from_request_context_native(
+                    context,
+                    s3_bucket=s3_bucket,
+                    s3_object=s3_object,
+                )
+
+            self._notification_dispatcher.send_notifications(
+                s3_notif_ctx, s3_bucket.notification_configuration
+            )
+
+    def _verify_notification_configuration(
+        self,
+        notification_configuration: NotificationConfiguration,
+        skip_destination_validation: SkipValidation,
+        context: RequestContext,
+        bucket_name: str,
+    ):
+        self._notification_dispatcher.verify_configuration(
+            notification_configuration, skip_destination_validation, context, bucket_name
+        )
 
     @staticmethod
     def get_store(account_id: str, region_name: str) -> S3Store:
@@ -403,6 +448,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["Expiration"] = s3_object.expiration  # TODO: properly parse the datetime
 
         add_encryption_to_response(response, s3_object=s3_object)
+        self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
 
         return response
 
@@ -457,6 +503,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.website_redirect_location:
             response["WebsiteRedirectLocation"] = s3_object.website_redirect_location
 
+        if s3_object.restore:
+            response["Restore"] = s3_object.restore
+
         if checksum_algorithm := s3_object.checksum_algorithm:
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
                 response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
@@ -479,7 +528,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # TODO: missing returned fields
         #     Expiration: Optional[Expiration]
-        #     Restore: Optional[Restore]
         #     RequestCharged: Optional[RequestCharged]
         #     ReplicationStatus: Optional[ReplicationStatus]
         #     TagCount: Optional[TagCount]
@@ -538,11 +586,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.website_redirect_location:
             response["WebsiteRedirectLocation"] = s3_object.website_redirect_location
 
+        if s3_object.restore:
+            response["Restore"] = s3_object.restore
+
         add_encryption_to_response(response, s3_object=s3_object)
 
         # TODO: missing return fields:
         # Expiration: Optional[Expiration]
-        # Restore: Optional[Restore]
         # ArchiveStatus: Optional[ArchiveStatus]
 
         # RequestCharged: Optional[RequestCharged]
@@ -581,7 +631,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             # TODO: RequestCharged
             if found_object:
                 self._storage_backend.remove(bucket, found_object)
-
+                self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
             return DeleteObjectOutput()
 
         if not version_id:
@@ -590,6 +640,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             # TODO: verify with Suspended bucket? does it override last version or still append?? big question
             #  I think it puts a delete marker with a `null` VersionId, which deletes the object under
             s3_bucket.objects.set(key, delete_marker)
+            # TODO: make a proper difference between DeleteMarker and S3Object, not done yet
+            #  s3:ObjectRemoved:DeleteMarkerCreated
+            self._notify(context, s3_bucket=s3_bucket, s3_object=delete_marker)
+
             return DeleteObjectOutput(VersionId=delete_marker.version_id, DeleteMarker=True)
 
         if key not in s3_bucket.objects:
@@ -608,6 +662,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["DeleteMarker"] = True
         else:
             self._storage_backend.remove(bucket, found_object)
+            self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
 
         return response
 
@@ -658,6 +713,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 found_object = s3_bucket.objects.pop(object_key, None)
                 if found_object:
                     to_remove.append(found_object)
+                    self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
+                # small hack to not create a fake object for nothing
+                elif s3_bucket.notification_configuration:
+                    # DeleteObjects is a bit weird, even if the object didn't exist, S3 will trigger a notification
+                    # for a non-existing object being deleted
+                    self._notify(
+                        context, s3_bucket=s3_bucket, s3_object=S3Object(key=object_key, etag="")
+                    )
 
                 if not quiet:
                     deleted.append(DeletedObject(Key=object_key))
@@ -668,6 +731,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 delete_marker_id = generate_version_id(s3_bucket.versioning_status)
                 delete_marker = S3DeleteMarker(key=object_key, version_id=delete_marker_id)
                 s3_bucket.objects.set(object_key, delete_marker)
+                # TODO: make a difference between DeleteMarker and S3Object
+                self._notify(context, s3_bucket=s3_bucket, s3_object=delete_marker)
                 if not quiet:
                     deleted.append(
                         DeletedObject(
@@ -704,6 +769,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
             if isinstance(found_object, S3Object):
                 to_remove.append(found_object)
+
+            self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
 
         # TODO: request charged
         self._storage_backend.remove(bucket, to_remove)
@@ -860,6 +927,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["CopySourceVersionId"] = src_version_id
 
         # RequestCharged: Optional[RequestCharged] # TODO
+        self._notify(context, s3_bucket=dest_s3_bucket, s3_object=s3_object)
 
         return response
 
@@ -1278,6 +1346,21 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO: add a way to transition from ongoing-request=true to false? for now it is instant
         s3_object.restore = f'ongoing-request="false", expiry-date="{restore_expiration_date}"'
 
+        s3_notif_ctx_initiated = S3EventNotificationContext.from_request_context_native(
+            context,
+            s3_bucket=s3_bucket,
+            s3_object=s3_object,
+        )
+        self._notify(context, s3_bucket=s3_bucket, s3_notif_ctx=s3_notif_ctx_initiated)
+        # But because it's instant in LocalStack, we can directly send the Completed notification as well
+        # We just need to copy the context so that we don't mutate the first context while it could be sent
+        # And modify its event type from `ObjectRestore:Post` to `ObjectRestore:Completed`
+        s3_notif_ctx_completed = copy.copy(s3_notif_ctx_initiated)
+        s3_notif_ctx_completed.event_type = s3_notif_ctx_completed.event_type.replace(
+            "Post", "Completed"
+        )
+        self._notify(context, s3_bucket=s3_bucket, s3_notif_ctx=s3_notif_ctx_completed)
+
         # TODO: request charged
         return RestoreObjectOutput(StatusCode=status_code)
 
@@ -1616,6 +1699,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         add_encryption_to_response(response, s3_object=s3_object)
 
+        self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
+
         return response
 
     def abort_multipart_upload(
@@ -1863,6 +1948,32 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
 
         s3_bucket.encryption_rule = None
+
+    def put_bucket_notification_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        notification_configuration: NotificationConfiguration,
+        expected_bucket_owner: AccountId = None,
+        skip_destination_validation: SkipValidation = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        self._verify_notification_configuration(
+            notification_configuration, skip_destination_validation, context, bucket
+        )
+        s3_bucket.notification_configuration = notification_configuration
+
+    def get_bucket_notification_configuration(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> NotificationConfiguration:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        return s3_bucket.notification_configuration or NotificationConfiguration()
 
 
 def generate_version_id(bucket_versioning_status: str) -> str | None:

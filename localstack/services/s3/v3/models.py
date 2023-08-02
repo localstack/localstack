@@ -123,6 +123,7 @@ class S3Bucket:
         self.creation_date = datetime.utcnow()
         self.multiparts = {}
         self.versioning_status = None
+        self.notification_configuration = {}
 
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
         self.owner = get_owner_for_account_id(account_id)
