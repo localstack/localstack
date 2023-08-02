@@ -12,3 +12,4 @@ class BaseTemplate(TemplateLoader):
     BASE_TASK_SEQ_2: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/task_seq_2.json5")
     BASE_WAIT_1_MIN: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/wait_1_min.json5")
     BASE_RAISE_FAILURE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/raise_failure.json5")
+    WAIT_AND_FAIL: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/wait_and_fail.json5")

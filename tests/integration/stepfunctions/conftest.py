@@ -47,7 +47,7 @@ class SfnNoneRecursiveParallelTransformer:
                 HistoryEventType.ParallelStateExited,
                 HistoryEventType.ParallelStateFailed,
             }:
-                events[start_idx:i] = sorted(sublist, key=to_json_str)
+                events[start_idx:i] = sorted(sublist, key=lambda e: to_json_str(e))
                 in_sublist = False
             elif event_type == HistoryEventType.ParallelStateStarted:
                 in_sublist = True
@@ -248,3 +248,44 @@ def sqs_send_heartbeat_and_task_success_state_machine(
         )
 
     return _create_state_machine
+
+
+@pytest.fixture
+def sfn_events_to_sqs_queue(events_create_rule, sqs_create_queue, sqs_queue_arn, aws_client):
+    def _create(state_machine_arn: str) -> str:
+        queue_name = f"test-queue-{short_uid()}"
+        rule_name = f"test-rule-{short_uid()}"
+        target_id = f"test-target-{short_uid()}"
+
+        pattern = {
+            "source": ["aws.states"],
+            "detail": {
+                "stateMachineArn": [state_machine_arn],
+            },
+        }
+        rule_arn = events_create_rule(Name=rule_name, EventBusName="default", EventPattern=pattern)
+
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_arn = sqs_queue_arn(queue_url)
+        queue_policy = {
+            "Statement": [
+                {
+                    "Sid": "StepFunctionsEventRule",
+                    "Resource": queue_arn,
+                    "Action": "sqs:SendMessage",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Condition": {"ArnEquals": {"aws:SourceArn": rule_arn}},
+                    "Effect": "Allow",
+                }
+            ]
+        }
+        aws_client.sqs.set_queue_attributes(
+            QueueUrl=queue_url,
+            Attributes={"Policy": json.dumps(queue_policy), "ReceiveMessageWaitTimeSeconds": "1"},
+        )
+
+        aws_client.events.put_targets(Rule=rule_name, Targets=[{"Id": target_id, "Arn": queue_arn}])
+
+        return queue_url
+
+    return _create

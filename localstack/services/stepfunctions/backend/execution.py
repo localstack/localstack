@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import datetime
+import logging
 from typing import Final, Optional
 
+from localstack.aws.api.events import PutEventsRequestEntry
 from localstack.aws.api.stepfunctions import (
     Arn,
     CloudWatchEventsExecutionDataDetails,
@@ -38,6 +40,9 @@ from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.execution_worker import ExecutionWorker
 from localstack.services.stepfunctions.backend.execution_worker_comm import ExecutionWorkerComm
 from localstack.services.stepfunctions.backend.state_machine import StateMachine
+from localstack.utils.aws import aws_stack
+
+LOG = logging.getLogger(__name__)
 
 
 class Execution:
@@ -63,6 +68,7 @@ class Execution:
                 raise RuntimeWarning(
                     f"Execution ended with unsupported ProgramState type '{type(exit_program_state)}'."
                 )
+            self.execution._publish_execution_status_change_event()
 
     name: Final[str]
     role_arn: Final[Arn]
@@ -109,6 +115,7 @@ class Execution:
         self.exec_worker = None
         self.error = None
         self.cause = None
+        self._events_client = aws_stack.create_external_boto_client(service_name="events")
 
     def to_start_output(self) -> StartExecutionOutput:
         return StartExecutionOutput(executionArn=self.exec_arn, startDate=self.start_date)
@@ -173,6 +180,7 @@ class Execution:
             ),
         )
         self.exec_status = ExecutionStatus.RUNNING
+        self._publish_execution_status_change_event()
         self.exec_worker.start()
 
     def stop(self, stop_date: datetime.datetime, error: Optional[str], cause: Optional[str]):
@@ -180,3 +188,40 @@ class Execution:
         if not exec_worker:
             raise RuntimeError("No running executions.")
         exec_worker.stop(stop_date=stop_date, cause=cause, error=error)
+
+    def _publish_execution_status_change_event(self):
+        input_value = (
+            dict() if not self.input_data else to_json_str(self.input_data, separators=(",", ":"))
+        )
+        output_value = self.output
+        output_details = None if output_value is None else self.output_details
+        entry = PutEventsRequestEntry(
+            Source="aws.states",
+            Resources=[self.exec_arn],
+            DetailType="Step Functions Execution Status Change",
+            Detail=to_json_str(
+                # Note: this operation carries significant changes from a describe_execution request.
+                DescribeExecutionOutput(
+                    executionArn=self.exec_arn,
+                    stateMachineArn=self.state_machine.arn,
+                    stateMachineAliasArn=None,
+                    stateMachineVersionArn=None,
+                    name=self.name,
+                    status=self.exec_status,
+                    startDate=self.start_date,
+                    stopDate=self.stop_date,
+                    input=input_value,
+                    inputDetails=self.input_details,
+                    output=output_value,
+                    outputDetails=output_details,
+                    error=self.error,
+                    cause=self.cause,
+                )
+            ),
+        )
+        try:
+            self._events_client.put_events(Entries=[entry])
+        except Exception:
+            LOG.exception(
+                f"Unable to send notification of Entry='{entry}' for Step Function execution with Arn='{self.exec_arn}' to EventBridge."
+            )

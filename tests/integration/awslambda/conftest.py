@@ -32,6 +32,8 @@ if TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 
+# Supported Runtimes: https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html
+# NOTE: missing support for `dotnet7` (container only)
 RUNTIMES_AGGREGATED = {
     "python": [
         Runtime.python3_7,

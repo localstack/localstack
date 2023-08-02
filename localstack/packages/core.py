@@ -2,14 +2,16 @@ import logging
 import os
 from abc import ABC
 from functools import lru_cache
+from typing import Optional
 
 import requests
 
 from localstack import config
 
 from ..utils.archives import download_and_extract
-from ..utils.files import chmod_r, mkdir, rm_rf
+from ..utils.files import chmod_r, chown_r, mkdir, rm_rf
 from ..utils.http import download
+from ..utils.run import is_root, run
 from .api import InstallTarget, PackageException, PackageInstaller
 
 LOG = logging.getLogger(__name__)
@@ -178,3 +180,52 @@ class GitHubReleaseInstaller(PermissionDownloadInstaller):
         :return: name of the asset to download from the GitHub project's tag / version
         """
         raise NotImplementedError()
+
+
+class NodePackageInstaller(ExecutableInstaller):
+    """Package installer for Node / NPM packages."""
+
+    def __init__(
+        self,
+        package_name: str,
+        version: str,
+        package_spec: Optional[str] = None,
+        main_module: str = "main.js",
+    ):
+        """
+        Initializes the Node / NPM package installer.
+        :param package_name: npm package name
+        :param version: version of the package which should be installed
+        :param package_spec: optional package spec for the installation.
+                If not set, the package name and version will be used for the installation.
+        :param main_module: main module file of the package
+        """
+        super().__init__(package_name, version)
+        self.package_name = package_name
+        # If the package spec is not explicitly set (f.e. to a repo), we build it and pin the version
+        self.package_spec = package_spec or f"{self.package_name}@{version}"
+        self.main_module = main_module
+
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        return os.path.join(install_dir, "node_modules", self.package_name, self.main_module)
+
+    def _install(self, target: InstallTarget) -> None:
+        target_dir = self._get_install_dir(target)
+
+        run(
+            [
+                "npm",
+                "install",
+                "--prefix",
+                target_dir,
+                self.package_spec,
+            ]
+        )
+        # npm 9+ does _not_ set the ownership of files anymore if run as root
+        # - https://github.blog/changelog/2022-10-24-npm-v9-0-0-released/
+        # - https://github.com/npm/cli/pull/5704
+        # - https://github.com/localstack/localstack/issues/7620
+        if is_root():
+            # if the package was installed as root, set the ownership manually
+            LOG.debug("Setting ownership root:root on %s", target_dir)
+            chown_r(target_dir, "root")
