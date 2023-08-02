@@ -2,6 +2,7 @@
 import contextlib
 import logging
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures._base import Future
 from typing import ContextManager
 
@@ -30,8 +31,12 @@ class AssignmentService(OtherServiceEndpoint):
     # function_version (fully qualified function ARN) => runtime_environment_id => runtime_environment
     environments: dict[str, dict[str, ExecutionEnvironment]]
 
+    # Global pool for spawning and killing provisioned Lambda runtime environments
+    provisioning_pool: ThreadPoolExecutor
+
     def __init__(self):
         self.environments = defaultdict(dict)
+        self.provisioning_pool = ThreadPoolExecutor(thread_name_prefix="lambda-provisioning-pool")
 
     @contextlib.contextmanager
     def get_environment(
@@ -119,7 +124,7 @@ class AssignmentService(OtherServiceEndpoint):
 
     def scale_provisioned_concurrency(
         self, function_version: FunctionVersion, target_provisioned_environments: int
-    ) -> Future[None]:
+    ) -> list[Future[None]]:
         version_arn = function_version.qualified_arn
         current_provisioned_environments = [
             e
@@ -128,6 +133,8 @@ class AssignmentService(OtherServiceEndpoint):
         ]
         current_provisioned_environments_count = len(current_provisioned_environments)
         diff = target_provisioned_environments - current_provisioned_environments_count
+
+        futures = []
         if diff > 0:
             for _ in range(diff):
                 runtime_environment = ExecutionEnvironment(
@@ -135,9 +142,14 @@ class AssignmentService(OtherServiceEndpoint):
                     initialization_type="provisioned-concurrency",
                 )
                 self.environments[version_arn][runtime_environment.id] = runtime_environment
-                # futures.append(self.provisioning_pool.submit(runtime_environment.start))
+                futures.append(self.provisioning_pool.submit(runtime_environment.start))
         elif diff < 0:
-            current_provisioned_environments
+            # Most simple: killall and restart the target
+
+            # 1) kill non-executing
+            # 2) give a shutdown pill for running invocation (or kill immediately for now)
+            pass
+            # current_provisioned_environments
             # TODO: kill non-running first, give running ones a shutdown pill (or alike)
             #  e.status != RuntimeStatus.RUNNING
             # TODO: implement killing envs
@@ -146,6 +158,8 @@ class AssignmentService(OtherServiceEndpoint):
         else:
             # NOOP
             pass
+
+        return futures
 
 
 # class PlacementService:

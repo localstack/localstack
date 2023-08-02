@@ -116,14 +116,22 @@ class CountingService:
         # brand new provisioned environments are not yet initialized.
         # * Decrease provisioned: It could happen that we have running invocations that should still be counted
         # against the limit but they are not because we already updated the concurrency config to fewer envs.
-        available_provisioned_concurrency = (
-            function.provisioned_concurrency_configs.get(function_version.id.qualifier, 0)
-            - provisioned_scoped_tracker.function_concurrency[qualified_arn]
+        # TODO: check that we don't give a lease while updating provisioned concurrency
+        provisioned_concurrency_config = function.provisioned_concurrency_configs.get(
+            function_version.id.qualifier
         )
-        if available_provisioned_concurrency > 0:
-            provisioned_scoped_tracker.function_concurrency[qualified_arn] += 1
-            yield "provisioned-concurrency"
-            provisioned_scoped_tracker.function_concurrency[qualified_arn] -= 1
+        if provisioned_concurrency_config:
+            available_provisioned_concurrency = (
+                provisioned_concurrency_config.provisioned_concurrent_executions
+                - provisioned_scoped_tracker.function_concurrency[qualified_arn]
+            )
+            if available_provisioned_concurrency > 0:
+                provisioned_scoped_tracker.function_concurrency[qualified_arn] += 1
+                try:
+                    yield "provisioned-concurrency"
+                finally:
+                    provisioned_scoped_tracker.function_concurrency[qualified_arn] -= 1
+                return
 
         # 2) reserved concurrency set => reserved concurrent executions only limited by local function limit
         if function.reserved_concurrent_executions is not None:
