@@ -58,6 +58,10 @@ def pytest_configure(config):
         "markers",
         "manual_setup_required: validated against real AWS but needs additional setup or account configuration (e.g. increased service quotas)",
     )
+    config.addinivalue_line(
+        "markers",
+        "multiruntime: parametrize test against multiple Lambda runtimes",
+    )
 
 
 def pytest_collection_modifyitems(config, items):

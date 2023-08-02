@@ -23,6 +23,11 @@ class SkipSnapshotVerifyMarker:
         ...
 
 
+class MultiRuntimeMarker:
+    def __call__(self, *, scenario: str, runtimes: Optional[list[str]] = None):
+        ...
+
+
 class SnapshotMarkers:
     skip_snapshot_verify: SkipSnapshotVerifyMarker = pytest.mark.skip_snapshot_verify
 
@@ -31,6 +36,9 @@ class Markers:
     parity = ParityMarkers
     snapshot = SnapshotMarkers
 
+    multiruntime: MultiRuntimeMarker = pytest.mark.multiruntime
+
+    # test selection
     skip_offline = pytest.mark.skip_offline
     only_on_amd64 = pytest.mark.only_on_amd64
     resource_heavy = pytest.mark.resource_heavy
