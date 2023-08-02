@@ -88,7 +88,9 @@ class KinesisMockServer(Server):
 
         if self._data_dir:
             env_vars["SHOULD_PERSIST_DATA"] = "true"
-            env_vars["PERSIST_PATH"] = self._data_dir
+            # FIXME use relative path to current working directory until
+            #  https://github.com/etspaceman/kinesis-mock/issues/554 is resolved
+            env_vars["PERSIST_PATH"] = os.path.relpath(self._data_dir)
             env_vars["PERSIST_FILE_NAME"] = self._data_filename
             env_vars["PERSIST_INTERVAL"] = config.KINESIS_MOCK_PERSIST_INTERVAL
 
