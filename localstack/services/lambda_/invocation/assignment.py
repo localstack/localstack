@@ -107,7 +107,7 @@ class AssignmentService(OtherServiceEndpoint):
             )
 
     def stop_environments_for_version(self, function_version: FunctionVersion):
-        for env in self.environments.get(function_version.qualified_arn, []):
+        for env in self.environments.get(function_version.qualified_arn, {}).values():
             self.stop_environment(env)
 
     def scale_provisioned_concurrency(
