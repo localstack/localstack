@@ -1,12 +1,11 @@
 import json
 
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
 
 class TestResourceGroups:
-    def test_create_group(self):
-        resource_group_client = aws_stack.create_external_boto_client("resource-groups")
+    def test_create_group(self, aws_client):
+        resource_group_client = aws_client.resource_groups
         name = "resource_group-{}".format(short_uid())
         response = resource_group_client.create_group(
             Name=name,

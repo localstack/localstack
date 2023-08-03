@@ -1,17 +1,14 @@
-# -*- coding: utf-8 -*-
-
 import base64
 import json
 import logging
 import re
 import time
-from datetime import datetime, timedelta
 
 import pytest
 
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.common import (
     clone,
     load_file,
@@ -530,10 +527,9 @@ class TestIntegration:
             # cleanup
             process.stop()
 
-    def test_scheduled_lambda(self, scheduled_test_lambda):
+    def test_scheduled_lambda(self, aws_client, scheduled_test_lambda):
         def check_invocation(*args):
-            log_events = get_lambda_logs(scheduled_test_lambda)
-            assert log_events
+            assert get_lambda_logs(scheduled_test_lambda, aws_client.logs)
 
         # wait for up to 1 min for invocations to get triggered
         retry(check_invocation, retries=14, sleep=5)
@@ -553,7 +549,7 @@ def test_kinesis_lambda_forward_chain(
     lambda_1_resp = create_lambda_function(
         func_name=lambda1_name,
         zip_file=zip_file,
-        event_source_arn=get_event_source_arn(stream1_name),
+        event_source_arn=get_event_source_arn(stream1_name, aws_client.kinesis),
         starting_position="TRIM_HORIZON",
     )
     lambda_1_event_source_uuid = lambda_1_resp["CreateEventSourceMappingResponse"]["UUID"]
@@ -563,7 +559,7 @@ def test_kinesis_lambda_forward_chain(
     lambda_2_resp = create_lambda_function(
         func_name=lambda2_name,
         zip_file=zip_file,
-        event_source_arn=get_event_source_arn(stream2_name),
+        event_source_arn=get_event_source_arn(stream2_name, aws_client.kinesis),
         starting_position="TRIM_HORIZON",
     )
     lambda_2_event_source_uuid = lambda_2_resp["CreateEventSourceMappingResponse"]["UUID"]
@@ -744,33 +740,5 @@ class TestLambdaOutgoingSdkCalls:
 # ---------------
 
 
-def get_event_source_arn(stream_name):
-    kinesis = aws_stack.create_external_boto_client("kinesis")
-    return kinesis.describe_stream(StreamName=stream_name)["StreamDescription"]["StreamARN"]
-
-
-def get_lambda_invocations_count(
-    lambda_name, metric=None, period=None, start_time=None, end_time=None
-):
-    metric = get_lambda_metrics(lambda_name, metric, period, start_time, end_time)
-    if not metric["Datapoints"]:
-        return 0
-    return metric["Datapoints"][-1]["Sum"]
-
-
-def get_lambda_metrics(func_name, metric=None, period=None, start_time=None, end_time=None):
-    metric = metric or "Invocations"
-    cloudwatch = aws_stack.create_external_boto_client("cloudwatch")
-    period = period or 600
-    end_time = end_time or datetime.now()
-    if start_time is None:
-        start_time = end_time - timedelta(seconds=period)
-    return cloudwatch.get_metric_statistics(
-        Namespace="AWS/Lambda",
-        MetricName=metric,
-        Dimensions=[{"Name": "FunctionName", "Value": func_name}],
-        Period=period,
-        StartTime=start_time,
-        EndTime=end_time,
-        Statistics=["Sum"],
-    )
+def get_event_source_arn(stream_name, client) -> str:
+    return client.describe_stream(StreamName=stream_name)["StreamDescription"]["StreamARN"]

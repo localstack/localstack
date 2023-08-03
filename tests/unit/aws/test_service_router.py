@@ -1,5 +1,4 @@
 from datetime import datetime
-from functools import lru_cache
 from typing import Any, Dict, Tuple
 from urllib.parse import urlsplit
 
@@ -10,7 +9,6 @@ from botocore.model import OperationModel, ServiceModel, Shape, StructureShape
 
 from localstack.aws.protocol.service_router import determine_aws_service_name, get_service_catalog
 from localstack.http import Request
-from localstack.utils.aws import aws_stack
 from localstack.utils.run import to_str
 
 
@@ -89,19 +87,6 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 yield service, service.operation_model(operation_name)
 
 
-@lru_cache
-def _client(service: str):
-    """Creates a boto client to create the request for a specific service."""
-    config = Config(
-        connect_timeout=1_000,
-        read_timeout=1_000,
-        retries={"total_max_attempts": 1},
-        parameter_validation=False,
-        user_agent="aws-cli/1.33.7",
-    )
-    return aws_stack.create_external_boto_client(service, config=config)
-
-
 def _botocore_request_to_localstack_request(request_object: AWSRequest) -> Request:
     """Converts a botocore request (AWSRequest) to our HTTP framework's Request object based on Werkzeug."""
     split_url = urlsplit(request_object.url)
@@ -158,12 +143,22 @@ def _generate_test_name(param: Any):
     ids=_generate_test_name,
 )
 def test_service_router_works_for_every_service(
-    service: ServiceModel, operation: OperationModel, caplog
+    service: ServiceModel, operation: OperationModel, caplog, aws_client_factory
 ):
     caplog.set_level("CRITICAL", "botocore")
 
     # Create a dummy request for the service router
-    client = _client(service.service_name)
+    client = aws_client_factory.get_client(
+        service.service_name,
+        config=Config(
+            connect_timeout=1_000,
+            read_timeout=1_000,
+            retries={"total_max_attempts": 1},
+            parameter_validation=False,
+            user_agent="aws-cli/1.33.7",
+        ),
+    )
+
     request_context = {
         "client_region": client.meta.region_name,
         "client_config": client.meta.config,

@@ -12,10 +12,12 @@ from .test_integration import PARTITION_KEY
 
 class TestErrorInjection:
     @markers.parity.only_localstack
-    def test_kinesis_error_injection(self, monkeypatch, wait_for_stream_ready, aws_client):
-        kinesis = aws_stack.create_external_boto_client("kinesis", config=self.retry_config())
+    def test_kinesis_error_injection(
+        self, monkeypatch, wait_for_stream_ready, aws_client, aws_client_factory
+    ):
+        kinesis = aws_client_factory(config=self.retry_config()).kinesis
         stream_name = f"stream-{short_uid()}"
-        resources.create_kinesis_stream(stream_name)
+        resources.create_kinesis_stream(kinesis, stream_name)
         wait_for_stream_ready(stream_name)
 
         try:

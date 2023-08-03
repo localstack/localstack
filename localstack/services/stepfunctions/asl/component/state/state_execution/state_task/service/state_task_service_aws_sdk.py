@@ -2,6 +2,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
+from localstack.aws.connect import connect_externally_to
 from localstack.aws.protocol.service_router import get_service_catalog
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
@@ -18,7 +19,6 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case
 
 
@@ -105,7 +105,7 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
         return super()._from_error(env=env, ex=ex)
 
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
-        api_client = aws_stack.create_external_boto_client(
+        api_client = connect_externally_to.get_client(
             service_name=self._normalised_api_name, config=Config(parameter_validation=False)
         )
         response = getattr(api_client, self._normalised_api_action)(**parameters) or dict()

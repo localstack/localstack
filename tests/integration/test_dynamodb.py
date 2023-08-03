@@ -11,7 +11,6 @@ from localstack.aws.api.dynamodb import (
     ContinuousBackupsUnavailableException,
     PointInTimeRecoverySpecification,
 )
-from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.pytest import markers
@@ -175,12 +174,12 @@ class TestDynamoDB:
         assert "Name" not in tags.keys()
         assert "NewKey" not in tags.keys()
 
-        delete_table(table_name)
+        aws_client.dynamodb.delete_table(TableName=table_name)
 
     @markers.parity.only_localstack
     def test_stream_spec_and_region_replacement(self, aws_client):
-        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
-        kinesis = aws_stack.create_external_boto_client("kinesis")
+        ddbstreams = aws_client.dynamodbstreams
+        kinesis = aws_client.kinesis
         table_name = f"ddb-{short_uid()}"
         resources.create_dynamodb_table(
             table_name,
@@ -215,7 +214,7 @@ class TestDynamoDB:
             assert re.match(r"^shardId-[0-9]{20}-[a-zA-Z0-9]{1,36}$", shard["ShardId"])
 
         # clean up
-        delete_table(table_name)
+        aws_client.dynamodb.delete_table(TableName=table_name)
 
         def _assert_stream_deleted():
             stream_tables = [s["TableName"] for s in ddbstreams.list_streams()["Streams"]]
@@ -319,7 +318,7 @@ class TestDynamoDB:
         assert ctx.match("ValidationException")
 
         # clean up
-        delete_table(table_name)
+        aws_client.dynamodb.delete_table(TableName=table_name)
 
     @markers.parity.only_localstack
     def test_valid_query_index(self, aws_client):
@@ -367,7 +366,7 @@ class TestDynamoDB:
         )
 
         # clean up
-        delete_table(table_name)
+        aws_client.dynamodb.delete_table(TableName=table_name)
 
     @markers.parity.aws_validated
     def test_valid_local_secondary_index(
@@ -566,9 +565,9 @@ class TestDynamoDB:
 
     @markers.parity.only_localstack
     def test_dynamodb_stream_shard_iterator(
-        self, wait_for_stream_ready, dynamodb_create_table_with_parameters
+        self, aws_client, wait_for_stream_ready, dynamodb_create_table_with_parameters
     ):
-        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
+        ddbstreams = aws_client.dynamodbstreams
 
         table_name = f"table_with_stream-{short_uid()}"
         table = dynamodb_create_table_with_parameters(
@@ -717,9 +716,9 @@ class TestDynamoDB:
         aws_client.dynamodb.delete_table(TableName=table_name)
 
     @markers.parity.only_localstack
-    def test_dynamodb_stream_stream_view_type(self):
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
-        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
+    def test_dynamodb_stream_stream_view_type(self, aws_client):
+        dynamodb = aws_client.dynamodb
+        ddbstreams = aws_client.dynamodbstreams
         table_name = "table_with_stream_%s" % short_uid()
 
         # create table
@@ -792,17 +791,13 @@ class TestDynamoDB:
             assert "NewImage" not in record["dynamodb"]
 
         # clean up
-        delete_table(table_name)
+        dynamodb.delete_table(TableName=table_name)
 
     @markers.parity.only_localstack
-    def test_dynamodb_with_kinesis_stream(self):
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+    def test_dynamodb_with_kinesis_stream(self, aws_client, secondary_aws_client):
+        dynamodb = aws_client.dynamodb
         # Create Kinesis stream in another account to test that integration works cross-account
-        kinesis = aws_stack.create_external_boto_client(
-            "kinesis",
-            aws_access_key_id="222244448888",
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-        )
+        kinesis = secondary_aws_client.kinesis
 
         # create kinesis datastream
         stream_name = f"kinesis_dest_stream_{short_uid()}"
@@ -888,7 +883,7 @@ class TestDynamoDB:
         assert destination["DestinationStatus"] == "DISABLED"
 
         # clean up
-        delete_table(table_name)
+        dynamodb.delete_table(TableName=table_name)
         kinesis.delete_stream(StreamName=stream_name)
 
     @markers.parity.only_localstack
@@ -1005,8 +1000,8 @@ class TestDynamoDB:
         assert len(response["Table"]["Replicas"]) == 0
 
     @markers.parity.only_localstack
-    def test_global_tables(self, ddb_test_table):
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+    def test_global_tables(self, aws_client, ddb_test_table):
+        dynamodb = aws_client.dynamodb
 
         # create global table
         regions = [
@@ -1427,7 +1422,7 @@ class TestDynamoDB:
         self, aws_client, dynamodb_create_table
     ):
         table_name = f"test-ddb-table-{short_uid()}"
-        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
+        ddbstreams = aws_client.dynamodbstreams
 
         dynamodb_create_table(
             table_name=table_name,
@@ -1688,8 +1683,3 @@ class TestDynamoDB:
 
         response = aws_client.dynamodb.describe_continuous_backups(TableName=table_name)
         snapshot.match("describe-continuous-backup", response)
-
-
-def delete_table(name):
-    dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
-    dynamodb_client.delete_table(TableName=name)

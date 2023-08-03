@@ -188,10 +188,9 @@ def create_api_gateway_integrations(
             )
 
 
-def create_kinesis_stream(stream_name, shards=1, delete=False):
+def create_kinesis_stream(client, stream_name: str, shards: int = 1, delete: bool = False):
     stream = KinesisStream(id=stream_name, num_shards=shards)
-    conn = connect_to().kinesis
-    stream.connect(conn)
+    stream.connect(client)
     if delete:
         run_safe(lambda: stream.destroy(), print_error=False)
     stream.create()

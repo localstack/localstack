@@ -1,18 +1,29 @@
 import pytest
 from botocore.exceptions import ClientError
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.config import EDGE_PORT
-from localstack.constants import LOCALHOST_HOSTNAME
-from localstack.utils.aws.aws_stack import create_external_boto_client
+from localstack.constants import (
+    LOCALHOST_HOSTNAME,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_SECRET_ACCESS_KEY,
+)
 
 remote_endpoint = "https://%s:%s" % (LOCALHOST_HOSTNAME, EDGE_PORT)
-s3control_client = create_external_boto_client("s3control", endpoint_url=remote_endpoint)
 
 
-def test_lifecycle_public_access_block():
+@pytest.fixture
+def s3control_client(aws_client_factory):
+    return aws_client_factory(
+        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        endpoint_url=remote_endpoint,
+    ).s3control
+
+
+def test_lifecycle_public_access_block(s3control_client):
     with pytest.raises(ClientError) as ce:
-        s3control_client.get_public_access_block(AccountId=get_aws_account_id())
+        s3control_client.get_public_access_block(AccountId=TEST_AWS_ACCOUNT_ID)
     assert ce.value.response["Error"]["Code"] == "NoSuchPublicAccessBlockConfiguration"
 
     access_block_config = {
@@ -23,18 +34,18 @@ def test_lifecycle_public_access_block():
     }
 
     put_response = s3control_client.put_public_access_block(
-        AccountId=get_aws_account_id(), PublicAccessBlockConfiguration=access_block_config
+        AccountId=TEST_AWS_ACCOUNT_ID, PublicAccessBlockConfiguration=access_block_config
     )
 
     assert put_response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-    get_response = s3control_client.get_public_access_block(AccountId=get_aws_account_id())
+    get_response = s3control_client.get_public_access_block(AccountId=TEST_AWS_ACCOUNT_ID)
     assert access_block_config == get_response["PublicAccessBlockConfiguration"]
 
-    s3control_client.delete_public_access_block(AccountId=get_aws_account_id())
+    s3control_client.delete_public_access_block(AccountId=TEST_AWS_ACCOUNT_ID)
 
 
-def test_public_access_block_validations():
+def test_public_access_block_validations(s3control_client):
     with pytest.raises(ClientError) as error:
         s3control_client.get_public_access_block(AccountId="111111111111")
     assert error.value.response["Error"]["Code"] == "AccessDenied"
@@ -48,6 +59,6 @@ def test_public_access_block_validations():
 
     with pytest.raises(ClientError) as error:
         s3control_client.put_public_access_block(
-            AccountId=get_aws_account_id(), PublicAccessBlockConfiguration={}
+            AccountId=TEST_AWS_ACCOUNT_ID, PublicAccessBlockConfiguration={}
         )
     assert error.value.response["Error"]["Code"] == "InvalidRequest"

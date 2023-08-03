@@ -9,6 +9,7 @@ from localstack.aws.api.stepfunctions import (
     HistoryEventType,
     TaskFailedEventDetails,
 )
+from localstack.aws.connect import connect_externally_to
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
 )
@@ -28,7 +29,6 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.utils.aws import aws_stack
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import camel_to_snake_case
 
@@ -101,9 +101,7 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
 
     @staticmethod
     def _get_sfn_client():
-        return aws_stack.create_external_boto_client(
-            "stepfunctions", config=Config(parameter_validation=False)
-        )
+        return connect_externally_to(config=Config(parameter_validation=False)).stepfunctions
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, ClientError):

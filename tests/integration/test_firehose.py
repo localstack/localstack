@@ -7,7 +7,7 @@ from pytest_httpserver import HTTPServer
 
 from localstack import config
 from localstack.testing.pytest import markers
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.aws.arns import lambda_function_arn
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition, retry
@@ -34,7 +34,7 @@ def handler(event, context):
 
 @pytest.mark.parametrize("lambda_processor_enabled", [True, False])
 def test_firehose_http(
-    lambda_processor_enabled: bool, create_lambda_function, httpserver: HTTPServer
+    aws_client, lambda_processor_enabled: bool, create_lambda_function, httpserver: HTTPServer
 ):
     httpserver.expect_request("").respond_with_data(b"", 200)
     http_endpoint = httpserver.url_for("/")
@@ -77,7 +77,7 @@ def test_firehose_http(
         }
 
     # create firehose stream with http destination
-    firehose = aws_stack.create_external_boto_client("firehose")
+    firehose = aws_client.firehose
     stream_name = "firehose_" + short_uid()
     stream = firehose.create_delivery_stream(
         DeliveryStreamName=stream_name,

@@ -69,8 +69,6 @@ from tests.integration.awslambda.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
 )
 
-# -*- coding: utf-8 -*-
-
 # TODO: split up the tests in this file into more specific test sub-modules
 
 
@@ -186,7 +184,9 @@ class TestAPIGateway:
 
     def test_api_gateway_kinesis_integration(self, aws_client):
         # create target Kinesis stream
-        stream = resource_util.create_kinesis_stream(self.TEST_STREAM_KINESIS_API_GW)
+        stream = resource_util.create_kinesis_stream(
+            aws_client.kinesis, self.TEST_STREAM_KINESIS_API_GW
+        )
         stream.wait_for()
 
         # create API Gateway and connect it to the target stream

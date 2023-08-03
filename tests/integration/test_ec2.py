@@ -4,6 +4,7 @@ import pytest
 from botocore.exceptions import ClientError
 from moto.ec2 import ec2_backends
 
+from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
@@ -168,11 +169,13 @@ class TestEc2Integrations:
         )
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
-    def test_vcp_peering_difference_regions(self):
+    def test_vcp_peering_difference_regions(self, aws_client_factory):
+        region1 = TEST_AWS_REGION_NAME
+        region2 = TEST_AWS_REGION_NAME  # When cross-region peering is supported, change to SECONDARY_TEST_AWS_REGION_NAME
+
         # Note: different regions currently not supported due to set_default_region_in_headers(..) in edge.py
-        region1 = region2 = aws_stack.get_region()
-        ec2_client1 = aws_stack.create_external_boto_client(service_name="ec2", region_name=region1)
-        ec2_client2 = aws_stack.create_external_boto_client(service_name="ec2", region_name=region2)
+        ec2_client1 = aws_client_factory(region_name=region1).ec2
+        ec2_client2 = aws_client_factory(region_name=region2).ec2
 
         cidr_block1 = "192.168.1.2/24"
         cidr_block2 = "192.168.1.2/24"

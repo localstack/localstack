@@ -8,7 +8,7 @@ from localstack.services.events.provider import TEST_EVENTS_CACHE
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.files import load_file
 from localstack.utils.json import clone
 from localstack.utils.strings import short_uid
@@ -174,8 +174,8 @@ LOG = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def setup_and_tear_down():
-    lambda_client = aws_stack.create_external_boto_client("lambda")
+def setup_and_tear_down(aws_client):
+    lambda_client = aws_client.awslambda
 
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_ENV), get_content=True)
     zip_file2 = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
@@ -461,7 +461,7 @@ class TestStateMachine:
         cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
 
     def test_events_state_machine(self, aws_client):
-        events = aws_stack.create_external_boto_client("events")
+        events = aws_client.events
         state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
         # create event bus
@@ -589,8 +589,8 @@ STS_ROLE_POLICY_DOC = {
 
 @pytest.mark.parametrize("region_name", ("us-east-1", "us-east-2", "eu-west-1", "eu-central-1"))
 @pytest.mark.parametrize("statemachine_definition", (TEST_STATE_MACHINE_3,))  # TODO: add sync2 test
-def test_multiregion_nested(region_name, statemachine_definition):
-    client1 = aws_stack.create_external_boto_client("stepfunctions", region_name=region_name)
+def test_multiregion_nested(aws_client_factory, region_name, statemachine_definition):
+    client1 = aws_client_factory(region_name=region_name).stepfunctions
     # create state machine
     child_machine_name = f"sf-child-{short_uid()}"
     role = arns.role_arn("sfn_role")

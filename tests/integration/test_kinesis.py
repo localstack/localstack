@@ -40,9 +40,9 @@ def kinesis_snapshot_transformer(snapshot):
 
 
 class TestKinesis:
-    def test_create_stream_without_stream_name_raises(self):
+    def test_create_stream_without_stream_name_raises(self, aws_client_factory):
         boto_config = BotoConfig(parameter_validation=False)
-        kinesis_client = aws_stack.create_external_boto_client("kinesis", config=boto_config)
+        kinesis_client = aws_client_factory(config=boto_config).kinesis
         with pytest.raises(ClientError) as e:
             kinesis_client.create_stream()
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
@@ -422,15 +422,16 @@ def wait_for_consumer_ready(aws_client):
 
 class TestKinesisPythonClient:
     @markers.skip_offline
-    def test_run_kcl(self):
+    def test_run_kcl(self, aws_client):
         result = []
 
         def process_records(records):
             result.extend(records)
 
         # start Kinesis client
+        kinesis = aws_client.kinesis
         stream_name = f"test-foobar-{short_uid()}"
-        resources.create_kinesis_stream(stream_name, delete=True)
+        resources.create_kinesis_stream(kinesis, stream_name, delete=True)
         process = kinesis_connector.listen_to_kinesis(
             stream_name=stream_name,
             listener_func=process_records,
@@ -439,8 +440,6 @@ class TestKinesisPythonClient:
         )
 
         try:
-            kinesis = aws_stack.create_external_boto_client("kinesis")
-
             stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
             assert 1 == stream_summary["StreamDescriptionSummary"]["OpenShardCount"]
 

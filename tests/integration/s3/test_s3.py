@@ -33,8 +33,11 @@ from localstack.config import LEGACY_S3_PROVIDER, STREAM_S3_PROVIDER
 from localstack.constants import (
     LOCALHOST_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
+    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_REGION_NAME,
+    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.services.awslambda.lambda_utils import (
@@ -115,6 +118,25 @@ def is_old_provider():
 
 def is_asf_provider():
     return not LEGACY_S3_PROVIDER
+
+
+@pytest.fixture
+def anonymous_client(aws_client_factory):
+    """
+    This fixture returns a factory that creates a client for a given service. This client is configured with credentials
+    that can be effectively be treated as anonymous.
+    """
+
+    def _anonymous_client(service_name: str):
+        return aws_client_factory.get_client(
+            service_name=service_name,
+            region_name=TEST_AWS_REGION_NAME,
+            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+            config=Config(signature_version=UNSIGNED),
+        )
+
+    yield _anonymous_client
 
 
 @pytest.fixture(scope="function")
@@ -2299,7 +2321,9 @@ class TestS3:
             "$..VersionId",
         ],
     )
-    def test_get_object_with_anon_credentials(self, s3_create_bucket, snapshot, aws_client):
+    def test_get_object_with_anon_credentials(
+        self, s3_create_bucket, snapshot, aws_client, anonymous_client
+    ):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
         bucket_name = f"bucket-{short_uid()}"
@@ -2314,7 +2338,7 @@ class TestS3:
             Body=body,
         )
         aws_client.s3.put_object_acl(Bucket=bucket_name, Key=object_key, ACL="public-read")
-        s3_anon_client = _anon_client("s3")
+        s3_anon_client = anonymous_client("s3")
 
         response = s3_anon_client.get_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("get_object", response)
@@ -3554,7 +3578,7 @@ class TestS3:
     @markers.parity.aws_validated
     @pytest.mark.xfail(reason="ACL behaviour is not implemented, see comments")
     def test_s3_batch_delete_objects_using_requests_with_acl(
-        self, s3_create_bucket, snapshot, aws_client
+        self, s3_create_bucket, snapshot, aws_client, anonymous_client
     ):
         # If an object is created in a public bucket by the owner, it can't be deleted by anonymous clients
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#specifying-grantee-predefined-groups
@@ -3568,7 +3592,7 @@ class TestS3:
         aws_client.s3.put_object(
             Bucket=bucket_name, Key=object_key_1, Body="This body document", ACL="public-read-write"
         )
-        anon = _anon_client("s3")
+        anon = anonymous_client("s3")
         anon.put_object(
             Bucket=bucket_name,
             Key=object_key_2,
@@ -3615,7 +3639,7 @@ class TestS3:
         ]
     )
     def test_s3_batch_delete_public_objects_using_requests(
-        self, s3_create_bucket, snapshot, aws_client
+        self, s3_create_bucket, snapshot, aws_client, anonymous_client
     ):
         # only "public" created objects can be deleted by anonymous clients
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#specifying-grantee-predefined-groups
@@ -3625,7 +3649,7 @@ class TestS3:
         object_key_2 = "key-created-by-anonymous-2"
 
         s3_create_bucket(Bucket=bucket_name, ACL="public-read-write")
-        anon = _anon_client("s3")
+        anon = anonymous_client("s3")
         anon.put_object(
             Bucket=bucket_name, Key=object_key_1, Body="This body document", ACL="public-read-write"
         )
@@ -8807,13 +8831,6 @@ class TestS3BucketLifecycle:
 
         response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
         snapshot.match("head-object", response)
-
-
-def _anon_client(service: str):
-    conf = Config(signature_version=UNSIGNED)
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        return boto3.client(service, config=conf, region_name=None)
-    return aws_stack.create_external_boto_client(service, config=conf)
 
 
 def _s3_client_custom_config(conf: Config, endpoint_url: str = None):
