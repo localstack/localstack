@@ -21,6 +21,7 @@ from moto.s3 import exceptions as s3_exceptions
 from moto.s3 import models as s3_models
 from moto.s3 import responses as s3_responses
 from moto.s3.utils import clean_key_name
+from readerwriterlock import rwlock
 from requests.structures import CaseInsensitiveDict
 
 from localstack import config
@@ -118,7 +119,6 @@ class S3ProviderStream(S3Provider):
         key_object = get_key_from_moto_bucket(moto_bucket, key=request["Key"])
         key_object: StreamedFakeKey
         checksum_algorithm = request.get("ChecksumAlgorithm")
-        # checksum_header = f"Checksum{checksum_algorithm.upper()}" if checksum_algorithm else None
         checksum_value = (
             request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
         )
@@ -242,14 +242,18 @@ class S3ProviderStream(S3Provider):
         )
         if checksum_algorithm:
             # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
-            dest_key_object = get_key_from_moto_bucket(dest_moto_bucket, key=request["Key"])
+            dest_key_object: StreamedFakeKey = get_key_from_moto_bucket(
+                dest_moto_bucket, key=request["Key"]
+            )
             dest_key_object.checksum_algorithm = checksum_algorithm
 
             if not source_key_object.checksum_value:
                 stream_value: SpooledTemporaryFile = dest_key_object.value
                 checksum = get_s3_checksum(checksum_algorithm)
 
-                with dest_key_object.lock:
+                # we are not keeping the internal position of the stream, so we need to lock the whole iteration so
+                # that it's not modified by a concurrent read
+                with dest_key_object.lock, dest_key_object.read_lock:
                     while data := stream_value.read(4096):
                         checksum.update(data)
                     stream_value.seek(0)
@@ -351,6 +355,14 @@ class StreamedFakeKey(s3_models.FakeKey):
     """
 
     def __init__(self, name: str, value: IO[bytes], *args, **kwargs):
+        # initialize a read/write lock, allowing S3 to properly lock writes if any thread is currently iterating and
+        # returning values from the underlying stream. It has write priority, which will lock future readers until
+        # writing is done
+        key_lock = rwlock.RWLockWrite()
+        self.write_lock = key_lock.gen_wlock()
+        self.read_lock = key_lock.gen_rlock()
+        # the key also had its own `.lock`, allowing to group `seek` and `read` operation as one atomic operation.
+
         # when we set the value to nothing to first initialize the key for `PutObject` until we pull all logic in the
         # provider
         if not value or isinstance(value, bytes):
@@ -372,7 +384,7 @@ class StreamedFakeKey(s3_models.FakeKey):
         # if the etag is not set, this is the result from CopyObject, in that case we should copy the underlying
         # SpooledTemporaryFile
         if self._etag and isinstance(new_value, SpooledTemporaryFile):
-            with self.lock:
+            with self.write_lock:
                 self._value_buffer.close()
                 self._value_buffer = new_value
                 self._value_buffer.seek(0, os.SEEK_END)
@@ -381,7 +393,7 @@ class StreamedFakeKey(s3_models.FakeKey):
 
             return
 
-        with self.lock:
+        with self.write_lock:
             self._value_buffer.seek(0)
             self._value_buffer.truncate()
             # We have 2 cases:
@@ -414,6 +426,10 @@ class StreamedFakeKey(s3_models.FakeKey):
 
         if etag_empty:
             self._etag = etag.hexdigest()
+
+    def dispose(self, garbage: bool = False) -> None:
+        with self.write_lock:
+            super().dispose(garbage)
 
 
 class StreamedFakeMultipart(s3_models.FakeMultipart):
@@ -450,7 +466,10 @@ class StreamedFakeMultipart(s3_models.FakeMultipart):
             md5s.extend(decode_hex(part_etag)[0])
             # to not trigger the property every time
             stream_value = part.value
-            with part.lock:
+            # we are not keeping the internal position of the stream, so we need to lock the whole iteration so
+            # that it's not modified by a concurrent read
+            with part.lock, part.read_lock:
+                stream_value.seek(0)
                 while data := stream_value.read(CHUNK_SIZE):
                     total.write(data)
 
@@ -714,7 +733,9 @@ def apply_stream_patches():
         if isinstance(body, SpooledTemporaryFile):
             # it means we got a successful `GetObject`, retrieve the key object to get its lock
             version_id = query.get("versionId", [None])[0]
-            key = self.backend.get_object(bucket_name, key_name, version_id=version_id)
+            key: StreamedFakeKey = self.backend.get_object(
+                bucket_name, key_name, version_id=version_id
+            )
 
             # we will handle `range` requests already here as we have access to the `StreamedFakeKey` object and lock
             # as we already return 206, this won't pass to the `_handle_range_header` method again
@@ -746,6 +767,7 @@ def apply_stream_patches():
                 content = get_range_generator_from_stream(
                     key_stream=key.value,
                     key_lock=key.lock,
+                    read_lock=key.read_lock,
                     start=begin,
                     requested_length=requested_length,
                 )
@@ -753,24 +775,32 @@ def apply_stream_patches():
 
                 return 206, response_headers, content
 
-            body = get_generator_from_key(key_stream=key.value, key_lock=key.lock)
+            body = get_generator_from_key(
+                key_stream=key.value, key_lock=key.lock, read_lock=key.read_lock
+            )
 
         return code, response_headers, body
 
 
 def get_generator_from_key(
-    key_stream: SpooledTemporaryFile, key_lock: threading.RLock
+    key_stream: SpooledTemporaryFile,
+    key_lock: threading.RLock,
+    read_lock: rwlock.Lockable,
 ) -> Iterator[bytes]:
     # Werkzeug will only read 1 everytime, so we control how much we return
     pos = 0
-    while True:
-        with key_lock:
-            key_stream.seek(pos)
-            data = key_stream.read(CHUNK_SIZE)
-        if not data:
-            break
-        pos += len(data)
-        yield data
+    # this read_lock will make sure no writer is modifying the underlying stream while this generator is still open
+    with read_lock:
+        while True:
+            # this lock makes sure the `seek` and `read` operation are atomic and no concurrent read will modify the
+            # internal stream position between `seek` and `read`
+            with key_lock:
+                key_stream.seek(pos)
+                data = key_stream.read(CHUNK_SIZE)
+            if not data:
+                break
+            pos += len(data)
+            yield data
 
     return b""
 
@@ -778,22 +808,27 @@ def get_generator_from_key(
 def get_range_generator_from_stream(
     key_stream: SpooledTemporaryFile,
     key_lock: threading.RLock,
+    read_lock: rwlock.Lockable,
     start: int,
     requested_length: int,
 ) -> Iterator[bytes]:
     pos = start
     max_length = requested_length
-    while True:
-        with key_lock:
-            key_stream.seek(pos)
-            amount = min(max_length, CHUNK_SIZE)
-            data = key_stream.read(amount)
+    # this read_lock will make sure no writer is modifying the underlying stream while this generator is still open
+    with read_lock:
+        while True:
+            # this lock makes sure the `seek` and `read` operation are atomic and no concurrent read will modify the
+            # internal stream position between `seek` and `read`
+            with key_lock:
+                key_stream.seek(pos)
+                amount = min(max_length, CHUNK_SIZE)
+                data = key_stream.read(amount)
 
-        if not data:
-            break
-        read = len(data)
-        pos += read
-        max_length -= read
-        yield data
+            if not data:
+                break
+            read = len(data)
+            pos += read
+            max_length -= read
+            yield data
 
     return b""
