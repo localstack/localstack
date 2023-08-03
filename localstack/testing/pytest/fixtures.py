@@ -231,14 +231,15 @@ def s3_empty_bucket(aws_client):
     # FIXME: this won't work when bucket has more than 1000 objects
     def factory(bucket_name: str):
         response = aws_client.s3.list_objects_v2(Bucket=bucket_name)
-        objects = [{"Key": obj["Key"]} for obj in response["Contents"]]
-        aws_client.s3.delete_objects(Bucket=bucket_name, Delete={"Objects": objects})
+        objects = [{"Key": obj["Key"]} for obj in response.get("Contents", [])]
+        if objects:
+            aws_client.s3.delete_objects(Bucket=bucket_name, Delete={"Objects": objects})
 
         response = aws_client.s3.list_object_versions(Bucket=bucket_name)
-        object_versions = [
-            {"Key": obj["Key"], "VersionId": obj["VersionId"]}
-            for obj in response.get("Versions", [])
-        ]
+        versions = response.get("Versions", [])
+        versions.extend(response.get("DeleteMarkers", []))
+
+        object_versions = [{"Key": obj["Key"], "VersionId": obj["VersionId"]} for obj in versions]
         if object_versions:
             aws_client.s3.delete_objects(Bucket=bucket_name, Delete={"Objects": object_versions})
 
