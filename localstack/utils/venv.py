@@ -74,9 +74,9 @@ class VirtualEnvironment:
         return matches[0]
 
     def inject_to_sys_path(self):
-        if path := str(self.site_dir):
-            if path not in sys.path:
-                sys.path.append(path)
+        path = str(self.site_dir)
+        if path and path not in sys.path:
+            sys.path.append(path)
 
     def add_pth(self, name, path: Union[str, os.PathLike, "VirtualEnvironment"]) -> None:
         """

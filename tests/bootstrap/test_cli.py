@@ -228,4 +228,5 @@ class TestImports:
 
     def test_import_venv(self):
         from localstack.utils.venv import VirtualEnvironment
+
         assert VirtualEnvironment
