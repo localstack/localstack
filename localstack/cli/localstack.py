@@ -455,6 +455,19 @@ def cmd_start(
         # pass the parsed cli params to the start infra command
         params = click.get_current_context().params
 
+        if network:
+            # reconciles the network config and makes sure that MAIN_DOCKER_NETWORK is set automatically if
+            # `--network` is set.
+            if config.MAIN_DOCKER_NETWORK:
+                if config.MAIN_DOCKER_NETWORK != network:
+                    raise click.ClickException(
+                        f"Values of MAIN_DOCKER_NETWORK={config.MAIN_DOCKER_NETWORK} and --network={network} "
+                        f"do not match"
+                    )
+            else:
+                config.MAIN_DOCKER_NETWORK = network
+                os.environ["MAIN_DOCKER_NETWORK"] = network
+
         if detached:
             bootstrap.start_infra_in_docker_detached(console, params)
         else:
