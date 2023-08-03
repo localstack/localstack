@@ -57,6 +57,8 @@ def simulate_call(service: str, op: str) -> RowEntry:
     """generates a mock request based on the service and operation model and sends it to the API"""
     client = connect_externally_to.get_client(
         service,
+        aws_access_key_id="test",
+        aws_secret_access_key="test",
         config=botocore.config.Config(
             parameter_validation=False,
             retries={"max_attempts": 0, "total_max_attempts": 1},
