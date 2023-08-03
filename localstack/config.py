@@ -564,7 +564,7 @@ class HostAndPort:
 
 
 def populate_legacy_edge_configuration(
-    environment: Dict[str, str]
+    environment: Mapping[str, str]
 ) -> Tuple[HostAndPort, List[HostAndPort], str, int, int]:
     if is_in_docker:
         default_ip = "0.0.0.0"
