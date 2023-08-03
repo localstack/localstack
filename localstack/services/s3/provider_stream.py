@@ -253,7 +253,7 @@ class S3ProviderStream(S3Provider):
 
                 # we are not keeping the internal position of the stream, so we need to lock the whole iteration so
                 # that it's not modified by a concurrent read
-                with dest_key_object.lock, dest_key_object.read_lock:
+                with dest_key_object.lock, dest_key_object.readwrite_lock.gen_rlock():
                     while data := stream_value.read(4096):
                         checksum.update(data)
                     stream_value.seek(0)
@@ -358,9 +358,7 @@ class StreamedFakeKey(s3_models.FakeKey):
         # initialize a read/write lock, allowing S3 to properly lock writes if any thread is currently iterating and
         # returning values from the underlying stream. It has write priority, which will lock future readers until
         # writing is done
-        key_lock = rwlock.RWLockWrite()
-        self.write_lock = key_lock.gen_wlock()
-        self.read_lock = key_lock.gen_rlock()
+        self.readwrite_lock = rwlock.RWLockWrite()
         # the key also had its own `.lock`, allowing to group `seek` and `read` operation as one atomic operation.
 
         # when we set the value to nothing to first initialize the key for `PutObject` until we pull all logic in the
@@ -384,7 +382,7 @@ class StreamedFakeKey(s3_models.FakeKey):
         # if the etag is not set, this is the result from CopyObject, in that case we should copy the underlying
         # SpooledTemporaryFile
         if self._etag and isinstance(new_value, SpooledTemporaryFile):
-            with self.write_lock:
+            with self.readwrite_lock.gen_wlock():
                 self._value_buffer.close()
                 self._value_buffer = new_value
                 self._value_buffer.seek(0, os.SEEK_END)
@@ -393,7 +391,7 @@ class StreamedFakeKey(s3_models.FakeKey):
 
             return
 
-        with self.write_lock:
+        with self.readwrite_lock.gen_wlock():
             self._value_buffer.seek(0)
             self._value_buffer.truncate()
             # We have 2 cases:
@@ -428,7 +426,7 @@ class StreamedFakeKey(s3_models.FakeKey):
             self._etag = etag.hexdigest()
 
     def dispose(self, garbage: bool = False) -> None:
-        with self.write_lock:
+        with self.readwrite_lock.gen_wlock():
             super().dispose(garbage)
 
 
@@ -468,7 +466,7 @@ class StreamedFakeMultipart(s3_models.FakeMultipart):
             stream_value = part.value
             # we are not keeping the internal position of the stream, so we need to lock the whole iteration so
             # that it's not modified by a concurrent read
-            with part.lock, part.read_lock:
+            with part.lock, part.readwrite_lock.gen_rlock():
                 stream_value.seek(0)
                 while data := stream_value.read(CHUNK_SIZE):
                     total.write(data)
@@ -767,7 +765,7 @@ def apply_stream_patches():
                 content = get_range_generator_from_stream(
                     key_stream=key.value,
                     key_lock=key.lock,
-                    read_lock=key.read_lock,
+                    read_lock=key.readwrite_lock.gen_rlock(),
                     start=begin,
                     requested_length=requested_length,
                 )
@@ -776,7 +774,7 @@ def apply_stream_patches():
                 return 206, response_headers, content
 
             body = get_generator_from_key(
-                key_stream=key.value, key_lock=key.lock, read_lock=key.read_lock
+                key_stream=key.value, key_lock=key.lock, read_lock=key.readwrite_lock.gen_rlock()
             )
 
         return code, response_headers, body
@@ -798,11 +796,10 @@ def get_generator_from_key(
                 key_stream.seek(pos)
                 data = key_stream.read(CHUNK_SIZE)
             if not data:
-                break
+                return b""
+
             pos += len(data)
             yield data
-
-    return b""
 
 
 def get_range_generator_from_stream(
@@ -825,10 +822,8 @@ def get_range_generator_from_stream(
                 data = key_stream.read(amount)
 
             if not data:
-                break
+                return b""
             read = len(data)
             pos += read
             max_length -= read
             yield data
-
-    return b""
