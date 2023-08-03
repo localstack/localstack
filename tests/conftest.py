@@ -7,6 +7,7 @@ from _pytest.config.argparsing import Parser
 os.environ["LOCALSTACK_INTERNAL_TEST_RUN"] = "1"
 
 pytest_plugins = [
+    "tests.fixtures",
     "localstack.testing.pytest.cloudtrail_tracking",
     "localstack.testing.pytest.fixtures",
     "localstack.testing.pytest.snapshot",
