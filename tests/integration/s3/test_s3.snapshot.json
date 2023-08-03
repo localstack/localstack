@@ -7750,7 +7750,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_put_bucket_logging": {
-    "recorded-date": "08-07-2023, 02:00:56",
+    "recorded-date": "03-08-2023, 02:13:19",
     "recorded-content": {
       "get-bucket-default-acl": {
         "Grants": [
@@ -7783,6 +7783,12 @@
           "TargetBucket": "<target-bucket:1>",
           "TargetPrefix": "log"
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-bucket-logging-delete": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
