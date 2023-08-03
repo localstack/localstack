@@ -12,7 +12,9 @@ class FirehoseDeliveryStream(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         stream_name = self.props.get("DeliveryStreamName") or self.logical_resource_id
-        return connect_to().firehose.describe_delivery_stream(DeliveryStreamName=stream_name)
+        return connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).firehose.describe_delivery_stream(DeliveryStreamName=stream_name)
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -25,11 +27,17 @@ class FirehoseDeliveryStream(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             stream_name = resource["Properties"]["DeliveryStreamName"]
 
             # TODO: fix the polling here and check the response, might not actually be ACTIVE
-            client = connect_to().firehose
+            client = connect_to(aws_access_key_id=account_id, region_name=region_name).firehose
 
             def check_stream_state():
                 stream = client.describe_delivery_stream(DeliveryStreamName=stream_name)

@@ -35,11 +35,13 @@ class LambdaFunction(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         func_name = self.props["FunctionName"]
-        return connect_to().lambda_.get_function(FunctionName=func_name)
+        return connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).lambda_.get_function(FunctionName=func_name)
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
-        client = connect_to().lambda_
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).lambda_
         config_keys = [
             "Description",
             "Environment",
@@ -64,6 +66,8 @@ class LambdaFunction(GenericBaseModel):
                     'Updating code for Lambda "%s" from location: %s', props["FunctionName"], code
                 )
             code = LambdaFunction.get_lambda_code_param(
+                self.account_id,
+                self.region_name,
                 props,
                 new_resource["LogicalResourceId"],
                 new_resource,
@@ -88,6 +92,8 @@ class LambdaFunction(GenericBaseModel):
 
     @staticmethod
     def get_lambda_code_param(
+        account_id: str,
+        region_name: str,
         properties: dict,
         logical_resource_id: str,
         resource: dict,
@@ -128,12 +134,22 @@ class LambdaFunction(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def get_delete_params(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ) -> dict:
             return {"FunctionName": properties.get("FunctionName")}
 
         def get_environment_params(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ):
             # botocore/data/lambda/2015-03-31/service-2.json:1161 (EnvironmentVariableValue)
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-lambda-function-environment.html
@@ -141,13 +157,19 @@ class LambdaFunction(GenericBaseModel):
                 environment_variables = properties["Environment"].get("Variables", {})
                 return {"Variables": {k: str(v) for k, v in environment_variables.items()}}
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             """waits for the lambda to be in a "terminal" state, i.e. not pending"""
             resource["Properties"]["Arn"] = result["FunctionArn"]
             resource["PhysicalResourceId"] = resource["Properties"]["FunctionName"]
-            connect_to().lambda_.get_waiter("function_active_v2").wait(
-                FunctionName=result["FunctionArn"]
-            )
+            connect_to(aws_access_key_id=account_id, region_name=region_name).lambda_.get_waiter(
+                "function_active_v2"
+            ).wait(FunctionName=result["FunctionArn"])
 
         return {
             "create": {
@@ -190,12 +212,20 @@ class LambdaFunctionVersion(GenericBaseModel):
         function_name = props["FunctionName"]
         qualifier = props["Version"]
 
-        lambda_client = connect_to().lambda_
+        lambda_client = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).lambda_
         return lambda_client.get_function(FunctionName=function_name, Qualifier=qualifier)
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["Properties"]["Version"] = result["Version"]
             resource["PhysicalResourceId"] = result["FunctionArn"]
 
@@ -227,7 +257,7 @@ class LambdaEventSourceMapping(GenericBaseModel):
                 or m.get("SelfManagedEventSource") == self_managed_src
             )
 
-        client = connect_to().lambda_
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).lambda_
         lambda_arn = client.get_function(FunctionName=function_name)["Configuration"]["FunctionArn"]
         kwargs = {"EventSourceArn": source_arn} if source_arn else {}
         mappings = client.list_event_source_mappings(FunctionName=function_name, **kwargs)
@@ -238,7 +268,13 @@ class LambdaEventSourceMapping(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = result["UUID"]
             resource["Properties"]["Id"] = result["UUID"]
 
@@ -259,7 +295,9 @@ class LambdaPermission(GenericBaseModel):
 
         props = self.props
         func_name = props.get("FunctionName")
-        lambda_client = connect_to().lambda_
+        lambda_client = connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).lambda_
         policy = lambda_client.get_policy(FunctionName=func_name)
         if not policy:
             return None
@@ -277,7 +315,7 @@ class LambdaPermission(GenericBaseModel):
         parameters_to_select = ["FunctionName", "Action", "Principal", "SourceArn"]
         update_config_props = select_attributes(props, parameters_to_select)
 
-        client = connect_to().lambda_
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).lambda_
         client.remove_permission(
             FunctionName=update_config_props["FunctionName"], StatementId=self.physical_resource_id
         )
@@ -285,15 +323,26 @@ class LambdaPermission(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             parsed_statement = json.loads(result["Statement"])
             resource["PhysicalResourceId"] = parsed_statement["Sid"]
 
         def lambda_permission_params(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ) -> dict:
             result = select_parameters("FunctionName", "Action", "Principal", "SourceArn")(
-                properties, logical_resource_id, resource, stack_name
+                account_id, region_name, properties, logical_resource_id, resource, stack_name
             )
             # generate SID
             # e.g. stack-78d0ac66-fnAllowInvokeLambdaPermissionsStacktopicF723B1A748672DB5-1D7VMEAZ2UQIN
@@ -307,7 +356,12 @@ class LambdaPermission(GenericBaseModel):
             return result
 
         def get_delete_params(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ) -> dict:
             statement_id = resource["PhysicalResourceId"]
             return {"FunctionName": properties.get("FunctionName"), "StatementId": statement_id}
@@ -328,7 +382,7 @@ class LambdaEventInvokeConfig(GenericBaseModel):
         return "AWS::Lambda::EventInvokeConfig"
 
     def fetch_state(self, stack_name, resources):
-        client = connect_to().lambda_
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).lambda_
         props = self.props
         result = client.get_function_event_invoke_config(
             FunctionName=props.get("FunctionName"),
@@ -338,7 +392,13 @@ class LambdaEventInvokeConfig(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = str(uuid.uuid4())  # TODO: not actually a UUIDv4
             # example format: 6403f864-a20b-4373-ac8f-f8d888f6bc0f
 
@@ -363,7 +423,7 @@ class LambdaUrl(GenericBaseModel):
         return "AWS::Lambda::Url"
 
     def fetch_state(self, stack_name, resources):
-        client = connect_to().lambda_
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).lambda_
 
         kwargs = {"FunctionName": self.props.get("TargetFunctionArn")}
         qualifier = self.props.get("Qualifier")
@@ -374,7 +434,13 @@ class LambdaUrl(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = result["FunctionArn"]
             resource["Properties"]["FunctionArn"] = result["FunctionArn"]
             resource["Properties"]["FunctionUrl"] = result["FunctionUrl"]
@@ -403,14 +469,20 @@ class LambdaAlias(GenericBaseModel):
         return "AWS::Lambda::Alias"
 
     def fetch_state(self, stack_name, resources):
-        client = connect_to().lambda_
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).lambda_
         props = self.props
         result = client.get_alias(FunctionName=props.get("FunctionName"), Name=props.get("Name"))
         return result
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = result["AliasArn"]
 
         return {
@@ -434,7 +506,7 @@ class LambdaCodeSigningConfig(GenericBaseModel):
         if not self.physical_resource_id:
             return None
 
-        client = connect_to().lambda_
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).lambda_
         result = client.get_code_signing_config(CodeSigningConfigArn=self.physical_resource_id)[
             "CodeSigningConfig"
         ]
@@ -442,7 +514,13 @@ class LambdaCodeSigningConfig(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = result["CodeSigningConfig"]["CodeSigningConfigArn"]
             resource["Properties"]["CodeSigningConfigArn"] = result["CodeSigningConfig"][
                 "CodeSigningConfigArn"
@@ -468,7 +546,7 @@ class LambdaLayerVersion(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         layer_name = self.props.get("LayerName")
         # TODO extract region name if layer_name is an ARN
-        client = connect_to().lambda_
+        client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).lambda_
         layers = client.list_layer_versions(LayerName=layer_name).get("LayerVersions", [])
         return layers[-1] if layers else None
 
@@ -480,7 +558,13 @@ class LambdaLayerVersion(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = result["LayerVersionArn"]
 
         return {"create": {"function": "publish_layer_version", "result_handler": _handle_result}}
@@ -513,7 +597,12 @@ class LambdaLayerVersionPermission(LambdaPermission):
     @classmethod
     def get_deploy_templates(cls):
         def layer_permission_params(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ):
             layer_name, version_number = cls.layer_name_and_version(properties)
             result = select_attributes(properties, ["Action", "Principal"])

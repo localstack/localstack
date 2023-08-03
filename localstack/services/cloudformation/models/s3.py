@@ -15,7 +15,7 @@ from localstack.services.s3.legacy.s3_listener import (
     remove_bucket_notification as legacy_remove_bucket_notification,
 )
 from localstack.services.s3.utils import normalize_bucket_name
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.common import canonical_json, md5
 from localstack.utils.testutil import delete_all_s3_objects
 
@@ -27,11 +27,19 @@ class S3BucketPolicy(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         bucket_name = self.props.get("Bucket") or self.logical_resource_id
-        return connect_to().s3.get_bucket_policy(Bucket=bucket_name)
+        return connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).s3.get_bucket_policy(Bucket=bucket_name)
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = md5(
                 canonical_json(resource["Properties"]["PolicyDocument"])
             )
@@ -125,7 +133,12 @@ class S3Bucket(GenericBaseModel):
             return {"CORSRules": cors_rules}
 
         def s3_bucket_notification_config(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ) -> dict | None:
             notif_config = properties.get("NotificationConfiguration")
             if not notif_config:
@@ -169,7 +182,13 @@ class S3Bucket(GenericBaseModel):
             }
             return result
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             bucket_name = resource["Properties"]["BucketName"]
             resource["PhysicalResourceId"] = bucket_name
             resource["Properties"]["Arn"] = arns.s3_bucket_arn(bucket_name)
@@ -185,8 +204,14 @@ class S3Bucket(GenericBaseModel):
             ] = f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}:{get_edge_port_http()}"
             # resource["Properties"]["DualStackDomainName"] = ?
 
-        def _pre_delete(logical_resource_id: str, resource: dict, stack_name: str):
-            s3 = connect_to().s3
+        def _pre_delete(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            s3 = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             try:
@@ -202,16 +227,28 @@ class S3Bucket(GenericBaseModel):
                 if "NoSuchBucket" not in str(e):
                     raise
 
-        def _add_bucket_tags(logical_resource_id: str, resource: dict, stack_name: str):
-            s3 = connect_to().s3
+        def _add_bucket_tags(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            s3 = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             tags = props.get("Tags", [])
             if len(tags) > 0:
                 s3.put_bucket_tagging(Bucket=bucket_name, Tagging={"TagSet": tags})
 
-        def _put_bucket_versioning(logical_resource_id: str, resource: dict, stack_name: str):
-            s3_client = connect_to().s3
+        def _put_bucket_versioning(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            s3_client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             versioning_config = props.get("VersioningConfiguration")
@@ -224,9 +261,13 @@ class S3Bucket(GenericBaseModel):
                 )
 
         def _put_bucket_cors_configuration(
-            logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ):
-            s3_client = connect_to().s3
+            s3_client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             cors_configuration = transform_cfn_cors(props.get("CorsConfiguration"))
@@ -237,9 +278,13 @@ class S3Bucket(GenericBaseModel):
                 )
 
         def _put_bucket_website_configuration(
-            logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ):
-            s3_client = connect_to().s3
+            s3_client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             website_config = transform_website_configuration(props.get("WebsiteConfiguration"))
@@ -249,8 +294,14 @@ class S3Bucket(GenericBaseModel):
                     WebsiteConfiguration=website_config,
                 )
 
-        def _create_bucket(logical_resource_id: str, resource: dict, stack_name: str):
-            s3_client = connect_to().s3
+        def _create_bucket(
+            account_id: str,
+            region_name: str,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
+        ):
+            s3_client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
             try:
@@ -262,9 +313,9 @@ class S3Bucket(GenericBaseModel):
                         "Bucket": bucket_name,
                         "ACL": convert_acl_cf_to_s3(props.get("AccessControl", "PublicRead")),
                     }
-                    if aws_stack.get_region() != "us-east-1":
+                    if region_name != "us-east-1":
                         params["CreateBucketConfiguration"] = {
-                            "LocationConstraint": aws_stack.get_region()
+                            "LocationConstraint": region_name,
                         }
                     s3_client.create_bucket(**params)
 
@@ -294,7 +345,7 @@ class S3Bucket(GenericBaseModel):
         props = self.props
         bucket_name = props["BucketName"]
         bucket_name = self.normalize_bucket_name(bucket_name)
-        s3_client = connect_to().s3
+        s3_client = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).s3
         response = s3_client.get_bucket_location(Bucket=bucket_name)
         notifs = props.get("NotificationConfiguration")
         if not response or not notifs:

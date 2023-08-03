@@ -1,8 +1,7 @@
 import logging
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from localstack.services.cloudformation.deployment_utils import check_not_found_exception
-from localstack.utils.aws import aws_stack
 
 LOG = logging.getLogger(__name__)
 
@@ -35,9 +34,10 @@ class GenericBaseModel:
     e.g., fetching the latest deployment state, getting the resource name, etc.
     """
 
-    def __init__(self, resource_json: dict, region_name: Optional[str] = None, **params):
+    def __init__(self, account_id: str, region_name: str, resource_json: dict, **params):
         # self.stack_name = stack_name # TODO: add stack name to params
-        self.region_name = region_name or aws_stack.get_region()
+        self.account_id = account_id
+        self.region_name = region_name
         self.resource_json = resource_json
         self.resource_type = resource_json["Type"]
         # Properties, as defined in the resource template

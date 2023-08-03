@@ -13,19 +13,19 @@ TransformResult = Union[dict, str]
 class Transformer:
     """Abstract class for Fn::Transform intrinsic functions"""
 
-    def transform(self, parameters: dict) -> TransformResult:
+    def transform(self, account_id: str, region_name: str, parameters: dict) -> TransformResult:
         """Apply the transformer to the given parameters and return the modified construct"""
 
 
 class AwsIncludeTransformer(Transformer):
     """Implements the 'AWS::Include' transform intrinsic function"""
 
-    def transform(self, parameters: dict) -> TransformResult:
+    def transform(self, account_id: str, region_name: str, parameters: dict) -> TransformResult:
         from localstack.services.cloudformation.engine.template_preparer import parse_template
 
         location = parameters.get("Location")
         if location and location.startswith("s3://"):
-            s3_client = connect_to().s3
+            s3_client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
             bucket, _, path = location.removeprefix("s3://").partition("/")
             content = testutil.download_s3_object(s3_client, bucket, path)
             content = parse_template(content)
@@ -40,6 +40,8 @@ transformers: Dict[str, Type] = {"AWS::Include": AwsIncludeTransformer}
 
 
 def apply_transform_intrinsic_functions(
+    account_id: str,
+    region_name: str,
     template: dict,
     stack_name: str,
     resources: dict,
@@ -59,9 +61,16 @@ def apply_transform_intrinsic_functions(
                 transformer = transformer_class()
                 parameters = transform.get("Parameters") or {}
                 parameters = resolve_refs_recursively(
-                    stack_name, resources, mappings, conditions, stack_parameters, parameters
+                    account_id,
+                    region_name,
+                    stack_name,
+                    resources,
+                    mappings,
+                    conditions,
+                    stack_parameters,
+                    parameters,
                 )
-                return transformer.transform(parameters)
+                return transformer.transform(account_id, region_name, parameters)
         return obj
 
     return recurse_object(template, _visit)

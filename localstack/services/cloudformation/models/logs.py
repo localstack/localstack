@@ -10,7 +10,7 @@ class LogsLogGroup(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get("LogGroupName")
-        logs = connect_to().logs
+        logs = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).logs
         groups = logs.describe_log_groups(logGroupNamePrefix=group_name)["logGroups"]
         return ([g for g in groups if g["logGroupName"] == group_name] or [None])[0]
 
@@ -24,11 +24,17 @@ class LogsLogGroup(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             log_group_name = resource["Properties"]["LogGroupName"]
-            describe_result = connect_to().logs.describe_log_groups(
-                logGroupNamePrefix=log_group_name
-            )
+            describe_result = connect_to(
+                aws_access_key_id=account_id, region_name=region_name
+            ).logs.describe_log_groups(logGroupNamePrefix=log_group_name)
             resource["Properties"]["Arn"] = describe_result["logGroups"][0]["arn"]
             resource["PhysicalResourceId"] = log_group_name
 
@@ -53,7 +59,7 @@ class LogsLogStream(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get("LogGroupName")
         stream_name = self.props.get("LogStreamName")
-        logs = connect_to().logs
+        logs = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).logs
         streams = logs.describe_log_streams(
             logGroupName=group_name, logStreamNamePrefix=stream_name
         )["logStreams"]
@@ -69,7 +75,13 @@ class LogsLogStream(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = resource["Properties"]["LogStreamName"]
 
         return {
@@ -94,14 +106,20 @@ class LogsSubscriptionFilter(GenericBaseModel):
         props = self.props
         group_name = props.get("LogGroupName")
         filter_pattern = props.get("FilterPattern")
-        logs = connect_to().logs
+        logs = connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).logs
         groups = logs.describe_subscription_filters(logGroupName=group_name)["subscriptionFilters"]
         groups = [g for g in groups if g.get("filterPattern") == filter_pattern]
         return (groups or [None])[0]
 
     @staticmethod
     def get_deploy_templates():
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = resource["Properties"]["LogGroupName"]
 
         return {

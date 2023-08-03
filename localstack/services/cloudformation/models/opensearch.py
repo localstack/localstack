@@ -14,7 +14,12 @@ from localstack.utils.collections import convert_to_typed_dict
 # See examples in:
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-opensearchservice-domain.html
 def opensearch_add_tags_params(
-    properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+    account_id: str,
+    region_name: str,
+    properties: dict,
+    logical_resource_id: str,
+    resource: dict,
+    stack_name: str,
 ):
     es_arn = arns.es_domain_arn(properties.get("DomainName"))
     tags = properties.get("Tags", [])
@@ -28,7 +33,9 @@ class OpenSearchDomain(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         domain_name = self._domain_name()
-        return connect_to().opensearch.describe_domain(DomainName=domain_name)
+        return connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).opensearch.describe_domain(DomainName=domain_name)
 
     def _domain_name(self):
         return self.props.get("DomainName") or self.logical_resource_id
@@ -36,7 +43,12 @@ class OpenSearchDomain(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def _create_params(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ):
             properties = remove_none_values(properties)
             result = convert_to_typed_dict(CreateDomainRequest, properties)
@@ -51,7 +63,13 @@ class OpenSearchDomain(GenericBaseModel):
                 )
             return result
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             resource["PhysicalResourceId"] = result["DomainStatus"]["DomainName"]
 
         return {

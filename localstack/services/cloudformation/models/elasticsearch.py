@@ -8,7 +8,14 @@ from localstack.utils.collections import convert_to_typed_dict
 from localstack.utils.sync import poll_condition
 
 
-def es_add_tags_params(properties: dict, logical_resource_id: str, resource: dict, stack_name: str):
+def es_add_tags_params(
+    account_id: str,
+    region_name: str,
+    properties: dict,
+    logical_resource_id: str,
+    resource: dict,
+    stack_name: str,
+):
     es_arn = arns.es_domain_arn(properties.get("DomainName"))
     tags = properties.get("Tags", [])
     return {"ARN": es_arn, "TagList": tags}
@@ -21,7 +28,9 @@ class ElasticsearchDomain(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         domain_name = self.props["DomainName"]
-        return connect_to().es.describe_elasticsearch_domain(DomainName=domain_name)
+        return connect_to(
+            aws_access_key_id=self.account_id, region_name=self.region_name
+        ).es.describe_elasticsearch_domain(DomainName=domain_name)
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -35,7 +44,12 @@ class ElasticsearchDomain(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def _create_params(
-            properties: dict, logical_resource_id: str, resource: dict, stack_name: str
+            account_id: str,
+            region_name: str,
+            properties: dict,
+            logical_resource_id: str,
+            resource: dict,
+            stack_name: str,
         ):
             result = convert_to_typed_dict(CreateElasticsearchDomainRequest, properties)
             result = remove_none_values(result)
@@ -46,7 +60,13 @@ class ElasticsearchDomain(GenericBaseModel):
                 cluster_config.setdefault("WarmType", "ultrawarm1.medium.elasticsearch")
             return result
 
-        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+        def _handle_result(
+            account_id: str,
+            region_name: str,
+            result: dict,
+            logical_resource_id: str,
+            resource: dict,
+        ):
             domain_name = resource["Properties"]["DomainName"]
             resource["PhysicalResourceId"] = domain_name
             resource["Properties"]["DomainEndpoint"] = result["DomainStatus"]["Endpoint"]
@@ -55,9 +75,11 @@ class ElasticsearchDomain(GenericBaseModel):
 
             # TODO: wait for resource
             poll_condition(
-                lambda: connect_to().es.describe_elasticsearch_domain(DomainName=domain_name)[
-                    "DomainStatus"
-                ]["Created"],
+                lambda: connect_to(
+                    aws_access_key_id=account_id, region_name=region_name
+                ).es.describe_elasticsearch_domain(DomainName=domain_name)["DomainStatus"][
+                    "Created"
+                ],
                 timeout=120,
                 interval=1,
             )
