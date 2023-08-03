@@ -223,8 +223,11 @@ class TestS3Cors:
             "$..Headers.Connection",  # TODO: fix me? OPTIONS with body is missing it
             "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
             "$..Headers.Transfer-Encoding",  # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
-            "$..Headers.x-amz-server-side-encryption",  # TODO: fix default bucket value
         ]
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not config.NATIVE_S3_PROVIDER,
+        paths=["$..Headers.x-amz-server-side-encryption"],
     )
     def test_cors_match_origins(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
         bucket_cors_config = {
@@ -310,10 +313,13 @@ class TestS3Cors:
             "$..Headers.Connection",  # TODO: fix me? OPTIONS with body is missing it
             "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
             "$..Headers.Transfer-Encoding",  # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
-            "$..Headers.x-amz-server-side-encryption",  # TODO: fix default bucket value
             "$.put-op.Body",  # TODO: We should not return a body for almost all PUT requests
             "$.put-op.Headers.Content-Type",  # issue with default Response values
         ]
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not config.NATIVE_S3_PROVIDER,
+        paths=["$..Headers.x-amz-server-side-encryption"],
     )
     def test_cors_match_methods(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
         origin = "https://localhost:4200"
@@ -372,11 +378,14 @@ class TestS3Cors:
             "$..Headers.Connection",  # TODO: fix me? OPTIONS with body is missing it
             "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
             "$..Headers.Transfer-Encoding",
-            "$..Headers.x-amz-server-side-encryption",  # TODO: fix default bucket value
             # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
             "$.put-op.Body",  # TODO: We should not return a body for almost all PUT requests
             "$.put-op.Headers.Content-Type",  # issue with default Response values
         ]
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not config.NATIVE_S3_PROVIDER,
+        paths=["$..Headers.x-amz-server-side-encryption"],
     )
     def test_cors_match_headers(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
         origin = "https://localhost:4200"

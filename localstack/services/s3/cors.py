@@ -17,6 +17,7 @@ from localstack.constants import S3_VIRTUAL_HOSTNAME
 from localstack.http import Request, Response
 from localstack.services.s3.models import BucketCorsIndex
 from localstack.services.s3.utils import S3_VIRTUAL_HOSTNAME_REGEX
+from localstack.services.s3.v3.models import BucketCorsIndex as BucketCorsIndexV2
 
 # TODO: add more logging statements
 LOG = logging.getLogger(__name__)
@@ -31,10 +32,10 @@ is_origin_allowed_default = CorsEnforcer.is_cors_origin_allowed
 
 class S3CorsHandler(Handler):
 
-    bucket_cors_index: BucketCorsIndex
+    bucket_cors_index: BucketCorsIndex | BucketCorsIndexV2
 
-    def __init__(self):
-        self.bucket_cors_index = BucketCorsIndex()
+    def __init__(self, bucket_cors_index: BucketCorsIndex | BucketCorsIndexV2 = None):
+        self.bucket_cors_index = bucket_cors_index or BucketCorsIndex()
         self._service = get_service_catalog().get("s3")
         self._s3_op_router = RestServiceOperationRouter(self._service)
 
