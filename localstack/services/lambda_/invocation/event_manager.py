@@ -3,6 +3,7 @@ import dataclasses
 import json
 import logging
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from math import ceil
@@ -155,13 +156,17 @@ class Poller:
                 sqs_invocation.retries += 1
                 delay_seconds = sqs_invocation.retries * config.LAMBDA_RETRY_BASE_DELAY_SECONDS
                 # TODO: remove debug log
-                LOG.debug(delay_seconds)
+                LOG.debug(f"{delay_seconds=}")
+                # TODO: fix super hacky workaround around broken DelaySeconds!!!
+                time.sleep(delay_seconds)
                 sqs_client.send_message(
                     QueueUrl=self.event_queue_url,
                     MessageBody=sqs_invocation.encode(),
                     # TODO: fix delay seconds. Tests:
                     #   tests.integration.awslambda.test_lambda_destinations.TestLambdaDestinationSqs.test_lambda_destination_default_retries
                     #   tests.integration.awslambda.test_lambda_destinations.TestLambdaDestinationSqs.test_retries
+                    # TODO: max delay is 15 minutes! Do we need to cap delay_seconds in case of custom base retry?
+                    #   https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
                     # DelaySeconds=delay_seconds,
                 )
                 return
