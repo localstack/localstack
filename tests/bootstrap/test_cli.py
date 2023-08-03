@@ -221,3 +221,19 @@ class TestHooks:
         # cache dir should exist and be writeable
         assert os.path.exists(dirs.cache)
         assert os.access(dirs.cache, os.W_OK)
+
+
+class TestImports:
+    """Simple tests to assert that certain code paths can be imported from the CLI"""
+
+    def test_import_venv(self):
+        try:
+            from functools import cached_property  # noqa
+        except Exception:
+            pytest.skip(
+                "Skip test in Python <= 3.7 (cached_property is required for VirtualEnvironment)"
+            )
+
+        from localstack.utils.venv import VirtualEnvironment
+
+        assert VirtualEnvironment
