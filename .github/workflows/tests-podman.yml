@@ -30,8 +30,7 @@ env:
   CI_COMMIT_SHA: ${{ github.sha }}
   CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   # report to tinybird if executed on master
-  # TODO change the reg to "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
-  TINYBIRD_PYTEST_ARGS: "--report-to-tinybird "
+  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
 
 jobs:
   podman-tests:

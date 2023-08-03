@@ -52,8 +52,7 @@ env:
   CI_COMMIT_SHA: ${{ github.sha }}
   CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   # report to tinybird if executed on master
-  # TODO change the reg to "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
-  TINYBIRD_PYTEST_ARGS: "--report-to-tinybird "
+  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
 
 jobs:
   test-pro:
@@ -249,8 +248,6 @@ jobs:
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
           sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
-          # TODO REMOVE - will be added to a dependency in localstack-ext
-          (source .venv/bin/activate && pip install pytest-tinybird)
           make test
 
       - name: Archive Test Results

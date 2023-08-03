@@ -18,9 +18,8 @@ commands:
     steps:
       - run:
           name: Setup Environment Variables
-          # TODO change branch to master
           command: |
-            if [[ $CIRCLE_BRANCH == "add-pytest-tinybird" ]] ; then
+            if [[ $CIRCLE_BRANCH == "master" ]] ; then
               echo "export TINYBIRD_PYTEST_ARGS='--report-to-tinybird '" >> $BASH_ENV
             fi
             echo "export TINYBIRD_DATASOURCE=localstack-tests-circleci" >> $BASH_ENV
