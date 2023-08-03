@@ -280,7 +280,7 @@
     }
   },
   "tests/integration/s3/test_s3_notifications_lambda.py::TestS3NotificationsToLambda::test_invalid_lambda_arn": {
-    "recorded-date": "05-05-2023, 16:10:00",
+    "recorded-date": "05-08-2023, 00:51:19",
     "recorded-content": {
       "invalid_not_skip": {
         "Error": {

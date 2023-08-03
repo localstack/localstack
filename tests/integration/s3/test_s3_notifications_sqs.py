@@ -974,6 +974,8 @@ class TestS3NotificationsToSQS:
 
         # setup fixture
         bucket_name = s3_create_bucket()
+        aws_client.s3.delete_bucket_ownership_controls(Bucket=bucket_name)
+        aws_client.s3.delete_public_access_block(Bucket=bucket_name)
         queue_url = sqs_create_queue()
         key_name = "my_key_acl"
         s3_create_sqs_bucket_notification(bucket_name, queue_url, ["s3:ObjectAcl:Put"])

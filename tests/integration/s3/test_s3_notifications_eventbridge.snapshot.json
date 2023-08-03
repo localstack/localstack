@@ -1,6 +1,6 @@
 {
   "tests/integration/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put": {
-    "recorded-date": "31-12-2022, 00:54:03",
+    "recorded-date": "05-08-2023, 00:41:37",
     "recorded-content": {
       "object_deleted": {
         "account": "111111111111",
@@ -60,7 +60,7 @@
     }
   },
   "tests/integration/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_put_acl": {
-    "recorded-date": "31-12-2022, 00:41:34",
+    "recorded-date": "05-08-2023, 01:08:43",
     "recorded-content": {
       "messages": {
         "messages": [
@@ -72,17 +72,14 @@
               },
               "object": {
                 "etag": "437b930db84b8079c2dd804a71936b5f",
-                "key": "<key-name:1>",
-                "sequencer": "object-sequencer",
-                "size": 9
+                "key": "<key-name:1>"
               },
-              "reason": "PutObject",
               "request-id": "request-id",
               "requester": "<requester>",
               "source-ip-address": "<ip-address:1>",
               "version": "0"
             },
-            "detail-type": "Object Created",
+            "detail-type": "Object ACL Updated",
             "id": "<uuid:1>",
             "region": "<region>",
             "resources": [
@@ -150,14 +147,17 @@
               },
               "object": {
                 "etag": "437b930db84b8079c2dd804a71936b5f",
-                "key": "<key-name:1>"
+                "key": "<key-name:1>",
+                "sequencer": "object-sequencer",
+                "size": 9
               },
+              "reason": "PutObject",
               "request-id": "request-id",
               "requester": "<requester>",
               "source-ip-address": "<ip-address:1>",
               "version": "0"
             },
-            "detail-type": "Object ACL Updated",
+            "detail-type": "Object Created",
             "id": "<uuid:4>",
             "region": "<region>",
             "resources": [
