@@ -1634,6 +1634,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if not (logging_config := bucket_logging_status.get("LoggingEnabled")):
             moto_bucket.logging = {}
+            return
 
         # the target bucket must be in the same account
         if not (target_bucket_name := logging_config.get("TargetBucket")):

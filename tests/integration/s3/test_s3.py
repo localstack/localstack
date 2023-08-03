@@ -5086,6 +5086,10 @@ class TestS3:
         resp = aws_client.s3.get_bucket_logging(Bucket=bucket_name)
         snapshot.match("get-bucket-logging", resp)
 
+        # delete BucketLogging
+        resp = aws_client.s3.put_bucket_logging(Bucket=bucket_name, BucketLoggingStatus={})
+        snapshot.match("put-bucket-logging-delete", resp)
+
     @markers.parity.aws_validated
     def test_put_bucket_logging_accept_wrong_grants(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
