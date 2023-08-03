@@ -1,20 +1,23 @@
+import hashlib
 import logging
 from collections import defaultdict
 from datetime import datetime
-from io import RawIOBase
-from typing import IO, Any, Literal, Optional, Union
+from secrets import token_urlsafe
+from typing import Literal, Optional, Union
 
 from werkzeug.datastructures.headers import Headers
 
 from localstack import config
-from localstack.aws.api.s3 import (
+from localstack.aws.api.s3 import (  # EntityTooSmall,; InvalidPart,
     AccountId,
     AnalyticsConfiguration,
     AnalyticsId,
     BucketAccelerateStatus,
     BucketName,
     BucketRegion,
+    BucketVersioningStatus,
     ChecksumAlgorithm,
+    CompletedPartList,
     CORSConfiguration,
     ETag,
     Expiration,
@@ -37,6 +40,7 @@ from localstack.aws.api.s3 import (
     ObjectStorageClass,
     ObjectVersionId,
     Owner,
+    PartNumber,
     Payer,
     Policy,
     PublicAccessBlockConfiguration,
@@ -50,9 +54,8 @@ from localstack.aws.api.s3 import (
     WebsiteConfiguration,
     WebsiteRedirectLocation,
 )
-from localstack.services.s3.storage import LockedSpooledTemporaryFile
+from localstack.services.s3.constants import S3_UPLOAD_PART_MIN_SIZE
 from localstack.services.s3.utils import (
-    ParsedRange,
     get_owner_for_account_id,
     iso_8601_datetime_without_milliseconds_s3,
     rfc_1123_datetime,
@@ -76,20 +79,18 @@ class S3Bucket:
     bucket_account_id: AccountId
     bucket_region: BucketRegion
     creation_date: datetime
-    multiparts: dict[MultipartUploadId, Any]  # TODO
+    multiparts: dict[MultipartUploadId, "S3Multipart"]
     objects: Union["KeyStore", "VersionedKeyStore"]
-    versioning_status: Literal[None, "Enabled", "Disabled"]
+    versioning_status: BucketVersioningStatus | None
     lifecycle_rules: LifecycleRules
     policy: Optional[Policy]
     website_configuration: WebsiteConfiguration
     acl: str  # TODO: change this
-    cors_rules: CORSConfiguration
+    cors_rules: Optional[CORSConfiguration]
     logging: LoggingEnabled
     notification_configuration: NotificationConfiguration
     payer: Payer
-    encryption_rule: Optional[
-        ServerSideEncryptionRule
-    ]  # TODO validate if there can be more than one rule
+    encryption_rule: Optional[ServerSideEncryptionRule]
     public_access_block: PublicAccessBlockConfiguration
     accelerate_status: BucketAccelerateStatus
     object_ownership: ObjectOwnership
@@ -193,8 +194,9 @@ class S3Bucket:
 class S3Object:
     key: ObjectKey
     version_id: Optional[ObjectVersionId]
-    size: Size
-    etag: ETag
+    bucket: BucketName
+    size: Optional[Size]
+    etag: Optional[ETag]
     user_metadata: Metadata
     system_metadata: Metadata
     last_modified: datetime
@@ -238,8 +240,10 @@ class S3Object:
         acl: Optional[str] = None,  # TODO
     ):
         self.key = key
-        self.user_metadata = {k.lower(): v for k, v in user_metadata.items()}
-        self.system_metadata = system_metadata
+        self.user_metadata = (
+            {k.lower(): v for k, v in user_metadata.items()} if user_metadata else {}
+        )
+        self.system_metadata = system_metadata or {}
         self.version_id = version_id
         self.storage_class = storage_class or StorageClass.STANDARD
         self.etag = etag
@@ -248,7 +252,6 @@ class S3Object:
         self.checksum_algorithm = checksum_algorithm
         self.checksum_value = checksum_value
         self.encryption = encryption
-        # TODO: validate the format for kms_key_id, always store the ARN even if just the ID
         self.kms_key_id = kms_key_id
         self.bucket_key_enabled = bucket_key_enabled
         self.lock_mode = lock_mode
@@ -296,6 +299,7 @@ class S3Object:
         return f'"{self.etag}"'
 
 
+# TODO: could use dataclass, validate after models are set
 class S3DeleteMarker:
     key: ObjectKey
     version_id: str
@@ -307,6 +311,130 @@ class S3DeleteMarker:
         self.version_id = version_id
         self.last_modified = datetime.utcnow()
         self.is_current = True
+
+
+# TODO: could use dataclass, validate after models are set
+class S3Part:
+    part_number: PartNumber
+    etag: Optional[ETag]
+    last_modified: datetime
+    size: Optional[int]
+    checksum_algorithm: Optional[ChecksumAlgorithm]
+    checksum_value: Optional[str]
+
+    def __init__(
+        self,
+        part_number: PartNumber,
+        size: int = None,
+        etag: ETag = None,
+        checksum_algorithm: Optional[ChecksumAlgorithm] = None,
+        checksum_value: Optional[str] = None,
+    ):
+        self.last_modified = datetime.utcnow()
+        self.part_number = part_number
+        self.size = size
+        self.etag = etag
+        self.checksum_algorithm = checksum_algorithm
+        self.checksum_value = checksum_value
+
+    @property
+    def quoted_etag(self) -> str:
+        return f'"{self.etag}"'
+
+
+class S3Multipart:
+    parts: dict[PartNumber, S3Part]
+    object: S3Object
+    upload_id: MultipartUploadId
+    checksum_value: Optional[str]
+    initiated: datetime
+
+    def __init__(
+        self,
+        key: ObjectKey,
+        storage_class: StorageClass | ObjectStorageClass = StorageClass.STANDARD,
+        expires: Optional[datetime] = None,
+        expiration: Optional[datetime] = None,  # come from lifecycle
+        checksum_algorithm: Optional[ChecksumAlgorithm] = None,
+        encryption: Optional[ServerSideEncryption] = None,  # inherit bucket
+        kms_key_id: Optional[SSEKMSKeyId] = None,  # inherit bucket
+        bucket_key_enabled: bool = False,  # inherit bucket
+        lock_mode: Optional[ObjectLockMode] = None,
+        lock_legal_status: Optional[ObjectLockLegalHoldStatus] = None,
+        lock_until: Optional[datetime] = None,
+        website_redirect_location: Optional[WebsiteRedirectLocation] = None,
+        acl: Optional[str] = None,  # TODO
+        user_metadata: Optional[Metadata] = None,
+        system_metadata: Optional[Metadata] = None,
+        initiator: Optional[Owner] = None,
+        tagging: Optional[dict[str, str]] = None,
+    ):
+        self.id = token_urlsafe(96)  # MultipartUploadId is 128 characters long
+        self.initiated = datetime.utcnow()
+        self.parts = {}
+        self.initiator = initiator
+        self.tagging = tagging
+        self.checksum_value = None
+        self.object = S3Object(
+            key=key,
+            user_metadata=user_metadata,
+            system_metadata=system_metadata,
+            storage_class=storage_class or StorageClass.STANDARD,
+            expires=expires,
+            expiration=expiration,
+            checksum_algorithm=checksum_algorithm,
+            encryption=encryption,
+            kms_key_id=kms_key_id,
+            bucket_key_enabled=bucket_key_enabled,
+            lock_mode=lock_mode,
+            lock_legal_status=lock_legal_status,
+            lock_until=lock_until,
+            website_redirect_location=website_redirect_location,
+            acl=acl,
+        )
+
+    def complete_multipart(self, parts: CompletedPartList):
+        last_part_index = len(parts) - 1
+        # TODO: this part is currently not implemented, time permitting
+        # if self.object.checksum_algorithm:
+        #     checksum_key = f"Checksum{self.object.checksum_algorithm.upper()}"
+        object_etag = hashlib.md5(usedforsecurity=False)
+        pos = 0
+        for index, part in enumerate(parts):
+            part_number = part["PartNumber"]
+            part_etag = part["ETag"].strip('"')
+
+            s3_part = self.parts.get(part_number)
+            if not s3_part or s3_part.etag != part_etag:
+                raise
+                # raise InvalidPart(
+                #     "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
+                #     ETag=part_etag,
+                #     PartNumber=part_number,
+                #     UploadId=self.id,
+                # )
+
+            # TODO: this part is currently not implemented, time permitting
+            # part_checksum = part.get(checksum_key) if self.object.checksum_algorithm else None
+            # if part_checksum and part_checksum != s3_part.checksum_value:
+            #     raise Exception()
+
+            if index != last_part_index and s3_part.size < S3_UPLOAD_PART_MIN_SIZE:
+                raise
+                # raise EntityTooSmall(
+                #     "Your proposed upload is smaller than the minimum allowed size",
+                #     ETag=part_etag,
+                #     PartNumber=part_number,
+                #     MinSizeAllowed=S3_UPLOAD_PART_MIN_SIZE,
+                #     ProposedSize=s3_part.size,
+                # )
+
+            object_etag.update(bytes.fromhex(s3_part.etag))
+            # TODO verify this, it seems wrong
+            self.object.parts.append((pos, s3_part.size))
+
+            multipart_etag = f"{object_etag.hexdigest()}-{len(parts)}"
+            self.object.etag = multipart_etag
 
 
 # TODO: use SynchronizedDefaultDict to prevent updates during iteration?
@@ -334,6 +462,9 @@ class KeyStore:
     def is_empty(self) -> bool:
         return not self._store
 
+    def __contains__(self, item):
+        return item in self._store
+
 
 class VersionedKeyStore:
     """
@@ -346,6 +477,17 @@ class VersionedKeyStore:
 
     def __init__(self):
         self._store = defaultdict(dict)
+
+    @classmethod
+    def from_key_store(cls, keystore: KeyStore) -> "VersionedKeyStore":
+        new_versioned_keystore = cls()
+        for s3_object in keystore.values():
+            # TODO: maybe do the object mutation inside the provider instead? but would need to iterate twice
+            #  or do this whole operation inside the provider instead, when actually working on versioning
+            s3_object.version_id = "null"
+            new_versioned_keystore.set(object_key=s3_object.key, s3_object=s3_object)
+
+        return new_versioned_keystore
 
     def get(
         self, object_key: ObjectKey, version_id: ObjectVersionId = None
@@ -371,7 +513,11 @@ class VersionedKeyStore:
         :param s3_object: the S3 object or S3DeleteMarker to set
         :return: None
         """
-        self._store[object_key][s3_object.version_id] = S3Object
+        existing_s3_object = self.get(object_key)
+        if existing_s3_object:
+            existing_s3_object.is_current = False
+
+        self._store[object_key][s3_object.version_id] = s3_object
 
     def pop(
         self, object_key: ObjectKey, version_id: ObjectVersionId = None, default=None
@@ -383,12 +529,19 @@ class VersionedKeyStore:
         object_version = versions.pop(version_id, default)
         if not versions:
             self._store.pop(object_key)
+        else:
+            existing_s3_object = self.get(object_key)
+            existing_s3_object.is_current = True
 
         return object_version
 
     def values(self, with_versions: bool = False) -> list[S3Object | S3DeleteMarker]:
         if with_versions:
-            return [object_version for values in self._store.values() for object_version in values]
+            return [
+                object_version
+                for values in self._store.values()
+                for object_version in values.values()
+            ]
 
         # if `with_versions` is False, then we need to return only the current version if it's not a DeleteMarker
         objects = []
@@ -407,13 +560,16 @@ class VersionedKeyStore:
     def is_empty(self) -> bool:
         return not self._store
 
+    def __contains__(self, item):
+        return item in self._store
 
-class S3StoreV2(BaseStore):
+
+class S3Store(BaseStore):
     buckets: dict[BucketName, S3Bucket] = CrossRegionAttribute(default=dict)
     global_bucket_map: dict[BucketName, AccountId] = CrossAccountAttribute(default=dict)
 
 
-class BucketCorsIndexV2:
+class BucketCorsIndex:
     def __init__(self):
         self._cors_index_cache = None
         self._bucket_index_cache = None
@@ -421,13 +577,13 @@ class BucketCorsIndexV2:
     @property
     def cors(self) -> dict[str, CORSConfiguration]:
         if self._cors_index_cache is None:
-            self._cors_index_cache = self._build_index()
+            self._bucket_index_cache, self._cors_index_cache = self._build_index()
         return self._cors_index_cache
 
     @property
     def buckets(self) -> set[str]:
         if self._bucket_index_cache is None:
-            self._bucket_index_cache = self._build_index()
+            self._bucket_index_cache, self._cors_index_cache = self._build_index()
         return self._bucket_index_cache
 
     def invalidate(self):
@@ -438,7 +594,7 @@ class BucketCorsIndexV2:
     def _build_index() -> tuple[set[BucketName], dict[BucketName, CORSConfiguration]]:
         buckets = set()
         cors_index = {}
-        for account_id, regions in s3_stores_v2.items():
+        for account_id, regions in s3_stores.items():
             for bucket_name, bucket in regions[config.DEFAULT_REGION].buckets.items():
                 bucket: S3Bucket
                 buckets.add(bucket_name)
@@ -448,39 +604,4 @@ class BucketCorsIndexV2:
         return buckets, cors_index
 
 
-class PartialStream(RawIOBase):
-    """
-    This utility class allows to return a range from the underlying stream representing an S3 Object.
-    """
-
-    def __init__(
-        self, base_stream: IO[bytes] | LockedSpooledTemporaryFile, range_data: ParsedRange
-    ):
-        super().__init__()
-        self._base_stream = base_stream
-        self._pos = range_data.begin
-        self._max_length = range_data.content_length
-
-    def read(self, s: int = -1) -> bytes | None:
-        if s is None or s < 0:
-            amount = self._max_length
-        else:
-            amount = min(self._max_length, s)
-
-        with self._base_stream.position_lock:
-            self._base_stream.seek(self._pos)
-            data = self._base_stream.read(amount)
-
-        if not data:
-            return b""
-        read_amount = len(data)
-        self._max_length -= read_amount
-        self._pos += read_amount
-
-        return data
-
-    def readable(self) -> bool:
-        return True
-
-
-s3_stores_v2 = AccountRegionBundle[S3StoreV2]("s3", S3StoreV2)
+s3_stores = AccountRegionBundle[S3Store]("s3", S3Store)

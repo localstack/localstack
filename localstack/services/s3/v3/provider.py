@@ -1,9 +1,7 @@
 import base64
 import datetime
-import hashlib
 import logging
 from secrets import token_urlsafe
-from typing import IO, Optional
 
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -31,7 +29,6 @@ from localstack.aws.api.s3 import (
     Delimiter,
     EncodingType,
     Error,
-    ETag,
     FetchOwner,
     GetBucketLocationOutput,
     GetObjectAttributesOutput,
@@ -57,7 +54,6 @@ from localstack.aws.api.s3 import (
     Object,
     ObjectIdentifier,
     ObjectKey,
-    ObjectSize,
     ObjectVersion,
     ObjectVersionId,
     ObjectVersionStorageClass,
@@ -77,33 +73,25 @@ from localstack.aws.api.s3 import (
 )
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.codec import AwsChunkedDecoder
-from localstack.services.s3.constants import ARCHIVES_STORAGE_CLASSES, S3_CHUNK_SIZE
+from localstack.services.s3.constants import ARCHIVES_STORAGE_CLASSES
 from localstack.services.s3.exceptions import (
     InvalidLocationConstraint,
     InvalidRequest,
     MalformedXML,
 )
-from localstack.services.s3.models_native import (
-    PartialStream,
-    S3Bucket,
-    S3DeleteMarker,
-    S3Object,
-    S3StoreV2,
-    s3_stores_v2,
-)
-from localstack.services.s3.storage import LockedSpooledTemporaryFile, TemporaryStorageBackend
 from localstack.services.s3.utils import (
     add_expiration_days_to_datetime,
     extract_bucket_key_version_id_from_copy_source,
     get_class_attrs_from_spec_class,
     get_full_default_bucket_location,
     get_owner_for_account_id,
-    get_s3_checksum,
     get_system_metadata_from_request,
     is_bucket_name_valid,
     parse_range_header,
     validate_kms_key_id,
 )
+from localstack.services.s3.v3.models import S3Bucket, S3DeleteMarker, S3Object, S3Store, s3_stores
+from localstack.services.s3.v3.storage import EphemeralS3ObjectStore, LimitedIterableStream
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
@@ -117,12 +105,12 @@ STORAGE_CLASSES = get_class_attrs_from_spec_class(StorageClass)
 class S3Provider(S3Api, ServiceLifecycleHook):
     def __init__(self) -> None:
         super().__init__()
-        self._storage_backend = TemporaryStorageBackend()
+        self._storage_backend = EphemeralS3ObjectStore()
 
     @staticmethod
-    def get_store(account_id: str, region_name: str) -> S3StoreV2:
+    def get_store(account_id: str, region_name: str) -> S3Store:
         # Use default account id for external access? would need an anonymous one
-        return s3_stores_v2[account_id][region_name]
+        return s3_stores[account_id][region_name]
 
     @handler("CreateBucket", expand=False)
     def create_bucket(
@@ -168,7 +156,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             object_lock_enabled_for_bucket=request.get("ObjectLockEnabledForBucket"),
         )
         store.buckets[bucket_name] = s3_bucket
-        self._storage_backend.create_bucket_directory(bucket_name)
+        store.global_bucket_map[bucket_name] = s3_bucket.bucket_account_id
 
         # Location is always contained in response -> full url for LocationConstraint outside us-east-1
         location = (
@@ -194,7 +182,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         store.buckets.pop(bucket)
-        self._storage_backend.delete_bucket_directory(bucket)
+        store.global_bucket_map.pop(bucket)
 
     def list_buckets(
         self,
@@ -303,39 +291,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         version_id = generate_version_id(s3_bucket.versioning_status)
 
-        fileobj = self._storage_backend.get_key_fileobj(
-            bucket_name=bucket_name,
-            object_key=key,
-            version_id=version_id,
-        )
-        # TODO: validate the algo?
-        checksum_value = None
-        if checksum_algorithm := request.get("ChecksumAlgorithm"):
-            if is_aws_chunked:
-                checksum_value = body.trailing_headers.get(
-                    f"x-amz-checksum-{checksum_algorithm.lower()}"
-                )
-            else:
-                checksum_value = request.get(f"Checksum{checksum_algorithm.upper()}")
-
-        size, etag, calculated_checksum_value = readinto_fileobj(body, fileobj, checksum_algorithm)
-        if checksum_algorithm and calculated_checksum_value != checksum_value:
-            self._storage_backend.delete_key_fileobj(bucket_name, key, version_id)
-            raise InvalidRequest(
-                f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
-            )
+        checksum_algorithm = request.get("ChecksumAlgorithm")
 
         s3_object = S3Object(
             key=key,
             version_id=version_id,
-            size=size,
-            etag=etag,
             storage_class=storage_class,
             expires=request.get("Expires"),
             user_metadata=request.get("Metadata"),
             system_metadata=system_metadata,
             checksum_algorithm=checksum_algorithm,
-            checksum_value=checksum_value,
+            checksum_value=request.get(f"Checksum{checksum_algorithm.upper()}"),
             encryption=request.get("ServerSideEncryption"),
             kms_key_id=request.get("SSEKMSKeyId"),
             bucket_key_enabled=request.get("BucketKeyEnabled"),
@@ -347,10 +313,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             acl=None,
         )
 
-        if s3_bucket.versioning_status == "Enabled" and (
-            existing_s3_object := s3_bucket.objects.get(key)
-        ):
-            existing_s3_object.is_current = False
+        s3_stored_object = self._storage_backend.open(bucket_name, s3_object)
+        s3_stored_object.write(body)
+
+        if checksum_algorithm and s3_object.checksum_value != s3_stored_object.checksum():
+            self._storage_backend.remove(bucket_name, s3_object)
+            raise InvalidRequest(
+                f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
+            )
 
         s3_bucket.objects.set(key, s3_object)
 
@@ -398,7 +368,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store = self.get_store(context.account_id, context.region)
         bucket_name = request["Bucket"]
         object_key = request["Key"]
-        version_id = request.get("VersionId")
         if not (s3_bucket := store.buckets.get(bucket_name)):
             raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket_name)
 
@@ -417,7 +386,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.user_metadata:
             response["Metadata"] = s3_object.user_metadata
 
-        if s3_object.parts:
+        if s3_object.parts and request.get("PartNumber"):
             response["PartsCount"] = len(s3_object.parts)
 
         if s3_object.version_id:
@@ -430,17 +399,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
             response["ContentEncoding"] = ""
             if request.get("ChecksumMode", "").upper() == "ENABLED":
-                response[f"Checksum{checksum_algorithm.upper()}"] = checksum  # noqa
+                response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
 
-        fileobj = self._storage_backend.get_key_fileobj(
-            bucket_name=bucket_name, object_key=object_key, version_id=version_id
-        )
+        s3_stored_object = self._storage_backend.open(bucket_name, s3_object)
 
         if range_header := request.get("Range"):
             range_data = parse_range_header(range_header, s3_object.size)
-            response["Body"] = fileobj.get_locked_range_stream_iterator(
-                max_length=range_data.content_length,
-                begin=range_data.begin,
+            s3_stored_object.seek(range_data.begin)
+            response["Body"] = LimitedIterableStream(
+                s3_stored_object, max_length=range_data.content_length
             )
             response["ContentRange"] = range_data.content_range
             response[
@@ -448,7 +415,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             ] = range_data.content_length  # TODO: should we set it for chunked encoding?
             response["StatusCode"] = 206
         else:
-            response["Body"] = fileobj.get_locked_stream_iterator()
+            response["Body"] = s3_stored_object
 
         # TODO: missing returned fields
         #     Expiration: Optional[Expiration]
@@ -553,7 +520,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             found_object = s3_bucket.objects.pop(key, None)
             # TODO: RequestCharged
             if found_object:
-                self._storage_backend.delete_key_fileobj(bucket_name=bucket, object_key=key)
+                self._storage_backend.remove(bucket, found_object)
+
             return DeleteObjectOutput()
 
         if not version_id:
@@ -579,9 +547,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if isinstance(found_object, S3DeleteMarker):
             response["DeleteMarker"] = True
         else:
-            self._storage_backend.delete_key_fileobj(
-                bucket_name=bucket, object_key=key, version_id=version_id
-            )
+            self._storage_backend.remove(bucket, found_object)
 
         return response
 
@@ -630,9 +596,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
                 found_object = s3_bucket.objects.pop(object_key, None)
                 if found_object:
-                    self._storage_backend.delete_key_fileobj(
-                        bucket_name=bucket, object_key=object_key
-                    )
+                    self._storage_backend.remove(bucket, found_object)
 
                 if not quiet:
                     deleted.append(DeletedObject(Key=object_key))
@@ -671,15 +635,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     Key=object_key,
                     VersionId=version_id,
                 )
+                if isinstance(found_object, S3DeleteMarker):
+                    deleted_object["DeleteMarker"] = True
+                    deleted_object["DeleteMarkerVersionId"] = found_object.version_id
+
                 deleted.append(deleted_object)
 
             if isinstance(found_object, S3Object):
-                self._storage_backend.delete_key_fileobj(
-                    bucket_name=bucket, object_key=object_key, version_id=version_id
-                )
+                self._storage_backend.remove(bucket, found_object)
 
         # TODO: request charged
         response: DeleteObjectsOutput = {}
+        # AWS validated: the list of Deleted objects is unordered, multiple identical calls can return different results
         if errors:
             response["Errors"] = errors
         if not quiet:
@@ -763,37 +730,20 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             user_metadata = src_s3_object.user_metadata
             system_metadata = src_s3_object.system_metadata
 
-        checksum_algorithm = request.get("ChecksumAlgorithm")
-
-        # TODO test CopyObject that was created with multipart, can you query the Parts afterwards?
-        src_fileobj = self._storage_backend.get_key_fileobj(
-            bucket_name=src_bucket,
-            object_key=src_key,
-            version_id=src_version_id,
-        )
-
         dest_version_id = generate_version_id(dest_s3_bucket.versioning_status)
-        dest_fileobj = self._storage_backend.get_key_fileobj(
-            bucket_name=dest_bucket,
-            object_key=dest_key,
-            version_id=dest_version_id,
-        )
-
-        _, _, calculated_checksum_value = read_from_fileobj_into_fileobj(
-            src_fileobj, dest_fileobj, checksum_algorithm
-        )
 
         s3_object = S3Object(
             key=dest_key,
             etag=src_s3_object.etag,
             size=src_s3_object.size,
+            version_id=dest_version_id,
             storage_class=storage_class,
             expires=request.get("Expires"),
             user_metadata=user_metadata,
             system_metadata=system_metadata,
             checksum_algorithm=request.get("ChecksumAlgorithm") or src_s3_object.checksum_algorithm,
-            checksum_value=calculated_checksum_value or src_s3_object.checksum_value,
-            encryption=request.get("ServerSideEncryption"),  # TODO inherit from bucket
+            # checksum_value=calculated_checksum_value or src_s3_object.checksum_value,
+            encryption=request.get("ServerSideEncryption"),
             kms_key_id=request.get("SSEKMSKeyId"),
             bucket_key_enabled=request.get("BucketKeyEnabled"),
             lock_mode=request.get("ObjectLockMode"),
@@ -803,14 +753,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             expiration=None,  # TODO, from lifecycle
             acl=None,
         )
+
+        s3_stored_object = self._storage_backend.copy(
+            src_bucket=src_bucket,
+            src_object=src_s3_object,
+            dest_bucket=dest_bucket,
+            dest_object=s3_object,
+        )
+        s3_object.checksum_value = s3_stored_object.checksum()
+
         # Object copied from Glacier object should not have expiry
         # TODO: verify this assumption from moto?
-
-        if dest_s3_bucket.versioning_status == "Enabled" and (
-            existing_s3_object := dest_s3_bucket.objects.get(dest_key)
-        ):
-            existing_s3_object.is_current = False
-
         dest_s3_bucket.objects.set(dest_key, s3_object)
 
         copy_object_result = CopyObjectResult(
@@ -1084,7 +1037,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         all_versions = s3_bucket.objects.values(with_versions=True)
         # sort by key, and last-modified-date, to get the last version first
-        all_versions.sort(key=lambda r: (r.key, r.last_modified))
+        all_versions.sort(key=lambda r: (r.key, -r.last_modified.timestamp()))
 
         for version in all_versions:
             key = version.key
@@ -1260,81 +1213,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return RestoreObjectOutput(StatusCode=status_code)
 
 
-def readinto_fileobj(
-    value: IO[bytes] | PartialStream,
-    buffer: LockedSpooledTemporaryFile,
-    checksum_algorithm: Optional[ChecksumAlgorithm] = None,
-) -> tuple[ObjectSize, ETag, Optional[str]]:
-    with buffer.readwrite_lock.gen_wlock():
-        buffer.seek(0)
-        buffer.truncate()
-        # We have 2 cases:
-        # The client gave a checksum value, we will need to compute the value and validate it against
-        # or the client have an algorithm value only, and we need to compute the checksum
-        if checksum_algorithm:
-            checksum = get_s3_checksum(checksum_algorithm)
-
-        etag = hashlib.md5(usedforsecurity=False)
-
-        while data := value.read(S3_CHUNK_SIZE):
-            buffer.write(data)
-            etag.update(data)
-            if checksum_algorithm:
-                checksum.update(data)
-
-        etag = etag.hexdigest()
-        size = buffer.tell()
-        buffer.seek(0)
-
-        if checksum_algorithm:
-            calculated_checksum = base64.b64encode(checksum.digest()).decode()
-            return size, etag, calculated_checksum
-
-        return size, etag, None
-
-
-def read_from_fileobj_into_fileobj(
-    src_fileobj: LockedSpooledTemporaryFile,
-    dest_fileobj: LockedSpooledTemporaryFile,
-    checksum_algorithm: Optional[ChecksumAlgorithm] = None,
-) -> tuple[ObjectSize, ETag, Optional[str]]:
-    with dest_fileobj.readwrite_lock.gen_wlock(), src_fileobj.readwrite_lock.gen_rlock():
-        dest_fileobj.seek(0)
-        dest_fileobj.truncate()
-        # We have 2 cases:
-        # The client gave a checksum value, we will need to compute the value and validate it against
-        # or the client have an algorithm value only, and we need to compute the checksum
-        if checksum_algorithm:
-            checksum = get_s3_checksum(checksum_algorithm)
-
-        etag = hashlib.md5(usedforsecurity=False)
-
-        pos = 0
-        while True:
-            with src_fileobj.position_lock:
-                src_fileobj.seek(pos)
-                data = src_fileobj.read(S3_CHUNK_SIZE)
-
-                if not data:
-                    break
-
-            dest_fileobj.write(data)
-            pos += len(data)
-            etag.update(data)
-            if checksum_algorithm:
-                checksum.update(data)
-
-        etag = etag.hexdigest()
-        size = dest_fileobj.tell()
-        dest_fileobj.seek(0)
-
-        if checksum_algorithm:
-            calculated_checksum = base64.b64encode(checksum.digest()).decode()
-            return size, etag, calculated_checksum
-
-        return size, etag, None
-
-
 def generate_version_id(bucket_versioning_status: str) -> str | None:
     if not bucket_versioning_status:
         return None
@@ -1346,8 +1224,6 @@ def add_encryption_to_response(response: dict, s3_object: S3Object):
     if encryption := s3_object.encryption:
         response["ServerSideEncryption"] = encryption
         if encryption == ServerSideEncryption.aws_kms:
-            if s3_object.kms_key_id is not None:
-                # TODO: see S3 AWS managed KMS key if not provided
-                response["SSEKMSKeyId"] = s3_object.kms_key_id
+            response["SSEKMSKeyId"] = s3_object.kms_key_id
             if s3_object.bucket_key_enabled is not None:
                 response["BucketKeyEnabled"] = s3_object.bucket_key_enabled

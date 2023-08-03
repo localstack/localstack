@@ -4,7 +4,7 @@ import logging
 import re
 import zlib
 from dataclasses import dataclass
-from typing import IO, Any, Dict, Literal, Optional, Tuple, Type, Union
+from typing import IO, Any, Dict, Literal, Optional, Protocol, Tuple, Type, Union
 from urllib import parse as urlparser
 from zoneinfo import ZoneInfo
 
@@ -102,7 +102,15 @@ def extract_bucket_key_version_id_from_copy_source(
     return src_bucket, src_key, src_version_id
 
 
-def get_s3_checksum(algorithm):
+class ChecksumHash(Protocol):
+    def digest(self) -> bytes:
+        ...
+
+    def update(self, value: bytes):
+        ...
+
+
+def get_s3_checksum(algorithm) -> ChecksumHash:
     match algorithm:
         case ChecksumAlgorithm.CRC32:
             return S3CRC32Checksum()
@@ -123,7 +131,7 @@ def get_s3_checksum(algorithm):
             raise InvalidRequest("The value specified in the x-amz-trailer header is not supported")
 
 
-class S3CRC32Checksum:
+class S3CRC32Checksum(ChecksumHash):
     __slots__ = ["checksum"]
 
     def __init__(self):
