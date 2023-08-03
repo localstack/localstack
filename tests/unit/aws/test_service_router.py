@@ -148,7 +148,7 @@ def test_service_router_works_for_every_service(
     caplog.set_level("CRITICAL", "botocore")
 
     # Create a dummy request for the service router
-    client = aws_client_factory(
+    client = aws_client_factory.get_client(
         service.service_name,
         config=Config(
             connect_timeout=1_000,
