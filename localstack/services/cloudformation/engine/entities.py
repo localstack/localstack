@@ -150,11 +150,13 @@ class Stack:
             result.setdefault(attr, [])
         return result
 
-    def set_stack_status(self, status):
+    def set_stack_status(self, status: str, status_reason: Optional[str] = None):
         self.metadata["StackStatus"] = status
         if "FAILED" in status:
-            self.metadata["StackStatusReason"] = "Deployment failed"
-        self.add_stack_event(self.stack_name, self.stack_id, status)
+            self.metadata["StackStatusReason"] = status_reason or "Deployment failed"
+        self.add_stack_event(
+            self.stack_name, self.stack_id, status, status_reason=status_reason or ""
+        )
 
     def set_time_attribute(self, attribute, new_time=None):
         self.metadata[attribute] = new_time or timestamp_millis()

@@ -59,6 +59,6 @@ jobs:
           pip install pytest
       - name: Run CLI tests
         env:
-          PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack.testing.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -s"
+          PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack.testing.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -s"
         run: |
           python -m pytest tests/bootstrap/
