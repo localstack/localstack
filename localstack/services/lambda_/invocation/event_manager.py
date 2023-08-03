@@ -3,7 +3,6 @@ import dataclasses
 import json
 import logging
 import threading
-import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from math import ceil
@@ -157,8 +156,8 @@ class Poller:
                 delay_seconds = sqs_invocation.retries * config.LAMBDA_RETRY_BASE_DELAY_SECONDS
                 # TODO: remove debug log
                 LOG.debug(f"{delay_seconds=}")
-                # TODO: fix super hacky workaround around broken DelaySeconds!!!
-                time.sleep(delay_seconds)
+                # TODO: fix super hacky workaround around broken DelaySeconds!!! fixes retries but breaks maxeventage
+                # time.sleep(delay_seconds)
                 sqs_client.send_message(
                     QueueUrl=self.event_queue_url,
                     MessageBody=sqs_invocation.encode(),
