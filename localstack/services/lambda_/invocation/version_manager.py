@@ -80,6 +80,7 @@ class LambdaVersionManager:
 
         # async
         self.provisioning_thread = None
+        # TODO: cleanup
         self.provisioning_pool = ThreadPoolExecutor(
             thread_name_prefix=f"lambda-provisioning-{function_version.id.function_name}:{function_version.id.qualifier}"
         )

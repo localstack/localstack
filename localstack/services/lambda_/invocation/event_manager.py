@@ -8,6 +8,7 @@ from datetime import datetime
 from math import ceil
 
 from localstack import config
+from localstack.aws.api.lambda_ import TooManyRequestsException
 from localstack.aws.connect import connect_to
 from localstack.services.lambda_.invocation.lambda_models import (
     INTERNAL_RESOURCE_ACCOUNT,
@@ -84,34 +85,52 @@ class Poller:
     version_manager: LambdaVersionManager
     event_queue_url: str
     _shutdown_event: threading.Event
+    invoker_pool: ThreadPoolExecutor
 
     def __init__(self, version_manager: LambdaVersionManager, event_queue_url: str):
         self.version_manager = version_manager
         self.event_queue_url = event_queue_url
         self._shutdown_event = threading.Event()
+        function_id = self.version_manager.function_version.id
+        # TODO: think about scaling, test it?!
+        self.invoker_pool = ThreadPoolExecutor(
+            thread_name_prefix=f"lambda-invoker-{function_id.function_name}:{function_id.qualifier}"
+        )
 
     def run(self):
-        sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
-        function_timeout = self.version_manager.function_version.config.timeout
-        while not self._shutdown_event.is_set():
-            messages = sqs_client.receive_message(
-                QueueUrl=self.event_queue_url,
-                WaitTimeSeconds=2,
-                # MAYBE: increase number of messages if single thread schedules invocations
-                MaxNumberOfMessages=1,
-                VisibilityTimeout=function_timeout + 60,
-            )
-            if not messages["Messages"]:
-                continue
-            message = messages["Messages"][0]
+        try:
+            sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
+            function_timeout = self.version_manager.function_version.config.timeout
+            while not self._shutdown_event.is_set():
+                messages = sqs_client.receive_message(
+                    QueueUrl=self.event_queue_url,
+                    WaitTimeSeconds=2,
+                    # MAYBE: increase number of messages if single thread schedules invocations
+                    MaxNumberOfMessages=1,
+                    VisibilityTimeout=function_timeout + 60,
+                )
+                if not messages.get("Messages"):
+                    continue
+                message = messages["Messages"][0]
 
-            # TODO: externalize the invoke onto a new thread
-            self.handle_message(message)
+                self.invoker_pool.submit(self.handle_message, message)
+        except Exception as e:
+            LOG.error(
+                "Error while polling lambda events %s", e, exc_info=LOG.isEnabledFor(logging.DEBUG)
+            )
 
     def handle_message(self, message: dict) -> None:
         sqs_invocation = SQSInvocation.decode(message["Body"])
         invocation = sqs_invocation.invocation
-        invocation_result = self.version_manager.invoke(invocation=invocation)
+        try:
+            invocation_result = self.version_manager.invoke(invocation=invocation)
+        except TooManyRequestsException:
+            # TODO: handle throttling and internal errors differently as described here:
+            #  https://aws.amazon.com/blogs/compute/introducing-new-asynchronous-invocation-metrics-for-aws-lambda/
+            # Idea: can reset visibility when re-scheduling necessary (e.g., when hitting concurrency limit)
+            # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html#terminating-message-visibility-timeout
+            # TODO: differentiate between reserved concurrency = 0 and other throttling errors
+            pass
 
         sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
         sqs_client.delete_message(
@@ -130,6 +149,7 @@ class Poller:
         if invocation_result.is_error:  # invocation error
             failure_cause = None
             # Reserved concurrency == 0
+            # TODO: maybe we should not send the invoke at all; testing?!
             if self.version_manager.function.reserved_concurrent_executions == 0:
                 # TODO: replace with constants from spec/model
                 failure_cause = "ZeroReservedConcurrency"
@@ -140,10 +160,6 @@ class Poller:
             # Maximum event age expired (lookahead for next retry)
             elif not has_enough_time_for_retry(sqs_invocation, event_invoke_config):
                 failure_cause = "EventAgeExceeded"
-            # TODO: handle throttling and internal errors differently as described here:
-            #  https://aws.amazon.com/blogs/compute/introducing-new-asynchronous-invocation-metrics-for-aws-lambda/
-            # Idea: can reset visibility when re-scheduling necessary (e.g., when hitting concurrency limit)
-            # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html#terminating-message-visibility-timeout
 
             if failure_cause:  # handle failure destination and DLQ
                 self.process_failure_destination(
@@ -153,20 +169,13 @@ class Poller:
                 return
             else:  # schedule retry
                 sqs_invocation.retries += 1
+                # TODO: max delay is 15 minutes! specify max 300 limit in docs
+                #   https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
                 delay_seconds = sqs_invocation.retries * config.LAMBDA_RETRY_BASE_DELAY_SECONDS
-                # TODO: remove debug log
-                LOG.debug(f"{delay_seconds=}")
-                # TODO: fix super hacky workaround around broken DelaySeconds!!! fixes retries but breaks maxeventage
-                # time.sleep(delay_seconds)
                 sqs_client.send_message(
                     QueueUrl=self.event_queue_url,
                     MessageBody=sqs_invocation.encode(),
-                    # TODO: fix delay seconds. Tests:
-                    #   tests.integration.awslambda.test_lambda_destinations.TestLambdaDestinationSqs.test_lambda_destination_default_retries
-                    #   tests.integration.awslambda.test_lambda_destinations.TestLambdaDestinationSqs.test_retries
-                    # TODO: max delay is 15 minutes! Do we need to cap delay_seconds in case of custom base retry?
-                    #   https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
-                    # DelaySeconds=delay_seconds,
+                    DelaySeconds=delay_seconds,
                 )
                 return
         else:  # invocation success
