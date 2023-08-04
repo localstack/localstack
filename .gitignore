@@ -27,7 +27,6 @@ venv
 *.egg-info/
 .eggs/
 .vagrant/
-*.sw*
 ~*
 *~
 
