@@ -62,7 +62,7 @@ class LimitedStream(RawIOBase):
 
     def __init__(self, base_stream: IO[bytes] | "S3StoredObject", range_data: ParsedRange):
         super().__init__()
-        self._base_stream = base_stream
+        self.file = base_stream
         self._pos = range_data.begin
         self._max_length = range_data.content_length
 
@@ -72,8 +72,8 @@ class LimitedStream(RawIOBase):
         else:
             amount = min(self._max_length, s)
 
-        self._base_stream.seek(self._pos)
-        data = self._base_stream.read(amount)
+        self.file.seek(self._pos)
+        data = self.file.read(amount)
 
         if not data:
             return b""
@@ -234,17 +234,29 @@ class EphemeralS3StoredObject(S3StoredObject):
             self.checksum_hash = get_s3_checksum(self.s3_object.checksum_algorithm)
 
         file = self.file
+        lock = None
+        # if the incoming stream has a file containing a readwrite_lock, from a `copy` call, then we need to lock
+        # around the iteration to block any concurrent write of the underlying object
+        if hasattr(stream, "file") and hasattr(stream.file, "readwrite_lock"):
+            lock = stream.file.readwrite_lock.gen_rlock()
+
         with file.readwrite_lock.gen_wlock():
             file.seek(0)
             file.truncate()
 
             etag = hashlib.md5(usedforsecurity=False)
 
+            if lock:
+                lock.acquire()
+
             while data := stream.read(S3_CHUNK_SIZE):
                 file.write(data)
                 etag.update(data)
                 if self.checksum_hash:
                     self.checksum_hash.update(data)
+
+            if lock:
+                lock.release()
 
             etag = etag.hexdigest()
             self.size = self.s3_object.size = file.tell()
@@ -255,11 +267,12 @@ class EphemeralS3StoredObject(S3StoredObject):
 
             return self.size
 
-    def append(self, part: IO[bytes] | "EphemeralS3StoredObject") -> int:
+    def append(self, part: "EphemeralS3StoredObject") -> int:
         read = 0
-        while data := part.read(S3_CHUNK_SIZE):
-            self.file.write(data)
-            read += len(data)
+        with part.file.readwrite_lock.gen_rlock():
+            while data := part.read(S3_CHUNK_SIZE):
+                self.file.write(data)
+                read += len(data)
 
         return read
 
