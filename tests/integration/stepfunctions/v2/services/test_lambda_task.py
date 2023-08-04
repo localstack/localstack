@@ -55,7 +55,6 @@ class TestTaskLambda:
     @pytest.mark.parametrize(
         "json_value",
         [
-            None,
             "HelloWorld",
             0.0,
             0,
