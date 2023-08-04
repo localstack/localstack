@@ -109,7 +109,7 @@ jobs:
           environment:
             LAMBDA_EXECUTOR: "local"
             PROVIDER_OVERRIDE_LAMBDA: "legacy"
-            TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py tests/integration/apigateway/test_apigateway_basic.py tests/integration/cloudformation/resources/test_lambda.py"
+            TEST_PATH: "tests/aws/awslambda/ tests/aws/test_integration.py tests/aws/apigateway/test_apigateway_basic.py tests/aws/cloudformation/resources/test_lambda.py"
             COVERAGE_ARGS: "-p"
           command: |
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='legacy-lambda-local'" make test-coverage
@@ -135,7 +135,7 @@ jobs:
           name: Test SFN V2 provider
           environment:
             PROVIDER_OVERRIDE_STEPFUNCTIONS: "v2"
-            TEST_PATH: "tests/integration/stepfunctions/v2/"
+            TEST_PATH: "tests/aws/stepfunctions/v2/"
             COVERAGE_ARGS: "-p"
           command: |
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_v2.xml -o junit_suite_name='sfn_v2'" make test-coverage
@@ -161,7 +161,7 @@ jobs:
           name: Test S3 Streaming provider
           environment:
             PROVIDER_OVERRIDE_S3: "stream"
-            TEST_PATH: "tests/integration/s3/"
+            TEST_PATH: "tests/aws/s3/"
             COVERAGE_ARGS: "-p"
           command: |
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_stream.xml -o junit_suite_name='s3_stream'" make test-coverage
@@ -241,22 +241,22 @@ jobs:
             - run:
                 name: compute-src-hashes
                 command: |
-                  find tests/integration/awslambda/functions/common -type f -path '**/src/**' -not -path '*/.*' | xargs sha256sum > /tmp/common-functions-checksums
+                  find tests/aws/awslambda/functions/common -type f -path '**/src/**' -not -path '*/.*' | xargs sha256sum > /tmp/common-functions-checksums
             - restore_cache:
                 key: common-functions-{{ checksum "/tmp/common-functions-checksums" }}
             - run:
                 name: pre-build lambda common test packages
-                command: ./scripts/build_common_test_functions.sh `pwd`/tests/integration/awslambda/functions/common
+                command: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/awslambda/functions/common
             - save_cache:
                 key: common-functions-{{ checksum "/tmp/common-functions-checksums" }}
                 paths:
-                  - "tests/integration/awslambda/functions/common"
+                  - "tests/aws/awslambda/functions/common"
       - prepare-pytest-tinybird
       - run:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
           command: |
-            TEST_FILES=$(circleci tests glob "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
+            TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
             COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
             TEST_PATH=$TEST_FILES \
