@@ -17,7 +17,8 @@ from localstack.services.s3 import utils as s3_utils_asf
 from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.constants import S3_CHUNK_SIZE
 from localstack.services.s3.legacy import multipart_content, s3_listener, s3_starter, s3_utils
-from localstack.services.s3.storage import TemporaryStorageBackend
+from localstack.services.s3.v3.models import S3Object
+from localstack.services.s3.v3.storage import EphemeralS3ObjectStore
 from localstack.utils.strings import short_uid
 
 
@@ -1020,14 +1021,19 @@ class TestS3AwsChunkedDecoder:
 
 class TestS3TemporaryStorageBackend:
     def test_get_fileobj_no_bucket(self):
-        temp_storage_backend = TemporaryStorageBackend()
-        fileobj = temp_storage_backend.get_key_fileobj(
-            bucket_name="test-bucket", object_key="test-key"
-        )
-        fileobj.write(b"abc")
-        fileobj.seek(0)
+        temp_storage_backend = EphemeralS3ObjectStore()
+        fake_object = S3Object(key="test-key")
+        s3_stored_object = temp_storage_backend.open("test-bucket", fake_object)
 
-        assert fileobj.read() == b"abc"
+        s3_stored_object.write(BytesIO(b"abc"))
 
-        temp_storage_backend.delete_key_fileobj(bucket_name="test-bucket", object_key="test-key")
-        assert fileobj.closed
+        assert s3_stored_object.read() == b"abc"
+
+        s3_stored_object.seek(1)
+        assert s3_stored_object.read() == b"bc"
+
+        s3_stored_object.seek(0)
+        assert s3_stored_object.read(1) == b"a"
+
+        temp_storage_backend.remove("test-bucket", fake_object)
+        assert s3_stored_object.file.closed

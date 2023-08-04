@@ -412,7 +412,9 @@ class EphemeralS3ObjectStore(S3ObjectStore):
     def remove(self, bucket: BucketName, s3_object: S3Object):
         if keys := self._filesystem.get(bucket, {}).get("keys", {}):
             key = self._key_from_s3_object(s3_object)
-            keys.pop(key, None)
+            file = keys.pop(key, None)
+            if file:
+                file.close()
 
         # if the bucket is now empty after removing, we can delete the directory
         if not keys and not self._filesystem.get(bucket, {}).get("multiparts"):
