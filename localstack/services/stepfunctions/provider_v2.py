@@ -243,7 +243,7 @@ class StepFunctionsProvider(StepfunctionsApi):
             raise StateMachineDoesNotExist(f"State Machine Does Not Exist: '{state_machine_arn}'")
 
         if input is None:
-            input_data = None
+            input_data = dict()
         else:
             try:
                 input_data = json.loads(input)

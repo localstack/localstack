@@ -46,7 +46,7 @@ class ExecutionWorker:
     def _execution_logic(self):
         program: Program = AmazonStateLanguageParser.parse(self.definition)
         self.env = Environment(context_object_init=self._context_object_init)
-        self.env.inp = self.input_data or {}
+        self.env.inp = self.input_data
 
         self.env.event_history.add_event(
             hist_type_event=HistoryEventType.ExecutionStarted,
