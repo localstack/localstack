@@ -56,6 +56,37 @@ class TestTaskServiceLambda:
             exec_input,
         )
 
+    def test_invoke_bytes_payload(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_lambda_function,
+        sfn_snapshot,
+    ):
+        function_name = f"lambda_func_{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=ST.LAMBDA_RETURN_BYTES_STR,
+            runtime="python3.9",
+        )
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+
+        template = ST.load_sfn_template(ST.LAMBDA_INVOKE)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {"FunctionName": function_name, "Payload": json.dumps("'{'Hello':'World'}'")}
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     # AWS's stepfuctions documentation seems to incorrectly classify LogType parameters as unsupported.
     def test_invoke_unsupported_param(
         self,
@@ -82,6 +113,51 @@ class TestTaskServiceLambda:
         exec_input = json.dumps(
             {"FunctionName": function_name, "Payload": None, "LogType": LogType.Tail}
         )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @pytest.mark.parametrize(
+        "json_value",
+        [
+            "HelloWorld",
+            0.0,
+            0,
+            -0,
+            True,
+            {},
+            [],
+        ],
+    )
+    def test_invoke_json_values(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_lambda_function,
+        sfn_snapshot,
+        json_value,
+    ):
+        function_name = f"lambda_func_{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=ST.LAMBDA_ID_FUNCTION,
+            runtime="python3.9",
+        )
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer("$..LogResult", "LogResult", replace_reference=True)
+        )
+
+        template = ST.load_sfn_template(ST.LAMBDA_INVOKE)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"FunctionName": function_name, "Payload": json.dumps(json_value)})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
