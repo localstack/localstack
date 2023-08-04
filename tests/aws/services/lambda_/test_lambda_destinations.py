@@ -327,11 +327,14 @@ class TestLambdaDestinationSqs:
 
         # between 0 and 1 min the lambda should NOT have been retried yet
         # between 1 min and 3 min the lambda should have been retried once
-        time.sleep(test_delay_base / 2)
+        # TODO: parse log and calculate time diffs for better/more reliable matching
+        # SQS queue has a thread checking every second, hence we need a 1 second offset
+        test_delay_base_with_offset = test_delay_base + 1
+        time.sleep(test_delay_base_with_offset / 2)
         assert get_filtered_event_count() == 1
-        time.sleep(test_delay_base)
+        time.sleep(test_delay_base_with_offset)
         assert get_filtered_event_count() == 2
-        time.sleep(test_delay_base * 2)
+        time.sleep(test_delay_base_with_offset * 2)
         assert get_filtered_event_count() == 3
 
         # 1. event should be in queue
