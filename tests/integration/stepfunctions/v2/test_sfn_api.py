@@ -65,7 +65,13 @@ class TestSnfApi:
         )
         sfn_snapshot.match("deletion_resp_1", deletion_resp_1)
 
-    @pytest.mark.skip("Add support for invalid language derivation.")
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: add static analyser support.
+            "$..Message",
+            "$..message",
+        ]
+    )
     def test_create_delete_invalid_sm(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot
     ):

@@ -1,5 +1,6 @@
 import abc
 
+import antlr4
 from antlr4 import CommonTokenStream, InputStream
 
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLLexer import ASLLexer
@@ -15,6 +16,7 @@ class AmazonStateLanguageParser(abc.ABC):
         lexer = ASLLexer(input_stream)
         stream = CommonTokenStream(lexer)
         parser = ASLParser(stream)
+        parser._errHandler = antlr4.BailErrorStrategy()
         tree = parser.program_decl()
         preprocessor = Preprocessor()
         program = preprocessor.visit(tree)

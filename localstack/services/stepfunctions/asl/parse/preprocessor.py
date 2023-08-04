@@ -595,7 +595,7 @@ class Preprocessor(ASLParserVisitor):
         return MaxAttemptsDecl(attempts=int(ctx.INT().getText()))
 
     def visitBackoff_rate_decl(self, ctx: ASLParser.Backoff_rate_declContext) -> BackoffRateDecl:
-        return BackoffRateDecl(rate=float(ctx.NUMBER().getText()))
+        return BackoffRateDecl(rate=float(ctx.children[-1].getText()))
 
     def visitCatch_decl(self, ctx: ASLParser.Catch_declContext) -> CatchDecl:
         catchers: list[CatcherDecl] = list()

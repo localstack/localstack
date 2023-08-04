@@ -32,6 +32,9 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_RETRY_LEGACY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_retry_legacy.json5"
     )
+    MAP_STATE_RETRY_MULTIPLE_RETRIERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_retry_multiple_retriers.json5"
+    )
     MAP_STATE_BREAK_CONDITION: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_break_condition.json5"
     )

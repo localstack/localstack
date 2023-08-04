@@ -19,7 +19,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_delete_invalid_sm": {
-    "recorded-date": "06-02-2023, 08:40:15",
+    "recorded-date": "04-08-2023, 16:47:10",
     "recorded-content": {
       "invalid_definition_1": {
         "Error": {

@@ -317,7 +317,7 @@ iterator_decl_item
     ;
 
 item_selector_decl
-    : ITEMSELECTOR payload_tmpl_decl
+    : ITEMSELECTOR COLON payload_tmpl_decl
     ;
 
 mode_decl
@@ -332,7 +332,7 @@ retry_decl
     : RETRY
       COLON
       LBRACK
-      retrier_decl (COMMA retry_decl)*
+      retrier_decl (COMMA retrier_decl)*
       RBRACK
     ;
 
@@ -366,7 +366,7 @@ max_attempts_decl
     ;
 
 backoff_rate_decl
-    : BACKOFFRATE COLON NUMBER
+    : BACKOFFRATE COLON (INT | NUMBER)
     ;
 
 catch_decl
