@@ -120,66 +120,84 @@ class Poller:
             )
 
     def handle_message(self, message: dict) -> None:
-        sqs_invocation = SQSInvocation.decode(message["Body"])
-        invocation = sqs_invocation.invocation
         try:
-            invocation_result = self.version_manager.invoke(invocation=invocation)
-        except TooManyRequestsException:
-            # TODO: handle throttling and internal errors differently as described here:
-            #  https://aws.amazon.com/blogs/compute/introducing-new-asynchronous-invocation-metrics-for-aws-lambda/
-            # Idea: can reset visibility when re-scheduling necessary (e.g., when hitting concurrency limit)
-            # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html#terminating-message-visibility-timeout
-            # TODO: differentiate between reserved concurrency = 0 and other throttling errors
-            pass
-
-        sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
-        sqs_client.delete_message(
-            QueueUrl=self.event_queue_url, ReceiptHandle=message["ReceiptHandle"]
-        )
-
-        # Asynchronous invocation handling: https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html
-        # https://aws.amazon.com/blogs/compute/introducing-new-asynchronous-invocation-metrics-for-aws-lambda/
-        max_retry_attempts = 2
-        qualifier = self.version_manager.function_version.id.qualifier
-        event_invoke_config = self.version_manager.function.event_invoke_configs.get(qualifier)
-        if event_invoke_config and event_invoke_config.maximum_retry_attempts is not None:
-            max_retry_attempts = event_invoke_config.maximum_retry_attempts
-
-        # An invocation error either leads to a terminal failure or to a scheduled retry
-        if invocation_result.is_error:  # invocation error
-            failure_cause = None
-            # Reserved concurrency == 0
-            # TODO: maybe we should not send the invoke at all; testing?!
-            if self.version_manager.function.reserved_concurrent_executions == 0:
-                # TODO: replace with constants from spec/model
-                failure_cause = "ZeroReservedConcurrency"
-            # Maximum retries exhausted
-            elif sqs_invocation.retries >= max_retry_attempts:
-                failure_cause = "RetriesExhausted"
-            # TODO: test what happens if max event age expired before it gets scheduled the first time?!
-            # Maximum event age expired (lookahead for next retry)
-            elif not has_enough_time_for_retry(sqs_invocation, event_invoke_config):
-                failure_cause = "EventAgeExceeded"
-
-            if failure_cause:  # handle failure destination and DLQ
-                self.process_failure_destination(
-                    sqs_invocation, invocation_result, event_invoke_config, failure_cause
+            sqs_invocation = SQSInvocation.decode(message["Body"])
+            invocation = sqs_invocation.invocation
+            try:
+                invocation_result = self.version_manager.invoke(invocation=invocation)
+            except TooManyRequestsException as e:  # Throttles 429
+                # TODO: handle throttling and internal errors differently as described here:
+                #  https://aws.amazon.com/blogs/compute/introducing-new-asynchronous-invocation-metrics-for-aws-lambda/
+                # Idea: can reset visibility when re-scheduling necessary (e.g., when hitting concurrency limit)
+                # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html#terminating-message-visibility-timeout
+                # TODO: differentiate between reserved concurrency = 0 and other throttling errors
+                LOG.debug("Throttled lambda %s: %s", self.version_manager.function_arn, e)
+                invocation_result = InvocationResult(
+                    is_error=True, request_id=invocation.request_id, payload=None, logs=None
                 )
-                self.process_dead_letter_queue(sqs_invocation, invocation_result)
-                return
-            else:  # schedule retry
-                sqs_invocation.retries += 1
-                # TODO: max delay is 15 minutes! specify max 300 limit in docs
-                #   https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
-                delay_seconds = sqs_invocation.retries * config.LAMBDA_RETRY_BASE_DELAY_SECONDS
-                sqs_client.send_message(
-                    QueueUrl=self.event_queue_url,
-                    MessageBody=sqs_invocation.encode(),
-                    DelaySeconds=delay_seconds,
+            except Exception as e:  # System errors 5xx
+                LOG.debug(
+                    "Service exception in lambda %s: %s", self.version_manager.function_arn, e
                 )
-                return
-        else:  # invocation success
-            self.process_success_destination(sqs_invocation, invocation_result, event_invoke_config)
+                # TODO: handle this
+                invocation_result = InvocationResult(
+                    is_error=True, request_id=invocation.request_id, payload=None, logs=None
+                )
+            finally:
+                sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
+                sqs_client.delete_message(
+                    QueueUrl=self.event_queue_url, ReceiptHandle=message["ReceiptHandle"]
+                )
+
+            # Asynchronous invocation handling: https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html
+            # https://aws.amazon.com/blogs/compute/introducing-new-asynchronous-invocation-metrics-for-aws-lambda/
+            max_retry_attempts = 2
+            qualifier = self.version_manager.function_version.id.qualifier
+            event_invoke_config = self.version_manager.function.event_invoke_configs.get(qualifier)
+            if event_invoke_config and event_invoke_config.maximum_retry_attempts is not None:
+                max_retry_attempts = event_invoke_config.maximum_retry_attempts
+
+            # An invocation error either leads to a terminal failure or to a scheduled retry
+            if invocation_result.is_error:  # invocation error
+                failure_cause = None
+                # Reserved concurrency == 0
+                # TODO: maybe we should not send the invoke at all; testing?!
+                if self.version_manager.function.reserved_concurrent_executions == 0:
+                    # TODO: replace with constants from spec/model
+                    failure_cause = "ZeroReservedConcurrency"
+                # Maximum retries exhausted
+                elif sqs_invocation.retries >= max_retry_attempts:
+                    failure_cause = "RetriesExhausted"
+                # TODO: test what happens if max event age expired before it gets scheduled the first time?!
+                # Maximum event age expired (lookahead for next retry)
+                elif not has_enough_time_for_retry(sqs_invocation, event_invoke_config):
+                    failure_cause = "EventAgeExceeded"
+
+                if failure_cause:  # handle failure destination and DLQ
+                    self.process_failure_destination(
+                        sqs_invocation, invocation_result, event_invoke_config, failure_cause
+                    )
+                    self.process_dead_letter_queue(sqs_invocation, invocation_result)
+                    return
+                else:  # schedule retry
+                    sqs_invocation.retries += 1
+                    # TODO: max delay is 15 minutes! specify max 300 limit in docs
+                    #   https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
+                    delay_seconds = sqs_invocation.retries * config.LAMBDA_RETRY_BASE_DELAY_SECONDS
+                    sqs_client.send_message(
+                        QueueUrl=self.event_queue_url,
+                        MessageBody=sqs_invocation.encode(),
+                        DelaySeconds=delay_seconds,
+                    )
+                    return
+            else:  # invocation success
+                self.process_success_destination(
+                    sqs_invocation, invocation_result, event_invoke_config
+                )
+        except Exception as e:
+            LOG.error(
+                "Error handling lambda invoke %s", e, exc_info=LOG.isEnabledFor(logging.DEBUG)
+            )
 
     def process_success_destination(
         self,
