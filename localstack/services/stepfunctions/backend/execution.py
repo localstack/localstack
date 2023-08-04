@@ -21,6 +21,7 @@ from localstack.aws.api.stepfunctions import (
     Timestamp,
     TraceHeader,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     ContextObjectInitData,
 )
@@ -40,7 +41,6 @@ from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.execution_worker import ExecutionWorker
 from localstack.services.stepfunctions.backend.execution_worker_comm import ExecutionWorkerComm
 from localstack.services.stepfunctions.backend.state_machine import StateMachine
-from localstack.utils.aws import aws_stack
 
 LOG = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ class Execution:
         self.exec_worker = None
         self.error = None
         self.cause = None
-        self._events_client = aws_stack.create_external_boto_client(service_name="events")
+        self._events_client = connect_to().events
 
     def to_start_output(self) -> StartExecutionOutput:
         return StartExecutionOutput(executionArn=self.exec_arn, startDate=self.start_date)

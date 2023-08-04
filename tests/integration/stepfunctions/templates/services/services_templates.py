@@ -25,6 +25,9 @@ class ServicesTemplates(TemplateLoader):
     LAMBDA_INVOKE_PIPE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/lambda_invoke_pipe.json5"
     )
+    LAMBDA_INVOKE_RESOURCE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/lambda_invoke_resource.json5"
+    )
     LAMBDA_INVOKE_LOG_TYPE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/lambda_invoke_log_type.json5"
     )
@@ -45,3 +48,6 @@ class ServicesTemplates(TemplateLoader):
     )
     # Lambda Functions.
     LAMBDA_ID_FUNCTION: Final[str] = os.path.join(_THIS_FOLDER, "lambdafunctions/id_function.py")
+    LAMBDA_RETURN_BYTES_STR: Final[str] = os.path.join(
+        _THIS_FOLDER, "lambdafunctions/return_bytes_str.py"
+    )
