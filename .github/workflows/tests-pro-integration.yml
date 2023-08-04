@@ -43,6 +43,17 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
+env:
+  # Set non-job-specific environment variables for pytest-tinybird
+  TINYBIRD_URL: https://api.tinybird.co
+  TINYBIRD_DATASOURCE: ${{ github.event.repository.name }}-tests-pro-integration
+  TINYBIRD_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
+  CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+  CI_COMMIT_SHA: ${{ github.sha }}
+  CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  # report to tinybird if executed on master
+  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
+
 jobs:
   test-pro:
     name: "Community Integration Tests against Pro"
@@ -52,6 +63,10 @@ jobs:
       matrix:
         group: [ 1, 2 ]
       fail-fast: false
+    env:
+      # Set job-specific environment variables for pytest-tinybird
+      CI_JOB_NAME: ${{ github.job }}
+      CI_JOB_ID: ${{ github.job }}
     steps:
       - name: Checkout Community
         uses: actions/checkout@v3
@@ -228,7 +243,7 @@ jobs:
           AWS_DEFAULT_REGION: "us-east-1"
           PYTEST_LOGLEVEL: debug
           TEST_PATH: "../localstack/tests/integration/"
-          PYTEST_ARGS: "--splits 2 --group ${{ matrix.group }} --capture=no --reruns 2 --junitxml=pytest-junit-community-${{ matrix.group }}.xml"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}--splits 2 --group ${{ matrix.group }} --capture=no --reruns 2 --junitxml=pytest-junit-community-${{ matrix.group }}.xml"
         working-directory: localstack-ext
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
