@@ -81,10 +81,12 @@ class IterationWorker(abc.ABC):
                 # and hence leading to a MapIterationFailed event.
                 end_program_state: ProgramState = env_frame.program_state()
                 if isinstance(end_program_state, ProgramError):
-                    error_name: str = end_program_state.error["error"]
+                    error_name = end_program_state.error.get("error")
+                    if error_name is not None:
+                        error_name = CustomErrorName(error_name=error_name)
                     raise FailureEventException(
                         failure_event=FailureEvent(
-                            error_name=CustomErrorName(error_name=error_name),
+                            error_name=error_name,
                             event_type=HistoryEventType.MapIterationFailed,
                             event_details=EventDetails(
                                 executionFailedEventDetails=end_program_state.error
