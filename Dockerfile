@@ -159,6 +159,7 @@ RUN --mount=type=cache,target=/root/.cache \
     --mount=type=cache,target=/var/lib/localstack/cache \
     source .venv/bin/activate && \
     python -m localstack.cli.lpm install \
+      awslambda-runtime \
       dynamodb-local && \
     chown -R localstack:localstack /usr/lib/localstack && \
     chmod -R 777 /usr/lib/localstack
