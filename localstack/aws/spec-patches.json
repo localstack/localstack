@@ -928,6 +928,63 @@
         "documentation": "<p>The bucket you tried to delete is not empty</p>",
         "exception": true
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/MinSizeAllowed",
+      "value": {
+        "type": "long"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ProposedSize",
+      "value": {
+        "type": "long"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/EntityTooSmall",
+      "value": {
+        "type": "structure",
+        "members": {
+          "ETag": {
+            "shape": "ETag"
+          },
+          "MinSizeAllowed": {
+            "shape": "MinSizeAllowed"
+          },
+          "PartNumber": {
+            "shape": "PartNumber"
+          },
+          "ProposedSize": {
+            "shape": "ProposedSize"
+          }
+        },
+        "documentation": "<p>Your proposed upload is smaller than the minimum allowed object size. Each part must be at least 5 MB in size, except the last part.</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidPart",
+      "value": {
+        "type": "structure",
+        "members": {
+          "ETag": {
+            "shape": "ETag"
+          },
+          "UploadId": {
+            "shape": "MultipartUploadId"
+          },
+          "PartNumber": {
+            "shape": "PartNumber"
+          }
+        },
+        "documentation": "<p>One or more of the specified parts could not be found. The part might not have been uploaded, or the specified entity tag might not have matched the part's entity tag.</p>",
+        "exception": true
+      }
     }
   ]
 }

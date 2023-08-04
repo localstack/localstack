@@ -998,6 +998,75 @@ class TestS3:
             )
         snapshot.match("abort-exc", e.value.response)
 
+    @pytest.mark.xfail(condition=not NATIVE_S3_PROVIDER, reason="not implemented in moto")
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.aws.validated
+    def test_multipart_complete_multipart_too_small(self, s3_bucket, snapshot, aws_client):
+        key_name = "test-upload-part-exc"
+        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        upload_id = response["UploadId"]
+
+        parts = []
+
+        for i in range(1, 3):
+            upload_part = aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=BytesIO(b"data"),
+                PartNumber=i,
+                UploadId=upload_id,
+            )
+            parts.append({"ETag": upload_part["ETag"], "PartNumber": i})
+            snapshot.match(f"upload-part{i}", upload_part)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket, Key=key_name, UploadId=upload_id
+            )
+        snapshot.match("complete-exc-no-parts", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket, Key=key_name, UploadId=upload_id, MultipartUpload={"Parts": parts}
+            )
+        snapshot.match("complete-exc-too-small", e.value.response)
+
+    @pytest.mark.xfail(condition=not NATIVE_S3_PROVIDER, reason="not implemented in moto")
+    @markers.aws.validated
+    def test_multipart_complete_multipart_wrong_part(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("UploadId"))
+        key_name = "test-upload-part-exc"
+        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        upload_id = response["UploadId"]
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=BytesIO(b"data"),
+            PartNumber=1,
+            UploadId=upload_id,
+        )
+        part_etag = upload_part["ETag"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                UploadId=upload_id,
+                MultipartUpload={"Parts": [{"ETag": part_etag, "PartNumber": 2}]},
+            )
+        snapshot.match("complete-exc-wrong-part-number", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            wrong_etag = "d41d8cd98f00b204e9800998ecf8427e"
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                UploadId=upload_id,
+                MultipartUpload={"Parts": [{"ETag": wrong_etag, "PartNumber": 1}]},
+            )
+        snapshot.match("complete-exc-wrong-etag", e.value.response)
+
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
