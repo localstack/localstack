@@ -58,8 +58,8 @@ requirements.copy.txt
 venv
 api_states
 
-/integration/lambdas/golang/handler.zip
-/tests/integration/lambdas/golang/handler.zip
+/aws/lambdas/golang/handler.zip
+/tests/aws/lambdas/golang/handler.zip
 tmp/
 
 volume/

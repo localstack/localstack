@@ -181,19 +181,19 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: |
-            localstack/tests/integration/awslambda/functions/common
-          key: community-it-${{ runner.os }}-lambda-common-${{ hashFiles('localstack/tests/integration/awslambda/functions/common/**/src/*') }}
+            localstack/tests/aws/awslambda/functions/common
+          key: community-it-${{ runner.os }}-lambda-common-${{ hashFiles('localstack/tests/aws/awslambda/functions/common/**/src/*') }}
 
       - name: Prebuild lambda common packages
         working-directory: localstack
-        run: ./scripts/build_common_test_functions.sh `pwd`/tests/integration/awslambda/functions/common
+        run: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/awslambda/functions/common
 
       - name: Save Lambda common runtime packages
         if: inputs.disableCaching != true
         uses: actions/cache/save@v3
         with:
           path: |
-            localstack/tests/integration/awslambda/functions/common
+            localstack/tests/aws/awslambda/functions/common
           key: ${{ steps.cached-lambda-common-restore.outputs.cache-primary-key }}
 
       - name: Install Python Dependencies for Pro
@@ -242,7 +242,7 @@ jobs:
           AWS_ACCESS_KEY_ID: "test"
           AWS_DEFAULT_REGION: "us-east-1"
           PYTEST_LOGLEVEL: debug
-          TEST_PATH: "../localstack/tests/integration/"
+          TEST_PATH: "../localstack/tests/aws/"  # TODO: also include tests/integration/
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}--splits 2 --group ${{ matrix.group }} --capture=no --reruns 2 --junitxml=pytest-junit-community-${{ matrix.group }}.xml"
         working-directory: localstack-ext
         run: |
