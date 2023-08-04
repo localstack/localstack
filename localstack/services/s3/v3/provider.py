@@ -292,6 +292,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         version_id = generate_version_id(s3_bucket.versioning_status)
 
         checksum_algorithm = request.get("ChecksumAlgorithm")
+        checksum_value = (
+            request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
+        )
 
         s3_object = S3Object(
             key=key,
@@ -301,7 +304,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             user_metadata=request.get("Metadata"),
             system_metadata=system_metadata,
             checksum_algorithm=checksum_algorithm,
-            checksum_value=request.get(f"Checksum{checksum_algorithm.upper()}"),
+            checksum_value=checksum_value,
             encryption=request.get("ServerSideEncryption"),
             kms_key_id=request.get("SSEKMSKeyId"),
             bucket_key_enabled=request.get("BucketKeyEnabled"),
@@ -742,7 +745,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             user_metadata=user_metadata,
             system_metadata=system_metadata,
             checksum_algorithm=request.get("ChecksumAlgorithm") or src_s3_object.checksum_algorithm,
-            # checksum_value=calculated_checksum_value or src_s3_object.checksum_value,
             encryption=request.get("ServerSideEncryption"),
             kms_key_id=request.get("SSEKMSKeyId"),
             bucket_key_enabled=request.get("BucketKeyEnabled"),
@@ -760,7 +762,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             dest_bucket=dest_bucket,
             dest_object=s3_object,
         )
-        s3_object.checksum_value = s3_stored_object.checksum()
+        s3_object.checksum_value = s3_stored_object.checksum() or s3_object.checksum_value
 
         # Object copied from Glacier object should not have expiry
         # TODO: verify this assumption from moto?
