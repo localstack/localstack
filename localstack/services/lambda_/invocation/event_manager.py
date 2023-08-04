@@ -66,11 +66,10 @@ def has_enough_time_for_retry(
     delay_queue_invoke_seconds = (
         sqs_invocation.retries + 1
     ) * config.LAMBDA_RETRY_BASE_DELAY_SECONDS
-    # TODO: test what is the default for maximum_event_age_in_seconds?
-    # 6 hours is a guess based on these AWS blogs:
+    # 6 hours is the default based on these AWS sources:
+    # https://repost.aws/questions/QUd214DdOQRkKWr7D8IuSMIw/why-is-aws-lambda-eventinvokeconfig-s-limit-for-maximumretryattempts-2
     # https://aws.amazon.com/blogs/compute/introducing-new-asynchronous-invocation-metrics-for-aws-lambda/
     # https://aws.amazon.com/about-aws/whats-new/2019/11/aws-lambda-supports-max-retry-attempts-event-age-asynchronous-invocations/
-    # Good summary blogpost: https://haithai91.medium.com/aws-lambdas-retry-behaviors-edff90e1cf1b
     maximum_event_age_in_seconds = 6 * 60 * 60
     if event_invoke_config and event_invoke_config.maximum_event_age_in_seconds is not None:
         maximum_event_age_in_seconds = event_invoke_config.maximum_event_age_in_seconds
@@ -131,6 +130,12 @@ class Poller:
                 # Idea: can reset visibility when re-scheduling necessary (e.g., when hitting concurrency limit)
                 # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html#terminating-message-visibility-timeout
                 # TODO: differentiate between reserved concurrency = 0 and other throttling errors
+
+                # TODO: implement throttle and exception retry behavior: "The retry interval increases exponentially
+                #  from 1 second after the first attempt to a maximum of 5 minutes. If the queue contains many
+                #  entries, Lambda increases the retry interval and reduces the rate at which it reads events from
+                #  the queue."
+                # Source: https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html
                 LOG.debug("Throttled lambda %s: %s", self.version_manager.function_arn, e)
                 invocation_result = InvocationResult(
                     is_error=True, request_id=invocation.request_id, payload=None, logs=None
@@ -139,6 +144,8 @@ class Poller:
                 LOG.debug(
                     "Service exception in lambda %s: %s", self.version_manager.function_arn, e
                 )
+                # Troubleshooting 500 errors:
+                # https://repost.aws/knowledge-center/lambda-troubleshoot-invoke-error-502-500
                 # TODO: handle this
                 invocation_result = InvocationResult(
                     is_error=True, request_id=invocation.request_id, payload=None, logs=None
@@ -149,6 +156,7 @@ class Poller:
                     QueueUrl=self.event_queue_url, ReceiptHandle=message["ReceiptHandle"]
                 )
 
+            # Good summary blogpost: https://haithai91.medium.com/aws-lambdas-retry-behaviors-edff90e1cf1b
             # Asynchronous invocation handling: https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html
             # https://aws.amazon.com/blogs/compute/introducing-new-asynchronous-invocation-metrics-for-aws-lambda/
             max_retry_attempts = 2
