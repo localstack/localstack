@@ -14,6 +14,7 @@ from localstack.aws.api.stepfunctions import (
     ExecutionStatus,
     GetExecutionHistoryOutput,
     IncludeExecutionDataGetExecutionHistory,
+    InvalidDefinition,
     InvalidExecutionInput,
     InvalidName,
     InvalidToken,
@@ -50,6 +51,7 @@ from localstack.services.stepfunctions.asl.eval.callback.callback import (
     CallbackOutcomeFailure,
     CallbackOutcomeSuccess,
 )
+from localstack.services.stepfunctions.asl.parse.asl_parser import AmazonStateLanguageParser
 from localstack.services.stepfunctions.backend.execution import Execution
 from localstack.services.stepfunctions.backend.state_machine import StateMachine
 from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
@@ -130,6 +132,15 @@ class StepFunctionsProvider(StepfunctionsApi):
             raise StateMachineAlreadyExists(
                 f"State Machine Already Exists: '{state_machine_with_name.arn}'"
             )
+
+        # Validate
+        # TODO: pass through static analyser.
+        state_machine_definition: str = request["definition"]
+        try:
+            AmazonStateLanguageParser.parse(state_machine_definition)
+        except Exception as ex:
+            # TODO: add message from static analyser, this just helps the user debug issues in the derivation.
+            raise InvalidDefinition(str(ex))
 
         name: Optional[Name] = request["name"]
         arn = aws_stack_state_machine_arn(
