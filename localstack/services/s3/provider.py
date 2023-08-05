@@ -454,7 +454,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
         key_object = get_key_from_moto_bucket(moto_bucket, key=key)
 
-        if checksum_algorithm := key_object.checksum_algorithm and not response.get(
+        if (checksum_algorithm := key_object.checksum_algorithm) and not response.get(
             "ContentEncoding"
         ):
             # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested) if it's not
@@ -507,7 +507,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not config.S3_SKIP_KMS_KEY_VALIDATION and key_object.kms_key_id:
             validate_kms_key_id(kms_key=key_object.kms_key_id, bucket=moto_bucket)
 
-        if checksum_algorithm := key_object.checksum_algorithm and not response.get(
+        if (checksum_algorithm := key_object.checksum_algorithm) and not response.get(
             "ContentEncoding"
         ):
             # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested) if it's not
