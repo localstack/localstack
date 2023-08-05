@@ -3215,6 +3215,10 @@ class TestS3:
     @markers.skip_offline
     @markers.parity.aws_validated
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=["$..ServerSideEncryption"],
+    )
     def test_s3_lambda_integration(
         self,
         create_lambda_function,
