@@ -301,7 +301,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             return cached_exp
 
         if lifecycle_rule := get_lifecycle_rule_from_object(
-            lifecycle_rules, moto_object, object_tags
+            lifecycle_rules, moto_object.name, moto_object.size, object_tags
         ):
             expiration_header = serialize_expiration_header(
                 lifecycle_rule["ID"],
@@ -1043,7 +1043,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         validate_lifecycle_configuration(lifecycle_conf)
         # TODO: we either apply the lifecycle to existing objects when we set the new rules, or we need to apply them
         #  everytime we get/head an object
-        # for now, we keep a cache and get it everytime we fetch an object
+        # for now, we keep a cache and get it everytime we fetch an object, as it's easier to invalidate than
+        # iterating over every single key to set the Expiration header to None
         store = self.get_store(context)
         store.bucket_lifecycle_configuration[bucket] = lifecycle_conf
         self._expiration_cache[bucket].clear()
