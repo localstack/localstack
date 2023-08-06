@@ -15,7 +15,6 @@ from requests.structures import CaseInsensitiveDict
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
-from localstack.aws.connect import connect_to
 from localstack.aws.handlers import cors
 from localstack.config import get_edge_url
 from localstack.constants import APPLICATION_JSON, LOCALHOST_HOSTNAME
@@ -865,11 +864,17 @@ class TestAPIGateway:
 
         assert 400 == response.status_code
 
-    def test_put_integration_dynamodb_proxy_validation_with_request_template(self, aws_client):
+    def test_put_integration_dynamodb_proxy_validation_with_request_template(
+        self, aws_client, dynamodb_create_table
+    ):
+        table = dynamodb_create_table()
+        table_name = table["TableDescription"]["TableName"]
+
+        # create API GW with DynamoDB integration
         request_templates = {
             "application/json": json.dumps(
                 {
-                    "TableName": "MusicCollection",
+                    "TableName": table_name,
                     "Item": {
                         "id": {"S": "$input.path('id')"},
                         "data": {"S": "$input.path('data')"},
@@ -877,22 +882,22 @@ class TestAPIGateway:
                 }
             )
         }
-
         api_id = self.create_api_gateway_and_deploy(
             aws_client.apigateway, request_templates=request_templates
         )
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
 
+        # add item to table via API GW endpoint
         response = requests.put(
             url,
             json.dumps({"id": "id1", "data": "foobar123"}),
         )
+        assert response.ok
 
-        assert 200 == response.status_code
-        dynamo_client = connect_to._session.resource("dynamodb")
-        table = dynamo_client.Table("MusicCollection")
-        result = table.get_item(Key={"id": "id1"})
-        assert "foobar123" == result["Item"]["data"]
+        # assert that the item has been added to the table
+        dynamo_client = aws_client.dynamodb
+        result = dynamo_client.get_item(TableName=table_name, Key={"id": {"S": "id1"}})
+        assert result["Item"]["data"] == {"S": "foobar123"}
 
     def test_multiple_api_keys_validate(self, aws_client):
         request_templates = {
@@ -1803,12 +1808,16 @@ class TestIntegrations:
         assert expected == content["data"]
         assert ctype == headers["content-type"]
 
-    def test_api_gateway_kinesis_integration(self, kinesis_create_stream):
+    def test_api_gateway_kinesis_integration(
+        self, aws_client, kinesis_create_stream, wait_for_stream_ready
+    ):
         # create target Kinesis stream
         stream_name = kinesis_create_stream()
+        wait_for_stream_ready(stream_name)
 
         # create API Gateway and connect it to the target stream
-        result = self.connect_api_gateway_to_kinesis("test_gateway1", stream_name)
+        api_name = f"test-gw-kinesis-{short_uid()}"
+        result = self.connect_api_gateway_to_kinesis(aws_client, api_name, stream_name)
 
         # generate test data
         test_data = {
@@ -1833,7 +1842,7 @@ class TestIntegrations:
         # post test data to Kinesis via API Gateway
         result = requests.post(url, data=json.dumps(test_data))
         result = json.loads(to_str(result.content))
-        assert 0 == result["FailedRecordCount"]
+        assert result["FailedRecordCount"] == 0
         assert len(test_data["records"]) == len(result["Records"])
 
     def test_api_gateway_sqs_integration_with_event_source(
@@ -1940,8 +1949,9 @@ class TestIntegrations:
             requestParameters={"integration.request.path.proxy": "method.request.path.proxy"},
         )
 
-    def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
+    def connect_api_gateway_to_kinesis(self, aws_client, gateway_name: str, kinesis_stream: str):
         template = APIGATEWAY_DATA_INBOUND_TEMPLATE % kinesis_stream
+        region_name = aws_client.kinesis.meta.region_name
         resources = {
             "data": [
                 {
@@ -1951,8 +1961,7 @@ class TestIntegrations:
                     "integrations": [
                         {
                             "type": "AWS",
-                            "uri": "arn:aws:apigateway:%s:kinesis:action/PutRecords"
-                            % aws_stack.get_region(),
+                            "uri": f"arn:aws:apigateway:{region_name}:kinesis:action/PutRecords",
                             "requestTemplates": {"application/json": template},
                         }
                     ],
@@ -1964,8 +1973,7 @@ class TestIntegrations:
                     "integrations": [
                         {
                             "type": "AWS",
-                            "uri": "arn:aws:apigateway:%s:kinesis:action/ListStreams"
-                            % aws_stack.get_region(),
+                            "uri": f"arn:aws:apigateway:{region_name}:kinesis:action/ListStreams",
                             "requestTemplates": {"application/json": "{}"},
                         }
                     ],
@@ -1973,7 +1981,10 @@ class TestIntegrations:
             ]
         }
         return resource_util.create_api_gateway(
-            name=gateway_name, resources=resources, stage_name=TEST_STAGE_NAME
+            name=gateway_name,
+            resources=resources,
+            stage_name=TEST_STAGE_NAME,
+            client=aws_client.apigateway,
         )
 
     def connect_api_gateway_to_http(
