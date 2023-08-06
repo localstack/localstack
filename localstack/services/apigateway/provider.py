@@ -2,6 +2,7 @@ import copy
 import io
 import json
 import logging
+import re
 from copy import deepcopy
 from datetime import datetime
 from typing import IO, Any
@@ -30,6 +31,7 @@ from localstack.aws.api.apigateway import (
     ConnectionType,
     CreateAuthorizerRequest,
     CreateRestApiRequest,
+    CreateStageRequest,
     DocumentationPart,
     DocumentationPartIds,
     DocumentationPartLocation,
@@ -68,12 +70,14 @@ from localstack.aws.api.apigateway import (
     RestApi,
     RestApis,
     SecurityPolicy,
+    Stage,
     StatusCode,
     String,
     Tags,
     TestInvokeMethodRequest,
     TestInvokeMethodResponse,
     ThrottleSettings,
+    UpdateStageRequest,
     UsagePlan,
     UsagePlans,
     VpcLink,
@@ -115,6 +119,36 @@ from localstack.utils.strings import short_uid, str_to_bool, to_str
 from localstack.utils.time import now_utc
 
 LOG = logging.getLogger(__name__)
+
+# list of valid paths for Stage update patch operations (extracted from AWS responses via snapshot tests)
+STAGE_UPDATE_PATHS = [
+    "/deploymentId",
+    "/description",
+    "/cacheClusterEnabled",
+    "/cacheClusterSize",
+    "/clientCertificateId",
+    "/accessLogSettings",
+    "/accessLogSettings/destinationArn",
+    "/accessLogSettings/format",
+    "/{resourcePath}/{httpMethod}/metrics/enabled",
+    "/{resourcePath}/{httpMethod}/logging/dataTrace",
+    "/{resourcePath}/{httpMethod}/logging/loglevel",
+    "/{resourcePath}/{httpMethod}/throttling/burstLimit/{resourcePath}/{httpMethod}/throttling/rateLimit/{resourcePath}/{httpMethod}/caching/ttlInSeconds",
+    "/{resourcePath}/{httpMethod}/caching/enabled",
+    "/{resourcePath}/{httpMethod}/caching/dataEncrypted",
+    "/{resourcePath}/{httpMethod}/caching/requireAuthorizationForCacheControl",
+    "/{resourcePath}/{httpMethod}/caching/unauthorizedCacheControlHeaderStrategy",
+    "/*/*/metrics/enabled",
+    "/*/*/logging/dataTrace",
+    "/*/*/logging/loglevel",
+    "/*/*/throttling/burstLimit /*/*/throttling/rateLimit /*/*/caching/ttlInSeconds",
+    "/*/*/caching/enabled",
+    "/*/*/caching/dataEncrypted",
+    "/*/*/caching/requireAuthorizationForCacheControl",
+    "/*/*/caching/unauthorizedCacheControlHeaderStrategy",
+    "/variables/{variable_name}",
+    "/tracingEnabled",
+]
 
 
 class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
@@ -800,6 +834,60 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         # this operation is not implemented by moto, but raises a 500 error (instead of a 501).
         # avoid a fallback to moto and return the 501 to the client directly instead.
         raise NotImplementedAvoidFallbackError
+
+    # stages
+
+    # TODO: add createdDate / lastUpdatedDate in Stage operations below!
+    @handler("CreateStage", expand=False)
+    def create_stage(self, context: RequestContext, request: CreateStageRequest) -> Stage:
+        response = call_moto(context)
+        response.setdefault("cacheClusterStatus", "NOT_AVAILABLE")
+        response.setdefault("tracingEnabled", False)
+        if not response.get("variables"):
+            response.pop("variables", None)
+        return response
+
+    def get_stage(self, context: RequestContext, rest_api_id: String, stage_name: String) -> Stage:
+        response = call_moto(context)
+        response.setdefault("cacheClusterStatus", "NOT_AVAILABLE")
+        response.setdefault("tracingEnabled", False)
+        if not response.get("variables"):
+            response.pop("variables", None)
+        return response
+
+    @handler("UpdateStage")
+    def update_stage(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        stage_name: String,
+        patch_operations: ListOfPatchOperation = None,
+    ) -> Stage:
+        call_moto(context)
+
+        moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+        moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
+        if not (moto_stage := moto_rest_api.stages.get(stage_name)):
+            raise NotFoundException("Invalid Stage identifier specified")
+
+        # construct list of path regexes for validation
+        path_regexes = [re.sub("{[^}]+}", ".+", path) for path in STAGE_UPDATE_PATHS]
+
+        patch_operations = patch_operations or []
+        for patch_operation in patch_operations:
+            if not any(re.match(regex, patch_operation["path"]) for regex in path_regexes):
+                valid_paths = f"[{', '.join(STAGE_UPDATE_PATHS)}]"
+                raise BadRequestException(
+                    f"Invalid method setting path: {patch_operation['path']}. Must be one of: {valid_paths}"
+                )
+        _patch_api_gateway_entity(moto_stage, patch_operations)
+
+        response = moto_stage.to_json()
+        response.setdefault("cacheClusterStatus", "NOT_AVAILABLE")
+        response.setdefault("tracingEnabled", False)
+        if not response.get("variables"):
+            response.pop("variables", None)
+        return response
 
     # authorizers
 

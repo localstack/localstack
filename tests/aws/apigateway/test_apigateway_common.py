@@ -1,6 +1,8 @@
 import json
 
+import pytest
 import requests
+from botocore.exceptions import ClientError
 
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.util import is_aws_cloud
@@ -438,3 +440,61 @@ class TestUsagePlans:
             ],
         )
         snapshot.match("update-usage-plan", response)
+
+
+class TestStages:
+    @markers.parity.aws_validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..createdDate", "$..lastUpdatedDate"])
+    def test_create_update_stages(
+        self, aws_client, create_rest_apigw, apigw_add_transformers, snapshot
+    ):
+        client = aws_client.apigateway
+
+        api_id, api_name, root_id = create_rest_apigw()
+
+        client.put_method(
+            restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
+        )
+        client.put_integration(restApiId=api_id, resourceId=root_id, httpMethod="GET", type="MOCK")
+
+        response = client.create_deployment(restApiId=api_id)
+        deployment_id = response["id"]
+
+        response = client.create_stage(
+            restApiId=api_id, stageName="s1", deploymentId=deployment_id, description="my stage"
+        )
+        snapshot.match("create-stage", response)
+
+        with pytest.raises(ClientError) as ctx:
+            client.update_stage(
+                restApiId=api_id,
+                stageName="s1",
+                patchOperations=[
+                    {"op": "replace", "path": "/documentation_version", "value": "123"}
+                ],
+            )
+        snapshot.match("error-update-doc-version", ctx.value.response)
+
+        with pytest.raises(ClientError) as ctx:
+            client.update_stage(
+                restApiId=api_id,
+                stageName="s1",
+                patchOperations=[
+                    {"op": "replace", "path": "/tags/tag1", "value": "value1"},
+                ],
+            )
+        snapshot.match("error-update-tags", ctx.value.response)
+
+        response = client.update_stage(
+            restApiId=api_id,
+            stageName="s1",
+            patchOperations=[
+                {"op": "replace", "path": "/description", "value": "stage new"},
+                {"op": "replace", "path": "/variables/var1", "value": "test"},
+                {"op": "replace", "path": "/variables/var2", "value": "test2"},
+            ],
+        )
+        snapshot.match("update-stage", response)
+
+        response = client.get_stage(restApiId=api_id, stageName="s1")
+        snapshot.match("get-stage", response)
