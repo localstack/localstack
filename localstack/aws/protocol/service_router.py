@@ -359,6 +359,11 @@ def determine_aws_service_name(request: Request, services: ServiceCatalog = None
         if custom_host_match:
             return custom_host_match
 
+    if request.shallow:
+        # from here on we would need access to the request body, which doesn't exist for shallow requests like
+        # WebsocketRequests.
+        return None
+
     # 5. check the query / form-data
     values = request.values
     if "Action" in values:

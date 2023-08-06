@@ -2,6 +2,8 @@ import logging
 from typing import List
 
 from localstack.http import Request, Response
+from localstack.http.asgi import Websocket
+from localstack.http.websocket import WebsocketRequest
 
 from .api import RequestContext
 from .chain import ExceptionHandler, Handler, HandlerChain
@@ -34,3 +36,33 @@ class Gateway:
         context.request = request
 
         chain.handle(context, response)
+
+    def accept(self, websocket: Websocket):
+        request = WebsocketRequest(websocket)
+        response = Response()
+        self.process(request, response)
+
+        if response.response:
+            if response is not None:
+                websocket.send(
+                    {
+                        "type": "websocket.http.response.start",
+                        "status": response.status_code,
+                        "headers": [],
+                    }
+                )
+                for chunk in response.iter_encoded():
+                    websocket.send(
+                        {
+                            "type": "websocket.http.response.body",
+                            "body": chunk,
+                            "more_body": True,
+                        }
+                    )
+                websocket.send(
+                    {
+                        "type": "websocket.http.response.body",
+                        "body": b"",
+                        "more_body": False,
+                    }
+                )
