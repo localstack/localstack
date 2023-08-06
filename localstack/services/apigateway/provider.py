@@ -77,7 +77,6 @@ from localstack.aws.api.apigateway import (
     TestInvokeMethodRequest,
     TestInvokeMethodResponse,
     ThrottleSettings,
-    UpdateStageRequest,
     UsagePlan,
     UsagePlans,
     VpcLink,
