@@ -235,6 +235,15 @@ def apply_patches():
 
         return resp
 
+    @patch(apigateway_models.Stage.to_json)
+    def apigateway_models_stage_to_json(fn, self):
+        result = fn(self)
+
+        if "documentationVersion" not in result:
+            result["documentationVersion"] = getattr(self, "documentation_version", None)
+
+        return result
+
     @patch(APIGatewayResponse.individual_deployment)
     def individual_deployment(fn, self, request, full_url, headers, *args, **kwargs):
         result = fn(self, request, full_url, headers, *args, **kwargs)

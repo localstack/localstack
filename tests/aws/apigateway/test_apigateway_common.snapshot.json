@@ -371,7 +371,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_common.py::TestStages::test_create_update_stages": {
-    "recorded-date": "06-08-2023, 16:59:58",
+    "recorded-date": "06-08-2023, 18:38:05",
     "recorded-content": {
       "create-stage": {
         "cacheClusterEnabled": false,
@@ -379,6 +379,7 @@
         "createdDate": "datetime",
         "deploymentId": "<deployment-id:1>",
         "description": "my stage",
+        "documentationVersion": "v123",
         "lastUpdatedDate": "datetime",
         "methodSettings": {},
         "stageName": "s1",
@@ -416,6 +417,7 @@
         "createdDate": "datetime",
         "deploymentId": "<deployment-id:1>",
         "description": "stage new",
+        "documentationVersion": "v123",
         "lastUpdatedDate": "datetime",
         "methodSettings": {},
         "stageName": "s1",
@@ -435,6 +437,7 @@
         "createdDate": "datetime",
         "deploymentId": "<deployment-id:1>",
         "description": "stage new",
+        "documentationVersion": "v123",
         "lastUpdatedDate": "datetime",
         "methodSettings": {},
         "stageName": "s1",
@@ -443,6 +446,67 @@
           "var1": "test",
           "var2": "test2"
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_common.py::TestDocumentations::test_documentation_parts_and_versions": {
+    "recorded-date": "06-08-2023, 18:32:36",
+    "recorded-content": {
+      "create-part-response": {
+        "id": "<id:1>",
+        "location": {
+          "type": "API"
+        },
+        "properties": {
+          "foo": "bar"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-parts-response": {
+        "items": [
+          {
+            "id": "<id:1>",
+            "location": {
+              "type": "API"
+            },
+            "properties": {
+              "foo": "bar"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-version-response": {
+        "createdDate": "datetime",
+        "version": "v123",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update-version-response": {
+        "createdDate": "datetime",
+        "description": "doc version new",
+        "version": "v123",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-version-response": {
+        "createdDate": "datetime",
+        "description": "doc version new",
+        "version": "v123",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

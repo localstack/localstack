@@ -20,6 +20,7 @@ from requests.models import Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.api import RequestContext
 from localstack.aws.api.apigateway import (
     Authorizer,
     ConnectionType,
@@ -130,8 +131,14 @@ class OpenAPIExt:
 # TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
 
 
-def get_apigateway_store(account_id: str = None, region: str = None) -> ApiGatewayStore:
-    return apigateway_stores[account_id or get_aws_account_id()][region or aws_stack.get_region()]
+def get_apigateway_store(
+    account_id: str = None, region: str = None, context: RequestContext = None
+) -> ApiGatewayStore:
+    if not account_id:
+        account_id = context.account_id if context else get_aws_account_id()
+    if not region:
+        region = context.region if context else aws_stack.get_region()
+    return apigateway_stores[account_id][region]
 
 
 class ApiGatewayIntegrationError(Exception):

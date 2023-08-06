@@ -442,6 +442,45 @@ class TestUsagePlans:
         snapshot.match("update-usage-plan", response)
 
 
+class TestDocumentations:
+    @markers.parity.aws_validated
+    def test_documentation_parts_and_versions(
+        self, aws_client, create_rest_apigw, apigw_add_transformers, snapshot
+    ):
+        client = aws_client.apigateway
+
+        # create API
+        api_id, api_name, root_id = create_rest_apigw()
+
+        # create documentation part
+        response = client.create_documentation_part(
+            restApiId=api_id,
+            location={"type": "API"},
+            properties=json.dumps({"foo": "bar"}),
+        )
+        snapshot.match("create-part-response", response)
+
+        response = client.get_documentation_parts(restApiId=api_id)
+        snapshot.match("get-parts-response", response)
+
+        # create/update/get documentation version
+
+        response = client.create_documentation_version(
+            restApiId=api_id, documentationVersion="v123"
+        )
+        snapshot.match("create-version-response", response)
+
+        response = client.update_documentation_version(
+            restApiId=api_id,
+            documentationVersion="v123",
+            patchOperations=[{"op": "replace", "path": "/description", "value": "doc version new"}],
+        )
+        snapshot.match("update-version-response", response)
+
+        response = client.get_documentation_version(restApiId=api_id, documentationVersion="v123")
+        snapshot.match("get-version-response", response)
+
+
 class TestStages:
     @markers.parity.aws_validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..createdDate", "$..lastUpdatedDate"])
@@ -450,20 +489,34 @@ class TestStages:
     ):
         client = aws_client.apigateway
 
+        # create API, method, integration, deployment
         api_id, api_name, root_id = create_rest_apigw()
-
         client.put_method(
             restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
         )
         client.put_integration(restApiId=api_id, resourceId=root_id, httpMethod="GET", type="MOCK")
-
         response = client.create_deployment(restApiId=api_id)
         deployment_id = response["id"]
 
+        # create documentation
+        client.create_documentation_part(
+            restApiId=api_id,
+            location={"type": "API"},
+            properties=json.dumps({"foo": "bar"}),
+        )
+        client.create_documentation_version(restApiId=api_id, documentationVersion="v123")
+
+        # create stage
         response = client.create_stage(
-            restApiId=api_id, stageName="s1", deploymentId=deployment_id, description="my stage"
+            restApiId=api_id,
+            stageName="s1",
+            deploymentId=deployment_id,
+            description="my stage",
+            documentationVersion="v123",
         )
         snapshot.match("create-stage", response)
+
+        # negative tests for immutable/non-updateable attributes
 
         with pytest.raises(ClientError) as ctx:
             client.update_stage(
@@ -484,6 +537,8 @@ class TestStages:
                 ],
             )
         snapshot.match("error-update-tags", ctx.value.response)
+
+        # update & get stage
 
         response = client.update_stage(
             restApiId=api_id,
