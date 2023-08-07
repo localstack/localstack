@@ -8852,7 +8852,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_get_object_content_length_with_virtual_host[True]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_get_object_content_length_with_virtual_host[True]": {
     "recorded-date": "07-08-2023, 19:56:10",
     "recorded-content": {
       "get-obj-content-len-headers": {
@@ -8869,7 +8869,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_get_object_content_length_with_virtual_host[False]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_get_object_content_length_with_virtual_host[False]": {
     "recorded-date": "07-08-2023, 19:56:13",
     "recorded-content": {
       "get-obj-content-len-headers": {
