@@ -4,8 +4,8 @@
 .filesystem
 
 # ignore files generated in CI build
-tests/integration/**/node_modules
-tests/integration/**/.terraform
+tests/aws/**/node_modules
+tests/aws/**/.terraform
 **/__pycache__
 target/
 htmlcov/
