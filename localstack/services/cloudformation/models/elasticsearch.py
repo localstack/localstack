@@ -21,7 +21,13 @@ class ElasticsearchDomain(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         domain_name = self.props["DomainName"]
-        return connect_to().es.describe_elasticsearch_domain(DomainName=domain_name)
+        poll_condition(lambda: self._is_ready(domain_name))
+        return connect_to().es.describe_elasticsearch_domain(DomainName=domain_name)["DomainStatus"]
+
+    @staticmethod
+    def _is_ready(domain_name: str) -> bool:
+        res = connect_to().es.describe_elasticsearch_domain(DomainName=domain_name)["DomainStatus"]
+        return not res.get("Processing", True)
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
