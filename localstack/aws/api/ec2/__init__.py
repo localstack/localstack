@@ -6445,6 +6445,7 @@ class LaunchTemplateInstanceNetworkInterfaceSpecificationRequest(TypedDict, tota
     Ipv4PrefixCount: Optional[Integer]
     Ipv6Prefixes: Optional[Ipv6PrefixList]
     Ipv6PrefixCount: Optional[Integer]
+    PrimaryIpv6: Optional[Boolean]
 
 
 LaunchTemplateInstanceNetworkInterfaceSpecificationRequestList = List[
@@ -6680,6 +6681,7 @@ Ipv4PrefixListResponse = List[Ipv4PrefixSpecificationResponse]
 
 class InstanceIpv6Address(TypedDict, total=False):
     Ipv6Address: Optional[String]
+    IsPrimaryIpv6: Optional[Boolean]
 
 
 InstanceIpv6AddressList = List[InstanceIpv6Address]
@@ -6705,6 +6707,7 @@ class LaunchTemplateInstanceNetworkInterfaceSpecification(TypedDict, total=False
     Ipv4PrefixCount: Optional[Integer]
     Ipv6Prefixes: Optional[Ipv6PrefixListResponse]
     Ipv6PrefixCount: Optional[Integer]
+    PrimaryIpv6: Optional[Boolean]
 
 
 LaunchTemplateInstanceNetworkInterfaceSpecificationList = List[
@@ -7151,6 +7154,7 @@ class CreateNetworkInterfaceRequest(ServiceRequest):
     SubnetId: SubnetId
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
+    EnablePrimaryIpv6: Optional[Boolean]
 
 
 class Ipv6PrefixSpecification(TypedDict, total=False):
@@ -7182,6 +7186,7 @@ NetworkInterfacePrivateIpAddressList = List[NetworkInterfacePrivateIpAddress]
 
 class NetworkInterfaceIpv6Address(TypedDict, total=False):
     Ipv6Address: Optional[String]
+    IsPrimaryIpv6: Optional[Boolean]
 
 
 NetworkInterfaceIpv6AddressesList = List[NetworkInterfaceIpv6Address]
@@ -12487,6 +12492,7 @@ class InstanceNetworkInterfaceSpecification(TypedDict, total=False):
     Ipv4PrefixCount: Optional[Integer]
     Ipv6Prefixes: Optional[Ipv6PrefixList]
     Ipv6PrefixCount: Optional[Integer]
+    PrimaryIpv6: Optional[Boolean]
 
 
 InstanceNetworkInterfaceSpecificationList = List[InstanceNetworkInterfaceSpecification]
@@ -15841,6 +15847,7 @@ class ModifyNetworkInterfaceAttributeRequest(ServiceRequest):
     NetworkInterfaceId: NetworkInterfaceId
     SourceDestCheck: Optional[AttributeBooleanValue]
     EnaSrdSpecification: Optional[EnaSrdSpecification]
+    EnablePrimaryIpv6: Optional[Boolean]
 
 
 class ModifyPrivateDnsNameOptionsRequest(ServiceRequest):
@@ -17034,6 +17041,7 @@ class RunInstancesRequest(ServiceRequest):
     PrivateDnsNameOptions: Optional[PrivateDnsNameOptionsRequest]
     MaintenanceOptions: Optional[InstanceMaintenanceOptionsRequest]
     DisableApiStop: Optional[Boolean]
+    EnablePrimaryIpv6: Optional[Boolean]
 
 
 ScheduledInstancesSecurityGroupIdSet = List[SecurityGroupId]
@@ -18458,6 +18466,7 @@ class Ec2Api:
         interface_type: NetworkInterfaceCreationType = None,
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
+        enable_primary_ipv6: Boolean = None,
     ) -> CreateNetworkInterfaceResult:
         raise NotImplementedError
 
@@ -22794,6 +22803,7 @@ class Ec2Api:
         groups: SecurityGroupIdStringList = None,
         source_dest_check: AttributeBooleanValue = None,
         ena_srd_specification: EnaSrdSpecification = None,
+        enable_primary_ipv6: Boolean = None,
     ) -> None:
         raise NotImplementedError
 
@@ -23767,6 +23777,7 @@ class Ec2Api:
         private_dns_name_options: PrivateDnsNameOptionsRequest = None,
         maintenance_options: InstanceMaintenanceOptionsRequest = None,
         disable_api_stop: Boolean = None,
+        enable_primary_ipv6: Boolean = None,
     ) -> Reservation:
         raise NotImplementedError
 
