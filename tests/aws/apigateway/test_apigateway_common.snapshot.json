@@ -370,7 +370,7 @@
       }
     }
   },
-  "tests/integration/apigateway/test_apigateway_common.py::TestStages::test_create_update_stages": {
+  "tests/aws/apigateway/test_apigateway_common.py::TestStages::test_create_update_stages": {
     "recorded-date": "06-08-2023, 18:38:05",
     "recorded-content": {
       "create-stage": {
@@ -453,7 +453,7 @@
       }
     }
   },
-  "tests/integration/apigateway/test_apigateway_common.py::TestDocumentations::test_documentation_parts_and_versions": {
+  "tests/aws/apigateway/test_apigateway_common.py::TestDocumentations::test_documentation_parts_and_versions": {
     "recorded-date": "07-08-2023, 22:02:13",
     "recorded-content": {
       "create-part-response": {
