@@ -16,8 +16,6 @@ class AwsCompatibilityMarkers:
 
 class ParityMarkers:
     aws_validated = pytest.mark.aws_validated
-    manual_setup_required = pytest.mark.manual_setup_required  # implies aws_validated
-    should_be_aws_validated = pytest.mark.should_be_aws_validated
     only_localstack = pytest.mark.only_localstack
 
 
