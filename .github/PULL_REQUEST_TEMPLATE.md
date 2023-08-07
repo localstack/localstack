@@ -1,6 +1,6 @@
 <!-- Please refer to the contribution guidelines before raising a PR: https://github.com/localstack/localstack/blob/master/CONTRIBUTING.md -->
 
-<!-- Why am I raising this PR? -->
+<!-- Why am I raising this PR? Add context such as related issues, PRs, or documentation. -->
 ## Motivation
 
 
