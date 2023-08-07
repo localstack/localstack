@@ -2,7 +2,7 @@ import pytest
 
 from localstack.constants import APPLICATION_JSON
 from localstack.utils.strings import short_uid
-from tests.integration.apigateway.apigateway_fixtures import (
+from tests.aws.apigateway.apigateway_fixtures import (
     create_rest_api_deployment,
     create_rest_api_integration,
     create_rest_api_integration_response,

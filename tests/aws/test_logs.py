@@ -14,7 +14,7 @@ from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns
 from localstack.utils.common import now_utc, poll_condition, retry, short_uid
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
+from tests.aws.awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
 logs_role = {
     "Statement": {

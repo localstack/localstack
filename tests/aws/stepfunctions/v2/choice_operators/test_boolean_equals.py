@@ -1,8 +1,8 @@
 import pytest
 
 from localstack.testing.pytest import markers
-from tests.integration.stepfunctions.utils import is_old_provider
-from tests.integration.stepfunctions.v2.choice_operators.utils import (
+from tests.aws.stepfunctions.utils import is_old_provider
+from tests.aws.stepfunctions.v2.choice_operators.utils import (
     TYPE_COMPARISONS,
     create_and_test_comparison_function,
 )

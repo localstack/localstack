@@ -1,6 +1,6 @@
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
-from tests.integration.stepfunctions.utils import await_execution_success
+from tests.aws.stepfunctions.utils import await_execution_success
 
 
 @staticmethod

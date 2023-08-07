@@ -4,8 +4,8 @@ import pytest
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from tests.integration.stepfunctions.templates.base.base_templates import BaseTemplate
-from tests.integration.stepfunctions.utils import (
+from tests.aws.stepfunctions.templates.base.base_templates import BaseTemplate
+from tests.aws.stepfunctions.utils import (
     create_and_record_events,
     create_and_record_execution,
     is_old_provider,

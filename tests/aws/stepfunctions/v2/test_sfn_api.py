@@ -7,9 +7,9 @@ from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
-from tests.integration.stepfunctions.lambda_functions import lambda_functions
-from tests.integration.stepfunctions.templates.base.base_templates import BaseTemplate
-from tests.integration.stepfunctions.utils import (
+from tests.aws.stepfunctions.lambda_functions import lambda_functions
+from tests.aws.stepfunctions.templates.base.base_templates import BaseTemplate
+from tests.aws.stepfunctions.utils import (
     await_execution_aborted,
     await_execution_started,
     await_execution_success,

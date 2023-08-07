@@ -7,11 +7,8 @@ from localstack.constants import APPLICATION_JSON
 from localstack.testing.pytest import markers
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.sync import retry
-from tests.integration.apigateway.apigateway_fixtures import (
-    api_invoke_url,
-    create_rest_api_integration,
-)
-from tests.integration.apigateway.conftest import DEFAULT_STAGE_NAME
+from tests.aws.apigateway.apigateway_fixtures import api_invoke_url, create_rest_api_integration
+from tests.aws.apigateway.conftest import DEFAULT_STAGE_NAME
 
 
 @markers.parity.aws_validated

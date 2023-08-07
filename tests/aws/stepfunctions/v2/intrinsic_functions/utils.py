@@ -2,10 +2,10 @@ import json
 
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
-from tests.integration.stepfunctions.templates.intrinsicfunctions.intrinsic_functions_templates import (
+from tests.aws.stepfunctions.templates.intrinsicfunctions.intrinsic_functions_templates import (
     IntrinsicFunctionTemplate as IFT,
 )
-from tests.integration.stepfunctions.utils import await_execution_success
+from tests.aws.stepfunctions.utils import await_execution_success
 
 
 def create_and_test_on_inputs(

@@ -21,7 +21,7 @@ from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
-from tests.integration.awslambda.test_lambda import (
+from tests.aws.awslambda.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
 )

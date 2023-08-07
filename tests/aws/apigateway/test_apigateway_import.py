@@ -20,7 +20,7 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
 from localstack.utils.urls import localstack_host
-from tests.integration.apigateway.apigateway_fixtures import api_invoke_url
+from tests.aws.apigateway.apigateway_fixtures import api_invoke_url
 
 LOG = logging.getLogger(__name__)
 

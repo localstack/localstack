@@ -1,7 +1,7 @@
 import os
 from typing import Final
 
-from tests.integration.stepfunctions.templates.template_loader import TemplateLoader
+from tests.aws.stepfunctions.templates.template_loader import TemplateLoader
 
 _THIS_FOLDER: Final[str] = os.path.dirname(os.path.realpath(__file__))
 

@@ -13,7 +13,7 @@ from localstack.utils.files import load_file, mkdir, rm_rf
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from localstack.utils.testutil import create_lambda_archive
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_ENV, THIS_FOLDER
+from tests.aws.awslambda.test_lambda import TEST_LAMBDA_ENV, THIS_FOLDER
 
 HOT_RELOADING_NODEJS_HANDLER = os.path.join(
     THIS_FOLDER, "functions/hot-reloading/nodejs/handler.mjs"

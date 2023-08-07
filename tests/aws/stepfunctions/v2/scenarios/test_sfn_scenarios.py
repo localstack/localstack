@@ -8,7 +8,7 @@ import pytest
 from localstack.aws.api.stepfunctions import ExecutionStatus
 from localstack.testing.pytest import markers
 from localstack.utils.sync import wait_until
-from tests.integration.stepfunctions.utils import is_old_provider
+from tests.aws.stepfunctions.utils import is_old_provider
 
 THIS_FOLDER = Path(os.path.dirname(__file__))
 

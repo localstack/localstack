@@ -39,7 +39,7 @@ from localstack.utils.json import clone
 from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
-from tests.integration.apigateway.apigateway_fixtures import (
+from tests.aws.apigateway.apigateway_fixtures import (
     api_invoke_url,
     create_rest_api_deployment,
     create_rest_api_integration,
@@ -53,13 +53,13 @@ from tests.integration.apigateway.apigateway_fixtures import (
     update_rest_api_deployment,
     update_rest_api_stage,
 )
-from tests.integration.apigateway.conftest import (
+from tests.aws.apigateway.conftest import (
     APIGATEWAY_ASSUME_ROLE_POLICY,
     APIGATEWAY_LAMBDA_POLICY,
     APIGATEWAY_STEPFUNCTIONS_POLICY,
     STEPFUNCTIONS_ASSUME_ROLE_POLICY,
 )
-from tests.integration.awslambda.test_lambda import (
+from tests.aws.awslambda.test_lambda import (
     TEST_LAMBDA_AWS_PROXY,
     TEST_LAMBDA_HTTP_RUST,
     TEST_LAMBDA_NODEJS,

@@ -4,10 +4,10 @@ from typing import Any, Final
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
-from tests.integration.stepfunctions.templates.choiceoperators.choice_operators_templates import (
+from tests.aws.stepfunctions.templates.choiceoperators.choice_operators_templates import (
     ChoiceOperatorTemplate as COT,
 )
-from tests.integration.stepfunctions.utils import await_execution_success
+from tests.aws.stepfunctions.utils import await_execution_success
 
 TYPE_COMPARISONS: Final[list[tuple[Any, bool]]] = [
     (None, True),  # 0

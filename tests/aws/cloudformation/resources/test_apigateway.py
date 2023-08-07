@@ -11,7 +11,7 @@ from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
-from tests.integration.apigateway.apigateway_fixtures import api_invoke_url
+from tests.aws.apigateway.apigateway_fixtures import api_invoke_url
 
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "awslambda/functions/lambda_echo.py")

@@ -20,8 +20,8 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
-from tests.integration.awslambda.functions import lambda_integration
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
+from tests.aws.awslambda.functions import lambda_integration
+from tests.aws.awslambda.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 LAMBDA_SQS_INTEGRATION_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_sqs_integration.py")

@@ -34,7 +34,7 @@ from localstack.utils.functions import call_safe
 from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import wait_until
 from localstack.utils.testutil import create_lambda_archive
-from tests.integration.awslambda.test_lambda import (
+from tests.aws.awslambda.test_lambda import (
     FUNCTION_MAX_UNZIPPED_SIZE,
     TEST_LAMBDA_JAVA_WITH_LIB,
     TEST_LAMBDA_NODEJS,

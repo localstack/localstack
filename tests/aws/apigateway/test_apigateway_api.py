@@ -15,7 +15,7 @@ from localstack.testing.snapshots.transformer import KeyValueBasedTransformer, S
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
-from tests.integration.apigateway.apigateway_fixtures import (
+from tests.aws.apigateway.apigateway_fixtures import (
     create_rest_api_integration,
     create_rest_api_integration_response,
     create_rest_api_method_response,

@@ -23,8 +23,8 @@ from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import retry
-from tests.integration.awslambda.functions import lambda_integration
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
+from tests.aws.awslambda.functions import lambda_integration
+from tests.aws.awslambda.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
 
 TEST_LAMBDA_PARALLEL_FILE = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "functions", "lambda_parallel.py"

@@ -5,7 +5,7 @@ import requests
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
-from tests.integration.apigateway.apigateway_fixtures import (
+from tests.aws.apigateway.apigateway_fixtures import (
     api_invoke_url,
     create_rest_api_deployment,
     create_rest_api_integration,
@@ -14,7 +14,7 @@ from tests.integration.apigateway.apigateway_fixtures import (
     create_rest_resource,
     create_rest_resource_method,
 )
-from tests.integration.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
+from tests.aws.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
 
 
 @markers.parity.aws_validated

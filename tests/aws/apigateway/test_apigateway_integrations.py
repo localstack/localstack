@@ -20,12 +20,9 @@ from localstack.testing.pytest import markers
 from localstack.testing.pytest.fixtures import PUBLIC_HTTP_ECHO_SERVER_URL
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry
-from tests.integration.apigateway.apigateway_fixtures import (
-    api_invoke_url,
-    create_rest_api_deployment,
-)
-from tests.integration.apigateway.conftest import DEFAULT_STAGE_NAME
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_LIBS
+from tests.aws.apigateway.apigateway_fixtures import api_invoke_url, create_rest_api_deployment
+from tests.aws.apigateway.conftest import DEFAULT_STAGE_NAME
+from tests.aws.awslambda.test_lambda import TEST_LAMBDA_LIBS
 
 
 def test_http_integration(create_rest_apigw, aws_client, echo_http_server):

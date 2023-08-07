@@ -12,8 +12,8 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
-from tests.integration.awslambda.functions import lambda_integration
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON
+from tests.aws.awslambda.functions import lambda_integration
+from tests.aws.awslambda.test_lambda import TEST_LAMBDA_PYTHON
 
 
 class TestLambdaDLQ:

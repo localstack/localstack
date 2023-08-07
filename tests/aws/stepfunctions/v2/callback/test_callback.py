@@ -5,18 +5,10 @@ import pytest
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
-from tests.integration.stepfunctions.templates.base.base_templates import BaseTemplate as BT
-from tests.integration.stepfunctions.templates.callbacks.callback_templates import (
-    CallbackTemplates as CT,
-)
-from tests.integration.stepfunctions.templates.timeouts.timeout_templates import (
-    TimeoutTemplates as TT,
-)
-from tests.integration.stepfunctions.utils import (
-    create,
-    create_and_record_execution,
-    is_old_provider,
-)
+from tests.aws.stepfunctions.templates.base.base_templates import BaseTemplate as BT
+from tests.aws.stepfunctions.templates.callbacks.callback_templates import CallbackTemplates as CT
+from tests.aws.stepfunctions.templates.timeouts.timeout_templates import TimeoutTemplates as TT
+from tests.aws.stepfunctions.utils import create, create_and_record_execution, is_old_provider
 
 pytestmark = pytest.mark.skipif(
     condition=is_old_provider(), reason="Test suite for v2 provider only."

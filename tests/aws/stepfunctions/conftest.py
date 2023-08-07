@@ -9,8 +9,8 @@ from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.testing.snapshots.transformer import TransformContext
 from localstack.utils.strings import short_uid
-from tests.integration.stepfunctions.templates.callbacks.callback_templates import CallbackTemplates
-from tests.integration.stepfunctions.utils import await_execution_success
+from tests.aws.stepfunctions.templates.callbacks.callback_templates import CallbackTemplates
+from tests.aws.stepfunctions.utils import await_execution_success
 
 LOG = logging.getLogger(__name__)
 

@@ -17,9 +17,9 @@ from localstack.utils.json import clone
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from localstack.utils.threads import parallelize
-from tests.integration.awslambda.functions import lambda_environment
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_PYTHON_ECHO
-from tests.integration.stepfunctions.utils import is_old_provider
+from tests.aws.awslambda.functions import lambda_environment
+from tests.aws.awslambda.test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_PYTHON_ECHO
+from tests.aws.stepfunctions.utils import is_old_provider
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_NAME_1 = "lambda_sfn_1"

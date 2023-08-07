@@ -19,7 +19,7 @@ from localstack.utils.functions import run_safe
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
-from tests.integration.awslambda.test_lambda import (
+from tests.aws.awslambda.test_lambda import (
     JAVA_TEST_RUNTIMES,
     NODE_TEST_RUNTIMES,
     PYTHON_TEST_RUNTIMES,
