@@ -416,11 +416,12 @@ def start_component(
         if target_address is None:
             raise ValueError("no target address specified")
 
-        default_host = "0.0.0.0" if config.in_docker() else "127.0.0.1"
         return start_proxy(
             listen_str=listen_str,
             target_address=HostAndPort.parse(
-                target_address, default_host=default_host, default_port=constants.DEFAULT_PORT_EDGE
+                target_address,
+                default_host=config.default_ip,
+                default_port=constants.DEFAULT_PORT_EDGE,
             ),
         )
     raise Exception("Unexpected component name '%s' received during start up" % component)
@@ -474,10 +475,9 @@ def do_start_tcp_proxy(
 
 
 def start_edge(listen_str: str, use_ssl: bool = True, asynchronous: bool = False):
-    default_ip = "0.0.0.0" if config.in_docker() else "127.0.0.1"
     if listen_str:
         listen = parse_gateway_listen(
-            listen_str, default_host=default_ip, default_port=constants.DEFAULT_PORT_EDGE
+            listen_str, default_host=config.default_ip, default_port=constants.DEFAULT_PORT_EDGE
         )
     else:
         listen = config.GATEWAY_LISTEN
@@ -492,7 +492,7 @@ def start_edge(listen_str: str, use_ssl: bool = True, asynchronous: bool = False
     if not unprivileged:
         unprivileged = parse_gateway_listen(
             f":{get_free_tcp_port()}",
-            default_host=default_ip,
+            default_host=config.default_ip,
             default_port=constants.DEFAULT_PORT_EDGE,
         )
 

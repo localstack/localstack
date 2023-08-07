@@ -352,6 +352,7 @@ OVERRIDE_IN_DOCKER = parse_boolean_env("OVERRIDE_IN_DOCKER")
 
 is_in_docker = in_docker()
 is_in_linux = is_linux()
+default_ip = "0.0.0.0" if is_in_docker else "127.0.0.1"
 
 # CLI specific: the configuration profile to load
 CONFIG_PROFILE = os.environ.get("CONFIG_PROFILE", "").strip()
@@ -566,11 +567,6 @@ class HostAndPort:
 def populate_legacy_edge_configuration(
     environment: Mapping[str, str]
 ) -> Tuple[HostAndPort, List[HostAndPort], str, int, int]:
-    if is_in_docker:
-        default_ip = "0.0.0.0"
-    else:
-        default_ip = "127.0.0.1"
-
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
 
@@ -602,7 +598,9 @@ def populate_legacy_edge_configuration(
         for address in gateway_listen_raw.split(","):
             gateway_listen.append(
                 HostAndPort.parse(
-                    address.strip(), default_host=default_ip, default_port=localstack_host.port
+                    address.strip(),
+                    default_host=default_ip,
+                    default_port=localstack_host.port,
                 )
             )
     else:
