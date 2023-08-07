@@ -5528,6 +5528,43 @@ class TestS3:
         list_inv_configs = aws_client.s3.list_bucket_inventory_configurations(Bucket=src_bucket)
         snapshot.match("list-inventory-config-after-del", list_inv_configs)
 
+    @pytest.mark.parametrize(
+        "use_virtual_address",
+        [True, False],
+    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..x-amz-server-side-encryption"])
+    def test_get_object_content_length_with_virtual_host(
+        self,
+        s3_bucket,
+        use_virtual_address,
+        snapshot,
+        aws_client,
+        aws_client_factory,
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("x-amz-request-id"),
+                snapshot.transform.key_value("x-amz-id-2"),
+                snapshot.transform.key_value("last-modified", reference_replacement=False),
+                snapshot.transform.key_value("date", reference_replacement=False),
+                snapshot.transform.key_value("server"),
+            ]
+        )
+        object_key = "temp.txt"
+        aws_client.s3.put_object(Key=object_key, Bucket=s3_bucket, Body="123")
+
+        s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
+        client = aws_client_factory(
+            config=Config(s3=s3_config),
+            endpoint_url=_endpoint_url(),
+        ).s3
+
+        url = _generate_presigned_url(client, {"Bucket": s3_bucket, "Key": object_key}, expires=10)
+        response = requests.get(url)
+        assert response.ok
+        lowercase_headers = {k.lower(): v for k, v in response.headers.items()}
+        snapshot.match("get-obj-content-len-headers", lowercase_headers)
+
 
 class TestS3MultiAccounts:
     @pytest.fixture
