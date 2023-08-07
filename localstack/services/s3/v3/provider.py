@@ -91,7 +91,8 @@ from localstack.services.s3.utils import (
     validate_kms_key_id,
 )
 from localstack.services.s3.v3.models import S3Bucket, S3DeleteMarker, S3Object, S3Store, s3_stores
-from localstack.services.s3.v3.storage import EphemeralS3ObjectStore, LimitedIterableStream
+from localstack.services.s3.v3.storage.core import LimitedIterableStream
+from localstack.services.s3.v3.storage.ephemeral import EphemeralS3ObjectStore
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
@@ -287,7 +288,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
             body = AwsChunkedDecoder(body, decoded_content_length)
 
-        # TODO check if key already exist, and if it is locked? so we don't override it
+        # TODO check if key already exist, and if it is locked with LegalHold? so we don't override it if protected
 
         version_id = generate_version_id(s3_bucket.versioning_status)
 
@@ -413,9 +414,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 s3_stored_object, max_length=range_data.content_length
             )
             response["ContentRange"] = range_data.content_range
-            response[
-                "ContentLength"
-            ] = range_data.content_length  # TODO: should we set it for chunked encoding?
+            response["ContentLength"] = range_data.content_length
             response["StatusCode"] = 206
         else:
             response["Body"] = s3_stored_object
@@ -581,6 +580,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         deleted = []
         errors = []
 
+        to_remove = []
         for to_delete_object in objects:
             # TODO: beware of key encoding (XML?)
             object_key = to_delete_object.get("Key")
@@ -599,7 +599,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
                 found_object = s3_bucket.objects.pop(object_key, None)
                 if found_object:
-                    self._storage_backend.remove(bucket, found_object)
+                    to_remove.append(found_object)
 
                 if not quiet:
                     deleted.append(DeletedObject(Key=object_key))
@@ -645,9 +645,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 deleted.append(deleted_object)
 
             if isinstance(found_object, S3Object):
-                self._storage_backend.remove(bucket, found_object)
+                to_remove.append(found_object)
 
         # TODO: request charged
+        self._storage_backend.remove(bucket, to_remove)
         response: DeleteObjectsOutput = {}
         # AWS validated: the list of Deleted objects is unordered, multiple identical calls can return different results
         if errors:

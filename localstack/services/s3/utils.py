@@ -80,10 +80,17 @@ RFC1123 = "%a, %d %b %Y %H:%M:%S GMT"
 
 
 def get_owner_for_account_id(account_id: str):
+    """
+    This method returns the S3 Owner from the account id. for now, this is hardcoded as it was in moto, but we can then
+    extend it to return different values depending on the account ID
+    See https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
+    :param account_id: the owner account id
+    :return: the Owner object containing the DisplayName and owner ID
+    """
     return Owner(
         DisplayName="webfile",  # only in certain regions, see above
         ID="75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a",
-    )  # TODO: find a way for that? to depends on the account id used? it will depend on region too? check it
+    )
 
 
 def extract_bucket_key_version_id_from_copy_source(
@@ -103,6 +110,11 @@ def extract_bucket_key_version_id_from_copy_source(
 
 
 class ChecksumHash(Protocol):
+    """
+    This Protocol allows proper typing for different kind of hash used by S3 (hashlib.shaX, zlib.crc32 from
+    S3CRC32Checksum, and botocore CrtCrc32cChecksum).
+    """
+
     def digest(self) -> bytes:
         ...
 
@@ -131,7 +143,9 @@ def get_s3_checksum(algorithm) -> ChecksumHash:
             raise InvalidRequest("The value specified in the x-amz-trailer header is not supported")
 
 
-class S3CRC32Checksum(ChecksumHash):
+class S3CRC32Checksum:
+    """Implements a unified way of using zlib.crc32 compatibl with hashlib.sha and botocore CrtCrc32cChecksum"""
+
     __slots__ = ["checksum"]
 
     def __init__(self):
@@ -150,13 +164,25 @@ class S3CRC32Checksum(ChecksumHash):
 
 @dataclass
 class ParsedRange:
-    content_range: str
-    content_length: int
-    begin: int
-    end: int
+    """
+    Dataclass representing a parsed Range header with the requested S3 object size
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range
+    """
+
+    content_range: str  # the original Range header
+    content_length: int  # the full requested object size
+    begin: int  # the start of range
+    end: int  # the end of the end
 
 
 def parse_range_header(range_header: str, object_size: int) -> ParsedRange:
+    """
+    Takes a Range header, and returns a dataclass containing the necessary information to return only a slice of an
+    S3 object
+    :param range_header: a Range header
+    :param object_size: the requested S3 object total size
+    :return: ParsedRange
+    """
     last = object_size - 1
     _, rspec = range_header.split("=")
     # TODO: check with AWS
@@ -187,7 +213,7 @@ def parse_range_header(range_header: str, object_size: int) -> ParsedRange:
     )
 
 
-def get_full_default_bucket_location(bucket_name):
+def get_full_default_bucket_location(bucket_name: BucketName) -> str:
     if config.HOSTNAME_EXTERNAL != config.LOCALHOST:
         host_definition = localstack_host(
             use_hostname_external=True, custom_port=config.get_edge_port_http()
@@ -198,7 +224,7 @@ def get_full_default_bucket_location(bucket_name):
         return f"{config.get_protocol()}://{bucket_name}.s3.{host_definition.host_and_port()}/"
 
 
-def get_object_checksum_for_algorithm(checksum_algorithm: str, data: bytes):
+def get_object_checksum_for_algorithm(checksum_algorithm: str, data: bytes) -> str:
     match checksum_algorithm:
         case ChecksumAlgorithm.CRC32:
             return checksum_crc32(data)
@@ -327,7 +353,7 @@ def uses_host_addressing(headers: Dict[str, str]) -> bool:
     )
 
 
-def get_class_attrs_from_spec_class(spec_class: Type[str]):
+def get_class_attrs_from_spec_class(spec_class: Type[str]) -> set[str]:
     return {attr for attr in vars(spec_class) if not attr.startswith("__")}
 
 

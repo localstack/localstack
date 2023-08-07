@@ -1,12 +1,11 @@
-import abc
 import base64
 import hashlib
 from collections import defaultdict
-from io import BytesIO, RawIOBase
+from io import BytesIO
 from shutil import rmtree
 from tempfile import SpooledTemporaryFile, mkdtemp
 from threading import RLock
-from typing import IO, Iterable, Iterator, Optional, TypedDict
+from typing import IO, Iterator, Optional, TypedDict
 
 from readerwriterlock import rwlock
 
@@ -15,12 +14,16 @@ from localstack.services.s3.constants import S3_CHUNK_SIZE
 from localstack.services.s3.utils import ChecksumHash, ParsedRange, get_s3_checksum
 from localstack.services.s3.v3.models import S3Multipart, S3Object, S3Part
 
+from .core import LimitedStream, S3ObjectStore, S3StoredMultipart, S3StoredObject
+
 # max file size for S3 objects kept in memory (500 KB by default)
 # TODO: make it configurable
 S3_MAX_FILE_SIZE_BYTES = 512 * 1024
 
 
 class LockedFileMixin:
+    """Mixin with 2 locks: one lock used to lock an underlying stream position between seek and read, and a readwrite"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # this lock allows us to make `seek` and `read` operation as an atomic one, without an external reader
@@ -33,165 +36,17 @@ class LockedFileMixin:
 
 
 class LockedSpooledTemporaryFile(LockedFileMixin, SpooledTemporaryFile):
+    """Creates a SpooledTemporaryFile with locks"""
+
     def seekable(self) -> bool:
         return True
 
 
-class LimitedIterableStream(Iterable[bytes]):
-    def __init__(self, iterable: Iterable[bytes], max_length: int):
-        self.iterable = iterable
-        self.max_length = max_length
-
-    def __iter__(self):
-        for chunk in self.iterable:
-            read = len(chunk)
-            if self.max_length - read >= 0:
-                self.max_length -= read
-                yield chunk
-            else:
-                yield chunk[: self.max_length + 1]
-                break
-
-        return
-
-
-class LimitedStream(RawIOBase):
-    """
-    This utility class allows to return a range from the underlying stream representing an S3 Object.
-    """
-
-    def __init__(self, base_stream: IO[bytes] | "S3StoredObject", range_data: ParsedRange):
-        super().__init__()
-        self.file = base_stream
-        self._pos = range_data.begin
-        self._max_length = range_data.content_length
-
-    def read(self, s: int = -1) -> bytes | None:
-        if s is None or s < 0:
-            amount = self._max_length
-        else:
-            amount = min(self._max_length, s)
-
-        self.file.seek(self._pos)
-        data = self.file.read(amount)
-
-        if not data:
-            return b""
-        read_amount = len(data)
-        self._max_length -= read_amount
-        self._pos += read_amount
-
-        return data
-
-
-# TODO: naming? Shared between Object and Part
-class S3StoredObject(abc.ABC, Iterable[bytes]):
-    s3_object: S3Object
-
-    def __init__(self, s3_object: S3Object | S3Part):
-        self.s3_object = s3_object
-
-    @abc.abstractmethod
-    def close(self):
-        pass
-
-    @abc.abstractmethod
-    def write(self, s: IO[bytes] | "S3StoredObject") -> int:
-        pass
-
-    @abc.abstractmethod
-    def append(self, part: "S3StoredObject") -> int:
-        pass
-
-    @abc.abstractmethod
-    def read(self, s: int = -1) -> bytes | None:
-        pass
-
-    @abc.abstractmethod
-    def seek(self, offset: int, whence: int = 0) -> int:
-        pass
-
-    @abc.abstractmethod
-    def checksum(self) -> Optional[str]:
-        if not self.s3_object.checksum_algorithm:
-            return None
-
-    @abc.abstractmethod
-    def __iter__(self) -> Iterator[bytes]:
-        pass
-
-
-class S3StoredMultipart(abc.ABC):
-    parts: dict[PartNumber, S3StoredObject]
-    s3_multipart: S3Multipart
-    _s3_store: "S3ObjectStore"
-
-    def __init__(self, s3_store: "S3ObjectStore", bucket: BucketName, s3_multipart: S3Multipart):
-        self.s3_multipart = s3_multipart
-        self.bucket = bucket
-        self._s3_store = s3_store
-        self.parts = {}
-
-    @abc.abstractmethod
-    def open(self, s3_part: S3Part) -> S3StoredObject:
-        pass
-
-    @abc.abstractmethod
-    def remove_part(self, s3_part: S3Part):
-        pass
-
-    @abc.abstractmethod
-    def complete_multipart(self, parts: list[PartNumber]) -> S3StoredObject:
-        pass
-
-    @abc.abstractmethod
-    def close(self):
-        pass
-
-    @abc.abstractmethod
-    def copy_from_object(
-        self,
-        s3_part: S3Part,
-        src_bucket: BucketName,
-        src_s3_object: S3Object,
-        range_data: ParsedRange,
-    ) -> S3StoredObject:
-        pass
-
-
-class S3ObjectStore(abc.ABC):
-    @abc.abstractmethod
-    def open(self, bucket: BucketName, s3_object: S3Object) -> S3StoredObject:
-        pass
-
-    @abc.abstractmethod
-    def remove(self, bucket: BucketName, s3_object: S3Object):
-        pass
-
-    @abc.abstractmethod
-    def copy(
-        self,
-        src_bucket: BucketName,
-        src_object: S3Object,
-        dest_bucket: BucketName,
-        dest_object: S3Object,
-    ) -> S3StoredObject:
-        pass
-
-    @abc.abstractmethod
-    def get_multipart(self, bucket: BucketName, upload_id: MultipartUploadId) -> S3StoredMultipart:
-        pass
-
-    @abc.abstractmethod
-    def remove_multipart(self, bucket: BucketName, s3_multipart: S3Multipart):
-        pass
-
-    @abc.abstractmethod
-    def close(self):
-        pass
-
-
 class EphemeralS3StoredObject(S3StoredObject):
+    """
+    An Ephemeral S3StoredObject, using LockedSpooledTemporaryFile as its underlying file object.
+    """
+
     file: LockedSpooledTemporaryFile
     size: int
     _pos: int
@@ -209,6 +64,7 @@ class EphemeralS3StoredObject(S3StoredObject):
         self._pos = 0
 
     def read(self, s: int = -1) -> bytes | None:
+        """Read at most `s` bytes from the underlying fileobject, and keeps the internal position"""
         with self.file.position_lock:
             self.file.seek(self._pos)
             data = self.file.read(s)
@@ -220,6 +76,12 @@ class EphemeralS3StoredObject(S3StoredObject):
         return data
 
     def seek(self, offset: int, whence: int = 0) -> int:
+        """
+        Set the position of the stream at `offset`, starting depending on `whence`.
+        :param offset: offset from the position depending on the whence
+        :param whence: can be 0, 1 or 2 - 0 meaning beginning of stream, 1 current position and 2 end of the stream
+        :return: the position after seeking, from beginning of the stream
+        """
         with self.file.position_lock:
             self.file.seek(offset, whence)
             self._pos = self.file.tell()
@@ -227,6 +89,15 @@ class EphemeralS3StoredObject(S3StoredObject):
         return self._pos
 
     def write(self, stream: IO[bytes] | "EphemeralS3StoredObject" | LimitedStream) -> int:
+        """
+        Read from the `stream` parameter into the underlying fileobject. This will truncate the fileobject before
+        writing, effectively copying the stream into the fileobject. While iterating, it will also calculate the MD5
+        hash of the stream, and its checksum value if the S3Object has a checksum algorithm set.
+        This method can directly take an EphemeralS3StoredObject as input, and will use its own locking system to
+        prevent concurrent write access while iterating over the stream input.
+        :param stream: can be a regular IO[bytes] or an EphemeralS3StoredObject
+        :return: number of bytes written
+        """
         if stream is None:
             stream = BytesIO()
 
@@ -268,6 +139,12 @@ class EphemeralS3StoredObject(S3StoredObject):
             return self.size
 
     def append(self, part: "EphemeralS3StoredObject") -> int:
+        """
+        Append the EphemeralS3StoredObject data into the underlying fileobject. Used with Multipart Upload to
+        assemble parts into the final S3StoredObject.
+        :param part: EphemeralS3StoredObject
+        :return: number of written bytes
+        """
         read = 0
         with part.file.readwrite_lock.gen_rlock():
             while data := part.read(S3_CHUNK_SIZE):
@@ -277,9 +154,15 @@ class EphemeralS3StoredObject(S3StoredObject):
         return read
 
     def close(self):
+        """Close the underlying fileobject, effectively deleting it"""
         return self.file.close()
 
     def checksum(self) -> Optional[str]:
+        """
+        Return the object checksum base64 encoded, if the S3Object has a checksum algorithm.
+        If the checksum hasn't been calculated, this method will iterate over the file again to recalculate it.
+        :return:
+        """
         if not self.s3_object.checksum_algorithm:
             return
         if not self.checksum_hash:
@@ -298,6 +181,11 @@ class EphemeralS3StoredObject(S3StoredObject):
         return self._checksum
 
     def __iter__(self) -> Iterator[bytes]:
+        """
+        This is mostly used as convenience to directly passed this object to a Werkzeug response object, hiding the
+        iteration locking logic.
+        :return:
+        """
         with self.file.readwrite_lock.gen_rlock():
             while data := self.read(S3_CHUNK_SIZE):
                 if not data:
@@ -322,6 +210,13 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         self.upload_dir = upload_dir
 
     def open(self, s3_part: S3Part) -> EphemeralS3StoredObject:
+        """
+        Returns an EphemeralS3StoredObject for an S3Part, allowing direct access to the object. This will add a part
+        into the Multipart collection. We can directly store the EphemeralS3StoredObject in the collection, as S3Part
+        cannot be accessed/read directly from the API.
+        :param s3_part: S3Part object
+        :return: EphemeralS3StoredObject, most often to directly `write` into it.
+        """
         if not (stored_part := self.parts.get(s3_part.part_number)):
             file = LockedSpooledTemporaryFile(dir=self.upload_dir, max_size=S3_MAX_FILE_SIZE_BYTES)
             stored_part = EphemeralS3StoredObject(s3_part, file)
@@ -330,11 +225,22 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         return stored_part
 
     def remove_part(self, s3_part: S3Part):
+        """
+        Remove a part from the Multipart collection.
+        :param s3_part: S3Part
+        :return:
+        """
         stored_part = self.parts.pop(s3_part.part_number, None)
         if stored_part:
             stored_part.close()
 
     def complete_multipart(self, parts: list[PartNumber]) -> EphemeralS3StoredObject:
+        """
+        Takes a list of parts numbers, and will iterate over it to assemble all parts together into a single
+        EphemeralS3StoredObject containing all those parts.
+        :param parts: list of PartNumber
+        :return: the resulting EphemeralS3StoredObject
+        """
         s3_stored_object = self._s3_store.open(self.bucket, self.s3_multipart.object)
         for part_number in parts:
             stored_part = self.parts.get(part_number)
@@ -343,6 +249,10 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         return s3_stored_object
 
     def close(self):
+        """
+        Iterates over all parts of the collection to close them and clean them up. Closing a part will delete it.
+        :return:
+        """
         for part in self.parts.values():
             part.close()
 
@@ -355,19 +265,20 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         src_s3_object: S3Object,
         range_data: ParsedRange,
     ) -> EphemeralS3StoredObject:
+        """
+        Create and add an EphemeralS3StoredObject to the Multipart collection, with an S3Object as input. This will
+        take a slice of the S3Object to create a part.
+        :param s3_part: the part which will contain the S3 Object slice
+        :param src_bucket: the bucket where the source S3Object resides
+        :param src_s3_object: the source S3Object
+        :param range_data: the range data from which the S3Part will copy its data.
+        :return: the EphemeralS3StoredObject representing the stored part
+        """
         src_stored_object = self._s3_store.open(src_bucket, src_s3_object)
         stored_part = self.open(s3_part)
 
         object_slice = LimitedStream(src_stored_object, range_data=range_data)
         stored_part.write(object_slice)
-        return stored_part
-
-    def _get_part(self, s3_part: S3Part) -> EphemeralS3StoredObject:
-        if not (stored_part := self.parts.get(s3_part.part_number)):
-            file = LockedSpooledTemporaryFile(dir=self.upload_dir, max_size=S3_MAX_FILE_SIZE_BYTES)
-            stored_part = EphemeralS3StoredObject(s3_part, file)
-            self.parts[s3_part.part_number] = stored_part
-
         return stored_part
 
 
@@ -390,15 +301,30 @@ class EphemeralS3ObjectStore(S3ObjectStore):
     │  ├─ <part-number-2> -> fileobj
     """
 
-    def __init__(self):
+    root_directory: str
+
+    def __init__(self, root_directory: str = None):
         self._filesystem: dict[BucketName, BucketTemporaryFileSystem] = defaultdict(
             lambda: {"keys": {}, "multiparts": {}}
         )
         # this allows us to map bucket names to temporary directory name, to not have a flat structure inside the
         # temporary directory used by SpooledTemporaryFile
         self._directory_mapping: dict[str, str] = {}
+        # namespace the EphemeralS3ObjectStore artifacts under a single root directory, under gettempdir() if not
+        # provided
+        if not root_directory:
+            root_directory = mkdtemp()
+        self.root_directory = root_directory
 
     def open(self, bucket: BucketName, s3_object: S3Object) -> EphemeralS3StoredObject:
+        """
+        Returns a EphemeralS3StoredObject from an S3Object, a wrapper around an underlying fileobject underneath,
+        exposing higher level actions for the provider to interact with. This allows the provider to store data for an
+        S3Object.
+        :param bucket: the S3Object bucket
+        :param s3_object: an S3Object
+        :return: EphemeralS3StoredObject
+        """
         key = self._key_from_s3_object(s3_object)
         if not (file := self._get_object_file(bucket, key)):
             if not (bucket_tmp_dir := self._directory_mapping.get(bucket)):
@@ -409,12 +335,22 @@ class EphemeralS3ObjectStore(S3ObjectStore):
 
         return EphemeralS3StoredObject(s3_object=s3_object, file=file)
 
-    def remove(self, bucket: BucketName, s3_object: S3Object):
+    def remove(self, bucket: BucketName, s3_object: S3Object | list[S3Object]):
+        """
+        Remove the underlying data of an S3Object.
+        :param bucket: the S3Object bucket
+        :param s3_object: S3Object to remove. This can also take a list of S3Objects
+        :return:
+        """
+        if not isinstance(s3_object, list):
+            s3_object = [s3_object]
+
         if keys := self._filesystem.get(bucket, {}).get("keys", {}):
-            key = self._key_from_s3_object(s3_object)
-            file = keys.pop(key, None)
-            if file:
-                file.close()
+            for obj in s3_object:
+                key = self._key_from_s3_object(obj)
+                file = keys.pop(key, None)
+                if file:
+                    file.close()
 
         # if the bucket is now empty after removing, we can delete the directory
         if not keys and not self._filesystem.get(bucket, {}).get("multiparts"):
@@ -427,8 +363,18 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         dest_bucket: BucketName,
         dest_object: S3Object,
     ) -> EphemeralS3StoredObject:
+        """
+        Copy an S3Object into another one. This will copy the underlying data inside another.
+        :param src_bucket: the source bucket
+        :param src_object: the source S3Object
+        :param dest_bucket: the destination bucket
+        :param dest_object: the destination S3Object
+        :return: the destination EphemeralS3StoredObject
+        """
+        # If this is an in-place copy, directly return the EphemeralS3StoredObject of the destination S3Object, no need
+        # to copy the underlying data.
         if src_bucket == dest_bucket and src_object.key == dest_object.key:
-            return self.open(src_bucket, src_object)
+            return self.open(dest_bucket, dest_object)
 
         src_stored_object = self.open(src_bucket, src_object)
         dest_stored_object = self.open(dest_bucket, dest_object)
@@ -445,7 +391,7 @@ class EphemeralS3ObjectStore(S3ObjectStore):
 
             upload_dir = self._create_upload_directory(bucket, s3_multipart.id)
 
-            multipart = EphemeralS3StoredMultipart(self, s3_multipart, upload_dir)
+            multipart = EphemeralS3StoredMultipart(self, bucket, s3_multipart, upload_dir)
             self._filesystem[bucket]["multiparts"][upload_key] = multipart
 
         return multipart
@@ -461,6 +407,11 @@ class EphemeralS3ObjectStore(S3ObjectStore):
             self._delete_bucket_directory(bucket)
 
     def close(self):
+        """
+        Close the Store and clean up all underlying objecs. This will effectively remove all data from the filesystem
+        and memory.
+        :return:
+        """
         for bucket in self._filesystem.values():
             if keys := bucket.get("keys"):
                 for file in keys.values():
@@ -491,7 +442,7 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         Create a temporary directory representing a bucket
         :param bucket_name
         """
-        tmp_dir = mkdtemp()
+        tmp_dir = mkdtemp(dir=self.root_directory)
         self._directory_mapping[bucket_name] = tmp_dir
         return tmp_dir
 
@@ -508,10 +459,10 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         self, bucket_name: BucketName, upload_id: MultipartUploadId
     ) -> str:
         """
-        Create a temporary
-        :param bucket_name:
-        :param upload_id:
-        :return:
+        Create a temporary directory inside a bucket, representing a multipart upload, holding its parts
+        :param bucket_name: the bucket where the multipart upload resides
+        :param upload_id: the multipart upload id
+        :return: the full part of the upload, where the parts will live
         """
         bucket_tmp_dir = self._directory_mapping.get(bucket_name)
         if not bucket_tmp_dir:
@@ -523,6 +474,12 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         return upload_tmp_dir
 
     def _delete_upload_directory(self, bucket_name: BucketName, upload_id: MultipartUploadId):
+        """
+        Delete the temporary directory representing a multipart upload
+        :param bucket_name: the multipart upload bucket
+        :param upload_id: the multipart upload id
+        :return:
+        """
         tmp_dir = self._directory_mapping.get(f"{bucket_name}/{upload_id}")
         if tmp_dir:
             rmtree(tmp_dir, ignore_errors=True)

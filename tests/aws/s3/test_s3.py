@@ -857,7 +857,7 @@ class TestS3:
         paths=[
             "$..ServerSideEncryption",
             "$..DeleteMarker",
-        ]
+        ],
     )
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER,

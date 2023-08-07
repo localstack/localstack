@@ -5,8 +5,6 @@ from datetime import datetime
 from secrets import token_urlsafe
 from typing import Literal, Optional, Union
 
-from werkzeug.datastructures.headers import Headers
-
 from localstack import config
 from localstack.aws.api.s3 import (  # EntityTooSmall,; InvalidPart,
     AccountId,
@@ -129,7 +127,7 @@ class S3Bucket:
         self,
         key: ObjectKey,
         version_id: ObjectVersionId = None,
-        http_method: Literal["GET", "PUT", "HEAD"] = "GET",  # TODO: better?
+        http_method: Literal["GET", "PUT", "HEAD"] = "GET",
     ) -> "S3Object":
         """
         :param key: the Object Key
@@ -265,11 +263,12 @@ class S3Object:
         self.parts = []
         self.restore = None
 
-    def get_system_metadata_fields(self):
-        headers = Headers()
-        headers["LastModified"] = self.last_modified_rfc1123
-        headers["ContentLength"] = str(self.size)
-        headers["ETag"] = self.quoted_etag
+    def get_system_metadata_fields(self) -> dict:
+        headers = {
+            "LastModified": self.last_modified_rfc1123,
+            "ContentLength": str(self.size),
+            "ETag": self.quoted_etag,
+        }
         if self.expires:
             headers["Expires"] = self.expires_rfc1123
 

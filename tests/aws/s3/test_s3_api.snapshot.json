@@ -1,5 +1,5 @@
 {
-  "tests/integration/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_object_versioned": {
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_object_versioned": {
     "recorded-date": "15-06-2023, 23:22:07",
     "recorded-content": {
       "put-object": {
@@ -164,7 +164,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_object": {
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_object": {
     "recorded-date": "27-07-2023, 01:10:35",
     "recorded-content": {
       "put-object": {
@@ -201,11 +201,11 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3BucketCRUD::test_delete_versioned_bucket_with_objects": {
+  "tests/aws/s3/test_s3_api.py::TestS3BucketCRUD::test_delete_versioned_bucket_with_objects": {
     "recorded-date": "25-07-2023, 01:56:39",
     "recorded-content": {}
   },
-  "tests/integration/s3/test_s3_api.py::TestS3ObjectCRUD::test_get_object_with_version_unversioned_bucket": {
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_get_object_with_version_unversioned_bucket": {
     "recorded-date": "27-07-2023, 00:53:12",
     "recorded-content": {
       "put-object": {
@@ -244,7 +244,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3ObjectCRUD::test_list_object_versions_order_unversioned": {
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_list_object_versions_order_unversioned": {
     "recorded-date": "26-07-2023, 21:32:00",
     "recorded-content": {
       "list-empty": {
@@ -340,7 +340,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3BucketCRUD::test_delete_bucket_with_objects": {
+  "tests/aws/s3/test_s3_api.py::TestS3BucketCRUD::test_delete_bucket_with_objects": {
     "recorded-date": "27-07-2023, 00:25:16",
     "recorded-content": {
       "delete-with-obj": {
@@ -368,7 +368,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_objects": {
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_objects": {
     "recorded-date": "27-07-2023, 02:01:09",
     "recorded-content": {
       "put-object": {
@@ -412,7 +412,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_objects_versioned": {
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_objects_versioned": {
     "recorded-date": "27-07-2023, 01:49:47",
     "recorded-content": {
       "put-object": {

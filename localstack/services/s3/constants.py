@@ -1,7 +1,11 @@
 from localstack.aws.api.s3 import BucketCannedACL, ObjectCannedACL, Permission, StorageClass
 
 S3_VIRTUAL_HOST_FORWARDED_HEADER = "x-s3-vhost-forwarded-for"
+
 S3_UPLOAD_PART_MIN_SIZE = 5242880
+"""
+This is minimum size allowed by S3 when uploading more than one part for a Multipart Upload, except for the last part
+"""
 
 VALID_CANNED_ACLS_BUCKET = {
     # https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
