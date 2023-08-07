@@ -12,6 +12,7 @@ from . import (
     legacy,
     logging,
     region,
+    route53,
     service,
 )
 
@@ -35,6 +36,7 @@ serve_localstack_resources = internal.LocalstackResourceHandler()
 run_custom_response_handlers = chain.CompositeResponseHandler()
 modify_service_response = service.ServiceResponseHandlers()
 parse_service_response = service.ServiceResponseParser()
+inject_host_header_for_route53_cname = route53.CnameHostHeaderInjector()
 # legacy compatibility handlers
 serve_edge_router_rules = legacy.EdgeRouterHandler()
 serve_default_listeners = legacy.DefaultListenerHandler()
