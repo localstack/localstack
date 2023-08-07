@@ -6,6 +6,14 @@ from typing import Callable, Optional
 import pytest
 
 
+class AwsCompatibilityMarkers:
+    validated = pytest.mark.aws_validated
+    manual_setup_required = pytest.mark.aws__manual_setup_required  # implies aws_validated
+    needs_fixing = pytest.mark.aws__needs_fixing
+    only_localstack = pytest.mark.aws__only_localstack
+    unknown = pytest.mark.aws__unknown
+
+
 class ParityMarkers:
     aws_validated = pytest.mark.aws_validated
     manual_setup_required = pytest.mark.manual_setup_required  # implies aws_validated
@@ -33,7 +41,8 @@ class SnapshotMarkers:
 
 
 class Markers:
-    parity = ParityMarkers
+    aws = AwsCompatibilityMarkers
+    parity = ParityMarkers  # TODO: in here for compatibility sake. Remove when -ext has been refactored to use @markers.aws.*
     snapshot = SnapshotMarkers
 
     multiruntime: MultiRuntimeMarker = pytest.mark.multiruntime
