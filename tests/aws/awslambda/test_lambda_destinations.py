@@ -583,6 +583,7 @@ def handler(event, context):
         with infra.provisioner(skip_teardown=False) as prov:
             yield prov
 
+    @markers.parity.aws_validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..AWSTraceHeader", "$..SenderId"])
     def test_invoke_lambda_eventbridge(self, infrastructure, aws_client, snapshot):
         outputs = infrastructure.get_stack_outputs(self.EVENT_BRIDGE_STACK)
