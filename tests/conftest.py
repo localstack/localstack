@@ -45,18 +45,21 @@ def pytest_configure(config):
         "markers",
         "aws_validated: mark the test as validated / verified against real AWS",
     )
-
     config.addinivalue_line(
         "markers",
-        "only_localstack: mark the test as inherently incompatible with AWS, e.g. when testing localstack-specific features",
+        "aws_only_localstack: mark the test as inherently incompatible with AWS, e.g. when testing localstack-specific features",
     )
     config.addinivalue_line(
         "markers",
-        "should_be_aws_validated: test fails against AWS but it shouldn't. Might need refactoring, additional permissions, etc.",
+        "aws_needs_fixing: test fails against AWS but it shouldn't. Might need refactoring, additional permissions, etc.",
     )
     config.addinivalue_line(
         "markers",
-        "manual_setup_required: validated against real AWS but needs additional setup or account configuration (e.g. increased service quotas)",
+        "aws_manual_setup_required: validated against real AWS but needs additional setup or account configuration (e.g. increased service quotas)",
+    )
+    config.addinivalue_line(
+        "markers",
+        "aws_unknown: it's unknown if the test works (reliably) against AWS or not",
     )
     config.addinivalue_line(
         "markers",
