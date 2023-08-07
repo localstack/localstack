@@ -454,8 +454,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
         key_object = get_key_from_moto_bucket(moto_bucket, key=key)
 
-        if checksum_algorithm := key_object.checksum_algorithm:
-            # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
+        if (checksum_algorithm := key_object.checksum_algorithm) and not response.get(
+            "ContentEncoding"
+        ):
+            # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested) if it's not
+            # set to something
             response["ContentEncoding"] = ""
 
         if (request.get("ChecksumMode") or "").upper() == "ENABLED" and checksum_algorithm:
@@ -504,12 +507,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not config.S3_SKIP_KMS_KEY_VALIDATION and key_object.kms_key_id:
             validate_kms_key_id(kms_key=key_object.kms_key_id, bucket=moto_bucket)
 
-        if checksum_algorithm := key_object.checksum_algorithm:
-            # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
+        if (checksum_algorithm := key_object.checksum_algorithm) and not response.get(
+            "ContentEncoding"
+        ):
+            # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested) if it's not
+            # set to something
             response["ContentEncoding"] = ""
 
         if (request.get("ChecksumMode") or "").upper() == "ENABLED" and checksum_algorithm:
-            response[f"Checksum{checksum_algorithm.upper()}"] = key_object.checksum_value  # noqa
+            response[f"Checksum{key_object.checksum_algorithm.upper()}"] = key_object.checksum_value
 
         if not version_id and (
             (bucket_lifecycle_config := store.bucket_lifecycle_configuration.get(request["Bucket"]))

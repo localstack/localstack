@@ -125,9 +125,10 @@ class TestS3NotificationsToEventBridge:
     @markers.parity.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
     def test_object_put_acl(self, basic_event_bridge_rule_to_sqs_queue, snapshot, aws_client):
-
         # setup fixture
         bucket_name, queue_url = basic_event_bridge_rule_to_sqs_queue
+        aws_client.s3.delete_bucket_ownership_controls(Bucket=bucket_name)
+        aws_client.s3.delete_public_access_block(Bucket=bucket_name)
         key_name = "my_key_acl"
 
         aws_client.s3.put_object(Bucket=bucket_name, Key=key_name, Body="something")
@@ -175,7 +176,7 @@ class TestS3NotificationsToEventBridge:
 
         retries = 10 if is_aws_cloud() else 5
         retry(_receive_messages, retries=retries, sleep=0.1)
-        messages.sort(key=lambda x: x["time"])
+        messages.sort(key=lambda x: (x["detail-type"], x["time"]))
         snapshot.match("messages", {"messages": messages})
 
     @markers.parity.aws_validated
@@ -230,7 +231,7 @@ class TestS3NotificationsToEventBridge:
 
             assert len(messages) == 2
 
-        retries = 10 if is_aws_cloud() else 5
+        retries = 20 if is_aws_cloud() else 5
         retry(_receive_messages, retries=retries, sleep=0.1)
         messages.sort(key=lambda x: x["time"])
         snapshot.match("messages", {"messages": messages})

@@ -22,7 +22,6 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config, constants
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -106,14 +105,6 @@ def aws_http_client_factory(aws_session):
 @pytest.fixture(scope="class")
 def s3_vhost_client(aws_client_factory):
     return aws_client_factory(config=botocore.config.Config(s3={"addressing_style": "virtual"})).s3
-
-
-# TODO: remove
-@pytest.fixture(scope="class")
-def s3_presigned_client(aws_client_factory):
-    return aws_client_factory(
-        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY
-    ).s3
 
 
 @pytest.fixture
