@@ -46,6 +46,7 @@ from localstack.utils.collections import split_list_by
 from localstack.utils.functions import empty_context_manager
 from localstack.utils.http import parse_request_data
 from localstack.utils.http import safe_requests as requests
+from localstack.utils.net import get_free_tcp_port
 from localstack.utils.run import is_root, run
 from localstack.utils.server.http2_server import HTTPErrorResponse
 from localstack.utils.server.proxy_server import start_tcp_proxy
@@ -406,25 +407,37 @@ def ensure_can_use_sudo():
         run("sudo -v", stdin=True)
 
 
-def start_component(component: str, listen_str: str = None):
+def start_component(
+    component: str, listen_str: str | None = None, target_address: str | None = None
+):
     if component == "edge":
         return start_edge(listen_str=listen_str)
     if component == "proxy":
-        return start_proxy(listen_str=listen_str)
+        if target_address is None:
+            raise ValueError("no target address specified")
+
+        default_host = "0.0.0.0" if config.in_docker() else "127.0.0.1"
+        return start_proxy(
+            listen_str=listen_str,
+            target_address=HostAndPort.parse(
+                target_address, default_host=default_host, default_port=constants.DEFAULT_PORT_EDGE
+            ),
+        )
     raise Exception("Unexpected component name '%s' received during start up" % component)
 
 
 def start_proxy(
-    listen_str: str, target_address: Optional[HostAndPort] = None, asynchronous: bool = False
+    listen_str: str, target_address: HostAndPort, asynchronous: bool = False
 ) -> FuncThread:
     """
     Starts a TCP proxy to perform a low-level forwarding of incoming requests.
     The proxy's source port (given as method argument) is bound to the EDGE_BIND_HOST.
     The target IP is always 127.0.0.1.
     The target port is parsed from the EDGE_FORWARD_URL (for compatibility with the legacy edge proxy forwarding).
-    All other parts of the EDGE_FORWARD_URL are _not_ used anymore.
+    All other parts of the EDGE_FORWARD_URL are _not_ used any more.
 
-    :param port: source port
+    :param listen_str: address to listen on
+    :param target_address: target address to proxy requests to
     :param asynchronous: False if the function should join the proxy thread and block until it terminates.
     :return: created thread executing the proxy
     """
@@ -445,11 +458,8 @@ def start_proxy(
 
 
 def do_start_tcp_proxy(
-    listen: HostAndPort, target_address: Optional[HostAndPort] = None, asynchronous: bool = False
+    listen: HostAndPort, target_address: HostAndPort, asynchronous: bool = False
 ) -> FuncThread:
-    if target_address is None:
-        target_address = HostAndPort(host=config.LOCALHOST_IP, port=constants.DEFAULT_PORT_EDGE)
-
     src = str(listen)
     dst = str(target_address)
 
@@ -464,8 +474,8 @@ def do_start_tcp_proxy(
 
 
 def start_edge(listen_str: str, use_ssl: bool = True, asynchronous: bool = False):
+    default_ip = "0.0.0.0" if config.in_docker() else "127.0.0.1"
     if listen_str:
-        default_ip = "0.0.0.0" if config.is_in_docker() else "127.0.0.1"
         listen = parse_gateway_listen(
             listen_str, default_host=default_ip, default_port=constants.DEFAULT_PORT_EDGE
         )
@@ -478,19 +488,35 @@ def start_edge(listen_str: str, use_ssl: bool = True, asynchronous: bool = False
     # separate privileged and unprivileged addresses
     unprivileged, privileged = split_list_by(listen, lambda addr: addr.is_unprivileged() or False)
 
+    # check that we are actually started the gateway server
+    if not unprivileged:
+        unprivileged = parse_gateway_listen(
+            f":{get_free_tcp_port()}",
+            default_host=default_ip,
+            default_port=constants.DEFAULT_PORT_EDGE,
+        )
+
     # bind the gateway server to unprivileged addresses
     edge_thread = do_start_edge(unprivileged, use_ssl=use_ssl, asynchronous=True)
 
     # start TCP proxies for the remaining addresses
+    proxy_destination = unprivileged[0]
     for address in privileged:
         if is_root():
             # just start the proxy
-            do_start_tcp_proxy(address, asynchronous=asynchronous)
+            do_start_tcp_proxy(address, target_address=proxy_destination, asynchronous=asynchronous)
         else:
             # escalate to root
+            args = [
+                "proxy",
+                "--gateway-listen",
+                str(address),
+                "--target-address",
+                str(proxy_destination),
+            ]
             run_module_as_sudo(
                 module="localstack.services.edge",
-                arguments=["proxy", "--gateway-listen", str(address)],
+                arguments=args,
                 asynchronous=True,
             )
 
@@ -545,7 +571,8 @@ if __name__ == "__main__":
     logging.basicConfig()
     parser = argparse.ArgumentParser()
     parser.add_argument("component")
-    parser.add_argument("-l", "--gateway-listen", required=False, default=None)
+    parser.add_argument("-l", "--gateway-listen", required=False, type=str)
+    parser.add_argument("-t", "--target-address", required=False, type=str)
     args = parser.parse_args()
 
-    start_component(args.component, args.gateway_listen)
+    start_component(args.component, args.gateway_listen, args.target_address)
