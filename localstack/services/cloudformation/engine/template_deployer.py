@@ -813,7 +813,7 @@ class TemplateDeployer:
 
     # ------------------
     # MAIN ENTRY POINTS
-    # ------------------
+    # -----------------
 
     def deploy_stack(self):
         self.stack.set_stack_status("CREATE_IN_PROGRESS")
@@ -909,7 +909,7 @@ class TemplateDeployer:
                         resource_provider_payload = self.create_resource_provider_payload(
                             "Remove", logical_resource_id=resource_id
                         )
-                        executor.deploy_loop(resource_provider_payload)  # noqa
+                        progress_event = executor.deploy_loop(resource_provider_payload)  # noqa
                         self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
                 except Exception as e:
                     if iteration_cycle == max_cycle:
@@ -1017,10 +1017,10 @@ class TemplateDeployer:
 
     def resource_config_differs(self, resource_new):
         """Return whether the given resource properties differ from the existing config (for stack updates)."""
-        # TODO: this is broken for default fields when they're added to the properties in the model
+        # TODO: this is broken for default fields and result_handler property modifications when they're added to the properties in the model
         resource_id = resource_new["LogicalResourceId"]
         resource_old = self.resources[resource_id]
-        props_old = resource_old["Properties"]
+        props_old = resource_old["SpecifiedProperties"]
         props_new = resource_new["Properties"]
         ignored_keys = ["LogicalResourceId", "PhysicalResourceId"]
         old_keys = set(props_old.keys()) - set(ignored_keys)
@@ -1037,10 +1037,13 @@ class TemplateDeployer:
         if old_status and "DELETE" in previous_state:
             return True
 
-    def merge_properties(self, resource_id, old_stack, new_stack):
+    # TODO: ?
+    def merge_properties(self, resource_id: str, old_stack, new_stack) -> None:
         old_resources = old_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
         new_resource = new_resources[resource_id]
+        # old_resource = old_resources.get(resource_id)
+
         old_resource = old_resources[resource_id] = old_resources.get(resource_id) or {}
         for key, value in new_resource.items():
             if key == "Properties":
@@ -1049,6 +1052,11 @@ class TemplateDeployer:
         old_res_props = old_resource["Properties"] = old_resource.get("Properties", {})
         for key, value in new_resource["Properties"].items():
             old_res_props[key] = value
+
+        old_res_props = {
+            k: v for k, v in old_res_props.items() if k in new_resource["Properties"].keys()
+        }
+        old_resource["Properties"] = old_res_props
 
         # overwrite original template entirely
         old_stack.template_original["Resources"][resource_id] = new_stack.template_original[
@@ -1064,7 +1072,7 @@ class TemplateDeployer:
         change_set_id=None,
         append_to_changeset: Optional[bool] = False,
         filter_unchanged_resources: Optional[bool] = False,
-    ):
+    ) -> list[ChangeConfig]:
         old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
         deletes = [val for key, val in old_resources.items() if key not in new_resources]
@@ -1078,7 +1086,7 @@ class TemplateDeployer:
             for item in items:
                 item["Properties"] = item.get("Properties", {})
                 if (
-                    not filter_unchanged_resources
+                    not filter_unchanged_resources  # TODO: find out purpose of this
                     or action != "Modify"
                     or self.resource_config_differs(item)
                 ):
@@ -1102,6 +1110,7 @@ class TemplateDeployer:
         old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
         action = action or "CREATE"
+        # TODO: this seems wrong, not every resource here will be in an UPDATE_IN_PROGRESS state? (only the ones that will actually be updated)
         self.init_resource_status(old_resources, action="UPDATE")
 
         # apply parameter changes to existing stack
@@ -1119,10 +1128,24 @@ class TemplateDeployer:
         contains_changes = False
         for change in changes:
             res_action = change["ResourceChange"]["Action"]
+            #  we need to resolve refs before diffing to detect if for example a parameter causes the change or not
+            # FIXME: this now causes issues because we might not be able to resolve everything yet
             resource = new_resources.get(change["ResourceChange"]["LogicalResourceId"])
-            if res_action != "Modify" or self.resource_config_differs(resource):
+            # resource = resolve_refs_recursively(
+            #     self.stack_name,
+            #     self.resources,
+            #     self.mappings,
+            #     self.stack.resolved_conditions,
+            #     self.stack.resolved_parameters,
+            #     resource,
+            # )
+            if res_action in ["Add", "Remove"] or self.resource_config_differs(resource):
                 contains_changes = True
+            # if res_action in ["Modify", "Add"]:
+            #     # mutating call that overwrites resource properties with new properties and overwrites the template in old stack with new template
+            #     self.merge_properties(resource["LogicalResourceId"], existing_stack, new_stack)
             if res_action in ["Modify", "Add"]:
+                # mutating call that overwrites resource properties with new properties and overwrites the template in old stack with new template
                 self.merge_properties(resource["LogicalResourceId"], existing_stack, new_stack)
         if not contains_changes:
             raise NoStackUpdates("No updates are to be performed.")
@@ -1139,7 +1162,9 @@ class TemplateDeployer:
             changes, existing_stack, action=action, new_stack=new_stack
         )
 
-    def apply_changes_in_loop(self, changes, stack, action=None, new_stack=None):
+    def apply_changes_in_loop(
+        self, changes: list[ChangeConfig], stack, action: Optional[str] = None, new_stack=None
+    ):
         def _run(*args):
             status_reason = None
             try:
@@ -1266,7 +1291,9 @@ class TemplateDeployer:
 
         return changes_done
 
-    def prepare_should_deploy_change(self, resource_id, change, stack, new_resources):
+    def prepare_should_deploy_change(
+        self, resource_id: str, change: ResourceChange, stack, new_resources: dict
+    ) -> bool:
         """
         TODO: document
         """
@@ -1274,13 +1301,12 @@ class TemplateDeployer:
         res_change = change["ResourceChange"]
         action = res_change["Action"]
 
-        # TODO: this needs to happen much earlier
         # check resource condition, if present
         if not evaluate_resource_condition(stack.resolved_conditions, resource):
             LOG.debug(
                 'Skipping deployment of "%s", as resource condition evaluates to false', resource_id
             )
-            return
+            return False
 
         # resolve refs in resource details
         resolve_refs_recursively(
@@ -1309,7 +1335,7 @@ class TemplateDeployer:
         return True
 
     # Stack is needed here
-    def apply_change(self, change: ChangeConfig, stack: Stack):
+    def apply_change(self, change: ChangeConfig, stack: Stack) -> None:
         change_details = change["ResourceChange"]
         action = change_details["Action"]
         resource_id = change_details["LogicalResourceId"]
@@ -1331,8 +1357,24 @@ class TemplateDeployer:
             action, logical_resource_id=resource_id
         )
 
-        # TODO: verify event
         progress_event = executor.deploy_loop(resource_provider_payload)  # noqa
+
+        resource["Properties"] = progress_event.resource_model
+
+        # progress_event.resource_model
+
+        # TODO: verify event
+        # try:
+        #
+        # except NotImplementedError:
+        #     if action == "Modify":
+        #         # TODO: replacement?
+        #
+        #         # create new one
+        #         resource_provider_payload['action'] = "CREATE"
+        #         executor.deploy_loop(resource_provider_payload)
+        #
+        #         # delete old one
 
         # TODO: update resource state with returned state from progress event
 
@@ -1373,7 +1415,7 @@ class TemplateDeployer:
             "requestData": {
                 "logicalResourceId": logical_resource_id,
                 "resourceProperties": resource["Properties"],
-                "previousResourceProperties": None,  # TODO
+                "previousResourceProperties": resource.get("_last_deployed_state"),  # TODO
                 "callerCredentials": creds,
                 "providerCredentials": creds,
                 "systemTags": {},

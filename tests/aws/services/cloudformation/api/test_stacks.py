@@ -228,6 +228,37 @@ class TestStacksApi:
         assert "UpdateStack" in error_message
         assert "No updates are to be performed." in error_message
 
+    @markers.aws.validated
+    def test_update_stack_actual_update(self, deploy_cfn_template, aws_client):
+        template = load_file(
+            os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_update.yaml")
+        )
+        queue_name = f"test-queue-{short_uid()}"
+        stack = deploy_cfn_template(
+            template=template, parameters={"QueueName": queue_name}, max_wait=360
+        )
+
+        queue_arn_1 = aws_client.sqs.get_queue_attributes(
+            QueueUrl=stack.outputs["QueueUrl"], AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+        assert queue_arn_1
+
+        stack2 = deploy_cfn_template(
+            template=template,
+            stack_name=stack.stack_name,
+            parameters={"QueueName": f"{queue_name}-new"},
+            is_update=True,
+            max_wait=360,
+        )
+
+        queue_arn_2 = aws_client.sqs.get_queue_attributes(
+            QueueUrl=stack2.outputs["QueueUrl"], AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+        assert queue_arn_2
+
+        assert queue_arn_1 != queue_arn_2
+        print("done")
+
     @markers.snapshot.skip_snapshot_verify(paths=["$..StackEvents"])
     @markers.aws.validated
     def test_list_events_after_deployment(self, deploy_cfn_template, snapshot, aws_client):

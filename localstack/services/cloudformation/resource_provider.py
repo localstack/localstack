@@ -111,7 +111,7 @@ def convert_payload(
         region_name=payload["region"],
     )
     desired_state = payload["requestData"]["resourceProperties"]
-    return ResourceRequest[Properties](
+    rr = ResourceRequest(
         _original_payload=desired_state,
         aws_client_factory=client_factory,
         request_token=str(uuid.uuid4()),  # TODO: not actually a UUID
@@ -121,10 +121,16 @@ def convert_payload(
         region_name=payload["region"],
         desired_state=desired_state,
         logical_resource_id=payload["requestData"]["logicalResourceId"],
+        resource_type=payload["resourceType"],
         logger=logging.getLogger("abc"),
         custom_context=payload["callbackContext"],
         action=payload["action"],
     )
+
+    if previous_properties := payload["requestData"].get("previousResourceProperties"):
+        rr.previous_state = previous_properties
+
+    return rr
 
 
 @dataclass
@@ -142,6 +148,7 @@ class ResourceRequest(Generic[Properties]):
     desired_state: Properties
 
     logical_resource_id: str
+    resource_type: str
 
     logger: Logger
 
@@ -608,12 +615,17 @@ class ResourceProviderExecutor:
             )  # TODO: simplify signature of get_resource_type to just take the type
             try:
                 resource_provider = self.load_resource_provider(resource_type)
+
+                logical_resource_id = raw_payload["requestData"]["logicalResourceId"]
+                resource = self.resources[logical_resource_id]
+
+                resource["SpecifiedProperties"] = raw_payload["requestData"]["resourceProperties"]
+
                 event = self.execute_action(resource_provider, payload)
 
                 if event.status == OperationStatus.SUCCESS:
-                    logical_resource_id = raw_payload["requestData"]["logicalResourceId"]
-                    resource = self.resources[logical_resource_id]
-                    if "PhysicalResourceId" not in resource:
+
+                    if not isinstance(resource_provider, LegacyResourceProvider):
                         # branch for non-legacy providers
                         # TODO: move out of if? (physical res id can be set earlier possibly)
                         if isinstance(resource_provider, LegacyResourceProvider):
@@ -636,6 +648,7 @@ class ResourceProviderExecutor:
                         )
 
                         resource["PhysicalResourceId"] = physical_resource_id
+                        resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
                         resource["Properties"] = event.resource_model
                     return event
 
@@ -676,11 +689,21 @@ class ResourceProviderExecutor:
             case "Add":
                 return resource_provider.create(request)
             case "Dynamic" | "Modify":
-                return resource_provider.update(request)
+                try:
+                    return resource_provider.update(request)
+                except NotImplementedError:
+                    LOG.warning(
+                        'Unable to update resource type "%s", id "%s"',
+                        request.resource_type,
+                        request.logical_resource_id,
+                    )
+                    return ProgressEvent(
+                        status=OperationStatus.SUCCESS, resource_model=request.desired_state
+                    )
             case "Remove":
                 return resource_provider.delete(request)
             case _:
-                raise NotImplementedError(change_type)
+                raise NotImplementedError(change_type)  # TODO: change error type
 
     def should_use_legacy_provider(self, resource_type: str) -> bool:
         # any config overwrites take precedence over the default list

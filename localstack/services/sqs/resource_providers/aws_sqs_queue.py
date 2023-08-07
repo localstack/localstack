@@ -192,7 +192,19 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
           - sqs:TagQueue
           - sqs:UntagQueue
         """
-        raise NotImplementedError
+        # TODO
+        sqs = request.aws_client_factory.sqs
+        model = request.desired_state
+        if request.desired_state.get("QueueName") != request.previous_state.get("QueueName"):
+            sqs.delete_queue(QueueUrl=request.previous_state["QueueUrl"])
+            model["QueueUrl"] = sqs.create_queue(QueueName=request.desired_state.get("QueueName"))[
+                "QueueUrl"
+            ]
+            model["Arn"] = sqs.get_queue_attributes(
+                QueueUrl=model["QueueUrl"], AttributeNames=["QueueArn"]
+            )["Attributes"]["QueueArn"]
+        return ProgressEvent(OperationStatus.SUCCESS, resource_model=model)
+        # raise NotImplementedError
 
     def _compile_sqs_queue_attributes(self, properties: SQSQueueProperties) -> dict[str, str]:
         """
