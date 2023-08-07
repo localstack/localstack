@@ -1,5 +1,5 @@
 {
-  "tests/integration/stepfunctions/v2/services/test_sfn_task_service.py::TestTaskServiceSfn::test_start_execution": {
+  "tests/aws/stepfunctions/v2/services/test_sfn_task_service.py::TestTaskServiceSfn::test_start_execution": {
     "recorded-date": "28-06-2023, 11:07:54",
     "recorded-content": {
       "get_execution_history": {
@@ -204,7 +204,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/services/test_sfn_task_service.py::TestTaskServiceSfn::test_start_execution_input_json": {
+  "tests/aws/stepfunctions/v2/services/test_sfn_task_service.py::TestTaskServiceSfn::test_start_execution_input_json": {
     "recorded-date": "28-06-2023, 11:12:13",
     "recorded-content": {
       "get_execution_history": {

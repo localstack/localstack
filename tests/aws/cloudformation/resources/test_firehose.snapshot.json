@@ -1,5 +1,5 @@
 {
-  "tests/integration/cloudformation/resources/test_firehose.py::test_firehose_stack_with_kinesis_as_source": {
+  "tests/aws/cloudformation/resources/test_firehose.py::test_firehose_stack_with_kinesis_as_source": {
     "recorded-date": "14-09-2022, 11:19:29",
     "recorded-content": {
       "outputs": {

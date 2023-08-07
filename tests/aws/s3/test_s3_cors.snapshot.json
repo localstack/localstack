@@ -1,5 +1,5 @@
 {
-  "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_cors_http_options_no_config": {
+  "tests/aws/s3/test_s3_cors.py::TestS3Cors::test_cors_http_options_no_config": {
     "recorded-date": "10-10-2022, 16:03:27",
     "recorded-content": {
       "options-no-origin": {
@@ -22,11 +22,11 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_cors_http_get_no_config": {
+  "tests/aws/s3/test_s3_cors.py::TestS3Cors::test_cors_http_get_no_config": {
     "recorded-date": "10-10-2022, 16:03:31",
     "recorded-content": {}
   },
-  "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_cors_http_options_non_existent_bucket": {
+  "tests/aws/s3/test_s3_cors.py::TestS3Cors::test_cors_http_options_non_existent_bucket": {
     "recorded-date": "10-10-2022, 16:03:34",
     "recorded-content": {
       "options-no-origin": {
@@ -49,7 +49,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_cors_match_origins": {
+  "tests/aws/s3/test_s3_cors.py::TestS3Cors::test_cors_match_origins": {
     "recorded-date": "11-10-2022, 23:43:24",
     "recorded-content": {
       "opt-no-origin": {
@@ -195,7 +195,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_cors_match_methods": {
+  "tests/aws/s3/test_s3_cors.py::TestS3Cors::test_cors_match_methods": {
     "recorded-date": "20-10-2022, 23:02:45",
     "recorded-content": {
       "opt-get": {
@@ -284,7 +284,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_cors_match_headers": {
+  "tests/aws/s3/test_s3_cors.py::TestS3Cors::test_cors_match_headers": {
     "recorded-date": "20-10-2022, 22:58:38",
     "recorded-content": {
       "opt-get": {
@@ -416,7 +416,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_get_cors": {
+  "tests/aws/s3/test_s3_cors.py::TestS3Cors::test_get_cors": {
     "recorded-date": "24-10-2022, 14:11:39",
     "recorded-content": {
       "get-cors-no-set": {
@@ -448,7 +448,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_put_cors": {
+  "tests/aws/s3/test_s3_cors.py::TestS3Cors::test_put_cors": {
     "recorded-date": "25-10-2022, 11:17:15",
     "recorded-content": {
       "put-cors": {
@@ -484,7 +484,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_put_cors_default_values": {
+  "tests/aws/s3/test_s3_cors.py::TestS3Cors::test_put_cors_default_values": {
     "recorded-date": "24-10-2022, 14:31:24",
     "recorded-content": {
       "opt-get": {
@@ -524,7 +524,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_put_cors_invalid_rules": {
+  "tests/aws/s3/test_s3_cors.py::TestS3Cors::test_put_cors_invalid_rules": {
     "recorded-date": "28-10-2022, 15:57:45",
     "recorded-content": {
       "put-cors-exc": {
@@ -549,7 +549,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_delete_cors": {
+  "tests/aws/s3/test_s3_cors.py::TestS3Cors::test_delete_cors": {
     "recorded-date": "24-10-2022, 14:44:10",
     "recorded-content": {
       "delete-cors-before-set": {
@@ -599,7 +599,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_cors_expose_headers": {
+  "tests/aws/s3/test_s3_cors.py::TestS3Cors::test_cors_expose_headers": {
     "recorded-date": "24-10-2022, 15:11:01",
     "recorded-content": {
       "opt-get": {
@@ -619,7 +619,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_put_cors_empty_origin": {
+  "tests/aws/s3/test_s3_cors.py::TestS3Cors::test_put_cors_empty_origin": {
     "recorded-date": "25-10-2022, 11:57:55",
     "recorded-content": {
       "get-cors-empty": {

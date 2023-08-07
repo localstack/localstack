@@ -1,5 +1,5 @@
 {
-  "tests/integration/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_edge_cases": {
+  "tests/aws/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_edge_cases": {
     "recorded-date": "01-02-2023, 08:26:30",
     "recorded-content": {
       "create_response": {
@@ -28,7 +28,7 @@
       }
     }
   },
-  "tests/integration/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_edge_cases[SUCCESS]": {
+  "tests/aws/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_edge_cases[SUCCESS]": {
     "recorded-date": "01-02-2023, 09:01:58",
     "recorded-content": {
       "create_response": {
@@ -57,7 +57,7 @@
       }
     }
   },
-  "tests/integration/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_edge_cases[FAIL]": {
+  "tests/aws/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_edge_cases[FAIL]": {
     "recorded-date": "01-02-2023, 09:02:30",
     "recorded-content": {
       "create_response": {
@@ -85,7 +85,7 @@
       }
     }
   },
-  "tests/integration/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_list_request_status": {
+  "tests/aws/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_list_request_status": {
     "recorded-date": "01-02-2023, 09:01:18",
     "recorded-content": {
       "create_bucket_resource": {
@@ -120,7 +120,7 @@
       }
     }
   },
-  "tests/integration/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_invalid_request_token_exc": {
+  "tests/aws/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_invalid_request_token_exc": {
     "recorded-date": "01-02-2023, 09:00:47",
     "recorded-content": {
       "get_token_not_found": {
@@ -147,7 +147,7 @@
       }
     }
   },
-  "tests/integration/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_request": {
+  "tests/aws/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceRequestApi::test_cancel_request": {
     "recorded-date": "01-02-2023, 09:01:26",
     "recorded-content": {
       "create_response": {
@@ -194,7 +194,7 @@
       }
     }
   },
-  "tests/integration/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_lifecycle": {
+  "tests/aws/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_lifecycle": {
     "recorded-date": "01-02-2023, 09:20:37",
     "recorded-content": {
       "create_response": {
@@ -284,7 +284,7 @@
       }
     }
   },
-  "tests/integration/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_api_exceptions": {
+  "tests/aws/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_api_exceptions": {
     "recorded-date": "01-02-2023, 09:20:39",
     "recorded-content": {
       "create_nonexistingtype": {
@@ -369,7 +369,7 @@
       }
     }
   },
-  "tests/integration/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_list_resources": {
+  "tests/aws/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_list_resources": {
     "recorded-date": "01-02-2023, 09:21:18",
     "recorded-content": {
       "list_paginated_all_filtered": {
@@ -402,7 +402,7 @@
       }
     }
   },
-  "tests/integration/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_double_create_with_client_token": {
+  "tests/aws/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_double_create_with_client_token": {
     "recorded-date": "01-02-2023, 09:21:50",
     "recorded-content": {
       "create_response": {
@@ -432,7 +432,7 @@
       }
     }
   },
-  "tests/integration/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_create_exceptions": {
+  "tests/aws/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_create_exceptions": {
     "recorded-date": "01-02-2023, 09:23:04",
     "recorded-content": {
       "create_response": {
@@ -518,7 +518,7 @@
       }
     }
   },
-  "tests/integration/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_create_invalid_desiredstate": {
+  "tests/aws/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_create_invalid_desiredstate": {
     "recorded-date": "01-02-2023, 09:23:05",
     "recorded-content": {
       "create_invalid_state_exc_invalid_field": {
@@ -543,7 +543,7 @@
       }
     }
   },
-  "tests/integration/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_update": {
+  "tests/aws/cloudcontrol/test_cloudcontrol_api.py::TestCloudControlResourceApi::test_update": {
     "recorded-date": "01-02-2023, 09:24:31",
     "recorded-content": {
       "update_createonlyproperty_exc": {

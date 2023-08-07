@@ -1,5 +1,5 @@
 {
-  "tests/integration/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_api_gateway_request_validator": {
+  "tests/aws/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_api_gateway_request_validator": {
     "recorded-date": "27-07-2023, 17:59:26",
     "recorded-content": {
       "register-lambda": {
@@ -227,7 +227,7 @@
       }
     }
   },
-  "tests/integration/apigateway/test_apigateway_common.py::TestUsagePlans::test_api_key_required_for_methods": {
+  "tests/aws/apigateway/test_apigateway_common.py::TestUsagePlans::test_api_key_required_for_methods": {
     "recorded-date": "27-07-2023, 17:57:20",
     "recorded-content": {
       "create-usage-plan": {
@@ -295,7 +295,7 @@
       }
     }
   },
-  "tests/integration/apigateway/test_apigateway_common.py::TestUsagePlans::test_usage_plan_crud": {
+  "tests/aws/apigateway/test_apigateway_common.py::TestUsagePlans::test_usage_plan_crud": {
     "recorded-date": "28-07-2023, 08:30:23",
     "recorded-content": {
       "create-usage-plan": {

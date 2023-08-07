@@ -26,7 +26,7 @@ def handler(event, context):
         # path_details[f"{path_label}_group"] = path.group()
 
     return {
-        # Tested in tests/integration/awslambda/test_lambda_common.py
+        # Tested in tests/aws/awslambda/test_lambda_common.py
         # "environment": dict(os.environ),
         "event": event,
         # user behavior: https://stackoverflow.com/a/25574419

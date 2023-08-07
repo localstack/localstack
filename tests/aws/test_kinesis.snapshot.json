@@ -1,5 +1,5 @@
 {
-  "tests/integration/test_kinesis.py::TestKinesis::test_create_stream_without_shard_count": {
+  "tests/aws/test_kinesis.py::TestKinesis::test_create_stream_without_shard_count": {
     "recorded-date": "26-08-2022, 09:30:59",
     "recorded-content": {
       "Shards": [
@@ -46,7 +46,7 @@
       ]
     }
   },
-  "tests/integration/test_kinesis.py::TestKinesis::test_add_tags_to_stream": {
+  "tests/aws/test_kinesis.py::TestKinesis::test_add_tags_to_stream": {
     "recorded-date": "25-08-2022, 08:56:43",
     "recorded-content": {
       "Tags": {
@@ -55,7 +55,7 @@
       }
     }
   },
-  "tests/integration/test_kinesis.py::TestKinesis::test_record_lifecycle_data_integrity": {
+  "tests/aws/test_kinesis.py::TestKinesis::test_record_lifecycle_data_integrity": {
     "recorded-date": "25-08-2022, 12:39:44",
     "recorded-content": {
       "Records": [
@@ -86,7 +86,7 @@
       ]
     }
   },
-  "tests/integration/test_kinesis.py::TestKinesis::test_subscribe_to_shard_with_sequence_number_as_iterator": {
+  "tests/aws/test_kinesis.py::TestKinesis::test_subscribe_to_shard_with_sequence_number_as_iterator": {
     "recorded-date": "26-08-2022, 09:29:21",
     "recorded-content": {
       "Records": [
@@ -123,7 +123,7 @@
       ]
     }
   },
-  "tests/integration/test_kinesis.py::TestKinesis::test_stream_consumers": {
+  "tests/aws/test_kinesis.py::TestKinesis::test_stream_consumers": {
     "recorded-date": "26-08-2022, 10:23:46",
     "recorded-content": {
       "One_consumer_by_list_stream": [
@@ -143,7 +143,7 @@
       }
     }
   },
-  "tests/integration/test_kinesis.py::TestKinesis::test_subscribe_to_shard": {
+  "tests/aws/test_kinesis.py::TestKinesis::test_subscribe_to_shard": {
     "recorded-date": "26-08-2022, 09:33:29",
     "recorded-content": {
       "Records": [

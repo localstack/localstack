@@ -1,5 +1,5 @@
 {
-  "tests/integration/stepfunctions/v2/error_handling/test_task_lambda.py::TestTaskLambda::test_raise_exception": {
+  "tests/aws/stepfunctions/v2/error_handling/test_task_lambda.py::TestTaskLambda::test_raise_exception": {
     "recorded-date": "22-06-2023, 13:27:25",
     "recorded-content": {
       "get_execution_history": {
@@ -100,7 +100,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/error_handling/test_task_lambda.py::TestTaskLambda::test_raise_exception_catch": {
+  "tests/aws/stepfunctions/v2/error_handling/test_task_lambda.py::TestTaskLambda::test_raise_exception_catch": {
     "recorded-date": "22-06-2023, 13:27:43",
     "recorded-content": {
       "get_execution_history": {
@@ -255,7 +255,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/error_handling/test_task_lambda.py::TestTaskLambda::test_no_such_function": {
+  "tests/aws/stepfunctions/v2/error_handling/test_task_lambda.py::TestTaskLambda::test_no_such_function": {
     "recorded-date": "22-06-2023, 13:28:01",
     "recorded-content": {
       "get_execution_history": {
@@ -356,7 +356,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/error_handling/test_task_lambda.py::TestTaskLambda::test_no_such_function_catch": {
+  "tests/aws/stepfunctions/v2/error_handling/test_task_lambda.py::TestTaskLambda::test_no_such_function_catch": {
     "recorded-date": "22-06-2023, 13:28:19",
     "recorded-content": {
       "get_execution_history": {

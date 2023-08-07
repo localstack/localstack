@@ -1,5 +1,5 @@
 {
-  "tests/integration/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_format_1": {
+  "tests/aws/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_format_1": {
     "recorded-date": "09-02-2023, 10:21:18",
     "recorded-content": {
       "exec_hist_resp_0": {
@@ -473,7 +473,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_format_2": {
+  "tests/aws/stepfunctions/v2/intrinsic_functions/test_generic.py::TestGeneric::test_format_2": {
     "recorded-date": "09-02-2023, 10:21:23",
     "recorded-content": {
       "exec_hist_resp_0": {

@@ -1,5 +1,5 @@
 {
-  "tests/integration/test_sns.py::TestSNSProvider::test_tags": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_tags": {
     "recorded-date": "09-08-2022, 11:30:16",
     "recorded-content": {
       "duplicate-key-error": {
@@ -55,7 +55,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_redrive_policy_sqs_queue_subscription[True]": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_redrive_policy_sqs_queue_subscription[True]": {
     "recorded-date": "10-08-2022, 11:36:11",
     "recorded-content": {
       "messages": {
@@ -91,7 +91,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_redrive_policy_sqs_queue_subscription[False]": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_redrive_policy_sqs_queue_subscription[False]": {
     "recorded-date": "10-08-2022, 11:36:14",
     "recorded-content": {
       "messages": {
@@ -136,7 +136,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_unicode_chars": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_unicode_chars": {
     "recorded-date": "09-08-2022, 11:30:03",
     "recorded-content": {
       "received-message": {
@@ -165,7 +165,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSSubscription::test_python_lambda_subscribe_sns_topic": {
+  "tests/aws/test_sns.py::TestSNSSubscription::test_python_lambda_subscribe_sns_topic": {
     "recorded-date": "09-08-2022, 11:30:00",
     "recorded-content": {
       "notification": {
@@ -183,7 +183,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_attribute_raw_subscribe": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_attribute_raw_subscribe": {
     "recorded-date": "09-08-2022, 11:30:06",
     "recorded-content": {
       "subscription-attributes": {
@@ -225,7 +225,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_with_invalid_protocol": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_subscribe_with_invalid_protocol": {
     "recorded-date": "09-08-2022, 11:30:03",
     "recorded-content": {
       "exception": {
@@ -241,7 +241,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_filter_policy": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_filter_policy": {
     "recorded-date": "13-02-2023, 16:48:57",
     "recorded-content": {
       "subscription-attributes": {
@@ -342,7 +342,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_exists_filter_policy": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_exists_filter_policy": {
     "recorded-date": "13-02-2023, 16:49:47",
     "recorded-content": {
       "subscription-attributes-policy-1": {
@@ -531,7 +531,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_sqs_queue": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_subscribe_sqs_queue": {
     "recorded-date": "13-02-2023, 16:50:28",
     "recorded-content": {
       "subscription-attributes": {
@@ -596,7 +596,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_unknown_topic_publish": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_unknown_topic_publish": {
     "recorded-date": "04-03-2023, 21:35:42",
     "recorded-content": {
       "success": {
@@ -619,7 +619,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_sqs_topic_subscription_confirmation": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_sqs_topic_subscription_confirmation": {
     "recorded-date": "09-08-2022, 11:30:18",
     "recorded-content": {
       "subscription-attrs": {
@@ -634,7 +634,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_sns_topic_as_lambda_dead_letter_queue": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_sns_topic_as_lambda_dead_letter_queue": {
     "recorded-date": "09-08-2022, 11:34:43",
     "recorded-content": {
       "lambda-response-dlq-config": {
@@ -703,7 +703,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_redrive_policy_lambda_subscription": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_redrive_policy_lambda_subscription": {
     "recorded-date": "11-08-2022, 14:36:27",
     "recorded-content": {
       "subscription-attributes": {
@@ -757,7 +757,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_with_empty_subject": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_with_empty_subject": {
     "recorded-date": "09-08-2022, 11:34:56",
     "recorded-content": {
       "response-without-subject": {
@@ -780,7 +780,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_create_topic_test_arn": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_create_topic_test_arn": {
     "recorded-date": "14-03-2023, 11:56:54",
     "recorded-content": {
       "create-topic": {
@@ -866,7 +866,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_message_by_target_arn": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_message_by_target_arn": {
     "recorded-date": "09-08-2022, 11:34:59",
     "recorded-content": {
       "receive-topic-arn": {
@@ -919,7 +919,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_message_before_subscribe_topic": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_message_before_subscribe_topic": {
     "recorded-date": "09-08-2022, 11:35:08",
     "recorded-content": {
       "publish-before-subscribing": {
@@ -963,7 +963,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_create_duplicate_topic_with_more_tags": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_create_duplicate_topic_with_more_tags": {
     "recorded-date": "09-08-2022, 11:35:08",
     "recorded-content": {
       "exception-duplicate": {
@@ -979,7 +979,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_create_duplicate_topic_check_idempotency": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_create_duplicate_topic_check_idempotency": {
     "recorded-date": "09-08-2022, 11:35:09",
     "recorded-content": {
       "response-created": {
@@ -1012,7 +1012,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_by_path_parameters": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_by_path_parameters": {
     "recorded-date": "09-08-2022, 11:35:12",
     "recorded-content": {
       "post-request": {
@@ -1052,7 +1052,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_sqs_from_sns": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_sqs_from_sns": {
     "recorded-date": "09-08-2022, 11:35:22",
     "recorded-content": {
       "sub-attrs-raw-true": {
@@ -1140,7 +1140,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_sns_to_sqs": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_sns_to_sqs": {
     "recorded-date": "12-06-2023, 18:15:59",
     "recorded-content": {
       "sub-attrs-raw-true": {
@@ -1273,7 +1273,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_exceptions": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_batch_exceptions": {
     "recorded-date": "12-06-2023, 18:22:01",
     "recorded-content": {
       "no-group-id": {
@@ -1333,7 +1333,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_create_topic_after_delete_with_new_tags": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_create_topic_after_delete_with_new_tags": {
     "recorded-date": "09-08-2022, 11:35:47",
     "recorded-content": {
       "topic-0": {
@@ -1352,7 +1352,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_not_found_error_on_set_subscription_attributes": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_not_found_error_on_set_subscription_attributes": {
     "recorded-date": "09-08-2022, 11:35:51",
     "recorded-content": {
       "sub": {
@@ -1413,7 +1413,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_validations_for_fifo": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_validations_for_fifo": {
     "recorded-date": "12-12-2022, 12:01:57",
     "recorded-content": {
       "not-fifo-topic": {
@@ -1495,7 +1495,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_empty_sns_message": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_empty_sns_message": {
     "recorded-date": "09-08-2022, 11:35:58",
     "recorded-content": {
       "empty-msg-error": {
@@ -1520,7 +1520,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_message_attributes_not_missing": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_message_attributes_not_missing": {
     "recorded-date": "09-08-2022, 11:36:07",
     "recorded-content": {
       "publish-msg-raw": {
@@ -1610,7 +1610,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_too_long_message": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_too_long_message": {
     "recorded-date": "09-08-2022, 11:36:07",
     "recorded-content": {
       "error": {
@@ -1626,7 +1626,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_sqs_from_sns_with_xray_propagation": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_sqs_from_sns_with_xray_propagation": {
     "recorded-date": "30-11-2022, 18:18:00",
     "recorded-content": {
       "xray-msg": {
@@ -1651,7 +1651,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_subscription_after_failure_to_deliver": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_subscription_after_failure_to_deliver": {
     "recorded-date": "20-12-2022, 20:25:24",
     "recorded-content": {
       "subscriptions-attrs": {
@@ -1780,7 +1780,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[True]": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[True]": {
     "recorded-date": "14-04-2023, 19:17:55",
     "recorded-content": {
       "topic-attrs": {
@@ -1985,7 +1985,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[False]": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[False]": {
     "recorded-date": "14-04-2023, 19:18:02",
     "recorded-content": {
       "topic-attrs": {
@@ -2190,7 +2190,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_message_to_fifo_sqs[True]": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_message_to_fifo_sqs[True]": {
     "recorded-date": "14-04-2023, 19:38:46",
     "recorded-content": {
       "messages": {
@@ -2232,7 +2232,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_message_to_fifo_sqs[False]": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_message_to_fifo_sqs[False]": {
     "recorded-date": "14-04-2023, 19:38:59",
     "recorded-content": {
       "messages": {
@@ -2274,7 +2274,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_messages_without_topic": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_batch_messages_without_topic": {
     "recorded-date": "01-09-2022, 20:49:54",
     "recorded-content": {
       "publish-batch-no-topic": {
@@ -2290,7 +2290,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_empty_or_wrong_message_attributes": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_empty_or_wrong_message_attributes": {
     "recorded-date": "27-09-2022, 16:22:03",
     "recorded-content": {
       "missing_string_attr": {
@@ -2427,7 +2427,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_message_attributes_prefixes": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_message_attributes_prefixes": {
     "recorded-date": "16-11-2022, 15:34:40",
     "recorded-content": {
       "publish-error": {
@@ -2468,7 +2468,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_message_structure_json_exc": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_message_structure_json_exc": {
     "recorded-date": "03-04-2023, 21:23:54",
     "recorded-content": {
       "missing-default-key": {
@@ -2513,7 +2513,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_non_existent_target": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_non_existent_target": {
     "recorded-date": "30-11-2022, 17:03:38",
     "recorded-content": {
       "non-existent-endpoint": {
@@ -2529,7 +2529,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_wrong_phone_format": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_wrong_phone_format": {
     "recorded-date": "30-11-2022, 17:20:37",
     "recorded-content": {
       "invalid-number": {
@@ -2567,7 +2567,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_to_sqs_with_queue_url": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_subscribe_to_sqs_with_queue_url": {
     "recorded-date": "30-11-2022, 18:09:39",
     "recorded-content": {
       "sub-queue-url": {
@@ -2583,7 +2583,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_fifo_messages_to_dlq[True]": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_fifo_messages_to_dlq[True]": {
     "recorded-date": "14-04-2023, 18:26:46",
     "recorded-content": {
       "topic-attrs": {
@@ -2768,7 +2768,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_fifo_messages_to_dlq[False]": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_fifo_messages_to_dlq[False]": {
     "recorded-date": "14-04-2023, 18:26:50",
     "recorded-content": {
       "topic-attrs": {
@@ -2986,7 +2986,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_validate_set_sub_attributes": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_validate_set_sub_attributes": {
     "recorded-date": "12-12-2022, 12:33:28",
     "recorded-content": {
       "fake-attribute": {
@@ -3035,7 +3035,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_set_subscription_filter_policy_scope": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_set_subscription_filter_policy_scope": {
     "recorded-date": "30-12-2022, 18:19:59",
     "recorded-content": {
       "sub-attrs-default": {
@@ -3108,7 +3108,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_sub_filter_policy_nested_property": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_sub_filter_policy_nested_property": {
     "recorded-date": "30-12-2022, 18:38:05",
     "recorded-content": {
       "sub-filter-policy-nested-error": {
@@ -3151,7 +3151,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_filter_policy_on_message_body[True]": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_filter_policy_on_message_body[True]": {
     "recorded-date": "31-03-2023, 16:57:29",
     "recorded-content": {
       "recv-init": {
@@ -3198,7 +3198,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_filter_policy_on_message_body[False]": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_filter_policy_on_message_body[False]": {
     "recorded-date": "31-03-2023, 16:57:42",
     "recorded-content": {
       "recv-init": {
@@ -3257,7 +3257,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_sub_filter_policy_nested_property_constraints": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_sub_filter_policy_nested_property_constraints": {
     "recorded-date": "04-01-2023, 17:41:42",
     "recorded-content": {
       "sub-filter-policy-nested-error-too-many-combinations": {
@@ -3295,7 +3295,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_to_fifo_topic_to_sqs_queue_no_content_dedup[True]": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_to_fifo_topic_to_sqs_queue_no_content_dedup[True]": {
     "recorded-date": "14-04-2023, 19:57:05",
     "recorded-content": {
       "messages": {
@@ -3334,7 +3334,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_to_fifo_topic_to_sqs_queue_no_content_dedup[False]": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_to_fifo_topic_to_sqs_queue_no_content_dedup[False]": {
     "recorded-date": "14-04-2023, 19:57:07",
     "recorded-content": {
       "messages": {
@@ -3389,7 +3389,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_filter_policy_for_batch": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_filter_policy_for_batch": {
     "recorded-date": "13-02-2023, 13:40:06",
     "recorded-content": {
       "subscription-attributes-with-filter": {
@@ -3549,7 +3549,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSPublishDelivery::test_delivery_lambda": {
+  "tests/aws/test_sns.py::TestSNSPublishDelivery::test_delivery_lambda": {
     "recorded-date": "01-03-2023, 14:56:10",
     "recorded-content": {
       "get-topic-attrs": {
@@ -3645,7 +3645,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_sns_confirm_subscription_wrong_token": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_sns_confirm_subscription_wrong_token": {
     "recorded-date": "04-03-2023, 21:28:49",
     "recorded-content": {
       "topic-not-exists": {
@@ -3683,7 +3683,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_sms_endpoint": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_subscribe_sms_endpoint": {
     "recorded-date": "05-03-2023, 15:29:28",
     "recorded-content": {
       "subscribe-sms-endpoint": {
@@ -3712,7 +3712,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_unsubscribe_from_non_existing_subscription": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_unsubscribe_from_non_existing_subscription": {
     "recorded-date": "17-03-2023, 19:35:30",
     "recorded-content": {
       "empty-unsubscribe": {
@@ -3723,7 +3723,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_message_structure_json_to_sqs": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_message_structure_json_to_sqs": {
     "recorded-date": "03-04-2023, 21:52:04",
     "recorded-content": {
       "get-msg-json-sqs": {
@@ -3776,7 +3776,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_to_fifo_topic_deduplication_on_topic_level": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_to_fifo_topic_deduplication_on_topic_level": {
     "recorded-date": "14-04-2023, 20:03:27",
     "recorded-content": {
       "messages": {
@@ -3818,7 +3818,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_external_http_endpoint[True]": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_subscribe_external_http_endpoint[True]": {
     "recorded-date": "13-04-2023, 02:58:36",
     "recorded-content": {
       "subscription-confirmation": {
@@ -3907,7 +3907,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_external_http_endpoint[False]": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_subscribe_external_http_endpoint[False]": {
     "recorded-date": "13-04-2023, 02:58:52",
     "recorded-content": {
       "subscription-confirmation": {
@@ -4007,7 +4007,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_wrong_arn_format": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_publish_wrong_arn_format": {
     "recorded-date": "01-06-2023, 20:18:02",
     "recorded-content": {
       "invalid-topic-arn": {
@@ -4034,7 +4034,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_create_subscriptions_with_attributes": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_create_subscriptions_with_attributes": {
     "recorded-date": "07-06-2023, 18:27:05",
     "recorded-content": {
       "subscribe": {
@@ -4074,7 +4074,7 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_create_topic_with_attributes": {
+  "tests/aws/test_sns.py::TestSNSProvider::test_create_topic_with_attributes": {
     "recorded-date": "07-06-2023, 18:34:51",
     "recorded-content": {
       "get-topic-attrs": {

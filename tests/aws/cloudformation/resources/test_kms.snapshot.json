@@ -1,5 +1,5 @@
 {
-  "tests/integration/cloudformation/resources/test_kms.py::test_cfn_with_kms_resources": {
+  "tests/aws/cloudformation/resources/test_kms.py::test_cfn_with_kms_resources": {
     "recorded-date": "29-05-2023, 15:45:17",
     "recorded-content": {
       "stack-outputs": {

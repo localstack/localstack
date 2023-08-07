@@ -856,4 +856,4 @@ class TestCloudFormation:
 
 
 # Note: DO NOT ADD TEST CASES HERE
-#       Add new tests in a corresponding file in the tests/integration/cloudformation directory
+#       Add new tests in a corresponding file in the tests/aws/cloudformation directory

@@ -1,5 +1,5 @@
 {
-  "tests/integration/stepfunctions/v2/scenarios/test_sfn_scenarios.py::TestFundamental::test_path_based_on_data": {
+  "tests/aws/stepfunctions/v2/scenarios/test_sfn_scenarios.py::TestFundamental::test_path_based_on_data": {
     "recorded-date": "04-03-2023, 10:00:55",
     "recorded-content": {
       "describe_statemachine": {
@@ -482,7 +482,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/scenarios/test_sfn_scenarios.py::TestFundamental::test_wait_for_callback": {
+  "tests/aws/stepfunctions/v2/scenarios/test_sfn_scenarios.py::TestFundamental::test_wait_for_callback": {
     "recorded-date": "04-03-2023, 10:05:28",
     "recorded-content": {
       "describe_statemachine": {
@@ -938,7 +938,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/scenarios/test_sfn_scenarios.py::TestFundamental::test_step_functions_calling_api_gateway": {
+  "tests/aws/stepfunctions/v2/scenarios/test_sfn_scenarios.py::TestFundamental::test_step_functions_calling_api_gateway": {
     "recorded-date": "04-03-2023, 10:06:48",
     "recorded-content": {
       "describe_statemachine": {

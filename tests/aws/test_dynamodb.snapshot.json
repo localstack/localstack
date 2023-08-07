@@ -1,5 +1,5 @@
 {
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_valid_local_secondary_index": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_valid_local_secondary_index": {
     "recorded-date": "15-09-2022, 09:00:29",
     "recorded-content": {
       "Items": {
@@ -25,7 +25,7 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_return_values_in_put_item": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_return_values_in_put_item": {
     "recorded-date": "13-07-2023, 11:57:53",
     "recorded-content": {
       "PutFirstItem": {
@@ -76,7 +76,7 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_empty_and_binary_values": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_empty_and_binary_values": {
     "recorded-date": "15-09-2022, 09:00:44",
     "recorded-content": {
       "PutFirstItem": {
@@ -93,7 +93,7 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_batch_write_binary": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_batch_write_binary": {
     "recorded-date": "15-09-2022, 10:19:38",
     "recorded-content": {
       "Response": {
@@ -105,7 +105,7 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_execute_transaction": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_dynamodb_execute_transaction": {
     "recorded-date": "15-09-2022, 09:00:55",
     "recorded-content": {
       "ExecutedTransaction": {
@@ -137,7 +137,7 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_batch_execute_statement": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_dynamodb_batch_execute_statement": {
     "recorded-date": "15-09-2022, 09:01:02",
     "recorded-content": {
       "ExecutedStatement": {
@@ -169,7 +169,7 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_partiql_missing": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_dynamodb_partiql_missing": {
     "recorded-date": "15-09-2022, 09:01:11",
     "recorded-content": {
       "FirstNameNotMissing": [
@@ -184,13 +184,13 @@
       ]
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_create_duplicate_table": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_create_duplicate_table": {
     "recorded-date": "15-09-2022, 09:01:17",
     "recorded-content": {
       "Error": "An error occurred (ResourceInUseException) when calling the CreateTable operation: Table already exists: <test-table>"
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_transaction_write_items": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_transaction_write_items": {
     "recorded-date": "15-09-2022, 09:01:24",
     "recorded-content": {
       "Response": {
@@ -201,13 +201,13 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_transaction_write_canceled": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_transaction_write_canceled": {
     "recorded-date": "15-09-2022, 09:01:29",
     "recorded-content": {
       "Error": "An error occurred (TransactionCanceledException) when calling the TransactWriteItems operation: Transaction cancelled, please refer cancellation reasons for specific reasons [ConditionalCheckFailed, None]"
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_transaction_write_binary_data": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_transaction_write_binary_data": {
     "recorded-date": "15-09-2022, 09:01:36",
     "recorded-content": {
       "WriteResponse": {
@@ -226,7 +226,7 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_transact_get_items": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_transact_get_items": {
     "recorded-date": "15-09-2022, 09:01:41",
     "recorded-content": {
       "TransactGetItems": {
@@ -246,7 +246,7 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_batch_write_items": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_batch_write_items": {
     "recorded-date": "15-09-2022, 09:01:46",
     "recorded-content": {
       "BatchWriteResponse": {
@@ -258,13 +258,13 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_pay_per_request": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_dynamodb_pay_per_request": {
     "recorded-date": "15-09-2022, 09:01:57",
     "recorded-content": {
       "Error": "An error occurred (ValidationException) when calling the CreateTable operation: One or more parameter values were invalid: Neither ReadCapacityUnits nor WriteCapacityUnits can be specified when BillingMode is PAY_PER_REQUEST"
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_create_table_with_partial_sse_specification": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_dynamodb_create_table_with_partial_sse_specification": {
     "recorded-date": "15-09-2022, 10:35:34",
     "recorded-content": {
       "SSEDescription": {
@@ -298,7 +298,7 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_get_batch_items": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_dynamodb_get_batch_items": {
     "recorded-date": "15-09-2022, 09:02:09",
     "recorded-content": {
       "Response": {
@@ -313,7 +313,7 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_idempotent_writing": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_dynamodb_idempotent_writing": {
     "recorded-date": "15-09-2022, 09:02:15",
     "recorded-content": {
       "Response1": {
@@ -330,13 +330,13 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_batch_write_not_matching_schema": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_batch_write_not_matching_schema": {
     "recorded-date": "15-09-2022, 09:02:20",
     "recorded-content": {
       "ValidationException": "An error occurred (ValidationException) when calling the BatchWriteItem operation: The provided key element does not match the schema"
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_data_encoding_consistency": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_data_encoding_consistency": {
     "recorded-date": "09-11-2022, 11:27:21",
     "recorded-content": {
       "GetItem": {
@@ -385,7 +385,7 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_continuous_backup_update": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_continuous_backup_update": {
     "recorded-date": "22-02-2023, 21:13:32",
     "recorded-content": {
       "update-continuous-backup": {
@@ -418,11 +418,11 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_streams_arn_format": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_dynamodb_streams_arn_format": {
     "recorded-date": "05-06-2023, 13:54:14",
     "recorded-content": {}
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_streams_shard_iterator_format": {
+  "tests/aws/test_dynamodb.py::TestDynamoDB::test_dynamodb_streams_shard_iterator_format": {
     "recorded-date": "05-06-2023, 17:04:25",
     "recorded-content": {}
   }

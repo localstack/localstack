@@ -1,5 +1,5 @@
 {
-  "tests/integration/test_transcribe.py::TestTranscribe::test_get_transcription_job": {
+  "tests/aws/test_transcribe.py::TestTranscribe::test_get_transcription_job": {
     "recorded-date": "30-08-2022, 12:34:01",
     "recorded-content": {
       "GetJob": {
@@ -36,7 +36,7 @@
       }
     }
   },
-  "tests/integration/test_transcribe.py::TestTranscribe::test_failing_start_transcription_job": {
+  "tests/aws/test_transcribe.py::TestTranscribe::test_failing_start_transcription_job": {
     "recorded-date": "30-08-2022, 12:34:20",
     "recorded-content": {
       "MissingLanguageCode": {
@@ -63,7 +63,7 @@
       }
     }
   },
-  "tests/integration/test_transcribe.py::TestTranscribe::test_failing_deletion": {
+  "tests/aws/test_transcribe.py::TestTranscribe::test_failing_deletion": {
     "recorded-date": "30-08-2022, 12:34:14",
     "recorded-content": {
       "MissingLanguageCode": {
@@ -79,7 +79,7 @@
       }
     }
   },
-  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_happy_path": {
+  "tests/aws/test_transcribe.py::TestTranscribe::test_transcribe_happy_path": {
     "recorded-date": "30-08-2022, 12:33:39",
     "recorded-content": {
       "TranscriptionJob": {
@@ -121,7 +121,7 @@
       }
     }
   },
-  "tests/integration/test_transcribe.py::TestTranscribe::test_list_transcription_jobs": {
+  "tests/aws/test_transcribe.py::TestTranscribe::test_list_transcription_jobs": {
     "recorded-date": "30-08-2022, 12:34:06",
     "recorded-content": {
       "ListJobs": {
@@ -141,7 +141,7 @@
       }
     }
   },
-  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_start_job[None-None]": {
+  "tests/aws/test_transcribe.py::TestTranscribe::test_transcribe_start_job[None-None]": {
     "recorded-date": "03-05-2023, 20:04:18",
     "recorded-content": {
       "response-start-job": {
@@ -194,7 +194,7 @@
       }
     }
   },
-  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-2-None]": {
+  "tests/aws/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-2-None]": {
     "recorded-date": "03-05-2023, 20:01:19",
     "recorded-content": {
       "response-start-job": {
@@ -247,7 +247,7 @@
       }
     }
   },
-  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-3-test-output]": {
+  "tests/aws/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-3-test-output]": {
     "recorded-date": "03-05-2023, 20:01:44",
     "recorded-content": {
       "response-start-job": {
@@ -300,7 +300,7 @@
       }
     }
   },
-  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-4-test-output.json]": {
+  "tests/aws/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-4-test-output.json]": {
     "recorded-date": "03-05-2023, 20:02:06",
     "recorded-content": {
       "response-start-job": {
@@ -353,7 +353,7 @@
       }
     }
   },
-  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-5-test-files/test-output.json]": {
+  "tests/aws/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-5-test-files/test-output.json]": {
     "recorded-date": "03-05-2023, 20:03:12",
     "recorded-content": {
       "response-start-job": {
@@ -406,7 +406,7 @@
       }
     }
   },
-  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-6-test-files/test-output]": {
+  "tests/aws/test_transcribe.py::TestTranscribe::test_transcribe_start_job[test-output-bucket-6-test-files/test-output]": {
     "recorded-date": "03-05-2023, 20:03:34",
     "recorded-content": {
       "response-start-job": {
@@ -459,7 +459,7 @@
       }
     }
   },
-  "tests/integration/test_transcribe.py::TestTranscribe::test_transcribe_start_job_same_name": {
+  "tests/aws/test_transcribe.py::TestTranscribe::test_transcribe_start_job_same_name": {
     "recorded-date": "09-05-2023, 22:50:14",
     "recorded-content": {
       "response-start-job": {

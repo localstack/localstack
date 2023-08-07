@@ -1,5 +1,5 @@
 {
-  "tests/integration/stepfunctions/v2/intrinsic_functions/test_unique_id_generation.py::TestUniqueIdGeneration::test_uuid": {
+  "tests/aws/stepfunctions/v2/intrinsic_functions/test_unique_id_generation.py::TestUniqueIdGeneration::test_uuid": {
     "recorded-date": "09-02-2023, 10:22:06",
     "recorded-content": {
       "exec_hist_resp": {

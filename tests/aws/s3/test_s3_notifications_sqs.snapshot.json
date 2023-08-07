@@ -1,5 +1,5 @@
 {
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_put": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_put": {
     "recorded-date": "05-08-2023, 00:55:23",
     "recorded-content": {
       "receive_messages": {
@@ -78,7 +78,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_copy": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_copy": {
     "recorded-date": "05-08-2023, 00:55:27",
     "recorded-content": {
       "receive_messages": {
@@ -121,7 +121,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_and_object_removed": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_and_object_removed": {
     "recorded-date": "05-08-2023, 00:55:32",
     "recorded-content": {
       "receive_messages": {
@@ -230,7 +230,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_complete_multipart_upload": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_complete_multipart_upload": {
     "recorded-date": "05-08-2023, 00:55:41",
     "recorded-content": {
       "receive_messages": {
@@ -273,7 +273,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_key_encoding": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_key_encoding": {
     "recorded-date": "05-08-2023, 00:55:45",
     "recorded-content": {
       "receive_messages": {
@@ -316,7 +316,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_put_with_presigned_url_upload": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_created_put_with_presigned_url_upload": {
     "recorded-date": "05-08-2023, 00:55:49",
     "recorded-content": {
       "receive_messages": {
@@ -359,7 +359,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_tagging_put_event": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_tagging_put_event": {
     "recorded-date": "05-08-2023, 00:55:54",
     "recorded-content": {
       "receive_messages": {
@@ -400,7 +400,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_tagging_delete_event": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_tagging_delete_event": {
     "recorded-date": "05-08-2023, 00:55:58",
     "recorded-content": {
       "receive_messages": {
@@ -441,7 +441,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_xray_header": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_xray_header": {
     "recorded-date": "05-08-2023, 00:56:03",
     "recorded-content": {
       "receive_messages": {
@@ -496,7 +496,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_notifications_with_filter": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_notifications_with_filter": {
     "recorded-date": "05-08-2023, 00:56:08",
     "recorded-content": {
       "config": {
@@ -632,7 +632,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_filter_rules_case_insensitive": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_filter_rules_case_insensitive": {
     "recorded-date": "05-08-2023, 00:56:10",
     "recorded-content": {
       "bucket_notification_configuration": {
@@ -666,7 +666,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_bucket_notification_with_invalid_filter_rules": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_bucket_notification_with_invalid_filter_rules": {
     "recorded-date": "05-08-2023, 00:56:12",
     "recorded-content": {
       "invalid_filter_name": {
@@ -683,7 +683,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_invalid_sqs_arn": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_invalid_sqs_arn": {
     "recorded-date": "05-08-2023, 00:56:15",
     "recorded-content": {
       "invalid_not_skip": {
@@ -739,7 +739,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_delete_objects": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_delete_objects": {
     "recorded-date": "05-08-2023, 00:55:37",
     "recorded-content": {
       "receive_messages": {
@@ -844,7 +844,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_put_acl": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_put_acl": {
     "recorded-date": "05-08-2023, 00:56:22",
     "recorded-content": {
       "receive_messages": {
@@ -949,7 +949,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_multiple_invalid_sqs_arns": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_multiple_invalid_sqs_arns": {
     "recorded-date": "05-08-2023, 00:56:17",
     "recorded-content": {
       "two-queue-arns-invalid": {
@@ -992,7 +992,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_restore_object": {
+  "tests/aws/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_restore_object": {
     "recorded-date": "13-07-2023, 01:18:19",
     "recorded-content": {
       "receive_messages": {

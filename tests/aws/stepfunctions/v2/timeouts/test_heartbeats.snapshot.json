@@ -1,5 +1,5 @@
 {
-  "tests/integration/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_timeout": {
+  "tests/aws/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_timeout": {
     "recorded-date": "26-06-2023, 09:12:29",
     "recorded-content": {
       "get_execution_history": {
@@ -135,7 +135,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_path_timeout": {
+  "tests/aws/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_path_timeout": {
     "recorded-date": "26-06-2023, 09:12:45",
     "recorded-content": {
       "get_execution_history": {
@@ -273,7 +273,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_no_timeout": {
+  "tests/aws/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_no_timeout": {
     "recorded-date": "26-06-2023, 09:13:01",
     "recorded-content": {
       "get_execution_history": {

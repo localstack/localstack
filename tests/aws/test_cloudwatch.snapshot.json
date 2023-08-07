@@ -1,5 +1,5 @@
 {
-  "tests/integration/test_cloudwatch.py::TestCloudwatch::test_enable_disable_alarm_actions": {
+  "tests/aws/test_cloudwatch.py::TestCloudwatch::test_enable_disable_alarm_actions": {
     "recorded-date": "21-07-2022, 09:54:55",
     "recorded-content": {
       "cloudwatch_sns_subscription": {
@@ -254,7 +254,7 @@
       }
     }
   },
-  "tests/integration/test_cloudwatch.py::TestCloudwatch::test_breaching_alarm_actions": {
+  "tests/aws/test_cloudwatch.py::TestCloudwatch::test_breaching_alarm_actions": {
     "recorded-date": "21-07-2022, 09:57:12",
     "recorded-content": {
       "cloudwatch_sns_subscription": {
@@ -362,7 +362,7 @@
       }
     }
   },
-  "tests/integration/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm": {
+  "tests/aws/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm": {
     "recorded-date": "21-07-2022, 10:47:12",
     "recorded-content": {
       "describe-alarm": {
@@ -599,7 +599,7 @@
       }
     }
   },
-  "tests/integration/test_cloudwatch.py::TestCloudwatch::test_aws_sqs_metrics_created": {
+  "tests/aws/test_cloudwatch.py::TestCloudwatch::test_aws_sqs_metrics_created": {
     "recorded-date": "17-11-2022, 14:40:11",
     "recorded-content": {
       "get_metric_data": {
@@ -667,7 +667,7 @@
       }
     }
   },
-  "tests/integration/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_values_list": {
+  "tests/aws/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_values_list": {
     "recorded-date": "11-11-2022, 16:04:47",
     "recorded-content": {
       "get_metric_statistics": {

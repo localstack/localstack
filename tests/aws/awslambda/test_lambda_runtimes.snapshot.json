@@ -1,5 +1,5 @@
 {
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs14.x]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs14.x]": {
     "recorded-date": "01-08-2023, 13:26:25",
     "recorded-content": {
       "creation-result": {
@@ -61,7 +61,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs16.x]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs16.x]": {
     "recorded-date": "01-08-2023, 13:26:37",
     "recorded-content": {
       "creation-result": {
@@ -123,7 +123,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_java_runtime_with_lib": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_java_runtime_with_lib": {
     "recorded-date": "01-08-2023, 13:35:50",
     "recorded-content": {
       "create-result-jar-with-lib": {
@@ -290,7 +290,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java8]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java8]": {
     "recorded-date": "01-08-2023, 13:35:54",
     "recorded-content": {
       "invoke_result": {
@@ -304,7 +304,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java8.al2]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java8.al2]": {
     "recorded-date": "01-08-2023, 13:35:57",
     "recorded-content": {
       "invoke_result": {
@@ -318,7 +318,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java11]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java11]": {
     "recorded-date": "01-08-2023, 13:36:01",
     "recorded-content": {
       "invoke_result": {
@@ -332,7 +332,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java8]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java8]": {
     "recorded-date": "01-08-2023, 13:36:11",
     "recorded-content": {
       "create-result": {
@@ -395,7 +395,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java8.al2]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java8.al2]": {
     "recorded-date": "01-08-2023, 13:36:17",
     "recorded-content": {
       "create-result": {
@@ -458,7 +458,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java11]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java11]": {
     "recorded-date": "01-08-2023, 13:36:22",
     "recorded-content": {
       "create-result": {
@@ -521,7 +521,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequestCustom-CUSTOM]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequestCustom-CUSTOM]": {
     "recorded-date": "01-08-2023, 13:36:42",
     "recorded-content": {
       "create-result": {
@@ -580,7 +580,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom-INTERFACE]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom-INTERFACE]": {
     "recorded-date": "01-08-2023, 13:36:50",
     "recorded-content": {
       "create-result": {
@@ -639,7 +639,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequest-INTERFACE]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequest-INTERFACE]": {
     "recorded-date": "01-08-2023, 13:36:59",
     "recorded-content": {
       "create-result": {
@@ -698,7 +698,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_java_lambda_subscribe_sns_topic": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_java_lambda_subscribe_sns_topic": {
     "recorded-date": "01-08-2023, 13:37:21",
     "recorded-content": {
       "get-function": {
@@ -770,39 +770,39 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.7]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.7]": {
     "recorded-date": "01-08-2023, 13:19:43",
     "recorded-content": {}
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.8]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.8]": {
     "recorded-date": "01-08-2023, 13:19:46",
     "recorded-content": {}
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.9]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.9]": {
     "recorded-date": "01-08-2023, 13:19:49",
     "recorded-content": {}
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.10]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.10]": {
     "recorded-date": "01-08-2023, 13:19:53",
     "recorded-content": {}
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.7]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.7]": {
     "recorded-date": "01-08-2023, 13:19:59",
     "recorded-content": {}
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.8]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.8]": {
     "recorded-date": "01-08-2023, 13:20:02",
     "recorded-content": {}
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.9]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.9]": {
     "recorded-date": "01-08-2023, 13:20:05",
     "recorded-content": {}
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.10]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.10]": {
     "recorded-date": "01-08-2023, 13:20:08",
     "recorded-content": {}
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.7]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.7]": {
     "recorded-date": "01-08-2023, 13:20:15",
     "recorded-content": {
       "creation_response": {
@@ -868,7 +868,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.8]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.8]": {
     "recorded-date": "01-08-2023, 13:20:18",
     "recorded-content": {
       "creation_response": {
@@ -934,7 +934,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.9]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.9]": {
     "recorded-date": "01-08-2023, 13:20:21",
     "recorded-content": {
       "creation_response": {
@@ -1001,7 +1001,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.10]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.10]": {
     "recorded-date": "01-08-2023, 13:20:24",
     "recorded-content": {
       "creation_response": {
@@ -1068,7 +1068,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java17]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java17]": {
     "recorded-date": "01-08-2023, 13:36:04",
     "recorded-content": {
       "invoke_result": {
@@ -1082,7 +1082,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java17]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java17]": {
     "recorded-date": "01-08-2023, 13:36:28",
     "recorded-content": {
       "create-result": {
@@ -1145,15 +1145,15 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.11]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.11]": {
     "recorded-date": "01-08-2023, 13:19:56",
     "recorded-content": {}
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.11]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.11]": {
     "recorded-date": "01-08-2023, 13:20:12",
     "recorded-content": {}
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.11]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.11]": {
     "recorded-date": "01-08-2023, 13:20:27",
     "recorded-content": {
       "creation_response": {
@@ -1220,7 +1220,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs18.x]": {
+  "tests/aws/awslambda/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs18.x]": {
     "recorded-date": "01-08-2023, 13:26:51",
     "recorded-content": {
       "creation-result": {

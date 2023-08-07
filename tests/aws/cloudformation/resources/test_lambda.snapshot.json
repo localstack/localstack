@@ -1,5 +1,5 @@
 {
-  "tests/integration/cloudformation/resources/test_lambda.py::test_cfn_function_url": {
+  "tests/aws/cloudformation/resources/test_lambda.py::test_cfn_function_url": {
     "recorded-date": "27-02-2023, 17:27:12",
     "recorded-content": {
       "url_resource": {
@@ -65,7 +65,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_lambda.py::test_lambda_alias": {
+  "tests/aws/cloudformation/resources/test_lambda.py::test_lambda_alias": {
     "recorded-date": "27-02-2023, 17:28:29",
     "recorded-content": {
       "stack_resource_descriptions": {
@@ -137,7 +137,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_permissions": {
+  "tests/aws/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_permissions": {
     "recorded-date": "27-02-2023, 17:34:08",
     "recorded-content": {
       "stack_resources": {
@@ -343,7 +343,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_sqs_source": {
+  "tests/aws/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_sqs_source": {
     "recorded-date": "27-02-2023, 17:38:51",
     "recorded-content": {
       "stack_resources": {
@@ -576,7 +576,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_lambda.py::test_lambda_code_signing_config": {
+  "tests/aws/cloudformation/resources/test_lambda.py::test_lambda_code_signing_config": {
     "recorded-date": "27-02-2023, 17:28:57",
     "recorded-content": {
       "stack_resource_descriptions": {
@@ -621,7 +621,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_lambda.py::test_event_invoke_config": {
+  "tests/aws/cloudformation/resources/test_lambda.py::test_event_invoke_config": {
     "recorded-date": "27-02-2023, 17:30:14",
     "recorded-content": {
       "event_invoke_config": {
@@ -640,7 +640,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_lambda.py::test_lambda_version": {
+  "tests/aws/cloudformation/resources/test_lambda.py::test_lambda_version": {
     "recorded-date": "27-02-2023, 17:31:32",
     "recorded-content": {
       "stack_resources": {
@@ -799,7 +799,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_dynamodb_source": {
+  "tests/aws/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_dynamodb_source": {
     "recorded-date": "27-02-2023, 17:42:01",
     "recorded-content": {
       "stack_resources": {
@@ -1091,7 +1091,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_kinesis_source": {
+  "tests/aws/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_kinesis_source": {
     "recorded-date": "27-02-2023, 17:44:31",
     "recorded-content": {
       "stack_resources": {
@@ -1356,7 +1356,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_lambda.py::test_multiple_lambda_permissions_for_singlefn": {
+  "tests/aws/cloudformation/resources/test_lambda.py::test_multiple_lambda_permissions_for_singlefn": {
     "recorded-date": "09-03-2023, 22:07:56",
     "recorded-content": {
       "policy": {

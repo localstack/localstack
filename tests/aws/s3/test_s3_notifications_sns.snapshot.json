@@ -1,5 +1,5 @@
 {
-  "tests/integration/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_object_created_put": {
+  "tests/aws/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_object_created_put": {
     "recorded-date": "05-08-2023, 00:52:31",
     "recorded-content": {
       "receive_messages": {
@@ -106,7 +106,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_bucket_notifications_with_filter": {
+  "tests/aws/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_bucket_notifications_with_filter": {
     "recorded-date": "05-08-2023, 00:52:37",
     "recorded-content": {
       "message": {
@@ -160,7 +160,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_invalid_topic_arn": {
+  "tests/aws/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_invalid_topic_arn": {
     "recorded-date": "05-08-2023, 00:52:42",
     "recorded-content": {
       "invalid_not_skip": {
@@ -204,7 +204,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_bucket_not_exist": {
+  "tests/aws/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_bucket_not_exist": {
     "recorded-date": "05-08-2023, 00:52:39",
     "recorded-content": {
       "bucket_not_exists": {

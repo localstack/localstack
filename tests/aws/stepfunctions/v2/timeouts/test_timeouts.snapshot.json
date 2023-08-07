@@ -1,5 +1,5 @@
 {
-  "tests/integration/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_lambda": {
+  "tests/aws/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_lambda": {
     "recorded-date": "22-06-2023, 13:42:57",
     "recorded-content": {
       "get_execution_history": {
@@ -82,7 +82,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_service_lambda": {
+  "tests/aws/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_service_lambda": {
     "recorded-date": "22-06-2023, 13:42:21",
     "recorded-content": {
       "get_execution_history": {
@@ -173,7 +173,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_service_lambda_map_timeout": {
+  "tests/aws/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_service_lambda_map_timeout": {
     "recorded-date": "26-05-2023, 12:48:33",
     "recorded-content": {
       "get_execution_history": {
@@ -590,7 +590,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_service_lambda_with_path": {
+  "tests/aws/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_service_lambda_with_path": {
     "recorded-date": "22-06-2023, 13:42:39",
     "recorded-content": {
       "get_execution_history": {

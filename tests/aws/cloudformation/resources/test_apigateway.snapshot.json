@@ -1,5 +1,5 @@
 {
-  "tests/integration/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_integration": {
+  "tests/aws/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_integration": {
     "recorded-date": "27-05-2023, 19:00:45",
     "recorded-content": {
       "rest_api": {
@@ -70,7 +70,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_apigateway.py::test_api_gateway_with_policy_as_dict": {
+  "tests/aws/cloudformation/resources/test_apigateway.py::test_api_gateway_with_policy_as_dict": {
     "recorded-date": "01-03-2023, 23:36:31",
     "recorded-content": {
       "rest-api": {
@@ -110,7 +110,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
+  "tests/aws/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
     "recorded-date": "02-06-2023, 18:26:01",
     "recorded-content": {
       "rest-api": {
@@ -167,7 +167,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_models": {
+  "tests/aws/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_models": {
     "recorded-date": "05-07-2023, 20:11:14",
     "recorded-content": {
       "get-resources": {
@@ -305,7 +305,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_apigateway.py::test_cfn_with_apigateway_resources": {
+  "tests/aws/cloudformation/resources/test_apigateway.py::test_cfn_with_apigateway_resources": {
     "recorded-date": "05-07-2023, 20:54:14",
     "recorded-content": {
       "get-method-post": {
@@ -437,7 +437,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_apigateway.py::test_rest_api_serverless_ref_resolving": {
+  "tests/aws/cloudformation/resources/test_apigateway.py::test_rest_api_serverless_ref_resolving": {
     "recorded-date": "06-07-2023, 21:01:08",
     "recorded-content": {
       "get-resources": {

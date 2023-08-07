@@ -1,5 +1,5 @@
 {
-  "tests/integration/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_pipe": {
+  "tests/aws/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_pipe": {
     "recorded-date": "22-06-2023, 13:34:18",
     "recorded-content": {
       "get_execution_history": {
@@ -169,7 +169,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_bytes_payload": {
+  "tests/aws/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_bytes_payload": {
     "recorded-date": "04-08-2023, 10:45:41",
     "recorded-content": {
       "get_execution_history": {
@@ -264,7 +264,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[None]": {
+  "tests/aws/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[None]": {
     "recorded-date": "04-08-2023, 14:57:19",
     "recorded-content": {
       "get_execution_history": {
@@ -359,7 +359,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[HelloWorld]": {
+  "tests/aws/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[HelloWorld]": {
     "recorded-date": "04-08-2023, 16:13:17",
     "recorded-content": {
       "get_execution_history": {
@@ -454,7 +454,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[0.0]": {
+  "tests/aws/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[0.0]": {
     "recorded-date": "04-08-2023, 16:13:35",
     "recorded-content": {
       "get_execution_history": {
@@ -549,7 +549,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[00]": {
+  "tests/aws/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[00]": {
     "recorded-date": "04-08-2023, 16:13:53",
     "recorded-content": {
       "get_execution_history": {
@@ -644,7 +644,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[01]": {
+  "tests/aws/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[01]": {
     "recorded-date": "04-08-2023, 16:14:12",
     "recorded-content": {
       "get_execution_history": {
@@ -739,7 +739,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[True]": {
+  "tests/aws/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[True]": {
     "recorded-date": "04-08-2023, 16:14:30",
     "recorded-content": {
       "get_execution_history": {
@@ -834,7 +834,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[json_value6]": {
+  "tests/aws/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[json_value6]": {
     "recorded-date": "04-08-2023, 16:15:06",
     "recorded-content": {
       "get_execution_history": {
@@ -929,7 +929,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[json_value7]": {
+  "tests/aws/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[json_value7]": {
     "recorded-date": "04-08-2023, 14:59:25",
     "recorded-content": {
       "get_execution_history": {
@@ -1024,7 +1024,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[json_value5]": {
+  "tests/aws/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[json_value5]": {
     "recorded-date": "04-08-2023, 16:14:48",
     "recorded-content": {
       "get_execution_history": {

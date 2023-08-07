@@ -1,5 +1,5 @@
 {
-  "tests/integration/cloudformation/resources/test_stack_sets.py::test_create_stack_set_with_stack_instances": {
+  "tests/aws/cloudformation/resources/test_stack_sets.py::test_create_stack_set_with_stack_instances": {
     "recorded-date": "24-05-2023, 15:32:47",
     "recorded-content": {
       "create_stack_set": {

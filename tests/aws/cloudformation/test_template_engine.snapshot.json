@@ -1,5 +1,5 @@
 {
-  "tests/integration/cloudformation/test_template_engine.py::TestTypes::test_implicit_type_conversion": {
+  "tests/aws/cloudformation/test_template_engine.py::TestTypes::test_implicit_type_conversion": {
     "recorded-date": "12-08-2022, 16:14:04",
     "recorded-content": {
       "queue": {
@@ -28,7 +28,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_global_scope": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_global_scope": {
     "recorded-date": "30-01-2023, 20:14:48",
     "recorded-content": {
       "processed_template": {
@@ -67,7 +67,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope": {
     "recorded-date": "06-12-2022, 09:44:49",
     "recorded-content": {
       "processed_template": {
@@ -111,7 +111,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_scope_order_and_parameters": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_scope_order_and_parameters": {
     "recorded-date": "07-12-2022, 09:08:26",
     "recorded-content": {
       "processed_template": {
@@ -137,7 +137,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope[transformation_snippet_topic.yml]": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope[transformation_snippet_topic.yml]": {
     "recorded-date": "08-12-2022, 16:24:58",
     "recorded-content": {
       "original_template": {
@@ -192,7 +192,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope[transformation_snippet_topic.json]": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope[transformation_snippet_topic.json]": {
     "recorded-date": "08-12-2022, 16:25:43",
     "recorded-content": {
       "original_template": {
@@ -274,7 +274,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_capabilities_requirements": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_capabilities_requirements": {
     "recorded-date": "30-01-2023, 20:15:46",
     "recorded-content": {
       "error": {
@@ -350,7 +350,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_validate_lambda_internals": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_validate_lambda_internals": {
     "recorded-date": "30-01-2023, 20:16:45",
     "recorded-content": {
       "event": {
@@ -386,7 +386,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_to_validate_template_limit_for_macro": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_to_validate_template_limit_for_macro": {
     "recorded-date": "30-01-2023, 20:17:04",
     "recorded-content": {
       "error_response": {
@@ -402,7 +402,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_error_pass_macro_as_reference": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_error_pass_macro_as_reference": {
     "recorded-date": "30-01-2023, 20:17:05",
     "recorded-content": {
       "error": {
@@ -418,11 +418,11 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_error_macro_param_as_reference": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_error_macro_param_as_reference": {
     "recorded-date": "08-12-2022, 11:50:49",
     "recorded-content": {}
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_functions_and_references_during_transformation": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_functions_and_references_during_transformation": {
     "recorded-date": "30-01-2023, 20:17:55",
     "recorded-content": {
       "event": {
@@ -444,7 +444,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_with_message.py]": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_with_message.py]": {
     "recorded-date": "30-01-2023, 20:18:45",
     "recorded-content": {
       "failed_description": {
@@ -460,7 +460,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_without_message.py]": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_without_message.py]": {
     "recorded-date": "30-01-2023, 20:19:35",
     "recorded-content": {
       "failed_description": {
@@ -476,7 +476,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_invalid_template.py]": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_invalid_template.py]": {
     "recorded-date": "30-01-2023, 20:20:30",
     "recorded-content": {
       "failed_description": {
@@ -492,7 +492,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[raise_error.py]": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_failed_state[raise_error.py]": {
     "recorded-date": "30-01-2023, 20:21:20",
     "recorded-content": {
       "failed_description": {
@@ -508,7 +508,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestSsmParameters::test_create_stack_with_ssm_parameters": {
+  "tests/aws/cloudformation/test_template_engine.py::TestSsmParameters::test_create_stack_with_ssm_parameters": {
     "recorded-date": "15-01-2023, 17:54:23",
     "recorded-content": {
       "stack-details": {
@@ -553,7 +553,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_macro_deployment": {
+  "tests/aws/cloudformation/test_template_engine.py::TestMacros::test_macro_deployment": {
     "recorded-date": "30-01-2023, 20:13:58",
     "recorded-content": {
       "stack_outputs": {
@@ -581,7 +581,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/test_template_engine.py::TestStackEvents::test_invalid_stack_deploy": {
+  "tests/aws/cloudformation/test_template_engine.py::TestStackEvents::test_invalid_stack_deploy": {
     "recorded-date": "12-06-2023, 17:08:47",
     "recorded-content": {
       "failed_event": {

@@ -1,5 +1,5 @@
 {
-  "tests/integration/stepfunctions/v2/intrinsic_functions/test_string_operations.py::TestStringOperations::test_string_split": {
+  "tests/aws/stepfunctions/v2/intrinsic_functions/test_string_operations.py::TestStringOperations::test_string_split": {
     "recorded-date": "09-02-2023, 10:36:01",
     "recorded-content": {
       "exec_hist_resp_0": {

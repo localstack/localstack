@@ -1,5 +1,5 @@
 {
-  "tests/integration/s3/test_s3.py::TestS3::test_region_header_exists": {
+  "tests/aws/s3/test_s3.py::TestS3::test_region_header_exists": {
     "recorded-date": "03-08-2023, 04:13:15",
     "recorded-content": {
       "head_bucket": {
@@ -22,7 +22,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_delete_bucket_with_content": {
+  "tests/aws/s3/test_s3.py::TestS3::test_delete_bucket_with_content": {
     "recorded-date": "03-08-2023, 04:13:20",
     "recorded-content": {
       "list-objects": {
@@ -162,7 +162,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_and_get_object_with_utf8_key": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_and_get_object_with_utf8_key": {
     "recorded-date": "03-08-2023, 04:13:21",
     "recorded-content": {
       "put-object": {
@@ -189,7 +189,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_metadata_header_character_decoding": {
+  "tests/aws/s3/test_s3.py::TestS3::test_metadata_header_character_decoding": {
     "recorded-date": "03-08-2023, 04:13:29",
     "recorded-content": {
       "head-object": {
@@ -210,7 +210,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_upload_file_multipart": {
+  "tests/aws/s3/test_s3.py::TestS3::test_upload_file_multipart": {
     "recorded-date": "03-08-2023, 04:13:32",
     "recorded-content": {
       "get_object": {
@@ -229,7 +229,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_list_objects_with_prefix[/]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_list_objects_with_prefix[/]": {
     "recorded-date": "03-08-2023, 04:13:39",
     "recorded-content": {
       "list-objects": {
@@ -252,7 +252,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_list_objects_with_prefix[%2F]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_list_objects_with_prefix[%2F]": {
     "recorded-date": "03-08-2023, 04:13:41",
     "recorded-content": {
       "list-objects": {
@@ -283,7 +283,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_get_object_no_such_bucket": {
+  "tests/aws/s3/test_s3.py::TestS3::test_get_object_no_such_bucket": {
     "recorded-date": "03-08-2023, 04:13:49",
     "recorded-content": {
       "expected_error": {
@@ -299,7 +299,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_delete_bucket_no_such_bucket": {
+  "tests/aws/s3/test_s3.py::TestS3::test_delete_bucket_no_such_bucket": {
     "recorded-date": "03-08-2023, 04:13:50",
     "recorded-content": {
       "expected_error": {
@@ -315,7 +315,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_get_bucket_notification_configuration_no_such_bucket": {
+  "tests/aws/s3/test_s3.py::TestS3::test_get_bucket_notification_configuration_no_such_bucket": {
     "recorded-date": "03-08-2023, 04:13:50",
     "recorded-content": {
       "expected_error": {
@@ -331,7 +331,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_get_object_attributes": {
+  "tests/aws/s3/test_s3.py::TestS3::test_get_object_attributes": {
     "recorded-date": "03-08-2023, 04:14:00",
     "recorded-content": {
       "object-attrs": {
@@ -372,7 +372,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_and_get_object_with_hash_prefix": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_and_get_object_with_hash_prefix": {
     "recorded-date": "03-08-2023, 04:14:14",
     "recorded-content": {
       "put-object": {
@@ -399,7 +399,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_invalid_range_error": {
+  "tests/aws/s3/test_s3.py::TestS3::test_invalid_range_error": {
     "recorded-date": "03-08-2023, 04:14:17",
     "recorded-content": {
       "exc": {
@@ -416,7 +416,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_range_key_not_exists": {
+  "tests/aws/s3/test_s3.py::TestS3::test_range_key_not_exists": {
     "recorded-date": "03-08-2023, 04:14:18",
     "recorded-content": {
       "exc": {
@@ -432,7 +432,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_and_get_bucket_policy": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_and_get_bucket_policy": {
     "recorded-date": "04-08-2023, 23:56:00",
     "recorded-content": {
       "put-bucket-policy": {
@@ -462,7 +462,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_object_tagging_empty_list": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_object_tagging_empty_list": {
     "recorded-date": "03-08-2023, 04:14:24",
     "recorded-content": {
       "created-object-tags": {
@@ -497,7 +497,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_get_object_after_deleted_in_versioned_bucket": {
+  "tests/aws/s3/test_s3.py::TestS3::test_get_object_after_deleted_in_versioned_bucket": {
     "recorded-date": "03-08-2023, 04:14:29",
     "recorded-content": {
       "get-object": {
@@ -528,7 +528,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_object_checksum[CRC32]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_object_checksum[CRC32]": {
     "recorded-date": "03-08-2023, 04:14:32",
     "recorded-content": {
       "put-wrong-checksum": {
@@ -599,7 +599,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_object_checksum[CRC32C]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_object_checksum[CRC32C]": {
     "recorded-date": "03-08-2023, 04:14:35",
     "recorded-content": {
       "put-wrong-checksum": {
@@ -670,7 +670,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_object_checksum[SHA1]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_object_checksum[SHA1]": {
     "recorded-date": "03-08-2023, 04:14:38",
     "recorded-content": {
       "put-wrong-checksum": {
@@ -741,7 +741,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_object_checksum[SHA256]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_object_checksum[SHA256]": {
     "recorded-date": "03-08-2023, 04:14:41",
     "recorded-content": {
       "put-wrong-checksum": {
@@ -812,7 +812,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_metadata_replace": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_metadata_replace": {
     "recorded-date": "03-08-2023, 04:15:04",
     "recorded-content": {
       "put_object": {
@@ -867,7 +867,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_content_type_and_metadata": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_content_type_and_metadata": {
     "recorded-date": "03-08-2023, 04:15:17",
     "recorded-content": {
       "put_object": {
@@ -947,7 +947,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_multipart_upload_acls": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_multipart_upload_acls": {
     "recorded-date": "03-08-2023, 16:53:20",
     "recorded-content": {
       "bucket-acl": {
@@ -1053,7 +1053,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_object_expiry": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_object_expiry": {
     "recorded-date": "03-08-2023, 04:16:18",
     "recorded-content": {
       "head-object-expired": {
@@ -1087,7 +1087,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_upload_file_with_xml_preamble": {
+  "tests/aws/s3/test_s3.py::TestS3::test_upload_file_with_xml_preamble": {
     "recorded-date": "03-08-2023, 04:16:20",
     "recorded-content": {
       "get_object": {
@@ -1106,7 +1106,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_bucket_availability": {
+  "tests/aws/s3/test_s3.py::TestS3::test_bucket_availability": {
     "recorded-date": "03-08-2023, 04:16:22",
     "recorded-content": {
       "bucket-lifecycle": {
@@ -1133,7 +1133,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_different_location_constraint": {
+  "tests/aws/s3/test_s3.py::TestS3::test_different_location_constraint": {
     "recorded-date": "03-08-2023, 04:16:27",
     "recorded-content": {
       "get_bucket_location_bucket_1": {
@@ -1188,7 +1188,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_get_object_with_anon_credentials": {
+  "tests/aws/s3/test_s3.py::TestS3::test_get_object_with_anon_credentials": {
     "recorded-date": "03-08-2023, 17:03:12",
     "recorded-content": {
       "get_object": {
@@ -1207,7 +1207,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_putobject_with_multiple_keys": {
+  "tests/aws/s3/test_s3.py::TestS3::test_putobject_with_multiple_keys": {
     "recorded-date": "03-08-2023, 04:16:33",
     "recorded-content": {
       "get_object": {
@@ -1226,7 +1226,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_delete_bucket_lifecycle_configuration": {
+  "tests/aws/s3/test_s3.py::TestS3BucketLifecycle::test_delete_bucket_lifecycle_configuration": {
     "recorded-date": "21-09-2022, 13:36:09",
     "recorded-content": {
       "get-bucket-lifecycle-exc-1": {
@@ -1277,7 +1277,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_delete_lifecycle_configuration_on_bucket_deletion": {
+  "tests/aws/s3/test_s3.py::TestS3BucketLifecycle::test_delete_lifecycle_configuration_on_bucket_deletion": {
     "recorded-date": "21-09-2022, 13:36:12",
     "recorded-content": {
       "get-bucket-lifecycle-conf": {
@@ -1311,7 +1311,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_configuration_object_expiry": {
+  "tests/aws/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_configuration_object_expiry": {
     "recorded-date": "07-07-2023, 15:33:21",
     "recorded-content": {
       "get-bucket-lifecycle-conf": {
@@ -1361,7 +1361,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_range_header_body_length": {
+  "tests/aws/s3/test_s3.py::TestS3::test_range_header_body_length": {
     "recorded-date": "03-08-2023, 04:16:36",
     "recorded-content": {
       "get-object": {
@@ -1381,7 +1381,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_delete_object_tagging": {
+  "tests/aws/s3/test_s3.py::TestS3::test_delete_object_tagging": {
     "recorded-date": "03-08-2023, 04:17:04",
     "recorded-content": {
       "get-obj": {
@@ -1414,7 +1414,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_delete_non_existing_keys": {
+  "tests/aws/s3/test_s3.py::TestS3::test_delete_non_existing_keys": {
     "recorded-date": "03-08-2023, 04:17:07",
     "recorded-content": {
       "deleted-resp": {
@@ -1436,7 +1436,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_delete_non_existing_keys_in_non_existing_bucket": {
+  "tests/aws/s3/test_s3.py::TestS3::test_delete_non_existing_keys_in_non_existing_bucket": {
     "recorded-date": "04-08-2023, 23:51:32",
     "recorded-content": {
       "error-non-existent-bucket": {
@@ -1452,7 +1452,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_request_payer": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_request_payer": {
     "recorded-date": "03-08-2023, 04:17:17",
     "recorded-content": {
       "put-bucket-request-payment": {
@@ -1470,7 +1470,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_request_payer_exceptions": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_request_payer_exceptions": {
     "recorded-date": "03-08-2023, 04:17:18",
     "recorded-content": {
       "wrong-payer-type": {
@@ -1485,7 +1485,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_bucket_exists": {
+  "tests/aws/s3/test_s3.py::TestS3::test_bucket_exists": {
     "recorded-date": "03-08-2023, 04:17:20",
     "recorded-content": {
       "get-bucket-cors": {
@@ -1540,7 +1540,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_uppercase_key_names": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_uppercase_key_names": {
     "recorded-date": "03-08-2023, 04:17:22",
     "recorded-content": {
       "response": {
@@ -1570,7 +1570,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_precondition_failed_error": {
+  "tests/aws/s3/test_s3.py::TestS3::test_precondition_failed_error": {
     "recorded-date": "03-08-2023, 04:17:50",
     "recorded-content": {
       "get-object-if-match": {
@@ -1586,7 +1586,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_invalid_content_md5": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_invalid_content_md5": {
     "recorded-date": "03-08-2023, 04:17:53",
     "recorded-content": {
       "md5-error-0": {
@@ -1635,7 +1635,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_upload_download_gzip": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_upload_download_gzip": {
     "recorded-date": "03-08-2023, 04:17:54",
     "recorded-content": {
       "put-object": {
@@ -1663,7 +1663,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_multipart_copy_object_etag": {
+  "tests/aws/s3/test_s3.py::TestS3::test_multipart_copy_object_etag": {
     "recorded-date": "03-08-2023, 04:17:57",
     "recorded-content": {
       "multipart-upload": {
@@ -1690,7 +1690,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_set_external_hostname": {
+  "tests/aws/s3/test_s3.py::TestS3::test_set_external_hostname": {
     "recorded-date": "03-08-2023, 17:09:20",
     "recorded-content": {
       "multipart-upload": {
@@ -1717,7 +1717,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_lambda_integration": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_lambda_integration": {
     "recorded-date": "03-08-2023, 04:18:58",
     "recorded-content": {
       "head_object": {
@@ -1735,7 +1735,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_uppercase_bucket_name": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_uppercase_bucket_name": {
     "recorded-date": "03-08-2023, 04:19:01",
     "recorded-content": {
       "uppercase-bucket": {
@@ -1751,7 +1751,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_create_bucket_with_existing_name": {
+  "tests/aws/s3/test_s3.py::TestS3::test_create_bucket_with_existing_name": {
     "recorded-date": "03-08-2023, 04:19:02",
     "recorded-content": {
       "create-bucket-us-west-1": {
@@ -1778,7 +1778,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_bucket_does_not_exist": {
+  "tests/aws/s3/test_s3.py::TestS3::test_bucket_does_not_exist": {
     "recorded-date": "03-08-2023, 04:19:09",
     "recorded-content": {
       "list_object": {
@@ -1805,7 +1805,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_create_bucket_head_bucket": {
+  "tests/aws/s3/test_s3.py::TestS3::test_create_bucket_head_bucket": {
     "recorded-date": "03-08-2023, 04:19:13",
     "recorded-content": {
       "create_bucket": {
@@ -1860,7 +1860,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_bucket_name_with_dots": {
+  "tests/aws/s3/test_s3.py::TestS3::test_bucket_name_with_dots": {
     "recorded-date": "03-08-2023, 17:13:12",
     "recorded-content": {
       "list_objects": {
@@ -1919,7 +1919,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_put_more_than_1000_items": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_put_more_than_1000_items": {
     "recorded-date": "03-08-2023, 04:23:05",
     "recorded-content": {
       "get_object-1009": {
@@ -2091,7 +2091,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_list_objects_empty_marker": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_list_objects_empty_marker": {
     "recorded-date": "03-08-2023, 04:23:09",
     "recorded-content": {
       "list-objects": {
@@ -2108,7 +2108,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_upload_big_file": {
+  "tests/aws/s3/test_s3.py::TestS3::test_upload_big_file": {
     "recorded-date": "03-08-2023, 04:23:23",
     "recorded-content": {
       "put_object_key1": {
@@ -2155,7 +2155,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_get_bucket_versioning_order": {
+  "tests/aws/s3/test_s3.py::TestS3::test_get_bucket_versioning_order": {
     "recorded-date": "03-08-2023, 04:23:26",
     "recorded-content": {
       "list_object_versions_before": {
@@ -2240,7 +2240,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_etag_on_get_object_call": {
+  "tests/aws/s3/test_s3.py::TestS3::test_etag_on_get_object_call": {
     "recorded-date": "03-08-2023, 04:23:29",
     "recorded-content": {
       "get_object": {
@@ -2274,7 +2274,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_delete_object_with_version_id": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_delete_object_with_version_id": {
     "recorded-date": "03-08-2023, 04:23:32",
     "recorded-content": {
       "get_bucket_versioning": {
@@ -2333,11 +2333,11 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_batch_delete_objects_using_requests_with_acl": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_batch_delete_objects_using_requests_with_acl": {
     "recorded-date": "03-08-2023, 04:23:41",
     "recorded-content": {}
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_batch_delete_public_objects_using_requests": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_batch_delete_public_objects_using_requests": {
     "recorded-date": "03-08-2023, 17:15:13",
     "recorded-content": {
       "multi-delete-with-requests": {
@@ -2367,7 +2367,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_batch_delete_objects": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_batch_delete_objects": {
     "recorded-date": "03-08-2023, 04:23:45",
     "recorded-content": {
       "batch-delete": {
@@ -2407,7 +2407,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_put_object": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_put_object": {
     "recorded-date": "04-08-2023, 23:58:39",
     "recorded-content": {
       "get_object": {
@@ -2426,7 +2426,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_put_url_metadata": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_put_url_metadata": {
     "recorded-date": "04-08-2023, 23:59:04",
     "recorded-content": {
       "head_object": {
@@ -2446,7 +2446,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_copy_md5": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_s3_copy_md5": {
     "recorded-date": "05-08-2023, 00:08:47",
     "recorded-content": {
       "copy-obj": {
@@ -2462,7 +2462,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3DeepArchive::test_s3_get_deep_archive_object_restore": {
+  "tests/aws/s3/test_s3.py::TestS3DeepArchive::test_s3_get_deep_archive_object_restore": {
     "recorded-date": "05-08-2023, 00:17:19",
     "recorded-content": {
       "get_object_invalid_state": {
@@ -2485,7 +2485,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_head_object_fields": {
+  "tests/aws/s3/test_s3.py::TestS3::test_head_object_fields": {
     "recorded-date": "03-08-2023, 04:14:26",
     "recorded-content": {
       "head-object": {
@@ -2513,7 +2513,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_bucket_acl": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_bucket_acl": {
     "recorded-date": "03-08-2023, 16:55:21",
     "recorded-content": {
       "get-bucket-acl": {
@@ -2611,7 +2611,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_bucket_acl_exceptions": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_bucket_acl_exceptions": {
     "recorded-date": "03-08-2023, 04:16:13",
     "recorded-content": {
       "put-bucket-canned-acl": {
@@ -2771,7 +2771,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_header_overrides": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_get_object_header_overrides": {
     "recorded-date": "03-08-2023, 04:23:46",
     "recorded-content": {
       "get-object": {
@@ -2795,7 +2795,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_put_object_versioned": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_put_object_versioned": {
     "recorded-date": "03-08-2023, 04:23:39",
     "recorded-content": {
       "put-pre-versioned": {
@@ -3059,7 +3059,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_put_object_with_md5_and_chunk_signature_bad_headers[s3-True]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_put_object_with_md5_and_chunk_signature_bad_headers[s3-True]": {
     "recorded-date": "04-08-2023, 23:59:09",
     "recorded-content": {
       "with-decoded-content-length": {
@@ -3088,11 +3088,11 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_put_object_with_md5_and_chunk_signature_bad_headers[s3-False]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_put_object_with_md5_and_chunk_signature_bad_headers[s3-False]": {
     "recorded-date": "04-08-2023, 23:59:11",
     "recorded-content": {}
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_put_object_with_md5_and_chunk_signature_bad_headers[s3v4-True]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_put_object_with_md5_and_chunk_signature_bad_headers[s3v4-True]": {
     "recorded-date": "04-08-2023, 23:59:13",
     "recorded-content": {
       "with-decoded-content-length": {
@@ -3115,11 +3115,11 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_put_object_with_md5_and_chunk_signature_bad_headers[s3v4-False]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_put_object_with_md5_and_chunk_signature_bad_headers[s3v4-False]": {
     "recorded-date": "04-08-2023, 23:59:15",
     "recorded-content": {}
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_presigned_url_expired[s3]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_s3_presigned_url_expired[s3]": {
     "recorded-date": "04-08-2023, 23:59:23",
     "recorded-content": {
       "expired-exception": {
@@ -3134,7 +3134,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_presigned_url_expired[s3v4]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_s3_presigned_url_expired[s3v4]": {
     "recorded-date": "04-08-2023, 23:59:29",
     "recorded-content": {
       "expired-exception": {
@@ -3150,7 +3150,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication_expired[s3-False]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication_expired[s3-False]": {
     "recorded-date": "05-08-2023, 00:00:07",
     "recorded-content": {
       "expired": {
@@ -3165,7 +3165,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication_expired[s3-True]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication_expired[s3-True]": {
     "recorded-date": "05-08-2023, 00:00:11",
     "recorded-content": {
       "expired": {
@@ -3180,7 +3180,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication_expired[s3v4-False]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication_expired[s3v4-False]": {
     "recorded-date": "05-08-2023, 00:00:16",
     "recorded-content": {
       "expired": {
@@ -3196,7 +3196,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication_expired[s3v4-True]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication_expired[s3v4-True]": {
     "recorded-date": "05-08-2023, 00:00:20",
     "recorded-content": {
       "expired": {
@@ -3212,7 +3212,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication[s3-False]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication[s3-False]": {
     "recorded-date": "05-08-2023, 00:00:25",
     "recorded-content": {
       "invalid-get-1": {
@@ -3241,7 +3241,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication[s3-True]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication[s3-True]": {
     "recorded-date": "05-08-2023, 00:00:29",
     "recorded-content": {
       "invalid-get-1": {
@@ -3270,7 +3270,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication[s3v4-False]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication[s3v4-False]": {
     "recorded-date": "05-08-2023, 00:00:34",
     "recorded-content": {
       "invalid-get-1": {
@@ -3303,7 +3303,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication[s3v4-True]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication[s3v4-True]": {
     "recorded-date": "05-08-2023, 00:00:38",
     "recorded-content": {
       "invalid-get-1": {
@@ -3336,7 +3336,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_missing_sig_param[s3]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_missing_sig_param[s3]": {
     "recorded-date": "04-08-2023, 23:59:43",
     "recorded-content": {
       "missing-param-exception": {
@@ -3350,7 +3350,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_missing_sig_param[s3v4]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_missing_sig_param[s3v4]": {
     "recorded-date": "04-08-2023, 23:59:45",
     "recorded-content": {
       "missing-param-exception": {
@@ -3364,7 +3364,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_with_different_headers[s3]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_with_different_headers[s3]": {
     "recorded-date": "04-08-2023, 23:59:34",
     "recorded-content": {
       "content-type-exception": {
@@ -3398,7 +3398,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_with_different_headers[s3v4]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_with_different_headers[s3v4]": {
     "recorded-date": "04-08-2023, 23:59:38",
     "recorded-content": {
       "content-type-exception": {
@@ -3436,7 +3436,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_same_header_and_qs_parameter": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_same_header_and_qs_parameter": {
     "recorded-date": "04-08-2023, 23:59:41",
     "recorded-content": {
       "double-header-query-string": {
@@ -3466,7 +3466,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_expires": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_expires": {
     "recorded-date": "04-08-2023, 23:58:47",
     "recorded-content": {
       "exception": {
@@ -3480,7 +3480,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_malformed_policy": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_malformed_policy": {
     "recorded-date": "04-10-2022, 20:42:19",
     "recorded-content": {
       "exception": {
@@ -3498,7 +3498,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_malformed_policy[s3]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_malformed_policy[s3]": {
     "recorded-date": "04-08-2023, 23:58:49",
     "recorded-content": {
       "exception-policy": {
@@ -3516,7 +3516,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_malformed_policy[s3v4]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_malformed_policy[s3v4]": {
     "recorded-date": "04-08-2023, 23:58:51",
     "recorded-content": {
       "exception-policy": {
@@ -3534,7 +3534,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_signature[s3]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_signature[s3]": {
     "recorded-date": "04-08-2023, 23:58:52",
     "recorded-content": {
       "exception-missing-signature": {
@@ -3550,7 +3550,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_signature[s3v4]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_signature[s3v4]": {
     "recorded-date": "04-08-2023, 23:58:54",
     "recorded-content": {
       "exception-missing-signature": {
@@ -3566,7 +3566,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_fields[s3]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_fields[s3]": {
     "recorded-date": "04-08-2023, 23:58:56",
     "recorded-content": {
       "exception-missing-fields": {
@@ -3591,7 +3591,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_fields[s3v4]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_fields[s3v4]": {
     "recorded-date": "04-08-2023, 23:58:58",
     "recorded-content": {
       "exception-missing-fields": {
@@ -3616,7 +3616,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3StaticWebsiteHosting::test_validate_website_configuration": {
+  "tests/aws/s3/test_s3.py::TestS3StaticWebsiteHosting::test_validate_website_configuration": {
     "recorded-date": "28-09-2022, 22:44:53",
     "recorded-content": {
       "invalid-website-conf-0": {
@@ -3709,7 +3709,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3StaticWebsiteHosting::test_crud_website_configuration": {
+  "tests/aws/s3/test_s3.py::TestS3StaticWebsiteHosting::test_crud_website_configuration": {
     "recorded-date": "28-09-2022, 23:23:11",
     "recorded-content": {
       "get-no-such-website-config": {
@@ -3746,7 +3746,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_http_methods": {
+  "tests/aws/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_http_methods": {
     "recorded-date": "04-10-2022, 16:11:12",
     "recorded-content": {
       "not-allowed-post": {
@@ -3757,21 +3757,21 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_index_lookup": {
+  "tests/aws/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_index_lookup": {
     "recorded-date": "04-10-2022, 16:45:08",
     "recorded-content": {
       "404-no-trailing-slash": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchKey</li>\n<li>Message: The specified key does not exist.</li>\n<li>Key: directory-wrong</li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n",
       "404-with-trailing-slash": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchKey</li>\n<li>Message: The specified key does not exist.</li>\n<li>Key: directory-wrong/index.html</li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n"
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_404": {
+  "tests/aws/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_404": {
     "recorded-date": "04-10-2022, 16:51:12",
     "recorded-content": {
       "404-no-such-key": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchKey</li>\n<li>Message: The specified key does not exist.</li>\n<li>Key: index.html</li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n",
       "404-no-such-key-nor-custom": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchKey</li>\n<li>Message: The specified key does not exist.</li>\n<li>Key: index.html</li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<h3>An Error Occurred While Attempting to Retrieve a Custom Error Document</h3>\n<ul>\n<li>Code: NoSuchKey</li>\n<li>Message: The specified key does not exist.</li>\n<li>Key: error.html</li>\n</ul>\n<hr/>\n</body>\n</html>\n"
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_no_such_website": {
+  "tests/aws/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_no_such_website": {
     "recorded-date": "04-10-2022, 16:56:34",
     "recorded-content": {
       "no-such-bucket": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchBucket</li>\n<li>Message: The specified bucket does not exist</li>\n<li>BucketName: <bucket-name></li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n",
@@ -3779,7 +3779,7 @@
       "no-such-website-config-key": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchWebsiteConfiguration</li>\n<li>Message: The specified bucket does not have a website configuration</li>\n<li>BucketName: <bucket-name></li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n"
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_multipart_and_list_parts": {
+  "tests/aws/s3/test_s3.py::TestS3::test_multipart_and_list_parts": {
     "recorded-date": "03-08-2023, 04:14:05",
     "recorded-content": {
       "create-multipart": {
@@ -3947,7 +3947,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_and_get_object_with_content_language_disposition": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_and_get_object_with_content_language_disposition": {
     "recorded-date": "03-08-2023, 04:13:24",
     "recorded-content": {
       "put-object": {
@@ -4013,7 +4013,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_copy_object_kms": {
+  "tests/aws/s3/test_s3.py::TestS3::test_copy_object_kms": {
     "recorded-date": "03-08-2023, 04:13:12",
     "recorded-content": {
       "get-object": {
@@ -4061,7 +4061,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_replication_config": {
+  "tests/aws/s3/test_s3.py::TestS3::test_replication_config": {
     "recorded-date": "03-08-2023, 04:13:08",
     "recorded-content": {
       "expected_error_no_replication_set": {
@@ -4118,7 +4118,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_delete_non_existing_keys_quiet": {
+  "tests/aws/s3/test_s3.py::TestS3::test_delete_non_existing_keys_quiet": {
     "recorded-date": "03-08-2023, 04:17:06",
     "recorded-content": {
       "deleted-resp": {
@@ -4129,7 +4129,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_replication_config_without_filter": {
+  "tests/aws/s3/test_s3.py::TestS3::test_replication_config_without_filter": {
     "recorded-date": "03-08-2023, 04:13:02",
     "recorded-content": {
       "expected_error_dest_does_not_exist": {
@@ -4196,7 +4196,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_sse_validate_kms_key": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_sse_validate_kms_key": {
     "recorded-date": "03-08-2023, 04:23:56",
     "recorded-content": {
       "create-kms-key": {
@@ -4289,7 +4289,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_complete_multipart_parts_order": {
+  "tests/aws/s3/test_s3.py::TestS3::test_complete_multipart_parts_order": {
     "recorded-date": "03-08-2023, 04:24:38",
     "recorded-content": {
       "upload-part-negative-part-number": {
@@ -4339,7 +4339,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD]": {
     "recorded-date": "03-08-2023, 04:24:40",
     "recorded-content": {
       "get-object-storage-class": {
@@ -4352,7 +4352,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD_IA]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD_IA]": {
     "recorded-date": "03-08-2023, 04:24:42",
     "recorded-content": {
       "get-object-storage-class": {
@@ -4365,7 +4365,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER]": {
     "recorded-date": "03-08-2023, 04:24:44",
     "recorded-content": {
       "get-object-storage-class": {
@@ -4378,7 +4378,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER_IR]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER_IR]": {
     "recorded-date": "03-08-2023, 04:24:46",
     "recorded-content": {
       "get-object-storage-class": {
@@ -4391,7 +4391,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[REDUCED_REDUNDANCY]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_object_storage_class[REDUCED_REDUNDANCY]": {
     "recorded-date": "03-08-2023, 04:24:48",
     "recorded-content": {
       "get-object-storage-class": {
@@ -4404,7 +4404,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[ONEZONE_IA]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_object_storage_class[ONEZONE_IA]": {
     "recorded-date": "03-08-2023, 04:24:50",
     "recorded-content": {
       "get-object-storage-class": {
@@ -4417,7 +4417,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[INTELLIGENT_TIERING]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_object_storage_class[INTELLIGENT_TIERING]": {
     "recorded-date": "03-08-2023, 04:24:52",
     "recorded-content": {
       "get-object-storage-class": {
@@ -4430,7 +4430,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[DEEP_ARCHIVE]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_object_storage_class[DEEP_ARCHIVE]": {
     "recorded-date": "03-08-2023, 04:24:54",
     "recorded-content": {
       "get-object-storage-class": {
@@ -4443,7 +4443,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class_outposts": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_object_storage_class_outposts": {
     "recorded-date": "03-08-2023, 04:24:56",
     "recorded-content": {
       "put-object-outposts": {
@@ -4470,7 +4470,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA256]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA256]": {
     "recorded-date": "03-08-2023, 04:14:55",
     "recorded-content": {
       "put-object": {
@@ -4541,7 +4541,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[None]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_get_object_checksum[None]": {
     "recorded-date": "03-08-2023, 04:14:59",
     "recorded-content": {
       "put-object": {
@@ -4603,7 +4603,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_checksum_with_content_encoding": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_checksum_with_content_encoding": {
     "recorded-date": "03-08-2023, 04:15:01",
     "recorded-content": {
       "put-object": {
@@ -4658,7 +4658,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_complete_multipart_parts_checksum": {
+  "tests/aws/s3/test_s3.py::TestS3::test_complete_multipart_parts_checksum": {
     "recorded-date": "03-08-2023, 04:25:24",
     "recorded-content": {
       "create-mpu-checksum": {
@@ -4794,7 +4794,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_multipart_parts_checksum_exceptions": {
+  "tests/aws/s3/test_s3.py::TestS3::test_multipart_parts_checksum_exceptions": {
     "recorded-date": "03-08-2023, 04:25:28",
     "recorded-content": {
       "create-mpu-no-checksum": {
@@ -4861,7 +4861,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_list_objects_versions_with_prefix": {
+  "tests/aws/s3/test_s3.py::TestS3::test_list_objects_versions_with_prefix": {
     "recorded-date": "04-08-2023, 23:47:58",
     "recorded-content": {
       "list-object-version-1": {
@@ -5025,7 +5025,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_sse_validate_kms_key_state": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_sse_validate_kms_key_state": {
     "recorded-date": "03-08-2023, 04:24:07",
     "recorded-content": {
       "create-kms-key": {
@@ -5102,7 +5102,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_delete_keys_in_versioned_bucket": {
+  "tests/aws/s3/test_s3.py::TestS3::test_delete_keys_in_versioned_bucket": {
     "recorded-date": "03-08-2023, 04:17:11",
     "recorded-content": {
       "list-objects-v2": {
@@ -5261,7 +5261,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_object_acl_on_delete_marker": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_object_acl_on_delete_marker": {
     "recorded-date": "04-08-2023, 23:53:09",
     "recorded-content": {
       "put-obj-1": {
@@ -5309,7 +5309,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_get_object_attributes_versioned": {
+  "tests/aws/s3/test_s3.py::TestS3::test_get_object_attributes_versioned": {
     "recorded-date": "03-08-2023, 04:14:03",
     "recorded-content": {
       "put-obj-v1": {
@@ -5373,11 +5373,11 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix[None]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix[None]": {
     "recorded-date": "28-03-2023, 12:25:25",
     "recorded-content": {}
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix[/]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix[/]": {
     "recorded-date": "28-03-2023, 12:25:27",
     "recorded-content": {
       "list-objects-v2": {
@@ -5400,7 +5400,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix[%2F]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix[%2F]": {
     "recorded-date": "28-03-2023, 12:25:30",
     "recorded-content": {
       "list-objects-v2": {
@@ -5427,7 +5427,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix": {
+  "tests/aws/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix": {
     "recorded-date": "03-08-2023, 04:13:48",
     "recorded-content": {
       "list-objects-v2-1": {
@@ -5502,7 +5502,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_list_multipart_uploads_parameters": {
+  "tests/aws/s3/test_s3.py::TestS3::test_list_multipart_uploads_parameters": {
     "recorded-date": "03-08-2023, 04:25:30",
     "recorded-content": {
       "create-multipart": {
@@ -5613,7 +5613,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_multipart_upload_sse": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_multipart_upload_sse": {
     "recorded-date": "03-08-2023, 04:25:32",
     "recorded-content": {
       "multi-sse-create-multipart": {
@@ -5669,7 +5669,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_sse_bucket_key_default": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_sse_bucket_key_default": {
     "recorded-date": "03-08-2023, 04:25:36",
     "recorded-content": {
       "put-obj-default-before-setting": {
@@ -5759,7 +5759,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_sse_default_kms_key": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_sse_default_kms_key": {
     "recorded-date": "03-04-2023, 22:16:19",
     "recorded-content": {
       "put-obj-default-kms-s3-key": {
@@ -5860,7 +5860,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_in_place": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_object_in_place": {
     "recorded-date": "03-08-2023, 16:51:58",
     "recorded-content": {
       "put_object": {
@@ -5956,7 +5956,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_metadata_directive": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_metadata_directive": {
     "recorded-date": "03-08-2023, 04:15:33",
     "recorded-content": {
       "put_object": {
@@ -6096,7 +6096,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_legal_hold": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_object_legal_hold": {
     "recorded-date": "03-08-2023, 04:15:38",
     "recorded-content": {
       "put_object": {
@@ -6152,7 +6152,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_lock": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_object_lock": {
     "recorded-date": "03-08-2023, 04:15:42",
     "recorded-content": {
       "put-source-object": {
@@ -6209,7 +6209,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_storage_class": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_storage_class": {
     "recorded-date": "03-08-2023, 04:15:24",
     "recorded-content": {
       "put-object": {
@@ -6262,7 +6262,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_with_encryption": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_with_encryption": {
     "recorded-date": "03-08-2023, 04:15:27",
     "recorded-content": {
       "put-object-with-kms-encryption": {
@@ -6366,7 +6366,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_storage_class": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_object_storage_class": {
     "recorded-date": "03-08-2023, 04:15:45",
     "recorded-content": {
       "put-object": {
@@ -6430,7 +6430,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_metadata_directive_copy": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_metadata_directive_copy": {
     "recorded-date": "03-08-2023, 04:15:06",
     "recorded-content": {
       "put-object": {
@@ -6486,7 +6486,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_website_redirect_location": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_website_redirect_location": {
     "recorded-date": "03-08-2023, 04:15:36",
     "recorded-content": {
       "put-object": {
@@ -6538,7 +6538,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_copy_in_place_with_bucket_encryption": {
+  "tests/aws/s3/test_s3.py::TestS3::test_copy_in_place_with_bucket_encryption": {
     "recorded-date": "03-08-2023, 04:15:30",
     "recorded-content": {
       "put-bucket-encryption": {
@@ -6568,7 +6568,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32]": {
     "recorded-date": "03-08-2023, 04:14:45",
     "recorded-content": {
       "put-object": {
@@ -6639,7 +6639,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32C]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32C]": {
     "recorded-date": "03-08-2023, 04:14:48",
     "recorded-content": {
       "put-object": {
@@ -6710,7 +6710,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA1]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA1]": {
     "recorded-date": "03-08-2023, 04:14:52",
     "recorded-content": {
       "put-object": {
@@ -6781,7 +6781,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_legal_hold_lock_versioned": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_legal_hold_lock_versioned": {
     "recorded-date": "03-08-2023, 04:25:43",
     "recorded-content": {
       "put-object": {
@@ -6874,7 +6874,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_analytics_configurations": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_analytics_configurations": {
     "recorded-date": "03-08-2023, 04:25:40",
     "recorded-content": {
       "put_config_with_storage_analysis_err": {
@@ -7059,7 +7059,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_intelligent_tier_config": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_intelligent_tier_config": {
     "recorded-date": "03-08-2023, 04:25:47",
     "recorded-content": {
       "put_bucket_intelligent_tiering_configuration_err_1`": {
@@ -7212,7 +7212,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_multipart_no_such_upload": {
+  "tests/aws/s3/test_s3.py::TestS3::test_multipart_no_such_upload": {
     "recorded-date": "03-08-2023, 04:14:08",
     "recorded-content": {
       "upload-exc": {
@@ -7250,7 +7250,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_with_checksum[CRC32]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_object_with_checksum[CRC32]": {
     "recorded-date": "03-08-2023, 04:15:48",
     "recorded-content": {
       "put-object-no-checksum": {
@@ -7304,7 +7304,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_with_checksum[CRC32C]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_object_with_checksum[CRC32C]": {
     "recorded-date": "03-08-2023, 04:15:51",
     "recorded-content": {
       "put-object-no-checksum": {
@@ -7358,7 +7358,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_with_checksum[SHA1]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_object_with_checksum[SHA1]": {
     "recorded-date": "03-08-2023, 04:15:54",
     "recorded-content": {
       "put-object-no-checksum": {
@@ -7412,7 +7412,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_with_checksum[SHA256]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_object_with_checksum[SHA256]": {
     "recorded-date": "03-08-2023, 04:15:56",
     "recorded-content": {
       "put-object-no-checksum": {
@@ -7466,7 +7466,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_get_object_special_character[file%2Fname]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_get_object_special_character[file%2Fname]": {
     "recorded-date": "03-08-2023, 04:13:34",
     "recorded-content": {
       "put-object-special-char": {
@@ -7520,7 +7520,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_get_object_special_character[test@key/]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_get_object_special_character[test@key/]": {
     "recorded-date": "03-08-2023, 04:13:37",
     "recorded-content": {
       "put-object-special-char": {
@@ -7574,7 +7574,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_headers": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_get_object_headers": {
     "recorded-date": "03-08-2023, 04:25:53",
     "recorded-content": {
       "if_none_match_err_1": {
@@ -7595,7 +7595,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_object_preconditions": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_object_preconditions": {
     "recorded-date": "03-08-2023, 04:16:02",
     "recorded-content": {
       "head-object": {
@@ -7690,7 +7690,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_bucket_logging": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_bucket_logging": {
     "recorded-date": "03-08-2023, 04:26:09",
     "recorded-content": {
       "get-bucket-default-acl": {
@@ -7737,7 +7737,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_bucket_logging_accept_wrong_grants": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_bucket_logging_accept_wrong_grants": {
     "recorded-date": "03-08-2023, 04:26:11",
     "recorded-content": {
       "put-bucket-logging": {
@@ -7774,7 +7774,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_bucket_logging_wrong_target": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_bucket_logging_wrong_target": {
     "recorded-date": "03-08-2023, 04:26:14",
     "recorded-content": {
       "put-bucket-logging-different-regions": {
@@ -7801,7 +7801,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_configuration_object_expiry_versioned": {
+  "tests/aws/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_configuration_object_expiry_versioned": {
     "recorded-date": "07-07-2023, 19:44:39",
     "recorded-content": {
       "get-bucket-lifecycle-conf": {
@@ -7881,7 +7881,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_object_expiry_after_bucket_lifecycle_configuration": {
+  "tests/aws/s3/test_s3.py::TestS3::test_object_expiry_after_bucket_lifecycle_configuration": {
     "recorded-date": "07-07-2023, 15:52:37",
     "recorded-content": {
       "put-object-before": {
@@ -7945,7 +7945,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_multiple_rules": {
+  "tests/aws/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_multiple_rules": {
     "recorded-date": "07-07-2023, 16:43:56",
     "recorded-content": {
       "get-bucket-lifecycle-conf": {
@@ -8008,7 +8008,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_put_bucket_lifecycle_conf_exc": {
+  "tests/aws/s3/test_s3.py::TestS3BucketLifecycle::test_put_bucket_lifecycle_conf_exc": {
     "recorded-date": "26-07-2023, 15:06:44",
     "recorded-content": {
       "missing-id": {
@@ -8095,7 +8095,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_configuration_date": {
+  "tests/aws/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_configuration_date": {
     "recorded-date": "07-07-2023, 18:47:29",
     "recorded-content": {
       "get-bucket-lifecycle-conf": {
@@ -8116,7 +8116,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_object_size_rules": {
+  "tests/aws/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_object_size_rules": {
     "recorded-date": "07-07-2023, 20:26:53",
     "recorded-content": {
       "get-bucket-lifecycle-conf": {
@@ -8171,7 +8171,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_tag_rules": {
+  "tests/aws/s3/test_s3.py::TestS3BucketLifecycle::test_bucket_lifecycle_tag_rules": {
     "recorded-date": "07-07-2023, 20:53:27",
     "recorded-content": {
       "get-bucket-lifecycle-conf": {
@@ -8240,7 +8240,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_object_expiry_after_bucket_lifecycle_configuration": {
+  "tests/aws/s3/test_s3.py::TestS3BucketLifecycle::test_object_expiry_after_bucket_lifecycle_configuration": {
     "recorded-date": "07-07-2023, 21:38:39",
     "recorded-content": {
       "put-object-before": {
@@ -8304,7 +8304,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_inventory_report_crud": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_inventory_report_crud": {
     "recorded-date": "03-08-2023, 04:26:19",
     "recorded-content": {
       "put-inventory-config": {
@@ -8389,7 +8389,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_put_inventory_report_exceptions": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_put_inventory_report_exceptions": {
     "recorded-date": "03-08-2023, 04:26:23",
     "recorded-content": {
       "wrong-id": {
@@ -8454,7 +8454,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_put_bucket_inventory_config_order": {
+  "tests/aws/s3/test_s3.py::TestS3::test_put_bucket_inventory_config_order": {
     "recorded-date": "03-08-2023, 04:26:27",
     "recorded-content": {
       "list-inventory-config": {
@@ -8553,7 +8553,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_object_hold": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_object_hold": {
     "recorded-date": "03-08-2023, 04:26:05",
     "recorded-content": {
       "put_object_retention_1": {
@@ -8592,7 +8592,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3BucketLifecycle::test_lifecycle_expired_object_delete_marker": {
+  "tests/aws/s3/test_s3.py::TestS3BucketLifecycle::test_lifecycle_expired_object_delete_marker": {
     "recorded-date": "26-07-2023, 15:14:49",
     "recorded-content": {
       "get-bucket-lifecycle-conf": {
@@ -8632,7 +8632,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_multipart_complete_multipart_too_small": {
+  "tests/aws/s3/test_s3.py::TestS3::test_multipart_complete_multipart_too_small": {
     "recorded-date": "03-08-2023, 04:14:10",
     "recorded-content": {
       "upload-part1": {
@@ -8677,7 +8677,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_multipart_complete_multipart_wrong_part": {
+  "tests/aws/s3/test_s3.py::TestS3::test_multipart_complete_multipart_wrong_part": {
     "recorded-date": "03-08-2023, 04:14:12",
     "recorded-content": {
       "complete-exc-wrong-part-number": {
@@ -8708,7 +8708,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive[COPY]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive[COPY]": {
     "recorded-date": "03-08-2023, 04:15:09",
     "recorded-content": {
       "put-object": {
@@ -8756,7 +8756,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive[REPLACE]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive[REPLACE]": {
     "recorded-date": "03-08-2023, 04:15:11",
     "recorded-content": {
       "put-object": {
@@ -8804,7 +8804,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive[None]": {
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive[None]": {
     "recorded-date": "03-08-2023, 04:15:14",
     "recorded-content": {
       "put-object": {
