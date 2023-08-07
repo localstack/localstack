@@ -7,7 +7,7 @@ import pytest
 
 
 class AwsCompatibilityMarkers:
-    validated = pytest.mark.aws_validated
+    validated = pytest.mark.aws__validated
     manual_setup_required = pytest.mark.aws__manual_setup_required  # implies aws_validated
     needs_fixing = pytest.mark.aws__needs_fixing
     only_localstack = pytest.mark.aws__only_localstack
