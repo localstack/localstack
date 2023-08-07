@@ -8,6 +8,7 @@ from localstack.services.cloudformation.deployment_utils import remove_none_valu
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import arns
 from localstack.utils.collections import convert_to_typed_dict
+from localstack.utils.sync import poll_condition
 
 
 # OpenSearch still uses "es" ARNs
@@ -28,7 +29,14 @@ class OpenSearchDomain(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         domain_name = self._domain_name()
-        return connect_to().opensearch.describe_domain(DomainName=domain_name)
+        # wait for deployment to finish
+        poll_condition(lambda: self._is_ready(domain_name))
+        return connect_to().opensearch.describe_domain(DomainName=domain_name)["DomainStatus"]
+
+    @staticmethod
+    def _is_ready(domain_name: str) -> bool:
+        res = connect_to().opensearch.describe_domain(DomainName=domain_name)["DomainStatus"]
+        return not res.get("Processing", True)
 
     def _domain_name(self):
         return self.props.get("DomainName") or self.logical_resource_id

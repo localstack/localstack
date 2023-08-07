@@ -13,3 +13,7 @@ Resources:
         InstanceType: 'm3.medium.search'
         # test using string types instead of int
         InstanceCount: "2"
+
+Outputs:
+  DomainEndpoint:
+    Value: !GetAtt Domain.DomainEndpoint
