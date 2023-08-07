@@ -346,13 +346,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api = get_moto_rest_api(context, request["restApiId"])
 
         openapi_spec = parse_json_or_yaml(to_str(body_data))
-        rest_api = import_api_from_openapi_spec(
-            rest_api,
-            openapi_spec,
-            context.request.values.to_dict(),
-            account_id=context.account_id,
-            region=context.region,
-        )
+        rest_api = import_api_from_openapi_spec(rest_api, openapi_spec, context=context)
 
         response = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response)

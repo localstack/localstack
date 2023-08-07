@@ -172,5 +172,5 @@ def import_apigw(aws_client):
 
 @pytest.fixture
 def apigw_add_transformers(snapshot):
-    snapshot.add_transformer(snapshot.transform.key_value("id"))
+    snapshot.add_transformer(snapshot.transform.jsonpath("$..items..id", "id"))
     snapshot.add_transformer(snapshot.transform.key_value("deploymentId"))
