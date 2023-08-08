@@ -95,6 +95,7 @@ class TestTranscribe:
             "files/en-gb.webm",
         ],
     )
+    @markers.aws.unknown
     def test_transcribe_supported_media_formats(
         self, transcribe_create_job, media_file, aws_client
     ):
@@ -120,6 +121,7 @@ class TestTranscribe:
 
         retry(_assert_transcript, retries=30, sleep=2)
 
+    @markers.aws.unknown
     def test_transcribe_unsupported_media_format_failure(self, transcribe_create_job, aws_client):
         # Ensure transcribing an empty file fails
         file_path = new_tmp_file()

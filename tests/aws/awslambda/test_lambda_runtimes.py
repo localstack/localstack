@@ -134,6 +134,7 @@ class TestNodeJSRuntimes:
 
 class TestJavaRuntimes:
     @pytest.fixture(scope="class")
+    @markers.aws.unknown
     def test_java_jar(self) -> bytes:
         lambda_java_testlibs_package.install()
         java_file = load_file(
@@ -142,6 +143,7 @@ class TestJavaRuntimes:
         return java_file
 
     @pytest.fixture(scope="class")
+    @markers.aws.unknown
     def test_java_zip(self, tmpdir_factory, test_java_jar) -> bytes:
         tmpdir = tmpdir_factory.mktemp("tmp-java-zip")
         zip_lib_dir = os.path.join(tmpdir, "lib")
@@ -319,6 +321,7 @@ class TestJavaRuntimes:
         ],
     )
     @pytest.mark.xfail(is_old_provider(), reason="Test flaky with local executor.")
+    @markers.aws.unknown
     # TODO maybe snapshot payload as well
     def test_java_lambda_subscribe_sns_topic(
         self,

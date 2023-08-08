@@ -1,12 +1,14 @@
 import pytest
 
 from localstack.aws.accounts import get_aws_account_id
+from localstack.testing.pytest import markers
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
 
 # TODO: add proper cleanup
 class TestRoute53:
+    @markers.aws.unknown
     def test_create_hosted_zone(self, aws_client):
         response = aws_client.route53.create_hosted_zone(Name="zone123", CallerReference="ref123")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 201
@@ -14,6 +16,7 @@ class TestRoute53:
         response = aws_client.route53.get_change(Id="string")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+    @markers.aws.unknown
     def test_crud_health_check(self, aws_client):
         response = aws_client.route53.create_health_check(
             CallerReference="test123",
@@ -39,6 +42,7 @@ class TestRoute53:
             aws_client.route53.delete_health_check(HealthCheckId=health_check_id)
         assert "NoSuchHealthCheck" in str(ctx.value)
 
+    @markers.aws.unknown
     def test_associate_vpc_with_hosted_zone(self, cleanups, aws_client):
         name = "zone123"
         response = aws_client.route53.create_hosted_zone(
@@ -111,6 +115,7 @@ class TestRoute53:
                 VPC={"VPCRegion": vpc_region, "VPCId": vpc2_id},
             )
 
+    @markers.aws.unknown
     def test_reusable_delegation_sets(self, aws_client):
         client = aws_client.route53
 

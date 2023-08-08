@@ -35,6 +35,7 @@ def create_launch_template(aws_client):
 
 
 class TestEc2Integrations:
+    @markers.aws.unknown
     def test_create_route_table_association(self, cleanups, aws_client):
         vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
         cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
@@ -68,6 +69,7 @@ class TestEc2Integrations:
             associations = [a for a in route_tables["Associations"] if not a.get("Main")]
             assert associations == []
 
+    @markers.aws.unknown
     def test_create_vpc_end_point(self, cleanups, aws_client):
         vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
         cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
@@ -139,6 +141,7 @@ class TestEc2Integrations:
         assert vpc["Vpc"]["VpcId"] == vpc_end_point["VpcEndpoint"]["VpcId"]
         assert len(vpc_end_point["VpcEndpoint"]["DnsEntries"]) > 0
 
+    @markers.aws.unknown
     def test_reserved_instance_api(self, aws_client):
         rs = aws_client.ec2.describe_reserved_instances_offerings(
             AvailabilityZone="us-east-1a",
@@ -169,6 +172,7 @@ class TestEc2Integrations:
         )
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
+    @markers.aws.unknown
     def test_vcp_peering_difference_regions(self, aws_client_factory):
         region1 = TEST_AWS_REGION_NAME
         region2 = TEST_AWS_REGION_NAME  # When cross-region peering is supported, change to SECONDARY_TEST_AWS_REGION_NAME
@@ -241,6 +245,7 @@ class TestEc2Integrations:
         ec2_client1.delete_vpc(VpcId=peer_vpc1["Vpc"]["VpcId"])
         ec2_client2.delete_vpc(VpcId=peer_vpc2["Vpc"]["VpcId"])
 
+    @markers.aws.unknown
     def test_describe_vpn_gateways_filter_by_vpc(self, aws_client):
         vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
         vpc_id = vpc["Vpc"]["VpcId"]
@@ -270,6 +275,7 @@ class TestEc2Integrations:
         aws_client.ec2.delete_vpn_gateway(VpnGatewayId=gateway_id)
         aws_client.ec2.delete_vpc(VpcId=vpc_id)
 
+    @markers.aws.unknown
     def test_describe_vpc_endpoints_with_filter(self, aws_client):
         vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
         vpc_id = vpc["Vpc"]["VpcId"]
@@ -404,6 +410,7 @@ def pickle_backends():
     return _can_pickle
 
 
+@markers.aws.unknown
 def test_pickle_ec2_backend(pickle_backends, aws_client):
     _ = aws_client.ec2.describe_account_attributes()
     pickle_backends(ec2_backends)

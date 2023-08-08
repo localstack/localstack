@@ -64,6 +64,7 @@ def logs_log_stream(logs_log_group, aws_client):
 
 class TestCloudWatchLogs:
     # TODO make creation and description atomic to avoid possible flake?
+    @markers.aws.unknown
     def test_create_and_delete_log_group(self, aws_client):
         test_name = f"test-log-group-{short_uid()}"
         log_groups_before = aws_client.logs.describe_log_groups(
@@ -150,6 +151,7 @@ class TestCloudWatchLogs:
             "$..describe-log-groups-pattern.nextToken",
         ]
     )
+    @markers.aws.unknown
     def test_create_and_delete_log_stream(self, logs_log_group, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.logs_api())
         test_name = f"test-log-stream-{short_uid()}"
@@ -218,6 +220,7 @@ class TestCloudWatchLogs:
         )
         assert len(log_streams_after) == 0
 
+    @markers.aws.unknown
     def test_put_events_multi_bytes_msg(self, logs_log_group, logs_log_stream, aws_client):
         body_msg = "🙀 - 参よ - 日本語"
         events = [{"timestamp": now_utc(millis=True), "message": body_msg}]
@@ -231,6 +234,7 @@ class TestCloudWatchLogs:
         )["events"]
         assert events[0]["message"] == body_msg
 
+    @markers.aws.unknown
     def test_filter_log_events_response_header(self, logs_log_group, logs_log_stream, aws_client):
         events = [
             {"timestamp": now_utc(millis=True), "message": "log message 1"},
@@ -520,6 +524,7 @@ class TestCloudWatchLogs:
             )
 
     @pytest.mark.skip("TODO: failing against pro")
+    @markers.aws.unknown
     def test_metric_filters(self, logs_log_group, logs_log_stream, aws_client):
         basic_filter_name = f"test-filter-basic-{short_uid()}"
         json_filter_name = f"test-filter-json-{short_uid()}"
@@ -588,6 +593,7 @@ class TestCloudWatchLogs:
         assert basic_filter_name not in filter_names
         assert json_filter_name not in filter_names
 
+    @markers.aws.unknown
     def test_delivery_logs_for_sns(self, sns_create_topic, sns_subscription, aws_client):
         topic_name = f"test-logs-{short_uid()}"
         contact = "+10123456789"

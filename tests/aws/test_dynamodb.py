@@ -1232,6 +1232,7 @@ class TestDynamoDB:
         snapshot.match("BatchWriteResponse", response)
 
     @pytest.mark.xfail(reason="this test flakes regularly in CI")
+    @markers.aws.unknown
     def test_dynamodb_stream_records_with_update_item(
         self, dynamodb_create_table, wait_for_stream_ready, aws_client
     ):
@@ -1549,6 +1550,7 @@ class TestDynamoDB:
             )
         snapshot.match("ValidationException", ctx.value)
 
+    @markers.aws.unknown
     def test_batch_write_not_existing_table(self, aws_client):
         with pytest.raises(Exception) as ctx:
             aws_client.dynamodb.transact_write_items(
@@ -1651,6 +1653,7 @@ class TestDynamoDB:
             "$..PointInTimeRecoveryDescription..LatestRestorableDateTime",
         ]
     )
+    @markers.aws.unknown
     def test_continuous_backup_update(self, dynamodb_create_table, snapshot, aws_client):
         table_name = f"table-{short_uid()}"
         dynamodb_create_table(

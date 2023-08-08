@@ -3322,6 +3322,7 @@ class TestS3:
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..Error.RequestID"]
     )
+    @markers.aws.unknown
     def test_bucket_does_not_exist(self, s3_vhost_client, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = f"bucket-does-not-exist-{short_uid()}"
@@ -5536,6 +5537,7 @@ class TestS3:
         [True, False],
     )
     @markers.snapshot.skip_snapshot_verify(paths=["$..x-amz-server-side-encryption"])
+    @markers.aws.unknown
     def test_get_object_content_length_with_virtual_host(
         self,
         s3_bucket,
@@ -5581,6 +5583,7 @@ class TestS3MultiAccounts:
         """
         return secondary_aws_client.s3
 
+    @markers.aws.unknown
     def test_shared_bucket_namespace(self, primary_client, secondary_client):
         # Ensure that the bucket name space is shared by all accounts and regions
         primary_client.create_bucket(Bucket="foo")
@@ -5592,6 +5595,7 @@ class TestS3MultiAccounts:
             )
         exc.match("BucketAlreadyExists")
 
+    @markers.aws.unknown
     def test_cross_account_access(self, primary_client, secondary_client):
         # Ensure that following operations can be performed across accounts
         # - ListObjects
@@ -7109,6 +7113,7 @@ class TestS3PresignedUrl:
         "signature_version",
         ["s3", "s3v4"],
     )
+    @markers.aws.unknown
     def test_s3_presign_url_encoding(
         self, aws_client, s3_bucket, signature_version, patch_s3_skip_signature_validation_false
     ):

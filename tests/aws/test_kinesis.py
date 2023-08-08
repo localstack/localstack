@@ -40,6 +40,7 @@ def kinesis_snapshot_transformer(snapshot):
 
 
 class TestKinesis:
+    @markers.aws.unknown
     def test_create_stream_without_stream_name_raises(self, aws_client_factory):
         boto_config = BotoConfig(parameter_validation=False)
         kinesis_client = aws_client_factory(config=boto_config).kinesis
@@ -228,6 +229,7 @@ class TestKinesis:
         # clean up
         aws_client.kinesis.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
 
+    @markers.aws.unknown
     def test_get_records(self, kinesis_create_stream, wait_for_stream_ready, aws_client):
         # create stream
         stream_name = kinesis_create_stream(ShardCount=1)
@@ -265,6 +267,7 @@ class TestKinesis:
             == result["Records"][0]["ApproximateArrivalTimestamp"]
         )
 
+    @markers.aws.unknown
     def test_get_records_empty_stream(
         self, kinesis_create_stream, wait_for_stream_ready, aws_client
     ):
@@ -422,6 +425,7 @@ def wait_for_consumer_ready(aws_client):
 
 class TestKinesisPythonClient:
     @markers.skip_offline
+    @markers.aws.unknown
     def test_run_kcl(self, aws_client):
         result = []
 
