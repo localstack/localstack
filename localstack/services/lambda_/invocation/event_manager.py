@@ -21,6 +21,7 @@ from localstack.services.lambda_.lambda_executors import InvocationException
 from localstack.utils.aws import dead_letter_queue
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.strings import md5, to_str
+from localstack.utils.threads import FuncThread
 from localstack.utils.time import timestamp_millis
 
 LOG = logging.getLogger(__name__)
@@ -102,7 +103,7 @@ class Poller:
             thread_name_prefix=f"lambda-invoker-{function_id.function_name}:{function_id.qualifier}"
         )
 
-    def run(self):
+    def run(self, *args, **kwargs):
         try:
             sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
             function_timeout = self.version_manager.function_version.config.timeout
@@ -110,7 +111,7 @@ class Poller:
                 messages = sqs_client.receive_message(
                     QueueUrl=self.event_queue_url,
                     WaitTimeSeconds=2,
-                    # MAYBE: increase number of messages if single thread schedules invocations
+                    # TODO: MAYBE: increase number of messages if single thread schedules invocations
                     MaxNumberOfMessages=1,
                     VisibilityTimeout=function_timeout + 60,
                 )
@@ -118,24 +119,43 @@ class Poller:
                     continue
                 message = messages["Messages"][0]
 
+                # NOTE: queueing within the thread pool executor could lead to double executions
+                #  due to the visibility timeout
                 self.invoker_pool.submit(self.handle_message, message)
         except Exception as e:
             LOG.error(
                 "Error while polling lambda events %s", e, exc_info=LOG.isEnabledFor(logging.DEBUG)
             )
 
+    def stop(self):
+        self._shutdown_event.set()
+        self.invoker_pool.shutdown(cancel_futures=True)
+
     def handle_message(self, message: dict) -> None:
+        failure_cause = None
+        qualifier = self.version_manager.function_version.id.qualifier
+        event_invoke_config = self.version_manager.function.event_invoke_configs.get(qualifier)
         try:
-            # TODO: MAYBE 1) guard against ZeroReservedConcurrency
             sqs_invocation = SQSInvocation.decode(message["Body"])
             invocation = sqs_invocation.invocation
             try:
                 invocation_result = self.version_manager.invoke(invocation=invocation)
             except Exception as e:
-                # 1) Reserved concurrency == 0
-                # TODO: handle + failures destinations/DLQ
-                # 2) Event age exceeded
-                # TODO: handle + failures destinations/DLQ
+                # Reserved concurrency == 0
+                if self.version_manager.function.reserved_concurrent_executions == 0:
+                    failure_cause = "ZeroReservedConcurrency"
+                # Maximum event age expired (lookahead for next retry)
+                elif not has_enough_time_for_retry(sqs_invocation, event_invoke_config):
+                    failure_cause = "EventAgeExceeded"
+                if failure_cause:
+                    invocation_result = InvocationResult(
+                        is_error=True, request_id=invocation.request_id, payload=None, logs=None
+                    )
+                    self.process_failure_destination(
+                        sqs_invocation, invocation_result, event_invoke_config, failure_cause
+                    )
+                    self.process_dead_letter_queue(sqs_invocation, invocation_result)
+                    return
                 # 3) Otherwise, retry without increasing counter
 
                 # If the function doesn't have enough concurrency available to process all events, additional
@@ -155,10 +175,6 @@ class Poller:
                     LOG.debug(
                         "Service exception in lambda %s: %s", self.version_manager.function_arn, e
                     )
-
-                invocation_result = InvocationResult(
-                    is_error=True, request_id=invocation.request_id, payload=None, logs=None
-                )
 
                 maximum_exception_retry_delay_seconds = 5 * 60
                 delay_seconds = min(
@@ -182,8 +198,6 @@ class Poller:
             # Asynchronous invocation handling: https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html
             # https://aws.amazon.com/blogs/compute/introducing-new-asynchronous-invocation-metrics-for-aws-lambda/
             max_retry_attempts = 2
-            qualifier = self.version_manager.function_version.id.qualifier
-            event_invoke_config = self.version_manager.function.event_invoke_configs.get(qualifier)
             if event_invoke_config and event_invoke_config.maximum_retry_attempts is not None:
                 max_retry_attempts = event_invoke_config.maximum_retry_attempts
 
@@ -355,18 +369,17 @@ class Poller:
                 e,
             )
 
-    def stop(self):
-        self._shutdown_event.set()
-
 
 class LambdaEventManager:
     version_manager: LambdaVersionManager
+    poller: Poller | None
+    poller_thread: FuncThread | None
     event_queue_url: str | None
 
     def __init__(self, version_manager: LambdaVersionManager):
         self.version_manager = version_manager
-        # Poller threads perform the synchronous invocation
-        self.poller_threads = ThreadPoolExecutor()
+        self.poller = None
+        self.poller_thread = None
         self.event_queue_url = None
 
     def enqueue_event(self, invocation: Invocation) -> None:
@@ -385,12 +398,11 @@ class LambdaEventManager:
         # Ensure no events are in new queues due to persistence and cloud pods
         sqs_client.purge_queue(QueueUrl=self.event_queue_url)
 
-        poller = Poller(self.version_manager, self.event_queue_url)
-        # TODO: think about scaling pollers or just run the synchronous invoke in a thread.
-        #  Currently we only have one poller per function version and therefore at most 1 concurrent async invocation.
-        self.poller_threads.submit(poller.run)
+        self.poller = Poller(self.version_manager, self.event_queue_url)
+        self.poller_thread = FuncThread(self.poller.run, name="lambda-poller")
+        self.poller_thread.start()
 
     def stop(self) -> None:
-        # TODO: shut down event threads + delete queue
-        # TODO: delete queue and test with persistence
-        pass
+        self.poller.stop()
+        sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
+        sqs_client.delete_queue(QueueUrl=self.event_queue_url)
