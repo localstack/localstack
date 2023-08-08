@@ -3574,7 +3574,6 @@ class TestSNSProvider:
         snapshot.match("token-not-exists", e.value.response)
 
 
-@markers.aws.only_localstack
 class TestSNSMultiAccounts:
     @pytest.fixture
     def sns_primary_client(self, aws_client):
@@ -3592,7 +3591,7 @@ class TestSNSMultiAccounts:
     def sqs_secondary_client(self, secondary_aws_client):
         return secondary_aws_client.sqs
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_cross_account_access(self, sns_primary_client, sns_secondary_client):
         # Cross-account access is supported for below operations.
         # This list is taken from ActionName param of the AddPermissions operation
@@ -3636,7 +3635,7 @@ class TestSNSMultiAccounts:
 
         assert sns_secondary_client.delete_topic(TopicArn=topic_arn)
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_cross_account_publish_to_sqs(
         self,
         sns_primary_client,
@@ -3874,9 +3873,8 @@ class TestSNSPublishDelivery:
         snapshot.match("delivery-events", events)
 
 
-@markers.aws.only_localstack
 class TestSNSRetrospectionEndpoints:
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_publish_to_platform_endpoint_can_retrospect(
         self, sns_create_topic, sns_subscription, sns_create_platform_application, aws_client
     ):
@@ -3995,7 +3993,7 @@ class TestSNSRetrospectionEndpoints:
         msg_with_region = requests.get(msgs_url, params={"region": "us-east-1"}).json()
         assert not msg_with_region["platform_endpoint_messages"]
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_publish_sms_can_retrospect(self, sns_create_topic, sns_subscription, aws_client):
         sns_store = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
