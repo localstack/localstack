@@ -34,7 +34,36 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
+        "only_in_docker: mark the test as running only in Docker (e.g., requires installation of system packages)",
+    )
+    config.addinivalue_line(
+        "markers",
+        "resource_heavy: mark the test as resource-heavy, e.g., downloading very large external dependencies, "
+        "or requiring high amount of RAM/CPU (can be systematically sampled/optimized in the future)",
+    )
+    config.addinivalue_line(
+        "markers",
         "aws_validated: mark the test as validated / verified against real AWS",
+    )
+    config.addinivalue_line(
+        "markers",
+        "aws_only_localstack: mark the test as inherently incompatible with AWS, e.g. when testing localstack-specific features",
+    )
+    config.addinivalue_line(
+        "markers",
+        "aws_needs_fixing: test fails against AWS but it shouldn't. Might need refactoring, additional permissions, etc.",
+    )
+    config.addinivalue_line(
+        "markers",
+        "aws_manual_setup_required: validated against real AWS but needs additional setup or account configuration (e.g. increased service quotas)",
+    )
+    config.addinivalue_line(
+        "markers",
+        "aws_unknown: it's unknown if the test works (reliably) against AWS or not",
+    )
+    config.addinivalue_line(
+        "markers",
+        "multiruntime: parametrize test against multiple Lambda runtimes",
     )
 
 

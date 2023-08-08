@@ -59,7 +59,7 @@ class TestLambdaRuntimesCommon:
     # * Create a generic parametrizable Makefile per runtime (possibly with an option to provide a specific one)
 
     @markers.parity.aws_validated
-    @pytest.mark.multiruntime(scenario="echo")
+    @markers.multiruntime(scenario="echo")
     def test_echo_invoke(self, multiruntime_lambda, aws_client):
         # provided lambdas take a little longer for large payloads, hence timeout to 5s
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024, Timeout=5)
@@ -138,7 +138,7 @@ class TestLambdaRuntimesCommon:
         ]
     )
     @markers.parity.aws_validated
-    @pytest.mark.multiruntime(scenario="introspection")
+    @markers.multiruntime(scenario="introspection")
     def test_introspection_invoke(self, multiruntime_lambda, snapshot, aws_client):
         create_function_result = multiruntime_lambda.create_function(
             MemorySize=1024, Environment={"Variables": {"TEST_KEY": "TEST_VAL"}}
@@ -176,7 +176,7 @@ class TestLambdaRuntimesCommon:
         ]
     )
     @markers.parity.aws_validated
-    @pytest.mark.multiruntime(scenario="uncaughtexception")
+    @markers.multiruntime(scenario="uncaughtexception")
     def test_uncaught_exception_invoke(self, multiruntime_lambda, snapshot, aws_client):
         # unfortunately the stack trace is quite unreliable and changes when AWS updates the runtime transparently
         # since the stack trace contains references to internal runtime code.
@@ -206,7 +206,7 @@ class TestLambdaRuntimesCommon:
     @markers.parity.aws_validated
     # this does only work on al2 lambdas, except provided.al2.
     # Source: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-modify.html#runtime-wrapper
-    @pytest.mark.multiruntime(
+    @markers.multiruntime(
         scenario="introspection",
         runtimes=["nodejs"],
         # runtimes=["nodejs", "python3.8", "python3.9", "java8.al2", "java11", "dotnet", "ruby"],
@@ -259,7 +259,7 @@ class TestLambdaRuntimesCommon:
     condition=platform.machine() != "x86_64", reason="build process doesn't support arm64 right now"
 )
 class TestLambdaCallingLocalstack:
-    @pytest.mark.multiruntime(
+    @markers.multiruntime(
         scenario="endpointinjection",
         runtimes=[
             "nodejs",
