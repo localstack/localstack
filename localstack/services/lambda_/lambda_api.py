@@ -34,7 +34,7 @@ from localstack.services.lambda_.event_source_listeners.event_source_listener im
     EventSourceListener,
 )
 from localstack.services.lambda_.lambda_executors import InvocationResult, LambdaContext
-from localstack.services.lambda_.lambda_models import awslambda_stores
+from localstack.services.lambda_.lambda_models import lambda_stores_v1
 from localstack.services.lambda_.lambda_utils import (
     API_PATH_ROOT,
     API_PATH_ROOT_2,
@@ -46,12 +46,12 @@ from localstack.services.lambda_.lambda_utils import (
     error_response,
     event_source_arn_matches,
     function_name_from_arn,
-    get_awslambda_store,
-    get_awslambda_store_for_arn,
     get_executor_mode,
     get_handler_file_from_name,
     get_lambda_extraction_dir,
     get_lambda_runtime,
+    get_lambda_store_v1,
+    get_lambda_store_v1_for_arn,
     get_zip_bytes,
     validate_filters,
 )
@@ -161,7 +161,7 @@ CHECK_HANDLER_ON_CREATION = False
 
 
 def cleanup():
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     store.lambdas.clear()
     store.event_source_mappings.clear()
     LAMBDA_EXECUTOR.cleanup()
@@ -175,7 +175,7 @@ def func_arn(function_name, remove_qualifier=True):
 
 
 def func_qualifier(function_name, qualifier=None):
-    store = get_awslambda_store_for_arn(function_name)
+    store = get_lambda_store_v1_for_arn(function_name)
     arn = arns.lambda_function_arn(function_name)
     details = store.lambdas.get(arn)
     if not details:
@@ -272,7 +272,7 @@ def format_timestamp_for_event_source_mapping():
 
 
 def add_event_source(data):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     mapping = build_mapping_obj(data)
     store.event_source_mappings.append(mapping)
     EventSourceListener.start_listeners(mapping)
@@ -281,7 +281,7 @@ def add_event_source(data):
 
 def update_event_source(uuid_value, data):
     function_name = data.get("FunctionName") or ""
-    store = get_awslambda_store_for_arn(function_name)
+    store = get_lambda_store_v1_for_arn(function_name)
     enabled = data.get("Enabled", True)
     for mapping in store.event_source_mappings:
         if uuid_value == mapping["UUID"]:
@@ -307,7 +307,7 @@ def update_event_source(uuid_value, data):
 
 
 def delete_event_source(uuid_value: str):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     for i, m in enumerate(store.event_source_mappings):
         if uuid_value == m["UUID"]:
             return store.event_source_mappings.pop(i)
@@ -316,7 +316,7 @@ def delete_event_source(uuid_value: str):
 
 def get_lambda_event_filters_for_arn(lambda_arn: str, event_arn: str) -> List[Dict]:
     region_name = lambda_arn.split(":")[3]
-    region = get_awslambda_store(region=region_name)
+    region = get_lambda_store_v1(region=region_name)
 
     event_filter_criterias = [
         event_source_mapping.get("FilterCriteria")
@@ -360,7 +360,7 @@ def process_lambda_url_invocation(lambda_url_config: dict, event: dict):
 
 def get_event_sources(func_name=None, source_arn=None) -> list:
     result = []
-    for store in awslambda_stores[get_aws_account_id()].values():
+    for store in lambda_stores_v1[get_aws_account_id()].values():
         for m in store.event_source_mappings:
             if not func_name or (m["FunctionArn"] in [func_name, func_arn(func_name)]):
                 if event_source_arn_matches(mapped=m.get("EventSourceArn"), searched=source_arn):
@@ -369,13 +369,13 @@ def get_event_sources(func_name=None, source_arn=None) -> list:
 
 
 def get_function_version(arn, version):
-    store = get_awslambda_store_for_arn(arn)
+    store = get_lambda_store_v1_for_arn(arn)
     func = store.lambdas.get(arn)
     return format_func_details(func, version=version, always_add_version=True)
 
 
 def publish_new_function_version(arn: str):
-    store = get_awslambda_store_for_arn(arn)
+    store = get_lambda_store_v1_for_arn(arn)
     lambda_function = store.lambdas.get(arn)
     versions = lambda_function.versions
     max_version_number = lambda_function.max_version()
@@ -396,7 +396,7 @@ def publish_new_function_version(arn: str):
 
 
 def do_list_versions(arn: str):
-    store = get_awslambda_store_for_arn(arn)
+    store = get_lambda_store_v1_for_arn(arn)
     versions = [
         get_function_version(arn, version) for version in store.lambdas.get(arn).versions.keys()
     ]
@@ -404,7 +404,7 @@ def do_list_versions(arn: str):
 
 
 def do_update_alias(arn: str, alias: str, version: str, description=None):
-    store = get_awslambda_store_for_arn(arn)
+    store = get_lambda_store_v1_for_arn(arn)
     new_alias = {
         "AliasArn": arn + ":" + alias,
         "FunctionVersion": version,
@@ -436,7 +436,7 @@ def run_lambda(
         connect_to().lambda_.list_functions()
         run_lambda._provider_initialized = True
 
-    store = get_awslambda_store_for_arn(func_arn)
+    store = get_lambda_store_v1_for_arn(func_arn)
     if suppress_output:
         stdout_ = sys.stdout
         stderr_ = sys.stderr
@@ -595,7 +595,7 @@ def get_java_handler(zip_file_content, main_file, lambda_function=None):
 def set_archive_code(
     code: Dict, lambda_name_or_arn: str, zip_file_content: bytes = None
 ) -> Optional[str]:
-    store = get_awslambda_store_for_arn(lambda_name_or_arn)
+    store = get_lambda_store_v1_for_arn(lambda_name_or_arn)
     # get metadata
     lambda_arn = func_arn(lambda_name_or_arn)
     lambda_details = store.lambdas[lambda_arn]
@@ -677,7 +677,7 @@ def store_and_get_lambda_code_archive(
             # Save the zip file to a temporary file that the lambda executors can reference
             zip_file_content = get_zip_bytes(code_passed)
     else:
-        store = get_awslambda_store_for_arn(lambda_function.arn())
+        store = get_lambda_store_v1_for_arn(lambda_function.arn())
         lambda_details = store.lambdas[lambda_function.arn()]
         lambda_zip_dir = lambda_zip_dir or lambda_details.zip_dir
 
@@ -837,7 +837,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
 
 def do_list_functions():
     funcs = []
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     this_region = aws_stack.get_region()
     for f_arn, func in store.lambdas.items():
         if type(func) != LambdaFunction:
@@ -1009,7 +1009,7 @@ def not_found_error(ref=None, msg=None):
 
 
 def delete_lambda_function(function_name: str) -> Dict[None, None]:
-    store = get_awslambda_store_for_arn(function_name)
+    store = get_lambda_store_v1_for_arn(function_name)
     arn = func_arn(function_name)
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(arn)
@@ -1032,7 +1032,7 @@ def delete_lambda_function(function_name: str) -> Dict[None, None]:
 
 
 def get_lambda_url_config(api_id: str, region: str = None):
-    store = get_awslambda_store(region=region)
+    store = get_lambda_store_v1(region=region)
     url_configs = store.url_configs.values()
     lambda_url_configs = [config for config in url_configs if config.get("CustomId") == api_id]
     return lambda_url_configs[0]
@@ -1203,7 +1203,7 @@ def create_function():
         - name: 'request'
           in: body
     """
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     arn = "n/a"
     try:
         if len(request.data) > FUNCTION_MAX_SIZE:
@@ -1283,7 +1283,7 @@ def get_function(function):
         - name: 'function'
           in: path
     """
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     funcs = do_list_functions()
     arn_regex = r".*%s($|:.+)" % function
     is_arn = ":" in function
@@ -1332,7 +1332,7 @@ def update_function_code(function):
         - name: 'request'
           in: body
     """
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     arn = func_arn(function)
     lambda_function = store.lambdas.get(arn)
     if not lambda_function:
@@ -1358,7 +1358,7 @@ def get_function_configuration(function):
     operationId: 'getFunctionConfiguration'
     parameters:
     """
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     arn = func_arn(function)
     lambda_details = store.lambdas.get(arn)
     if not lambda_details:
@@ -1376,7 +1376,7 @@ def update_function_configuration(function):
         - name: 'request'
           in: body
     """
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     data = json.loads(to_str(request.data))
     arn = func_arn(function)
 
@@ -1493,7 +1493,7 @@ def create_url_config(function):
     qualifier = request.args.get("Qualifier")
     q_arn = func_qualifier(function, qualifier)
 
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     function = store.lambdas.get(arn)
     if function is None:
         response = error_response("Function does not exist", 404, "ResourceNotFoundException")
@@ -1503,7 +1503,7 @@ def create_url_config(function):
         return not_found_error()
 
     arn = q_arn or arn
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     if arn in store.url_configs:
         return error_response(
             f"Failed to create function url config for [functionArn = {arn}]. Error message:  FunctionUrlConfig exists for this Lambda function",
@@ -1545,7 +1545,7 @@ def get_url_config(function):
     qualifier = request.args.get("Qualifier")
 
     arn = func_arn(function)
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
 
     # function doesn't exist
     fn = store.lambdas.get(arn)
@@ -1590,7 +1590,7 @@ def update_url_config(function):
     q_arn = func_qualifier(function, qualifier)
     arn = q_arn or arn
 
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     prev_url_config = store.url_configs.get(arn)
 
     if prev_url_config is None:
@@ -1618,7 +1618,7 @@ def delete_url_config(function):
     q_arn = func_qualifier(function, qualifier)
     arn = q_arn or arn
 
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     if arn not in store.url_configs:
         response = error_response("Function does not exist", 404, "ResourceNotFoundException")
         return response
@@ -1630,7 +1630,7 @@ def delete_url_config(function):
 def add_permission_policy_statement(
     resource_name, resource_arn, resource_arn_qualified, qualifier=None
 ):
-    store = get_awslambda_store_for_arn(resource_arn)
+    store = get_lambda_store_v1_for_arn(resource_arn)
     data = json.loads(to_str(request.data))
     iam_client = connect_to().iam
     sid = data.get("StatementId")
@@ -1824,7 +1824,7 @@ def invoke_function(function):
 
     # check if this lambda function exists
     not_found = None
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     if arn not in store.lambdas:
         not_found = not_found_error(arn)
     elif qualifier and not store.lambdas.get(arn).qualifier_exists(qualifier):
@@ -1904,7 +1904,7 @@ def get_event_source_mappings():
     ---
     operationId: 'listEventSourceMappings'
     """
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     event_source_arn = request.args.get("EventSourceArn")
     function_name = request.args.get("FunctionName")
 
@@ -1928,7 +1928,7 @@ def get_event_source_mapping(mapping_uuid):
         - name: 'request'
           in: body
     """
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     mappings = store.event_source_mappings
     mappings = [m for m in mappings if mapping_uuid == m.get("UUID")]
 
@@ -1991,7 +1991,7 @@ def delete_event_source_mapping(mapping_uuid):
 
 @app.route("%s/functions/<function>/versions" % API_PATH_ROOT, methods=["POST"])
 def publish_version(function):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     arn = func_arn(function)
     if arn not in store.lambdas:
         return not_found_error(arn)
@@ -2000,7 +2000,7 @@ def publish_version(function):
 
 @app.route("%s/functions/<function>/versions" % API_PATH_ROOT, methods=["GET"])
 def list_versions(function):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     arn = func_arn(function)
     if arn not in store.lambdas:
         return not_found_error(arn)
@@ -2009,7 +2009,7 @@ def list_versions(function):
 
 @app.route("%s/functions/<function>/aliases" % API_PATH_ROOT, methods=["POST"])
 def create_alias(function):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     arn = func_arn(function)
     if arn not in store.lambdas:
         return not_found_error(arn)
@@ -2028,7 +2028,7 @@ def create_alias(function):
 
 @app.route("%s/functions/<function>/aliases/<name>" % API_PATH_ROOT, methods=["PUT"])
 def update_alias(function, name):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     arn = func_arn(function)
     if arn not in store.lambdas:
         return not_found_error(arn)
@@ -2043,7 +2043,7 @@ def update_alias(function, name):
 
 @app.route("%s/functions/<function>/aliases/<name>" % API_PATH_ROOT, methods=["GET"])
 def get_alias(function, name):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     arn = func_arn(function)
     if arn not in store.lambdas:
         return not_found_error(arn)
@@ -2054,7 +2054,7 @@ def get_alias(function, name):
 
 @app.route("%s/functions/<function>/aliases" % API_PATH_ROOT, methods=["GET"])
 def list_aliases(function):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     arn = func_arn(function)
     if arn not in store.lambdas:
         return not_found_error(arn)
@@ -2065,7 +2065,7 @@ def list_aliases(function):
 
 @app.route("%s/functions/<function>/aliases/<name>" % API_PATH_ROOT, methods=["DELETE"])
 def delete_alias(function, name):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     arn = func_arn(function)
     if arn not in store.lambdas:
         return not_found_error(arn)
@@ -2078,7 +2078,7 @@ def delete_alias(function, name):
 
 @app.route("/<version>/functions/<function>/concurrency", methods=["GET", "PUT", "DELETE"])
 def function_concurrency(version, function):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     # the version for put_concurrency != API_PATH_ROOT, at the time of this
     # writing it's: /2017-10-31 for this endpoint
     # https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionConcurrency.html
@@ -2099,7 +2099,7 @@ def function_concurrency(version, function):
 
 @app.route("/<version>/tags/<arn>", methods=["GET"])
 def list_tags(version, arn):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     lambda_function = store.lambdas.get(arn)
     if not lambda_function:
         return not_found_error(arn)
@@ -2109,7 +2109,7 @@ def list_tags(version, arn):
 
 @app.route("/<version>/tags/<arn>", methods=["POST"])
 def tag_resource(version, arn):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     data = json.loads(request.data)
     tags = data.get("Tags", {})
     if tags:
@@ -2123,7 +2123,7 @@ def tag_resource(version, arn):
 
 @app.route("/<version>/tags/<arn>", methods=["DELETE"])
 def untag_resource(version, arn):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     tag_keys = request.args.getlist("tagKeys")
     lambda_function = store.lambdas.get(arn)
     if not lambda_function:
@@ -2147,7 +2147,7 @@ def put_function_event_invoke_config(function):
         - name: 'request'
           in: body
     """
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     data = json.loads(to_str(request.data))
     function_arn = func_arn(function)
     lambda_obj = store.lambdas.get(function_arn)
@@ -2185,7 +2185,7 @@ def get_function_event_invoke_config(function):
         - name: 'request'
           in: body
     """
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     try:
         function_arn = func_arn(function)
         lambda_obj = store.lambdas[function_arn]
@@ -2201,7 +2201,7 @@ def get_function_event_invoke_config(function):
 
 @app.route("/2019-09-25/functions/<function>/event-invoke-config", methods=["DELETE"])
 def delete_function_event_invoke_config(function):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     try:
         function_arn = func_arn(function)
         if function_arn not in store.lambdas:
@@ -2217,7 +2217,7 @@ def delete_function_event_invoke_config(function):
 
 @app.route("/2020-06-30/functions/<function>/code-signing-config", methods=["GET"])
 def get_function_code_signing_config(function):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     function_arn = func_arn(function)
     if function_arn not in store.lambdas:
         msg = "Function not found: %s" % (function_arn)
@@ -2236,7 +2236,7 @@ def get_function_code_signing_config(function):
 
 @app.route("/2020-06-30/functions/<function>/code-signing-config", methods=["PUT"])
 def put_function_code_signing_config(function):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     data = json.loads(request.data)
 
     arn = data.get("CodeSigningConfigArn")
@@ -2263,7 +2263,7 @@ def put_function_code_signing_config(function):
 
 @app.route("/2020-06-30/functions/<function>/code-signing-config", methods=["DELETE"])
 def delete_function_code_signing_config(function):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     function_arn = func_arn(function)
     if function_arn not in store.lambdas:
         msg = "Function not found: %s" % (function_arn)
@@ -2278,7 +2278,7 @@ def delete_function_code_signing_config(function):
 
 @app.route("/2020-04-22/code-signing-configs/", methods=["POST"])
 def create_code_signing_config():
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     data = json.loads(request.data)
     signing_profile_version_arns = data.get("AllowedPublishers").get("SigningProfileVersionArns")
 
@@ -2319,7 +2319,7 @@ def create_code_signing_config():
 
 @app.route("/2020-04-22/code-signing-configs/<arn>", methods=["GET"])
 def get_code_signing_config(arn):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     try:
         code_signing_obj = store.code_signing_configs[arn]
     except KeyError:
@@ -2346,7 +2346,7 @@ def get_code_signing_config(arn):
 
 @app.route("/2020-04-22/code-signing-configs/<arn>", methods=["DELETE"])
 def delete_code_signing_config(arn):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     try:
         store.code_signing_configs.pop(arn)
     except KeyError:
@@ -2358,7 +2358,7 @@ def delete_code_signing_config(arn):
 
 @app.route("/2020-04-22/code-signing-configs/<arn>", methods=["PUT"])
 def update_code_signing_config(arn):
-    store = get_awslambda_store()
+    store = get_lambda_store_v1()
     try:
         code_signing_obj = store.code_signing_configs[arn]
     except KeyError:

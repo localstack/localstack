@@ -4,8 +4,9 @@ from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttr
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
 
 
-# This store is for the non-ASF Lambda provider and can be distinguished by the `Aws` prefix
-class AwsLambdaStore(BaseStore):
+class LambdaStoreV1(BaseStore):
+    """Store for the old Lambda provider v1"""
+
     # map ARN strings to lambda function objects
     lambdas: Dict[str, LambdaFunction] = LocalAttribute(default=dict)
 
@@ -22,4 +23,4 @@ class AwsLambdaStore(BaseStore):
     layers: Dict[str, str] = LocalAttribute(default=dict)
 
 
-awslambda_stores = AccountRegionBundle[AwsLambdaStore]("lambda", AwsLambdaStore)
+lambda_stores_v1 = AccountRegionBundle[LambdaStoreV1]("lambda", LambdaStoreV1)

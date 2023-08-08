@@ -15,7 +15,7 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import FilterCriteria, Runtime
 from localstack.aws.connect import connect_to
-from localstack.services.lambda_.lambda_models import AwsLambdaStore, awslambda_stores
+from localstack.services.lambda_.lambda_models import LambdaStoreV1, lambda_stores_v1
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -431,21 +431,21 @@ def function_name_from_arn(arn: str):
     return FUNCTION_NAME_REGEX.match(arn).group("name")
 
 
-def get_awslambda_store(
+def get_lambda_store_v1(
     account_id: Optional[str] = None, region: Optional[str] = None
-) -> AwsLambdaStore:
+) -> LambdaStoreV1:
     """Get the legacy Lambda store."""
     account_id = account_id or get_aws_account_id()
     region = region or aws_stack.get_region()
 
-    return awslambda_stores[account_id][region]
+    return lambda_stores_v1[account_id][region]
 
 
-def get_awslambda_store_for_arn(resource_arn: str) -> AwsLambdaStore:
+def get_lambda_store_v1_for_arn(resource_arn: str) -> LambdaStoreV1:
     """
     Return the store for the region extracted from the given resource ARN.
     """
-    return get_awslambda_store(
+    return get_lambda_store_v1(
         account_id=extract_account_id_from_arn(resource_arn or ""),
         region=extract_region_from_arn(resource_arn or ""),
     )

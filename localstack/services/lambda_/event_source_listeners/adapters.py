@@ -274,7 +274,7 @@ class EventSourceAsfAdapter(EventSourceAdapter):
     @lru_cache(maxsize=64)
     def _cached_client_factory(self, region_name: str, role_arn: str) -> ServiceLevelClientFactory:
         return connect_to.with_assumed_role(
-            role_arn=role_arn, region_name=region_name, service_principal=ServicePrincipal.awslambda
+            role_arn=role_arn, region_name=region_name, service_principal=ServicePrincipal.lambda_
         )
 
     def _get_role_for_function(self, function_arn: str) -> str:

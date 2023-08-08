@@ -98,7 +98,7 @@ class LogHandler:
         logs_client = connect_to.with_assumed_role(
             region_name=self.region,
             role_arn=self.role_arn,
-            service_principal=ServicePrincipal.awslambda,
+            service_principal=ServicePrincipal.lambda_,
         ).logs
         while not self._shutdown_event.is_set():
             log_item = self.log_queue.get()

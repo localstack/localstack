@@ -26,7 +26,7 @@ class AWSLambdaRuntimePackage(Package):
         return [LAMBDA_RUNTIME_VERSION]
 
     def _get_installer(self, version: str) -> PackageInstaller:
-        return AWSLambdaRuntimePackageInstaller(name="awslambda-runtime", version=version)
+        return AWSLambdaRuntimePackageInstaller(name="lambda_-runtime", version=version)
 
 
 class AWSLambdaRuntimePackageInstaller(DownloadInstaller):

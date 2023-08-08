@@ -235,7 +235,7 @@ class ServicePrincipal(str):
     """
 
     apigateway = "apigateway"
-    awslambda = "lambda"
+    lambda_ = "lambda"
     events = "events"
     firehose = "firehose"
     s3 = "s3"
