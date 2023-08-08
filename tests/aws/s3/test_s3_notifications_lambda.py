@@ -105,8 +105,8 @@ class TestS3NotificationsToLambda:
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not LEGACY_S3_PROVIDER,
         paths=[
-            "$..data.s3.object.eTag",
-            "$..data.s3.object.size",
+            "$..data.M.s3.M.object.M.eTag.S",
+            "$..data.M.s3.M.object.M.size.N",
         ],  # TODO presigned-post sporadic failures in CI Pipeline
     )
     def test_create_object_by_presigned_request_via_dynamodb(

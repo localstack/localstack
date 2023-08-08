@@ -7,7 +7,7 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request as WerkzeugRequest
 
 from localstack.http import Request, Response, Router
-from localstack.http.client import SimpleRequestsClient
+from localstack.http.client import SimpleRequestsClient, SimpleStreamingRequestsClient
 from localstack.http.dispatcher import handler_dispatcher
 from localstack.http.hypercorn import HypercornServer
 from localstack.http.proxy import Proxy, ProxyHandler, forward
@@ -195,6 +195,37 @@ class TestProxy:
             assert response.json["headers"]["X-My-Custom-Header"] == "hello world"
             assert response.json["headers"]["X-Forwarded-For"] == "127.0.0.10"
             assert response.json["headers"]["Host"] == "127.0.0.1:80"
+
+    @pytest.mark.parametrize("chunked", [True, False])
+    def test_proxy_for_transfer_encoding_chunked(
+        self,
+        httpserver: HTTPServer,
+        chunked,
+    ):
+        body = "enough-for-content-length"
+
+        def _handler(_: WerkzeugRequest):
+            headers = (
+                {"Content-Length": len(body)} if not chunked else {"Transfer-Encoding": "chunked"}
+            )
+
+            return Response(body, headers=headers)
+
+        httpserver.expect_request("").respond_with_handler(_handler)
+
+        with SimpleStreamingRequestsClient() as client:
+            proxy = Proxy(httpserver.url_for("/").lstrip("/"), client)
+
+            request = Request(path="/", method="GET", headers={"Host": "127.0.0.1:80"})
+
+            response = proxy.request(request)
+
+            if chunked:
+                assert response.headers["Transfer-Encoding"] == "chunked"
+                assert "Content-Length" not in response.headers
+            else:
+                assert response.headers["Content-Length"] == str(len(body))
+                assert "Transfer-Encoding" not in response.headers
 
 
 @pytest.mark.parametrize("consume_data", [True, False])
