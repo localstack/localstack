@@ -7,6 +7,7 @@ from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.s3 import (
     MFA,
+    AbortMultipartUploadOutput,
     AccountId,
     Bucket,
     BucketAlreadyExists,
@@ -15,12 +16,21 @@ from localstack.aws.api.s3 import (
     BucketNotEmpty,
     BypassGovernanceRetention,
     ChecksumAlgorithm,
+    ChecksumCRC32,
+    ChecksumCRC32C,
+    ChecksumSHA1,
+    ChecksumSHA256,
     CommonPrefix,
+    CompletedMultipartUpload,
+    CompleteMultipartUploadOutput,
     CopyObjectOutput,
     CopyObjectRequest,
     CopyObjectResult,
+    CopyPartResult,
     CreateBucketOutput,
     CreateBucketRequest,
+    CreateMultipartUploadOutput,
+    CreateMultipartUploadRequest,
     Delete,
     DeletedObject,
     DeleteMarkerEntry,
@@ -42,15 +52,23 @@ from localstack.aws.api.s3 import (
     InvalidArgument,
     InvalidBucketName,
     InvalidObjectState,
+    InvalidPartOrder,
     InvalidStorageClass,
     KeyMarker,
     ListBucketsOutput,
+    ListMultipartUploadsOutput,
     ListObjectsOutput,
     ListObjectsV2Output,
     ListObjectVersionsOutput,
+    ListPartsOutput,
     Marker,
     MaxKeys,
+    MaxParts,
+    MaxUploads,
+    MultipartUpload,
+    MultipartUploadId,
     NoSuchBucket,
+    NoSuchUpload,
     Object,
     ObjectIdentifier,
     ObjectKey,
@@ -58,6 +76,8 @@ from localstack.aws.api.s3 import (
     ObjectVersionId,
     ObjectVersionStorageClass,
     OptionalObjectAttributesList,
+    Part,
+    PartNumberMarker,
     Prefix,
     PutObjectOutput,
     PutObjectRequest,
@@ -66,9 +86,17 @@ from localstack.aws.api.s3 import (
     RestoreRequest,
     S3Api,
     ServerSideEncryption,
+    SSECustomerAlgorithm,
+    SSECustomerKey,
+    SSECustomerKeyMD5,
     StartAfter,
     StorageClass,
     Token,
+    UploadIdMarker,
+    UploadPartCopyOutput,
+    UploadPartCopyRequest,
+    UploadPartOutput,
+    UploadPartRequest,
     VersionIdMarker,
 )
 from localstack.services.plugins import ServiceLifecycleHook
@@ -90,7 +118,15 @@ from localstack.services.s3.utils import (
     parse_range_header,
     validate_kms_key_id,
 )
-from localstack.services.s3.v3.models import S3Bucket, S3DeleteMarker, S3Object, S3Store, s3_stores
+from localstack.services.s3.v3.models import (
+    S3Bucket,
+    S3DeleteMarker,
+    S3Multipart,
+    S3Object,
+    S3Part,
+    S3Store,
+    s3_stores,
+)
 from localstack.services.s3.v3.storage.core import LimitedIterableStream
 from localstack.services.s3.v3.storage.ephemeral import EphemeralS3ObjectStore
 from localstack.utils.strings import to_str
@@ -763,7 +799,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             dest_bucket=dest_bucket,
             dest_object=s3_object,
         )
-        s3_object.checksum_value = s3_stored_object.checksum() or s3_object.checksum_value
+        s3_object.checksum_value = s3_stored_object.checksum() or src_s3_object.checksum_value
 
         # Object copied from Glacier object should not have expiry
         # TODO: verify this assumption from moto?
@@ -1214,6 +1250,473 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # TODO: request charged
         return RestoreObjectOutput(StatusCode=status_code)
+
+    @handler("CreateMultipartUpload", expand=False)
+    def create_multipart_upload(
+        self,
+        context: RequestContext,
+        request: CreateMultipartUploadRequest,
+    ) -> CreateMultipartUploadOutput:
+        # TODO: handle missing parameters:
+        #  acl: ObjectCannedACL = None,
+        #  grant_full_control: GrantFullControl = None,
+        #  grant_read: GrantRead = None,
+        #  grant_read_acp: GrantReadACP = None,
+        #  grant_write_acp: GrantWriteACP = None,
+        #  request_payer: RequestPayer = None,
+        store = self.get_store(context.account_id, context.region)
+        bucket_name = request["Bucket"]
+        if not (s3_bucket := store.buckets.get(bucket_name)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket_name)
+
+        if (
+            storage_class := request.get("StorageClass")
+        ) is not None and storage_class not in STORAGE_CLASSES:
+            raise InvalidStorageClass(
+                "The storage class you specified is not valid", StorageClassRequested=storage_class
+            )
+
+        if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
+            validate_kms_key_id(sse_kms_key_id, s3_bucket)
+
+        key = request["Key"]
+
+        system_metadata = get_system_metadata_from_request(request)
+        if not system_metadata.get("ContentType"):
+            system_metadata["ContentType"] = "binary/octet-stream"
+
+        # TODO: get all default from bucket, maybe extract logic
+
+        # TODO: consolidate ACL into one, and validate it
+
+        # TODO: validate the algorithm?
+        checksum_algorithm = request.get("ChecksumAlgorithm")
+
+        # validate encryption values
+
+        s3_multipart = S3Multipart(
+            key=key,
+            storage_class=storage_class,
+            expires=request.get("Expires"),
+            user_metadata=request.get("Metadata"),
+            system_metadata=system_metadata,
+            checksum_algorithm=checksum_algorithm,
+            encryption=request.get("ServerSideEncryption"),
+            kms_key_id=request.get("SSEKMSKeyId"),
+            bucket_key_enabled=request.get("BucketKeyEnabled"),
+            lock_mode=request.get("ObjectLockMode"),
+            lock_legal_status=request.get("ObjectLockLegalHoldStatus"),
+            lock_until=request.get("ObjectLockRetainUntilDate"),
+            website_redirect_location=request.get("WebsiteRedirectLocation"),
+            expiration=None,  # TODO, from lifecycle, or should it be updated with config?
+            acl=None,
+            initiator=get_owner_for_account_id(context.account_id),
+        )
+
+        s3_bucket.multiparts[s3_multipart.id] = s3_multipart
+
+        response = CreateMultipartUploadOutput(
+            Bucket=bucket_name, Key=key, UploadId=s3_multipart.id
+        )
+
+        if checksum_algorithm:
+            response["ChecksumAlgorithm"] = checksum_algorithm
+
+        add_encryption_to_response(response, s3_object=s3_multipart.object)
+
+        # TODO: missing response fields we're not currently supporting
+        # - AbortDate: lifecycle related,not currently supported, todo
+        # - AbortRuleId: lifecycle related, not currently supported, todo
+        # - RequestCharged: todo
+        # - ChecksumAlgorithm: not currently supported, todo
+
+        return response
+
+    @handler("UploadPart", expand=False)
+    def upload_part(
+        self,
+        context: RequestContext,
+        request: UploadPartRequest,
+    ) -> UploadPartOutput:
+        # TODO: missing following parameters:
+        #  content_length: ContentLength = None, ->validate?
+        #  content_md5: ContentMD5 = None, -> validate?
+        #  request_payer: RequestPayer = None,
+        store = self.get_store(context.account_id, context.region)
+        bucket_name = request["Bucket"]
+        if not (s3_bucket := store.buckets.get(bucket_name)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket_name)
+
+        upload_id = request.get("UploadId")
+        if not (s3_multipart := s3_bucket.multiparts.get(upload_id)):
+            raise NoSuchUpload(
+                "The specified upload does not exist. "
+                "The upload ID may be invalid, or the upload may have been aborted or completed.",
+                UploadId=upload_id,
+            )
+
+        # TODO: validate key?
+        if s3_multipart.object.key != request.get("Key"):
+            pass
+
+        part_number = request.get("PartNumber")
+        # TODO: validate PartNumber
+        # if part_number > 10000:
+        # raise InvalidMaxPartNumberArgument(part_number)
+
+        body = request.get("Body")
+        headers = context.request.headers
+        is_aws_chunked = headers.get("x-amz-content-sha256", "").startswith("STREAMING-")
+        # check if chunked request
+        if is_aws_chunked:
+            decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
+            body = AwsChunkedDecoder(body, decoded_content_length)
+
+        checksum_algorithm = request.get("ChecksumAlgorithm")
+        checksum_value = (
+            request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
+        )
+
+        s3_part = S3Part(
+            part_number=part_number,
+            checksum_algorithm=checksum_algorithm,
+            checksum_value=checksum_value,
+        )
+
+        stored_multipart = self._storage_backend.get_multipart(bucket_name, s3_multipart)
+        stored_s3_part = stored_multipart.open(s3_part)
+        stored_s3_part.write(body)
+
+        if checksum_algorithm and s3_part.checksum_value != stored_s3_part.checksum():
+            stored_multipart.remove_part(s3_part)
+            raise InvalidRequest(
+                f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
+            )
+
+        s3_multipart.parts[part_number] = s3_part
+
+        response = UploadPartOutput(
+            ETag=s3_part.quoted_etag,
+        )
+
+        add_encryption_to_response(response, s3_object=s3_multipart.object)
+
+        if s3_part.checksum_algorithm:
+            response[f"Checksum{checksum_algorithm.upper()}"] = s3_part.checksum_value
+
+        # TODO: RequestCharged: Optional[RequestCharged]
+        return response
+
+    @handler("UploadPartCopy", expand=False)
+    def upload_part_copy(
+        self,
+        context: RequestContext,
+        request: UploadPartCopyRequest,
+    ) -> UploadPartCopyOutput:
+        # TODO: handle following parameters:
+        #  copy_source_if_match: CopySourceIfMatch = None,
+        #  copy_source_if_modified_since: CopySourceIfModifiedSince = None,
+        #  copy_source_if_none_match: CopySourceIfNoneMatch = None,
+        #  copy_source_if_unmodified_since: CopySourceIfUnmodifiedSince = None,
+        #  request_payer: RequestPayer = None,
+        dest_bucket = request["Bucket"]
+        dest_key = request["Bucket"]
+        store = self.get_store(context.account_id, context.region)
+        if not (dest_s3_bucket := store.buckets.get(dest_bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=dest_bucket)
+
+        src_bucket, src_key, src_version_id = extract_bucket_key_version_id_from_copy_source(
+            request.get("CopySource")
+        )
+
+        if not (src_s3_bucket := store.buckets.get(src_bucket)):
+            # TODO: validate this
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=src_bucket)
+
+        # validate method not allowed?
+        src_s3_object = src_s3_bucket.get_object(key=src_key, version_id=src_version_id)
+        # TODO: validate StorageClass for ARCHIVES one
+        if src_s3_object.storage_class in ARCHIVES_STORAGE_CLASSES:
+            pass
+
+        upload_id = request.get("UploadId")
+        if not (s3_multipart := dest_s3_bucket.multiparts.get(upload_id)):
+            raise NoSuchUpload(
+                "The specified upload does not exist. "
+                "The upload ID may be invalid, or the upload may have been aborted or completed.",
+                UploadId=upload_id,
+            )
+
+        # TODO: validate key?
+        if s3_multipart.object.key != dest_key:
+            pass
+
+        part_number = request.get("PartNumber")
+        # TODO: validate PartNumber
+        # if part_number > 10000:
+        # raise InvalidMaxPartNumberArgument(part_number)
+
+        source_range = request.get("CopySourceRange")
+        # TODO implement copy source IF (done in ASF provider)
+        range_data = parse_range_header(source_range, src_s3_object.size)
+
+        s3_part = S3Part(part_number=part_number)
+
+        stored_multipart = self._storage_backend.get_multipart(dest_bucket, s3_multipart)
+        stored_multipart.copy_from_object(s3_part, src_bucket, src_s3_object, range_data)
+
+        s3_multipart.parts[part_number] = s3_part
+
+        # TODO: return those fields (checksum not handled currently in moto for parts)
+        # ChecksumCRC32: Optional[ChecksumCRC32]
+        # ChecksumCRC32C: Optional[ChecksumCRC32C]
+        # ChecksumSHA1: Optional[ChecksumSHA1]
+        # ChecksumSHA256: Optional[ChecksumSHA256]
+        #     RequestCharged: Optional[RequestCharged]
+
+        result = CopyPartResult(
+            ETag=s3_part.quoted_etag,
+            LastModified=s3_part.last_modified,
+        )
+
+        response = UploadPartCopyOutput(
+            CopyPartResult=result,
+        )
+
+        if src_version_id:
+            response["CopySourceVersionId"] = src_version_id
+
+        add_encryption_to_response(response, s3_object=s3_multipart.object)
+
+        return response
+
+    def complete_multipart_upload(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        upload_id: MultipartUploadId,
+        multipart_upload: CompletedMultipartUpload = None,
+        checksum_crc32: ChecksumCRC32 = None,
+        checksum_crc32_c: ChecksumCRC32C = None,
+        checksum_sha1: ChecksumSHA1 = None,
+        checksum_sha256: ChecksumSHA256 = None,
+        request_payer: RequestPayer = None,
+        expected_bucket_owner: AccountId = None,
+        sse_customer_algorithm: SSECustomerAlgorithm = None,
+        sse_customer_key: SSECustomerKey = None,
+        sse_customer_key_md5: SSECustomerKeyMD5 = None,
+    ) -> CompleteMultipartUploadOutput:
+
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not (s3_multipart := s3_bucket.multiparts.get(upload_id)):
+            raise NoSuchUpload(
+                "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+                UploadId=upload_id,
+            )
+
+        # TODO: validate key?
+        if s3_multipart.object.key != key:
+            pass
+
+        parts = multipart_upload.get("Parts", [])
+        if not parts:
+            raise InvalidRequest("You must specify at least one part")
+
+        parts_numbers = [part.get("PartNumber") for part in parts]
+        # sorted is very fast (fastest) if the list is already sorted, which should be the case
+        if sorted(parts_numbers) != parts_numbers:
+            raise InvalidPartOrder(
+                "The list of parts was not in ascending order. Parts must be ordered by part number.",
+                UploadId=upload_id,
+            )
+
+        # generate the versionId before completing, in case the bucket versioning status has changed between
+        # creation and completion? AWS validate this
+        version_id = generate_version_id(s3_bucket.versioning_status)
+        s3_multipart.object.version_id = version_id
+
+        s3_multipart.complete_multipart(parts_numbers)
+
+        stored_multipart = self._storage_backend.get_multipart(bucket, s3_multipart)
+        stored_multipart.complete_multipart(parts_numbers)
+
+        s3_object = s3_multipart.object
+
+        s3_bucket.objects.set(key, s3_object)
+
+        # remove the multipart now that it's complete
+        self._storage_backend.remove_multipart(bucket, s3_multipart)
+        s3_bucket.multiparts.pop(s3_multipart.id, None)
+
+        # TODO: validate if you provide wrong checksum compared to the given algorithm? should you calculate it anyway
+        #  when you complete? sounds weird, not sure how that works?
+
+        #     ChecksumCRC32: Optional[ChecksumCRC32] ??
+        #     ChecksumCRC32C: Optional[ChecksumCRC32C] ??
+        #     ChecksumSHA1: Optional[ChecksumSHA1] ??
+        #     ChecksumSHA256: Optional[ChecksumSHA256] ??
+        #     RequestCharged: Optional[RequestCharged] TODO
+
+        response = CompleteMultipartUploadOutput(
+            Bucket=bucket,
+            Key=key,
+            ETag=s3_object.quoted_etag,
+            Location=f"{get_full_default_bucket_location(bucket)}{bucket}",
+        )
+
+        if s3_object.version_id:
+            response["VersionId"] = s3_object.version_id
+
+        # TODO: check this?
+        if s3_object.checksum_algorithm:
+            response[f"Checksum{s3_object.checksum_algorithm.upper()}"] = s3_object.checksum_value
+
+        if s3_object.expiration:
+            response["Expiration"] = s3_object.expiration  # TODO: properly parse the datetime
+
+        add_encryption_to_response(response, s3_object=s3_object)
+
+        return response
+
+    def abort_multipart_upload(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        upload_id: MultipartUploadId,
+        request_payer: RequestPayer = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> AbortMultipartUploadOutput:
+        # TODO: write tests around this
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not (s3_multipart := s3_bucket.multiparts.pop(upload_id, None)):
+            raise NoSuchUpload(
+                "The specified upload does not exist. "
+                "The upload ID may be invalid, or the upload may have been aborted or completed.",
+                UploadId=upload_id,
+            )
+
+        self._storage_backend.remove_multipart(bucket, s3_multipart)
+        response = AbortMultipartUploadOutput()
+        # TODO: requestCharged
+        return response
+
+    def list_parts(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        upload_id: MultipartUploadId,
+        max_parts: MaxParts = None,
+        part_number_marker: PartNumberMarker = None,
+        request_payer: RequestPayer = None,
+        expected_bucket_owner: AccountId = None,
+        sse_customer_algorithm: SSECustomerAlgorithm = None,
+        sse_customer_key: SSECustomerKey = None,
+        sse_customer_key_md5: SSECustomerKeyMD5 = None,
+    ) -> ListPartsOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not (s3_multipart := s3_bucket.multiparts.get(upload_id)):
+            raise NoSuchUpload(
+                "The specified upload does not exist. "
+                "The upload ID may be invalid, or the upload may have been aborted or completed.",
+                UploadId=upload_id,
+            )
+
+        #     AbortDate: Optional[AbortDate] TODO: lifecycle
+        #     AbortRuleId: Optional[AbortRuleId] TODO: lifecycle
+        #     RequestCharged: Optional[RequestCharged]
+        #     ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+
+        response = ListPartsOutput(
+            Bucket=bucket,
+            Key=key,
+            UploadId=upload_id,
+            Initiator=s3_multipart.initiator,
+            Owner=s3_multipart.initiator,
+            StorageClass=s3_multipart.object.storage_class,
+            IsTruncated=False,
+            MaxParts=max_parts or 1000,
+        )
+
+        # TODO: implement MaxParts
+        # TODO: implement locking for iteration
+        parts = [
+            Part(
+                ETag=part.quoted_etag,
+                LastModified=part.last_modified,
+                PartNumber=part_number,
+                Size=part.size,
+            )
+            for part_number, part in sorted(s3_multipart.parts.items())
+        ]
+        response["Parts"] = parts
+        last_part = parts[-1]["PartNumber"] if parts else 0
+        response["PartNumberMarker"] = last_part - 1 if parts else 0
+        response["NextPartNumberMarker"] = last_part
+
+        if s3_multipart.object.checksum_algorithm:
+            response["ChecksumAlgorithm"] = s3_multipart.object.checksum_algorithm
+
+        return response
+
+    def list_multipart_uploads(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        delimiter: Delimiter = None,
+        encoding_type: EncodingType = None,
+        key_marker: KeyMarker = None,
+        max_uploads: MaxUploads = None,
+        prefix: Prefix = None,
+        upload_id_marker: UploadIdMarker = None,
+        expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
+    ) -> ListMultipartUploadsOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        s3_multiparts = s3_bucket.multiparts
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListMultipartUploads.html
+        # TODO implement Prefix/Delimiter/CommonPrefixes/EncodingType and truncating results
+        # should be common from ListObjects?ListVersions
+
+        #     NextKeyMarker: Optional[NextKeyMarker] ?
+        #     NextUploadIdMarker: Optional[NextUploadIdMarker] ?
+
+        response = ListMultipartUploadsOutput(
+            Bucket=bucket,
+            IsTruncated=False,
+            KeyMarker=key_marker or "",
+            MaxUploads=max_uploads or 1000,
+            UploadIdMarker=upload_id_marker or "",
+        )
+        # TODO: implement locking for iteration
+        uploads = [
+            MultipartUpload(
+                UploadId=multipart.id,
+                Key=multipart.object.key,
+                Initiated=multipart.initiated,
+                StorageClass=multipart.object.storage_class,
+                Owner=multipart.initiator,  # TODO: check the difference
+                Initiator=multipart.initiator,
+            )
+            for multipart in s3_multiparts.values()
+        ]
+        response["Uploads"] = uploads
+
+        return response
 
 
 def generate_version_id(bucket_versioning_status: str) -> str | None:
