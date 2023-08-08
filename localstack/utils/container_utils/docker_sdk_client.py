@@ -144,9 +144,7 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
-    def stop_container(self, container_name: str, timeout: int = None) -> None:
-        if timeout is None:
-            timeout = self.STOP_TIMEOUT
+    def stop_container(self, container_name: str, timeout: int = 10) -> None:
         LOG.debug("Stopping container: %s", container_name)
         try:
             container = self.client().containers.get(container_name)
