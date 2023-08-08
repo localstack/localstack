@@ -30,6 +30,7 @@ LOG = logging.getLogger(__name__)
 class SQSInvocation:
     invocation: Invocation
     retries: int = 0
+    exception_retries: int = 0
 
     def encode(self) -> str:
         return json.dumps(
@@ -42,6 +43,7 @@ class SQSInvocation:
                 # = invocation_id
                 "request_id": self.invocation.request_id,
                 "retries": self.retries,
+                "exception_retries": self.exception_retries,
             }
         )
 
@@ -56,7 +58,11 @@ class SQSInvocation:
             invoke_time=datetime.fromisoformat(invocation_dict["invoke_time"]),
             request_id=invocation_dict["request_id"],
         )
-        return cls(invocation, invocation_dict["retries"])
+        return cls(
+            invocation=invocation,
+            retries=invocation_dict["retries"],
+            exception_retries=invocation_dict["exception_retries"],
+        )
 
 
 def has_enough_time_for_retry(
@@ -120,36 +126,52 @@ class Poller:
 
     def handle_message(self, message: dict) -> None:
         try:
+            # TODO: MAYBE 1) guard against ZeroReservedConcurrency
             sqs_invocation = SQSInvocation.decode(message["Body"])
             invocation = sqs_invocation.invocation
             try:
                 invocation_result = self.version_manager.invoke(invocation=invocation)
-            except TooManyRequestsException as e:  # Throttles 429
-                # TODO: handle throttling and internal errors differently as described here:
-                #  https://aws.amazon.com/blogs/compute/introducing-new-asynchronous-invocation-metrics-for-aws-lambda/
-                # Idea: can reset visibility when re-scheduling necessary (e.g., when hitting concurrency limit)
-                # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html#terminating-message-visibility-timeout
-                # TODO: differentiate between reserved concurrency = 0 and other throttling errors
+            except Exception as e:
+                # 1) Reserved concurrency == 0
+                # TODO: handle + failures destinations/DLQ
+                # 2) Event age exceeded
+                # TODO: handle + failures destinations/DLQ
+                # 3) Otherwise, retry without increasing counter
 
-                # TODO: implement throttle and exception retry behavior: "The retry interval increases exponentially
-                #  from 1 second after the first attempt to a maximum of 5 minutes. If the queue contains many
-                #  entries, Lambda increases the retry interval and reduces the rate at which it reads events from
-                #  the queue."
-                # Source: https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html
-                LOG.debug("Throttled lambda %s: %s", self.version_manager.function_arn, e)
-                invocation_result = InvocationResult(
-                    is_error=True, request_id=invocation.request_id, payload=None, logs=None
-                )
-            except Exception as e:  # System errors 5xx
-                LOG.debug(
-                    "Service exception in lambda %s: %s", self.version_manager.function_arn, e
-                )
+                # If the function doesn't have enough concurrency available to process all events, additional
+                # requests are throttled. For throttling errors (429) and system errors (500-series), Lambda returns
+                # the event to the queue and attempts to run the function again for up to 6 hours. The retry interval
+                # increases exponentially from 1 second after the first attempt to a maximum of 5 minutes. If the
+                # queue contains many entries, Lambda increases the retry interval and reduces the rate at which it
+                # reads events from the queue. Source:
+                # https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html
+                # Difference depending on error cause:
+                # https://aws.amazon.com/blogs/compute/introducing-new-asynchronous-invocation-metrics-for-aws-lambda/
                 # Troubleshooting 500 errors:
                 # https://repost.aws/knowledge-center/lambda-troubleshoot-invoke-error-502-500
-                # TODO: handle this
+                if isinstance(e, TooManyRequestsException):  # Throttles 429
+                    LOG.debug("Throttled lambda %s: %s", self.version_manager.function_arn, e)
+                else:  # System errors 5xx
+                    LOG.debug(
+                        "Service exception in lambda %s: %s", self.version_manager.function_arn, e
+                    )
+
                 invocation_result = InvocationResult(
                     is_error=True, request_id=invocation.request_id, payload=None, logs=None
                 )
+
+                maximum_exception_retry_delay_seconds = 5 * 60
+                delay_seconds = min(
+                    2**sqs_invocation.exception_retries, maximum_exception_retry_delay_seconds
+                )
+                # TODO: calculate delay seconds into max event age handling
+                sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
+                sqs_client.send_message(
+                    QueueUrl=self.event_queue_url,
+                    MessageBody=sqs_invocation.encode(),
+                    DelaySeconds=delay_seconds,
+                )
+                return
             finally:
                 sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
                 sqs_client.delete_message(
@@ -189,9 +211,14 @@ class Poller:
                     return
                 else:  # schedule retry
                     sqs_invocation.retries += 1
+                    # Assumption: We assume that the internal exception retries counter is reset after
+                    #  an invocation that does not throw an exception
+                    sqs_invocation.exception_retries = 0
                     # TODO: max delay is 15 minutes! specify max 300 limit in docs
                     #   https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
                     delay_seconds = sqs_invocation.retries * config.LAMBDA_RETRY_BASE_DELAY_SECONDS
+                    # TODO: max SQS message size limit could break parity with AWS because
+                    #  our SQSInvocation contains additional fields! 256kb is max for both Lambda payload + SQS
                     sqs_client.send_message(
                         QueueUrl=self.event_queue_url,
                         MessageBody=sqs_invocation.encode(),
