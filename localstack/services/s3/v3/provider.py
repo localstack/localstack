@@ -61,6 +61,7 @@ from localstack.aws.api.s3 import (
     GetBucketLocationOutput,
     GetBucketTaggingOutput,
     GetBucketVersioningOutput,
+    GetBucketWebsiteOutput,
     GetObjectAttributesOutput,
     GetObjectAttributesParts,
     GetObjectAttributesRequest,
@@ -107,6 +108,7 @@ from localstack.aws.api.s3 import (
     NoSuchLifecycleConfiguration,
     NoSuchTagSet,
     NoSuchUpload,
+    NoSuchWebsiteConfiguration,
     NotificationConfiguration,
     Object,
     ObjectIdentifier,
@@ -142,8 +144,10 @@ from localstack.aws.api.s3 import (
     UploadPartRequest,
     VersionIdMarker,
     VersioningConfiguration,
+    WebsiteConfiguration,
 )
 from localstack.aws.handlers import preprocess_request, serve_custom_service_request_handlers
+from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.constants import ARCHIVES_STORAGE_CLASSES, DEFAULT_BUCKET_ENCRYPTION
@@ -193,7 +197,9 @@ from localstack.services.s3.validation import (
     validate_cors_configuration,
     validate_inventory_configuration,
     validate_lifecycle_configuration,
+    validate_website_configuration,
 )
+from localstack.services.s3.website_hosting import register_website_hosting_routes
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
@@ -219,6 +225,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def on_after_init(self):
         preprocess_request.append(self._cors_handler)
         serve_custom_service_request_handlers.append(s3_cors_request_handler)
+        register_website_hosting_routes(router=ROUTER)
 
     def on_before_stop(self):
         self._notification_dispatcher.shutdown()
@@ -272,7 +279,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         the case. We're caching it because it can change depending on the set rules on the bucket.
         We can't use `lru_cache` as the parameters needs to be hashable
         :param lifecycle_rules: the bucket LifecycleRules
-        :param moto_object: FakeKey from moto
+        :param s3_object: S3Object
         :param object_tags: the object tags
         :return: the Expiration header if there's a rule matching
         """
@@ -289,6 +296,20 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
             self._expiration_cache[bucket][s3_object.key] = expiration_header
             return expiration_header
+
+    def _get_cross_account_bucket(
+        self, context: RequestContext, bucket_name: BucketName
+    ) -> tuple[S3Store, S3Bucket]:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket_name)):
+            if not (account_id := store.global_bucket_map.get(bucket_name)):
+                raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket_name)
+
+            store = self.get_store(account_id, context.region)
+            if not (s3_bucket := store.buckets.get(bucket_name)):
+                raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket_name)
+
+        return store, s3_bucket
 
     @staticmethod
     def get_store(account_id: str, region_name: str) -> S3Store:
@@ -446,10 +467,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         #  object_lock_mode: ObjectLockMode = None,
         #  object_lock_retain_until_date: ObjectLockRetainUntilDate = None,
         #  object_lock_legal_hold_status: ObjectLockLegalHoldStatus = None,
-        store = self.get_store(context.account_id, context.region)
         bucket_name = request["Bucket"]
-        if not (s3_bucket := store.buckets.get(bucket_name)):
-            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket_name)
+        store, s3_bucket = self._get_cross_account_bucket(context, bucket_name)
 
         if (
             storage_class := request.get("StorageClass")
@@ -579,12 +598,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         #  part_number: PartNumber = None,
         #  expected_bucket_owner: AccountId = None,
 
-        store = self.get_store(context.account_id, context.region)
         bucket_name = request["Bucket"]
         object_key = request["Key"]
         version_id = request.get("VersionId")
-        if not (s3_bucket := store.buckets.get(bucket_name)):
-            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket_name)
+        store, s3_bucket = self._get_cross_account_bucket(context, bucket_name)
 
         # TODO implement PartNumber once multipart is done (being able to select only a Part)
 
@@ -1090,9 +1107,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         expected_bucket_owner: AccountId = None,
         optional_object_attributes: OptionalObjectAttributesList = None,
     ) -> ListObjectsOutput:
-        store = self.get_store(context.account_id, context.region)
-        if not (s3_bucket := store.buckets.get(bucket)):
-            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         # TODO: URL encode keys (is it done already in serializer?)
         common_prefixes = set()
@@ -1187,9 +1202,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         expected_bucket_owner: AccountId = None,
         optional_object_attributes: OptionalObjectAttributesList = None,
     ) -> ListObjectsV2Output:
-        store = self.get_store(context.account_id, context.region)
-        if not (s3_bucket := store.buckets.get(bucket)):
-            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         if continuation_token and continuation_token == "":
             raise InvalidArgument("The continuation token provided is incorrect")
@@ -1302,9 +1315,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request_payer: RequestPayer = None,
         optional_object_attributes: OptionalObjectAttributesList = None,
     ) -> ListObjectVersionsOutput:
-        store = self.get_store(context.account_id, context.region)
-        if not (s3_bucket := store.buckets.get(bucket)):
-            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         # TODO: URL encode keys (is it done already in serializer?)
         common_prefixes = set()
@@ -2544,6 +2555,45 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if not s3_bucket.inventory_configurations.pop(id, None):
             raise NoSuchConfiguration("The specified configuration does not exist.")
+
+    def get_bucket_website(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketWebsiteOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not s3_bucket.website_configuration:
+            raise NoSuchWebsiteConfiguration(
+                "The specified bucket does not have a website configuration",
+                BucketName=bucket,
+            )
+        return s3_bucket.website_configuration
+
+    def put_bucket_website(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        website_configuration: WebsiteConfiguration,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        validate_website_configuration(website_configuration)
+        s3_bucket.website_configuration = website_configuration
+
+    def delete_bucket_website(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        # does not raise error if the bucket did not have a config, will simply return
+        s3_bucket.website_configuration = None
 
     # ###### THIS ARE UNIMPLEMENTED METHODS TO ALLOW TESTING, DO NOT COUNT THEM AS DONE ###### #
 
