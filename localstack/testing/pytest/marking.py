@@ -7,19 +7,20 @@ import pytest
 
 
 class AwsCompatibilityMarkers:
-    validated = (
-        pytest.mark.aws_validated
-    )  # test has been successfully run against AWS, ideally multiple times
-    manual_setup_required = (
-        pytest.mark.aws_manual_setup_required
-    )  # implies aws_validated. test needs additional setup, configuration or some other steps not included in the test setup itself
-    needs_fixing = (
-        pytest.mark.aws_needs_fixing
-    )  # fails against AWS but should be made runnable against AWS in the future, basically a TODO
-    only_localstack = pytest.mark.aws_only_localstack  # only runnable against localstack by design
-    unknown = (
-        pytest.mark.aws_unknown
-    )  # it's unknown if the test works (reliably) against AWS or not
+    # test has been successfully run against AWS, ideally multiple times
+    validated = pytest.mark.aws_validated
+
+    # implies aws_validated. test needs additional setup, configuration or some other steps not included in the test setup itself
+    manual_setup_required = pytest.mark.aws_manual_setup_required
+
+    # fails against AWS but should be made runnable against AWS in the future, basically a TODO
+    needs_fixing = pytest.mark.aws_needs_fixing
+
+    # only runnable against localstack by design
+    only_localstack = pytest.mark.aws_only_localstack
+
+    # it's unknown if the test works (reliably) against AWS or not
+    unknown = pytest.mark.aws_unknown
 
 
 class ParityMarkers:
