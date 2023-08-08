@@ -153,7 +153,8 @@ class SimpleStreamingRequestsClient(SimpleRequestsClient):
             return final_response
 
         response_headers = Headers(dict(response.headers))
-        response_headers.pop("Content-Length", None)
+        if "chunked" in response_headers.get("Transfer-Encoding", ""):
+            response_headers.pop("Content-Length", None)
 
         final_response = Response(
             response=(chunk for chunk in response.raw.stream(1024, decode_content=False)),
