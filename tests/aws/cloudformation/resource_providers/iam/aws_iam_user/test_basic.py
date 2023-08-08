@@ -64,7 +64,7 @@ class TestBasicCRD:
         assert "MyResource" in user_name
 
     @pytest.mark.skip_snapshot_verify
-    @pytest.mark.aws_validated
+    @markers.aws.validated
     def test_getatt(self, snapshot, deploy_cfn_template, aws_client):
         user_name = f"test-user-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(user_name, "<user-name>"))

@@ -378,7 +378,7 @@ class TestCloudFormationConditions:
         aws_client.sns.get_topic_attributes(TopicArn=topic_arn_with_suffix)
         assert topic_arn_with_suffix.split(":")[-1] == f"{topic_prefix}-{region}-{suffix}"
 
-    @pytest.mark.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize("env,region", [("dev", "us-west-2"), ("production", "us-east-1")])
     def test_conditional_in_conditional(self, env, region, deploy_cfn_template, aws_client):
         stack = deploy_cfn_template(
