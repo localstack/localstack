@@ -22,8 +22,8 @@ from localstack.testing.pytest import markers
 from localstack.testing.scenario.provisioning import InfraProvisioner
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
-from tests.aws.awslambda.functions import lambda_integration
-from tests.aws.awslambda.test_lambda import TEST_LAMBDA_PYTHON
+from tests.aws.lambda_.functions import lambda_integration
+from tests.aws.lambda_.test_lambda import TEST_LAMBDA_PYTHON
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import CloudWatchLogsClient

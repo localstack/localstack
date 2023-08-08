@@ -23,7 +23,7 @@ from localstack.utils.files import load_file
 from localstack.utils.platform import get_arch, get_os
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.testutil import create_lambda_archive
-from tests.aws.awslambda.test_lambda import (
+from tests.aws.lambda_.test_lambda import (
     TEST_GOLANG_LAMBDA_URL_TEMPLATE,
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_RUBY,

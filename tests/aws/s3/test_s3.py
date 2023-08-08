@@ -3102,7 +3102,7 @@ class TestS3:
         create_lambda_function(
             handler_file=os.path.join(
                 os.path.dirname(__file__),
-                "../awslambda",
+                "../lambda_",
                 "functions",
                 "lambda_triggered_by_sqs_download_s3_file.py",
             ),
@@ -3302,7 +3302,7 @@ class TestS3:
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../awslambda/functions/lambda_s3_integration.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration.js"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
@@ -7032,7 +7032,7 @@ class TestS3PresignedUrl:
         assert StorageClass.STANDARD not in url
 
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../awslambda/functions/lambda_s3_integration_presign.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_presign.js"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
@@ -7096,7 +7096,7 @@ class TestS3PresignedUrl:
         assert "=AES256" not in url
 
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../awslambda/functions/lambda_s3_integration_sdk_v2.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_sdk_v2.js"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,

@@ -14,7 +14,7 @@ from localstack.utils.sync import retry
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON_TRIGGERED_S3 = os.path.join(
-    THIS_FOLDER, "../awslambda", "functions", "lambda_triggered_by_s3.py"
+    THIS_FOLDER, "../lambda_", "functions", "lambda_triggered_by_s3.py"
 )
 
 

@@ -22,7 +22,7 @@ from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry
 from tests.aws.apigateway.apigateway_fixtures import api_invoke_url, create_rest_api_deployment
 from tests.aws.apigateway.conftest import DEFAULT_STAGE_NAME
-from tests.aws.awslambda.test_lambda import TEST_LAMBDA_LIBS
+from tests.aws.lambda_.test_lambda import TEST_LAMBDA_LIBS
 
 
 @markers.aws.unknown

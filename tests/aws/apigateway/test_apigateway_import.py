@@ -46,7 +46,7 @@ OAS_30_CIRCULAR_REF_WITH_REQUEST_BODY = os.path.join(
     PARENT_DIR, "files", "openapi.spec.circular-ref-with-request-body.json"
 )
 OAS_30_STAGE_VARIABLES = os.path.join(PARENT_DIR, "files", "openapi.spec.stage-variables.json")
-TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "awslambda/functions/lambda_echo.py")
+TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "lambda_/functions/lambda_echo.py")
 
 
 @pytest.fixture

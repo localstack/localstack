@@ -22,7 +22,7 @@ from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
-from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
+from .lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 

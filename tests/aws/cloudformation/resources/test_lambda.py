@@ -1034,7 +1034,7 @@ def test_python_lambda_code_deployed_via_s3(deploy_cfn_template, aws_client, s3_
     bucket_key = "handler.zip"
     zip_file = create_lambda_archive(
         load_file(
-            os.path.join(os.path.dirname(__file__), "../../awslambda/functions/lambda_echo.py")
+            os.path.join(os.path.dirname(__file__), "../../lambda_/functions/lambda_echo.py")
         ),
         get_content=True,
         runtime=Runtime.python3_10,

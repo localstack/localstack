@@ -29,8 +29,8 @@ from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
-from .awslambda.functions import lambda_integration
-from .awslambda.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
+from .lambda_.functions import lambda_integration
+from .lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
 
 LOG = logging.getLogger(__name__)
 

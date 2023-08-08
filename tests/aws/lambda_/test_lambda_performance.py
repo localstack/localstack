@@ -20,7 +20,7 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.config import is_env_true
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
-from tests.aws.awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
+from tests.aws.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
 # These performance tests are opt-in because we currently do not track performance systematically.
 if not is_env_true("TEST_PERFORMANCE"):

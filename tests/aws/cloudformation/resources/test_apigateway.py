@@ -14,7 +14,7 @@ from localstack.utils.strings import to_bytes
 from tests.aws.apigateway.apigateway_fixtures import api_invoke_url
 
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "awslambda/functions/lambda_echo.py")
+TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "lambda_/functions/lambda_echo.py")
 
 TEST_TEMPLATE_1 = """
 AWSTemplateFormatVersion: '2010-09-09'

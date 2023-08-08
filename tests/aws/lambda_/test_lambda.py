@@ -33,7 +33,7 @@ from localstack.utils.platform import Arch, get_arch, is_arm_compatible, standar
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
-from tests.aws.awslambda.conftest import RUNTIMES_AGGREGATED
+from tests.aws.lambda_.conftest import RUNTIMES_AGGREGATED
 
 LOG = logging.getLogger(__name__)
 FUNCTION_MAX_UNZIPPED_SIZE = 262144000

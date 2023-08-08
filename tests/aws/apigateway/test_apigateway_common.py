@@ -17,7 +17,7 @@ from tests.aws.apigateway.apigateway_fixtures import (
     create_rest_api_stage,
     create_rest_resource_method,
 )
-from tests.aws.awslambda.test_lambda import TEST_LAMBDA_AWS_PROXY
+from tests.aws.lambda_.test_lambda import TEST_LAMBDA_AWS_PROXY
 
 
 class TestApiGatewayCommon:

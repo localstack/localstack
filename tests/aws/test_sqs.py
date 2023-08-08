@@ -30,8 +30,8 @@ from localstack.testing.snapshots.transformer import GenericTransformer
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 
-from .awslambda.functions import lambda_integration
-from .awslambda.test_lambda import TEST_LAMBDA_PYTHON
+from .lambda_.functions import lambda_integration
+from .lambda_.test_lambda import TEST_LAMBDA_PYTHON
 
 TEST_POLICY = """
 {

@@ -59,7 +59,7 @@ from tests.aws.apigateway.conftest import (
     APIGATEWAY_STEPFUNCTIONS_POLICY,
     STEPFUNCTIONS_ASSUME_ROLE_POLICY,
 )
-from tests.aws.awslambda.test_lambda import (
+from tests.aws.lambda_.test_lambda import (
     TEST_LAMBDA_AWS_PROXY,
     TEST_LAMBDA_HTTP_RUST,
     TEST_LAMBDA_NODEJS,

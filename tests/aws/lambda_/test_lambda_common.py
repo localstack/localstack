@@ -48,7 +48,7 @@ def snapshot_transformers(snapshot):
 )
 class TestLambdaRuntimesCommon:
     """
-    Directly correlates to the structure found in tests.aws.awslambda.functions.common
+    Directly correlates to the structure found in tests.aws.lambda_.functions.common
     Each scenario has the following folder structure: ./common/<scenario>/runtime/
     Runtime can either be directly one of the supported runtimes (e.g. in case of version specific compilation instructions) or one of the keys in RUNTIMES_AGGREGATED
     To selectively execute runtimes, use the runtimes parameter of multiruntime. Example: runtimes=[Runtime.go1_x]

@@ -29,7 +29,7 @@ from localstack.utils.strings import first_char_to_lower, short_uid
 
 LOG = logging.getLogger(__name__)
 # Custom logger for proactive deprecation hints related to the migration from the old to the new lambda provider
-HINT_LOG = logging.getLogger("localstack.services.awslambda.hints")
+HINT_LOG = logging.getLogger("localstack.services.lambda_.hints")
 
 # root path of Lambda API endpoints
 API_PATH_ROOT = "/2015-03-31"

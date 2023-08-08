@@ -159,7 +159,7 @@ class TestClientFactory:
             "appsync",
             "athena",
             "autoscaling",
-            "awslambda",
+            "lambda_",
             "backup",
             "batch",
             "ce",
