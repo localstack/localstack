@@ -431,23 +431,22 @@ def start_http_server(
     return test_port, invocations, proxy
 
 
-def list_all_s3_objects():
-    return map_all_s3_objects().values()
+def list_all_s3_objects(s3_client):
+    return map_all_s3_objects(s3_client=s3_client).values()
 
 
-def delete_all_s3_objects(buckets):
-    s3_client = connect_to().s3
+def delete_all_s3_objects(s3_client, buckets: str | List[str]):
     buckets = ensure_list(buckets)
     for bucket in buckets:
-        keys = all_s3_object_keys(bucket)
+        keys = all_s3_object_keys(s3_client, bucket)
         deletes = [{"Key": key} for key in keys]
         if deletes:
             s3_client.delete_objects(Bucket=bucket, Delete={"Objects": deletes})
 
 
-def download_s3_object(s3, bucket, path):
+def download_s3_object(s3_client, bucket, path):
     with tempfile.SpooledTemporaryFile() as tmpfile:
-        s3.Bucket(bucket).download_fileobj(path, tmpfile)
+        s3_client.download_fileobj(bucket, path, tmpfile)
         tmpfile.seek(0)
         result = tmpfile.read()
         try:
@@ -457,31 +456,32 @@ def download_s3_object(s3, bucket, path):
         return result
 
 
-def all_s3_object_keys(bucket: str) -> List[str]:
-    s3_client = aws_stack.connect_to_resource("s3")
-    bucket = s3_client.Bucket(bucket) if isinstance(bucket, str) else bucket
-    keys = [key.key for key in bucket.objects.all()]
+def all_s3_object_keys(s3_client, bucket: str) -> List[str]:
+    response = s3_client.list_objects_v2(Bucket=bucket)
+    keys = [obj["Key"] for obj in response.get("Contents", [])]
     return keys
 
 
 def map_all_s3_objects(
-    to_json: bool = True, buckets: str | List[str] = None, s3_resource=None
+    s3_client, to_json: bool = True, buckets: str | List[str] = None
 ) -> Dict[str, Any]:
-    # TODO: remove aws_stack
-    s3_resource = s3_resource or aws_stack.connect_to_resource("s3")
     result = {}
     buckets = ensure_list(buckets)
-    buckets = [s3_resource.Bucket(b) for b in buckets] if buckets else s3_resource.buckets.all()
+    if not buckets:
+        # get all buckets
+        response = s3_client.list_buckets()
+        buckets = [b["Name"] for b in response["Buckets"]]
+
     for bucket in buckets:
-        for key in bucket.objects.all():
-            value = download_s3_object(s3_resource, key.bucket_name, key.key)
+        response = s3_client.list_objects_v2(Bucket=bucket)
+        objects = [obj["Key"] for obj in response.get("Contents", [])]
+        for key in objects:
+            value = download_s3_object(s3_client, bucket, key)
             try:
                 if to_json:
                     value = json.loads(value)
-                bucket_name = key.bucket_name
-                separator = "" if key.key.startswith("/") else "/"
-                key = f"{bucket_name}{separator}{key.key}"
-                result[key] = value
+                separator = "" if key.startswith("/") else "/"
+                result[f"{bucket}{separator}{key}"] = value
             except Exception:
                 # skip non-JSON or binary objects
                 pass
