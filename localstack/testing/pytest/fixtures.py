@@ -1769,6 +1769,7 @@ def create_rest_apigw(aws_client_factory):
     def _create_apigateway_function(**kwargs):
         region_name = kwargs.pop("region_name", None)
         apigateway_client = aws_client_factory(region_name=region_name).apigateway
+        kwargs.setdefault("name", f"api-{short_uid()}")
 
         response = apigateway_client.create_rest_api(**kwargs)
         api_id = response.get("id")
