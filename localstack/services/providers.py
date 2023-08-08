@@ -279,6 +279,14 @@ def s3_stream():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
+@aws_provider(api="s3", name="v3")
+def s3_v3():
+    from localstack.services.s3.v3.provider import S3Provider
+
+    provider = S3Provider()
+    return Service.for_provider(provider)
+
+
 @aws_provider()
 def s3control():
     from localstack.services.s3control.provider import S3ControlProvider

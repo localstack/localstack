@@ -1,0 +1,491 @@
+{
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_object_versioned": {
+    "recorded-date": "15-06-2023, 23:22:07",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"a9a43d6b467d3dc6514412c3a4987415\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-object": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-deleted-object": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "test-delete",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-object-with-version": {
+        "AcceptRanges": "bytes",
+        "Body": "test-delete",
+        "ContentLength": 11,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"a9a43d6b467d3dc6514412c3a4987415\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-delete-marker": {
+        "Error": {
+          "Code": "MethodNotAllowed",
+          "Message": "The specified method is not allowed against this resource.",
+          "Method": "GET",
+          "ResourceType": "DeleteMarker"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 405
+        }
+      },
+      "delete-object-2": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list-object-versions": {
+        "DeleteMarkers": [
+          {
+            "IsLatest": true,
+            "Key": "test-delete",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "IsLatest": false,
+            "Key": "test-delete",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "VersionId": "<version-id:2>"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "test-delete",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"a9a43d6b467d3dc6514412c3a4987415\"",
+            "IsLatest": false,
+            "Key": "test-delete",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 11,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-delete-marker": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-object-version": {
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-deleted-object-with-version": {
+        "Error": {
+          "Code": "NoSuchVersion",
+          "Key": "test-delete",
+          "Message": "The specified version does not exist.",
+          "VersionId": "<version-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-with-bad-version": {
+        "Error": {
+          "ArgumentName": "versionId",
+          "ArgumentValue": "HPniJFCxqTsMuIH9KX8K8wEjNUgmABCD",
+          "Code": "InvalidArgument",
+          "Message": "Invalid version id specified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete-wrong-key": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_object": {
+    "recorded-date": "27-07-2023, 01:10:35",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"a9a43d6b467d3dc6514412c3a4987415\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-object": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-nonexistent-object": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-nonexistent-object-versionid": {
+        "Error": {
+          "ArgumentName": "versionId",
+          "ArgumentValue": "HPniJFCxqTsMuIH9KX8K8wEjNUgmABCD",
+          "Code": "InvalidArgument",
+          "Message": "Invalid version id specified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3BucketCRUD::test_delete_versioned_bucket_with_objects": {
+    "recorded-date": "25-07-2023, 01:56:39",
+    "recorded-content": {}
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_get_object_with_version_unversioned_bucket": {
+    "recorded-date": "27-07-2023, 00:53:12",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"a8b14b49cca6ee9a2dc6e28f87cc542c\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-with-version": {
+        "Error": {
+          "ArgumentName": "versionId",
+          "ArgumentValue": "HPniJFCxqTsMuIH9KX8K8wEjNUgmABCD",
+          "Code": "InvalidArgument",
+          "Message": "Invalid version id specified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-obj-with-null-version": {
+        "AcceptRanges": "bytes",
+        "Body": "test-version",
+        "ContentLength": 12,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"a8b14b49cca6ee9a2dc6e28f87cc542c\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_list_object_versions_order_unversioned": {
+    "recorded-date": "26-07-2023, 21:32:00",
+    "recorded-content": {
+      "list-empty": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object": {
+        "ETag": "\"1b5c4d94104ea274dc3a49a55179de86\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-3": {
+        "ETag": "\"2532913c38a0c3046be3dc4e434df6e6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-2": {
+        "ETag": "\"2f3c2d190be43f3f6cd1c26ce4c59ae6\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-versions": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"1b5c4d94104ea274dc3a49a55179de86\"",
+            "IsLatest": true,
+            "Key": "a-test-object-1",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 13,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          },
+          {
+            "ETag": "\"2f3c2d190be43f3f6cd1c26ce4c59ae6\"",
+            "IsLatest": true,
+            "Key": "b-test-object-2",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 13,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          },
+          {
+            "ETag": "\"2532913c38a0c3046be3dc4e434df6e6\"",
+            "IsLatest": true,
+            "Key": "c-test-object-3",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 13,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3BucketCRUD::test_delete_bucket_with_objects": {
+    "recorded-date": "27-07-2023, 00:25:16",
+    "recorded-content": {
+      "delete-with-obj": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "BucketNotEmpty",
+          "Message": "The bucket you tried to delete is not empty"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "delete-obj": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-bucket": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_objects": {
+    "recorded-date": "27-07-2023, 02:01:09",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"a9a43d6b467d3dc6514412c3a4987415\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-object-wrong-version-id": {
+        "Errors": [
+          {
+            "Code": "NoSuchVersion",
+            "Key": "test-delete",
+            "Message": "The specified version does not exist.",
+            "VersionId": "HPniJFCxqTsMuIH9KX8K8wEjNUgmABCD"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-objects": {
+        "Deleted": [
+          {
+            "Key": "a-wrong-key"
+          },
+          {
+            "Key": "c-wrong-key"
+          },
+          {
+            "Key": "test-delete"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_objects_versioned": {
+    "recorded-date": "27-07-2023, 01:49:47",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"a9a43d6b467d3dc6514412c3a4987415\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-objects-no-version-id": {
+        "Deleted": [
+          {
+            "DeleteMarker": true,
+            "DeleteMarkerVersionId": "<version-id:2>",
+            "Key": "wrongkey"
+          },
+          {
+            "DeleteMarker": true,
+            "DeleteMarkerVersionId": "<delete-marker-version-id:1>",
+            "Key": "test-delete"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-objects-marker": {
+        "Deleted": [
+          {
+            "Key": "test-delete",
+            "VersionId": "<version-id:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-objects-wrong-version-id": {
+        "Errors": [
+          {
+            "Code": "NoSuchVersion",
+            "Key": "wrong-key-2",
+            "Message": "The specified version does not exist.",
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "Code": "NoSuchVersion",
+            "Key": "test-delete",
+            "Message": "The specified version does not exist.",
+            "VersionId": "<version-id:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-objects-version-id": {
+        "Deleted": [
+          {
+            "Key": "test-delete",
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -3,7 +3,8 @@ import hashlib
 import logging
 import re
 import zlib
-from typing import IO, Dict, Literal, Optional, Tuple, Union
+from dataclasses import dataclass
+from typing import IO, Any, Dict, Literal, Optional, Protocol, Tuple, Type, Union
 from urllib import parse as urlparser
 from zoneinfo import ZoneInfo
 
@@ -14,19 +15,24 @@ from moto.s3.exceptions import MissingBucket
 from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 from moto.s3.utils import clean_key_name
 
-from localstack.aws.api import CommonServiceException, RequestContext, ServiceException
+from localstack import config
+from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.s3 import (
     BucketName,
     ChecksumAlgorithm,
     CopySource,
     InvalidArgument,
+    InvalidRange,
     LifecycleExpiration,
     LifecycleRule,
     LifecycleRules,
+    Metadata,
     MethodNotAllowed,
     NoSuchBucket,
     NoSuchKey,
     ObjectKey,
+    ObjectVersionId,
+    Owner,
 )
 from localstack.aws.connect import connect_to
 from localstack.services.s3.constants import (
@@ -34,11 +40,14 @@ from localstack.services.s3.constants import (
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
     SIGNATURE_V2_PARAMS,
     SIGNATURE_V4_PARAMS,
+    SYSTEM_METADATA_SETTABLE_HEADERS,
     VALID_CANNED_ACLS_BUCKET,
 )
+from localstack.services.s3.exceptions import InvalidRequest
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import checksum_crc32, checksum_crc32c, hash_sha1, hash_sha256
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -70,15 +79,23 @@ PATTERN_UUID = re.compile(
 RFC1123 = "%a, %d %b %Y %H:%M:%S GMT"
 
 
-class InvalidRequest(ServiceException):
-    code: str = "InvalidRequest"
-    sender_fault: bool = False
-    status_code: int = 400
+def get_owner_for_account_id(account_id: str):
+    """
+    This method returns the S3 Owner from the account id. for now, this is hardcoded as it was in moto, but we can then
+    extend it to return different values depending on the account ID
+    See https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
+    :param account_id: the owner account id
+    :return: the Owner object containing the DisplayName and owner ID
+    """
+    return Owner(
+        DisplayName="webfile",  # only in certain regions, see above
+        ID="75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a",
+    )
 
 
 def extract_bucket_key_version_id_from_copy_source(
     copy_source: CopySource,
-) -> tuple[BucketName, ObjectKey, Optional[str]]:
+) -> tuple[BucketName, ObjectKey, Optional[ObjectVersionId]]:
     """
     Utility to parse bucket name, object key and optionally its versionId. It accepts the CopySource format:
     - <bucket-name/<object-key>?versionId=<version-id>, used for example in CopySource for CopyObject
@@ -92,7 +109,20 @@ def extract_bucket_key_version_id_from_copy_source(
     return src_bucket, src_key, src_version_id
 
 
-def get_s3_checksum(algorithm):
+class ChecksumHash(Protocol):
+    """
+    This Protocol allows proper typing for different kind of hash used by S3 (hashlib.shaX, zlib.crc32 from
+    S3CRC32Checksum, and botocore CrtCrc32cChecksum).
+    """
+
+    def digest(self) -> bytes:
+        ...
+
+    def update(self, value: bytes):
+        ...
+
+
+def get_s3_checksum(algorithm) -> ChecksumHash:
     match algorithm:
         case ChecksumAlgorithm.CRC32:
             return S3CRC32Checksum()
@@ -114,6 +144,8 @@ def get_s3_checksum(algorithm):
 
 
 class S3CRC32Checksum:
+    """Implements a unified way of using zlib.crc32 compatibl with hashlib.sha and botocore CrtCrc32cChecksum"""
+
     __slots__ = ["checksum"]
 
     def __init__(self):
@@ -130,7 +162,69 @@ class S3CRC32Checksum:
         return self.checksum.to_bytes(4, "big")
 
 
-def get_object_checksum_for_algorithm(checksum_algorithm: str, data: bytes):
+@dataclass
+class ParsedRange:
+    """
+    Dataclass representing a parsed Range header with the requested S3 object size
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range
+    """
+
+    content_range: str  # the original Range header
+    content_length: int  # the full requested object size
+    begin: int  # the start of range
+    end: int  # the end of the end
+
+
+def parse_range_header(range_header: str, object_size: int) -> ParsedRange:
+    """
+    Takes a Range header, and returns a dataclass containing the necessary information to return only a slice of an
+    S3 object
+    :param range_header: a Range header
+    :param object_size: the requested S3 object total size
+    :return: ParsedRange
+    """
+    last = object_size - 1
+    _, rspec = range_header.split("=")
+    # TODO: check with AWS
+    if "," in rspec:
+        raise NotImplementedError("Multiple range specifiers not supported")
+
+    begin, end = [int(i) if i else None for i in rspec.split("-")]
+    if begin is not None:  # byte range
+        end = last if end is None else min(end, last)
+    elif end is not None:  # suffix byte range
+        begin = object_size - min(end, object_size)
+        end = last
+    else:
+        # TODO, find exception here
+        raise Exception("TODO")
+    if begin < 0 or end > last or begin > min(end, last):
+        raise InvalidRange(
+            "",
+            ActualObjectSize=str(object_size),
+            RangeRequest=range_header,
+        )
+
+    return ParsedRange(
+        content_range=f"bytes {begin}-{end}/{object_size}",
+        content_length=end - begin + 1,
+        begin=begin,
+        end=end,
+    )
+
+
+def get_full_default_bucket_location(bucket_name: BucketName) -> str:
+    if config.HOSTNAME_EXTERNAL != config.LOCALHOST:
+        host_definition = localstack_host(
+            use_hostname_external=True, custom_port=config.get_edge_port_http()
+        )
+        return f"{config.get_protocol()}://{host_definition.host_and_port()}/{bucket_name}/"
+    else:
+        host_definition = localstack_host(use_localhost_cloud=True)
+        return f"{config.get_protocol()}://{bucket_name}.s3.{host_definition.host_and_port()}/"
+
+
+def get_object_checksum_for_algorithm(checksum_algorithm: str, data: bytes) -> str:
     match checksum_algorithm:
         case ChecksumAlgorithm.CRC32:
             return checksum_crc32(data)
@@ -257,6 +351,20 @@ def uses_host_addressing(headers: Dict[str, str]) -> bool:
         if ".s3" in host and ((match := _s3_virtual_host_regex.match(host)) and match.group(3))
         else False
     )
+
+
+def get_class_attrs_from_spec_class(spec_class: Type[str]) -> set[str]:
+    return {attr for attr in vars(spec_class) if not attr.startswith("__")}
+
+
+def get_system_metadata_from_request(request: dict) -> Metadata:
+    metadata: Metadata = {}
+
+    for system_metadata_field in SYSTEM_METADATA_SETTABLE_HEADERS:
+        if field_value := request.get(system_metadata_field):
+            metadata[system_metadata_field] = field_value
+
+    return metadata
 
 
 def forwarded_from_virtual_host_addressed_request(headers: dict[str, str]) -> bool:
@@ -387,7 +495,8 @@ def capitalize_header_name_from_snake_case(header_name: str) -> str:
     return "-".join([part.capitalize() for part in header_name.split("-")])
 
 
-def validate_kms_key_id(kms_key: str, bucket: FakeBucket) -> None:
+# TODO: replace Any by a replacement for S3Bucket, some kind of defined type?
+def validate_kms_key_id(kms_key: str, bucket: FakeBucket | Any) -> None:
     """
     Validate that the KMS key used to encrypt the object is valid
     :param kms_key: the KMS key id or ARN
@@ -396,11 +505,16 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket) -> None:
     :raise KMS.NotFoundException if the key is not in the same region or does not exist
     :return: the key ARN if found and enabled
     """
+    if hasattr(bucket, "region_name"):
+        bucket_region = bucket.region_name
+    else:
+        bucket_region = bucket.bucket_region
+
     try:
         parsed_arn = parse_arn(kms_key)
         key_region = parsed_arn["region"]
         # the KMS key should be in the same region as the bucket, we can raise an exception without calling KMS
-        if key_region != bucket.region_name:
+        if key_region != bucket_region:
             raise CommonServiceException(
                 code="KMS.NotFoundException", message=f"Invalid arn {key_region}"
             )
@@ -411,11 +525,11 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket) -> None:
         # recreate the ARN manually with the bucket region and bucket owner
         # if the KMS key is cross-account, user should provide an ARN and not a KeyId
         kms_key = arns.kms_key_arn(
-            key_id=key_id, account_id=bucket.account_id, region_name=bucket.region_name
+            key_id=key_id, account_id=bucket.account_id, region_name=bucket_region
         )
 
     # the KMS key should be in the same region as the bucket, create the client in the bucket region
-    kms_client = connect_to(region_name=bucket.region_name).kms
+    kms_client = connect_to(region_name=bucket_region).kms
     try:
         key = kms_client.describe_key(KeyId=kms_key)
         if not key["KeyMetadata"]["Enabled"]:
@@ -444,16 +558,36 @@ def str_to_rfc_1123_datetime(value: str) -> datetime.datetime:
     return datetime.datetime.strptime(value, RFC1123).replace(tzinfo=ZoneInfo("GMT"))
 
 
+def iso_8601_datetime_without_milliseconds_s3(
+    value: datetime,
+) -> Optional[str]:
+    return value.strftime("%Y-%m-%dT%H:%M:%S.000Z") if value else None
+
+
+def add_expiration_days_to_datetime(user_datatime: datetime.datetime, exp_days: int) -> str:
+    """
+    This adds expiration days to a datetime, rounding to the next day at midnight UTC.
+    :param user_datatime: datetime object
+    :param exp_days: provided days
+    :return: return a datetime object, rounded to midnight, in string formatted to rfc_1123
+    """
+    rounded_datetime = user_datatime.replace(
+        hour=0, minute=0, second=0, microsecond=0
+    ) + datetime.timedelta(days=exp_days + 1)
+
+    return rfc_1123_datetime(rounded_datetime)
+
+
 def serialize_expiration_header(
     rule_id: str, lifecycle_exp: LifecycleExpiration, last_modified: datetime.datetime
 ):
-    if not (exp_date := lifecycle_exp.get("Date")):
-        exp_days = lifecycle_exp.get("Days")
+    if exp_days := lifecycle_exp.get("Days"):
         # AWS round to the next day at midnight UTC
-        exp_date = last_modified.replace(
-            hour=0, minute=0, second=0, microsecond=0
-        ) + datetime.timedelta(days=exp_days + 1)
-    return f'expiry-date="{rfc_1123_datetime(exp_date)}", rule-id="{rule_id}"'
+        exp_date = add_expiration_days_to_datetime(last_modified, exp_days)
+    else:
+        exp_date = rfc_1123_datetime(lifecycle_exp["Date"])
+
+    return f'expiry-date="{exp_date}", rule-id="{rule_id}"'
 
 
 def get_lifecycle_rule_from_object(

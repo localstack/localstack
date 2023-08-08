@@ -28,7 +28,7 @@ from botocore.exceptions import ClientError
 
 from localstack import config, constants
 from localstack.aws.api.s3 import StorageClass
-from localstack.config import LEGACY_S3_PROVIDER, STREAM_S3_PROVIDER
+from localstack.config import LEGACY_S3_PROVIDER, NATIVE_S3_PROVIDER, STREAM_S3_PROVIDER
 from localstack.constants import (
     LOCALHOST_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
@@ -121,7 +121,7 @@ def is_asf_provider():
 
 
 def is_native_provider():
-    return False
+    return NATIVE_S3_PROVIDER
 
 
 @pytest.fixture
@@ -566,7 +566,7 @@ class TestS3:
         paths=[
             "$..HTTPHeaders.connection",
             # TODO content-length and type is wrong, skipping for now
-            "$..HTTPHeaders.content-length",  # 58, but should be 0
+            "$..HTTPHeaders.content-length",  # 58, but should be 0 # TODO!!!
             "$..HTTPHeaders.content-type",  # application/xml but should not be set
         ],
     )  # for ASF we currently always set 'close'
@@ -740,8 +740,10 @@ class TestS3:
     def test_list_objects_versions_with_prefix(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         objects = [
-            {"Key": "dir/test", "Content": b"content 1"},
-            {"Key": "dir/subdir/test2", "Content": b"content 2"},
+            {"Key": "dir/test", "Content": b"content key1-v1"},
+            {"Key": "dir/test", "Content": b"content key-1v2"},
+            {"Key": "dir/subdir/test2", "Content": b"content key2-v1"},
+            {"Key": "dir/subdir/test2", "Content": b"content key2-v2"},
         ]
         params = [
             {"Prefix": "dir/", "Delimiter": "/", "Id": 1},
@@ -851,10 +853,11 @@ class TestS3:
 
     @markers.parity.aws_validated
     @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
         paths=[
             "$..ServerSideEncryption",
             "$..DeleteMarker",
-        ]
+        ],
     )
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER,
@@ -900,11 +903,11 @@ class TestS3:
 
     @markers.parity.aws_validated
     @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..ServerSideEncryption",  # missing from the response as it's default in AWS now
-            "$..NextKeyMarker",  # not returned by LocalStack yet
-            "$..NextUploadIdMarker",
-        ]
+        condition=lambda: not is_native_provider(),
+        paths=["$..ServerSideEncryption"],
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_asf_provider, paths=["$..NextKeyMarker", "$..NextUploadIdMarker"]
     )
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..Error.RequestID"]

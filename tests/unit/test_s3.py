@@ -17,6 +17,8 @@ from localstack.services.s3 import utils as s3_utils_asf
 from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.constants import S3_CHUNK_SIZE
 from localstack.services.s3.legacy import multipart_content, s3_listener, s3_starter, s3_utils
+from localstack.services.s3.v3.models import S3Multipart, S3Object, S3Part
+from localstack.services.s3.v3.storage.ephemeral import EphemeralS3ObjectStore
 from localstack.utils.strings import short_uid
 
 
@@ -1015,3 +1017,49 @@ class TestS3AwsChunkedDecoder:
         assert stream.read(chunk_size + 1000) == total_body[:chunk_size]
         # assert that even if we read more, when accessing the rest, we're still at the same position
         assert stream.read(10) == total_body[chunk_size : chunk_size + 10]
+
+
+class TestS3TemporaryStorageBackend:
+    def test_get_fileobj_no_bucket(self, tmpdir):
+        temp_storage_backend = EphemeralS3ObjectStore(root_directory=tmpdir)
+        fake_object = S3Object(key="test-key")
+        s3_stored_object = temp_storage_backend.open("test-bucket", fake_object)
+
+        s3_stored_object.write(BytesIO(b"abc"))
+
+        assert s3_stored_object.read() == b"abc"
+
+        s3_stored_object.seek(1)
+        assert s3_stored_object.read() == b"bc"
+
+        s3_stored_object.seek(0)
+        assert s3_stored_object.read(1) == b"a"
+
+        temp_storage_backend.remove("test-bucket", fake_object)
+        assert s3_stored_object.file.closed
+
+        temp_storage_backend.close()
+
+    def test_ephemeral_multipart(self, tmpdir):
+        temp_storage_backend = EphemeralS3ObjectStore(root_directory=tmpdir)
+        fake_multipart = S3Multipart(key="test-multipart")
+
+        s3_stored_multipart = temp_storage_backend.get_multipart("test-bucket", fake_multipart)
+        parts_numbers = []
+        stored_parts = []
+        for i in range(1, 6):
+            fake_s3_part = S3Part(part_number=i)
+            stored_part = s3_stored_multipart.open(fake_s3_part)
+            stored_part.write(BytesIO(b"abc"))
+            parts_numbers.append(i)
+            stored_parts.append(stored_part)
+
+        s3_stored_object = s3_stored_multipart.complete_multipart(parts=parts_numbers)
+        temp_storage_backend.remove_multipart("test-bucket", fake_multipart)
+
+        assert s3_stored_object.read() == b"abc" * 5
+
+        assert all(stored_part.file.closed for stored_part in stored_parts)
+
+        temp_storage_backend.close()
+        assert s3_stored_object.file.closed

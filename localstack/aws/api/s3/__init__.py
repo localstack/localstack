@@ -181,7 +181,6 @@ X_Amz_Expires = int
 HttpMethod = str
 ResourceType = str
 MissingHeaderName = str
-Method = str
 
 
 class AnalyticsS3ExportFileFormat(str):
@@ -612,6 +611,8 @@ class NoSuchKey(ServiceException):
     sender_fault: bool = False
     status_code: int = 404
     Key: Optional[ObjectKey]
+    DeleteMarker: Optional[DeleteMarker]
+    VersionId: Optional[ObjectVersionId]
 
 
 class NoSuchUpload(ServiceException):
@@ -645,6 +646,14 @@ class InvalidBucketName(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     BucketName: Optional[BucketName]
+
+
+class NoSuchVersion(ServiceException):
+    code: str = "NoSuchVersion"
+    sender_fault: bool = False
+    status_code: int = 404
+    VersionId: Optional[ObjectVersionId]
+    Key: Optional[ObjectKey]
 
 
 class PreconditionFailed(ServiceException):
@@ -771,8 +780,11 @@ class MethodNotAllowed(ServiceException):
     code: str = "MethodNotAllowed"
     sender_fault: bool = False
     status_code: int = 405
-    Method: Optional[Method]
+    Method: Optional[HttpMethod]
     ResourceType: Optional[ResourceType]
+    DeleteMarker: Optional[DeleteMarker]
+    VersionId: Optional[ObjectVersionId]
+    Allow: Optional[HttpMethod]
 
 
 class CrossLocationLoggingProhibitted(ServiceException):
@@ -787,6 +799,13 @@ class InvalidTargetBucketForLogging(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     TargetBucket: Optional[BucketName]
+
+
+class BucketNotEmpty(ServiceException):
+    code: str = "BucketNotEmpty"
+    sender_fault: bool = False
+    status_code: int = 409
+    BucketName: Optional[BucketName]
 
 
 AbortDate = datetime
