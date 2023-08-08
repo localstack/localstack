@@ -41,7 +41,7 @@ def test_parameter_defaults(deploy_cfn_template, aws_client):
     ctx.match("ParameterNotFound")
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_update_ssm_parameters(deploy_cfn_template, aws_client):
     ssm_parameter_value = f"custom-{short_uid()}"
 
@@ -67,7 +67,7 @@ def test_update_ssm_parameters(deploy_cfn_template, aws_client):
     assert param["Parameter"]["Value"] == ssm_parameter_value
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_update_ssm_parameter_tag(deploy_cfn_template, aws_client):
     ssm_parameter_value = f"custom-{short_uid()}"
     tag_value = f"tag-{short_uid()}"
@@ -124,7 +124,7 @@ def test_update_ssm_parameter_tag(deploy_cfn_template, aws_client):
 
 
 @markers.snapshot.skip_snapshot_verify(paths=["$..DriftInformation", "$..Metadata"])
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_deploy_patch_baseline(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -142,7 +142,7 @@ def test_deploy_patch_baseline(deploy_cfn_template, aws_client, snapshot):
     snapshot.match("patch_baseline", describe_resource)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_maintenance_window(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(
         template_path=os.path.join(

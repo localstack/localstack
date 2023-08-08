@@ -341,8 +341,8 @@ class TestSES:
         assert original_rule_set["Rules"] == rule_set["Rules"]
         assert [x["Name"] for x in rule_set["Rules"]] == rule_names
 
-    @markers.parity.only_localstack
-    @markers.parity.aws_validated
+    @markers.aws.only_localstack
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Message.delivery.processingTimeMillis",
@@ -422,8 +422,8 @@ class TestSES:
         messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
 
-    @markers.parity.only_localstack
-    @markers.parity.aws_validated
+    @markers.aws.only_localstack
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Message.delivery.processingTimeMillis",
@@ -503,8 +503,8 @@ class TestSES:
         messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
 
-    @markers.parity.only_localstack
-    @markers.parity.aws_validated
+    @markers.aws.only_localstack
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Message.delivery.processingTimeMillis",
@@ -605,7 +605,7 @@ class TestSES:
             )
         snapshot.match("create-error", e_info.value.response)
 
-    @markers.parity.only_localstack
+    @markers.aws.only_localstack
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Signature",
@@ -760,7 +760,7 @@ class TestSES:
             )
         snapshot.match("delete-error", e_info.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Type"])
     @pytest.mark.parametrize(
         "tag_name,tag_value",

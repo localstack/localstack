@@ -89,7 +89,7 @@ class TestCloudWatchLogs:
         )
         assert len(log_groups_after) == len(log_groups_before)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_list_tags_log_group(self, snapshot, aws_client):
         test_name = f"test-log-group-{short_uid()}"
         try:
@@ -247,7 +247,7 @@ class TestCloudWatchLogs:
             response["ResponseMetadata"]["HTTPHeaders"]["content-type"] == APPLICATION_AMZ_JSON_1_1
         )
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Statement.Condition.StringEquals",
@@ -340,7 +340,7 @@ class TestCloudWatchLogs:
 
         retry(check_invocation, retries=6, sleep=3.0)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_put_subscription_filter_firehose(
         self, logs_log_group, logs_log_stream, s3_bucket, create_iam_role_with_policy, aws_client
     ):
@@ -430,7 +430,7 @@ class TestCloudWatchLogs:
                 DeliveryStreamName=firehose_name, AllowForceDelete=True
             )
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_put_subscription_filter_kinesis(
         self, logs_log_group, logs_log_stream, create_iam_role_with_policy, aws_client
     ):

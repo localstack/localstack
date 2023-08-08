@@ -118,7 +118,7 @@ def test_cfn_handle_secretsmanager_secret(deploy_cfn_template, aws_client):
     assert "DeletedDate" in rs
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_cfn_secret_policy(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(template=TEST_TEMPLATE_SECRET_POLICY)
     secret_id = stack.outputs["SecretId"]

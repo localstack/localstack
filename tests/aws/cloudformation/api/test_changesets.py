@@ -237,7 +237,7 @@ def test_create_change_set_missing_stackname(aws_client):
         )
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_create_change_set_with_ssm_parameter(
     cleanup_changesets,
     cleanup_stacks,
@@ -320,7 +320,7 @@ def test_create_change_set_with_ssm_parameter(
         cleanup_stacks([stack_id])
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_describe_change_set_nonexisting(snapshot, aws_client):
     with pytest.raises(Exception) as ex:
         aws_client.cloudformation.describe_change_set(
@@ -396,7 +396,7 @@ def test_execute_change_set(
         cleanup_stacks([stack_id])
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_delete_change_set_exception(snapshot, aws_client):
     """test error cases when trying to delete a change set"""
     with pytest.raises(Exception) as e1:
@@ -410,7 +410,7 @@ def test_delete_change_set_exception(snapshot, aws_client):
     snapshot.match("e2", e2)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_template):
     # first deploy cfn with a CodeArtifact resource that is not actually supported
     template_path = os.path.join(
@@ -434,7 +434,7 @@ def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_tem
     )
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_create_and_then_update_refreshes_template_metadata(
     aws_client,
     cleanup_changesets,
@@ -508,7 +508,7 @@ def test_create_and_then_update_refreshes_template_metadata(
         cleanup_changesets(list(changesets_to_cleanup))
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_template, aws_client):
     first_bucket_name = f"test-bucket-1-{short_uid()}"
     second_bucket_name = f"test-bucket-2-{short_uid()}"
@@ -556,7 +556,7 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
         "$..Parameters",
     ]
 )
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_empty_changeset(snapshot, cleanups, aws_client):
     """
     Creates a change set that doesn't actually update any resources and then tries to execute it
@@ -636,7 +636,7 @@ def test_empty_changeset(snapshot, cleanups, aws_client):
     snapshot.match("error_execute_failed", e.value)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_deleted_changeset(snapshot, cleanups, aws_client):
     """simple case verifying that proper exception is thrown when trying to get a deleted changeset"""
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -682,7 +682,7 @@ def test_deleted_changeset(snapshot, cleanups, aws_client):
     snapshot.match("postdelete_changeset_notfound", e.value)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_autoexpand_capability_requirement(cleanups, aws_client):
     stack_name = f"test-stack-{short_uid()}"
     changeset_name = f"test-changeset-{short_uid()}"

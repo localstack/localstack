@@ -20,7 +20,7 @@ def test_sqs_queue_policy(deploy_cfn_template, aws_client):
     )  # just kind of a smoke test to see if its set
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_sqs_fifo_queue_generates_valid_name(deploy_cfn_template):
     result = deploy_cfn_template(
         template_path=os.path.join(

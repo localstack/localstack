@@ -11,7 +11,7 @@ from tests.aws.apigateway.apigateway_fixtures import api_invoke_url, create_rest
 from tests.aws.apigateway.conftest import DEFAULT_STAGE_NAME
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 @pytest.mark.parametrize("ddb_action", ["PutItem", "Query", "Scan"])
 @markers.snapshot.skip_snapshot_verify(
     paths=[
@@ -112,7 +112,7 @@ def test_rest_api_to_dynamodb_integration(
         snapshot.match("result-scan", result)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_error_aws_proxy_not_supported(create_rest_api_with_integration, snapshot, aws_client):
     region_name = aws_client.apigateway.meta.region_name
     integration_uri = f"arn:aws:apigateway:{region_name}:dynamodb:action/Query"

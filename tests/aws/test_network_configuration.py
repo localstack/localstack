@@ -20,7 +20,7 @@ from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.utils.files import new_tmp_file, save_file
 from localstack.utils.strings import short_uid
 
-pytestmark = [markers.parity.only_localstack]
+pytestmark = [markers.aws.only_localstack]
 
 
 class TestOpenSearch:

@@ -231,7 +231,7 @@ class TestEvents:
         # clean up
         clean_up(rule_name=rule_name)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_put_events_with_target_sqs(self, aws_client, put_events_with_filter_to_sqs):
         entries = [
             {
@@ -275,7 +275,7 @@ class TestEvents:
             input_path="$.detail",
         )
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_put_events_with_nested_event_pattern(self, aws_client, put_events_with_filter_to_sqs):
         pattern = {"detail": {"event": {"data": {"type": ["1"]}}}}
         entries1 = [
@@ -1411,7 +1411,7 @@ class TestEvents:
     @pytest.mark.parametrize(
         "schedule_expression", ["rate(1 minute)", "rate(1 day)", "rate(1 hour)"]
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_create_rule_with_one_unit_in_singular_should_succeed(
         self, schedule_expression, aws_client, clean_up
     ):
@@ -1426,7 +1426,7 @@ class TestEvents:
     @pytest.mark.parametrize(
         "schedule_expression", ["rate(1 minutes)", "rate(1 days)", "rate(1 hours)"]
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.xfail
     def test_create_rule_with_one_unit_in_plural_should_fail(self, schedule_expression, aws_client):
         rule_name = f"rule-{short_uid()}"
@@ -1435,7 +1435,7 @@ class TestEvents:
         with pytest.raises(ClientError):
             aws_client.events.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.xfail
     def test_verify_rule_event_content(self, aws_client, clean_up):
         log_group_name = f"/aws/events/testLogGroup-{short_uid()}"
@@ -1477,7 +1477,7 @@ class TestEvents:
             log_group_name=log_group_name,
         )
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: config.LEGACY_S3_PROVIDER, path="$..Messages..Body.detail.object.etag"
     )
@@ -1650,7 +1650,7 @@ class TestEvents:
 
         yield _clean_up
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_put_target_id_validation(
         self, sqs_create_queue, events_put_rule, snapshot, aws_client
     ):
@@ -1692,7 +1692,7 @@ class TestEvents:
             ],
         )
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_should_ignore_schedules_for_put_event(
         self, create_lambda_function, cleanups, aws_client
     ):
@@ -1746,7 +1746,7 @@ class TestEvents:
 
         retry(check_invocation, sleep=5, retries=15)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_put_events_nonexistent_event_bus(
         self,
         aws_client,
@@ -1827,7 +1827,7 @@ class TestEvents:
             aws_client.events.describe_event_bus(Name=nonexistent_event_bus)
         snapshot.match("non-existent-bus", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_test_event_pattern(self, aws_client, snapshot, account_id, region):
         response = aws_client.events.test_event_pattern(
             Event=json.dumps(
@@ -1870,7 +1870,7 @@ class TestEvents:
         )
         snapshot.match("eventbridge-test-event-pattern-response-no-match", response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_put_events_time(
         self,
         aws_client,
