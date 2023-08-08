@@ -131,6 +131,7 @@ class S3Bucket:
         self.notification_configuration = {}
         self.cors_rules = None
         self.lifecycle_rules = None
+        self.website_configuration = None
         self.intelligent_tiering_configurations = {}
         self.analytics_configurations = {}
         self.inventory_configurations = {}
