@@ -28,7 +28,7 @@ pytestmark = pytest.mark.skipif(
     ]
 )
 class TestTaskServiceDynamoDB:
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_invalid_param(
         self,
         aws_client,
@@ -54,7 +54,7 @@ class TestTaskServiceDynamoDB:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_put_item_no_such_table(
         self,
         aws_client,
@@ -89,7 +89,7 @@ class TestTaskServiceDynamoDB:
             "$..error"  # TODO: LS returns a ResourceNotFoundException instead of reflecting the validation error
         ]
     )
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_put_item_invalid_table_name(
         self,
         aws_client,

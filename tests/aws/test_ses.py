@@ -585,7 +585,7 @@ class TestSES:
         messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_cannot_create_event_for_no_topic(
         self, ses_configuration_set, snapshot, account_id, aws_client
     ):
@@ -693,7 +693,7 @@ class TestSES:
         messages = sqs_receive_num_messages(sqs_queue, 1)
         snapshot.match("messages", messages)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_creating_event_destination_without_configuration_set(
         self, sns_topic, snapshot, aws_client
     ):
@@ -716,7 +716,7 @@ class TestSES:
             )
         snapshot.match("create-error", e_info.value.response)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_deleting_non_existent_configuration_set(self, snapshot, aws_client):
         config_set_name = f"config-set-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(config_set_name, "<config-set>"))
@@ -725,7 +725,7 @@ class TestSES:
             aws_client.ses.delete_configuration_set(ConfigurationSetName=config_set_name)
         snapshot.match("delete-error", e_info.value.response)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_deleting_non_existent_configuration_set_event_destination(
         self, ses_configuration_set, snapshot, aws_client
     ):
@@ -742,7 +742,7 @@ class TestSES:
             )
         snapshot.match("delete-error", e_info.value.response)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_trying_to_delete_event_destination_from_non_existent_configuration_set(
         self,
         ses_configuration_set,

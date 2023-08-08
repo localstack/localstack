@@ -8,7 +8,7 @@ from localstack.utils.strings import short_uid
 
 class TestExtensionsModules:
     @pytest.mark.skip(reason="feature not supported")
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_module_usage(self, deploy_cfn_template, register_extension, snapshot, aws_client):
 
         artifact_path = os.path.join(

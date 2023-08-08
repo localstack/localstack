@@ -32,7 +32,7 @@ class TestRedshift:
             aws_client.redshift.describe_clusters(ClusterIdentifier=cluster_id)
         assert "ClusterNotFound" in str(e)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_cluster_security_groups(self, snapshot, aws_client):
         # Note: AWS parity testing not easily possible with our account, due to error message
         #  "VPC-by-Default customers cannot use cluster security groups"

@@ -24,7 +24,7 @@ class TestAttributeAccess:
         raises=StackDeployError,
     )
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Exploratory test only")
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_getattr(
         self,
         aws_client: ServiceLevelClientFactory,

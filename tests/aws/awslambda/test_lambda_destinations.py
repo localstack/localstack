@@ -197,7 +197,7 @@ class TestLambdaDestinationSqs:
     @pytest.mark.skipif(
         condition=is_old_provider(), reason="config variable only supported in new provider"
     )
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_lambda_destination_default_retries(
         self,
         create_lambda_function,

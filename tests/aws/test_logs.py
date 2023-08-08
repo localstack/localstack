@@ -151,7 +151,7 @@ class TestCloudWatchLogs:
             "$..describe-log-groups-pattern.nextToken",
         ]
     )
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_create_and_delete_log_stream(self, logs_log_group, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.logs_api())
         test_name = f"test-log-stream-{short_uid()}"

@@ -119,7 +119,7 @@ class TestTaskServiceSqs:
         )
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_sqs_failure_in_wait_for_task_tok(
         self,
         aws_client,

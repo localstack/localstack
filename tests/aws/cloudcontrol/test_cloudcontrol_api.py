@@ -264,7 +264,7 @@ class TestCloudControlResourceApi:
         snapshot.match("list_typenotfound_exc", e.value.response)
 
     @pytest.mark.skip(reason="advanced feature, will be added later")
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_list_resources_with_resource_model(self, create_resource, snapshot, aws_client):
         """
         See: https://docs.aws.amazon.com/cloudcontrolapi/latest/userguide/resource-operations-list.html

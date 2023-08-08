@@ -948,7 +948,7 @@ class TestMacros:
             "raise_error.py",
         ],
     )
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_failed_state(
         self,
         deploy_cfn_template,

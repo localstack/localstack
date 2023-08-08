@@ -8,7 +8,7 @@ from localstack.utils.strings import short_uid
 
 class TestExtensionsResourceTypes:
     @pytest.mark.skip(reason="feature not implemented")
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_deploy_resource_type(
         self, deploy_cfn_template, register_extension, snapshot, aws_client
     ):

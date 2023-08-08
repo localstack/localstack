@@ -485,7 +485,7 @@ def create_vpc_endpoint(default_vpc, aws_client):
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..endpointConfiguration.types", "$..policy.Statement..Resource"]
 )
-@markers.aws.unknown
+@markers.aws.validated
 def test_create_execute_api_vpc_endpoint(
     create_rest_api_with_integration,
     dynamodb_create_table,

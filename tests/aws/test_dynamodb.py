@@ -1653,7 +1653,7 @@ class TestDynamoDB:
             "$..PointInTimeRecoveryDescription..LatestRestorableDateTime",
         ]
     )
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_continuous_backup_update(self, dynamodb_create_table, snapshot, aws_client):
         table_name = f"table-{short_uid()}"
         dynamodb_create_table(

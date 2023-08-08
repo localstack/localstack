@@ -11,7 +11,7 @@ from tests.aws.apigateway.conftest import DEFAULT_STAGE_NAME
 # PutRecord does not return EncryptionType, but it's documented as such.
 # xxx requires further investigation
 @markers.snapshot.skip_snapshot_verify(paths=["$..EncryptionType", "$..ChildShards"])
-@markers.aws.unknown
+@markers.aws.validated
 def test_apigateway_to_kinesis(
     kinesis_create_stream,
     wait_for_stream_ready,

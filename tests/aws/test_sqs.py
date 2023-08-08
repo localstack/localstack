@@ -1696,7 +1696,7 @@ class TestSqsProvider:
 
         snapshot.match("error", e.value.response)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_fifo_set_content_based_deduplication_strategy(
         self, sqs_create_queue, aws_client, snapshot
     ):
