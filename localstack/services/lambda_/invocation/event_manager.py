@@ -211,9 +211,11 @@ class Poller:
         self,
         sqs_invocation: SQSInvocation,
         invocation_result: InvocationResult,
-        event_invoke_config: EventInvokeConfig,
-    ):
+        event_invoke_config: EventInvokeConfig | None,
+    ) -> None:
         LOG.debug("Handling success destination for %s", self.version_manager.function_arn)
+        if event_invoke_config is None:
+            return
         success_destination = event_invoke_config.destination_config.get("OnSuccess", {}).get(
             "Destination"
         )
@@ -254,10 +256,12 @@ class Poller:
         self,
         sqs_invocation: SQSInvocation,
         invocation_result: InvocationResult,
-        event_invoke_config: EventInvokeConfig,
+        event_invoke_config: EventInvokeConfig | None,
         failure_cause: str,
     ):
         LOG.debug("Handling failure destination for %s", self.version_manager.function_arn)
+        if event_invoke_config is None:
+            return
         failure_destination = event_invoke_config.destination_config.get("OnFailure", {}).get(
             "Destination"
         )
