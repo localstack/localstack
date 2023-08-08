@@ -11,7 +11,7 @@ THIS_DIR = os.path.dirname(__file__)
 
 
 class TestCloudFormationConditions:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_simple_condition_evaluation_deploys_resource(
         self, aws_client, deploy_cfn_template, cleanups
     ):
@@ -37,7 +37,7 @@ class TestCloudFormationConditions:
             if topic_name in t["TopicArn"]
         ]
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_simple_condition_evaluation_doesnt_deploy_resource(
         self, aws_client, deploy_cfn_template, cleanups
     ):
@@ -64,7 +64,7 @@ class TestCloudFormationConditions:
         "should_set_custom_name",
         ["yep", "nope"],
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_simple_intrinsic_fn_condition_evaluation(
         self, aws_client, deploy_cfn_template, should_set_custom_name
     ):
@@ -93,7 +93,7 @@ class TestCloudFormationConditions:
         else:
             assert topic_name not in topic_arn
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="not supported yet")
     def test_dependent_ref(self, aws_client, snapshot):
         """
@@ -123,7 +123,7 @@ class TestCloudFormationConditions:
             )
         snapshot.match("dependent_ref_exc", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="not supported yet")
     def test_dependent_ref_intrinsic_fn_condition(self, aws_client, deploy_cfn_template):
         """
@@ -143,7 +143,7 @@ class TestCloudFormationConditions:
             },
         )
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="not supported yet")
     def test_dependent_ref_with_macro(
         self, aws_client, deploy_cfn_template, lambda_su_role, cleanups
@@ -211,7 +211,7 @@ class TestCloudFormationConditions:
         ],
     )
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="not supported yet")
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_nested_conditions(
         self,
         aws_client,
@@ -307,7 +307,7 @@ class TestCloudFormationConditions:
             assert bucket_policy_exists == should_create_policy
 
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="not supported yet")
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_output_reference_to_skipped_resource(self, deploy_cfn_template, aws_client, snapshot):
         """test what happens to outputs that reference a resource that isn't deployed due to a falsy condition"""
         with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
@@ -335,7 +335,7 @@ class TestCloudFormationConditions:
             ("false", "DefaultParamValue"),
         ],
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_dependency_in_non_evaluated_if_branch(
         self, deploy_cfn_template, aws_client, should_use_fallback, match_value
     ):
@@ -352,7 +352,7 @@ class TestCloudFormationConditions:
         param = aws_client.ssm.get_parameter(Name=stack.outputs["ParameterName"])
         assert param["Parameter"]["Value"] == match_value
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_sub_in_conditions(self, deploy_cfn_template, aws_client):
         region = aws_client.cloudformation.meta.region_name
         topic_prefix = f"test-topic-{short_uid()}"
@@ -378,7 +378,7 @@ class TestCloudFormationConditions:
         aws_client.sns.get_topic_attributes(TopicArn=topic_arn_with_suffix)
         assert topic_arn_with_suffix.split(":")[-1] == f"{topic_prefix}-{region}-{suffix}"
 
-    @pytest.mark.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize("env,region", [("dev", "us-west-2"), ("production", "us-east-1")])
     def test_conditional_in_conditional(self, env, region, deploy_cfn_template, aws_client):
         stack = deploy_cfn_template(

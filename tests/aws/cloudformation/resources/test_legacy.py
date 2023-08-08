@@ -776,7 +776,7 @@ class TestCloudFormation:
 
     # TODO: evaluate (can we drop this?)
     @pytest.mark.xfail(reason="GetAtt resolved old value")
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_updating_stack_with_iam_role(self, deploy_cfn_template, aws_client):
         lambda_role_name = f"lambda-role-{short_uid()}"
         lambda_function_name = f"lambda-function-{short_uid()}"

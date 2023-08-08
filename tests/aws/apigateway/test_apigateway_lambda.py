@@ -14,7 +14,7 @@ from tests.aws.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
 from tests.aws.awslambda.test_lambda import TEST_LAMBDA_AWS_PROXY, TEST_LAMBDA_PYTHON_ECHO
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..body",
@@ -235,7 +235,7 @@ def test_lambda_aws_proxy_integration(
     snapshot.match("invocation-payload-with-params-encoding-multi", responses.json())
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_lambda_aws_integration(
     create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client
 ):
@@ -315,7 +315,7 @@ def test_lambda_aws_integration(
     snapshot.match("lambda-aws-integration", response_data)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_lambda_aws_integration_with_request_template(
     create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client
 ):

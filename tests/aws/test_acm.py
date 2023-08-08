@@ -71,7 +71,7 @@ class TestACM:
         waiter = aws_client.acm.get_waiter("certificate_validated")
         waiter.wait(CertificateArn=certificate_arn, WaiterConfig={"Delay": 0.5, "MaxAttempts": 3})
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Certificate.SignatureAlgorithm"])
     def test_certificate_for_subdomain_wildcard(
         self, acm_request_certificate, aws_client, snapshot, monkeypatch

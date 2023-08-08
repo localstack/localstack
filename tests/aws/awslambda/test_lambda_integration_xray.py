@@ -16,7 +16,7 @@ TEST_LAMBDA_XRAY_TRACEID = os.path.join(
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 @pytest.mark.parametrize("tracing_mode", ["Active", "PassThrough"])
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_traceid_outside_handler(create_lambda_function, lambda_su_role, tracing_mode, aws_client):
     fn_name = f"test-xray-traceid-fn-{short_uid()}"
 

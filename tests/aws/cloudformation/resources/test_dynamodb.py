@@ -56,7 +56,7 @@ def test_globalindex_read_write_provisioned_throughput_dynamodb_table(
         assert isinstance(test_write_capacity, int)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
@@ -77,7 +77,7 @@ def test_default_name_for_table(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("table_description", response)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",

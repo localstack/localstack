@@ -3,7 +3,7 @@ import os
 from localstack.testing.pytest import markers
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..ResourceIdentifierSummaries..ResourceIdentifiers"]
 )

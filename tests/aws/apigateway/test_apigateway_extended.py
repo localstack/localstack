@@ -119,7 +119,7 @@ def test_get_domain_name(aws_client):
     assert result["domainNameStatus"] == "AVAILABLE"
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_get_api_keys(aws_client):
     api_key_name = f"test-key-{short_uid()}"
     api_key_name_2 = f"test-key-{short_uid()}"

@@ -640,7 +640,7 @@ def test_multiregion_nested(aws_client_factory, region_name, statemachine_defini
         client1.delete_state_machine(stateMachineArn=child_machine_arn)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_default_logging_configuration(create_state_machine, aws_client):
     role_name = f"role_name-{short_uid()}"
     try:

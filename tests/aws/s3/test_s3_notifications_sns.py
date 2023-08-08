@@ -101,7 +101,7 @@ def sqs_collect_sns_messages(
 
 
 class TestS3NotificationsToSns:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
     )
@@ -165,7 +165,7 @@ class TestS3NotificationsToSns:
         assert event["s3"]["object"]["key"] == key_name
         assert event["s3"]["object"]["size"] == len("second event")
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER,
         paths=["$..Message.Records..s3.object.eTag", "$..Message.Records..s3.object.versionId"],
@@ -231,7 +231,7 @@ class TestS3NotificationsToSns:
         assert event["s3"]["bucket"]["name"] == bucket_name
         assert event["s3"]["object"]["key"] == test_key2
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..Error.BucketName"]
     )
@@ -256,7 +256,7 @@ class TestS3NotificationsToSns:
             )
         snapshot.match("bucket_not_exists", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="no validation implemented")
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not LEGACY_S3_PROVIDER,

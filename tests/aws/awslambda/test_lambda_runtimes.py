@@ -100,7 +100,7 @@ class TestNodeJSRuntimes:
         is_old_provider() and not use_docker(),
         reason="ES6 support is only guaranteed when using the docker executor",
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_invoke_nodejs_es6_lambda(self, create_lambda_function, snapshot, runtime, aws_client):
         """Test simple nodejs lambda invocation"""
 
@@ -160,7 +160,7 @@ class TestJavaRuntimes:
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Payload"]
     )  # newline at end
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_java_runtime_with_lib(self, create_lambda_function, snapshot, aws_client):
         """Test lambda creation/invocation with different deployment package types (jar, zip, zip-with-gradle)"""
 
@@ -209,7 +209,7 @@ class TestJavaRuntimes:
             assert "echo" in to_str(result_data)
 
     @parametrize_java_runtimes
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_stream_handler(
         self, create_lambda_function, test_java_jar, runtime, snapshot, aws_client
     ):
@@ -227,7 +227,7 @@ class TestJavaRuntimes:
         snapshot.match("invoke_result", result)
 
     @parametrize_java_runtimes
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_serializable_input_object(
         self, create_lambda_function, test_java_zip, runtime, snapshot, aws_client
     ):
@@ -272,7 +272,7 @@ class TestJavaRuntimes:
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Payload"]
     )  # newline at end
-    @markers.parity.aws_validated
+    @markers.aws.validated
     # this test is only compiled against java 11
     def test_java_custom_handler_method_specification(
         self,
@@ -427,7 +427,7 @@ class TestJavaRuntimes:
 
 class TestPythonRuntimes:
     @parametrize_python_runtimes
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_handler_in_submodule(self, create_lambda_function, runtime, aws_client):
         """Test invocation of a lambda handler which resides in a submodule (= not root module)"""
         function_name = f"test-function-{short_uid()}"
@@ -454,7 +454,7 @@ class TestPythonRuntimes:
         not use_docker(), reason="Test for docker python runtimes not applicable if run locally"
     )
     @parametrize_python_runtimes
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_python_runtime_correct_versions(self, create_lambda_function, runtime, aws_client):
         """Test different versions of python runtimes to report back the correct python version"""
         function_name = f"test_python_executor_{short_uid()}"
@@ -478,7 +478,7 @@ class TestPythonRuntimes:
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Payload.requestId"]
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_python_runtime_unhandled_errors(
         self, create_lambda_function, runtime, snapshot, aws_client
     ):

@@ -76,7 +76,7 @@ def status_code_http_server(httpserver: HTTPServer):
     return http_endpoint
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_http_integration_status_code_selection(
     create_rest_apigw, aws_client, status_code_http_server
 ):
@@ -159,7 +159,7 @@ def test_http_integration_status_code_selection(
     )
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_put_integration_responses(create_rest_apigw, aws_client, echo_http_server_post, snapshot):
     snapshot.add_transformers_list(
         [

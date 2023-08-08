@@ -315,7 +315,7 @@ class TestEc2Integrations:
         # clean up
         aws_client.ec2.delete_vpc(VpcId=vpc_id)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize("id_type", ["id", "name"])
     def test_modify_launch_template(self, create_launch_template, id_type, aws_client):
         launch_template_result = create_launch_template(f"template-with-versions-{short_uid()}")
@@ -346,7 +346,7 @@ class TestEc2Integrations:
         )
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_raise_modify_to_invalid_default_version(create_launch_template, aws_client):
     launch_template_result = create_launch_template(f"my-first-launch-template-{short_uid()}")
     template = launch_template_result["LaunchTemplate"]
@@ -359,7 +359,7 @@ def test_raise_modify_to_invalid_default_version(create_launch_template, aws_cli
     assert e.value.response["Error"]["Code"] == "InvalidLaunchTemplateId.VersionNotFound"
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_raise_when_launch_template_data_missing(aws_client):
     with pytest.raises(ClientError) as e:
         aws_client.ec2.create_launch_template(
@@ -369,7 +369,7 @@ def test_raise_when_launch_template_data_missing(aws_client):
     assert e.value.response["Error"]["Code"] == "MissingParameter"
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_raise_invalid_launch_template_name(create_launch_template):
     with pytest.raises(ClientError) as e:
         create_launch_template(f"some illegal name {short_uid()}")
@@ -378,7 +378,7 @@ def test_raise_invalid_launch_template_name(create_launch_template):
     assert e.value.response["Error"]["Code"] == "InvalidLaunchTemplateName.MalformedException"
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_raise_duplicate_launch_template_name(create_launch_template):
     create_launch_template("name")
 

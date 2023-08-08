@@ -47,7 +47,7 @@ class TestKinesis:
             kinesis_client.create_stream()
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_create_stream_without_shard_count(
         self, kinesis_create_stream, wait_for_stream_ready, snapshot, aws_client
     ):
@@ -60,7 +60,7 @@ class TestKinesis:
 
         snapshot.match("Shards", shards)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_stream_consumers(
         self,
         kinesis_create_stream,
@@ -107,7 +107,7 @@ class TestKinesis:
             StreamARN=stream_arn, ConsumerName=consumer_name
         )
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
     def test_subscribe_to_shard(
         self,
@@ -163,7 +163,7 @@ class TestKinesis:
         # clean up
         aws_client.kinesis.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
     def test_subscribe_to_shard_with_sequence_number_as_iterator(
         self,
@@ -289,7 +289,7 @@ class TestKinesis:
         cbor_records = cbor_records_content.get("Records")
         assert 0 == len(cbor_records)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
     def test_record_lifecycle_data_integrity(
         self, kinesis_create_stream, wait_for_stream_ready, snapshot, aws_client
@@ -315,7 +315,7 @@ class TestKinesis:
         response_records.sort(key=lambda k: k.get("Data"))
         snapshot.match("Records", response_records)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @patch.object(kinesis_provider, "MAX_SUBSCRIPTION_SECONDS", 3)
     def test_subscribe_to_shard_timeout(
         self, kinesis_create_stream, wait_for_stream_ready, wait_for_consumer_ready, aws_client
@@ -363,7 +363,7 @@ class TestKinesis:
         # clean up
         aws_client.kinesis.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_add_tags_to_stream(
         self, kinesis_create_stream, wait_for_stream_ready, snapshot, aws_client
     ):
@@ -382,7 +382,7 @@ class TestKinesis:
         snapshot.match("Tags", stream_tags_response["Tags"][0])
         assert not stream_tags_response["HasMoreTags"]
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_get_records_next_shard_iterator(
         self, kinesis_create_stream, wait_for_stream_ready, aws_client
     ):

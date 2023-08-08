@@ -52,7 +52,7 @@ class TestCloudwatch:
         assert 1 == len(rs["Metrics"])
         assert namespace == rs["Metrics"][0]["Namespace"]
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_put_metric_data_values_list(self, snapshot, aws_client):
         metric_name = "test-metric"
         namespace = f"ns-{short_uid()}"
@@ -471,7 +471,7 @@ class TestCloudwatch:
             aws_client.sns.unsubscribe(SubscriptionArn=subscription_ok["SubscriptionArn"])
             aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name])
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..evaluatedDatapoints",
@@ -581,7 +581,7 @@ class TestCloudwatch:
             aws_client.sns.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
             aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name])
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..evaluatedDatapoints"])
     def test_breaching_alarm_actions(
         self, sns_create_topic, sqs_create_queue, snapshot, aws_client
@@ -649,7 +649,7 @@ class TestCloudwatch:
             aws_client.sns.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
             aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name])
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_enable_disable_alarm_actions(
         self, sns_create_topic, sqs_create_queue, snapshot, aws_client
     ):
@@ -748,7 +748,7 @@ class TestCloudwatch:
             aws_client.sns.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
             aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name])
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_aws_sqs_metrics_created(self, sqs_create_queue, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         sqs_url = sqs_create_queue()

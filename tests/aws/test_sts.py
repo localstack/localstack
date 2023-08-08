@@ -163,13 +163,13 @@ class TestSTSIntegrations:
         federated_user_info = response["FederatedUser"]["FederatedUserId"].split(":")
         assert federated_user_info[1] == token_name
 
-    @markers.parity.only_localstack
+    @markers.aws.only_localstack
     def test_get_caller_identity_root(self, monkeypatch, aws_client):
         response = aws_client.sts.get_caller_identity()
         account_id = response["Account"]
         assert f"arn:aws:iam::{account_id}:root" == response["Arn"]
 
-    @markers.parity.only_localstack
+    @markers.aws.only_localstack
     def test_expiration_date_format(self):
         url = config.get_edge_url()
         data = {"Action": "GetSessionToken", "Version": "2011-06-15"}
@@ -182,7 +182,7 @@ class TestSTSIntegrations:
         result = content["GetSessionTokenResponse"]["GetSessionTokenResult"]
         assert is_number(result["Credentials"]["Expiration"])
 
-    @markers.parity.only_localstack
+    @markers.aws.only_localstack
     @pytest.mark.parametrize("use_aws_creds", [True, False])
     def test_get_caller_identity_user_access_key(self, cleanups, use_aws_creds, monkeypatch):
         """Check whether the correct account id is returned for requests by other users access keys"""
@@ -206,7 +206,7 @@ class TestSTSIntegrations:
         assert account_id == response["Account"]
         assert user_arn == response["Arn"]
 
-    @markers.parity.only_localstack
+    @markers.aws.only_localstack
     @pytest.mark.parametrize("use_aws_creds", [True, False])
     def test_get_caller_identity_role_access_key(
         self, aws_client, account_id, cleanups, use_aws_creds, monkeypatch

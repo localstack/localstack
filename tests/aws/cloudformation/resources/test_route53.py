@@ -3,7 +3,7 @@ import os
 from localstack.testing.pytest import markers
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_create_record_set_via_id(route53_hosted_zone, deploy_cfn_template):
     create_zone_response = route53_hosted_zone()
     hosted_zone_id = create_zone_response["HostedZone"]["Id"]

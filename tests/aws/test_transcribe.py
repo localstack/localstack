@@ -47,7 +47,7 @@ class TestTranscribe:
             return True
 
     @markers.skip_offline
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..TranscriptionJob..Settings",
@@ -133,7 +133,7 @@ class TestTranscribe:
 
         retry(_assert_transcript, retries=10, sleep=3)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..TranscriptionJob..Settings", "$..TranscriptionJob..Transcript", "$..Error..Code"]
     )
@@ -150,7 +150,7 @@ class TestTranscribe:
 
         snapshot.match("GetError", e_info.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..NextToken", "$..TranscriptionJobSummaries..OutputLocationType"]
     )
@@ -166,7 +166,7 @@ class TestTranscribe:
 
         snapshot.match("ListJobs", jobs)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error..Code"])
     def test_failing_deletion(self, snapshot, aws_client):
         # successful deletion is tested in the happy path test
@@ -176,7 +176,7 @@ class TestTranscribe:
 
         snapshot.match("MissingLanguageCode", e_info.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..MissingLanguageCode..Message", "$..MalformedLanguageCode..Message"]
     )
@@ -207,7 +207,7 @@ class TestTranscribe:
             )
         snapshot.match("MalformedLanguageCode", e_info.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..TranscriptionJob..Settings", "$..TranscriptionJob..Transcript"]
     )
@@ -282,7 +282,7 @@ class TestTranscribe:
         )
         snapshot.match("delete-transcription-job", res_delete_transcription_job)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..TranscriptionJob..Transcript"])
     def test_transcribe_start_job_same_name(
         self,

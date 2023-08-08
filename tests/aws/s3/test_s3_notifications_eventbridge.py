@@ -87,7 +87,7 @@ def s3_event_bridge_notification(snapshot):
 
 
 class TestS3NotificationsToEventBridge:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..detail.object.etag"]
     )
@@ -122,7 +122,7 @@ class TestS3NotificationsToEventBridge:
             != object_created_event["detail"]["request-id"]
         )
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
     def test_object_put_acl(self, basic_event_bridge_rule_to_sqs_queue, snapshot, aws_client):
         # setup fixture
@@ -179,7 +179,7 @@ class TestS3NotificationsToEventBridge:
         messages.sort(key=lambda x: (x["detail-type"], x["time"]))
         snapshot.match("messages", {"messages": messages})
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
     def test_restore_object(self, basic_event_bridge_rule_to_sqs_queue, snapshot, aws_client):
         # setup fixture
