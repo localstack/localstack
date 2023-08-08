@@ -10,7 +10,7 @@ from localstack.testing.pytest import markers
 class TestBasicCRD:
     @pytest.mark.skip(reason="re-enable after fixing schema extraction")
     @markers.snapshot.skip_snapshot_verify(paths=["$..error-message"])
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_black_box(self, deploy_cfn_template, aws_client: ServiceLevelClientFactory, snapshot):
         stack = deploy_cfn_template(
             template_path=os.path.join(
@@ -37,7 +37,7 @@ class TestBasicCRD:
 
 class TestUpdates:
     @pytest.mark.skip(reason="TODO")
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_update_without_replacement(self, deploy_cfn_template, aws_client, snapshot):
         stack = deploy_cfn_template(
             template_path=os.path.join(

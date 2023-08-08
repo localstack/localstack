@@ -411,7 +411,7 @@ def test_update_usage_plan(deploy_cfn_template, aws_client):
         aws_client.apigateway.delete_usage_plan(usagePlanId=plan["id"])
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_client):
     template = """
     Parameters:

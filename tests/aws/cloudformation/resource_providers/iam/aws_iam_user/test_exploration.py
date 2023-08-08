@@ -12,7 +12,7 @@ RESOURCE_GETATT_TARGETS = ["Path", "UserName", "Id", "Arn", "PermissionsBoundary
 class TestAttributeAccess:
     @pytest.mark.parametrize("attribute", RESOURCE_GETATT_TARGETS)
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Exploratory test only")
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_getatt(
         self,
         aws_client,

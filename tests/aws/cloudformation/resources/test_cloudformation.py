@@ -61,7 +61,7 @@ class SignalSuccess(Thread):
 
 
 @markers.snapshot.skip_snapshot_verify(paths=["$..WaitConditionName"])
-@markers.aws.unknown
+@markers.aws.validated
 def test_waitcondition(deploy_cfn_template, snapshot, aws_client):
     """
     Complicated test, since we have a wait condition that must signal

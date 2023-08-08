@@ -227,7 +227,7 @@ class TestStacksApi:
         assert "No updates are to be performed." in error_message
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..StackEvents"])
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_list_events_after_deployment(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(SortingTransformer("StackEvents", lambda x: x["Timestamp"]))
         snapshot.add_transformer(snapshot.transform.cloudformation_api())

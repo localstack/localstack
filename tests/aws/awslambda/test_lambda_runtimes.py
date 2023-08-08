@@ -321,7 +321,7 @@ class TestJavaRuntimes:
         ],
     )
     @pytest.mark.xfail(is_old_provider(), reason="Test flaky with local executor.")
-    @markers.aws.unknown
+    @markers.aws.validated
     # TODO maybe snapshot payload as well
     def test_java_lambda_subscribe_sns_topic(
         self,

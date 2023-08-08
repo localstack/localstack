@@ -40,7 +40,7 @@ class TestTaskServiceAwsSdk:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_dynamodb_put_get_item(
         self,
         aws_client,
@@ -73,7 +73,7 @@ class TestTaskServiceAwsSdk:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_dynamodb_put_delete_item(
         self,
         aws_client,
@@ -106,7 +106,7 @@ class TestTaskServiceAwsSdk:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_dynamodb_put_update_get_item(
         self,
         aws_client,

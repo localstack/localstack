@@ -266,7 +266,7 @@ class TestRubyRuntimes:
         reason="ruby runtimes not supported in local invocation",
     )
     @markers.snapshot.skip_snapshot_verify
-    @markers.aws.unknown
+    @markers.aws.validated
     # general invocation test
     def test_ruby_lambda_running_in_docker(self, create_lambda_function, snapshot, aws_client):
         """Test simple ruby lambda invocation"""
@@ -291,7 +291,7 @@ class TestRubyRuntimes:
 class TestGolangRuntimes:
     @markers.snapshot.skip_snapshot_verify
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.validated
     # general invocation test
     def test_golang_lambda(self, tmp_path, create_lambda_function, snapshot, aws_client):
         """Test simple golang lambda invocation"""

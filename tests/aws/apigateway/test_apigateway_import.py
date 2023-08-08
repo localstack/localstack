@@ -645,7 +645,7 @@ class TestApiGatewayImportRestApi:
             # TODO: this is really weird, after importing, AWS returns them empty?
         ]
     )
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_import_with_circular_models_and_request_validation(
         self, import_apigw, apigw_snapshot_imported_resources, aws_client, snapshot
     ):

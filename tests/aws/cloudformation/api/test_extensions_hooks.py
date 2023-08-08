@@ -12,7 +12,7 @@ from localstack.utils.strings import short_uid
 class TestExtensionsHooks:
     @pytest.mark.skip(reason="feature not implemented")
     @pytest.mark.parametrize("failure_mode", ["FAIL", "WARN"])
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_hook_deployment(
         self, failure_mode, register_extension, snapshot, cleanups, aws_client
     ):

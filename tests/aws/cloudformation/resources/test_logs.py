@@ -3,7 +3,7 @@ import os.path
 from localstack.testing.pytest import markers
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_logstream(deploy_cfn_template, snapshot, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
