@@ -592,7 +592,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_destinations.py::TestLambdaDestinationEventbridge::test_invoke_lambda_eventbridge": {
+  "tests/aws/awslambda/test_lambda_destinations.py::TestLambdaDestinationEventbridge::test_invoke_lambda_eventbridge": {
     "recorded-date": "07-08-2023, 17:39:40",
     "recorded-content": {
       "filtered_message_event_bus_sqs": {
