@@ -197,7 +197,7 @@ class S3Bucket(GenericBaseModel):
                 legacy_remove_bucket_notification(resource["PhysicalResourceId"])
             # TODO: divergence from how AWS deals with bucket deletes (should throw an error)
             try:
-                delete_all_s3_objects(bucket_name)
+                delete_all_s3_objects(s3, bucket_name)
             except Exception as e:
                 if "NoSuchBucket" not in str(e):
                     raise

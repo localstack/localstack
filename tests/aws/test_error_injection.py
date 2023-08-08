@@ -70,7 +70,8 @@ class TestErrorInjection:
 
         # by default, no errors
         test_no_errors = aws_client.dynamodb.put_item(
-            TableName=table_name, Item={PARTITION_KEY: short_uid(), "data": "foobar123"}
+            TableName=table_name,
+            Item={PARTITION_KEY: {"S": short_uid()}, "data": {"S": "foobar123"}},
         )
         assert test_no_errors["ResponseMetadata"]["HTTPStatusCode"] == 200
 
@@ -78,7 +79,8 @@ class TestErrorInjection:
         monkeypatch.setattr(config, "DYNAMODB_WRITE_ERROR_PROBABILITY", 1.0)
         with pytest.raises(ClientError) as exc:
             aws_client.dynamodb.put_item(
-                TableName=table_name, Item={PARTITION_KEY: short_uid(), "data": "foobar123"}
+                TableName=table_name,
+                Item={PARTITION_KEY: {"S": short_uid()}, "data": {"S": "foobar123"}},
             )
         exc.match("ProvisionedThroughputExceededException")
 
@@ -88,8 +90,8 @@ class TestErrorInjection:
                 aws_client.dynamodb.put_item(
                     TableName=table_name,
                     Item={
-                        PARTITION_KEY: short_uid(),
-                        "data": "foobar123",
+                        PARTITION_KEY: {"S": short_uid()},
+                        "data": {"S": "foobar123"},
                     },
                 )
         exc.match("ProvisionedThroughputExceededException")
@@ -102,6 +104,6 @@ class TestErrorInjection:
     def assert_zero_probability_read_error_injection(dynamodb_client, table_name, partition_key):
         # by default, no errors
         test_no_errors = dynamodb_client.get_item(
-            TableName=table_name, Key={PARTITION_KEY: partition_key}
+            TableName=table_name, Key={PARTITION_KEY: {"S": partition_key}}
         )
         assert test_no_errors["ResponseMetadata"]["HTTPStatusCode"] == 200
