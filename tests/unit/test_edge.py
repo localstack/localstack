@@ -5,7 +5,7 @@ import requests
 from pytest_httpserver.httpserver import HTTPServer
 from werkzeug.datastructures import Headers
 
-from localstack import config
+from localstack import config, constants
 from localstack.config import HostAndPort
 from localstack.services.edge import get_auth_string, start_proxy
 from localstack.utils.net import get_free_tcp_port
@@ -91,6 +91,7 @@ def test_edge_tcp_proxy_raises_exception_on_invalid_url(monkeypatch):
     with pytest.raises(ValueError):
         start_proxy(
             listen_str=f"127.0.0.1:{port}",
+            target_address=HostAndPort(host="127.0.0.1", port=constants.DEFAULT_PORT_EDGE),
             asynchronous=True,
         ).stop()
 
@@ -102,7 +103,11 @@ def test_edge_tcp_proxy_raises_exception_on_url_without_port(monkeypatch):
     # Start the TCP proxy
     port = get_free_tcp_port()
     with pytest.raises(ValueError):
-        start_proxy(listen_str=f"127.0.0.1:{port}", asynchronous=True).stop()
+        start_proxy(
+            listen_str=f"127.0.0.1:{port}",
+            asynchronous=True,
+            target_address=HostAndPort(host="127.0.0.1", port=constants.DEFAULT_PORT_EDGE),
+        ).stop()
 
 
 def test_edge_tcp_proxy_raises_connection_refused_on_missing_target_server(monkeypatch):
