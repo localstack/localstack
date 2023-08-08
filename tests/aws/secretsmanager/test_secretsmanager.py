@@ -531,7 +531,7 @@ class TestSecretsManager:
     @pytest.mark.parametrize(
         "secret_name", ["Inv Name", " Inv Name", " Inv*Name? ", " Inv *?!]Name\\-"]
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_invalid_secret_name(self, sm_snapshot, cleanups, secret_name: str, aws_client):
         cleanups.append(
             lambda: aws_client.secretsmanager.delete_secret(
@@ -1814,7 +1814,7 @@ class TestSecretsManager:
 
         aws_client.secretsmanager.delete_secret(**stage_deletion_req)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_secret_exists(self, cleanups, aws_client):
         secret_name = short_uid()
         cleanups.append(
@@ -1862,7 +1862,7 @@ class TestSecretsManager:
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_secret_exists_snapshots(self, sm_snapshot, cleanups, aws_client):
         secret_name = short_uid()
         cleanups.append(
@@ -1896,7 +1896,7 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res", delete_secret_res)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "operation",
         [

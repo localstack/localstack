@@ -21,7 +21,7 @@ class TestLambdaDLQ:
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_dead_letter_queue(
         self,
         create_lambda_function,
@@ -113,7 +113,7 @@ class TestLambdaDestinationSqs:
             {lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1},
         ],
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_assess_lambda_destination_invocation(
         self,
         payload,
@@ -227,7 +227,7 @@ class TestLambdaDestinationSqs:
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..Body.requestContext.functionArn"])
     @pytest.mark.xfail(condition=is_old_provider(), reason="only works with new provider")
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_retries(
         self,
         snapshot,
@@ -344,7 +344,7 @@ class TestLambdaDestinationSqs:
         paths=["$..SenderId", "$..Body.requestContext.functionArn"]
     )
     @pytest.mark.xfail(condition=is_old_provider(), reason="only works with new provider")
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_maxeventage(
         self,
         snapshot,

@@ -28,7 +28,7 @@ pytestmark = markers.snapshot.skip_snapshot_verify(
 
 
 @pytest.mark.skipif(condition=is_new_provider(), reason="not implemented yet")
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_lambda_w_dynamodb_event_filter(deploy_cfn_template, aws_client):
     function_name = f"test-fn-{short_uid()}"
     table_name = f"ddb-tbl-{short_uid()}"
@@ -74,7 +74,7 @@ def test_lambda_w_dynamodb_event_filter(deploy_cfn_template, aws_client):
         "$..content-length",
     ]
 )
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_cfn_function_url(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.lambda_api())
@@ -127,7 +127,7 @@ def test_cfn_function_url(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("response_headers", lowered_headers)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_lambda_alias(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.lambda_api())
@@ -163,7 +163,7 @@ def test_lambda_alias(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("Alias", alias)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..DestinationConfig"])
 def test_lambda_code_signing_config(deploy_cfn_template, snapshot, account_id, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -189,7 +189,7 @@ def test_lambda_code_signing_config(deploy_cfn_template, snapshot, account_id, a
 
 
 @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..DestinationConfig"])
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_event_invoke_config(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.lambda_api())
@@ -231,7 +231,7 @@ def test_event_invoke_config(deploy_cfn_template, snapshot, aws_client):
         "$..Layers",
     ],
 )
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_lambda_version(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.lambda_api())
@@ -268,7 +268,7 @@ def test_lambda_version(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("get_function_version", get_function_version)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_lambda_cfn_run(deploy_cfn_template, aws_client):
     """
     simply deploys a lambda and immediately invokes it
@@ -288,7 +288,7 @@ def test_lambda_cfn_run(deploy_cfn_template, aws_client):
 
 
 @pytest.mark.skip(reason="broken/notimplemented")
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_lambda_vpc(deploy_cfn_template, aws_client):
     """
     this test showcases a very long-running deployment of a fairly straight forward lambda function
@@ -312,7 +312,7 @@ def test_lambda_vpc(deploy_cfn_template, aws_client):
 
 
 @pytest.mark.xfail(condition=is_new_provider(), reason="fails/times out with new provider")
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_update_lambda_permissions(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -344,7 +344,7 @@ def test_update_lambda_permissions(deploy_cfn_template, aws_client):
 @markers.snapshot.skip_snapshot_verify(
     condition=is_old_provider, paths=["$..PolicyArn", "$..PolicyName", "$..RevisionId"]
 )
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_multiple_lambda_permissions_for_singlefn(deploy_cfn_template, snapshot, aws_client):
     deploy = deploy_cfn_template(
         template_path=os.path.join(
@@ -390,7 +390,7 @@ class TestCfnLambdaIntegrations:
             "$..Tags",  # missing cloudformation automatic resource tags for the lambda function
         ]
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_cfn_lambda_permissions(self, deploy_cfn_template, snapshot, aws_client):
         """
         * Lambda Function
@@ -483,7 +483,7 @@ class TestCfnLambdaIntegrations:
             "$..StackResources..PhysicalResourceId",  # TODO: compatibility between AWS URL and localstack URL
         ]
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_cfn_lambda_sqs_source(self, deploy_cfn_template, snapshot, aws_client):
         """
         Resources:
@@ -641,7 +641,7 @@ class TestCfnLambdaIntegrations:
             "$..TumblingWindowInSeconds",
         ]
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_cfn_lambda_dynamodb_source(self, deploy_cfn_template, snapshot, aws_client):
         """
         Resources:
@@ -789,7 +789,7 @@ class TestCfnLambdaIntegrations:
             "$..Configuration.StateReasonCode",
         ],
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_cfn_lambda_kinesis_source(self, deploy_cfn_template, snapshot, aws_client):
         """
         Resources:
@@ -948,7 +948,7 @@ class TestCfnLambdaDestinations:
             # ("eventbridge", "eventbridge")
         ],
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_generic_destination_routing(
         self, deploy_cfn_template, on_success, on_failure, aws_client
     ):
@@ -1029,7 +1029,7 @@ class TestCfnLambdaDestinations:
         wait_until(wait_for_logs)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_python_lambda_code_deployed_via_s3(deploy_cfn_template, aws_client, s3_bucket):
     bucket_key = "handler.zip"
     zip_file = create_lambda_archive(

@@ -142,7 +142,7 @@ class TestAPIGateway:
     }
     TEST_API_GATEWAY_AUTHORIZER_OPS = [{"op": "replace", "path": "/name", "value": "test1"}]
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_delete_rest_api_with_invalid_id(self, aws_client):
         with pytest.raises(ClientError) as e:
             aws_client.apigateway.delete_rest_api(restApiId="foobar")
@@ -260,7 +260,7 @@ class TestAPIGateway:
         # TODO this should not only be empty, but the key should not exist (like in aws)
         assert not body.get("requestContext").get("authorizer")
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_api_gateway_lambda_integration_aws_type(
         self, create_lambda_function, create_rest_apigw, aws_client
     ):
@@ -965,7 +965,7 @@ class TestAPIGateway:
         for usage_plan_id in usage_plan_ids:
             aws_client.apigateway.delete_usage_plan(usagePlanId=usage_plan_id)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize("action", ["StartExecution", "DeleteStateMachine"])
     def test_apigateway_with_step_function_integration(
         self,
@@ -1323,7 +1323,7 @@ class TestAPIGateway:
         assert "response from" in json.loads(response.get("body")).get("body")
         assert "val123" in json.loads(response.get("body")).get("body")
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize("stage_name", ["local", "dev"])
     def test_apigw_stage_variables(
         self, create_lambda_function, create_rest_apigw, stage_name, aws_client

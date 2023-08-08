@@ -58,7 +58,7 @@ class TestLambdaRuntimesCommon:
     # * Remove specific hashes and `touch -t` since we're not actually checking size & hash of the zip files anymore
     # * Create a generic parametrizable Makefile per runtime (possibly with an option to provide a specific one)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.multiruntime(scenario="echo")
     def test_echo_invoke(self, multiruntime_lambda, aws_client):
         # provided lambdas take a little longer for large payloads, hence timeout to 5s
@@ -137,7 +137,7 @@ class TestLambdaRuntimesCommon:
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.multiruntime(scenario="introspection")
     def test_introspection_invoke(self, multiruntime_lambda, snapshot, aws_client):
         create_function_result = multiruntime_lambda.create_function(
@@ -175,7 +175,7 @@ class TestLambdaRuntimesCommon:
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.multiruntime(scenario="uncaughtexception")
     def test_uncaught_exception_invoke(self, multiruntime_lambda, snapshot, aws_client):
         # unfortunately the stack trace is quite unreliable and changes when AWS updates the runtime transparently
@@ -203,7 +203,7 @@ class TestLambdaRuntimesCommon:
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     # this does only work on al2 lambdas, except provided.al2.
     # Source: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-modify.html#runtime-wrapper
     @markers.multiruntime(

@@ -17,7 +17,7 @@ from tests.aws.apigateway.apigateway_fixtures import (
 from tests.aws.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_apigateway_to_eventbridge(
     aws_client, create_rest_apigw, create_role_with_policy, region, account_id, snapshot
 ):

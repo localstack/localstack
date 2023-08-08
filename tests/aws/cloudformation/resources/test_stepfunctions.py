@@ -246,7 +246,7 @@ def test_retry_and_catch(deploy_cfn_template, aws_client):
     assert receive_result["Messages"][0]["Body"] == "Fail"
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_cfn_statemachine_with_dependencies(deploy_cfn_template, aws_client):
 
     stack = deploy_cfn_template(

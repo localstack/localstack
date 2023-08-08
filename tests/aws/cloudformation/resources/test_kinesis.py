@@ -8,7 +8,7 @@ from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..StreamDescription.StreamModeDetails"])
 def test_stream_creation(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.resource_name())
@@ -103,7 +103,7 @@ def test_cfn_handle_kinesis_firehose_resources(deploy_cfn_template, aws_client):
 
 
 # TODO: use a different template and move this test to a more generic API level test suite
-@markers.parity.aws_validated
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify  # nothing really works here right now
 def test_describe_template(s3_create_bucket, aws_client, cleanups, snapshot):
     bucket_name = f"b-{short_uid()}"

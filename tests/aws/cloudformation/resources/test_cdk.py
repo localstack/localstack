@@ -108,7 +108,7 @@ class TestCdkSampleApp:
             "$..StackResourceSummaries..PhysicalResourceId",
         ]
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_cdk_sample(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.add_transformer(snapshot.transform.sqs_api())

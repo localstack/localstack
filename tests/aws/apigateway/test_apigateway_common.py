@@ -26,7 +26,7 @@ class TestApiGatewayCommon:
     requests/responses from the API.
     """
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$.invalid-request-body.Type",
@@ -260,7 +260,7 @@ class TestApiGatewayCommon:
 
 
 class TestUsagePlans:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_api_key_required_for_methods(
         self,
         aws_client,
@@ -372,7 +372,7 @@ class TestUsagePlans:
 
         retry(_assert_with_key, retries=retries, sleep=sleep, expected_status_code=403)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_usage_plan_crud(self, create_rest_apigw, snapshot, aws_client, echo_http_server_post):
         snapshot.add_transformer(snapshot.transform.key_value("id", reference_replacement=True))
         snapshot.add_transformer(snapshot.transform.key_value("name"))
@@ -443,7 +443,7 @@ class TestUsagePlans:
 
 
 class TestDocumentations:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_documentation_parts_and_versions(
         self, aws_client, create_rest_apigw, apigw_add_transformers, snapshot
     ):
@@ -482,7 +482,7 @@ class TestDocumentations:
 
 
 class TestStages:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..createdDate", "$..lastUpdatedDate"])
     def test_create_update_stages(
         self, aws_client, create_rest_apigw, apigw_add_transformers, snapshot

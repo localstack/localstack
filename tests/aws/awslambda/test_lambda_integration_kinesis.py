@@ -62,7 +62,7 @@ def _snapshot_transformers(snapshot):
     ],
 )
 class TestKinesisSource:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_create_kinesis_event_source_mapping(
         self,
         create_lambda_function,
@@ -126,7 +126,7 @@ class TestKinesisSource:
 
     # FIXME remove usage of this config value with 2.0
     @patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skipif(
         condition=is_new_provider(), reason="deprecated config that only works in legacy provider"
     )
@@ -195,7 +195,7 @@ class TestKinesisSource:
 
         assert (invocation_events[1]["executionStart"] - invocation_events[0]["executionStart"]) > 5
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_kinesis_event_source_trim_horizon(
         self,
         create_lambda_function,
@@ -258,7 +258,7 @@ class TestKinesisSource:
         )
         snapshot.match("invocation_events", invocation_events)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_disable_kinesis_event_source_mapping(
         self,
         create_lambda_function,
@@ -350,7 +350,7 @@ class TestKinesisSource:
         ],
         condition=is_old_provider,
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,
         create_lambda_function,

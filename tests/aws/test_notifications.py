@@ -6,7 +6,7 @@ PUBLICATION_RETRIES = 20
 
 
 class TestNotifications:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_sqs_queue_names(self, aws_client):
         queue_name = f"{short_uid()}.fifo"
 

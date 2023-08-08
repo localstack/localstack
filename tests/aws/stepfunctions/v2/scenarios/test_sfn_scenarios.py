@@ -62,7 +62,7 @@ class TestFundamental:
         if assert_state:
             assert describe_ex_done["status"] == assert_state
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_path_based_on_data(self, deploy_cfn_template, sfn_snapshot, aws_client):
         """
         Based on the "path-based-on-data" sample workflow on serverlessland.com
@@ -120,7 +120,7 @@ class TestFundamental:
             "$..previousEventId",
         ],
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_wait_for_callback(self, deploy_cfn_template, sfn_snapshot, aws_client):
         """
         Based on the "wait-for-callback" sample workflow on serverlessland.com
@@ -172,7 +172,7 @@ class TestFundamental:
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Headers", "$..StatusText"]
     )
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_step_functions_calling_api_gateway(
         self, deploy_cfn_template, sfn_snapshot, aws_client
     ):

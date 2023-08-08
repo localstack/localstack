@@ -6,7 +6,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_str
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_sam_policies(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.iam_api())

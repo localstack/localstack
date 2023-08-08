@@ -253,14 +253,14 @@ def apigw_deploy_rest_api(aws_client):
 
 
 class TestApiGatewayImportRestApi:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_import_rest_api(self, import_apigw, snapshot):
         spec_file = load_file(OPENAPI_SPEC_PULUMI_JSON)
         response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
 
         snapshot.match("import_rest_api", response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.no_apigw_snap_transformers  # not using the API Gateway default transformers
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -325,7 +325,7 @@ class TestApiGatewayImportRestApi:
         # integrationResponse
         apigw_snapshot_imported_resources(rest_api_id=rest_api_id, resources=response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$.resources.items..resourceMethods.GET",  # TODO: this is really weird, after importing, AWS returns them empty?
@@ -370,7 +370,7 @@ class TestApiGatewayImportRestApi:
             # waiting before cleaning up to avoid TooManyRequests, as we create multiple REST APIs
             time.sleep(15)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize("base_path_type", ["ignore", "prepend", "split"])
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -450,7 +450,7 @@ class TestApiGatewayImportRestApi:
             # then you realize LocalStack is needed!
             time.sleep(20)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize("base_path_type", ["ignore", "prepend", "split"])
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -558,7 +558,7 @@ class TestApiGatewayImportRestApi:
         url = api_invoke_url(rest_api_id, stage=stage_name, path=resource_path)
         retry(assert_request_ok, retries=10, sleep=2, request_url=url)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$.resources.items..resourceMethods.GET",  # AWS does not show them after import
@@ -598,7 +598,7 @@ class TestApiGatewayImportRestApi:
         # integrationResponse
         apigw_snapshot_imported_resources(rest_api_id=rest_api_id, resources=response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.no_apigw_snap_transformers  # not using the API Gateway default transformers
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -726,7 +726,7 @@ class TestApiGatewayImportRestApi:
         assert request.status_code == 400
         assert request.json().get("message") == "Invalid request body"
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_import_with_stage_variables(self, import_apigw, aws_client, echo_http_server_post):
 
         spec_file = load_file(OAS_30_STAGE_VARIABLES)

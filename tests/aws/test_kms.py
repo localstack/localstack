@@ -66,7 +66,7 @@ class TestKMS:
     def kms_api_snapshot_transformer(self, snapshot):
         snapshot.add_transformer(snapshot.transform.kms_api())
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_create_alias(self, kms_create_alias, kms_create_key, snapshot):
 
         alias_name = f"{short_uid()}"
@@ -76,7 +76,7 @@ class TestKMS:
 
         snapshot.match("create_alias", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_create_key(
         self, kms_client_for_region, kms_create_key, snapshot, aws_client, account_id
     ):
@@ -99,7 +99,7 @@ class TestKMS:
         assert f":{TEST_AWS_REGION_NAME}:" in response["Arn"]
         assert f":{account_id}:" in response["Arn"]
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_get_key_in_different_region(self, kms_client_for_region, kms_create_key, snapshot):
         client_region = TEST_AWS_REGION_NAME
         key_region = SECONDARY_TEST_AWS_REGION_NAME
@@ -126,7 +126,7 @@ class TestKMS:
         response = us_west_2_kms_client.describe_key(KeyId=key_arn)
         snapshot.match("describe-key-same-specific-region-with-arn", response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_get_key_does_not_exist(self, kms_create_key, snapshot, aws_client):
         # we create a real key to base our fake key ARN on, so we have real account ID and same region
         response = kms_create_key(Description="test key 123")
@@ -155,7 +155,7 @@ class TestKMS:
 
         snapshot.match("describe-key-with-valid-id-mrk", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_get_key_invalid_uuid(self, snapshot, aws_client):
         # valid regular KeyId format
         # "134f2428-cec1-4b25-a1ae-9048164dba47"
@@ -175,7 +175,7 @@ class TestKMS:
             aws_client.kms.describe_key(KeyId="mrk-fake-key-id")
         snapshot.match("describe-key-with-invalid-uuid-mrk", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_list_keys(self, kms_create_key, aws_client):
         created_key = kms_create_key()
         next_token = None
@@ -191,7 +191,7 @@ class TestKMS:
                 break
             next_token = response["nextToken"]
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_schedule_and_cancel_key_deletion(self, kms_create_key, aws_client):
         key_id = kms_create_key()["KeyId"]
         aws_client.kms.schedule_key_deletion(KeyId=key_id)
@@ -206,7 +206,7 @@ class TestKMS:
         assert result["KeyMetadata"]["KeyState"] == "Disabled"
         assert not result["KeyMetadata"].get("DeletionDate")
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_disable_and_enable_key(self, kms_create_key, aws_client):
         key_id = kms_create_key()["KeyId"]
         result = aws_client.kms.describe_key(KeyId=key_id)
@@ -224,7 +224,7 @@ class TestKMS:
         assert result["KeyMetadata"]["KeyState"] == "Enabled"
 
     # Not sure how useful this test is, as it just fails during key validation, before grant-specific logic kicks in.
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_create_grant_with_invalid_key(self, user_arn, aws_client):
 
         with pytest.raises(ClientError) as e:
@@ -236,7 +236,7 @@ class TestKMS:
         e.match("NotFoundException")
 
     # Not sure how useful this test is, as it just fails during key validation, before grant-specific logic kicks in.
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_list_grants_with_invalid_key(self, aws_client):
         with pytest.raises(ClientError) as e:
             aws_client.kms.list_grants(
@@ -244,7 +244,7 @@ class TestKMS:
             )
         e.match("NotFoundException")
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_create_grant_with_valid_key(self, kms_key, user_arn, aws_client):
         key_id = kms_key["KeyId"]
 
@@ -261,7 +261,7 @@ class TestKMS:
         grants_after = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
         assert len(grants_after) == len(grants_before) + 1
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_create_grant_with_same_name_two_keys(self, kms_create_key, user_arn, aws_client):
         first_key_id = kms_create_key()["KeyId"]
         second_key_id = kms_create_key()["KeyId"]
@@ -292,7 +292,7 @@ class TestKMS:
         second_grants_after = aws_client.kms.list_grants(KeyId=second_key_id)["Grants"]
         assert len(second_grants_after) == 1
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_revoke_grant(self, kms_grant_and_key, aws_client):
         grant = kms_grant_and_key[0]
         key_id = kms_grant_and_key[1]["KeyId"]
@@ -303,7 +303,7 @@ class TestKMS:
         grants_after = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
         assert len(grants_after) == len(grants_before) - 1
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_retire_grant_with_grant_token(self, kms_grant_and_key, aws_client):
         grant = kms_grant_and_key[0]
         key_id = kms_grant_and_key[1]["KeyId"]
@@ -314,7 +314,7 @@ class TestKMS:
         grants_after = aws_client.kms.list_grants(KeyId=key_id)["Grants"]
         assert len(grants_after) == len(grants_before) - 1
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_retire_grant_with_grant_id_and_key_id(self, kms_grant_and_key, aws_client):
         grant = kms_grant_and_key[0]
         key_id = kms_grant_and_key[1]["KeyId"]
@@ -326,7 +326,7 @@ class TestKMS:
         assert len(grants_after) == len(grants_before) - 1
 
     # Fails against AWS, as the retiring_principal_arn_prefix is invalid there.
-    @markers.parity.only_localstack
+    @markers.aws.only_localstack
     def test_list_retirable_grants(self, kms_create_key, kms_create_grant, aws_client):
         retiring_principal_arn_prefix = (
             "arn:aws:kms:eu-central-1:123456789876:key/198a5a78-52c3-489f-ac70-"
@@ -364,7 +364,7 @@ class TestKMS:
         assert not wrong_grant_found
 
     @pytest.mark.parametrize("number_of_bytes", [12, 44, 91, 1, 1024])
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_generate_random(self, snapshot, number_of_bytes, aws_client):
         result = aws_client.kms.generate_random(NumberOfBytes=number_of_bytes)
 
@@ -376,7 +376,7 @@ class TestKMS:
         snapshot.match("result_length", len(plain_text))
 
     @pytest.mark.parametrize("number_of_bytes", [None, 0, 1025])
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_generate_random_invalid_number_of_bytes(
         self, aws_client_factory, snapshot, number_of_bytes
     ):
@@ -387,7 +387,7 @@ class TestKMS:
 
         snapshot.match("generate-random-exc", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Error.Message",
@@ -506,7 +506,7 @@ class TestKMS:
         )["Plaintext"]
         assert base64.b64decode(plaintext) == message
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "key_spec,algo",
         [
@@ -529,7 +529,7 @@ class TestKMS:
             )
         snapshot.match("generate-random-exc", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_get_public_key(self, kms_create_key, aws_client):
         key = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_2048")
         response = aws_client.kms.get_public_key(KeyId=key["KeyId"])
@@ -538,7 +538,7 @@ class TestKMS:
         assert response.get("KeyUsage") == key["KeyUsage"]
         assert response.get("PublicKey")
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_describe_and_list_sign_key(self, kms_create_key, aws_client):
         response = kms_create_key(KeyUsage="SIGN_VERIFY", CustomerMasterKeySpec="ECC_NIST_P256")
 
@@ -547,7 +547,7 @@ class TestKMS:
         assert describe_response["KeyId"] == key_id
         assert key_id in _get_all_key_ids(aws_client.kms)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_import_key(self, kms_create_key, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("Description"))
         key = kms_create_key(Origin="EXTERNAL")
@@ -610,7 +610,7 @@ class TestKMS:
             aws_client.kms.encrypt(Plaintext=plaintext, KeyId=key_id)
         snapshot.match("encrypt-after-delete-error", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_list_aliases_of_key(self, kms_create_key, kms_create_alias, aws_client):
         aliased_key_id = kms_create_key()["KeyId"]
         comparison_key_id = kms_create_key()["KeyId"]
@@ -621,7 +621,7 @@ class TestKMS:
         assert _get_alias(aws_client.kms, alias_name, aliased_key_id) is not None
         assert _get_alias(aws_client.kms, alias_name, comparison_key_id) is None
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_all_types_of_key_id_can_be_used_for_encryption(
         self, kms_create_key, kms_create_alias, aws_client
     ):
@@ -643,19 +643,19 @@ class TestKMS:
         aws_client.kms.encrypt(KeyId=alias_arn, Plaintext="encrypt-me")
         aws_client.kms.encrypt(KeyId=alias_name, Plaintext="encrypt-me")
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_create_multi_region_key(self, kms_create_key):
         key = kms_create_key(MultiRegion=True)
         assert key["KeyId"].startswith("mrk-")
         assert key["MultiRegion"]
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_non_multi_region_keys_should_not_have_multi_region_properties(self, kms_create_key):
         key = kms_create_key(MultiRegion=False)
         assert not key["KeyId"].startswith("mrk-")
         assert not key["MultiRegion"]
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..KeyMetadata.Enabled",
@@ -698,7 +698,7 @@ class TestKMS:
         response = us_west_1_kms_client.describe_key(KeyId=key_id)
         snapshot.match("describe-replicated-key", response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_update_key_description(self, kms_create_key, aws_client):
         old_description = "old_description"
         new_description = "new_description"
@@ -715,7 +715,7 @@ class TestKMS:
             == new_description
         )
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_key_rotation_status(self, kms_key, aws_client):
         key_id = kms_key["KeyId"]
         # According to AWS docs, supposed to be False by default.
@@ -725,7 +725,7 @@ class TestKMS:
         aws_client.kms.disable_key_rotation(KeyId=key_id)
         assert aws_client.kms.get_key_rotation_status(KeyId=key_id)["KeyRotationEnabled"] is False
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_create_list_delete_alias(self, kms_create_alias, aws_client):
         alias_name = f"alias/{short_uid()}"
         assert _get_alias(aws_client.kms, alias_name) is None
@@ -734,7 +734,7 @@ class TestKMS:
         aws_client.kms.delete_alias(AliasName=alias_name)
         assert _get_alias(aws_client.kms, alias_name) is None
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_update_alias(self, kms_create_key, kms_create_alias, aws_client):
         alias_name = f"alias/{short_uid()}"
         old_key_id = kms_create_key()["KeyId"]
@@ -792,7 +792,7 @@ class TestKMS:
         key_policy = aws_client.kms.get_key_policy(KeyId=key_id, PolicyName="default")["Policy"]
         assert json.dumps(json.loads(key_policy)) == policy_two
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_tag_untag_list_tags(self, kms_create_key, aws_client):
         def _create_tag(key):
             return {"TagKey": key, "TagValue": short_uid()}
@@ -833,7 +833,7 @@ class TestKMS:
         assert _are_tags_there([tag_two, tag_three], key_id) is True
         assert _are_tags_there([new_tag_one], key_id) is False
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_cant_use_disabled_or_deleted_keys(self, kms_create_key, aws_client):
         key_id = kms_create_key(KeySpec="SYMMETRIC_DEFAULT", KeyUsage="ENCRYPT_DECRYPT")["KeyId"]
         aws_client.kms.generate_data_key(KeyId=key_id, KeySpec="AES_256")
@@ -848,7 +848,7 @@ class TestKMS:
             aws_client.kms.generate_data_key(KeyId=key_id, KeySpec="AES_256")
         e.match("KMSInvalidStateException")
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_cant_delete_deleted_key(self, kms_create_key, aws_client):
         key_id = kms_create_key()["KeyId"]
         aws_client.kms.schedule_key_deletion(KeyId=key_id)
@@ -857,7 +857,7 @@ class TestKMS:
             aws_client.kms.schedule_key_deletion(KeyId=key_id)
         e.match("KMSInvalidStateException")
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_hmac_create_key(self, kms_client_for_region, kms_create_key, snapshot):
         kms_client = kms_client_for_region(TEST_AWS_REGION_NAME)
         key_ids_before = _get_all_key_ids(kms_client)
@@ -878,7 +878,7 @@ class TestKMS:
         response = kms_client.describe_key(KeyId=key_id)["KeyMetadata"]
         snapshot.match("describe-key", response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_hmac_create_key_invalid_operations(self, kms_create_key, snapshot):
         with pytest.raises(ClientError) as e:
             kms_create_key(Description="test HMAC key without key usage", KeySpec="HMAC_256")
@@ -897,7 +897,7 @@ class TestKMS:
             )
         snapshot.match("create-hmac-key-invalid-key-usage", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "key_spec,mac_algo",
         [
@@ -950,7 +950,7 @@ class TestKMS:
             )
         snapshot.match("verify-mac-invalid-key-id", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "key_spec,mac_algo",
         [
@@ -973,7 +973,7 @@ class TestKMS:
             )
         snapshot.match("generate-mac", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..message"])
     @pytest.mark.parametrize(
         "key_spec,mac_algo,verify_msg",
@@ -1008,7 +1008,7 @@ class TestKMS:
             )
         snapshot.match("verify-mac", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_error_messaging_for_invalid_keys(self, aws_client, kms_create_key, snapshot):
         hmac_key_id = kms_create_key(
             Description="test key hmac",
@@ -1061,7 +1061,7 @@ class TestKMS:
             aws_client.kms.decrypt(CiphertextBlob=ciphertext_blob, KeyId=hmac_key_id)
         snapshot.match("decrypt-invalid-key-id", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_plaintext_size_for_encrypt(self, kms_create_key, snapshot, aws_client):
         key_id = kms_create_key()["KeyId"]
         message = b"test message 123 !%$@ 1234567890"
@@ -1070,7 +1070,7 @@ class TestKMS:
             aws_client.kms.encrypt(KeyId=key_id, Plaintext=base64.b64encode(message * 100))
         snapshot.match("invalid-plaintext-size-encrypt", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..message"])
     def test_encrypt_decrypt_encryption_context(self, kms_create_key, snapshot, aws_client):
         key_id = kms_create_key()["KeyId"]
@@ -1209,7 +1209,7 @@ class TestKMSGenerateKeys:
     def generate_key_transformers(self, snapshot):
         snapshot.add_transformer(snapshot.transform.resource_name())
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_generate_data_key_pair_without_plaintext(self, kms_key, aws_client, snapshot):
         snapshot.add_transformer(
             snapshot.transform.key_value("PrivateKeyCiphertextBlob", reference_replacement=False)
@@ -1224,7 +1224,7 @@ class TestKMSGenerateKeys:
         )
         snapshot.match("generate-data-key-pair-without-plaintext", result)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_generate_data_key_pair(self, kms_key, aws_client, snapshot):
         snapshot.add_transformer(
             snapshot.transform.key_value("PrivateKeyCiphertextBlob", reference_replacement=False)
@@ -1246,7 +1246,7 @@ class TestKMSGenerateKeys:
         )
         assert decrypted["Plaintext"] == result["PrivateKeyPlaintext"]
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_generate_data_key(self, kms_key, aws_client, snapshot):
         snapshot.add_transformer(
             snapshot.transform.key_value("CiphertextBlob", reference_replacement=False)
@@ -1264,7 +1264,7 @@ class TestKMSGenerateKeys:
         decrypted = aws_client.kms.decrypt(CiphertextBlob=result["CiphertextBlob"], KeyId=key_id)
         assert decrypted["Plaintext"] == result["Plaintext"]
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_generate_data_key_without_plaintext(self, kms_key, aws_client, snapshot):
         snapshot.add_transformer(
             snapshot.transform.key_value("CiphertextBlob", reference_replacement=False)
@@ -1274,7 +1274,7 @@ class TestKMSGenerateKeys:
         result = aws_client.kms.generate_data_key_without_plaintext(KeyId=key_id, KeySpec="AES_256")
         snapshot.match("generate-data-key-without-plaintext", result)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
     def test_encryption_context_generate_data_key(self, kms_key, aws_client, snapshot):
         encryption_context = {"context-key": "context-value"}
@@ -1287,7 +1287,7 @@ class TestKMSGenerateKeys:
             aws_client.kms.decrypt(CiphertextBlob=result["CiphertextBlob"], KeyId=key_id)
         snapshot.match("decrypt-without-encryption-context", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
     def test_encryption_context_generate_data_key_without_plaintext(
         self, kms_key, aws_client, snapshot
@@ -1302,7 +1302,7 @@ class TestKMSGenerateKeys:
             aws_client.kms.decrypt(CiphertextBlob=result["CiphertextBlob"], KeyId=key_id)
         snapshot.match("decrypt-without-encryption-context", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..message"])
     def test_encryption_context_generate_data_key_pair(self, kms_key, aws_client, snapshot):
         encryption_context = {"context-key": "context-value"}
@@ -1315,7 +1315,7 @@ class TestKMSGenerateKeys:
             aws_client.kms.decrypt(CiphertextBlob=result["PrivateKeyCiphertextBlob"], KeyId=key_id)
         snapshot.match("decrypt-without-encryption-context", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..message"])
     def test_encryption_context_generate_data_key_pair_without_plaintext(
         self, kms_key, aws_client, snapshot

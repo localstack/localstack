@@ -337,7 +337,7 @@ class TestOpensearchProvider:
         finally:
             aws_client.opensearch.delete_domain(DomainName=domain_name)
 
-    @markers.parity.only_localstack
+    @markers.aws.only_localstack
     @pytest.mark.parametrize(
         "engine_version",
         # Test once per major version
@@ -436,7 +436,7 @@ class TestOpensearchProvider:
         test_user_client.create("new-index2", id="new-index-id2", body={})
         test_user_client.index(test_index_name, body={"test-key1": "test-value1"})
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_create_domain_with_invalid_name(self, aws_client):
         with pytest.raises(botocore.exceptions.ClientError) as e:
             aws_client.opensearch.create_domain(
@@ -448,7 +448,7 @@ class TestOpensearchProvider:
             aws_client.opensearch.create_domain(DomainName="abc#")  # no special characters allowed
         assert e.value.response["Error"]["Code"] == "ValidationException"
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_exception_header_field(self, aws_client):
         """Test if the error response correctly sets the error code in the headers (see #6304)."""
         with pytest.raises(botocore.exceptions.ClientError) as e:

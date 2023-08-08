@@ -9,7 +9,7 @@ from localstack.testing.pytest.fixtures import StackDeployError
 class TestResourceAttributes:
     @pytest.mark.skip(reason="failing on unresolved attributes is not enabled yet")
     @markers.snapshot.skip_snapshot_verify
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_invalid_getatt_fails(self, aws_client, deploy_cfn_template, snapshot):
         """
         Check how CloudFormation behaves on invalid attribute names for resources in a Fn::GetAtt

@@ -4,7 +4,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_alarm_creation(deploy_cfn_template, snapshot):
     snapshot.add_transformer(snapshot.transform.resource_name())
     alarm_name = f"alarm-{short_uid()}"
