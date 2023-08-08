@@ -3,6 +3,7 @@ import aws_cdk.aws_ecs as ecs
 import pytest
 import requests
 
+from localstack.testing.pytest import markers
 from localstack.testing.scenario.provisioning import InfraProvisioner
 
 
@@ -33,6 +34,7 @@ class TestEcsScenario:
         with provisioner.provisioner() as prov:
             yield prov
 
+    @markers.aws.unknown
     def test_scenario_validate_infra(self, aws_client, infrastructure):
         outputs = infrastructure.get_stack_outputs(stack_name="ClusterStack")
         cluster_name = outputs["ClusterName"]
@@ -43,6 +45,7 @@ class TestEcsScenario:
         albs = aws_client.elbv2.describe_load_balancers(LoadBalancerArns=[alb_arn])
         assert albs["LoadBalancers"][0]["LoadBalancerArn"] == alb_arn
 
+    @markers.aws.unknown
     def test_scenario_call_service(self, aws_client, infrastructure):
         # TODO: add a test here to call the deployed NGINX service
         # outputs = infrastructure.get_stack_outputs(stack_name="ClusterStack")

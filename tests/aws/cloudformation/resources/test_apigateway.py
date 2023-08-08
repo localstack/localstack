@@ -51,6 +51,7 @@ Resources:
 """
 
 
+@markers.aws.unknown
 def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
     api_name = f"rest-api-{short_uid()}"
     custom_id = short_uid()
@@ -332,6 +333,7 @@ def test_cfn_deploy_apigateway_from_s3_swagger(
     snapshot.match("resources", resources)
 
 
+@markers.aws.unknown
 def test_cfn_apigateway_rest_api(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "../../templates/apigateway.json")
@@ -409,6 +411,7 @@ def test_update_usage_plan(deploy_cfn_template, aws_client):
         aws_client.apigateway.delete_usage_plan(usagePlanId=plan["id"])
 
 
+@markers.aws.unknown
 def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_client):
     template = """
     Parameters:

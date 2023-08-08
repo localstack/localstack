@@ -30,6 +30,7 @@ pytestmark = pytest.mark.skipif(
     ]
 )
 class TestTaskServiceSqs:
+    @markers.aws.unknown
     def test_send_message_no_such_queue(
         self,
         aws_client,
@@ -58,6 +59,7 @@ class TestTaskServiceSqs:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_send_message_no_such_queue_no_catch(
         self,
         aws_client,
@@ -87,6 +89,7 @@ class TestTaskServiceSqs:
         )
 
     @pytest.mark.skip("SQS does not raise error on empty body.")
+    @markers.aws.unknown
     def test_send_message_empty_body(
         self,
         aws_client,
@@ -116,6 +119,7 @@ class TestTaskServiceSqs:
         )
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
+    @markers.aws.unknown
     def test_sqs_failure_in_wait_for_task_tok(
         self,
         aws_client,

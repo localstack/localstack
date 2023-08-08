@@ -16,6 +16,7 @@ from localstack.utils.testutil import create_zip_file
 
 class TestCdkInit:
     @pytest.mark.parametrize("bootstrap_version", ["10", "11", "12"])
+    @markers.aws.unknown
     def test_cdk_bootstrap(self, deploy_cfn_template, bootstrap_version, aws_client):
         deploy_cfn_template(
             template_path=os.path.join(
@@ -35,6 +36,7 @@ class TestCdkInit:
         assert len(stack_res["StackResources"]) == 1
         assert stack_res["StackResources"][0]["LogicalResourceId"] == "CDKMetadata"
 
+    @markers.aws.unknown
     def test_cdk_bootstrap_redeploy(
         self, is_change_set_finished, cleanup_stacks, cleanup_changesets
     ):
@@ -65,6 +67,7 @@ class TestCdkInit:
             cleanup_stacks([stack_name])
 
     # TODO: remove this and replace with CDK test
+    @markers.aws.unknown
     def test_cdk_template(self, deploy_cfn_template, s3_create_bucket, aws_client):
         bucket = f"bucket-{short_uid()}"
         key = f"key-{short_uid()}"

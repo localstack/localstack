@@ -24,6 +24,7 @@ pytestmark = pytest.mark.skipif(
 )
 class TestTaskServiceAwsSdk:
     @markers.snapshot.skip_snapshot_verify(paths=["$..SecretList"])
+    @markers.aws.unknown
     def test_list_secrets(
         self, aws_client, create_iam_role_for_sfn, create_state_machine, sfn_snapshot
     ):
@@ -39,6 +40,7 @@ class TestTaskServiceAwsSdk:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_dynamodb_put_get_item(
         self,
         aws_client,
@@ -71,6 +73,7 @@ class TestTaskServiceAwsSdk:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_dynamodb_put_delete_item(
         self,
         aws_client,
@@ -103,6 +106,7 @@ class TestTaskServiceAwsSdk:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_dynamodb_put_update_get_item(
         self,
         aws_client,

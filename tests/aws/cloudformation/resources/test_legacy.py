@@ -270,6 +270,7 @@ Outputs:
 
 # Note: Do not add new tests here !
 class TestCloudFormation:
+    @markers.aws.unknown
     def test_validate_template(self, aws_client):
         template = template_preparer.template_to_json(
             load_file(
@@ -286,6 +287,7 @@ class TestCloudFormation:
             == "The EC2 Key Pair to allow SSH access to the instance"
         )
 
+    @markers.aws.unknown
     def test_validate_invalid_json_template_should_fail(self, aws_client):
         invalid_json = '{"this is invalid JSON"="bobbins"}'
 
@@ -295,6 +297,7 @@ class TestCloudFormation:
             assert ctx.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
             assert ctx.value.response["Error"]["Message"] == "Template Validation Error"
 
+    @markers.aws.unknown
     def test_cfn_handle_log_group_resource(self, deploy_cfn_template, aws_client):
         log_group_prefix = "/aws/lambda/AWS_DUB_LAM_10000000"
 
@@ -312,6 +315,7 @@ class TestCloudFormation:
         rs = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_prefix)
         assert len(rs["logGroups"]) == 0
 
+    @markers.aws.unknown
     def test_cfn_handle_iam_role_resource(self, deploy_cfn_template, aws_client):
         role_name = f"role-{short_uid()}"
         policy_name = f"policy-{short_uid()}"
@@ -335,6 +339,7 @@ class TestCloudFormation:
         rs = aws_client.iam.list_roles(PathPrefix=role_path_prefix)
         assert not rs["Roles"]
 
+    @markers.aws.unknown
     def test_cfn_handle_iam_role_resource_no_role_name(self, deploy_cfn_template, aws_client):
         role_path_prefix = f"/role-prefix-{short_uid()}/"
         stack = deploy_cfn_template(template=TEST_TEMPLATE_14 % role_path_prefix)
@@ -347,6 +352,7 @@ class TestCloudFormation:
         rs = aws_client.iam.list_roles(PathPrefix=role_path_prefix)
         assert not rs["Roles"]
 
+    @markers.aws.unknown
     def test_cfn_conditional_deployment(self, deploy_cfn_template, aws_client):
         bucket_id = short_uid()
         deploy_cfn_template(template=TEST_TEMPLATE_19.format(id=bucket_id))
@@ -363,6 +369,7 @@ class TestCloudFormation:
     @pytest.mark.parametrize(
         "create_bucket_first, region", [(True, "eu-west-1"), (False, "us-east-1")]
     )
+    @markers.aws.unknown
     def test_cfn_handle_s3_notification_configuration(
         self, region, aws_client_factory, deploy_cfn_template, create_bucket_first
     ):
@@ -391,6 +398,7 @@ class TestCloudFormation:
             s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
         exc.match("NoSuchBucket")
 
+    @markers.aws.unknown
     def test_cfn_handle_serverless_api_resource(self, deploy_cfn_template, aws_client):
         stack = deploy_cfn_template(template=TEST_TEMPLATE_22)
 
@@ -417,6 +425,7 @@ class TestCloudFormation:
 
     # TODO: refactor
     @pytest.mark.xfail(condition=is_new_provider(), reason="fails/times out")
+    @markers.aws.unknown
     def test_update_lambda_function(self, s3_create_bucket, deploy_cfn_template, aws_client):
         bucket_name = f"bucket-{short_uid()}"
         key_name = "lambda-package"
@@ -460,6 +469,7 @@ class TestCloudFormation:
         )
 
     # TODO: evaluate
+    @markers.aws.unknown
     def test_update_conditions(self, deploy_cfn_template, aws_client):
         stack = deploy_cfn_template(template=TEST_TEMPLATE_3)
         template = yaml.safe_load(TEST_TEMPLATE_3)
@@ -498,6 +508,7 @@ class TestCloudFormation:
         with pytest.raises(Exception):
             aws_client.s3.head_bucket(Bucket=bucket2)
 
+    @markers.aws.unknown
     def test_cfn_template_with_short_form_fn_sub(self, deploy_cfn_template, aws_client):
         environment = f"env-{short_uid()}"
 
@@ -526,6 +537,7 @@ class TestCloudFormation:
         payload = definition["States"]["time-series-update"]["Parameters"]["Payload"]
         assert payload == {"key": "12345"}
 
+    @markers.aws.unknown
     def test_sub_in_lambda_function_name(self, deploy_cfn_template, s3_create_bucket, aws_client):
         environment = f"env-{short_uid()}"
         bucket = f"bucket-{short_uid()}"
@@ -577,6 +589,7 @@ class TestCloudFormation:
         groups = aws_client.resource_groups.list_groups().get("Groups", [])
         assert [g for g in groups if g["Name"] == rg_name]
 
+    @markers.aws.unknown
     def test_functions_in_output_export_name(self, deploy_cfn_template, aws_client):
         environment = f"env-{short_uid()}"
 
@@ -614,6 +627,7 @@ class TestCloudFormation:
 
     # TODO: refactor
     @pytest.mark.xfail(reason="fails due to / depending on other tests")
+    @markers.aws.unknown
     def test_deploy_stack_with_sub_select_and_sub_getaz(
         self, deploy_cfn_template, cleanups, aws_client
     ):
@@ -670,6 +684,7 @@ class TestCloudFormation:
 
     # TODO: refactor
     @pytest.mark.skip(reason="update doesn't change value for instancetype")
+    @markers.aws.unknown
     def test_cfn_update_ec2_instance_type(self, deploy_cfn_template, aws_client):
         if aws_client.cloudformation.meta.region_name not in [
             "ap-northeast-1",
@@ -712,6 +727,7 @@ class TestCloudFormation:
         assert len(reservations) == 1
         assert reservations[0]["Instances"][0]["InstanceType"] == "t2.medium"
 
+    @markers.aws.unknown
     def test_cfn_with_exports(self, deploy_cfn_template, aws_client):
         # fetch initial list of exports
         exports_before = aws_client.cloudformation.list_exports()["Exports"]
@@ -733,6 +749,7 @@ class TestCloudFormation:
         assert f"{stack_name}-cc-schedules-stream" in export_names
 
     # TODO: refactor
+    @markers.aws.unknown
     def test_cfn_with_route_table(self, deploy_cfn_template, aws_client):
         resp = aws_client.ec2.describe_vpcs()
         # TODO: fix assertion, to make tests parallelizable!
@@ -843,6 +860,7 @@ class TestCloudFormation:
         assert len(new_function) == 1
         assert lambda_role_name_new in new_function[0].get("Role")
 
+    @markers.aws.unknown
     def test_resolve_transitive_placeholders_in_strings(self, deploy_cfn_template, aws_client):
         queue_name = f"q-{short_uid()}"
         stack_name = f"stack-{short_uid()}"

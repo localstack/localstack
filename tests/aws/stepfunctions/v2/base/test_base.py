@@ -20,6 +20,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestSnfApi:
+    @markers.aws.unknown
     def test_state_fail(
         self,
         aws_client,
@@ -40,6 +41,7 @@ class TestSnfApi:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_event_bridge_events_base(
         self,
         create_iam_role_for_sfn,
@@ -63,6 +65,7 @@ class TestSnfApi:
         )
 
     @pytest.mark.skip(reason="flaky")  # FIXME
+    @markers.aws.unknown
     def test_event_bridge_events_failure(
         self,
         create_iam_role_for_sfn,

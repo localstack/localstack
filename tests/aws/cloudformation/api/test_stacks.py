@@ -168,6 +168,7 @@ class TestStacksApi:
         resources = aws_client.cloudformation.describe_stack_resources(StackName=stack_name)
         snapshot.match("stack_resources", resources)
 
+    @markers.aws.unknown
     def test_list_stack_resources_for_removed_resource(self, deploy_cfn_template, aws_client):
         template_path = os.path.join(
             os.path.dirname(__file__), "../../templates/eventbridge_policy.yaml"
@@ -206,6 +207,7 @@ class TestStacksApi:
         statuses = set([res["ResourceStatus"] for res in resources])
         assert statuses == {"UPDATE_COMPLETE"}
 
+    @markers.aws.unknown
     def test_update_stack_with_same_template(self, deploy_cfn_template, aws_client):
         template = load_file(
             os.path.join(os.path.dirname(__file__), "../../templates/fifo_queue.json")
@@ -225,6 +227,7 @@ class TestStacksApi:
         assert "No updates are to be performed." in error_message
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..StackEvents"])
+    @markers.aws.unknown
     def test_list_events_after_deployment(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(SortingTransformer("StackEvents", lambda x: x["Timestamp"]))
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -280,6 +283,7 @@ class TestStacksApi:
     @pytest.mark.skip(reason="disable rollback not enabled")
     # @markers.aws.validated
     @pytest.mark.parametrize("rollback_disabled, length_expected", [(False, 2), (True, 1)])
+    @markers.aws.unknown
     def test_failure_options_for_stack_update(self, rollback_disabled, length_expected, aws_client):
         stack_name = f"stack-{short_uid()}"
 

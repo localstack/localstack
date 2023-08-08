@@ -2,11 +2,13 @@ import os
 
 import pytest
 
+from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
 class TestExtensionsResourceTypes:
     @pytest.mark.skip(reason="feature not implemented")
+    @markers.aws.unknown
     def test_deploy_resource_type(
         self, deploy_cfn_template, register_extension, snapshot, aws_client
     ):

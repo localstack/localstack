@@ -24,6 +24,7 @@ pytestmark = pytest.mark.skipif(
 )
 class TestHeartbeats:
     @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
+    @markers.aws.unknown
     def test_heartbeat_timeout(
         self,
         aws_client,
@@ -62,6 +63,7 @@ class TestHeartbeats:
         )
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
+    @markers.aws.unknown
     def test_heartbeat_path_timeout(
         self,
         aws_client,
@@ -104,6 +106,7 @@ class TestHeartbeats:
         )
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
+    @markers.aws.unknown
     def test_heartbeat_no_timeout(
         self,
         aws_client,

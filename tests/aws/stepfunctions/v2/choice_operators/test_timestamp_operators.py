@@ -39,6 +39,7 @@ BASE_COMPARISONS: Final[list[tuple[str, str]]] = [(T0, T0), (T0, T1), (T1, T0)]
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestTimestamps:
+    @markers.aws.unknown
     def test_timestamp_equals(
         self,
         aws_client,
@@ -59,6 +60,7 @@ class TestTimestamps:
             comparisons=[*type_equals, *BASE_COMPARISONS],
         )
 
+    @markers.aws.unknown
     def test_timestamp_equals_path(
         self,
         aws_client,
@@ -76,6 +78,7 @@ class TestTimestamps:
             add_literal_value=False,
         )
 
+    @markers.aws.unknown
     def test_timestamp_greater_than(
         self,
         aws_client,
@@ -92,6 +95,7 @@ class TestTimestamps:
             comparisons=BASE_COMPARISONS,
         )
 
+    @markers.aws.unknown
     def test_timestamp_greater_than_path(
         self,
         aws_client,
@@ -109,6 +113,7 @@ class TestTimestamps:
             add_literal_value=False,
         )
 
+    @markers.aws.unknown
     def test_timestamp_greater_than_equals(
         self,
         aws_client,
@@ -125,6 +130,7 @@ class TestTimestamps:
             comparisons=BASE_COMPARISONS,
         )
 
+    @markers.aws.unknown
     def test_timestamp_greater_than_equals_path(
         self,
         aws_client,
@@ -142,6 +148,7 @@ class TestTimestamps:
             add_literal_value=False,
         )
 
+    @markers.aws.unknown
     def test_timestamp_less_than(
         self,
         aws_client,
@@ -158,6 +165,7 @@ class TestTimestamps:
             comparisons=BASE_COMPARISONS,
         )
 
+    @markers.aws.unknown
     def test_timestamp_less_than_path(
         self,
         aws_client,
@@ -175,6 +183,7 @@ class TestTimestamps:
             add_literal_value=False,
         )
 
+    @markers.aws.unknown
     def test_timestamp_less_than_equals(
         self,
         aws_client,
@@ -191,6 +200,7 @@ class TestTimestamps:
             comparisons=BASE_COMPARISONS,
         )
 
+    @markers.aws.unknown
     def test_timestamp_less_than_equals_path(
         self,
         aws_client,

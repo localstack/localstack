@@ -4,6 +4,7 @@ import os
 import pytest
 
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest import markers
 
 RESOURCE_GETATT_TARGETS = ["Path", "UserName", "Id", "Arn", "PermissionsBoundary"]
 
@@ -11,6 +12,7 @@ RESOURCE_GETATT_TARGETS = ["Path", "UserName", "Id", "Arn", "PermissionsBoundary
 class TestAttributeAccess:
     @pytest.mark.parametrize("attribute", RESOURCE_GETATT_TARGETS)
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Exploratory test only")
+    @markers.aws.unknown
     def test_getatt(
         self,
         aws_client,
