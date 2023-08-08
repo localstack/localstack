@@ -213,7 +213,6 @@ class Poller:
         invocation_result: InvocationResult,
         event_invoke_config: EventInvokeConfig | None,
     ) -> None:
-        LOG.debug("Handling success destination for %s", self.version_manager.function_arn)
         if event_invoke_config is None:
             return
         success_destination = event_invoke_config.destination_config.get("OnSuccess", {}).get(
@@ -221,6 +220,7 @@ class Poller:
         )
         if success_destination is None:
             return
+        LOG.debug("Handling success destination for %s", self.version_manager.function_arn)
 
         original_payload = sqs_invocation.invocation.payload
         destination_payload = {
@@ -259,7 +259,6 @@ class Poller:
         event_invoke_config: EventInvokeConfig | None,
         failure_cause: str,
     ):
-        LOG.debug("Handling failure destination for %s", self.version_manager.function_arn)
         if event_invoke_config is None:
             return
         failure_destination = event_invoke_config.destination_config.get("OnFailure", {}).get(
@@ -267,8 +266,13 @@ class Poller:
         )
         if failure_destination is None:
             return
+        LOG.debug("Handling failure destination for %s", self.version_manager.function_arn)
 
         original_payload = sqs_invocation.invocation.payload
+        if failure_cause == "ZeroReservedConcurrency":
+            approximate_invoke_count = sqs_invocation.retries
+        else:
+            approximate_invoke_count = sqs_invocation.retries + 1
         destination_payload = {
             "version": "1.0",
             "timestamp": timestamp_millis(),
@@ -276,7 +280,7 @@ class Poller:
                 "requestId": invocation_result.request_id,
                 "functionArn": self.version_manager.function_version.qualified_arn,
                 "condition": failure_cause,
-                "approximateInvokeCount": sqs_invocation.retries + 1,
+                "approximateInvokeCount": approximate_invoke_count,
             },
             "requestPayload": json.loads(to_str(original_payload)),
         }
