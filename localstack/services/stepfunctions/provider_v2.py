@@ -1,3 +1,4 @@
+import copy
 import datetime
 import json
 from typing import Optional
@@ -7,6 +8,7 @@ from localstack.aws.api.stepfunctions import (
     Arn,
     CreateStateMachineInput,
     CreateStateMachineOutput,
+    Definition,
     DeleteStateMachineOutput,
     DescribeExecutionOutput,
     DescribeStateMachineOutput,
@@ -14,6 +16,7 @@ from localstack.aws.api.stepfunctions import (
     ExecutionStatus,
     GetExecutionHistoryOutput,
     IncludeExecutionDataGetExecutionHistory,
+    InvalidArn,
     InvalidDefinition,
     InvalidExecutionInput,
     InvalidName,
@@ -21,10 +24,13 @@ from localstack.aws.api.stepfunctions import (
     ListExecutionsOutput,
     ListExecutionsPageToken,
     ListStateMachinesOutput,
+    LoggingConfiguration,
     LongArn,
+    MissingRequiredParameter,
     Name,
     PageSize,
     PageToken,
+    Publish,
     ReverseOrder,
     SendTaskFailureOutput,
     SendTaskHeartbeatOutput,
@@ -36,7 +42,6 @@ from localstack.aws.api.stepfunctions import (
     StateMachineAlreadyExists,
     StateMachineDoesNotExist,
     StateMachineList,
-    StateMachineStatus,
     StateMachineType,
     StepfunctionsApi,
     StopExecutionOutput,
@@ -44,6 +49,9 @@ from localstack.aws.api.stepfunctions import (
     TaskTimedOut,
     TaskToken,
     TraceHeader,
+    TracingConfiguration,
+    UpdateStateMachineOutput,
+    VersionDescription,
 )
 from localstack.services.stepfunctions.asl.eval.callback.callback import (
     CallbackConsumerTimeout,
@@ -112,6 +120,16 @@ class StepFunctionsProvider(StepfunctionsApi):
                 return state_machine
         return None
 
+    @staticmethod
+    def _validate_definition(definition: str):
+        # Validate
+        # TODO: pass through static analyser.
+        try:
+            AmazonStateLanguageParser.parse(definition)
+        except Exception as ex:
+            # TODO: add message from static analyser, this just helps the user debug issues in the derivation.
+            raise InvalidDefinition(str(ex))
+
     def create_state_machine(
         self, context: RequestContext, request: CreateStateMachineInput
     ) -> CreateStateMachineOutput:
@@ -133,14 +151,8 @@ class StepFunctionsProvider(StepfunctionsApi):
                 f"State Machine Already Exists: '{state_machine_with_name.arn}'"
             )
 
-        # Validate
-        # TODO: pass through static analyser.
         state_machine_definition: str = request["definition"]
-        try:
-            AmazonStateLanguageParser.parse(state_machine_definition)
-        except Exception as ex:
-            # TODO: add message from static analyser, this just helps the user debug issues in the derivation.
-            raise InvalidDefinition(str(ex))
+        StepFunctionsProvider._validate_definition(definition=state_machine_definition)
 
         name: Optional[Name] = request["name"]
         arn = aws_stack_state_machine_arn(
@@ -170,17 +182,10 @@ class StepFunctionsProvider(StepfunctionsApi):
     def describe_state_machine(
         self, context: RequestContext, state_machine_arn: Arn
     ) -> DescribeStateMachineOutput:
-        sm = self.get_store(context).state_machines.get(state_machine_arn)
-        return DescribeStateMachineOutput(
-            stateMachineArn=sm.arn,
-            name=sm.name,
-            status=StateMachineStatus.ACTIVE,
-            definition=sm.definition,
-            roleArn=sm.role_arn,
-            type=sm.sm_type,
-            creationDate=sm.create_date,
-            loggingConfiguration=sm.logging_config,
-        )
+        state_machine = self.get_store(context).state_machines.get(state_machine_arn)
+        if state_machine is None:
+            raise InvalidArn()
+        return state_machine.to_describe_output()
 
     def send_task_heartbeat(
         self, context: RequestContext, task_token: TaskToken
@@ -253,6 +258,9 @@ class StepFunctionsProvider(StepfunctionsApi):
         if not state_machine:
             raise StateMachineDoesNotExist(f"State Machine Does Not Exist: '{state_machine_arn}'")
 
+        # Update event change parameters about the state machine and should not affect those about this execution.
+        state_machine_clone = copy.deepcopy(state_machine)
+
         if input is None:
             input_data = dict()
         else:
@@ -280,9 +288,9 @@ class StepFunctionsProvider(StepfunctionsApi):
 
         execution = Execution(
             name=exec_name,
-            role_arn=state_machine.role_arn,
+            role_arn=state_machine_clone.role_arn,
             exec_arn=exec_arn,
-            state_machine=state_machine,
+            state_machine=state_machine_clone,
             start_date=datetime.datetime.now(),
             input_data=input_data,
             trace_header=trace_header,
@@ -358,3 +366,33 @@ class StepFunctionsProvider(StepfunctionsApi):
         stop_date = datetime.datetime.now()
         execution.stop(stop_date=stop_date, cause=cause, error=error)
         return StopExecutionOutput(stopDate=stop_date)
+
+    def update_state_machine(
+        self,
+        context: RequestContext,
+        state_machine_arn: Arn,
+        definition: Definition = None,
+        role_arn: Arn = None,
+        logging_configuration: LoggingConfiguration = None,
+        tracing_configuration: TracingConfiguration = None,
+        publish: Publish = None,
+        version_description: VersionDescription = None,
+    ) -> UpdateStateMachineOutput:
+        state_machine = self.get_store(context).state_machines.get(state_machine_arn)
+        if state_machine is None:
+            raise InvalidArn()
+
+        if not any([definition, role_arn, logging_configuration]):
+            raise MissingRequiredParameter(
+                "Either the definition, the role ARN, the LoggingConfiguration, or the TracingConfiguration must be specified"
+            )
+
+        if definition is not None:
+            self._validate_definition(definition=definition)
+
+        revision_id = state_machine.add_revision(definition=definition, role_arn=role_arn)
+
+        update_output = UpdateStateMachineOutput(updateDate=datetime.datetime.now())
+        if revision_id is not None:
+            update_output["revisionId"] = revision_id
+        return update_output
