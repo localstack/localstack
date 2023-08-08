@@ -6,14 +6,14 @@ import pytest
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.awslambda import lambda_api
-from localstack.services.awslambda.lambda_api import (
+from localstack.services.lambda_ import lambda_api
+from localstack.services.lambda_.lambda_api import (
     LAMBDA_TEST_ROLE,
     get_lambda_policy_name,
     use_docker,
 )
-from localstack.services.awslambda.lambda_utils import LAMBDA_DEFAULT_HANDLER
-from localstack.services.awslambda.packages import awslambda_go_runtime_package
+from localstack.services.lambda_.lambda_utils import LAMBDA_DEFAULT_HANDLER
+from localstack.services.lambda_.packages import awslambda_go_runtime_package
 from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
@@ -69,7 +69,7 @@ def test_logging_in_local_executor(create_lambda_function, handler_path, aws_cli
         runtime=Runtime.python3_9,
     )
 
-    invoke_result = aws_client.awslambda.invoke(
+    invoke_result = aws_client.lambda_.invoke(
         FunctionName=function_name,
         LogType="Tail",
         Payload=to_bytes(json.dumps({"verification_token": verification_token})),
@@ -100,7 +100,7 @@ class TestLambdaLegacyProvider:
         principal = "s3.amazonaws.com"
         statement_ids = ["s4", "s5"]
         for sid in statement_ids:
-            resp = aws_client.awslambda.add_permission(
+            resp = aws_client.lambda_.add_permission(
                 FunctionName=function_name,
                 Action=action,
                 StatementId=sid,
@@ -134,7 +134,7 @@ class TestLambdaLegacyProvider:
             assert statement_ids[abs(i - 1)] == statements[i]["Sid"]
 
         # remove permission that we just added
-        resp = aws_client.awslambda.remove_permission(
+        resp = aws_client.lambda_.remove_permission(
             FunctionName=function_name,
             StatementId=sid,
             Qualifier="qual1",
@@ -155,7 +155,7 @@ class TestLambdaLegacyProvider:
         action = "lambda:InvokeFunction"
         sid = "s3"
         principal = "s3.amazonaws.com"
-        resp = aws_client.awslambda.add_permission(
+        resp = aws_client.lambda_.add_permission(
             FunctionName=function_name,
             Action=action,
             StatementId=sid,
@@ -164,7 +164,7 @@ class TestLambdaLegacyProvider:
         )
 
         # fetch lambda policy
-        policy = aws_client.awslambda.get_policy(FunctionName=function_name)["Policy"]
+        policy = aws_client.lambda_.get_policy(FunctionName=function_name)["Policy"]
         assert isinstance(policy, str)
         policy = json.loads(to_str(policy))
         assert action == policy["Statement"][0]["Action"]
@@ -185,7 +185,7 @@ class TestLambdaLegacyProvider:
         assert ":policy/" in matching[0]["Arn"]
 
         # remove permission that we just added
-        resp = aws_client.awslambda.remove_permission(
+        resp = aws_client.lambda_.remove_permission(
             FunctionName=function_name,
             StatementId=sid,
             Qualifier="qual1",
@@ -222,23 +222,23 @@ class TestLambdaLegacyProvider:
             "Environment": {"Variables": {"foo": "bar"}},
         }
 
-        result = aws_client.awslambda.create_function(**kwargs)
+        result = aws_client.lambda_.create_function(**kwargs)
         function_arn = result["FunctionArn"]
-        assert testutil.response_arn_matches_partition(aws_client.awslambda, function_arn)
+        assert testutil.response_arn_matches_partition(aws_client.lambda_, function_arn)
 
         partial_function_arn = ":".join(function_arn.split(":")[3:])
 
         # Get function by Name, ARN and partial ARN
         for func_ref in [func_name, function_arn, partial_function_arn]:
-            rs = aws_client.awslambda.get_function(FunctionName=func_ref)
+            rs = aws_client.lambda_.get_function(FunctionName=func_ref)
             assert rs["Configuration"].get("KMSKeyArn", "") == kms_key_arn
             assert rs["Configuration"].get("VpcConfig", {}) == vpc_config
             assert rs["Tags"] == tags
 
         # clean up
-        aws_client.awslambda.delete_function(FunctionName=func_name)
+        aws_client.lambda_.delete_function(FunctionName=func_name)
         with pytest.raises(Exception) as exc:
-            aws_client.awslambda.delete_function(FunctionName=func_name)
+            aws_client.lambda_.delete_function(FunctionName=func_name)
         assert "ResourceNotFoundException" in str(exc)
 
     @skip_if_pro_enabled
@@ -252,7 +252,7 @@ class TestLambdaLegacyProvider:
         )
 
         # update function config with Layers - should be ignored (and not raise a serializer error)
-        result = aws_client.awslambda.update_function_configuration(
+        result = aws_client.lambda_.update_function_configuration(
             FunctionName=func_name, Layers=["foo:bar"]
         )
         assert "Layers" not in result
@@ -279,7 +279,7 @@ class TestRubyRuntimes:
             runtime=Runtime.ruby2_7,
         )
         snapshot.match("create-result", create_result)
-        result = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
+        result = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         result = read_streams(result)
         snapshot.match("invoke-result", result)
         result_data = result["Payload"]
@@ -316,7 +316,7 @@ class TestGolangRuntimes:
         snapshot.match("create-result", create_result)
 
         # invoke
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=func_name, Payload=json.dumps({"name": "pytest"})
         )
         result = read_streams(result)

@@ -33,7 +33,7 @@ from localstack.aws.api.lambda_ import (
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import AWS_REGION_US_EAST_1
-from localstack.services.awslambda.api_utils import qualified_lambda_arn, unqualified_lambda_arn
+from localstack.services.lambda_.api_utils import qualified_lambda_arn, unqualified_lambda_arn
 from localstack.utils.archives import unzip
 from localstack.utils.strings import long_uid
 

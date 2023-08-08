@@ -136,14 +136,15 @@ from localstack.aws.api.lambda_ import (
     Version,
 )
 from localstack.aws.connect import connect_to
-from localstack.services.awslambda import api_utils
-from localstack.services.awslambda import hooks as lambda_hooks
-from localstack.services.awslambda.api_utils import STATEMENT_ID_REGEX
-from localstack.services.awslambda.event_source_listeners.event_source_listener import (
+from localstack.services.edge import ROUTER
+from localstack.services.lambda_ import api_utils
+from localstack.services.lambda_ import hooks as lambda_hooks
+from localstack.services.lambda_.api_utils import STATEMENT_ID_REGEX
+from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
-from localstack.services.awslambda.invocation import AccessDeniedException
-from localstack.services.awslambda.invocation.lambda_models import (
+from localstack.services.lambda_.invocation import AccessDeniedException
+from localstack.services.lambda_.invocation.lambda_models import (
     IMAGE_MAPPING,
     SNAP_START_SUPPORTED_RUNTIMES,
     AliasRoutingConfig,
@@ -171,7 +172,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     VersionState,
     VpcConfig,
 )
-from localstack.services.awslambda.invocation.lambda_service import (
+from localstack.services.lambda_.invocation.lambda_service import (
     LambdaService,
     create_image_code,
     destroy_code_if_not_used,
@@ -179,12 +180,11 @@ from localstack.services.awslambda.invocation.lambda_service import (
     store_lambda_archive,
     store_s3_bucket_archive,
 )
-from localstack.services.awslambda.invocation.models import LambdaStore
-from localstack.services.awslambda.invocation.runtime_executor import get_runtime_executor
-from localstack.services.awslambda.lambda_utils import validate_filters
-from localstack.services.awslambda.layerfetcher.layer_fetcher import LayerFetcher
-from localstack.services.awslambda.urlrouter import FunctionUrlRouter
-from localstack.services.edge import ROUTER
+from localstack.services.lambda_.invocation.models import LambdaStore
+from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
+from localstack.services.lambda_.lambda_utils import validate_filters
+from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
+from localstack.services.lambda_.urlrouter import FunctionUrlRouter
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import extract_service_from_arn
@@ -1236,7 +1236,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     ),
                     mode="rb",
                 )
-                lambda_client = connect_to().awslambda
+                lambda_client = connect_to().lambda_
                 lambda_client.create_function(
                     FunctionName="localstack-internal-awssdk",
                     Runtime=Runtime.nodejs16_x,

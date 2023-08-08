@@ -28,7 +28,7 @@ from localstack.aws.api.lambda_ import (
 from localstack.utils.collections import merge_recursive
 
 if TYPE_CHECKING:
-    from localstack.services.awslambda.invocation.lambda_models import (
+    from localstack.services.lambda_.invocation.lambda_models import (
         CodeSigningConfig,
         Function,
         FunctionUrlConfig,
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
         LayerVersion,
         VersionAlias,
     )
-    from localstack.services.awslambda.invocation.models import LambdaStore
+    from localstack.services.lambda_.invocation.models import LambdaStore
 
 # Pattern for a full (both with and without qualifier) lambda function ARN
 FULL_FN_ARN_PATTERN = re.compile(

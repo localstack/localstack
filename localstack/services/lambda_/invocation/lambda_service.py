@@ -24,13 +24,13 @@ from localstack.aws.api.lambda_ import (
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import AWS_REGION_US_EAST_1
-from localstack.services.awslambda import api_utils, usage
-from localstack.services.awslambda.api_utils import (
+from localstack.services.lambda_ import api_utils, usage
+from localstack.services.lambda_.api_utils import (
     lambda_arn,
     qualified_lambda_arn,
     qualifier_is_alias,
 )
-from localstack.services.awslambda.invocation.lambda_models import (
+from localstack.services.lambda_.invocation.lambda_models import (
     BUCKET_ACCOUNT,
     ArchiveCode,
     Function,
@@ -44,9 +44,9 @@ from localstack.services.awslambda.invocation.lambda_models import (
     VersionAlias,
     VersionState,
 )
-from localstack.services.awslambda.invocation.models import lambda_stores
-from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
-from localstack.services.awslambda.lambda_utils import HINT_LOG
+from localstack.services.lambda_.invocation.models import lambda_stores
+from localstack.services.lambda_.invocation.version_manager import LambdaVersionManager
+from localstack.services.lambda_.lambda_utils import HINT_LOG
 from localstack.utils.archives import get_unzipped_size, is_zip_file
 from localstack.utils.container_utils.container_client import ContainerException
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT

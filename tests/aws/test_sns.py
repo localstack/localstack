@@ -110,7 +110,7 @@ class TestSNSSubscription:
             role=lambda_su_role,
         )
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             FunctionName=function_name,
             StatementId=permission_id,
             Action="lambda:InvokeFunction",
@@ -744,7 +744,7 @@ class TestSNSProvider:
 
         # allow the SNS topic to invoke the lambda
         permission_id = f"test-statement-{short_uid()}"
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             FunctionName=function_name,
             StatementId=permission_id,
             Action="lambda:InvokeFunction",
@@ -873,7 +873,7 @@ class TestSNSProvider:
 
         snapshot.match("subscription-attributes", response_attributes)
 
-        aws_client.awslambda.delete_function(FunctionName=lambda_name)
+        aws_client.lambda_.delete_function(FunctionName=lambda_name)
 
         aws_client.sns.publish(
             TopicArn=topic_arn,
@@ -3817,7 +3817,7 @@ class TestSNSPublishDelivery:
             role=lambda_su_role,
         )
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             FunctionName=function_name,
             StatementId=permission_id,
             Action="lambda:InvokeFunction",

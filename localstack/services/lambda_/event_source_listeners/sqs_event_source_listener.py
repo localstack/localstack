@@ -4,15 +4,15 @@ import time
 from typing import Dict, List, Optional
 
 from localstack.aws.api.lambda_ import InvocationType
-from localstack.services.awslambda.event_source_listeners.adapters import (
+from localstack.services.lambda_.event_source_listeners.adapters import (
     EventSourceAdapter,
     EventSourceLegacyAdapter,
 )
-from localstack.services.awslambda.event_source_listeners.event_source_listener import (
+from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
-from localstack.services.awslambda.lambda_executors import InvocationResult
-from localstack.services.awslambda.lambda_utils import (
+from localstack.services.lambda_.lambda_executors import InvocationResult
+from localstack.services.lambda_.lambda_utils import (
     filter_stream_records,
     message_attributes_to_lower,
 )

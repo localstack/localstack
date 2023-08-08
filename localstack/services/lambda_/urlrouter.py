@@ -11,10 +11,10 @@ from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.protocol.serializer import gen_amzn_requestid
 from localstack.http import Request, Router
 from localstack.http.dispatcher import Handler
-from localstack.services.awslambda.api_utils import FULL_FN_ARN_PATTERN
-from localstack.services.awslambda.invocation.lambda_models import InvocationError, InvocationResult
-from localstack.services.awslambda.invocation.lambda_service import LambdaService
-from localstack.services.awslambda.invocation.models import lambda_stores
+from localstack.services.lambda_.api_utils import FULL_FN_ARN_PATTERN
+from localstack.services.lambda_.invocation.lambda_models import InvocationError, InvocationResult
+from localstack.services.lambda_.invocation.lambda_service import LambdaService
+from localstack.services.lambda_.invocation.models import lambda_stores
 from localstack.utils.aws.request_context import AWS_REGION_REGEX
 from localstack.utils.strings import long_uid, to_bytes, to_str
 from localstack.utils.time import TIMESTAMP_READABLE_FORMAT, mktime, timestamp

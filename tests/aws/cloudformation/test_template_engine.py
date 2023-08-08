@@ -509,7 +509,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_9,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
         )
 
         stack_with_macro = deploy_cfn_template(
@@ -554,7 +554,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -614,7 +614,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -663,7 +663,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -717,7 +717,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -783,7 +783,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -832,7 +832,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -905,7 +905,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -971,7 +971,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 

@@ -204,7 +204,7 @@ class TestLambda:
             runtime=Runtime.python3_9,
         )
 
-        function_url = aws_client.awslambda.create_function_url_config(
+        function_url = aws_client.lambda_.create_function_url_config(
             FunctionName=function_name,
             AuthType="NONE",
         )["FunctionUrl"]

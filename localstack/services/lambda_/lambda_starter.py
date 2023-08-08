@@ -4,9 +4,9 @@ from moto.awslambda import models as moto_awslambda_models
 
 from localstack import config
 from localstack.aws.connect import connect_to
-from localstack.services.awslambda.lambda_api import handle_lambda_url_invocation
-from localstack.services.awslambda.lambda_utils import get_default_executor_mode
 from localstack.services.edge import ROUTER
+from localstack.services.lambda_.lambda_api import handle_lambda_url_invocation
+from localstack.services.lambda_.lambda_utils import get_default_executor_mode
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.analytics import log
 from localstack.utils.aws import arns
@@ -37,8 +37,8 @@ class LambdaLifecycleHook(ServiceLifecycleHook):
 
 
 def start_lambda(port=None, asynchronous=False):
-    from localstack.services.awslambda import lambda_api, lambda_utils
     from localstack.services.infra import start_local_api
+    from localstack.services.lambda_ import lambda_api, lambda_utils
 
     log.event(
         "lambda:config",
@@ -65,7 +65,7 @@ def start_lambda(port=None, asynchronous=False):
 
 
 def stop_lambda() -> None:
-    from localstack.services.awslambda.lambda_api import cleanup
+    from localstack.services.lambda_.lambda_api import cleanup
 
     """
     Stops / cleans up the Lambda Executor
@@ -86,7 +86,7 @@ def check_lambda(expect_shutdown=False, print_error=False):
         wait_for_port_open(port, sleep_time=0.5, retries=20)
 
         endpoint_url = f"http://127.0.0.1:{port}"
-        out = connect_to(endpoint_url=endpoint_url).awslambda.list_functions()
+        out = connect_to(endpoint_url=endpoint_url).lambda_.list_functions()
     except Exception:
         if print_error:
             LOG.exception("Lambda health check failed")
@@ -102,7 +102,7 @@ def get_function(fn, self, *args, **kwargs):
     if result:
         return result
 
-    client = connect_to().awslambda
+    client = connect_to().lambda_
     lambda_name = arns.lambda_function_name(args[0])
     response = client.get_function(FunctionName=lambda_name)
 
@@ -117,5 +117,5 @@ def get_function(fn, self, *args, **kwargs):
 @patch(moto_awslambda_models.LambdaFunction.invoke)
 def invoke(fn, self, *args, **kwargs):
     payload = to_bytes(args[0])
-    client = connect_to().awslambda
+    client = connect_to().lambda_
     return client.invoke(FunctionName=self.function_name, Payload=payload)

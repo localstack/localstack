@@ -7,13 +7,13 @@ from werkzeug import Request
 from werkzeug.routing import Rule
 
 from localstack.http import Response, Router
-from localstack.services.awslambda.invocation.lambda_models import (
+from localstack.services.edge import ROUTER
+from localstack.services.lambda_.invocation.lambda_models import (
     InvocationError,
     InvocationLogs,
     InvocationResult,
     ServiceEndpoint,
 )
-from localstack.services.edge import ROUTER
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)

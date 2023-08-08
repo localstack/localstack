@@ -28,10 +28,10 @@ def test_traceid_outside_handler(create_lambda_function, lambda_su_role, tracing
         TracingConfig={"Mode": tracing_mode},
     )
 
-    invoke_result_1 = aws_client.awslambda.invoke(FunctionName=fn_name)
+    invoke_result_1 = aws_client.lambda_.invoke(FunctionName=fn_name)
     parsed_result_1 = json.loads(to_str(invoke_result_1["Payload"].read()))
     time.sleep(1)  # to guarantee sampling on AWS
-    invoke_result_2 = aws_client.awslambda.invoke(FunctionName=fn_name)
+    invoke_result_2 = aws_client.lambda_.invoke(FunctionName=fn_name)
     parsed_result_2 = json.loads(to_str(invoke_result_2["Payload"].read()))
 
     assert parsed_result_1["trace_id_outside_handler"] == "None"

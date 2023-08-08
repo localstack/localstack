@@ -1,7 +1,7 @@
 import json
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.awslambda.invocation.docker_runtime_executor import RuntimeImageResolver
+from localstack.services.lambda_.invocation.docker_runtime_executor import RuntimeImageResolver
 
 
 def test_custom_pattern_mapping():

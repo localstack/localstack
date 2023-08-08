@@ -69,7 +69,7 @@ class TestLambdaDLQ:
 
         # invoke Lambda, triggering an error
         payload = {lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1}
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=lambda_name,
             Payload=json.dumps(payload),
             InvocationType="Event",
@@ -88,11 +88,11 @@ class TestLambdaDLQ:
         snapshot.match("receive_result", receive_result)
 
         # update DLQ config
-        update_function_config_response = aws_client.awslambda.update_function_configuration(
+        update_function_config_response = aws_client.lambda_.update_function_configuration(
             FunctionName=lambda_name, DeadLetterConfig={}
         )
         snapshot.match("delete_dlq", update_function_config_response)
-        invoke_result = aws_client.awslambda.invoke(
+        invoke_result = aws_client.lambda_.invoke(
             FunctionName=lambda_name, Payload=json.dumps(payload), LogType="Tail"
         )
         snapshot.match("invoke_result", invoke_result)
@@ -168,7 +168,7 @@ class TestLambdaDestinationSqs:
             role=lambda_su_role,
         )
 
-        put_event_invoke_config_response = aws_client.awslambda.put_function_event_invoke_config(
+        put_event_invoke_config_response = aws_client.lambda_.put_function_event_invoke_config(
             FunctionName=lambda_name,
             MaximumRetryAttempts=0,
             DestinationConfig={
@@ -178,7 +178,7 @@ class TestLambdaDestinationSqs:
         )
         snapshot.match("put_function_event_invoke_config", put_event_invoke_config_response)
 
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=lambda_name,
             Payload=json.dumps(payload),
             InvocationType="Event",
@@ -227,7 +227,7 @@ class TestLambdaDestinationSqs:
             role=lambda_su_role,
         )
 
-        put_event_invoke_config_response = aws_client.awslambda.put_function_event_invoke_config(
+        put_event_invoke_config_response = aws_client.lambda_.put_function_event_invoke_config(
             FunctionName=lambda_name,
             DestinationConfig={
                 "OnSuccess": {"Destination": queue_arn},
@@ -236,7 +236,7 @@ class TestLambdaDestinationSqs:
         )
         snapshot.match("put_function_event_invoke_config", put_event_invoke_config_response)
 
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=lambda_name,
             Payload=json.dumps({lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1}),
             InvocationType="Event",
@@ -300,14 +300,14 @@ class TestLambdaDestinationSqs:
             runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
-        aws_client.awslambda.put_function_event_invoke_config(
+        aws_client.lambda_.put_function_event_invoke_config(
             FunctionName=fn_name,
             MaximumRetryAttempts=2,
             DestinationConfig={"OnFailure": {"Destination": queue_arn}},
         )
-        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=fn_name)
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=fn_name)
 
-        invoke_result = aws_client.awslambda.invoke(
+        invoke_result = aws_client.lambda_.invoke(
             FunctionName=fn_name,
             Payload=to_bytes(json.dumps({"message": message_id})),
             InvocationType="Event",  # important, otherwise destinations won't be triggered
@@ -410,15 +410,15 @@ class TestLambdaDestinationSqs:
             func_name=fn_name,
             role=lambda_su_role,
         )
-        aws_client.awslambda.put_function_event_invoke_config(
+        aws_client.lambda_.put_function_event_invoke_config(
             FunctionName=fn_name,
             MaximumRetryAttempts=2,
             MaximumEventAgeInSeconds=60,
             DestinationConfig={"OnFailure": {"Destination": queue_arn}},
         )
-        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=fn_name)
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=fn_name)
 
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=fn_name,
             Payload=to_bytes(json.dumps({"message": message_id})),
             InvocationType="Event",  # important, otherwise destinations won't be triggered
@@ -462,16 +462,16 @@ class TestLambdaDestinationSqs:
 
         # now we increase the max event age to give it a bit of a buffer for the actual lambda execution (60s + 30s buffer = 90s)
         # one retry should now be attempted since there's enough time left
-        aws_client.awslambda.update_function_event_invoke_config(
+        aws_client.lambda_.update_function_event_invoke_config(
             FunctionName=fn_name, MaximumEventAgeInSeconds=90, MaximumRetryAttempts=2
         )
-        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=fn_name)
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=fn_name)
 
         # deleting the log group, so we have a 'fresh' counter
         # without it, the assertion later would need to accommodate for previous invocations
         aws_client.logs.delete_log_group(logGroupName=f"/aws/lambda/{fn_name}")
 
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=fn_name,
             Payload=to_bytes(json.dumps({"message": message_id})),
             InvocationType="Event",  # important, otherwise destinations won't be triggered
@@ -607,7 +607,7 @@ def handler(event, context):
         )
         snapshot.add_transformer(snapshot.transform.regex(test_queue_name, "TestQueue"))
 
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=input_fn_name,
             Payload=b"{}",
             InvocationType="Event",  # important, otherwise destinations won't be triggered

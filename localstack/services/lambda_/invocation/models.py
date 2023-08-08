@@ -1,9 +1,5 @@
 from localstack.aws.api.lambda_ import EventSourceMappingConfiguration
-from localstack.services.awslambda.invocation.lambda_models import (
-    CodeSigningConfig,
-    Function,
-    Layer,
-)
+from localstack.services.lambda_.invocation.lambda_models import CodeSigningConfig, Function, Layer
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 
 

@@ -62,7 +62,7 @@ class TestS3NotificationsToLambda:
             handler_file=TEST_LAMBDA_PYTHON_TRIGGERED_S3, func_name=function_name, role=lambda_role
         )["CreateFunctionResponse"]
 
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             StatementId="1",
             FunctionName=function_name,
             Action="lambda:InvokeFunction",
@@ -147,7 +147,7 @@ class TestS3NotificationsToLambda:
             handler_file=TEST_LAMBDA_PYTHON_TRIGGERED_S3, func_name=function_name, role=lambda_role
         )["CreateFunctionResponse"]
 
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             StatementId="1",
             FunctionName=function_name,
             Action="lambda:InvokeFunction",

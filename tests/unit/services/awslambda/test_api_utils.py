@@ -1,4 +1,4 @@
-from localstack.services.awslambda.api_utils import (
+from localstack.services.lambda_.api_utils import (
     is_qualifier_expression,
     qualifier_is_alias,
     qualifier_is_version,

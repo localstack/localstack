@@ -8,8 +8,8 @@ import pytest
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import LOCALSTACK_MAVEN_VERSION, MAVEN_REPO_URL
 from localstack.packages import DownloadInstaller, Package, PackageInstaller
-from localstack.services.awslambda.lambda_api import use_docker
-from localstack.services.awslambda.packages import lambda_java_libs_package
+from localstack.services.lambda_.lambda_api import use_docker
+from localstack.services.lambda_.packages import lambda_java_libs_package
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
@@ -113,7 +113,7 @@ class TestNodeJSRuntimes:
         )
         snapshot.match("creation-result", result)
 
-        rs = aws_client.awslambda.invoke(
+        rs = aws_client.lambda_.invoke(
             FunctionName=function_name,
             Payload=json.dumps({"event_type": "test_lambda"}),
         )
@@ -200,9 +200,7 @@ class TestJavaRuntimes:
             )
             snapshot.match(f"create-result-{archive_desc}", create_result)
 
-            result = aws_client.awslambda.invoke(
-                FunctionName=lambda_name, Payload=b'{"echo":"echo"}'
-            )
+            result = aws_client.lambda_.invoke(FunctionName=lambda_name, Payload=b'{"echo":"echo"}')
             result = read_streams(result)
             snapshot.match(f"invoke-result-{archive_desc}", result)
             result_data = result["Payload"]
@@ -222,7 +220,7 @@ class TestJavaRuntimes:
             runtime=runtime,
             handler="cloud.localstack.awssdkv1.sample.LambdaStreamHandler",
         )
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=function_name,
             Payload=b'{"echo":"echo"}',
         )
@@ -242,7 +240,7 @@ class TestJavaRuntimes:
             handler="cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
         )
         snapshot.match("create-result", create_result)
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=function_name,
             Payload=b'{"bucket": "test_bucket", "key": "test_key"}',
         )
@@ -297,7 +295,7 @@ class TestJavaRuntimes:
         )
         snapshot.match("create-result", create_result)
 
-        result = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b'{"echo":"echo"}')
+        result = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b'{"echo":"echo"}')
         result = read_streams(result)
         snapshot.match("invoke-result", result)
         result_data = result["Payload"]
@@ -344,7 +342,7 @@ class TestJavaRuntimes:
             runtime=Runtime.java11,
             handler="cloud.localstack.sample.LambdaHandler",
         )
-        function_result = aws_client.awslambda.get_function(FunctionName=function_name)
+        function_result = aws_client.lambda_.get_function(FunctionName=function_name)
         snapshot.match("get-function", function_result)
         function_arn = function_result["Configuration"]["FunctionArn"]
         permission_id = f"test-statement-{short_uid()}"
@@ -385,7 +383,7 @@ class TestJavaRuntimes:
             },
         )
 
-        add_permission_response = aws_client.awslambda.add_permission(
+        add_permission_response = aws_client.lambda_.add_permission(
             FunctionName=function_name,
             StatementId=permission_id,
             Action="lambda:InvokeFunction",
@@ -448,7 +446,7 @@ class TestPythonRuntimes:
         )
 
         # invoke function and assert result
-        result = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
+        result = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         result_data = json.loads(result["Payload"].read())
         assert 200 == result["StatusCode"]
         assert json.loads("{}") == result_data["event"]
@@ -466,7 +464,7 @@ class TestPythonRuntimes:
             handler_file=TEST_LAMBDA_PYTHON_VERSION,
             runtime=runtime,
         )
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=function_name,
             Payload=b"{}",
         )
@@ -493,7 +491,7 @@ class TestPythonRuntimes:
             runtime=runtime,
         )
         snapshot.match("creation_response", creation_response)
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=function_name,
             Payload=b"{}",
         )

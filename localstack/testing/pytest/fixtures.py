@@ -1107,7 +1107,7 @@ def is_change_set_finished(aws_client):
 @pytest.fixture
 def wait_until_lambda_ready(aws_client):
     def _wait_until_ready(function_name: str, qualifier: str = None, client=None):
-        client = client or aws_client.awslambda
+        client = client or aws_client.lambda_
 
         def _is_not_pending():
             kwargs = {}
@@ -1170,13 +1170,13 @@ def create_lambda_function_aws(aws_client):
 
     def _create_lambda_function(**kwargs):
         def _create_function():
-            resp = aws_client.awslambda.create_function(**kwargs)
+            resp = aws_client.lambda_.create_function(**kwargs)
             lambda_arns.append(resp["FunctionArn"])
 
             def _is_not_pending():
                 try:
                     result = (
-                        aws_client.awslambda.get_function(FunctionName=resp["FunctionName"])[
+                        aws_client.lambda_.get_function(FunctionName=resp["FunctionName"])[
                             "Configuration"
                         ]["State"]
                         != "Pending"
@@ -1197,7 +1197,7 @@ def create_lambda_function_aws(aws_client):
 
     for arn in lambda_arns:
         try:
-            aws_client.awslambda.delete_function(FunctionName=arn)
+            aws_client.lambda_.delete_function(FunctionName=arn)
         except Exception:
             LOG.debug(f"Unable to delete function {arn=} in cleanup")
 
@@ -1206,7 +1206,7 @@ def create_lambda_function_aws(aws_client):
 def create_lambda_function(aws_client, wait_until_lambda_ready, lambda_su_role):
     lambda_arns_and_clients = []
     log_groups = []
-    lambda_client = aws_client.awslambda
+    lambda_client = aws_client.lambda_
     logs_client = aws_client.logs
     s3_client = aws_client.s3
 

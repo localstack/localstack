@@ -1,10 +1,10 @@
 from typing import Dict, Optional, Type
 
-from localstack.services.awslambda.event_source_listeners.adapters import (
+from localstack.services.lambda_.event_source_listeners.adapters import (
     EventSourceAdapter,
     EventSourceAsfAdapter,
 )
-from localstack.services.awslambda.invocation.lambda_service import LambdaService
+from localstack.services.lambda_.invocation.lambda_service import LambdaService
 from localstack.utils.objects import SubtypesInstanceManager
 
 

@@ -40,7 +40,7 @@ def test_invoke_warm_start(create_lambda_function, aws_client):
     )
 
     def invoke():
-        aws_client.awslambda.invoke(FunctionName=function_name)
+        aws_client.lambda_.invoke(FunctionName=function_name)
 
     # Ignore initial cold start
     invoke()
@@ -64,7 +64,7 @@ def test_invoke_cold_start(create_lambda_function, aws_client, monkeypatch):
     )
 
     def invoke():
-        aws_client.awslambda.invoke(FunctionName=function_name)
+        aws_client.lambda_.invoke(FunctionName=function_name)
 
     # Ignore the initial cold start, which could be even slower due to init downloading
     invoke()

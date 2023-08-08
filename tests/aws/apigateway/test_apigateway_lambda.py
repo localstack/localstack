@@ -4,7 +4,7 @@ import pytest
 import requests
 from botocore.exceptions import ClientError
 
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid

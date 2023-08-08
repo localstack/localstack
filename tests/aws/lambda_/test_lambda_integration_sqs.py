@@ -6,11 +6,11 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.awslambda.lambda_api import (
+from localstack.services.lambda_.lambda_api import (
     BATCH_SIZE_RANGES,
     INVALID_PARAMETER_VALUE_EXCEPTION,
 )
-from localstack.services.awslambda.lambda_utils import (
+from localstack.services.lambda_.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON38,
     LAMBDA_RUNTIME_PYTHON39,
 )
@@ -117,15 +117,15 @@ def test_failing_lambda_retries_after_visibility_timeout(
     event_source_arn = sqs_queue_arn(event_source_url)
 
     # wire everything with the event source mapping
-    response = aws_client.awslambda.create_event_source_mapping(
+    response = aws_client.lambda_.create_event_source_mapping(
         EventSourceArn=event_source_arn,
         FunctionName=function_name,
         BatchSize=1,
     )
     mapping_uuid = response["UUID"]
-    cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=mapping_uuid))
-    _await_event_source_mapping_enabled(aws_client.awslambda, mapping_uuid)
-    response = aws_client.awslambda.get_event_source_mapping(UUID=mapping_uuid)
+    cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
+    _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
+    response = aws_client.lambda_.get_event_source_mapping(UUID=mapping_uuid)
     snapshot.match("event_source_mapping", response)
 
     # trigger lambda with a message and pass the result destination url. the event format is expected by the
@@ -217,13 +217,13 @@ def test_message_body_and_attributes_passed_correctly(
     event_source_arn = sqs_queue_arn(event_source_url)
 
     # wire everything with the event source mapping
-    mapping_uuid = aws_client.awslambda.create_event_source_mapping(
+    mapping_uuid = aws_client.lambda_.create_event_source_mapping(
         EventSourceArn=event_source_arn,
         FunctionName=function_name,
         BatchSize=1,
     )["UUID"]
-    cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=mapping_uuid))
-    _await_event_source_mapping_enabled(aws_client.awslambda, mapping_uuid)
+    cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
+    _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
 
     # trigger lambda with a message and pass the result destination url. the event format is expected by the
     # lambda_sqs_integration.py lambda.
@@ -314,13 +314,13 @@ def test_redrive_policy_with_failing_lambda(
     event_source_arn = sqs_queue_arn(event_source_url)
 
     # wire everything with the event source mapping
-    mapping_uuid = aws_client.awslambda.create_event_source_mapping(
+    mapping_uuid = aws_client.lambda_.create_event_source_mapping(
         EventSourceArn=event_source_arn,
         FunctionName=function_name,
         BatchSize=1,
     )["UUID"]
-    cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=mapping_uuid))
-    _await_event_source_mapping_enabled(aws_client.awslambda, mapping_uuid)
+    cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
+    _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
 
     # trigger lambda with a message and pass the result destination url. the event format is expected by the
     # lambda_sqs_integration.py lambda.
@@ -391,7 +391,7 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
 
     # invoke Lambda, triggering an error
     payload = {lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1}
-    aws_client.awslambda.invoke(
+    aws_client.lambda_.invoke(
         FunctionName=function_name,
         Payload=json.dumps(payload),
         InvocationType="Event",
@@ -537,7 +537,7 @@ def test_report_batch_item_failures(
     _await_queue_size(aws_client.sqs, event_source_url, qsize=4, retries=30)
 
     # wire everything with the event source mapping
-    response = aws_client.awslambda.create_event_source_mapping(
+    response = aws_client.lambda_.create_event_source_mapping(
         EventSourceArn=event_source_arn,
         FunctionName=function_name,
         BatchSize=10,
@@ -546,8 +546,8 @@ def test_report_batch_item_failures(
     )
     snapshot.match("create_event_source_mapping", response)
     mapping_uuid = response["UUID"]
-    cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=mapping_uuid))
-    _await_event_source_mapping_enabled(aws_client.awslambda, mapping_uuid)
+    cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
+    _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
 
     # now wait for the first invocation result which is expected to have processed message 1 we wait half the retry
     # interval to wait long enough for the message to appear, but short enough to check that the DLQ is empty after
@@ -650,13 +650,13 @@ def test_report_batch_item_failures_on_lambda_error(
     _await_queue_size(aws_client.sqs, event_source_url, qsize=2)
 
     # wire everything with the event source mapping
-    mapping_uuid = aws_client.awslambda.create_event_source_mapping(
+    mapping_uuid = aws_client.lambda_.create_event_source_mapping(
         EventSourceArn=event_source_arn,
         FunctionName=function_name,
         FunctionResponseTypes=["ReportBatchItemFailures"],
     )["UUID"]
-    cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=mapping_uuid))
-    _await_event_source_mapping_enabled(aws_client.awslambda, mapping_uuid)
+    cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
+    _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
 
     # the message should arrive in the DLQ after 2 retries + some time for processing
 
@@ -732,15 +732,15 @@ def test_report_batch_item_failures_invalid_result_json_batch_fails(
     event_source_arn = sqs_queue_arn(event_source_url)
 
     # wire everything with the event source mapping
-    mapping_uuid = aws_client.awslambda.create_event_source_mapping(
+    mapping_uuid = aws_client.lambda_.create_event_source_mapping(
         EventSourceArn=event_source_arn,
         FunctionName=function_name,
         BatchSize=10,
         MaximumBatchingWindowInSeconds=0,
         FunctionResponseTypes=["ReportBatchItemFailures"],
     )["UUID"]
-    cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=mapping_uuid))
-    _await_event_source_mapping_enabled(aws_client.awslambda, mapping_uuid)
+    cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
+    _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
 
     # trigger the lambda, the message content doesn't matter because the whole batch should be treated as failure
     aws_client.sqs.send_message(
@@ -823,15 +823,15 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
     event_source_arn = sqs_queue_arn(event_source_url)
 
     # wire everything with the event source mapping
-    mapping_uuid = aws_client.awslambda.create_event_source_mapping(
+    mapping_uuid = aws_client.lambda_.create_event_source_mapping(
         EventSourceArn=event_source_arn,
         FunctionName=function_name,
         BatchSize=10,
         MaximumBatchingWindowInSeconds=0,
         FunctionResponseTypes=["ReportBatchItemFailures"],
     )["UUID"]
-    cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=mapping_uuid))
-    _await_event_source_mapping_enabled(aws_client.awslambda, mapping_uuid)
+    cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
+    _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
 
     # trigger the lambda, the message content doesn't matter because the whole batch should be treated as failure
     aws_client.sqs.send_message(
@@ -903,18 +903,18 @@ class TestSQSEventSourceMapping:
                 role=lambda_su_role,
             )
 
-            rs = aws_client.awslambda.create_event_source_mapping(
+            rs = aws_client.lambda_.create_event_source_mapping(
                 EventSourceArn=queue_arn_1, FunctionName=function_name
             )
             snapshot.match("create-event-source-mapping", rs)
 
             uuid = rs["UUID"]
             assert BATCH_SIZE_RANGES["sqs"][0] == rs["BatchSize"]
-            _await_event_source_mapping_enabled(aws_client.awslambda, uuid)
+            _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
 
             with pytest.raises(ClientError) as e:
                 # Update batch size with invalid value
-                rs = aws_client.awslambda.update_event_source_mapping(
+                rs = aws_client.lambda_.update_event_source_mapping(
                     UUID=uuid,
                     FunctionName=function_name,
                     BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
@@ -927,7 +927,7 @@ class TestSQSEventSourceMapping:
 
             with pytest.raises(ClientError) as e:
                 # Create event source mapping with invalid batch size value
-                rs = aws_client.awslambda.create_event_source_mapping(
+                rs = aws_client.lambda_.create_event_source_mapping(
                     EventSourceArn=queue_arn_2,
                     FunctionName=function_name,
                     BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
@@ -935,7 +935,7 @@ class TestSQSEventSourceMapping:
             snapshot.match("invalid-create-event-source-mapping", e.value.response)
             e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
         finally:
-            aws_client.awslambda.delete_event_source_mapping(UUID=uuid)
+            aws_client.lambda_.delete_event_source_mapping(UUID=uuid)
 
     @markers.aws.validated
     def test_sqs_event_source_mapping(
@@ -960,15 +960,15 @@ class TestSQSEventSourceMapping:
         )
         queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
         queue_arn_1 = sqs_queue_arn(queue_url_1)
-        create_event_source_mapping_response = aws_client.awslambda.create_event_source_mapping(
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
             EventSourceArn=queue_arn_1,
             FunctionName=function_name,
             MaximumBatchingWindowInSeconds=1,
         )
         mapping_uuid = create_event_source_mapping_response["UUID"]
-        cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=mapping_uuid))
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
         snapshot.match("create-event-source-mapping-response", create_event_source_mapping_response)
-        _await_event_source_mapping_enabled(aws_client.awslambda, mapping_uuid)
+        _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
 
         aws_client.sqs.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps({"foo": "bar"}))
 
@@ -1081,7 +1081,7 @@ class TestSQSEventSourceMapping:
 
         retry(_assert_qsize, retries=10)
 
-        create_event_source_mapping_response = aws_client.awslambda.create_event_source_mapping(
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
             EventSourceArn=queue_arn_1,
             FunctionName=function_name,
             MaximumBatchingWindowInSeconds=1,
@@ -1092,9 +1092,9 @@ class TestSQSEventSourceMapping:
             },
         )
         mapping_uuid = create_event_source_mapping_response["UUID"]
-        cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=mapping_uuid))
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=mapping_uuid))
         snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
-        _await_event_source_mapping_enabled(aws_client.awslambda, mapping_uuid)
+        _await_event_source_mapping_enabled(aws_client.lambda_, mapping_uuid)
 
         def _check_lambda_logs():
             events = get_lambda_log_events(function_name, logs_client=aws_client.logs)
@@ -1142,7 +1142,7 @@ class TestSQSEventSourceMapping:
         queue_arn_1 = sqs_queue_arn(queue_url_1)
 
         with pytest.raises(ClientError) as expected:
-            aws_client.awslambda.create_event_source_mapping(
+            aws_client.lambda_.create_event_source_mapping(
                 EventSourceArn=queue_arn_1,
                 FunctionName=function_name,
                 MaximumBatchingWindowInSeconds=1,

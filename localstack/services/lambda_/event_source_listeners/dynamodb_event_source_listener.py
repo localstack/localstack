@@ -1,7 +1,7 @@
 import datetime
 from typing import Dict, List, Optional
 
-from localstack.services.awslambda.event_source_listeners.stream_event_source_listener import (
+from localstack.services.lambda_.event_source_listeners.stream_event_source_listener import (
     StreamEventSourceListener,
 )
 from localstack.utils.aws import aws_stack

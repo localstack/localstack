@@ -9,7 +9,7 @@ class DockerRuntimeExecutorPlugin(RuntimeExecutorPlugin):
     name = "docker"
 
     def load(self, *args, **kwargs):
-        from localstack.services.awslambda.invocation.docker_runtime_executor import (
+        from localstack.services.lambda_.invocation.docker_runtime_executor import (
             DockerRuntimeExecutor,
         )
 

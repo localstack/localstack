@@ -29,13 +29,13 @@ from localstack.aws.connect import connect_to
 from localstack.constants import APPLICATION_JSON
 from localstack.http import Request
 from localstack.http import Response as HttpResponse
-from localstack.services.awslambda import lambda_executors
-from localstack.services.awslambda.event_source_listeners.event_source_listener import (
+from localstack.services.lambda_ import lambda_executors
+from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
-from localstack.services.awslambda.lambda_executors import InvocationResult, LambdaContext
-from localstack.services.awslambda.lambda_models import awslambda_stores
-from localstack.services.awslambda.lambda_utils import (
+from localstack.services.lambda_.lambda_executors import InvocationResult, LambdaContext
+from localstack.services.lambda_.lambda_models import awslambda_stores
+from localstack.services.lambda_.lambda_utils import (
     API_PATH_ROOT,
     API_PATH_ROOT_2,
     DOTNET_LAMBDA_RUNTIMES,
@@ -55,7 +55,7 @@ from localstack.services.awslambda.lambda_utils import (
     get_zip_bytes,
     validate_filters,
 )
-from localstack.services.awslambda.packages import awslambda_go_runtime_package
+from localstack.services.lambda_.packages import awslambda_go_runtime_package
 from localstack.utils.archives import unzip
 from localstack.utils.aws import arns, aws_stack, resources
 from localstack.utils.aws.arns import extract_region_from_arn
@@ -433,7 +433,7 @@ def run_lambda(
     # (e.g., persistence) have been executed when the run_lambda(..) function gets called (e.g., from API GW).
     LOG.debug("Running lambda %s", func_arn)
     if not hasattr(run_lambda, "_provider_initialized"):
-        connect_to().awslambda.list_functions()
+        connect_to().lambda_.list_functions()
         run_lambda._provider_initialized = True
 
     store = get_awslambda_store_for_arn(func_arn)
@@ -1843,7 +1843,7 @@ def invoke_function(function):
             ),
             mode="rb",
         )
-        lambda_client = connect_to().awslambda
+        lambda_client = connect_to().lambda_
         lambda_client.create_function(
             FunctionName="localstack-internal-awssdk",
             Runtime=LAMBDA_RUNTIME_NODEJS14X,

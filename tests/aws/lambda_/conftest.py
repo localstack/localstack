@@ -253,7 +253,7 @@ def multiruntime_lambda(aws_client, request, lambda_su_role) -> ParametrizedLamb
 
     zip_file_path = package_for_lang(scenario=scenario, runtime=runtime)
     param_lambda = ParametrizedLambda(
-        lambda_client=aws_client.awslambda,
+        lambda_client=aws_client.lambda_,
         scenario=scenario,
         runtime=runtime,
         handler=handler,

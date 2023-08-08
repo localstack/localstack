@@ -566,7 +566,7 @@ def backend_rotate_secret(
 
     rotation_func = None
     try:
-        lm_client = connect_to(region_name=self.region_name).awslambda
+        lm_client = connect_to(region_name=self.region_name).lambda_
         get_func_res = lm_client.get_function(FunctionName=rotation_lambda_arn)
         lm_spec = get_func_res["Configuration"]
         lm_spec["Code"] = {"ZipFile": str(short_uid())}

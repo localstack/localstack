@@ -140,8 +140,8 @@ def kms():
 
 
 @aws_provider(api="lambda", name="legacy")
-def awslambda_legacy():
-    from localstack.services.awslambda import lambda_starter
+def lambda_legacy():
+    from localstack.services.lambda_ import lambda_starter
 
     return Service(
         "lambda",
@@ -153,8 +153,8 @@ def awslambda_legacy():
 
 
 @aws_provider(api="lambda", name="v1")
-def awslambda_v1():
-    from localstack.services.awslambda import lambda_starter
+def lambda_v1():
+    from localstack.services.lambda_ import lambda_starter
 
     return Service(
         "lambda",
@@ -166,24 +166,24 @@ def awslambda_v1():
 
 
 @aws_provider(api="lambda")
-def awslambda():
-    from localstack.services.awslambda.provider import LambdaProvider
+def lambda_():
+    from localstack.services.lambda_.provider import LambdaProvider
 
     provider = LambdaProvider()
     return Service.for_provider(provider)
 
 
 @aws_provider(api="lambda", name="asf")
-def awslambda_asf():
-    from localstack.services.awslambda.provider import LambdaProvider
+def lambda_asf():
+    from localstack.services.lambda_.provider import LambdaProvider
 
     provider = LambdaProvider()
     return Service.for_provider(provider)
 
 
 @aws_provider(api="lambda", name="v2")
-def awslambda_v2():
-    from localstack.services.awslambda.provider import LambdaProvider
+def lambda_v2():
+    from localstack.services.lambda_.provider import LambdaProvider
 
     provider = LambdaProvider()
     return Service.for_provider(provider)

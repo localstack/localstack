@@ -20,7 +20,7 @@ from localstack.aws.api.lambda_ import (
     TooManyRequestsException,
 )
 from localstack.aws.connect import connect_to
-from localstack.services.awslambda.invocation.lambda_models import (
+from localstack.services.lambda_.invocation.lambda_models import (
     Function,
     FunctionVersion,
     Invocation,
@@ -31,13 +31,13 @@ from localstack.services.awslambda.invocation.lambda_models import (
     ServiceEndpoint,
     VersionState,
 )
-from localstack.services.awslambda.invocation.runtime_environment import (
+from localstack.services.lambda_.invocation.runtime_environment import (
     InvalidStatusException,
     RuntimeEnvironment,
     RuntimeStatus,
 )
-from localstack.services.awslambda.invocation.runtime_executor import get_runtime_executor
-from localstack.services.awslambda.lambda_executors import InvocationException
+from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
+from localstack.services.lambda_.lambda_executors import InvocationException
 from localstack.utils.aws import dead_letter_queue
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.message_forwarding import send_event_to_target
@@ -47,7 +47,7 @@ from localstack.utils.threads import FuncThread, start_thread
 from localstack.utils.time import timestamp_millis
 
 if TYPE_CHECKING:
-    from localstack.services.awslambda.invocation.lambda_service import LambdaService
+    from localstack.services.lambda_.invocation.lambda_service import LambdaService
 
 LOG = logging.getLogger(__name__)
 

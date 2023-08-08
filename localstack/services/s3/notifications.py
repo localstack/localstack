@@ -538,7 +538,7 @@ class LambdaNotifier(BaseNotifier):
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
         arn_data = parse_arn(arn=target_arn)
-        lambda_client = connect_to(region_name=arn_data["region"]).awslambda
+        lambda_client = connect_to(region_name=arn_data["region"]).lambda_
         try:
             lambda_client.get_function(FunctionName=target_arn)
         except ClientError:
@@ -566,7 +566,7 @@ class LambdaNotifier(BaseNotifier):
         lambda_arn = config["LambdaFunctionArn"]
 
         region_name = arns.extract_region_from_arn(lambda_arn)
-        lambda_client = connect_to(region_name=region_name).awslambda.request_metadata(
+        lambda_client = connect_to(region_name=region_name).lambda_.request_metadata(
             source_arn=s3_bucket_arn(ctx.bucket_name), service_principal=ServicePrincipal.s3
         )
         lambda_function_config = arns.lambda_function_name(lambda_arn)

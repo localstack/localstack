@@ -65,11 +65,11 @@ class TestHotReloading:
             Role=lambda_su_role,
             Runtime=runtime,
         )
-        response = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
+        response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.loads(response["Payload"].read())
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value1"
-        response = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
+        response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.loads(response["Payload"].read())
         assert response_dict["counter"] == 2
         assert response_dict["constant"] == "value1"
@@ -77,11 +77,11 @@ class TestHotReloading:
             f.write(function_content.replace("value1", "value2"))
         # we have to sleep here, since the hot reloading is debounced with 500ms
         time.sleep(0.6)
-        response = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
+        response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.loads(response["Payload"].read())
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value2"
-        response = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
+        response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.loads(response["Payload"].read())
         assert response_dict["counter"] == 2
         assert response_dict["constant"] == "value2"
@@ -91,7 +91,7 @@ class TestHotReloading:
         mkdir(test_folder)
         # make sure the creation of the folder triggered reload
         time.sleep(0.6)
-        response = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
+        response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.loads(response["Payload"].read())
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value2"
@@ -99,7 +99,7 @@ class TestHotReloading:
         with open(os.path.join(test_folder, "test-file"), mode="wt") as f:
             f.write("test-content")
         time.sleep(0.6)
-        response = aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
+        response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.loads(response["Payload"].read())
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value2"
@@ -132,7 +132,7 @@ class TestHotReloading:
             Role=lambda_su_role,
             Runtime=Runtime.nodejs18_x,
         )
-        aws_client.awslambda.publish_version(FunctionName=function_name, CodeSha256="zipfilehash")
+        aws_client.lambda_.publish_version(FunctionName=function_name, CodeSha256="zipfilehash")
 
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="Focussing on the new provider")
@@ -148,8 +148,8 @@ class TestDockerFlags:
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
-        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=function_name)
-        result = aws_client.awslambda.invoke(FunctionName=function_name, Payload="{}")
+        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        result = aws_client.lambda_.invoke(FunctionName=function_name, Payload="{}")
         result_data = result["Payload"].read()
         result_data = json.loads(to_str(result_data))
         assert {"Hello": env_value} == result_data
@@ -186,17 +186,17 @@ class TestDockerFlags:
             get_content=True,
             runtime=Runtime.python3_9,
         )
-        aws_client.awslambda.create_function(
+        aws_client.lambda_.create_function(
             FunctionName=function_name,
             Code={"ZipFile": zip_file},
             Handler="handler.handler",
             Runtime=Runtime.python3_9,
             Role=lambda_su_role,
         )
-        cleanups.append(lambda: aws_client.awslambda.delete_function(FunctionName=function_name))
+        cleanups.append(lambda: aws_client.lambda_.delete_function(FunctionName=function_name))
 
-        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=function_name)
-        result = aws_client.awslambda.invoke(
+        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        result = aws_client.lambda_.invoke(
             FunctionName=function_name, Payload=json.dumps({"url": f"http://{container_name}"})
         )
         result_data = result["Payload"].read()

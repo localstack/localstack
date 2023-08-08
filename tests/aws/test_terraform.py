@@ -129,7 +129,7 @@ class TestTerraform:
     @markers.aws.unknown
     def test_lambda(self, aws_client):
         account_id = get_aws_account_id()
-        response = aws_client.awslambda.get_function(FunctionName=LAMBDA_NAME)
+        response = aws_client.lambda_.get_function(FunctionName=LAMBDA_NAME)
         assert response["Configuration"]["FunctionName"] == LAMBDA_NAME
         assert response["Configuration"]["Handler"] == LAMBDA_HANDLER
         assert response["Configuration"]["Runtime"] == LAMBDA_RUNTIME
@@ -140,7 +140,7 @@ class TestTerraform:
     def test_event_source_mapping(self, aws_client):
         queue_arn = QUEUE_ARN.format(account_id=get_aws_account_id())
         lambda_arn = LAMBDA_ARN.format(account_id=get_aws_account_id(), lambda_name=LAMBDA_NAME)
-        all_mappings = aws_client.awslambda.list_event_source_mappings(
+        all_mappings = aws_client.lambda_.list_event_source_mappings(
             EventSourceArn=queue_arn, FunctionName=LAMBDA_NAME
         )
         function_mapping = all_mappings.get("EventSourceMappings")[0]

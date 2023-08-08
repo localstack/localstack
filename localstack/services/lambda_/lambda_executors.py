@@ -22,7 +22,7 @@ from localstack import config
 from localstack.aws.connect import connect_to
 from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY
 from localstack.runtime.hooks import hook_spec
-from localstack.services.awslambda.lambda_utils import (
+from localstack.services.lambda_.lambda_utils import (
     API_PATH_ROOT,
     LAMBDA_RUNTIME_PROVIDED,
     get_main_container_network_for_lambda,
@@ -32,7 +32,7 @@ from localstack.services.awslambda.lambda_utils import (
     rm_docker_container,
     store_lambda_logs,
 )
-from localstack.services.awslambda.packages import (
+from localstack.services.lambda_.packages import (
     awslambda_go_runtime_package,
     lambda_java_libs_package,
 )
@@ -879,7 +879,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
     ) -> InvocationResult:
         full_url = self._get_lambda_stay_open_url(lambda_docker_ip)
 
-        client = connect_to(endpoint_url=full_url).awslambda
+        client = connect_to(endpoint_url=full_url).lambda_
         event = inv_context.event or "{}"
 
         LOG.debug(f"Calling {full_url} to run invocation in docker-reuse Lambda container")

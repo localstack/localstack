@@ -8,7 +8,7 @@ import pytest
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
     _await_event_source_mapping_state,
@@ -93,13 +93,13 @@ class TestKinesisSource:
             "StreamDescription"
         ]["StreamARN"]
 
-        create_event_source_mapping_response = aws_client.awslambda.create_event_source_mapping(
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
             EventSourceArn=stream_arn, FunctionName=function_name, StartingPosition="LATEST"
         )
         snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
         uuid = create_event_source_mapping_response["UUID"]
-        cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=uuid))
-        _await_event_source_mapping_enabled(aws_client.awslambda, uuid)
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
+        _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
 
         def _send_and_receive_messages():
             aws_client.kinesis.put_records(
@@ -162,7 +162,7 @@ class TestKinesisSource:
         stream_summary = aws_client.kinesis.describe_stream_summary(StreamName=stream_name)
         assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
 
-        create_event_source_mapping_response = aws_client.awslambda.create_event_source_mapping(
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
             EventSourceArn=stream_arn,
             FunctionName=function_name,
             StartingPosition="LATEST",
@@ -170,8 +170,8 @@ class TestKinesisSource:
         )
         snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
         uuid = create_event_source_mapping_response["UUID"]
-        cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=uuid))
-        _await_event_source_mapping_enabled(aws_client.awslambda, uuid)
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
+        _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
 
         def _send_and_receive_messages():
             for i in range(num_batches):
@@ -235,7 +235,7 @@ class TestKinesisSource:
                 ],
                 StreamName=stream_name,
             )
-        create_event_source_mapping_response = aws_client.awslambda.create_event_source_mapping(
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
             EventSourceArn=stream_arn,
             FunctionName=function_name,
             StartingPosition="TRIM_HORIZON",
@@ -243,7 +243,7 @@ class TestKinesisSource:
         )
         snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
         uuid = create_event_source_mapping_response["UUID"]
-        cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=uuid))
+        cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
         # insert some more records
         aws_client.kinesis.put_records(
             Records=[
@@ -284,7 +284,7 @@ class TestKinesisSource:
             "StreamDescription"
         ]["StreamARN"]
         wait_for_stream_ready(stream_name=stream_name)
-        create_event_source_mapping_response = aws_client.awslambda.create_event_source_mapping(
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
             EventSourceArn=stream_arn,
             FunctionName=function_name,
             StartingPosition="LATEST",
@@ -293,9 +293,9 @@ class TestKinesisSource:
         snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
         event_source_uuid = create_event_source_mapping_response["UUID"]
         cleanups.append(
-            lambda: aws_client.awslambda.delete_event_source_mapping(UUID=event_source_uuid)
+            lambda: aws_client.lambda_.delete_event_source_mapping(UUID=event_source_uuid)
         )
-        _await_event_source_mapping_enabled(aws_client.awslambda, event_source_uuid)
+        _await_event_source_mapping_enabled(aws_client.lambda_, event_source_uuid)
 
         def _send_and_receive_messages():
             aws_client.kinesis.put_records(
@@ -313,8 +313,8 @@ class TestKinesisSource:
         invocation_events = retry(_send_and_receive_messages, retries=3)
         snapshot.match("invocation_events", invocation_events)
 
-        aws_client.awslambda.update_event_source_mapping(UUID=event_source_uuid, Enabled=False)
-        _await_event_source_mapping_state(aws_client.awslambda, event_source_uuid, state="Disabled")
+        aws_client.lambda_.update_event_source_mapping(UUID=event_source_uuid, Enabled=False)
+        _await_event_source_mapping_state(aws_client.lambda_, event_source_uuid, state="Disabled")
         # we need to wait here, so the event source mapping is for sure disabled, sadly the state is no real indication
         if is_aws_cloud():
             time.sleep(60)
@@ -401,7 +401,7 @@ class TestKinesisSource:
             lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1,
         }
 
-        create_event_source_mapping_response = aws_client.awslambda.create_event_source_mapping(
+        create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
             FunctionName=function_name,
             BatchSize=1,
             StartingPosition="TRIM_HORIZON",
@@ -411,11 +411,11 @@ class TestKinesisSource:
             DestinationConfig=destination_config,
         )
         cleanups.append(
-            lambda: aws_client.awslambda.delete_event_source_mapping(UUID=event_source_mapping_uuid)
+            lambda: aws_client.lambda_.delete_event_source_mapping(UUID=event_source_mapping_uuid)
         )
         snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
         event_source_mapping_uuid = create_event_source_mapping_response["UUID"]
-        _await_event_source_mapping_enabled(aws_client.awslambda, event_source_mapping_uuid)
+        _await_event_source_mapping_enabled(aws_client.lambda_, event_source_mapping_uuid)
         aws_client.kinesis.put_record(
             StreamName=kinesis_name, Data=to_bytes(json.dumps(message)), PartitionKey="custom"
         )

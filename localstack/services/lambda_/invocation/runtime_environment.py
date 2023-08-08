@@ -12,16 +12,16 @@ from typing import TYPE_CHECKING, Dict, Literal, Optional
 from localstack import config
 from localstack.aws.api.lambda_ import TracingMode
 from localstack.aws.connect import connect_to
-from localstack.services.awslambda.invocation.executor_endpoint import ServiceEndpoint
-from localstack.services.awslambda.invocation.lambda_models import Credentials, FunctionVersion
-from localstack.services.awslambda.invocation.runtime_executor import (
+from localstack.services.lambda_.invocation.executor_endpoint import ServiceEndpoint
+from localstack.services.lambda_.invocation.lambda_models import Credentials, FunctionVersion
+from localstack.services.lambda_.invocation.runtime_executor import (
     RuntimeExecutor,
     get_runtime_executor,
 )
 from localstack.utils.strings import to_str
 
 if TYPE_CHECKING:
-    from localstack.services.awslambda.invocation.version_manager import QueuedInvocation
+    from localstack.services.lambda_.invocation.version_manager import QueuedInvocation
 
 STARTUP_TIMEOUT_SEC = config.LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT
 HEX_CHARS = [str(num) for num in range(10)] + ["a", "b", "c", "d", "e", "f"]

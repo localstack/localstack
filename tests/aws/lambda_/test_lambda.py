@@ -13,7 +13,7 @@ from botocore.response import StreamingBody
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
-from localstack.services.awslambda.lambda_api import use_docker
+from localstack.services.lambda_.lambda_api import use_docker
 from localstack.testing.aws.lambda_utils import (
     concurrency_update_done,
     get_invoke_init_type,
@@ -182,7 +182,7 @@ class TestLambdaBaseFeatures:
         large_value = "test123456" * 100 * 1000 * 5
         snapshot.add_transformer(snapshot.transform.regex(large_value, "<large-value>"))
         payload = {"test": large_value}  # 5MB payload
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
         )
         snapshot.match("invocation_response", result)
@@ -214,7 +214,7 @@ class TestLambdaBaseFeatures:
         )
         snapshot.match("create-fn-response", create_response)
 
-        response = aws_client.awslambda.get_function(FunctionName=function_name)
+        response = aws_client.lambda_.get_function(FunctionName=function_name)
         snapshot.match("get-fn-response", response)
 
     @pytest.mark.skipif(
@@ -239,7 +239,7 @@ class TestLambdaBaseFeatures:
 
         # invoke two versions in two threads at the same time so environments won't be reused really quick
         def _invoke_lambda(*args):
-            result = aws_client.awslambda.invoke(
+            result = aws_client.lambda_.invoke(
                 FunctionName=function_name, Payload=to_bytes(json.dumps({"sleep": 2}))
             )
             return json.loads(to_str(result["Payload"].read()))["environment"]
@@ -334,7 +334,7 @@ class TestLambdaBehavior:
             Architectures=[Architecture.x86_64],
         )
 
-        invoke_result = aws_client.awslambda.invoke(FunctionName=func_name)
+        invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
         snapshot.match("invoke_runtime_x86_introspection", invoke_result)
 
     @pytest.mark.skipif(is_old_provider(), reason="unsupported in old provider")
@@ -363,7 +363,7 @@ class TestLambdaBehavior:
             Architectures=[Architecture.arm64],
         )
 
-        invoke_result = aws_client.awslambda.invoke(FunctionName=func_name)
+        invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
         snapshot.match("invoke_runtime_arm_introspection", invoke_result)
 
     @pytest.mark.skipif(
@@ -388,7 +388,7 @@ class TestLambdaBehavior:
             runtime=Runtime.python3_10,
         )
 
-        invoke_result = aws_client.awslambda.invoke(FunctionName=func_name)
+        invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
         snapshot.match("invoke_runtime_ulimits", invoke_result)
 
     @pytest.mark.skipif(is_old_provider(), reason="unsupported in old provider")
@@ -415,7 +415,7 @@ class TestLambdaBehavior:
             Architectures=[non_native_architecture],
         )
 
-        invoke_result = aws_client.awslambda.invoke(FunctionName=func_name)
+        invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
         payload = json.loads(to_str(invoke_result["Payload"].read()))
         lambda_arch = standardized_arch(payload.get("platform_machine"))
         assert lambda_arch == native_arch
@@ -435,7 +435,7 @@ class TestLambdaBehavior:
             Architectures=[Architecture.x86_64],
         )
 
-        invoke_result = aws_client.awslambda.invoke(FunctionName=func_name)
+        invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
         assert "FunctionError" not in invoke_result
         payload = json.loads(invoke_result["Payload"].read())
         assert payload.get("platform_machine") == "x86_64"
@@ -448,33 +448,33 @@ class TestLambdaBehavior:
             Architectures=[Architecture.arm64],
         )
 
-        invoke_result_arm = aws_client.awslambda.invoke(FunctionName=func_name_arm)
+        invoke_result_arm = aws_client.lambda_.invoke(FunctionName=func_name_arm)
         assert "FunctionError" not in invoke_result_arm
         payload_arm = json.loads(invoke_result_arm["Payload"].read())
         assert payload_arm.get("platform_machine") == "aarch64"
 
-        v1_result = aws_client.awslambda.publish_version(FunctionName=func_name)
+        v1_result = aws_client.lambda_.publish_version(FunctionName=func_name)
         v1 = v1_result["Version"]
 
         # assert version is available(!)
-        aws_client.awslambda.get_waiter(waiter_name="function_active_v2").wait(
+        aws_client.lambda_.get_waiter(waiter_name="function_active_v2").wait(
             FunctionName=func_name, Qualifier=v1
         )
 
-        arm_v1_result = aws_client.awslambda.publish_version(FunctionName=func_name_arm)
+        arm_v1_result = aws_client.lambda_.publish_version(FunctionName=func_name_arm)
         arm_v1 = arm_v1_result["Version"]
 
         # assert version is available(!)
-        aws_client.awslambda.get_waiter(waiter_name="function_active_v2").wait(
+        aws_client.lambda_.get_waiter(waiter_name="function_active_v2").wait(
             FunctionName=func_name_arm, Qualifier=arm_v1
         )
 
-        invoke_result_2 = aws_client.awslambda.invoke(FunctionName=func_name, Qualifier=v1)
+        invoke_result_2 = aws_client.lambda_.invoke(FunctionName=func_name, Qualifier=v1)
         assert "FunctionError" not in invoke_result_2
         payload_2 = json.loads(invoke_result_2["Payload"].read())
         assert payload_2.get("platform_machine") == "x86_64"
 
-        invoke_result_arm_2 = aws_client.awslambda.invoke(
+        invoke_result_arm_2 = aws_client.lambda_.invoke(
             FunctionName=func_name_arm, Qualifier=arm_v1
         )
         assert "FunctionError" not in invoke_result_arm_2
@@ -503,13 +503,13 @@ class TestLambdaBehavior:
             func_name=func_name,
             handler_file=lambda_fn,
             runtime=lambda_runtime,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
         )
 
-        first_invoke_result = aws_client.awslambda.invoke(FunctionName=func_name)
+        first_invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
         snapshot.match("first_invoke_result", first_invoke_result)
 
-        second_invoke_result = aws_client.awslambda.invoke(FunctionName=func_name)
+        second_invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
         snapshot.match("second_invoke_result", second_invoke_result)
 
     @pytest.mark.skipif(is_old_provider(), reason="old provider")
@@ -530,14 +530,12 @@ class TestLambdaBehavior:
             func_name=func_name,
             handler_file=TEST_LAMBDA_TIMEOUT_PYTHON,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
         snapshot.match("create-result", create_result)
 
-        result = aws_client.awslambda.invoke(
-            FunctionName=func_name, Payload=json.dumps({"wait": 2})
-        )
+        result = aws_client.lambda_.invoke(FunctionName=func_name, Payload=json.dumps({"wait": 2}))
         snapshot.match("invoke-result", result)
 
         log_group_name = f"/aws/lambda/{func_name}"
@@ -578,14 +576,12 @@ class TestLambdaBehavior:
             func_name=func_name,
             handler_file=TEST_LAMBDA_TIMEOUT_PYTHON,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=2,
         )
         snapshot.match("create-result", create_result)
 
-        result = aws_client.awslambda.invoke(
-            FunctionName=func_name, Payload=json.dumps({"wait": 1})
-        )
+        result = aws_client.lambda_.invoke(FunctionName=func_name, Payload=json.dumps({"wait": 1}))
         snapshot.match("invoke-result", result)
         log_group_name = f"/aws/lambda/{func_name}"
 
@@ -629,34 +625,32 @@ class TestLambdaBehavior:
             func_name=func_name,
             handler_file=TEST_LAMBDA_TIMEOUT_ENV_PYTHON,
             runtime=Runtime.python3_10,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
         snapshot.match("create-result", create_result)
         file_content = "some-content"
         set_number = 42
 
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=func_name, Payload=json.dumps({"write-file": file_content})
         )
         snapshot.match("invoke-result-file-write", result)
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=func_name, Payload=json.dumps({"read-file": True})
         )
         snapshot.match("invoke-result-file-read", result)
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=func_name, Payload=json.dumps({"set-number": set_number})
         )
         snapshot.match("invoke-result-set-number", result)
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=func_name, Payload=json.dumps({"read-number": True})
         )
         snapshot.match("invoke-result-read-number", result)
         # file is written, let's let the function timeout and check if it is still there
 
-        result = aws_client.awslambda.invoke(
-            FunctionName=func_name, Payload=json.dumps({"sleep": 2})
-        )
+        result = aws_client.lambda_.invoke(FunctionName=func_name, Payload=json.dumps({"sleep": 2}))
         snapshot.match("invoke-result-timed-out", result)
         log_group_name = f"/aws/lambda/{func_name}"
 
@@ -681,11 +675,11 @@ class TestLambdaBehavior:
         retry(assert_events, retries=15)
 
         # check if, for the next normal invocation, the file is still there:
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=func_name, Payload=json.dumps({"read-file": True})
         )
         snapshot.match("invoke-result-file-read-after-timeout", result)
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=func_name, Payload=json.dumps({"read-number": True})
         )
         snapshot.match("invoke-result-read-number-after-timeout", result)
@@ -765,14 +759,14 @@ class TestLambdaURL:
             runtime=Runtime.python3_10,
         )
 
-        url_config = aws_client.awslambda.create_function_url_config(
+        url_config = aws_client.lambda_.create_function_url_config(
             FunctionName=function_name,
             AuthType="NONE",
         )
 
         snapshot.match("create_lambda_url_config", url_config)
 
-        permissions_response = aws_client.awslambda.add_permission(
+        permissions_response = aws_client.lambda_.add_permission(
             FunctionName=function_name,
             StatementId="urlPermission",
             Action="lambda:InvokeFunctionUrl",
@@ -811,13 +805,13 @@ class TestLambdaURL:
             handler="lambda_url.handler",
         )
 
-        url_config = aws_client.awslambda.create_function_url_config(
+        url_config = aws_client.lambda_.create_function_url_config(
             FunctionName=function_name,
             AuthType="NONE",
         )
         snapshot.match("create_lambda_url_config", url_config)
 
-        permissions_response = aws_client.awslambda.add_permission(
+        permissions_response = aws_client.lambda_.add_permission(
             FunctionName=function_name,
             StatementId="urlPermission",
             Action="lambda:InvokeFunctionUrl",
@@ -854,16 +848,16 @@ class TestLambdaURL:
             handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
             runtime=Runtime.python3_10,
         )
-        get_fn_result = aws_client.awslambda.get_function(FunctionName=function_name)
+        get_fn_result = aws_client.lambda_.get_function(FunctionName=function_name)
         snapshot.match("get_fn_result", get_fn_result)
 
-        url_config = aws_client.awslambda.create_function_url_config(
+        url_config = aws_client.lambda_.create_function_url_config(
             FunctionName=function_name,
             AuthType="NONE",
         )
         snapshot.match("create_lambda_url_config", url_config)
 
-        permissions_response = aws_client.awslambda.add_permission(
+        permissions_response = aws_client.lambda_.add_permission(
             FunctionName=function_name,
             StatementId="urlPermission",
             Action="lambda:InvokeFunctionUrl",
@@ -893,7 +887,7 @@ class TestLambdaPermissions:
             runtime=Runtime.nodejs18_x,
             handler="lambda_url.handler",
         )
-        url_config = aws_client.awslambda.create_function_url_config(
+        url_config = aws_client.lambda_.create_function_url_config(
             FunctionName=function_name,
             AuthType="NONE",
         )
@@ -939,7 +933,7 @@ class TestLambdaFeatures:
             snapshot.transform.key_value("LogResult", reference_replacement=False)
         )
 
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=invocation_echo_lambda, Payload=b"{}", LogType="Tail"
         )
         snapshot.match("invoke", result)
@@ -967,7 +961,7 @@ class TestLambdaFeatures:
     @markers.aws.validated
     def test_invocation_type_request_response(self, snapshot, invocation_echo_lambda, aws_client):
         """Test invocation with InvocationType RequestResponse explicitly set"""
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=invocation_echo_lambda,
             Payload=b"{}",
             InvocationType="RequestResponse",
@@ -980,7 +974,7 @@ class TestLambdaFeatures:
     @markers.aws.validated
     def test_invocation_type_event(self, snapshot, invocation_echo_lambda, aws_client):
         """Check invocation response for type event"""
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=invocation_echo_lambda, Payload=b"{}", InvocationType="Event"
         )
         result = read_streams(result)
@@ -995,7 +989,7 @@ class TestLambdaFeatures:
     @markers.aws.validated
     def test_invocation_type_dry_run(self, snapshot, invocation_echo_lambda, aws_client):
         """Check invocation response for type dryrun"""
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=invocation_echo_lambda, Payload=b"{}", InvocationType="DryRun"
         )
         result = read_streams(result)
@@ -1015,7 +1009,7 @@ class TestLambdaFeatures:
             runtime=Runtime.python3_10,
         )
         snapshot.match("creation_response", creation_response)
-        invocation_response = aws_client.awslambda.invoke(
+        invocation_response = aws_client.lambda_.invoke(
             FunctionName=function_name, Payload=b"{}", InvocationType="Event"
         )
         snapshot.match("invocation_response", invocation_response)
@@ -1082,7 +1076,7 @@ class TestLambdaFeatures:
         qualifier = response["Version"]
 
         # invoke lambda function
-        invoke_result = aws_client.awslambda.invoke(
+        invoke_result = aws_client.lambda_.invoke(
             FunctionName=function_name,
             Payload=b'{"foo": "bar with \'quotes\\""}',
             Qualifier=qualifier,
@@ -1134,7 +1128,7 @@ class TestLambdaFeatures:
         snapshot.match("creation-response", create_response)
 
         # invoke lambda function
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=function_name, Payload=b'{"foo": "bar with \'quotes\\""}'
         )
         snapshot.match("invocation-response", result)
@@ -1164,7 +1158,7 @@ class TestLambdaFeatures:
             "env": {"fizz": "buzz"},
         }
 
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=function_name,
             Payload=b"{}",
             ClientContext=to_str(base64.b64encode(to_bytes(json.dumps(ctx)))),
@@ -1192,11 +1186,11 @@ class TestLambdaFeatures:
 class TestLambdaMultiAccounts:
     @pytest.fixture
     def primary_client(self, aws_client):
-        return aws_client.awslambda
+        return aws_client.lambda_
 
     @pytest.fixture
     def secondary_client(self, secondary_aws_client):
-        return secondary_aws_client.awslambda
+        return secondary_aws_client.lambda_
 
     @pytest.mark.skipif(is_old_provider(), reason="Not supported by old provider")
     @markers.aws.unknown
@@ -1332,26 +1326,26 @@ class TestLambdaConcurrency:
             runtime=Runtime.python3_10,
         )
 
-        default_concurrency_result = aws_client.awslambda.get_function_concurrency(
+        default_concurrency_result = aws_client.lambda_.get_function_concurrency(
             FunctionName=func_name
         )
         snapshot.match("get_function_concurrency_default", default_concurrency_result)
 
         # 0 should always succeed independent of the UnreservedConcurrentExecution limits
-        reserved_concurrency_result = aws_client.awslambda.put_function_concurrency(
+        reserved_concurrency_result = aws_client.lambda_.put_function_concurrency(
             FunctionName=func_name, ReservedConcurrentExecutions=0
         )
         snapshot.match("put_function_concurrency", reserved_concurrency_result)
 
-        updated_concurrency_result = aws_client.awslambda.get_function_concurrency(
+        updated_concurrency_result = aws_client.lambda_.get_function_concurrency(
             FunctionName=func_name
         )
         snapshot.match("get_function_concurrency_updated", updated_concurrency_result)
         assert updated_concurrency_result["ReservedConcurrentExecutions"] == 0
 
-        aws_client.awslambda.delete_function_concurrency(FunctionName=func_name)
+        aws_client.lambda_.delete_function_concurrency(FunctionName=func_name)
 
-        deleted_concurrency_result = aws_client.awslambda.get_function_concurrency(
+        deleted_concurrency_result = aws_client.lambda_.get_function_concurrency(
             FunctionName=func_name
         )
         snapshot.match("get_function_concurrency_deleted", deleted_concurrency_result)
@@ -1372,51 +1366,51 @@ class TestLambdaConcurrency:
         )
 
         # reserved concurrency
-        v1_result = aws_client.awslambda.publish_version(FunctionName=func_name)
+        v1_result = aws_client.lambda_.publish_version(FunctionName=func_name)
         snapshot.match("v1_result", v1_result)
         v1 = v1_result["Version"]
 
         # assert version is available(!)
-        aws_client.awslambda.get_waiter(waiter_name="function_active_v2").wait(
+        aws_client.lambda_.get_waiter(waiter_name="function_active_v2").wait(
             FunctionName=func_name, Qualifier=v1
         )
 
         # Reserved concurrency works on the whole function
-        reserved_concurrency_result = aws_client.awslambda.put_function_concurrency(
+        reserved_concurrency_result = aws_client.lambda_.put_function_concurrency(
             FunctionName=func_name, ReservedConcurrentExecutions=1
         )
         snapshot.match("reserved_concurrency_result", reserved_concurrency_result)
 
         # verify we can call $LATEST
-        invoke_latest_before_block = aws_client.awslambda.invoke(
+        invoke_latest_before_block = aws_client.lambda_.invoke(
             FunctionName=func_name, Qualifier="$LATEST", Payload=json.dumps({"hello": "world"})
         )
         snapshot.match("invoke_latest_before_block", invoke_latest_before_block)
 
         # Provisioned concurrency works on individual version/aliases, but *not* on $LATEST
-        provisioned_concurrency_result = aws_client.awslambda.put_provisioned_concurrency_config(
+        provisioned_concurrency_result = aws_client.lambda_.put_provisioned_concurrency_config(
             FunctionName=func_name, Qualifier=v1, ProvisionedConcurrentExecutions=1
         )
         snapshot.match("provisioned_concurrency_result", provisioned_concurrency_result)
 
-        assert wait_until(concurrency_update_done(aws_client.awslambda, func_name, v1))
+        assert wait_until(concurrency_update_done(aws_client.lambda_, func_name, v1))
 
         # verify we can't call $LATEST anymore
-        with pytest.raises(aws_client.awslambda.exceptions.TooManyRequestsException) as e:
-            aws_client.awslambda.invoke(
+        with pytest.raises(aws_client.lambda_.exceptions.TooManyRequestsException) as e:
+            aws_client.lambda_.invoke(
                 FunctionName=func_name, Qualifier="$LATEST", Payload=json.dumps({"hello": "world"})
             )
         snapshot.match("invoke_latest_first_exc", e.value.response)
 
         # but we can call the version with provisioned concurrency
-        invoke_v1_after_block = aws_client.awslambda.invoke(
+        invoke_v1_after_block = aws_client.lambda_.invoke(
             FunctionName=func_name, Qualifier=v1, Payload=json.dumps({"hello": "world"})
         )
         snapshot.match("invoke_v1_after_block", invoke_v1_after_block)
 
         # verify we can't call $LATEST again
-        with pytest.raises(aws_client.awslambda.exceptions.TooManyRequestsException) as e:
-            aws_client.awslambda.invoke(
+        with pytest.raises(aws_client.lambda_.exceptions.TooManyRequestsException) as e:
+            aws_client.lambda_.invoke(
                 FunctionName=func_name, Qualifier="$LATEST", Payload=json.dumps({"hello": "world"})
             )
         snapshot.match("invoke_latest_second_exc", e.value.response)
@@ -1440,88 +1434,87 @@ class TestLambdaConcurrency:
             func_name=func_name,
             handler_file=TEST_LAMBDA_INVOCATION_TYPE,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=2,
         )
         snapshot.match("create-result", create_result)
 
-        fn = aws_client.awslambda.get_function_configuration(
+        fn = aws_client.lambda_.get_function_configuration(
             FunctionName=func_name, Qualifier="$LATEST"
         )
         snapshot.match("get-function-configuration", fn)
 
-        first_ver = aws_client.awslambda.publish_version(
+        first_ver = aws_client.lambda_.publish_version(
             FunctionName=func_name, RevisionId=fn["RevisionId"], Description="my-first-version"
         )
         snapshot.match("publish_version_1", first_ver)
 
-        get_function_configuration = aws_client.awslambda.get_function_configuration(
+        get_function_configuration = aws_client.lambda_.get_function_configuration(
             FunctionName=func_name, Qualifier=first_ver["Version"]
         )
         snapshot.match("get_function_configuration_version_1", get_function_configuration)
 
-        aws_client.awslambda.get_waiter("function_updated_v2").wait(
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(
             FunctionName=func_name, Qualifier=first_ver["Version"]
         )
 
         # There's no ProvisionedConcurrencyConfiguration yet
         assert (
-            get_invoke_init_type(aws_client.awslambda, func_name, first_ver["Version"])
-            == "on-demand"
+            get_invoke_init_type(aws_client.lambda_, func_name, first_ver["Version"]) == "on-demand"
         )
 
         # Create Alias and add ProvisionedConcurrencyConfiguration to it
-        alias = aws_client.awslambda.create_alias(
+        alias = aws_client.lambda_.create_alias(
             FunctionName=func_name, FunctionVersion=first_ver["Version"], Name=alias_name
         )
         snapshot.match("create_alias", alias)
-        get_function_result = aws_client.awslambda.get_function(
+        get_function_result = aws_client.lambda_.get_function(
             FunctionName=func_name, Qualifier=first_ver["Version"]
         )
         snapshot.match("get_function_before_provisioned", get_function_result)
-        aws_client.awslambda.put_provisioned_concurrency_config(
+        aws_client.lambda_.put_provisioned_concurrency_config(
             FunctionName=func_name, Qualifier=alias_name, ProvisionedConcurrentExecutions=1
         )
-        assert wait_until(concurrency_update_done(aws_client.awslambda, func_name, alias_name))
-        get_function_result = aws_client.awslambda.get_function(
+        assert wait_until(concurrency_update_done(aws_client.lambda_, func_name, alias_name))
+        get_function_result = aws_client.lambda_.get_function(
             FunctionName=func_name, Qualifier=alias_name
         )
         snapshot.match("get_function_after_provisioned", get_function_result)
 
         # Alias AND Version now both use provisioned-concurrency (!)
         assert (
-            get_invoke_init_type(aws_client.awslambda, func_name, first_ver["Version"])
+            get_invoke_init_type(aws_client.lambda_, func_name, first_ver["Version"])
             == "provisioned-concurrency"
         )
         assert (
-            get_invoke_init_type(aws_client.awslambda, func_name, alias_name)
+            get_invoke_init_type(aws_client.lambda_, func_name, alias_name)
             == "provisioned-concurrency"
         )
 
         # Update lambda configuration and publish new version
-        aws_client.awslambda.update_function_configuration(FunctionName=func_name, Timeout=10)
-        assert wait_until(update_done(aws_client.awslambda, func_name))
-        lambda_conf = aws_client.awslambda.get_function_configuration(FunctionName=func_name)
+        aws_client.lambda_.update_function_configuration(FunctionName=func_name, Timeout=10)
+        assert wait_until(update_done(aws_client.lambda_, func_name))
+        lambda_conf = aws_client.lambda_.get_function_configuration(FunctionName=func_name)
         snapshot.match("get_function_after_update", lambda_conf)
 
         # Move existing alias to the new version
-        new_version = aws_client.awslambda.publish_version(
+        new_version = aws_client.lambda_.publish_version(
             FunctionName=func_name, RevisionId=lambda_conf["RevisionId"]
         )
         snapshot.match("publish_version_2", new_version)
-        new_alias = aws_client.awslambda.update_alias(
+        new_alias = aws_client.lambda_.update_alias(
             FunctionName=func_name, FunctionVersion=new_version["Version"], Name=alias_name
         )
         snapshot.match("update_alias", new_alias)
 
         # lambda should now be provisioning new "hot" execution environments for this new alias->version pointer
         # the old one should be de-provisioned
-        get_provisioned_config_result = aws_client.awslambda.get_provisioned_concurrency_config(
+        get_provisioned_config_result = aws_client.lambda_.get_provisioned_concurrency_config(
             FunctionName=func_name, Qualifier=alias_name
         )
         snapshot.match("get_provisioned_config_after_alias_move", get_provisioned_config_result)
         assert wait_until(
-            concurrency_update_done(aws_client.awslambda, func_name, alias_name),
+            concurrency_update_done(aws_client.lambda_, func_name, alias_name),
             strategy="linear",
             wait=30,
             max_retries=20,
@@ -1531,23 +1524,22 @@ class TestLambdaConcurrency:
         # concurrency should still only work for the alias now
         # NOTE: the old version has been de-provisioned and will run 'on-demand' now!
         assert (
-            get_invoke_init_type(aws_client.awslambda, func_name, first_ver["Version"])
-            == "on-demand"
+            get_invoke_init_type(aws_client.lambda_, func_name, first_ver["Version"]) == "on-demand"
         )
         assert (
-            get_invoke_init_type(aws_client.awslambda, func_name, new_version["Version"])
+            get_invoke_init_type(aws_client.lambda_, func_name, new_version["Version"])
             == "provisioned-concurrency"
         )
         assert (
-            get_invoke_init_type(aws_client.awslambda, func_name, alias_name)
+            get_invoke_init_type(aws_client.lambda_, func_name, alias_name)
             == "provisioned-concurrency"
         )
 
         # ProvisionedConcurrencyConfig should only be "registered" to the alias, not the referenced version
         with pytest.raises(
-            aws_client.awslambda.exceptions.ProvisionedConcurrencyConfigNotFoundException
+            aws_client.lambda_.exceptions.ProvisionedConcurrencyConfigNotFoundException
         ) as e:
-            aws_client.awslambda.get_provisioned_concurrency_config(
+            aws_client.lambda_.get_provisioned_concurrency_config(
                 FunctionName=func_name, Qualifier=new_version["Version"]
             )
         snapshot.match("provisioned_concurrency_notfound", e.value.response)
@@ -1570,33 +1562,31 @@ class TestLambdaConcurrency:
             func_name=func_name,
             handler_file=TEST_LAMBDA_INVOCATION_TYPE,
             runtime=Runtime.python3_10,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
         )
 
-        v1 = aws_client.awslambda.publish_version(FunctionName=func_name)
+        v1 = aws_client.lambda_.publish_version(FunctionName=func_name)
 
-        put_provisioned = aws_client.awslambda.put_provisioned_concurrency_config(
+        put_provisioned = aws_client.lambda_.put_provisioned_concurrency_config(
             FunctionName=func_name, Qualifier=v1["Version"], ProvisionedConcurrentExecutions=5
         )
         snapshot.match("put_provisioned_5", put_provisioned)
 
-        get_provisioned_prewait = aws_client.awslambda.get_provisioned_concurrency_config(
+        get_provisioned_prewait = aws_client.lambda_.get_provisioned_concurrency_config(
             FunctionName=func_name, Qualifier=v1["Version"]
         )
         snapshot.match("get_provisioned_prewait", get_provisioned_prewait)
-        assert wait_until(concurrency_update_done(aws_client.awslambda, func_name, v1["Version"]))
-        get_provisioned_postwait = aws_client.awslambda.get_provisioned_concurrency_config(
+        assert wait_until(concurrency_update_done(aws_client.lambda_, func_name, v1["Version"]))
+        get_provisioned_postwait = aws_client.lambda_.get_provisioned_concurrency_config(
             FunctionName=func_name, Qualifier=v1["Version"]
         )
         snapshot.match("get_provisioned_postwait", get_provisioned_postwait)
 
-        invoke_result1 = aws_client.awslambda.invoke(
-            FunctionName=func_name, Qualifier=v1["Version"]
-        )
+        invoke_result1 = aws_client.lambda_.invoke(FunctionName=func_name, Qualifier=v1["Version"])
         result1 = json.loads(to_str(invoke_result1["Payload"].read()))
         assert result1 == "provisioned-concurrency"
 
-        invoke_result2 = aws_client.awslambda.invoke(FunctionName=func_name, Qualifier="$LATEST")
+        invoke_result2 = aws_client.lambda_.invoke(FunctionName=func_name, Qualifier="$LATEST")
         result2 = json.loads(to_str(invoke_result2["Payload"].read()))
         assert result2 == "on-demand"
 
@@ -1609,45 +1599,45 @@ class TestLambdaConcurrency:
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
             runtime=Runtime.python3_10,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=20,
         )
 
-        fn = aws_client.awslambda.get_function_configuration(
+        fn = aws_client.lambda_.get_function_configuration(
             FunctionName=func_name, Qualifier="$LATEST"
         )
         snapshot.match("fn", fn)
         fn_arn = fn["FunctionArn"]
 
         # sequential execution
-        put_fn_concurrency = aws_client.awslambda.put_function_concurrency(
+        put_fn_concurrency = aws_client.lambda_.put_function_concurrency(
             FunctionName=func_name, ReservedConcurrentExecutions=1
         )
         snapshot.match("put_fn_concurrency", put_fn_concurrency)
 
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 10})
         )
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 10})
         )
 
         time.sleep(4)  # make sure one is already in the "queue" and one is being executed
 
-        with pytest.raises(aws_client.awslambda.exceptions.TooManyRequestsException) as e:
-            aws_client.awslambda.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
+        with pytest.raises(aws_client.lambda_.exceptions.TooManyRequestsException) as e:
+            aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
         snapshot.match("too_many_requests_exc", e.value.response)
 
-        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
-            aws_client.awslambda.put_function_concurrency(
+        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+            aws_client.lambda_.put_function_concurrency(
                 FunctionName=fn_arn, ReservedConcurrentExecutions=2
             )
         snapshot.match("put_function_concurrency_qualified_arn_exc", e.value.response)
 
-        aws_client.awslambda.put_function_concurrency(
+        aws_client.lambda_.put_function_concurrency(
             FunctionName=func_name, ReservedConcurrentExecutions=2
         )
-        aws_client.awslambda.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
+        aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
 
         def assert_events():
             log_events = aws_client.logs.filter_log_events(
@@ -1681,24 +1671,24 @@ class TestLambdaConcurrency:
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
             runtime=Runtime.python3_10,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=20,
         )
 
-        fn = aws_client.awslambda.get_function_configuration(
+        fn = aws_client.lambda_.get_function_configuration(
             FunctionName=func_name, Qualifier="$LATEST"
         )
         snapshot.match("fn", fn)
         fn_arn = fn["FunctionArn"]
 
         # block execution by setting reserved concurrency to 0
-        put_reserved = aws_client.awslambda.put_function_concurrency(
+        put_reserved = aws_client.lambda_.put_function_concurrency(
             FunctionName=func_name, ReservedConcurrentExecutions=0
         )
         snapshot.match("put_reserved", put_reserved)
 
-        with pytest.raises(aws_client.awslambda.exceptions.TooManyRequestsException) as e:
-            aws_client.awslambda.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
+        with pytest.raises(aws_client.lambda_.exceptions.TooManyRequestsException) as e:
+            aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
         snapshot.match("exc_no_cap_requestresponse", e.value.response)
 
         queue_name = f"test-queue-{short_uid()}"
@@ -1706,7 +1696,7 @@ class TestLambdaConcurrency:
         queue_arn = aws_client.sqs.get_queue_attributes(
             QueueUrl=queue_url, AttributeNames=["QueueArn"]
         )["Attributes"]["QueueArn"]
-        put_event_invoke_conf = aws_client.awslambda.put_function_event_invoke_config(
+        put_event_invoke_conf = aws_client.lambda_.put_function_event_invoke_config(
             FunctionName=func_name,
             MaximumRetryAttempts=0,
             DestinationConfig={"OnFailure": {"Destination": queue_arn}},
@@ -1715,7 +1705,7 @@ class TestLambdaConcurrency:
 
         time.sleep(3)  # just to be sure
 
-        invoke_result = aws_client.awslambda.invoke(FunctionName=fn_arn, InvocationType="Event")
+        invoke_result = aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="Event")
         snapshot.match("invoke_result", invoke_result)
 
         def get_msg_from_queue():
@@ -1735,40 +1725,40 @@ class TestLambdaConcurrency:
             func_name=func_name,
             handler_file=TEST_LAMBDA_INVOCATION_TYPE,
             runtime=Runtime.python3_10,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
         )
 
-        v1 = aws_client.awslambda.publish_version(FunctionName=func_name)
+        v1 = aws_client.lambda_.publish_version(FunctionName=func_name)
 
-        put_provisioned = aws_client.awslambda.put_provisioned_concurrency_config(
+        put_provisioned = aws_client.lambda_.put_provisioned_concurrency_config(
             FunctionName=func_name, Qualifier=v1["Version"], ProvisionedConcurrentExecutions=2
         )
         snapshot.match("put_provisioned_5", put_provisioned)
 
-        get_provisioned_prewait = aws_client.awslambda.get_provisioned_concurrency_config(
+        get_provisioned_prewait = aws_client.lambda_.get_provisioned_concurrency_config(
             FunctionName=func_name, Qualifier=v1["Version"]
         )
         snapshot.match("get_provisioned_prewait", get_provisioned_prewait)
-        assert wait_until(concurrency_update_done(aws_client.awslambda, func_name, v1["Version"]))
-        get_provisioned_postwait = aws_client.awslambda.get_provisioned_concurrency_config(
+        assert wait_until(concurrency_update_done(aws_client.lambda_, func_name, v1["Version"]))
+        get_provisioned_postwait = aws_client.lambda_.get_provisioned_concurrency_config(
             FunctionName=func_name, Qualifier=v1["Version"]
         )
         snapshot.match("get_provisioned_postwait", get_provisioned_postwait)
 
-        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
-            aws_client.awslambda.put_function_concurrency(
+        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+            aws_client.lambda_.put_function_concurrency(
                 FunctionName=func_name, ReservedConcurrentExecutions=1
             )
         snapshot.match("reserved_lower_than_provisioned_exc", e.value.response)
-        aws_client.awslambda.put_function_concurrency(
+        aws_client.lambda_.put_function_concurrency(
             FunctionName=func_name, ReservedConcurrentExecutions=2
         )
-        get_concurrency = aws_client.awslambda.get_function_concurrency(FunctionName=func_name)
+        get_concurrency = aws_client.lambda_.get_function_concurrency(FunctionName=func_name)
         snapshot.match("get_concurrency", get_concurrency)
 
         # absolute limit, this means there is no free function execution for any invoke that doesn't have provisioned concurrency (!)
-        with pytest.raises(aws_client.awslambda.exceptions.TooManyRequestsException) as e:
-            aws_client.awslambda.invoke(FunctionName=func_name)
+        with pytest.raises(aws_client.lambda_.exceptions.TooManyRequestsException) as e:
+            aws_client.lambda_.invoke(FunctionName=func_name)
         snapshot.match("reserved_equals_provisioned_latest_invoke_exc", e.value.response)
 
         # passes since the version has a provisioned concurrency config set
@@ -1778,24 +1768,24 @@ class TestLambdaConcurrency:
         # assert result1 == "provisioned-concurrency"
 
         # try to add a new provisioned concurrency config to another qualifier on the same function
-        update_func_config = aws_client.awslambda.update_function_configuration(
+        update_func_config = aws_client.lambda_.update_function_configuration(
             FunctionName=func_name, Timeout=15
         )
         snapshot.match("update_func_config", update_func_config)
-        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=func_name)
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=func_name)
 
-        v2 = aws_client.awslambda.publish_version(FunctionName=func_name)
+        v2 = aws_client.lambda_.publish_version(FunctionName=func_name)
         assert v1["Version"] != v2["Version"]
         # doesn't work because the reserved function concurrency is 2 and we already have a total provisioned sum of 2
-        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
-            aws_client.awslambda.put_provisioned_concurrency_config(
+        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+            aws_client.lambda_.put_provisioned_concurrency_config(
                 FunctionName=func_name, Qualifier=v2["Version"], ProvisionedConcurrentExecutions=1
             )
         snapshot.match("reserved_equals_provisioned_another_provisioned_exc", e.value.response)
 
         # updating the provisioned concurrency config of v1 to 3 (from 2) should also not work
-        with pytest.raises(aws_client.awslambda.exceptions.InvalidParameterValueException) as e:
-            aws_client.awslambda.put_provisioned_concurrency_config(
+        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+            aws_client.lambda_.put_provisioned_concurrency_config(
                 FunctionName=func_name, Qualifier=v1["Version"], ProvisionedConcurrentExecutions=3
             )
         snapshot.match("reserved_equals_provisioned_increase_provisioned_exc", e.value.response)
@@ -1807,7 +1797,7 @@ class TestLambdaVersions:
     def test_lambda_versions_with_code_changes(
         self, lambda_su_role, create_lambda_function_aws, snapshot, aws_client
     ):
-        waiter = aws_client.awslambda.get_waiter("function_updated_v2")
+        waiter = aws_client.lambda_.get_waiter("function_updated_v2")
         function_name = f"fn-{short_uid()}"
         zip_file_v1 = create_lambda_archive(
             load_file(TEST_LAMBDA_VERSION) % "version1", get_content=True
@@ -1822,60 +1812,60 @@ class TestLambdaVersions:
             Description="No version :(",
         )
         snapshot.match("create_response", create_response)
-        first_publish_response = aws_client.awslambda.publish_version(
+        first_publish_response = aws_client.lambda_.publish_version(
             FunctionName=function_name, Description="First version description :)"
         )
         snapshot.match("first_publish_response", first_publish_response)
         zip_file_v2 = create_lambda_archive(
             load_file(TEST_LAMBDA_VERSION) % "version2", get_content=True
         )
-        update_lambda_response = aws_client.awslambda.update_function_code(
+        update_lambda_response = aws_client.lambda_.update_function_code(
             FunctionName=function_name, ZipFile=zip_file_v2
         )
         snapshot.match("update_lambda_response", update_lambda_response)
         waiter.wait(FunctionName=function_name)
-        invocation_result_latest = aws_client.awslambda.invoke(
+        invocation_result_latest = aws_client.lambda_.invoke(
             FunctionName=function_name, Payload=b"{}"
         )
         snapshot.match("invocation_result_latest", invocation_result_latest)
-        invocation_result_v1 = aws_client.awslambda.invoke(
+        invocation_result_v1 = aws_client.lambda_.invoke(
             FunctionName=function_name, Qualifier=first_publish_response["Version"], Payload=b"{}"
         )
         snapshot.match("invocation_result_v1", invocation_result_v1)
-        second_publish_response = aws_client.awslambda.publish_version(
+        second_publish_response = aws_client.lambda_.publish_version(
             FunctionName=function_name, Description="Second version description :)"
         )
         snapshot.match("second_publish_response", second_publish_response)
         waiter.wait(FunctionName=function_name, Qualifier=second_publish_response["Version"])
-        invocation_result_v2 = aws_client.awslambda.invoke(
+        invocation_result_v2 = aws_client.lambda_.invoke(
             FunctionName=function_name, Qualifier=second_publish_response["Version"], Payload=b"{}"
         )
         snapshot.match("invocation_result_v2", invocation_result_v2)
         zip_file_v3 = create_lambda_archive(
             load_file(TEST_LAMBDA_VERSION) % "version3", get_content=True
         )
-        update_lambda_response_with_publish = aws_client.awslambda.update_function_code(
+        update_lambda_response_with_publish = aws_client.lambda_.update_function_code(
             FunctionName=function_name, ZipFile=zip_file_v3, Publish=True
         )
         snapshot.match("update_lambda_response_with_publish", update_lambda_response_with_publish)
         waiter.wait(
             FunctionName=function_name, Qualifier=update_lambda_response_with_publish["Version"]
         )
-        invocation_result_v3 = aws_client.awslambda.invoke(
+        invocation_result_v3 = aws_client.lambda_.invoke(
             FunctionName=function_name,
             Qualifier=update_lambda_response_with_publish["Version"],
             Payload=b"{}",
         )
         snapshot.match("invocation_result_v3", invocation_result_v3)
-        invocation_result_latest_end = aws_client.awslambda.invoke(
+        invocation_result_latest_end = aws_client.lambda_.invoke(
             FunctionName=function_name, Payload=b"{}"
         )
         snapshot.match("invocation_result_latest_end", invocation_result_latest_end)
-        invocation_result_v2 = aws_client.awslambda.invoke(
+        invocation_result_v2 = aws_client.lambda_.invoke(
             FunctionName=function_name, Qualifier=second_publish_response["Version"], Payload=b"{}"
         )
         snapshot.match("invocation_result_v2_end", invocation_result_v2)
-        invocation_result_v1 = aws_client.awslambda.invoke(
+        invocation_result_v1 = aws_client.lambda_.invoke(
             FunctionName=function_name, Qualifier=first_publish_response["Version"], Payload=b"{}"
         )
         snapshot.match("invocation_result_v1_end", invocation_result_v1)
@@ -1888,7 +1878,7 @@ class TestLambdaAliases:
         self, lambda_su_role, create_lambda_function_aws, snapshot, aws_client
     ):
         """Check if alias only moves after it is updated"""
-        waiter = aws_client.awslambda.get_waiter("function_updated_v2")
+        waiter = aws_client.lambda_.get_waiter("function_updated_v2")
         function_name = f"fn-{short_uid()}"
         zip_file_v1 = create_lambda_archive(
             load_file(TEST_LAMBDA_VERSION) % "version1", get_content=True
@@ -1903,22 +1893,22 @@ class TestLambdaAliases:
             Description="No version :(",
         )
         snapshot.match("create_response", create_response)
-        first_publish_response = aws_client.awslambda.publish_version(
+        first_publish_response = aws_client.lambda_.publish_version(
             FunctionName=function_name, Description="First version description :)"
         )
         waiter.wait(FunctionName=function_name, Qualifier=first_publish_response["Version"])
         # create alias
-        create_alias_response = aws_client.awslambda.create_alias(
+        create_alias_response = aws_client.lambda_.create_alias(
             FunctionName=function_name,
             FunctionVersion=first_publish_response["Version"],
             Name="alias1",
         )
         snapshot.match("create_alias_response", create_alias_response)
-        invocation_result_qualifier_v1 = aws_client.awslambda.invoke(
+        invocation_result_qualifier_v1 = aws_client.lambda_.invoke(
             FunctionName=function_name, Qualifier=create_alias_response["Name"], Payload=b"{}"
         )
         snapshot.match("invocation_result_qualifier_v1", invocation_result_qualifier_v1)
-        invocation_result_qualifier_v1_arn = aws_client.awslambda.invoke(
+        invocation_result_qualifier_v1_arn = aws_client.lambda_.invoke(
             FunctionName=create_alias_response["AliasArn"], Payload=b"{}"
         )
         snapshot.match("invocation_result_qualifier_v1_arn", invocation_result_qualifier_v1_arn)
@@ -1926,13 +1916,13 @@ class TestLambdaAliases:
             load_file(TEST_LAMBDA_VERSION) % "version2", get_content=True
         )
         # update lambda code
-        update_lambda_response = aws_client.awslambda.update_function_code(
+        update_lambda_response = aws_client.lambda_.update_function_code(
             FunctionName=function_name, ZipFile=zip_file_v2
         )
         snapshot.match("update_lambda_response", update_lambda_response)
         waiter.wait(FunctionName=function_name)
         # check if alias is still first version
-        invocation_result_qualifier_v1_after_update = aws_client.awslambda.invoke(
+        invocation_result_qualifier_v1_after_update = aws_client.lambda_.invoke(
             FunctionName=function_name, Qualifier=create_alias_response["Name"], Payload=b"{}"
         )
         snapshot.match(
@@ -1940,13 +1930,13 @@ class TestLambdaAliases:
             invocation_result_qualifier_v1_after_update,
         )
         # publish to 2
-        second_publish_response = aws_client.awslambda.publish_version(
+        second_publish_response = aws_client.lambda_.publish_version(
             FunctionName=function_name, Description="Second version description :)"
         )
         snapshot.match("second_publish_response", second_publish_response)
         waiter.wait(FunctionName=function_name, Qualifier=second_publish_response["Version"])
         # check if invoke still targets 1
-        invocation_result_qualifier_v1_after_publish = aws_client.awslambda.invoke(
+        invocation_result_qualifier_v1_after_publish = aws_client.lambda_.invoke(
             FunctionName=function_name, Qualifier=create_alias_response["Name"], Payload=b"{}"
         )
         snapshot.match(
@@ -1954,19 +1944,19 @@ class TestLambdaAliases:
             invocation_result_qualifier_v1_after_publish,
         )
         # move alias to 2
-        update_alias_response = aws_client.awslambda.update_alias(
+        update_alias_response = aws_client.lambda_.update_alias(
             FunctionName=function_name,
             Name=create_alias_response["Name"],
             FunctionVersion=second_publish_response["Version"],
         )
         snapshot.match("update_alias_response", update_alias_response)
         # check if alias moved to 2
-        invocation_result_qualifier_v2 = aws_client.awslambda.invoke(
+        invocation_result_qualifier_v2 = aws_client.lambda_.invoke(
             FunctionName=function_name, Qualifier=create_alias_response["Name"], Payload=b"{}"
         )
         snapshot.match("invocation_result_qualifier_v2", invocation_result_qualifier_v2)
-        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
-            aws_client.awslambda.invoke(
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
+            aws_client.lambda_.invoke(
                 FunctionName=function_name, Qualifier="non-existent-alias", Payload=b"{}"
             )
         snapshot.match("invocation_exc_not_existent", e.value.response)
@@ -1975,7 +1965,7 @@ class TestLambdaAliases:
     def test_alias_routingconfig(
         self, lambda_su_role, create_lambda_function_aws, snapshot, aws_client
     ):
-        waiter = aws_client.awslambda.get_waiter("function_updated_v2")
+        waiter = aws_client.lambda_.get_waiter("function_updated_v2")
         function_name = f"fn-{short_uid()}"
         zip_file_v1 = create_lambda_archive(
             load_file(TEST_LAMBDA_VERSION) % "version1", get_content=True
@@ -1995,15 +1985,15 @@ class TestLambdaAliases:
             load_file(TEST_LAMBDA_VERSION) % "version2", get_content=True
         )
         # update lambda code
-        aws_client.awslambda.update_function_code(FunctionName=function_name, ZipFile=zip_file_v2)
+        aws_client.lambda_.update_function_code(FunctionName=function_name, ZipFile=zip_file_v2)
         waiter.wait(FunctionName=function_name)
 
-        second_publish_response = aws_client.awslambda.publish_version(
+        second_publish_response = aws_client.lambda_.publish_version(
             FunctionName=function_name, Description="Second version description :)"
         )
         waiter.wait(FunctionName=function_name, Qualifier=second_publish_response["Version"])
         # create alias
-        create_alias_response = aws_client.awslambda.create_alias(
+        create_alias_response = aws_client.lambda_.create_alias(
             FunctionName=function_name,
             FunctionVersion=create_function_response["Version"],
             Name="alias1",
@@ -2014,7 +2004,7 @@ class TestLambdaAliases:
         max_retries = 20
         versions_hit = set()
         while len(versions_hit) < 2 and retries < max_retries:
-            invoke_response = aws_client.awslambda.invoke(
+            invoke_response = aws_client.lambda_.invoke(
                 FunctionName=function_name, Qualifier=create_alias_response["Name"], Payload=b"{}"
             )
             payload = json.loads(to_str(invoke_response["Payload"].read()))
@@ -2027,7 +2017,7 @@ class TestLambdaAliases:
 class TestRequestIdHandling:
     @markers.aws.validated
     def test_request_id_format(self, aws_client):
-        r = aws_client.awslambda.list_functions()
+        r = aws_client.lambda_.list_functions()
         request_id = r["ResponseMetadata"]["RequestId"]
         assert re.match(
             r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", request_id
@@ -2042,10 +2032,10 @@ class TestRequestIdHandling:
             func_name=func_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             runtime=Runtime.python3_10,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
         )
 
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=func_name, Payload=json.dumps({"hello": "world"})
         )
         snapshot.match("invoke_result", result)
@@ -2083,16 +2073,16 @@ class TestRequestIdHandling:
             func_name=fn_name,
             handler_file=handler_file,
             runtime=Runtime.python3_10,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
         )
 
-        url_config = aws_client.awslambda.create_function_url_config(
+        url_config = aws_client.lambda_.create_function_url_config(
             FunctionName=fn_name,
             AuthType="NONE",
         )
         snapshot.match("create_lambda_url_config", url_config)
 
-        permissions_response = aws_client.awslambda.add_permission(
+        permissions_response = aws_client.lambda_.add_permission(
             FunctionName=fn_name,
             StatementId="urlPermission",
             Action="lambda:InvokeFunctionUrl",
@@ -2142,15 +2132,15 @@ class TestRequestIdHandling:
             func_name=func_name,
             handler_file=TEST_LAMBDA_CONTEXT_REQID,
             runtime=Runtime.python3_10,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
         )
 
-        aws_client.awslambda.put_function_event_invoke_config(
+        aws_client.lambda_.put_function_event_invoke_config(
             FunctionName=func_name, MaximumRetryAttempts=1
         )
-        aws_client.awslambda.get_waiter("function_updated_v2").wait(FunctionName=func_name)
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=func_name)
 
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=func_name, InvocationType="Event", Payload=json.dumps({"fail": 1})
         )
         snapshot.match("invoke_result", result)

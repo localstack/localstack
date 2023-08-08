@@ -175,7 +175,7 @@ LOG = logging.getLogger(__name__)
 
 @pytest.fixture(scope="module")
 def setup_and_tear_down(aws_client):
-    lambda_client = aws_client.awslambda
+    lambda_client = aws_client.lambda_
 
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_ENV), get_content=True)
     zip_file2 = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)

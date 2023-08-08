@@ -8,23 +8,23 @@ from typing import Callable, Dict, Literal, Optional
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, PackageType, Runtime
-from localstack.services.awslambda import hooks as lambda_hooks
-from localstack.services.awslambda.invocation.executor_endpoint import (
+from localstack.services.lambda_ import hooks as lambda_hooks
+from localstack.services.lambda_.invocation.executor_endpoint import (
     INVOCATION_PORT,
     ExecutorEndpoint,
     ServiceEndpoint,
 )
-from localstack.services.awslambda.invocation.lambda_models import IMAGE_MAPPING, FunctionVersion
-from localstack.services.awslambda.invocation.runtime_executor import (
+from localstack.services.lambda_.invocation.lambda_models import IMAGE_MAPPING, FunctionVersion
+from localstack.services.lambda_.invocation.runtime_executor import (
     LambdaRuntimeException,
     RuntimeExecutor,
 )
-from localstack.services.awslambda.lambda_utils import (
+from localstack.services.lambda_.lambda_utils import (
     HINT_LOG,
     get_all_container_networks_for_lambda,
     get_main_endpoint_from_container,
 )
-from localstack.services.awslambda.packages import awslambda_runtime_package
+from localstack.services.lambda_.packages import awslambda_runtime_package
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,

@@ -10,11 +10,11 @@ from botocore.exceptions import ClientError
 from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
-import localstack.services.awslambda.lambda_api
+import localstack.services.lambda_.lambda_api
 from localstack import config
-from localstack.services.awslambda import lambda_api, lambda_executors
-from localstack.services.awslambda.lambda_api import do_set_function_code, use_docker
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.services.lambda_ import lambda_api, lambda_executors
+from localstack.services.lambda_.lambda_api import do_set_function_code, use_docker
+from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
@@ -85,13 +85,13 @@ class TestLambdaFallbackUrl:
             return len((run_safe(ddb_client.scan, TableName=db_table) or {"Items": []})["Items"])
 
         items_before = num_items()
-        self._run_forward_to_fallback_url(aws_client.awslambda, "dynamodb://%s" % db_table)
+        self._run_forward_to_fallback_url(aws_client.lambda_, "dynamodb://%s" % db_table)
         items_after = num_items()
         assert items_before + 3 == items_after
 
     @markers.aws.unknown
     def test_forward_to_fallback_url_http(self, aws_client):
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
         lambda_result = {"result": "test123"}
 
         def _handler(_request: Request):
@@ -104,7 +104,7 @@ class TestLambdaFallbackUrl:
             http_endpoint = server.url_for("/")
 
             # test 1: forward to LAMBDA_FALLBACK_URL
-            self._run_forward_to_fallback_url(aws_client.awslambda, http_endpoint)
+            self._run_forward_to_fallback_url(aws_client.lambda_, http_endpoint)
 
             poll_condition(lambda: len(server.log) >= 3, timeout=10)
 
@@ -127,7 +127,7 @@ class TestLambdaFallbackUrl:
 
                 # test 2: forward to LAMBDA_FORWARD_URL
                 inv_results = self._run_forward_to_fallback_url(
-                    aws_client.awslambda, http_endpoint, lambda_name=lambda_name, fallback=False
+                    aws_client.lambda_, http_endpoint, lambda_name=lambda_name, fallback=False
                 )
 
                 poll_condition(lambda: len(server.log) >= 3, timeout=10)
@@ -154,7 +154,7 @@ class TestLambdaFallbackUrl:
 
     @markers.aws.unknown
     def test_adding_fallback_function_name_in_headers(self, aws_client):
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
         ddb_client = aws_client.dynamodb
 
         db_table = f"lambda-records-{short_uid()}"
@@ -188,7 +188,7 @@ class TestDockerExecutors:
                 libs=TEST_LAMBDA_LIBS,
                 func_name=function_name,
             )
-            lambda_client = aws_client.awslambda
+            lambda_client = aws_client.lambda_
             lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
             result = lambda_client.invoke(FunctionName=function_name, Payload="{}")
             assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
@@ -214,10 +214,10 @@ class TestDockerExecutors:
             libs=TEST_LAMBDA_LIBS,
             envvars={"Hello": "World"},
         )
-        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=func_name)
+        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=func_name)
 
         # test first invocation
-        result = aws_client.awslambda.invoke(FunctionName=func_name, Payload=b"{}")
+        result = aws_client.lambda_.invoke(FunctionName=func_name, Payload=b"{}")
         payload = json.loads(to_str(result["Payload"].read()))
 
         assert payload["Hello"] == "World"
@@ -227,10 +227,10 @@ class TestDockerExecutors:
         updated_handler = testutil.create_lambda_archive(
             updated_handler, libs=TEST_LAMBDA_LIBS, get_content=True
         )
-        aws_client.awslambda.update_function_code(FunctionName=func_name, ZipFile=updated_handler)
+        aws_client.lambda_.update_function_code(FunctionName=func_name, ZipFile=updated_handler)
 
         # second invocation should exec updated lambda code
-        result = aws_client.awslambda.invoke(FunctionName=func_name, Payload=b"{}")
+        result = aws_client.lambda_.invoke(FunctionName=func_name, Payload=b"{}")
         payload = json.loads(to_str(result["Payload"].read()))
 
         assert payload["Hello"] == "Elon Musk"
@@ -258,7 +258,7 @@ class TestDockerExecutors:
             libs=TEST_LAMBDA_LIBS,
             envvars={"Hello": "World"},
         )
-        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=func_name)
+        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=func_name)
 
         assert 0 == len(executor.get_all_container_names())
         assert {} == executor.function_invoke_times
@@ -273,7 +273,7 @@ class TestDockerExecutors:
                 prev_invoke_time = executor.function_invoke_times[func_arn]
 
             start_time = time.time()
-            aws_client.awslambda.invoke(FunctionName=func_name, Payload=b"{}")
+            aws_client.lambda_.invoke(FunctionName=func_name, Payload=b"{}")
             duration = time.time() - start_time
 
             assert 1 == len(executor.get_all_container_names())
@@ -328,11 +328,11 @@ class TestDockerExecutors:
             libs=TEST_LAMBDA_LIBS,
             envvars={"Hello": "World"},
         )
-        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=func_name)
+        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=func_name)
 
         assert 0 == len(executor.get_all_container_names())
 
-        aws_client.awslambda.invoke(FunctionName=func_name, Payload=b"{}")
+        aws_client.lambda_.invoke(FunctionName=func_name, Payload=b"{}")
         assert 1 == len(executor.get_all_container_names())
 
         # try to destroy idle containers.
@@ -368,9 +368,9 @@ class TestDockerExecutors:
         testutil.create_lambda_function(
             func_name=func_name, handler_file=TEST_LAMBDA_NODEJS_ECHO, runtime="nodejs16.x"
         )
-        aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=func_name)
+        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=func_name)
 
-        result = aws_client.awslambda.invoke(
+        result = aws_client.lambda_.invoke(
             FunctionName=func_name, Payload=('{"key":"%s"}' % ("😀" + " " * 4091))
         )
         assert "FunctionError" not in result
@@ -382,7 +382,7 @@ class TestDockerExecutors:
 class TestLocalExecutors:
     @markers.aws.unknown
     def test_python3_runtime_multiple_create_with_conflicting_module(self, aws_client):
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
         original_do_use_docker = lambda_api.DO_USE_DOCKER
         try:
             # always use the local runner
@@ -443,10 +443,10 @@ class TestFunctionStates:
             return result
 
         monkeypatch.setattr(
-            localstack.services.awslambda.lambda_api, "do_set_function_code", _do_set_function_code
+            localstack.services.lambda_.lambda_api, "do_set_function_code", _do_set_function_code
         )
         try:
-            response = aws_client.awslambda.create_function(
+            response = aws_client.lambda_.create_function(
                 FunctionName=function_name,
                 Runtime="python3.9",
                 Handler="handler.handler",
@@ -457,7 +457,7 @@ class TestFunctionStates:
             assert response["State"] == "Pending"
 
             with pytest.raises(ClientError) as e:
-                aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
+                aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
 
             assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 409
             assert e.match("ResourceConflictException")
@@ -470,14 +470,14 @@ class TestFunctionStates:
 
             # lambda has to get active at some point
             def _check_lambda_state():
-                response = aws_client.awslambda.get_function(FunctionName=function_name)
+                response = aws_client.lambda_.get_function(FunctionName=function_name)
                 assert response["Configuration"]["State"] == "Active"
                 return response
 
             retry(_check_lambda_state)
-            aws_client.awslambda.invoke(FunctionName=function_name, Payload=b"{}")
+            aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         finally:
             try:
-                aws_client.awslambda.delete_function(FunctionName=function_name)
+                aws_client.lambda_.delete_function(FunctionName=function_name)
             except Exception:
                 LOG.debug("Unable to delete function %s", function_name)
