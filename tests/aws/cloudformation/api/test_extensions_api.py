@@ -7,6 +7,7 @@ import botocore.errorfactory
 import botocore.exceptions
 import pytest
 
+from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
@@ -28,6 +29,7 @@ class TestExtensionsApi:
             ("HOOK", "LocalStack::Testing::TestHook", "hooks/localstack-testing-testhook.zip"),
         ],
     )
+    @markers.aws.unknown
     def test_crud_extension(
         self,
         deploy_cfn_template,
@@ -89,6 +91,7 @@ class TestExtensionsApi:
         snapshot.match("deregister_response", deregister_response)
 
     @pytest.mark.skip(reason="test not completed")
+    @markers.aws.unknown
     def test_extension_versioning(self, s3_bucket, snapshot, aws_client):
         """
         This tests validates some api behaviours and errors resulting of creating and deleting versions of extensions.
@@ -166,6 +169,7 @@ class TestExtensionsApi:
         snapshot.match("deleting_default_response", delete_default_response)
 
     @pytest.mark.skip(reason="feature not implemented")
+    @markers.aws.unknown
     def test_extension_not_complete(self, s3_bucket, snapshot, aws_client):
         """
         This tests validates the error of Extension not found using the describe_type operation when the registration
@@ -200,6 +204,7 @@ class TestExtensionsApi:
         )
 
     @pytest.mark.skip(reason="feature not implemented")
+    @markers.aws.unknown
     def test_extension_type_configuration(self, register_extension, snapshot, aws_client):
         artifact_path = os.path.join(
             os.path.dirname(__file__),

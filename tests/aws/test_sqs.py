@@ -969,6 +969,7 @@ class TestSqsProvider:
         response = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
         assert len(response["Messages"]) == 1
 
+    @markers.aws.unknown
     def test_delete_message_batch_from_lambda(
         self, sqs_create_queue, create_lambda_function, aws_client
     ):
@@ -1695,6 +1696,7 @@ class TestSqsProvider:
 
         snapshot.match("error", e.value.response)
 
+    @markers.aws.unknown
     def test_fifo_set_content_based_deduplication_strategy(
         self, sqs_create_queue, aws_client, snapshot
     ):
@@ -2028,6 +2030,7 @@ class TestSqsProvider:
         e.match("InvalidParameterValue")
 
     @pytest.mark.xfail
+    @markers.aws.unknown
     def test_redrive_policy_attribute_validity(self, sqs_create_queue, sqs_queue_arn, aws_client):
         dl_queue_name = f"dl-queue-{short_uid()}"
         dl_queue_url = sqs_create_queue(QueueName=dl_queue_name)
@@ -2288,6 +2291,7 @@ class TestSqsProvider:
         send_invalid(invalid_attribute)
 
     @pytest.mark.xfail
+    @markers.aws.unknown
     def test_send_message_with_invalid_fifo_parameters(self, sqs_create_queue, aws_client):
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(
@@ -2441,6 +2445,7 @@ class TestSqsProvider:
             == result_send["MessageId"]
         )
 
+    @markers.aws.unknown
     def test_dead_letter_queue_chain(self, sqs_create_queue, aws_client):
         # test a chain of 3 queues, with DLQ flow q1 -> q2 -> q3
 
@@ -2773,6 +2778,7 @@ class TestSqsProvider:
             == "5ae4d5d7636402d80f4eb6d213245a88"
         )
 
+    @markers.aws.unknown
     def test_inflight_message_requeue(self, sqs_create_queue, aws_client):
         visibility_timeout = 3
         queue_name = f"queue-{short_uid()}"
@@ -2913,6 +2919,7 @@ class TestSqsProvider:
         assert "Messages" not in result_recv_2.keys()
 
     @pytest.mark.skip
+    @markers.aws.unknown
     def test_dead_letter_queue_execution_lambda_mapping_preserves_id(
         self, sqs_create_queue, create_lambda_function, aws_client
     ):
@@ -2967,6 +2974,7 @@ class TestSqsProvider:
     # verification of community posted issue
     # FIXME: \r gets lost
     @pytest.mark.skip
+    @markers.aws.unknown
     def test_message_with_carriage_return(self, sqs_create_queue, aws_client):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -3187,6 +3195,7 @@ class TestSqsProvider:
     @pytest.mark.skip(
         reason="this is an AWS behaviour test that requires 5 minutes to run. Only execute manually"
     )
+    @markers.aws.unknown
     def test_deduplication_interval(self, sqs_create_queue, aws_client):
         # TODO: AWS behaviour here "seems" inconsistent -> current code might need adaption
         fifo_queue_name = f"queue-{short_uid()}.fifo"
@@ -3914,6 +3923,7 @@ class TestSqsQueryApi:
         assert response.ok
         assert "foobar" in response.text
 
+    @markers.aws.unknown
     def test_queue_url_format_path_strategy(self, sqs_create_queue, monkeypatch):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "path")
         queue_name = f"path_queue_{short_uid()}"
@@ -4002,6 +4012,7 @@ class TestSqsQueryApi:
 
 class TestSQSMultiAccounts:
     @pytest.mark.parametrize("strategy", ["domain", "path"])
+    @markers.aws.unknown
     def test_cross_account_access(
         self, monkeypatch, sqs_create_queue, secondary_aws_client, strategy
     ):
@@ -4035,6 +4046,7 @@ class TestSQSMultiAccounts:
         # - UntagQueue
 
     @pytest.mark.parametrize("strategy", ["domain", "path"])
+    @markers.aws.unknown
     def test_cross_account_get_queue_url(
         self, monkeypatch, sqs_create_queue, secondary_aws_client, strategy
     ):

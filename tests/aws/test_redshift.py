@@ -1,9 +1,11 @@
 import pytest
 
+from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
 
 class TestRedshift:
+    @markers.aws.unknown
     def test_create_clusters(self, aws_client):
 
         # create
@@ -30,6 +32,7 @@ class TestRedshift:
             aws_client.redshift.describe_clusters(ClusterIdentifier=cluster_id)
         assert "ClusterNotFound" in str(e)
 
+    @markers.aws.unknown
     def test_cluster_security_groups(self, snapshot, aws_client):
         # Note: AWS parity testing not easily possible with our account, due to error message
         #  "VPC-by-Default customers cannot use cluster security groups"

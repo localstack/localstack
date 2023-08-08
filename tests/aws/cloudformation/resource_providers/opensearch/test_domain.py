@@ -4,6 +4,7 @@ import pytest
 
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest import markers
 from localstack.testing.pytest.fixtures import StackDeployError
 
 RESOURCE_GETATT_TARGETS = [
@@ -23,6 +24,7 @@ class TestAttributeAccess:
         raises=StackDeployError,
     )
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Exploratory test only")
+    @markers.aws.unknown
     def test_getattr(
         self,
         aws_client: ServiceLevelClientFactory,

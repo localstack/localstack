@@ -2,6 +2,7 @@ import json
 import logging
 import os
 
+from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import wait_until
@@ -9,6 +10,7 @@ from localstack.utils.sync import wait_until
 LOG = logging.getLogger(__name__)
 
 
+@markers.aws.unknown
 def test_eventbus_policies(deploy_cfn_template, aws_client):
     event_bus_name = f"event-bus-{short_uid()}"
 
@@ -49,6 +51,7 @@ def test_eventbus_policies(deploy_cfn_template, aws_client):
     assert len(policy["Statement"]) == 1
 
 
+@markers.aws.unknown
 def test_eventbus_policy_statement(deploy_cfn_template, aws_client):
     event_bus_name = f"event-bus-{short_uid()}"
     statement_id = f"statement-{short_uid()}"
@@ -72,6 +75,7 @@ def test_eventbus_policy_statement(deploy_cfn_template, aws_client):
     assert event_bus_name in statement["Resource"]
 
 
+@markers.aws.unknown
 def test_event_rule_to_logs(deploy_cfn_template, aws_client):
     event_rule_name = f"event-rule-{short_uid()}"
     log_group_name = f"log-group-{short_uid()}"
@@ -122,6 +126,7 @@ def test_event_rule_to_logs(deploy_cfn_template, aws_client):
     assert message_token in log_events["events"][0]["message"]
 
 
+@markers.aws.unknown
 def test_event_rule_creation_without_target(deploy_cfn_template, aws_client):
     event_rule_name = f"event-rule-{short_uid()}"
     deploy_cfn_template(
@@ -137,6 +142,7 @@ def test_event_rule_creation_without_target(deploy_cfn_template, aws_client):
     assert response
 
 
+@markers.aws.unknown
 def test_cfn_event_bus_resource(deploy_cfn_template, aws_client):
     def _assert(expected_len):
         rs = aws_client.events.list_event_buses()
@@ -205,6 +211,7 @@ Resources:
 """
 
 
+@markers.aws.unknown
 def test_cfn_handle_events_rule(deploy_cfn_template, aws_client):
     bucket_name = f"target-{short_uid()}"
     rule_prefix = f"s3-rule-{short_uid()}"
@@ -227,6 +234,7 @@ def test_cfn_handle_events_rule(deploy_cfn_template, aws_client):
     assert rule_name not in [rule["Name"] for rule in rs["Rules"]]
 
 
+@markers.aws.unknown
 def test_cfn_handle_events_rule_without_name(deploy_cfn_template, aws_client):
     rs = aws_client.events.list_rules()
     rule_names = [rule["Name"] for rule in rs["Rules"]]

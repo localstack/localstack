@@ -1199,6 +1199,7 @@ class TestLambdaMultiAccounts:
         return secondary_aws_client.awslambda
 
     @pytest.mark.skipif(is_old_provider(), reason="Not supported by old provider")
+    @markers.aws.unknown
     def test_cross_account_access(
         self, primary_client, secondary_client, create_lambda_function, dummylayer
     ):

@@ -299,6 +299,7 @@ class TestLambdaFunction:
             method(FunctionName=wrong_region_arn)
         snapshot.match("wrong_region_exception", e.value.response)
 
+    @markers.aws.unknown
     def test_lambda_code_location_zipfile(
         self, snapshot, create_lambda_function_aws, lambda_su_role, aws_client
     ):
@@ -345,6 +346,7 @@ class TestLambdaFunction:
             == get_function_response_updated["Configuration"]["CodeSize"]
         )
 
+    @markers.aws.unknown
     def test_lambda_code_location_s3(
         self, s3_bucket, snapshot, create_lambda_function_aws, lambda_su_role, aws_client
     ):
@@ -701,6 +703,7 @@ class TestLambdaImages:
             )
 
     @pytest.fixture(scope="class")
+    @markers.aws.unknown
     def test_image(self, aws_client, login_docker_client):
         repository_names = []
         image_names = []
@@ -3242,6 +3245,7 @@ class TestLambdaUrl:
         # function name + qualifier tests
         fn_arn_doesnotexist = fn_arn.replace(function_name, "doesnotexist")
 
+        @markers.aws.unknown
         def test_name_and_qualifier(method: Callable, snapshot_prefix: str, tests, **kwargs):
             for t in tests:
                 with pytest.raises(t["exc"]) as e:
@@ -3702,6 +3706,7 @@ class TestCodeSigningConfig:
         )
         snapshot.match("delete_code_signing_config", response)
 
+    @markers.aws.unknown
     def test_code_signing_not_found_excs(
         self, snapshot, create_lambda_function, account_id, aws_client
     ):
@@ -4045,6 +4050,7 @@ class TestLambdaEventSourceMappings:
             "$..UUID",
         ]
     )
+    @markers.aws.unknown
     def test_event_source_mapping_lifecycle(
         self,
         create_lambda_function,
@@ -4118,6 +4124,7 @@ class TestLambdaEventSourceMappings:
         # lambda_client.delete_event_source_mapping(UUID=uuid)
 
     @pytest.mark.skipif(is_old_provider(), reason="new provider only")
+    @markers.aws.unknown
     def test_create_event_source_validation(
         self, create_lambda_function, lambda_su_role, dynamodb_create_table, snapshot, aws_client
     ):
@@ -4149,6 +4156,7 @@ class TestLambdaEventSourceMappings:
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not correctly supported")
 class TestLambdaTags:
+    @markers.aws.unknown
     def test_tag_exceptions(self, create_lambda_function, snapshot, account_id, aws_client):
         function_name = f"fn-tag-{short_uid()}"
         create_lambda_function(
@@ -4249,6 +4257,7 @@ class TestLambdaTags:
             aws_client.awslambda.tag_resource(Resource=function_arn, Tags={"a_key": "a_value"})
         snapshot.match("tag_lambda_too_many_tags_additional", e.value.response)
 
+    @markers.aws.unknown
     def test_tag_versions(self, create_lambda_function, snapshot, aws_client):
         function_name = f"fn-tag-{short_uid()}"
         create_function_result = create_lambda_function(
@@ -4599,6 +4608,7 @@ class TestLambdaLayer:
             )
         snapshot.match("create_function_with_layer_in_different_region", e.value.response)
 
+    @markers.aws.unknown
     def test_layer_function_quota_exception(
         self, create_lambda_function, snapshot, dummylayer, cleanups, aws_client
     ):

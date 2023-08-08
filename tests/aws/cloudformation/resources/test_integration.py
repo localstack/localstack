@@ -1,10 +1,12 @@
 import json
 import os
 
+from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import wait_until
 
 
+@markers.aws.unknown
 def test_events_sqs_sns_lambda(deploy_cfn_template, aws_client):
     function_name = f"function-{short_uid()}"
     queue_name = f"queue-{short_uid()}"

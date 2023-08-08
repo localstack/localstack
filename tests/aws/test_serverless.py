@@ -35,6 +35,7 @@ class TestServerless:
         # run('cd %s; npm run undeploy -- --region=%s' % (cls.get_base_dir(), aws_stack.get_region()))
 
     @markers.skip_offline
+    @markers.aws.unknown
     def test_event_rules_deployed(self, aws_client, setup_and_teardown):
         events = aws_client.events
         rules = events.list_rules()["Rules"]
@@ -52,6 +53,7 @@ class TestServerless:
         assert {"source": ["customSource"]} == json.loads(rule["EventPattern"])
 
     @markers.skip_offline
+    @markers.aws.unknown
     def test_dynamodb_stream_handler_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-dynamodbStreamHandler"
         table_name = "Test"
@@ -72,6 +74,7 @@ class TestServerless:
         assert event_source_arn == resp["Table"]["LatestStreamArn"]
 
     @markers.skip_offline
+    @markers.aws.unknown
     def test_kinesis_stream_handler_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-kinesisStreamHandler"
         function_name2 = "sls-test-local-kinesisConsumerHandler"
@@ -101,6 +104,7 @@ class TestServerless:
         retry(assert_invocations, sleep=2, retries=20)
 
     @markers.skip_offline
+    @markers.aws.unknown
     def test_queue_handler_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-queueHandler"
         queue_name = "sls-test-local-CreateQueue"
@@ -128,6 +132,7 @@ class TestServerless:
         assert 3 == redrive_policy["maxReceiveCount"]
 
     @markers.skip_offline
+    @markers.aws.unknown
     def test_lambda_with_configs_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-test"
 
@@ -145,6 +150,7 @@ class TestServerless:
         assert 7200 == resp.get("MaximumEventAgeInSeconds")
 
     @markers.skip_offline
+    @markers.aws.unknown
     def test_apigateway_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-router"
         existing_api_ids = setup_and_teardown
@@ -174,6 +180,7 @@ class TestServerless:
             )
 
     @markers.skip_offline
+    @markers.aws.unknown
     def test_s3_bucket_deployed(self, aws_client, setup_and_teardown):
         s3_client = aws_client.s3
         bucket_name = "testing-bucket"

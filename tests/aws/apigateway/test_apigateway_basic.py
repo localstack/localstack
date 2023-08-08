@@ -152,6 +152,7 @@ class TestAPIGateway:
         assert "foobar" in e.value.response["Error"]["Message"]
 
     @pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
+    @markers.aws.unknown
     def test_create_rest_api_with_custom_id(self, create_rest_apigw, url_function, aws_client):
         apigw_name = f"gw-{short_uid()}"
         test_id = "testId123"
@@ -171,6 +172,7 @@ class TestAPIGateway:
         assert response.ok
         assert response._content == b'{"echo": "foobar", "response": "mocked"}'
 
+    @markers.aws.unknown
     def test_update_rest_api_deployment(self, create_rest_apigw, aws_client):
         api_id, _, root = create_rest_apigw(name="test_gateway5")
 
@@ -213,6 +215,7 @@ class TestAPIGateway:
         )
         assert deployment["description"] == "new-description"
 
+    @markers.aws.unknown
     def test_api_gateway_lambda_integration(
         self, create_rest_apigw, create_lambda_function, aws_client
     ):
@@ -353,6 +356,7 @@ class TestAPIGateway:
     @pytest.mark.parametrize("use_hostname", [True, False])
     @pytest.mark.parametrize("disable_custom_cors", [True, False])
     @pytest.mark.parametrize("origin", ["http://allowed", "http://denied"])
+    @markers.aws.unknown
     def test_invoke_endpoint_cors_headers(
         self, use_hostname, disable_custom_cors, origin, monkeypatch, aws_client
     ):
@@ -395,17 +399,20 @@ class TestAPIGateway:
             assert response.status_code == 200
             assert "http://test.com" in response.headers["Access-Control-Allow-Origin"]
 
+    @markers.aws.unknown
     def test_api_gateway_lambda_proxy_integration(self, integration_lambda):
         self._test_api_gateway_lambda_proxy_integration(
             integration_lambda, self.API_PATH_LAMBDA_PROXY_BACKEND
         )
 
+    @markers.aws.unknown
     def test_api_gateway_lambda_proxy_integration_with_path_param(self, integration_lambda):
         self._test_api_gateway_lambda_proxy_integration(
             integration_lambda,
             self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM,
         )
 
+    @markers.aws.unknown
     def test_api_gateway_lambda_proxy_integration_with_is_base_64_encoded(self, integration_lambda):
         # Test the case where `isBase64Encoded` is enabled.
         content = b"hello, please base64 encode me"
@@ -537,11 +544,13 @@ class TestAPIGateway:
         assert "/yCqIBE=" == result_content["body"]
         assert ["isBase64Encoded"]
 
+    @markers.aws.unknown
     def test_api_gateway_lambda_proxy_integration_any_method(self, integration_lambda):
         self._test_api_gateway_lambda_proxy_integration_any_method(
             integration_lambda, self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD
         )
 
+    @markers.aws.unknown
     def test_api_gateway_lambda_proxy_integration_any_method_with_path_param(
         self, integration_lambda
     ):
@@ -550,6 +559,7 @@ class TestAPIGateway:
             self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
         )
 
+    @markers.aws.unknown
     def test_api_gateway_lambda_asynchronous_invocation(
         self, create_rest_apigw, create_lambda_function, aws_client
     ):
@@ -571,6 +581,7 @@ class TestAPIGateway:
         assert result.status_code == 200
         assert result.content == b""
 
+    @markers.aws.unknown
     def test_api_gateway_mock_integration(self, create_rest_apigw, aws_client):
         rest_api_name = f"apigw-{short_uid()}"
         rest_api_id, _, _ = create_rest_apigw(name=rest_api_name)
@@ -583,6 +594,7 @@ class TestAPIGateway:
         assert response._content == b'{"echo": "foobar", "response": "mocked"}'
 
     @pytest.mark.xfail(reason="Behaviour is not AWS compliant, need to recreate this test")
+    @markers.aws.unknown
     # TODO rework or remove this test
     def test_api_gateway_authorizer_crud(self, aws_client):
         get_api_gateway_id = "fugvjdxtri"
@@ -631,6 +643,7 @@ class TestAPIGateway:
                 restApiId=get_api_gateway_id, authorizerId=authorizer_id
             )
 
+    @markers.aws.unknown
     def test_malformed_response_apigw_invocation(self, create_lambda_function, aws_client):
         lambda_name = f"test_lambda_{short_uid()}"
         lambda_resource = "/api/v1/{proxy+}"
@@ -659,6 +672,7 @@ class TestAPIGateway:
         assert result.headers.get("Content-Type") == "application/json"
         assert json.loads(result.content)["message"] == "Internal server error"
 
+    @markers.aws.unknown
     def test_api_gateway_handle_domain_name(self, aws_client):
         domain_name = f"{short_uid()}.example.com"
         apigw_client = aws_client.apigateway
@@ -698,6 +712,7 @@ class TestAPIGateway:
             else:
                 assert 204 == result.status_code
 
+    @markers.aws.unknown
     def test_apigateway_with_custom_authorization_method(
         self, create_rest_apigw, aws_client, integration_lambda
     ):
@@ -734,6 +749,7 @@ class TestAPIGateway:
 
         assert authorizer["id"] == method_response["authorizerId"]
 
+    @markers.aws.unknown
     def test_base_path_mapping(self, create_rest_apigw, aws_client):
         rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
 
@@ -791,6 +807,7 @@ class TestAPIGateway:
                 domainName=domain_name, basePath=base_path
             )
 
+    @markers.aws.unknown
     def test_base_path_mapping_root(self, aws_client):
         client = aws_client.apigateway
         response = client.create_rest_api(name="my_api2", description="this is my api")
@@ -844,6 +861,7 @@ class TestAPIGateway:
         with pytest.raises(Exception):
             client.delete_base_path_mapping(domainName=domain_name, basePath=base_path)
 
+    @markers.aws.unknown
     def test_api_account(self, create_rest_apigw, aws_client):
         rest_api_id, _, _ = create_rest_apigw(name="my_api", description="test 123")
 
@@ -854,6 +872,7 @@ class TestAPIGateway:
         )
         assert "foobar" in result["features"]
 
+    @markers.aws.unknown
     def test_put_integration_dynamodb_proxy_validation_without_request_template(self, aws_client):
         api_id = self.create_api_gateway_and_deploy(aws_client.apigateway)
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
@@ -864,6 +883,7 @@ class TestAPIGateway:
 
         assert 400 == response.status_code
 
+    @markers.aws.unknown
     def test_put_integration_dynamodb_proxy_validation_with_request_template(
         self, aws_client, dynamodb_create_table
     ):
@@ -899,6 +919,7 @@ class TestAPIGateway:
         result = dynamo_client.get_item(TableName=table_name, Key={"id": {"S": "id1"}})
         assert result["Item"]["data"] == {"S": "foobar123"}
 
+    @markers.aws.unknown
     def test_multiple_api_keys_validate(self, aws_client):
         request_templates = {
             "application/json": json.dumps(
@@ -1116,6 +1137,7 @@ class TestAPIGateway:
 
                 retry(_invoke_step_function, retries=15, sleep=0.8)
 
+    @markers.aws.unknown
     def test_api_gateway_http_integration_with_path_request_parameter(
         self, create_rest_apigw, echo_http_server, aws_client
     ):
@@ -1191,6 +1213,7 @@ class TestAPIGateway:
             f"{proto}://localhost:{config.EDGE_PORT}/restapis/{api_id}/{stage}/_user_request_{path}"
         )
 
+    @markers.aws.unknown
     def test_api_mock_integration_response_params(self, aws_client):
         resps = [
             {
@@ -1212,6 +1235,7 @@ class TestAPIGateway:
         assert "Origin" == result.headers.get("vary")
         assert "POST,OPTIONS" == result.headers.get("Access-Control-Allow-Methods")
 
+    @markers.aws.unknown
     def test_api_gateway_update_resource_path_part(self, create_rest_apigw, aws_client):
         api_id, _, _ = create_rest_apigw(name="test-api")
         root_res_id = aws_client.apigateway.get_resources(restApiId=api_id)["items"][0]["id"]
@@ -1232,6 +1256,7 @@ class TestAPIGateway:
         )
         assert response.get("pathPart") == "demo1"
 
+    @markers.aws.unknown
     def test_response_headers_invocation_with_apigw(self, create_lambda_function, aws_client):
         lambda_name = f"test_lambda_{short_uid()}"
         lambda_resource = "/api/v1/{proxy+}"
@@ -1263,6 +1288,7 @@ class TestAPIGateway:
         body = xmltodict.parse(result.content)
         assert body.get("message") == "completed"
 
+    @markers.aws.unknown
     def test_apigw_test_invoke_method_api(
         self, create_rest_apigw, create_lambda_function, aws_client
     ):
@@ -1484,6 +1510,7 @@ class TestAPIGateway:
 
 
 class TestTagging:
+    @markers.aws.unknown
     def test_tag_api(self, create_rest_apigw, aws_client):
         api_name = f"api-{short_uid()}"
         tags = {"foo": "bar"}
@@ -1502,6 +1529,7 @@ class TestTagging:
 
 @pytest.mark.skipif(not use_docker(), reason="Rust lambdas cannot be executed in local executor")
 @pytest.mark.skipif(get_arch() == "arm64", reason="Lambda only available for amd64")
+@markers.aws.unknown
 def test_apigateway_rust_lambda(
     create_rest_apigw, create_lambda_function, create_iam_role_with_policy, aws_client
 ):
@@ -1556,6 +1584,7 @@ def test_apigateway_rust_lambda(
     assert result.text == f"Hello, {first_name}!"
 
 
+@markers.aws.unknown
 def test_apigw_call_api_with_aws_endpoint_url(aws_client):
     headers = aws_stack.mock_aws_request_headers("apigateway")
     headers["Host"] = "apigateway.us-east-2.amazonaws.com:4566"
@@ -1568,6 +1597,7 @@ def test_apigw_call_api_with_aws_endpoint_url(aws_client):
 
 @pytest.mark.parametrize("method", ["GET", "ANY"])
 @pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
+@markers.aws.unknown
 def test_rest_api_multi_region(
     method, url_function, create_rest_apigw, aws_client, aws_client_factory
 ):
@@ -1661,6 +1691,7 @@ def test_rest_api_multi_region(
 
 
 class TestIntegrations:
+    @markers.aws.unknown
     def test_api_gateway_s3_get_integration(self, create_rest_apigw, aws_client):
         s3_client = aws_client.s3
 
@@ -1700,6 +1731,7 @@ class TestIntegrations:
     @pytest.mark.parametrize(
         "passthrough_behaviour", ["WHEN_NO_MATCH", "NEVER", "WHEN_NO_TEMPLATES"]
     )
+    @markers.aws.unknown
     def test_mock_integration_response(
         self, method, url_function, passthrough_behaviour, create_rest_apigw, aws_client
     ):
@@ -1754,6 +1786,7 @@ class TestIntegrations:
         assert to_str(result.content) == '{"statusCode": 200, "id": 42}'
 
     @pytest.mark.parametrize("int_type", ["custom", "proxy"])
+    @markers.aws.unknown
     def test_api_gateway_http_integrations(
         self, int_type, echo_http_server, monkeypatch, aws_client
     ):
@@ -1808,6 +1841,7 @@ class TestIntegrations:
         assert expected == content["data"]
         assert ctype == headers["content-type"]
 
+    @markers.aws.unknown
     def test_api_gateway_kinesis_integration(
         self, aws_client, kinesis_create_stream, wait_for_stream_ready
     ):
@@ -1845,6 +1879,7 @@ class TestIntegrations:
         assert result["FailedRecordCount"] == 0
         assert len(test_data["records"]) == len(result["Records"])
 
+    @markers.aws.unknown
     def test_api_gateway_sqs_integration_with_event_source(
         self, aws_client, integration_lambda, sqs_queue
     ):
@@ -1883,6 +1918,7 @@ class TestIntegrations:
 
         assert "b639f52308afd65866c86f274c59033f" == body_md5
 
+    @markers.aws.unknown
     def test_api_gateway_sqs_integration(self, aws_client):
         # create target SQS stream
         queue_name = f"queue-{short_uid()}"

@@ -13,6 +13,7 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_IMPORT_PETSTORE_SWAGGER = os.path.join(THIS_FOLDER, "../files", "petstore-swagger.json")
 
 
+@markers.aws.unknown
 def test_export_swagger_openapi(aws_client):
     spec_file = load_file(TEST_IMPORT_PETSTORE_SWAGGER)
     response = aws_client.apigateway.import_rest_api(failOnWarnings=True, body=spec_file)
@@ -47,6 +48,7 @@ def test_export_swagger_openapi(aws_client):
     assert all(k in spec_object.keys() for k in optional_keys)
 
 
+@markers.aws.unknown
 def test_export_oas30_openapi(aws_client):
     spec_file = load_file(TEST_IMPORT_PETSTORE_SWAGGER)
     response = aws_client.apigateway.import_rest_api(failOnWarnings=True, body=spec_file)
@@ -69,6 +71,7 @@ def test_export_oas30_openapi(aws_client):
     assert all(k in spec_object.keys() for k in optional_keys)
 
 
+@markers.aws.unknown
 def test_create_domain_names(aws_client):
     domain_name = f"{short_uid()}-testDomain"
     test_certificate_name = "test.certificate"
@@ -89,6 +92,7 @@ def test_create_domain_names(aws_client):
     assert ex.value.response["Error"]["Code"] == "BadRequestException"
 
 
+@markers.aws.unknown
 def test_get_domain_names(aws_client):
     # create domain name
     domain_name = f"domain-{short_uid()}"
@@ -109,6 +113,7 @@ def test_get_domain_names(aws_client):
     assert added[0]["domainNameStatus"] == "AVAILABLE"
 
 
+@markers.aws.unknown
 def test_get_domain_name(aws_client):
     domain_name = f"{short_uid()}-testDomain"
     # adding a domain name

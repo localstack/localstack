@@ -4,6 +4,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack import config
+from localstack.testing.pytest import markers
 
 
 @pytest.mark.skipif(
@@ -11,6 +12,7 @@ from localstack import config
     reason="These are WIP tests for the new native S3 provider",
 )
 class TestS3BucketCRUD:
+    @markers.aws.unknown
     def test_delete_bucket_with_objects(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         key_name = "test-delete"
@@ -27,6 +29,7 @@ class TestS3BucketCRUD:
         snapshot.match("delete-bucket", delete_bucket)
         # TODO: write a test with a multipart upload that is not completed?
 
+    @markers.aws.unknown
     def test_delete_versioned_bucket_with_objects(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         # enable versioning on the bucket
@@ -67,6 +70,7 @@ class TestS3BucketCRUD:
     reason="These are WIP tests for the new native S3 provider",
 )
 class TestS3ObjectCRUD:
+    @markers.aws.unknown
     def test_delete_object(self, s3_bucket, aws_client, snapshot):
         key_name = "test-delete"
         put_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=key_name, Body="test-delete")
@@ -84,6 +88,7 @@ class TestS3ObjectCRUD:
             )
         snapshot.match("delete-nonexistent-object-versionid", e.value.response)
 
+    @markers.aws.unknown
     def test_delete_objects(self, s3_bucket, aws_client, snapshot):
         key_name = "test-delete"
         put_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=key_name, Body="test-delete")
@@ -112,6 +117,7 @@ class TestS3ObjectCRUD:
 
         snapshot.match("delete-objects", delete_objects)
 
+    @markers.aws.unknown
     def test_delete_object_versioned(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         # enable versioning on the bucket
@@ -209,6 +215,7 @@ class TestS3ObjectCRUD:
         delete_wrong_key = aws_client.s3.delete_object(Bucket=s3_bucket, Key="wrong-key")
         snapshot.match("delete-wrong-key", delete_wrong_key)
 
+    @markers.aws.unknown
     def test_delete_objects_versioned(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(snapshot.transform.key_value("DeleteMarkerVersionId"))
@@ -281,12 +288,15 @@ class TestS3ObjectCRUD:
         )
         snapshot.match("delete-objects-version-id", delete_objects_marker)
 
+    @markers.aws.unknown
     def test_delete_object_locked(self):
         pass
 
+    @markers.aws.unknown
     def test_delete_object_on_suspended_bucket(self):
         pass
 
+    @markers.aws.unknown
     def test_get_object_with_version_unversioned_bucket(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
@@ -303,6 +313,7 @@ class TestS3ObjectCRUD:
         get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name, VersionId="null")
         snapshot.match("get-obj-with-null-version", get_obj)
 
+    @markers.aws.unknown
     def test_list_object_versions_order_unversioned(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
 

@@ -1,6 +1,7 @@
 import pytest
 
 from localstack.constants import AWS_REGION_US_EAST_1
+from localstack.testing.pytest import markers
 
 TEST_SUPPORT_CASE = {
     "subject": "Urgent - DynamoDB is down",
@@ -31,6 +32,7 @@ class TestConfigService:
         )
         return response["caseId"]
 
+    @markers.aws.unknown
     def test_create_support_case(self, support_client, case_id_test):
         support_cases = support_client.describe_cases()["cases"]
         assert len(support_cases) == 1
@@ -38,6 +40,7 @@ class TestConfigService:
         for key in TEST_SUPPORT_CASE.keys():
             assert support_cases[0][key] == TEST_SUPPORT_CASE[key]
 
+    @markers.aws.unknown
     def test_resolve_case(self, support_client, case_id_test):
         response = support_client.resolve_case(caseId=case_id_test)
         assert response["finalCaseStatus"] == "resolved"

@@ -19,6 +19,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestStringOperations:
+    @markers.aws.unknown
     def test_string_split(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):

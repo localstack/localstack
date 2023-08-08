@@ -92,6 +92,7 @@ def sort_mail_sqs_messages(message):
 
 
 class TestSES:
+    @markers.aws.unknown
     def test_list_templates(self, create_template, aws_client):
         create_template(Template=SAMPLE_TEMPLATE)
         templ_list = aws_client.ses.list_templates()["TemplatesMetadata"]
@@ -107,6 +108,7 @@ class TestSES:
         assert SAMPLE_TEMPLATE["TemplateName"] == created_template["Name"]
         assert type(created_template["CreatedTimestamp"]) in (date, datetime)
 
+    @markers.aws.unknown
     def test_delete_template(self, create_template, aws_client):
         templ_list = aws_client.ses.list_templates()["TemplatesMetadata"]
         assert 0 == len(templ_list)
@@ -117,6 +119,7 @@ class TestSES:
         templ_list = aws_client.ses.list_templates()["TemplatesMetadata"]
         assert 0 == len(templ_list)
 
+    @markers.aws.unknown
     def test_get_identity_verification_attributes(self, aws_client):
         domain = "example.com"
         email = f"user-{short_uid()}@example.com"
@@ -130,6 +133,7 @@ class TestSES:
         assert "VerificationToken" in response[domain]
         assert "VerificationToken" not in response[email]
 
+    @markers.aws.unknown
     def test_send_email_can_retrospect(self, aws_client):
         # Test that sent emails can be retrospected through saved file and API access
 
@@ -206,6 +210,7 @@ class TestSES:
         assert requests.delete(emails_url + f"?id={message2_id}").status_code == 204
         assert requests.get(emails_url).json() == {"messages": []}
 
+    @markers.aws.unknown
     def test_send_templated_email_can_retrospect(self, create_template, aws_client):
         # Test that sent emails can be retrospected through saved file and API access
         data_dir = config.dirs.data or config.dirs.tmp
@@ -242,6 +247,7 @@ class TestSES:
         assert requests.delete("http://localhost:4566/_aws/ses").status_code == 204
         assert requests.get("http://localhost:4566/_aws/ses").json() == {"messages": []}
 
+    @markers.aws.unknown
     def test_sent_message_counter(self, create_template, aws_client):
         # Ensure all email send operations correctly update the sent email counter
         email = f"user-{short_uid()}@example.com"
@@ -280,6 +286,7 @@ class TestSES:
         new_counter = aws_client.ses.get_send_quota()["SentLast24Hours"]
         assert new_counter == counter + 1
 
+    @markers.aws.unknown
     def test_clone_receipt_rule_set(self, aws_client):
         # Test that rule set is cloned properly
 
@@ -578,6 +585,7 @@ class TestSES:
         messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
 
+    @markers.aws.unknown
     def test_cannot_create_event_for_no_topic(
         self, ses_configuration_set, snapshot, account_id, aws_client
     ):
@@ -685,6 +693,7 @@ class TestSES:
         messages = sqs_receive_num_messages(sqs_queue, 1)
         snapshot.match("messages", messages)
 
+    @markers.aws.unknown
     def test_creating_event_destination_without_configuration_set(
         self, sns_topic, snapshot, aws_client
     ):
@@ -707,6 +716,7 @@ class TestSES:
             )
         snapshot.match("create-error", e_info.value.response)
 
+    @markers.aws.unknown
     def test_deleting_non_existent_configuration_set(self, snapshot, aws_client):
         config_set_name = f"config-set-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(config_set_name, "<config-set>"))
@@ -715,6 +725,7 @@ class TestSES:
             aws_client.ses.delete_configuration_set(ConfigurationSetName=config_set_name)
         snapshot.match("delete-error", e_info.value.response)
 
+    @markers.aws.unknown
     def test_deleting_non_existent_configuration_set_event_destination(
         self, ses_configuration_set, snapshot, aws_client
     ):
@@ -731,6 +742,7 @@ class TestSES:
             )
         snapshot.match("delete-error", e_info.value.response)
 
+    @markers.aws.unknown
     def test_trying_to_delete_event_destination_from_non_existent_configuration_set(
         self,
         ses_configuration_set,

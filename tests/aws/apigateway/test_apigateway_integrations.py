@@ -25,6 +25,7 @@ from tests.aws.apigateway.conftest import DEFAULT_STAGE_NAME
 from tests.aws.awslambda.test_lambda import TEST_LAMBDA_LIBS
 
 
+@markers.aws.unknown
 def test_http_integration(create_rest_apigw, aws_client, echo_http_server):
     api_id, _, root_id = create_rest_apigw(name="my_api", description="this is my api")
 
@@ -265,6 +266,7 @@ def test_put_integration_responses(create_rest_apigw, aws_client, echo_http_serv
     snapshot.match("get-integration-response-put", response)
 
 
+@markers.aws.unknown
 def test_put_integration_response_with_response_template(aws_client, echo_http_server_post):
     response = aws_client.apigateway.create_rest_api(name="my_api", description="this is my api")
     api_id = response["id"]
@@ -312,6 +314,7 @@ def test_put_integration_response_with_response_template(aws_client, echo_http_s
 
 
 # TODO: add snapshot test!
+@markers.aws.unknown
 def test_put_integration_validation(aws_client, echo_http_server, echo_http_server_post):
     response = aws_client.apigateway.create_rest_api(name="my_api", description="this is my api")
     api_id = response["id"]
@@ -482,6 +485,7 @@ def create_vpc_endpoint(default_vpc, aws_client):
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..endpointConfiguration.types", "$..policy.Statement..Resource"]
 )
+@markers.aws.unknown
 def test_create_execute_api_vpc_endpoint(
     create_rest_api_with_integration,
     dynamodb_create_table,

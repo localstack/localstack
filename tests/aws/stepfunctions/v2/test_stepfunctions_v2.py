@@ -270,6 +270,7 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.mark.usefixtures("setup_and_tear_down")
 class TestStateMachine:
+    @markers.aws.unknown
     def test_create_choice_state_machine(self, aws_client):
         state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
         role_arn = arns.role_arn("sfn_role")
@@ -307,6 +308,7 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, sfn_client=aws_client.stepfunctions)
 
+    @markers.aws.unknown
     def test_create_run_map_state_machine(self, aws_client):
         names = ["Bob", "Meg", "Joe"]
         test_input = [{"map": name} for name in names]
@@ -346,6 +348,7 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
 
+    @markers.aws.unknown
     def test_create_run_state_machine(self, aws_client):
         state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
@@ -381,6 +384,7 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
 
+    @markers.aws.unknown
     def test_try_catch_state_machine(self, aws_client):
         state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
@@ -414,6 +418,7 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
 
+    @markers.aws.unknown
     def test_intrinsic_functions(self, aws_client):
         state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 
@@ -453,6 +458,7 @@ class TestStateMachine:
         cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
 
     @pytest.mark.skip("Accurate events reporting not yet supported.")
+    @markers.aws.unknown
     def test_events_state_machine(self, aws_client):
         events = aws_client.events
         state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
@@ -493,6 +499,7 @@ class TestStateMachine:
         cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
         events.delete_event_bus(Name=bus_name)
 
+    @markers.aws.unknown
     def test_create_state_machines_in_parallel(self, cleanups, aws_client):
         """
         Perform a test that creates a series of state machines in parallel. Without concurrency control, using
@@ -584,6 +591,7 @@ STS_ROLE_POLICY_DOC = {
 @pytest.mark.skip("Investigate error around states:startExecution.sync")
 @pytest.mark.parametrize("region_name", ("us-east-1", "us-east-2", "eu-west-1", "eu-central-1"))
 @pytest.mark.parametrize("statemachine_definition", (TEST_STATE_MACHINE_3,))  # TODO: add sync2 test
+@markers.aws.unknown
 def test_multiregion_nested(aws_client_factory, region_name, statemachine_definition):
     client1 = aws_client_factory(
         region_name=region_name,
@@ -666,6 +674,7 @@ def test_default_logging_configuration(create_state_machine, aws_client):
         aws_client.iam.delete_role(RoleName=role_name)
 
 
+@markers.aws.unknown
 def test_aws_sdk_task(aws_client):
     statemachine_definition = {
         "StartAt": "CreateTopicTask",
@@ -756,6 +765,7 @@ def test_aws_sdk_task(aws_client):
         aws_client.stepfunctions.delete_state_machine(stateMachineArn=machine_arn)
 
 
+@markers.aws.unknown
 def test_run_aws_sdk_secrets_manager(aws_client):
     state_machines_before = aws_client.stepfunctions.list_state_machines()["stateMachines"]
 

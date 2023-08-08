@@ -92,6 +92,7 @@ class TestOpensearchProvider:
     OPENSEARCH_MULTI_CLUSTER=True, regardless of changes in the config value.
     """
 
+    @markers.aws.unknown
     def test_list_versions(self, aws_client):
         response = aws_client.opensearch.list_versions()
 
@@ -127,6 +128,7 @@ class TestOpensearchProvider:
         for expected_version in expected_versions:
             assert expected_version in versions
 
+    @markers.aws.unknown
     def test_get_compatible_versions(self, aws_client):
         response = aws_client.opensearch.get_compatible_versions()
 
@@ -300,6 +302,7 @@ class TestOpensearchProvider:
         for expected_compatible_version in expected_compatible_versions:
             assert expected_compatible_version in compatible_versions
 
+    @markers.aws.unknown
     def test_get_compatible_version_for_domain(self, opensearch_create_domain, aws_client):
         opensearch_domain = opensearch_create_domain(EngineVersion="OpenSearch_1.0")
         response = aws_client.opensearch.get_compatible_versions(DomainName=opensearch_domain)
@@ -312,6 +315,7 @@ class TestOpensearchProvider:
         # Just check if 1.1 is contained (not equality) to avoid breaking the test if new versions are supported
         assert "OpenSearch_1.1" in compatibility["TargetVersions"]
 
+    @markers.aws.unknown
     def test_create_domain(self, opensearch_wait_for_cluster, aws_client):
         domain_name = f"opensearch-domain-{short_uid()}"
         try:
@@ -459,6 +463,7 @@ class TestOpensearchProvider:
             == "ValidationException"
         )
 
+    @markers.aws.unknown
     def test_create_existing_domain_causes_exception(self, opensearch_wait_for_cluster, aws_client):
         domain_name = f"opensearch-domain-{short_uid()}"
         try:
@@ -470,11 +475,13 @@ class TestOpensearchProvider:
         finally:
             aws_client.opensearch.delete_domain(DomainName=domain_name)
 
+    @markers.aws.unknown
     def test_describe_domains(self, opensearch_domain, aws_client):
         response = aws_client.opensearch.describe_domains(DomainNames=[opensearch_domain])
         assert len(response["DomainStatusList"]) == 1
         assert response["DomainStatusList"][0]["DomainName"] == opensearch_domain
 
+    @markers.aws.unknown
     def test_gzip_responses(self, opensearch_endpoint):
         gzip_response = requests.get(opensearch_endpoint, stream=True)
         # get the raw data, don't let requests decode the response
@@ -482,6 +489,7 @@ class TestOpensearchProvider:
         # force the gzip decoding here (which would raise an exception if it's not actually gzip)
         assert gzip.decompress(raw_data)
 
+    @markers.aws.unknown
     def test_domain_version(self, opensearch_domain, opensearch_create_domain, aws_client):
         response = aws_client.opensearch.describe_domain(DomainName=opensearch_domain)
         assert "DomainStatus" in response
@@ -495,6 +503,7 @@ class TestOpensearchProvider:
         assert "EngineVersion" in status
         assert status["EngineVersion"] == "OpenSearch_1.0"
 
+    @markers.aws.unknown
     def test_update_domain_config(self, opensearch_domain, aws_client):
         initial_response = aws_client.opensearch.describe_domain_config(
             DomainName=opensearch_domain
@@ -517,6 +526,7 @@ class TestOpensearchProvider:
             == final_response["DomainConfig"]["ClusterConfig"]["Options"]["InstanceType"]
         )
 
+    @markers.aws.unknown
     def test_create_indices(self, opensearch_endpoint):
         indices = ["index1", "index2"]
         for index_name in indices:
@@ -529,12 +539,14 @@ class TestOpensearchProvider:
             assert req_result[0]["health"] in ["green", "yellow"]
             assert req_result[0]["index"] in indices
 
+    @markers.aws.unknown
     def test_get_document(self, opensearch_document_path):
         response = requests.get(opensearch_document_path)
         assert (
             "I'm just a simple man" in response.text
         ), f"document not found({response.status_code}): {response.text}"
 
+    @markers.aws.unknown
     def test_search(self, opensearch_endpoint, opensearch_document_path):
         index = "/".join(opensearch_document_path.split("/")[:-2])
         # force the refresh of the index after the document was added, so it can appear in search
@@ -548,6 +560,7 @@ class TestOpensearchProvider:
             "I'm just a simple man" in response.text
         ), f"search unsuccessful({response.status_code}): {response.text}"
 
+    @markers.aws.unknown
     def test_endpoint_strategy_path(self, monkeypatch, opensearch_create_domain, aws_client):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "path")
 
@@ -560,6 +573,7 @@ class TestOpensearchProvider:
         endpoint = status["Endpoint"]
         assert endpoint.endswith(f"/{domain_name}")
 
+    @markers.aws.unknown
     def test_endpoint_strategy_port(self, monkeypatch, opensearch_create_domain, aws_client):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
 
@@ -577,6 +591,7 @@ class TestOpensearchProvider:
         )
 
     # testing CloudFormation deployment here to make sure OpenSearch is installed
+    @markers.aws.unknown
     def test_cloudformation_deployment(self, deploy_cfn_template, aws_client):
         domain_name = f"domain-{short_uid()}"
         deploy_cfn_template(
@@ -593,6 +608,7 @@ class TestOpensearchProvider:
 
 @markers.skip_offline
 class TestEdgeProxiedOpensearchCluster:
+    @markers.aws.unknown
     def test_route_through_edge(self):
         cluster_id = f"domain-{short_uid()}"
         cluster_url = f"http://localhost:{config.EDGE_PORT}/{cluster_id}"
@@ -623,6 +639,7 @@ class TestEdgeProxiedOpensearchCluster:
             lambda: not cluster.is_up(), timeout=240
         ), "gave up waiting for cluster to shut down"
 
+    @markers.aws.unknown
     def test_custom_endpoint(
         self, opensearch_wait_for_cluster, opensearch_create_domain, aws_client
     ):
@@ -647,6 +664,7 @@ class TestEdgeProxiedOpensearchCluster:
         assert response.ok
         assert response.status_code == 200
 
+    @markers.aws.unknown
     def test_custom_endpoint_disabled(
         self, opensearch_wait_for_cluster, opensearch_create_domain, aws_client
     ):
@@ -680,6 +698,7 @@ class TestEdgeProxiedOpensearchCluster:
 
 @markers.skip_offline
 class TestMultiClusterManager:
+    @markers.aws.unknown
     def test_multi_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", True)
@@ -727,6 +746,7 @@ class TestMultiClusterManager:
 
 @markers.skip_offline
 class TestMultiplexingClusterManager:
+    @markers.aws.unknown
     def test_multiplexing_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", False)
@@ -774,6 +794,7 @@ class TestMultiplexingClusterManager:
 
 @markers.skip_offline
 class TestSingletonClusterManager:
+    @markers.aws.unknown
     def test_endpoint_strategy_port_singleton_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", False)
@@ -819,6 +840,7 @@ class TestSingletonClusterManager:
 
 @markers.skip_offline
 class TestCustomBackendManager:
+    @markers.aws.unknown
     def test_custom_backend(self, httpserver, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_CUSTOM_BACKEND", httpserver.url_for("/"))
@@ -884,6 +906,7 @@ class TestCustomBackendManager:
 
         httpserver.check()
 
+    @markers.aws.unknown
     def test_custom_backend_with_custom_endpoint(
         self,
         httpserver,

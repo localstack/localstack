@@ -14,6 +14,7 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wait_until
 
 
+@markers.aws.unknown
 def test_create_change_set_without_parameters(
     cleanup_stacks, cleanup_changesets, is_change_set_created_and_available, aws_client
 ):
@@ -68,6 +69,7 @@ def test_create_change_set_without_parameters(
 
 # TODO: implement
 @pytest.mark.xfail(condition=not is_aws_cloud(), reason="Not properly implemented")
+@markers.aws.unknown
 def test_create_change_set_update_without_parameters(
     cleanup_stacks,
     cleanup_changesets,
@@ -140,11 +142,13 @@ def test_create_change_set_update_without_parameters(
 
 
 @pytest.mark.skip(reason="TODO")
+@markers.aws.unknown
 def test_create_change_set_with_template_url():
     pass
 
 
 @pytest.mark.xfail(reason="change set type not implemented")
+@markers.aws.unknown
 def test_create_change_set_create_existing(
     is_stack_created, cleanup_changesets, cleanup_stacks, aws_client
 ):
@@ -182,6 +186,7 @@ def test_create_change_set_create_existing(
         cleanup_stacks([stack_id])
 
 
+@markers.aws.unknown
 def test_create_change_set_update_nonexisting(aws_client):
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
@@ -204,11 +209,13 @@ def test_create_change_set_update_nonexisting(aws_client):
 
 
 @pytest.mark.skip(reason="TODO")
+@markers.aws.unknown
 def test_create_change_set_import():
     """test importing existing resources into a stack via the change set"""
     pass  # TODO
 
 
+@markers.aws.unknown
 def test_create_change_set_invalid_params(aws_client):
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
@@ -224,6 +231,7 @@ def test_create_change_set_invalid_params(aws_client):
     assert err["Code"] == "ValidationError"
 
 
+@markers.aws.unknown
 def test_create_change_set_missing_stackname(aws_client):
     """in this case boto doesn't even let us send the request"""
     change_set_name = f"change-set-{short_uid()}"
@@ -330,6 +338,7 @@ def test_describe_change_set_nonexisting(snapshot, aws_client):
 
 
 @pytest.mark.skip(reason="fails because of the properties mutation in the result_handler")
+@markers.aws.unknown
 def test_execute_change_set(
     is_change_set_finished,
     is_change_set_created_and_available,

@@ -38,6 +38,7 @@ Outputs:
 
 
 @markers.skip_offline
+@markers.aws.unknown
 def test_cfn_handle_elasticsearch_domain(deploy_cfn_template, aws_client):
     domain_name = f"es-{short_uid()}"
 
