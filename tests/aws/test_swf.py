@@ -1,3 +1,4 @@
+from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 DEFAULT_TASK_LIST = {"name": "default"}
@@ -5,6 +6,7 @@ SWF_VERSION = "1.0"
 
 
 class TestSwf:
+    @markers.aws.unknown
     def test_run_workflow(self, aws_client):
         swf_client = aws_client.swf
 

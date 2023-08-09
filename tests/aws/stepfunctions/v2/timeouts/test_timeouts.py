@@ -17,6 +17,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestTimeouts:
+    @markers.aws.unknown
     def test_fixed_timeout_service_lambda(
         self,
         aws_client,
@@ -46,6 +47,7 @@ class TestTimeouts:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_fixed_timeout_service_lambda_with_path(
         self,
         aws_client,
@@ -79,6 +81,7 @@ class TestTimeouts:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_fixed_timeout_lambda(
         self,
         aws_client,
@@ -111,6 +114,7 @@ class TestTimeouts:
         )
 
     @pytest.mark.skip(reason="Add support for State Map event history first.")
+    @markers.aws.unknown
     def test_service_lambda_map_timeout(
         self,
         aws_client,

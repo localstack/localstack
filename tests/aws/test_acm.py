@@ -29,6 +29,7 @@ JjZ91eQ0hjkCMHw2U/Aw5WJjOpnitqM7mzT6HtoQknFekROn3aRukswy1vUhZscv
 
 
 class TestACM:
+    @markers.aws.unknown
     def test_import_certificate(self, aws_client):
         certs_before = aws_client.acm.list_certificates().get("CertificateSummaryList", [])
 
@@ -57,12 +58,14 @@ class TestACM:
             if result is not None:
                 aws_client.acm.delete_certificate(CertificateArn=result["CertificateArn"])
 
+    @markers.aws.unknown
     def test_domain_validation(self, acm_request_certificate, aws_client):
         certificate_arn = acm_request_certificate()["CertificateArn"]
         result = aws_client.acm.describe_certificate(CertificateArn=certificate_arn)
         options = result["Certificate"]["DomainValidationOptions"]
         assert len(options) == 1
 
+    @markers.aws.unknown
     def test_boto_wait_for_certificate_validation(
         self, acm_request_certificate, aws_client, monkeypatch
     ):
@@ -71,7 +74,7 @@ class TestACM:
         waiter = aws_client.acm.get_waiter("certificate_validated")
         waiter.wait(CertificateArn=certificate_arn, WaiterConfig={"Delay": 0.5, "MaxAttempts": 3})
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Certificate.SignatureAlgorithm"])
     def test_certificate_for_subdomain_wildcard(
         self, acm_request_certificate, aws_client, snapshot, monkeypatch

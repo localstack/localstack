@@ -16,6 +16,7 @@ from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.awslambda.lambda_api import do_set_function_code, use_docker
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.lambda_utils import is_new_provider
+from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.files import load_file
 from localstack.utils.functions import run_safe
@@ -75,6 +76,7 @@ class TestLambdaFallbackUrl:
             else:
                 config.LAMBDA_FORWARD_URL = ""
 
+    @markers.aws.unknown
     def test_forward_to_fallback_url_dynamodb(self, aws_client):
         db_table = f"lambda-records-{short_uid()}"
         ddb_client = aws_client.dynamodb
@@ -87,6 +89,7 @@ class TestLambdaFallbackUrl:
         items_after = num_items()
         assert items_before + 3 == items_after
 
+    @markers.aws.unknown
     def test_forward_to_fallback_url_http(self, aws_client):
         lambda_client = aws_client.awslambda
         lambda_result = {"result": "test123"}
@@ -149,6 +152,7 @@ class TestLambdaFallbackUrl:
                 # clean up / shutdown
                 lambda_client.delete_function(FunctionName=lambda_name)
 
+    @markers.aws.unknown
     def test_adding_fallback_function_name_in_headers(self, aws_client):
         lambda_client = aws_client.awslambda
         ddb_client = aws_client.dynamodb
@@ -171,6 +175,7 @@ class TestLambdaFallbackUrl:
 
 class TestDockerExecutors:
     @pytest.mark.skipif(not use_docker(), reason="Only applicable with docker executor")
+    @markers.aws.unknown
     def test_additional_docker_flags(self, aws_client):
         flags_before = config.LAMBDA_DOCKER_FLAGS
         env_value = short_uid()
@@ -196,6 +201,7 @@ class TestDockerExecutors:
         # clean up
         lambda_client.delete_function(FunctionName=function_name)
 
+    @markers.aws.unknown
     def test_code_updated_on_redeployment(self, aws_client):
         lambda_api.LAMBDA_EXECUTOR.cleanup()
 
@@ -235,6 +241,7 @@ class TestDockerExecutors:
         ),
         reason="Test only applicable if docker-reuse executor is selected",
     )
+    @markers.aws.unknown
     def test_prime_and_destroy_containers(self, aws_client):
         executor = lambda_api.LAMBDA_EXECUTOR
         func_name = f"test_prime_and_destroy_containers_{short_uid()}"
@@ -304,6 +311,7 @@ class TestDockerExecutors:
         ),
         reason="Test only applicable if docker-reuse executor is selected",
     )
+    @markers.aws.unknown
     def test_destroy_idle_containers(self, aws_client):
         executor = lambda_api.LAMBDA_EXECUTOR
         func_name = "test_destroy_idle_containers"
@@ -351,6 +359,7 @@ class TestDockerExecutors:
         ),
         reason="Test only applicable if docker-reuse executor is selected",
     )
+    @markers.aws.unknown
     def test_logresult_more_than_4k_characters(self, aws_client):
         lambda_api.LAMBDA_EXECUTOR.cleanup()
 
@@ -371,6 +380,7 @@ class TestDockerExecutors:
 
 
 class TestLocalExecutors:
+    @markers.aws.unknown
     def test_python3_runtime_multiple_create_with_conflicting_module(self, aws_client):
         lambda_client = aws_client.awslambda
         original_do_use_docker = lambda_api.DO_USE_DOCKER
@@ -419,6 +429,7 @@ class TestLocalExecutors:
 
 
 class TestFunctionStates:
+    @markers.aws.unknown
     def test_invoke_failure_when_state_pending(self, lambda_su_role, monkeypatch, aws_client):
         """Tests if a lambda invocation fails if state is pending"""
         function_name = f"test-function-{short_uid()}"

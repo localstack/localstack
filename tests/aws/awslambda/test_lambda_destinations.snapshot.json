@@ -591,5 +591,31 @@
         }
       }
     }
+  },
+  "tests/aws/awslambda/test_lambda_destinations.py::TestLambdaDestinationEventbridge::test_invoke_lambda_eventbridge": {
+    "recorded-date": "07-08-2023, 17:39:40",
+    "recorded-content": {
+      "filtered_message_event_bus_sqs": {
+        "Records": [
+          {
+            "messageId": "<message-id:1>",
+            "receiptHandle": "<receipt-handle:1>",
+            "body": "{\"hello\":\"world\",\"test\":\"abc\",\"val\":5,\"success\":true}",
+            "attributes": {
+              "ApproximateReceiveCount": "1",
+              "AWSTraceHeader": "trace-header",
+              "SentTimestamp": "timestamp",
+              "SenderId": "<sender-id:1>",
+              "ApproximateFirstReceiveTimestamp": "timestamp"
+            },
+            "messageAttributes": {},
+            "md5OfBody": "md5-of-body",
+            "eventSource": "aws:sqs",
+            "eventSourceARN": "arn:aws:sqs:<region>:111111111111:TestQueue",
+            "awsRegion": "<region>"
+          }
+        ]
+      }
+    }
   }
 }

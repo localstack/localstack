@@ -6,6 +6,7 @@ import requests
 from localstack import config
 from localstack.constants import PATH_USER_REQUEST
 from localstack.services.apigateway.helpers import connect_api_gateway_to_sqs
+from localstack.testing.pytest import markers
 from localstack.utils.aws import arns, queries
 from localstack.utils.common import short_uid, to_str
 
@@ -16,6 +17,7 @@ REGION4 = "eu-central-1"
 
 
 class TestMultiRegion:
+    @markers.aws.unknown
     def test_multi_region_sns(self, aws_client_factory):
         sns_1 = aws_client_factory(region_name=REGION1).sns
         sns_2 = aws_client_factory(region_name=REGION2).sns
@@ -36,6 +38,7 @@ class TestMultiRegion:
         assert len(result2) == len_2 + 1
         assert REGION2 in result2[0]["TopicArn"]
 
+    @markers.aws.unknown
     def test_multi_region_api_gateway(self, aws_client_factory):
         gw_1 = aws_client_factory(region_name=REGION1).apigateway
         gw_2 = aws_client_factory(region_name=REGION2).apigateway

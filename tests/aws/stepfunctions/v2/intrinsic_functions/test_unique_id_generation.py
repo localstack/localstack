@@ -20,6 +20,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestUniqueIdGeneration:
+    @markers.aws.unknown
     def test_uuid(self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client):
         snf_role_arn = create_iam_role_for_sfn()
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))

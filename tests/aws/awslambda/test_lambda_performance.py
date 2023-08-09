@@ -18,6 +18,7 @@ import pytest
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.config import is_env_true
+from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from tests.aws.awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
@@ -29,6 +30,7 @@ if not is_env_true("TEST_PERFORMANCE"):
 LOG = logging.getLogger(__name__)
 
 
+@markers.aws.unknown
 def test_invoke_warm_start(create_lambda_function, aws_client):
     function_name = f"echo-func-{short_uid()}"
     create_lambda_function(
@@ -51,6 +53,7 @@ def test_invoke_warm_start(create_lambda_function, aws_client):
     export_csv(timings, "test_invoke_warm_start")
 
 
+@markers.aws.unknown
 def test_invoke_cold_start(create_lambda_function, aws_client, monkeypatch):
     monkeypatch.setattr(config, "LAMBDA_KEEPALIVE_MS", 0)
     function_name = f"echo-func-{short_uid()}"

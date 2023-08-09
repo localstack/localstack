@@ -25,6 +25,7 @@ pytestmark = pytest.mark.skipif(
     ]
 )
 class TestTaskServiceLambda:
+    @markers.aws.unknown
     def test_invoke(
         self,
         aws_client,
@@ -54,6 +55,7 @@ class TestTaskServiceLambda:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_invoke_bytes_payload(
         self,
         aws_client,
@@ -86,6 +88,7 @@ class TestTaskServiceLambda:
         )
 
     # AWS's stepfuctions documentation seems to incorrectly classify LogType parameters as unsupported.
+    @markers.aws.unknown
     def test_invoke_unsupported_param(
         self,
         aws_client,
@@ -132,6 +135,7 @@ class TestTaskServiceLambda:
             [],
         ],
     )
+    @markers.aws.unknown
     def test_invoke_json_values(
         self,
         aws_client,
@@ -166,6 +170,7 @@ class TestTaskServiceLambda:
         )
 
     @pytest.mark.skip(reason="Add support for Invalid State Machine Definition errors")
+    @markers.aws.unknown
     def test_list_functions(
         self,
         aws_client,

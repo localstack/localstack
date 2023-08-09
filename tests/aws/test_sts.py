@@ -91,6 +91,7 @@ TEST_SAML_ASSERTION = """
 
 
 class TestSTSIntegrations:
+    @markers.aws.unknown
     def test_assume_role(self, aws_client):
         test_role_session_name = "s3-access-example"
         test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
@@ -104,6 +105,7 @@ class TestSTSIntegrations:
             assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
             assert assume_role_id_parts[1] == test_role_session_name
 
+    @markers.aws.unknown
     def test_assume_role_with_web_identity(self, aws_client):
         test_role_session_name = "web_token"
         test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
@@ -120,6 +122,7 @@ class TestSTSIntegrations:
             assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
             assert assume_role_id_parts[1] == test_role_session_name
 
+    @markers.aws.unknown
     def test_assume_role_with_saml(self, aws_client):
         account_id = "000000000000"
         role_name = "test-role"
@@ -152,6 +155,7 @@ class TestSTSIntegrations:
             assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
             assert assume_role_id_parts[1] == fed_name
 
+    @markers.aws.unknown
     def test_get_federation_token(self, aws_client):
         token_name = "TestName"
         response = aws_client.sts.get_federation_token(Name=token_name)
@@ -163,13 +167,13 @@ class TestSTSIntegrations:
         federated_user_info = response["FederatedUser"]["FederatedUserId"].split(":")
         assert federated_user_info[1] == token_name
 
-    @markers.parity.only_localstack
+    @markers.aws.only_localstack
     def test_get_caller_identity_root(self, monkeypatch, aws_client):
         response = aws_client.sts.get_caller_identity()
         account_id = response["Account"]
         assert f"arn:aws:iam::{account_id}:root" == response["Arn"]
 
-    @markers.parity.only_localstack
+    @markers.aws.only_localstack
     def test_expiration_date_format(self):
         url = config.get_edge_url()
         data = {"Action": "GetSessionToken", "Version": "2011-06-15"}
@@ -182,7 +186,7 @@ class TestSTSIntegrations:
         result = content["GetSessionTokenResponse"]["GetSessionTokenResult"]
         assert is_number(result["Credentials"]["Expiration"])
 
-    @markers.parity.only_localstack
+    @markers.aws.only_localstack
     @pytest.mark.parametrize("use_aws_creds", [True, False])
     def test_get_caller_identity_user_access_key(self, cleanups, use_aws_creds, monkeypatch):
         """Check whether the correct account id is returned for requests by other users access keys"""
@@ -206,7 +210,7 @@ class TestSTSIntegrations:
         assert account_id == response["Account"]
         assert user_arn == response["Arn"]
 
-    @markers.parity.only_localstack
+    @markers.aws.only_localstack
     @pytest.mark.parametrize("use_aws_creds", [True, False])
     def test_get_caller_identity_role_access_key(
         self, aws_client, account_id, cleanups, use_aws_creds, monkeypatch

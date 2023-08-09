@@ -25,6 +25,7 @@ GET_USER_POLICY_DOC = """{
 
 
 class TestIAMExtensions:
+    @markers.aws.unknown
     def test_get_user_without_username_as_user(self, create_user, aws_client):
         user_name = f"user-{short_uid()}"
         policy_name = f"policy={short_uid()}"
@@ -41,7 +42,7 @@ class TestIAMExtensions:
         assert user["UserName"] == user_name
         assert user["Arn"] == f"arn:aws:iam::{account_id}:user/{user_name}"
 
-    @markers.parity.only_localstack
+    @markers.aws.only_localstack
     def test_get_user_without_username_as_root(self, aws_client):
         """Test get_user on root account. Marked only localstack, since we usually cannot access as root directly"""
         account_id = aws_client.sts.get_caller_identity()["Account"]
@@ -50,6 +51,7 @@ class TestIAMExtensions:
         assert user["UserId"] == account_id
         assert user["Arn"] == f"arn:aws:iam::{account_id}:root"
 
+    @markers.aws.unknown
     def test_get_user_without_username_as_role(self, create_role, wait_and_assume_role, aws_client):
         role_name = f"role-{short_uid()}"
         policy_name = f"policy={short_uid()}"
@@ -77,6 +79,7 @@ class TestIAMExtensions:
             iam_client_as_role.get_user()
         e.match("Must specify userName when calling with non-User credentials")
 
+    @markers.aws.unknown
     def test_create_user_with_permission_boundary(self, create_user, create_policy, aws_client):
         user_name = f"user-{short_uid()}"
         policy_name = f"policy-{short_uid()}"
@@ -99,6 +102,7 @@ class TestIAMExtensions:
         get_user_reply = aws_client.iam.get_user(UserName=user_name)
         assert "PermissionsBoundary" not in get_user_reply["User"]
 
+    @markers.aws.unknown
     def test_create_user_add_permission_boundary_afterwards(
         self, create_user, create_policy, aws_client
     ):
@@ -124,7 +128,7 @@ class TestIAMExtensions:
         get_user_reply = aws_client.iam.get_user(UserName=user_name)
         assert "PermissionsBoundary" not in get_user_reply["User"]
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_create_role_with_malformed_assume_role_policy_document(self, aws_client, snapshot):
         role_name = f"role-{short_uid()}"
         # The error in this document is the trailing comma after `"Effect": "Allow"`
@@ -148,6 +152,7 @@ class TestIAMExtensions:
 
 
 class TestIAMIntegrations:
+    @markers.aws.unknown
     def test_attach_iam_role_to_new_iam_user(self, aws_client):
         test_policy_document = {
             "Version": "2012-10-17",
@@ -182,6 +187,7 @@ class TestIAMIntegrations:
         assert ctx.typename == "NoSuchEntityException"
         assert ctx.value.response["Error"]["Code"] == "NoSuchEntity"
 
+    @markers.aws.unknown
     def test_delete_non_existent_policy_returns_no_such_entity(self, aws_client):
         non_existent_policy_arn = "arn:aws:iam::000000000000:policy/non-existent-policy"
 
@@ -190,6 +196,7 @@ class TestIAMIntegrations:
         assert ctx.typename == "NoSuchEntityException"
         assert ctx.value.response["Error"]["Code"] == "NoSuchEntity"
 
+    @markers.aws.unknown
     def test_recreate_iam_role(self, aws_client):
         role_name = "role-{}".format(short_uid())
 
@@ -223,6 +230,7 @@ class TestIAMIntegrations:
         # clean up
         aws_client.iam.delete_role(RoleName=role_name)
 
+    @markers.aws.unknown
     def test_instance_profile_tags(self, aws_client):
         def gen_tag():
             return Tag(Key=f"key-{long_uid()}", Value=f"value-{short_uid()}")
@@ -297,6 +305,7 @@ class TestIAMIntegrations:
 
         aws_client.iam.delete_instance_profile(InstanceProfileName=user_name)
 
+    @markers.aws.unknown
     def test_create_user_with_tags(self, aws_client):
         user_name = "user-role-{}".format(short_uid())
 
@@ -315,6 +324,7 @@ class TestIAMIntegrations:
         # clean up
         aws_client.iam.delete_user(UserName=user_name)
 
+    @markers.aws.unknown
     def test_attach_detach_role_policy(self, aws_client):
         role_name = "s3-role-{}".format(short_uid())
         policy_name = "s3-role-policy-{}".format(short_uid())
@@ -379,6 +389,7 @@ class TestIAMIntegrations:
 
         aws_client.iam.delete_policy(PolicyArn=policy_arn)
 
+    @markers.aws.unknown
     def test_simulate_principle_policy(self, aws_client):
         policy_name = "policy-{}".format(short_uid())
         policy_document = {
@@ -411,6 +422,7 @@ class TestIAMIntegrations:
         assert "s3:GetObjectVersion" in actions
         assert actions["s3:GetObjectVersion"]["EvalDecision"] == "allowed"
 
+    @markers.aws.unknown
     def test_create_role_with_assume_role_policy(self, aws_client):
         role_name_1 = f"role-{short_uid()}"
         role_name_2 = f"role-{short_uid()}"
@@ -463,7 +475,7 @@ class TestIAMIntegrations:
         assert roles["Roles"][0]["RoleName"] == role_name_2
         assert len(roles["Roles"]) == 1
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.xfail
     @pytest.mark.parametrize(
         "service_name, expected_role",
@@ -486,7 +498,7 @@ class TestIAMIntegrations:
             if role_name:
                 aws_client.iam.delete_service_linked_role(RoleName=role_name)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_update_assume_role_policy(self, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.iam_api())
 
@@ -516,7 +528,7 @@ class TestIAMIntegrations:
         finally:
             aws_client.iam.delete_role(RoleName=role_name)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_create_describe_role(self, snapshot, aws_client, create_role, cleanups):
         snapshot.add_transformer(snapshot.transform.iam_api())
         path_prefix = f"/{short_uid()}/"
@@ -544,7 +556,7 @@ class TestIAMIntegrations:
         list_roles_result = aws_client.iam.list_roles(PathPrefix=path_prefix)
         snapshot.match("list_roles_result", list_roles_result)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_list_roles_with_permission_boundary(
         self, snapshot, aws_client, create_role, create_policy, cleanups
     ):
@@ -587,7 +599,7 @@ class TestIAMIntegrations:
         list_roles_result = aws_client.iam.list_roles(PathPrefix=path_prefix)
         snapshot.match("list_roles_result", list_roles_result)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Policy.IsAttachable",
@@ -643,7 +655,7 @@ class TestIAMIntegrations:
         )
         snapshot.match("valid_policy_arn", attach_policy_response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Policy.IsAttachable",

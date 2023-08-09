@@ -6,6 +6,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
 
+@markers.aws.unknown
 def test_bucketpolicy(deploy_cfn_template, aws_client):
     bucket_name = f"ls-bucket-{short_uid()}"
     deploy_result = deploy_cfn_template(
@@ -33,7 +34,7 @@ def test_bucketpolicy(deploy_cfn_template, aws_client):
     assert err.value.response["Error"]["Code"] == "NoSuchBucketPolicy"
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_bucket_autoname(deploy_cfn_template, aws_client):
     result = deploy_cfn_template(
         template_path=os.path.join(
@@ -46,6 +47,7 @@ def test_bucket_autoname(deploy_cfn_template, aws_client):
     assert result.stack_name.lower() in output["OutputValue"]
 
 
+@markers.aws.unknown
 def test_bucket_versioning(deploy_cfn_template, aws_client):
     result = deploy_cfn_template(
         template_path=os.path.join(
@@ -58,7 +60,7 @@ def test_bucket_versioning(deploy_cfn_template, aws_client):
     assert bucket_version["Status"] == "Enabled"
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_website_configuration(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.s3_api())
@@ -81,7 +83,7 @@ def test_website_configuration(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("get_bucket_website", response)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_cors_configuration(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.s3_api())

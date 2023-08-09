@@ -72,7 +72,7 @@ def _snapshot_transformers(snapshot):
         "$..StateTransitionReason",
     ]
 )
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_failing_lambda_retries_after_visibility_timeout(
     create_lambda_function,
     sqs_create_queue,
@@ -168,7 +168,7 @@ def test_failing_lambda_retries_after_visibility_timeout(
         "$..binaryListValues",
     ]
 )
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_message_body_and_attributes_passed_correctly(
     create_lambda_function,
     sqs_create_queue,
@@ -260,7 +260,7 @@ def test_message_body_and_attributes_passed_correctly(
         "$..StateTransitionReason",
     ]
 )
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_redrive_policy_with_failing_lambda(
     create_lambda_function,
     sqs_create_queue,
@@ -355,7 +355,7 @@ def test_redrive_policy_with_failing_lambda(
     snapshot.match("dlq_response", dlq_response)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_sqs_queue_as_lambda_dead_letter_queue(
     lambda_su_role, create_lambda_function, sqs_create_queue, sqs_queue_arn, snapshot, aws_client
 ):
@@ -436,7 +436,7 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
         "$..create_event_source_mapping.ResponseMetadata",
     ]
 )
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_report_batch_item_failures(
     create_lambda_function,
     sqs_create_queue,
@@ -590,7 +590,7 @@ def test_report_batch_item_failures(
     snapshot.match("dlq_response", dlq_response)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_report_batch_item_failures_on_lambda_error(
     create_lambda_function,
     sqs_create_queue,
@@ -678,7 +678,7 @@ def test_report_batch_item_failures_on_lambda_error(
     snapshot.match("dlq_messages", messages)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_report_batch_item_failures_invalid_result_json_batch_fails(
     create_lambda_function,
     sqs_create_queue,
@@ -771,7 +771,7 @@ def test_report_batch_item_failures_invalid_result_json_batch_fails(
     snapshot.match("dlq_response", dlq_response)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_report_batch_item_failures_empty_json_batch_succeeds(
     create_lambda_function,
     sqs_create_queue,
@@ -875,7 +875,7 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
 class TestSQSEventSourceMapping:
     # FIXME refactor and move to test_lambda_sqs_integration
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Error.Message", "$..message"]
     )
@@ -937,7 +937,7 @@ class TestSQSEventSourceMapping:
         finally:
             aws_client.awslambda.delete_event_source_mapping(UUID=uuid)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_sqs_event_source_mapping(
         self,
         create_lambda_function,
@@ -985,7 +985,7 @@ class TestSQSEventSourceMapping:
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
         assert rs.get("Messages") is None
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "filter, item_matching, item_not_matching",
         [
@@ -1115,7 +1115,7 @@ class TestSQSEventSourceMapping:
         rs = aws_client.sqs.receive_message(QueueUrl=queue_url_1)
         assert rs.get("Messages") is None
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "invalid_filter", [None, "simple string", {"eventSource": "aws:sqs"}, {"eventSource": []}]
     )

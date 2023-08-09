@@ -7,6 +7,7 @@ import time
 import pytest
 
 from localstack.testing.aws.util import get_lambda_logs
+from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns
 from localstack.utils.common import (
@@ -77,6 +78,7 @@ def scheduled_test_lambda(aws_client):
 
 @pytest.mark.usefixtures("scheduled_test_lambda")
 class TestIntegration:
+    @markers.aws.unknown
     def test_firehose_s3(self, firehose_create_delivery_stream, s3_create_bucket, aws_client):
         stream_name = f"fh-stream-{short_uid()}"
         bucket_name = s3_create_bucket()
@@ -113,6 +115,7 @@ class TestIntegration:
         for key in all_objects.keys():
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
+    @markers.aws.unknown
     def test_firehose_extended_s3(
         self, firehose_create_delivery_stream, s3_create_bucket, aws_client
     ):
@@ -149,6 +152,7 @@ class TestIntegration:
         for key in all_objects.keys():
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
+    @markers.aws.unknown
     def test_firehose_kinesis_to_s3(self, kinesis_create_stream, aws_client):
         stream_name = f"fh-stream-{short_uid()}"
 
@@ -201,6 +205,7 @@ class TestIntegration:
         # clean up
         aws_client.firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
 
+    @markers.aws.unknown
     def test_lambda_streams_batch_and_transactions(
         self,
         kinesis_create_stream,
@@ -527,6 +532,7 @@ class TestIntegration:
             # cleanup
             process.stop()
 
+    @markers.aws.unknown
     def test_scheduled_lambda(self, aws_client, scheduled_test_lambda):
         def check_invocation(*args):
             assert get_lambda_logs(scheduled_test_lambda, aws_client.logs)
@@ -535,6 +541,7 @@ class TestIntegration:
         retry(check_invocation, retries=14, sleep=5)
 
 
+@markers.aws.unknown
 def test_kinesis_lambda_forward_chain(
     kinesis_create_stream, create_lambda_function, cleanups, aws_client
 ):
@@ -592,6 +599,7 @@ parametrize_python_runtimes = pytest.mark.parametrize("runtime", PYTHON_TEST_RUN
 
 class TestLambdaOutgoingSdkCalls:
     @parametrize_python_runtimes
+    @markers.aws.unknown
     def test_lambda_send_message_to_sqs(
         self, create_lambda_function, sqs_create_queue, runtime, lambda_su_role, aws_client
     ):
@@ -625,6 +633,7 @@ class TestLambdaOutgoingSdkCalls:
         assert event["message"] == message["Body"]
 
     @parametrize_python_runtimes
+    @markers.aws.unknown
     def test_lambda_put_item_to_dynamodb(
         self,
         create_lambda_function,
@@ -673,6 +682,7 @@ class TestLambdaOutgoingSdkCalls:
             assert data[item["id"]["S"]] == item["data"]["S"]
 
     @parametrize_python_runtimes
+    @markers.aws.unknown
     def test_lambda_start_stepfunctions_execution(
         self, create_lambda_function, runtime, lambda_su_role, cleanups, aws_client
     ):

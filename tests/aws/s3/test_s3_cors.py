@@ -66,13 +66,24 @@ def match_headers(snapshot, snapshot_headers):
     return _match
 
 
+@pytest.fixture(autouse=True)
+def allow_bucket_acl(s3_bucket, aws_client):
+    """
+    # Since April 2023, AWS will by default block setting ACL to your bucket and object. You need to manually disable
+    # the BucketOwnershipControls and PublicAccessBlock to make your objects public.
+    # See https://aws.amazon.com/about-aws/whats-new/2022/12/amazon-s3-automatically-enable-block-public-access-disable-access-control-lists-buckets-april-2023/
+    """
+    aws_client.s3.delete_bucket_ownership_controls(Bucket=s3_bucket)
+    aws_client.s3.delete_public_access_block(Bucket=s3_bucket)
+
+
 @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="Tests are for new ASF provider")
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..x-amz-id-2"]  # we're currently using a static value in LocalStack
 )
 class TestS3Cors:
-    @markers.parity.aws_validated
-    def test_cors_http_options_no_config(self, s3_bucket, snapshot, aws_client):
+    @markers.aws.validated
+    def test_cors_http_options_no_config(self, s3_bucket, snapshot, aws_client, allow_bucket_acl):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("HostId", reference_replacement=False),
@@ -88,7 +99,6 @@ class TestS3Cors:
 
         response = requests.options(key_url)
         assert response.status_code == 400
-        # TODO: match_headers
         # yes, a body in an `options` request
         parsed_response = xmltodict.parse(response.content)
         snapshot.match("options-no-origin", parsed_response)
@@ -98,9 +108,14 @@ class TestS3Cors:
         )
         assert response.status_code == 403
         parsed_response = xmltodict.parse(response.content)
-        snapshot.match("options-with-origin", parsed_response)
+        snapshot.match("options-with-origin-and-method", parsed_response)
 
-    @markers.parity.aws_validated
+        response = requests.options(key_url, headers={"Origin": "whatever"})
+        assert response.status_code == 403
+        parsed_response = xmltodict.parse(response.content)
+        snapshot.match("options-with-origin-no-method", parsed_response)
+
+    @markers.aws.validated
     def test_cors_http_get_no_config(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -125,7 +140,7 @@ class TestS3Cors:
         assert response.text == body
         assert not any("access-control" in header.lower() for header in response.headers)
 
-    @markers.parity.only_localstack
+    @markers.aws.only_localstack
     def test_cors_no_config_localstack_allowed(self, s3_bucket, aws_client):
         key = "test-cors-get-no-config"
         body = "cors-test"
@@ -145,7 +160,7 @@ class TestS3Cors:
         assert response.text == body
         assert response.headers["Access-Control-Allow-Origin"] == origin
 
-    @markers.parity.only_localstack
+    @markers.aws.only_localstack
     def test_cors_list_buckets(self):
         # ListBuckets is an operation outside S3 CORS configuration management
         # it should follow the default rules of LocalStack
@@ -168,7 +183,7 @@ class TestS3Cors:
         # assert that we're getting ListBuckets result
         assert b"<ListAllMyBuckets" in response.content
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_cors_http_options_non_existent_bucket(self, s3_bucket, snapshot):
         snapshot.add_transformer(
             [
@@ -191,7 +206,7 @@ class TestS3Cors:
         parsed_response = xmltodict.parse(response.content)
         snapshot.match("options-with-origin", parsed_response)
 
-    @markers.parity.only_localstack
+    @markers.aws.only_localstack
     def test_cors_http_options_non_existent_bucket_ls_allowed(self, s3_bucket):
         key = "test-cors-options-no-bucket"
         key_url = f'{_bucket_url_vhost(bucket_name=f"fake-bucket-{short_uid()}")}/{key}'
@@ -200,7 +215,7 @@ class TestS3Cors:
         assert response.ok
         assert response.headers["Access-Control-Allow-Origin"] == origin
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Body.Error.HostId",  # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
@@ -208,9 +223,10 @@ class TestS3Cors:
             "$..Headers.Connection",  # TODO: fix me? OPTIONS with body is missing it
             "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
             "$..Headers.Transfer-Encoding",  # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
+            "$..Headers.x-amz-server-side-encryption",  # TODO: fix default bucket value
         ]
     )
-    def test_cors_match_origins(self, s3_bucket, match_headers, aws_client):
+    def test_cors_match_origins(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
         bucket_cors_config = {
             "CORSRules": [
                 {
@@ -237,6 +253,15 @@ class TestS3Cors:
         match_headers("opt-no-origin", opt_req)
         get_req = requests.get(key_url)
         match_headers("get-no-origin", get_req)
+
+        # referer header, akin to no CORS following the specs
+        opt_req = requests.options(
+            key_url,
+            headers={"referer": "https://localhost:4200", "Access-Control-Request-Method": "PUT"},
+        )
+        match_headers("opt-referer", opt_req)
+        get_req = requests.get(key_url, headers={"referer": "https://localhost:4200"})
+        match_headers("get-referer", get_req)
 
         # origin from the rule
         opt_req = requests.options(
@@ -277,7 +302,7 @@ class TestS3Cors:
         get_req = requests.get(key_url, headers={"Origin": "http://random:1234"})
         match_headers("get-random-wildcard-origin", get_req)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Body.Error.HostId",  # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
@@ -285,11 +310,12 @@ class TestS3Cors:
             "$..Headers.Connection",  # TODO: fix me? OPTIONS with body is missing it
             "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
             "$..Headers.Transfer-Encoding",  # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
+            "$..Headers.x-amz-server-side-encryption",  # TODO: fix default bucket value
             "$.put-op.Body",  # TODO: We should not return a body for almost all PUT requests
             "$.put-op.Headers.Content-Type",  # issue with default Response values
         ]
     )
-    def test_cors_match_methods(self, s3_create_bucket, match_headers, aws_client):
+    def test_cors_match_methods(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
         origin = "https://localhost:4200"
         bucket_cors_config = {
             "CORSRules": [
@@ -303,15 +329,15 @@ class TestS3Cors:
         }
 
         object_key = "test-cors-method"
-        bucket_name = s3_create_bucket(ACL="public-read-write")
+        aws_client.s3.put_bucket_acl(Bucket=s3_bucket, ACL="public-read-write")
         response = aws_client.s3.put_object(
-            Bucket=bucket_name, Key=object_key, Body="test-cors", ACL="public-read"
+            Bucket=s3_bucket, Key=object_key, Body="test-cors", ACL="public-read"
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        aws_client.s3.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+        aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
 
-        key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}"
+        key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{object_key}"
 
         # test with allowed method: GET
         opt_req = requests.options(
@@ -329,7 +355,7 @@ class TestS3Cors:
 
         # test with method: PUT
 
-        new_key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}new"
+        new_key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{object_key}new"
 
         opt_req = requests.options(
             new_key_url, headers={"Origin": origin, "Access-Control-Request-Method": "PUT"}
@@ -338,7 +364,7 @@ class TestS3Cors:
         get_req = requests.put(new_key_url, headers={"Origin": origin})
         match_headers("put-op", get_req)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Body.Error.HostId",  # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
@@ -346,12 +372,13 @@ class TestS3Cors:
             "$..Headers.Connection",  # TODO: fix me? OPTIONS with body is missing it
             "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
             "$..Headers.Transfer-Encoding",
+            "$..Headers.x-amz-server-side-encryption",  # TODO: fix default bucket value
             # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
             "$.put-op.Body",  # TODO: We should not return a body for almost all PUT requests
             "$.put-op.Headers.Content-Type",  # issue with default Response values
         ]
     )
-    def test_cors_match_headers(self, s3_create_bucket, match_headers, aws_client):
+    def test_cors_match_headers(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
         origin = "https://localhost:4200"
         bucket_cors_config = {
             "CORSRules": [
@@ -364,16 +391,16 @@ class TestS3Cors:
             ]
         }
 
+        aws_client.s3.put_bucket_acl(Bucket=s3_bucket, ACL="public-read-write")
         object_key = "test-cors-method"
-        bucket_name = s3_create_bucket(ACL="public-read-write")
         response = aws_client.s3.put_object(
-            Bucket=bucket_name, Key=object_key, Body="test-cors", ACL="public-read"
+            Bucket=s3_bucket, Key=object_key, Body="test-cors", ACL="public-read"
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        aws_client.s3.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+        aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
 
-        key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}"
+        key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{object_key}"
 
         # test with a specific header: x-amz-request-payer
         opt_req = requests.options(
@@ -413,7 +440,7 @@ class TestS3Cors:
                 }
             ]
         }
-        aws_client.s3.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+        aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
 
         # test with a specific header: x-amz-request-payer, but not allowed in the config
         opt_req = requests.options(
@@ -462,17 +489,17 @@ class TestS3Cors:
         )
         match_headers("get-non-allowed", get_req)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$.opt-get.Headers.Content-Type",  # issue with default Response values
         ]
     )
-    def test_cors_expose_headers(self, s3_create_bucket, match_headers, aws_client):
+    def test_cors_expose_headers(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
         object_key = "test-cors-expose"
-        bucket_name = s3_create_bucket(ACL="public-read-write")
+        aws_client.s3.put_bucket_acl(Bucket=s3_bucket, ACL="public-read-write")
         response = aws_client.s3.put_object(
-            Bucket=bucket_name, Key=object_key, Body="test-cors", ACL="public-read"
+            Bucket=s3_bucket, Key=object_key, Body="test-cors", ACL="public-read"
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
@@ -486,9 +513,9 @@ class TestS3Cors:
                 }
             ]
         }
-        aws_client.s3.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+        aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
 
-        key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}"
+        key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{object_key}"
 
         # get CORS headers from the response matching the rule
         opt_req = requests.options(
@@ -500,7 +527,7 @@ class TestS3Cors:
         )
         match_headers("opt-get", opt_req)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_get_cors(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         with pytest.raises(ClientError) as e:
@@ -521,7 +548,7 @@ class TestS3Cors:
         response = aws_client.s3.get_bucket_cors(Bucket=s3_bucket)
         snapshot.match("get-cors-after-set", response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_put_cors(self, s3_bucket, snapshot, aws_client):
         bucket_cors_config = {
             "CORSRules": [
@@ -548,7 +575,7 @@ class TestS3Cors:
         response = aws_client.s3.get_bucket_cors(Bucket=s3_bucket)
         snapshot.match("get-cors", response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Body.Error.HostId",  # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
@@ -557,11 +584,11 @@ class TestS3Cors:
             "$..Headers.Transfer-Encoding",
         ]
     )
-    def test_put_cors_default_values(self, s3_create_bucket, match_headers, aws_client):
+    def test_put_cors_default_values(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
+        aws_client.s3.put_bucket_acl(Bucket=s3_bucket, ACL="public-read-write")
         object_key = "test-cors-default"
-        bucket_name = s3_create_bucket(ACL="public-read-write")
         response = aws_client.s3.put_object(
-            Bucket=bucket_name, Key=object_key, Body="test-cors", ACL="public-read"
+            Bucket=s3_bucket, Key=object_key, Body="test-cors", ACL="public-read"
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
@@ -574,9 +601,9 @@ class TestS3Cors:
                 }
             ]
         }
-        aws_client.s3.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+        aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
 
-        key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}"
+        key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{object_key}"
 
         # get CORS headers from the response matching the rule
         opt_req = requests.options(
@@ -599,7 +626,7 @@ class TestS3Cors:
         )
         match_headers("opt-get-headers", opt_req)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_put_cors_invalid_rules(self, s3_bucket, snapshot, aws_client):
         bucket_cors_config = {
             "CORSRules": [
@@ -619,7 +646,7 @@ class TestS3Cors:
 
         snapshot.match("put-cors-exc-empty", e.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_put_cors_empty_origin(self, s3_bucket, snapshot, aws_client):
         # derived from TestAccS3Bucket_Security_corsEmptyOrigin TF test
         bucket_cors_config = {
@@ -636,7 +663,7 @@ class TestS3Cors:
 
         snapshot.match("get-cors-empty", response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_delete_cors(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         response = aws_client.s3.delete_bucket_cors(Bucket=s3_bucket)
