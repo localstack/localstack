@@ -500,7 +500,7 @@ class TestS3BucketVersioning:
     reason="These are WIP tests for the new native S3 provider",
 )
 class TestS3BucketEncryption:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_s3_default_bucket_encryption(self, s3_bucket, aws_client, snapshot):
         get_default_encryption = aws_client.s3.get_bucket_encryption(Bucket=s3_bucket)
         snapshot.match("default-bucket-encryption", get_default_encryption)
@@ -514,6 +514,7 @@ class TestS3BucketEncryption:
         bucket_versioning = aws_client.s3.get_bucket_versioning(Bucket=s3_bucket)
         snapshot.match("get-bucket-no-encryption", bucket_versioning)
 
+    @markers.aws.validated
     def test_s3_default_bucket_encryption_exc(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         fake_bucket = f"fakebucket-{short_uid()}-{short_uid()}"
@@ -574,6 +575,7 @@ class TestS3BucketEncryption:
             )
         snapshot.match("put-bucket-encryption-kms-with-aes", e.value.response)
 
+    @markers.aws.validated
     def test_s3_bucket_encryption_sse_s3(self, s3_bucket, aws_client, snapshot):
         # AES256 is already the default
         # so set something with the BucketKey, which should only be set for KMS, to see if it returns
@@ -604,7 +606,7 @@ class TestS3BucketEncryption:
         get_object_encrypted = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
         snapshot.match("get-object-encrypted", get_object_encrypted)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     # there is currently no server side encryption is place in LS, ETag will be different
     @markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
     def test_s3_bucket_encryption_sse_kms(self, s3_bucket, kms_key, aws_client, snapshot):
@@ -640,7 +642,7 @@ class TestS3BucketEncryption:
         get_object_encrypted = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
         snapshot.match("get-object-encrypted", get_object_encrypted)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     # there is currently no server side encryption is place in LS, ETag will be different
     @markers.snapshot.skip_snapshot_verify(
         paths=[
