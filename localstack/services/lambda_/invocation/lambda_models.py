@@ -144,6 +144,7 @@ class S3Code(ArchiveCode):
     S3 Store:
       Code archives represented by this method are stored in a bucket awslambda-{region_name}-tasks,
       (e.g. awslambda-us-east-1-tasks), when correctly created using create_lambda_archive.
+      The "awslambda" prefix matches the behavior at real AWS.
 
       This class will then provide different properties / methods to be operated on the stored code,
       like the ability to create presigned-urls, checking the code hash etc.
