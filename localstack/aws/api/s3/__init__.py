@@ -846,6 +846,13 @@ class InvalidTag(ServiceException):
     TagValue: Optional[Value]
 
 
+class ObjectLockConfigurationNotFoundError(ServiceException):
+    code: str = "ObjectLockConfigurationNotFoundError"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
 AbortDate = datetime
 
 

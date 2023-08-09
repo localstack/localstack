@@ -31,3 +31,13 @@ class UnexpectedContent(CommonServiceException):
 class NoSuchConfiguration(CommonServiceException):
     def __init__(self, message=None):
         super().__init__("NoSuchConfiguration", status_code=404, message=message)
+
+
+class InvalidBucketState(CommonServiceException):
+    def __init__(self, message=None):
+        super().__init__("InvalidBucketState", status_code=409, message=message)
+
+
+class NoSuchObjectLockConfiguration(CommonServiceException):
+    def __init__(self, message=None):
+        super().__init__("NoSuchObjectLockConfiguration", status_code=404, message=message)
