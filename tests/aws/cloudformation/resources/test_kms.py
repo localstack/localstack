@@ -4,6 +4,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
+@markers.aws.unknown
 def test_kms_key_disabled(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -44,6 +45,7 @@ def test_cfn_with_kms_resources(deploy_cfn_template, aws_client, snapshot):
     assert not _get_matching_aliases()
 
 
+@markers.aws.unknown
 def test_deploy_stack_with_kms(deploy_cfn_template, aws_client):
     environment = f"env-{short_uid()}"
 

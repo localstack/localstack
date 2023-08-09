@@ -6,8 +6,8 @@ from localstack.testing.pytest import markers
 CLOUDFORMATION_UI_PATH = "/_localstack/cloudformation/deploy"
 
 
-@markers.aws.only_localstack
 class TestCloudFormationUi:
+    @markers.aws.only_localstack
     def test_get_cloudformation_ui(self):
         cfn_ui_url = config.get_edge_url() + CLOUDFORMATION_UI_PATH
         response = requests.get(cfn_ui_url)

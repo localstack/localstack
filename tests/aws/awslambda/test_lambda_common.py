@@ -271,6 +271,7 @@ class TestLambdaCallingLocalstack:
             "dotnet6",  # TODO: does not yet support transparent endpoint injection
         ],
     )
+    @markers.aws.unknown
     def test_calling_localstack_from_lambda(self, multiruntime_lambda, tmp_path, aws_client):
         create_function_result = multiruntime_lambda.create_function(
             MemorySize=1024,

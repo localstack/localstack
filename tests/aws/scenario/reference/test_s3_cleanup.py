@@ -2,6 +2,7 @@ import aws_cdk as cdk
 import aws_cdk.aws_s3 as s3
 import pytest
 
+from localstack.testing.pytest import markers
 from localstack.testing.scenario.provisioning import InfraProvisioner
 from localstack.utils.strings import to_str
 
@@ -26,6 +27,7 @@ class TestS3CleanupScenario:
         finally:
             provisioner.teardown()
 
+    @markers.aws.unknown
     def test_scenario_validate_infra(self, aws_client, infrastructure):
         outputs = infrastructure.get_stack_outputs(stack_name="BucketCleanupStack")
         bucket1_name = outputs["Bucket1Name"]  # noqa

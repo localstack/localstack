@@ -106,6 +106,7 @@ class TestSecretsManager:
             "Valid/_+=.@-Name-a1b2c3-",
         ],
     )
+    @markers.aws.unknown
     def test_create_and_update_secret(self, secret_name: str, sm_snapshot, cleanups, aws_client):
         cleanups.append(
             lambda: aws_client.secretsmanager.delete_secret(
@@ -159,6 +160,7 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
+    @markers.aws.unknown
     def test_secret_not_found(self, sm_snapshot, aws_client):
         with pytest.raises(Exception) as not_found:
             aws_client.secretsmanager.get_secret_value(SecretId=f"s-{short_uid()}")
@@ -168,6 +170,7 @@ class TestSecretsManager:
             aws_client.secretsmanager.list_secret_version_ids(SecretId=f"s-{short_uid()}")
         sm_snapshot.match("list_secret_version_ids_not_found_ex", not_found.value.response)
 
+    @markers.aws.unknown
     def test_call_lists_secrets_multiple_times(self, secret_name, aws_client):
         aws_client.secretsmanager.create_secret(
             Name=secret_name,
@@ -188,6 +191,7 @@ class TestSecretsManager:
         )
 
     @pytest.mark.skip("In CI transformers are not applied for this test.")
+    @markers.aws.unknown
     def test_call_lists_secrets_multiple_times_snapshots(
         self, sm_snapshot, secret_name, aws_client
     ):
@@ -214,6 +218,7 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
+    @markers.aws.unknown
     def test_create_multi_secrets(self, cleanups, aws_client):
         secret_names = [short_uid(), short_uid(), short_uid()]
         arns = []
@@ -249,6 +254,7 @@ class TestSecretsManager:
             )
 
     @pytest.mark.skip("In CI transformers are not applied for this test.")
+    @markers.aws.unknown
     def test_create_multi_secrets_snapshot(self, sm_snapshot, cleanups, aws_client):
         secret_names = [short_uid() for _ in range(3)]
         for i, secret_name in enumerate(secret_names):
@@ -278,6 +284,7 @@ class TestSecretsManager:
             )
             sm_snapshot.match(f"delete_secret_res{i}", delete_secret_res)
 
+    @markers.aws.unknown
     def test_get_random_exclude_characters_and_symbols(self, aws_client):
         random_password = aws_client.secretsmanager.get_random_password(
             PasswordLength=120, ExcludeCharacters="xyzDje@?!."
@@ -286,6 +293,7 @@ class TestSecretsManager:
         assert len(random_password["RandomPassword"]) == 120
         assert all(c not in "xyzDje@?!." for c in random_password["RandomPassword"])
 
+    @markers.aws.unknown
     def test_resource_policy(self, secret_name, aws_client):
         aws_client.secretsmanager.create_secret(
             Name=secret_name,
@@ -313,6 +321,7 @@ class TestSecretsManager:
         )
 
     @pytest.mark.skip(condition=is_new_provider(), reason="needs lambda usage rework")
+    @markers.aws.unknown
     def test_rotate_secret_with_lambda_1(
         self, secret_name, create_secret, create_lambda_function, aws_client
     ):
@@ -341,6 +350,7 @@ class TestSecretsManager:
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @pytest.mark.skipif(condition=is_new_provider(), reason="needs lambda usage rework")
+    @markers.aws.unknown
     def test_rotate_secret_with_lambda_2(
         self, secret_name, create_lambda_function, create_secret, aws_client
     ):
@@ -429,6 +439,7 @@ class TestSecretsManager:
         secret_string_2 = lambda_rotate_secret.secret_of_rotation_from_version_id(version_id_2)
         assert get_res["SecretString"] == secret_string_2
 
+    @markers.aws.unknown
     def test_rotate_secret_invalid_lambda_arn(self, secret_name, aws_client):
         aws_client.secretsmanager.create_secret(Name=secret_name, SecretString="init")
         invalid_arn = (
@@ -453,6 +464,7 @@ class TestSecretsManager:
         assert "RotationRules" not in des
         assert "RotationLambdaARN" not in des
 
+    @markers.aws.unknown
     def test_put_secret_value_with_version_stages(self, sm_snapshot, secret_name, aws_client):
         secret_string_v0: str = "secret_string_v0"
 
@@ -592,6 +604,7 @@ class TestSecretsManager:
             )
         sm_snapshot.match("ex_log_10", validation_exception.value.response)
 
+    @markers.aws.unknown
     def test_last_accessed_date(self, cleanups, aws_client):
         def last_accessed_scenario_1(fail_if_days_overlap: bool) -> bool:
             secret_name = f"s-{short_uid()}"
@@ -633,6 +646,7 @@ class TestSecretsManager:
                 True
             )  # Replay today or allow failure (this should never take longer than a day).
 
+    @markers.aws.unknown
     def test_last_updated_date(self, secret_name, aws_client):
         aws_client.secretsmanager.create_secret(Name=secret_name, SecretString="MySecretValue")
 
@@ -673,6 +687,7 @@ class TestSecretsManager:
         assert "LastChangedDate" in res
         assert create_date < res["LastChangedDate"]
 
+    @markers.aws.unknown
     def test_update_secret_description(self, sm_snapshot, secret_name, aws_client):
         secret_string_v0 = "MySecretString"
         create_secret_rs_0 = aws_client.secretsmanager.create_secret(
@@ -726,6 +741,7 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
+    @markers.aws.unknown
     def test_update_secret_version_stages_return_type(self, sm_snapshot, secret_name, aws_client):
         create_secret_rs_0 = aws_client.secretsmanager.create_secret(
             Name=secret_name, SecretString="Something1"
@@ -759,6 +775,7 @@ class TestSecretsManager:
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    @markers.aws.unknown
     def test_update_secret_version_stages_current_previous(
         self, sm_snapshot, secret_name, aws_client
     ):
@@ -796,6 +813,7 @@ class TestSecretsManager:
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    @markers.aws.unknown
     def test_update_secret_version_stages_current_pending(
         self, sm_snapshot, secret_name, aws_client
     ):
@@ -850,6 +868,7 @@ class TestSecretsManager:
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    @markers.aws.unknown
     def test_update_secret_version_stages_current_pending_cycle(
         self, sm_snapshot, secret_name, aws_client
     ):
@@ -931,6 +950,7 @@ class TestSecretsManager:
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    @markers.aws.unknown
     def test_update_secret_version_stages_current_pending_cycle_custom_stages_1(
         self, sm_snapshot, secret_name, aws_client
     ):
@@ -1011,6 +1031,7 @@ class TestSecretsManager:
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    @markers.aws.unknown
     def test_update_secret_version_stages_current_pending_cycle_custom_stages_2(
         self, sm_snapshot, secret_name, aws_client
     ):
@@ -1102,6 +1123,7 @@ class TestSecretsManager:
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    @markers.aws.unknown
     def test_non_versioning_version_stages_replacement(self, sm_snapshot, secret_name, aws_client):
         create_secret_rs_0 = aws_client.secretsmanager.create_secret(
             Name=secret_name, SecretString="S0"
@@ -1139,6 +1161,7 @@ class TestSecretsManager:
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    @markers.aws.unknown
     def test_non_versioning_version_stages_no_replacement(
         self, sm_snapshot, secret_name, aws_client
     ):
@@ -1378,6 +1401,7 @@ class TestSecretsManager:
         assert res_json["VersionStages"] == version_stages
         return res_json
 
+    @markers.aws.unknown
     def test_update_secret_with_non_provided_client_request_token(self, aws_client, secret_name):
         # Create v0.
         secret_string_v0: str = "secret_string_v0"
@@ -1423,6 +1447,7 @@ class TestSecretsManager:
             version_id_v2,
         )
 
+    @markers.aws.unknown
     def test_put_secret_value_with_new_custom_client_request_token(self, secret_name, aws_client):
         # Create v0.
         secret_string_v0: str = "MySecretString"
@@ -1473,6 +1498,7 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
+    @markers.aws.unknown
     def test_http_put_secret_value_with_duplicate_client_request_token(
         self, secret_name, aws_client
     ):
@@ -1521,6 +1547,7 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
+    @markers.aws.unknown
     def test_http_put_secret_value_with_non_provided_client_request_token(
         self, secret_name, aws_client
     ):
@@ -1567,6 +1594,7 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
+    @markers.aws.unknown
     def test_http_put_secret_value_duplicate_req(self, secret_name, aws_client):
         # Create v0.
         secret_string_v0: str = "MySecretString"
@@ -1612,6 +1640,7 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
+    @markers.aws.unknown
     def test_http_put_secret_value_null_client_request_token_new_version_stages(
         self, secret_name, aws_client
     ):
@@ -1673,6 +1702,7 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
+    @markers.aws.unknown
     def test_http_put_secret_value_custom_client_request_token_new_version_stages(
         self,
         secret_name,
@@ -1741,6 +1771,7 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
+    @markers.aws.unknown
     def test_delete_non_existent_secret_returns_as_if_secret_exists(self, secret_name, aws_client):
         """When ForceDeleteWithoutRecovery=True, AWS responds as if the non-existent secret was successfully deleted."""
         response = aws_client.secretsmanager.delete_secret(
@@ -1751,6 +1782,7 @@ class TestSecretsManager:
         assert response["ARN"] is not None
         assert response["DeletionDate"] is not None
 
+    @markers.aws.unknown
     def test_exp_raised_on_creation_of_secret_scheduled_for_deletion(
         self, sm_snapshot, secret_name, aws_client
     ):
@@ -1775,6 +1807,7 @@ class TestSecretsManager:
             aws_client.secretsmanager.create_secret(**create_secret_req)
         sm_snapshot.match("invalid_req_ex", invalid_req_ex.value.response)
 
+    @markers.aws.unknown
     def test_can_recreate_delete_secret(self, sm_snapshot, secret_name, aws_client):
         # NOTE: AWS will behave as staged deletion for a small number of seconds (<10).
         # We assume forced deletion is instantaneous, until the precise behaviour is understood.

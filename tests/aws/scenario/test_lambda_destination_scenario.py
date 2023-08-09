@@ -7,6 +7,7 @@ import pytest
 
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.connect import connect_to
+from localstack.testing.pytest import markers
 from localstack.testing.scenario.provisioning import InfraProvisioner
 from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import wait_until
@@ -76,6 +77,7 @@ class TestLambdaDestinationScenario:
         with provisioner.provisioner() as prov:
             yield prov
 
+    @markers.aws.unknown
     def test_infra(self, infrastructure, aws_client):
         outputs = infrastructure.get_stack_outputs("LambdaTestStack")
         collect_fn_name = outputs["CollectFunctionName"]
@@ -92,6 +94,7 @@ class TestLambdaDestinationScenario:
 
         aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
 
+    @markers.aws.unknown
     def test_destination_sns(self, infrastructure, aws_client):
         outputs = infrastructure.get_stack_outputs("LambdaTestStack")
         invoke_fn_name = outputs["DestinationFunctionName"]

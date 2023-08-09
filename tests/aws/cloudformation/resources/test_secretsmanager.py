@@ -75,6 +75,7 @@ Outputs:
 """
 
 
+@markers.aws.unknown
 def test_cfn_secretsmanager_gen_secret(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(template=TEMPLATE_GENERATE_SECRET)
 
@@ -98,6 +99,7 @@ def test_cfn_secretsmanager_gen_secret(deploy_cfn_template, aws_client):
     assert re.match(r".*%s-[a-zA-Z0-9]+" % SECRET_NAME, output_secret_arn)
 
 
+@markers.aws.unknown
 def test_cfn_handle_secretsmanager_secret(deploy_cfn_template, aws_client):
     secret_name = f"secret-{short_uid()}"
     stack = deploy_cfn_template(template=TEST_TEMPLATE_11, parameters={"SecretName": secret_name})

@@ -7,6 +7,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
+@markers.aws.unknown
 def test_sqs_queue_policy(deploy_cfn_template, aws_client):
     result = deploy_cfn_template(
         template_path=os.path.join(
@@ -32,6 +33,7 @@ def test_sqs_fifo_queue_generates_valid_name(deploy_cfn_template):
 
 
 # FIXME: doesn't work on AWS. (known bug in cloudformation: https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/165)
+@markers.aws.unknown
 def test_sqs_non_fifo_queue_generates_valid_name(deploy_cfn_template):
     result = deploy_cfn_template(
         template_path=os.path.join(
@@ -59,6 +61,7 @@ Resources:
 """
 
 
+@markers.aws.unknown
 def test_cfn_handle_sqs_resource(deploy_cfn_template, aws_client):
     fifo_queue = f"queue-{short_uid()}.fifo"
 

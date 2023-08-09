@@ -158,6 +158,7 @@ class TestEvents:
         for field in expected_fields:
             assert field in event
 
+    @markers.aws.unknown
     def test_put_rule(self, aws_client, clean_up):
         rule_name = f"rule-{short_uid()}"
 
@@ -170,6 +171,7 @@ class TestEvents:
         # clean up
         clean_up(rule_name=rule_name)
 
+    @markers.aws.unknown
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
         self, aws_client
     ):
@@ -205,6 +207,7 @@ class TestEvents:
             == event_details_to_publish
         )
 
+    @markers.aws.unknown
     def test_list_tags_for_resource(self, aws_client, clean_up):
         rule_name = "rule-{}".format(short_uid())
 
@@ -245,6 +248,7 @@ class TestEvents:
             entries_asserts=[(entries, True)],
         )
 
+    @markers.aws.unknown
     def test_put_events_with_values_in_array(self, aws_client, put_events_with_filter_to_sqs):
         pattern = {"detail": {"event": {"data": {"type": ["1", "2"]}}}}
         entries1 = [
@@ -306,6 +310,7 @@ class TestEvents:
             input_path="$.detail",
         )
 
+    @markers.aws.unknown
     def test_put_events_with_target_sqs_event_detail_match(
         self, aws_client, put_events_with_filter_to_sqs
     ):
@@ -427,6 +432,7 @@ class TestEvents:
 
     # TODO: further unify/parameterize the tests for the different target types below
 
+    @markers.aws.unknown
     def test_put_events_with_target_sns(self, sns_subscription, aws_client, clean_up):
         queue_name = "test-%s" % short_uid()
         rule_name = "rule-{}".format(short_uid())
@@ -484,6 +490,7 @@ class TestEvents:
         aws_client.sns.delete_topic(TopicArn=topic_arn)
         clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id, queue_url=queue_url)
 
+    @markers.aws.unknown
     def test_put_events_into_event_bus(self, aws_client, clean_up):
         queue_name = "queue-{}".format(short_uid())
         rule_name = "rule-{}".format(short_uid())
@@ -545,6 +552,7 @@ class TestEvents:
         clean_up(bus_name=bus_name_2)
         aws_client.sqs.delete_queue(QueueUrl=queue_url)
 
+    @markers.aws.unknown
     def test_put_events_with_target_lambda(
         self, create_lambda_function, cleanups, aws_client, clean_up
     ):
@@ -607,6 +615,7 @@ class TestEvents:
         self.assert_valid_event(actual_event)
         assert actual_event["detail"] == EVENT_DETAIL
 
+    @markers.aws.unknown
     def test_rule_disable(self, aws_client, clean_up):
         rule_name = "rule-{}".format(short_uid())
         aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
@@ -620,6 +629,7 @@ class TestEvents:
         # clean up
         clean_up(rule_name=rule_name)
 
+    @markers.aws.unknown
     def test_scheduled_expression_events(
         self,
         sns_create_topic,
@@ -756,6 +766,7 @@ class TestEvents:
         aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
 
     @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
+    @markers.aws.unknown
     def test_api_destinations(self, httpserver: HTTPServer, auth, aws_client, clean_up):
         token = short_uid()
         bearer = f"Bearer {token}"
@@ -913,6 +924,7 @@ class TestEvents:
                 assert oauth_request.headers["oauthheader"] == "value2"
                 assert oauth_request.args["oauthquery"] == "value3"
 
+    @markers.aws.unknown
     def test_create_connection_validations(self, aws_client):
         connection_name = "This should fail with two errors 123467890123412341234123412341234"
 
@@ -932,6 +944,7 @@ class TestEvents:
         assert "must have length less than or equal to 64" in message
         assert "must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]" in message
 
+    @markers.aws.unknown
     def test_put_events_with_target_firehose(self, aws_client, clean_up):
         s3_bucket = "s3-{}".format(short_uid())
         s3_prefix = "testeventdata"
@@ -998,6 +1011,7 @@ class TestEvents:
         aws_client.s3.delete_bucket(Bucket=s3_bucket)
         clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id)
 
+    @markers.aws.unknown
     def test_put_events_with_target_sqs_new_region(self, aws_client_factory):
         events_client = aws_client_factory(region_name="eu-west-1").events
         queue_name = "queue-{}".format(short_uid())
@@ -1037,6 +1051,7 @@ class TestEvents:
         assert len(response.get("Entries")) == 1
         assert "EventId" in response.get("Entries")[0]
 
+    @markers.aws.unknown
     def test_put_events_with_target_kinesis(self, aws_client):
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
@@ -1107,6 +1122,7 @@ class TestEvents:
         assert data["detail"] == EVENT_DETAIL
         self.assert_valid_event(data)
 
+    @markers.aws.unknown
     def test_put_events_with_input_path(self, aws_client, clean_up):
         queue_name = f"queue-{short_uid()}"
         rule_name = f"rule-{short_uid()}"
@@ -1164,6 +1180,7 @@ class TestEvents:
         # clean up
         clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id, queue_url=queue_url)
 
+    @markers.aws.unknown
     def test_put_events_with_input_path_multiple(self, aws_client, clean_up):
         queue_name = "queue-{}".format(short_uid())
         queue_name_1 = "queue-{}".format(short_uid())
@@ -1243,12 +1260,14 @@ class TestEvents:
             queue_url=queue_url,
         )
 
+    @markers.aws.unknown
     def test_put_event_without_source(self, aws_client_factory):
         events_client = aws_client_factory(region_name="eu-west-1").events
 
         response = events_client.put_events(Entries=[{"DetailType": "Test", "Detail": "{}"}])
         assert response.get("Entries")
 
+    @markers.aws.unknown
     def test_put_event_without_detail(self, aws_client_factory):
         events_client = aws_client_factory(region_name="eu-west-1").events
 
@@ -1261,6 +1280,7 @@ class TestEvents:
         )
         assert response.get("Entries")
 
+    @markers.aws.unknown
     def test_trigger_event_on_ssm_change(self, aws_client, clean_up):
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
@@ -1309,6 +1329,7 @@ class TestEvents:
         # clean up
         clean_up(rule_name=rule_name, target_ids=target_id)
 
+    @markers.aws.unknown
     def test_put_event_with_content_base_rule_in_pattern(self, aws_client, clean_up):
         queue_name = f"queue-{short_uid()}"
         rule_name = f"rule-{short_uid()}"

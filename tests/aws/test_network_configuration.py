@@ -20,14 +20,13 @@ from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.utils.files import new_tmp_file, save_file
 from localstack.utils.strings import short_uid
 
-pytestmark = [markers.aws.only_localstack]
-
 
 class TestOpenSearch:
     """
     OpenSearch does not respect any customisations and just returns a domain with localhost.localstack.cloud in.
     """
 
+    @markers.aws.only_localstack
     def test_default_strategy(
         self, opensearch_wait_for_cluster, assert_host_customisation, aws_client
     ):
@@ -38,6 +37,7 @@ class TestOpenSearch:
 
         assert_host_customisation(endpoint, use_localstack_cloud=True)
 
+    @markers.aws.only_localstack
     def test_port_strategy(
         self, monkeypatch, opensearch_wait_for_cluster, assert_host_customisation, aws_client
     ):
@@ -53,6 +53,7 @@ class TestOpenSearch:
         else:
             assert_host_customisation(endpoint, custom_host="127.0.0.1")
 
+    @markers.aws.only_localstack
     def test_path_strategy(
         self, monkeypatch, opensearch_wait_for_cluster, assert_host_customisation, aws_client
     ):
@@ -70,6 +71,7 @@ class TestS3:
     @pytest.mark.skipif(
         condition=config.LEGACY_S3_PROVIDER, reason="Not implemented for legacy provider"
     )
+    @markers.aws.only_localstack
     def test_non_us_east_1_location(
         self, s3_empty_bucket, cleanups, assert_host_customisation, aws_client
     ):
@@ -89,6 +91,7 @@ class TestS3:
 
         assert_host_customisation(res["Location"], use_hostname_external=True)
 
+    @markers.aws.only_localstack
     def test_multipart_upload(self, s3_bucket, assert_host_customisation, aws_client):
         key_name = f"key-{short_uid()}"
         upload_id = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)[
@@ -106,6 +109,7 @@ class TestS3:
 
         assert_host_customisation(res["Location"], use_hostname_external=True)
 
+    @markers.aws.only_localstack
     def test_201_response(self, s3_bucket, assert_host_customisation, aws_client):
         key_name = f"key-{short_uid()}"
         body = "body"
@@ -137,6 +141,7 @@ class TestSQS:
     * hostname_external
     """
 
+    @markers.aws.only_localstack
     def test_off_strategy_without_external_port(
         self, monkeypatch, sqs_create_queue, assert_host_customisation
     ):
@@ -148,6 +153,7 @@ class TestSQS:
         assert_host_customisation(queue_url, use_localhost=True)
         assert queue_name in queue_url
 
+    @markers.aws.only_localstack
     def test_off_strategy_with_external_port(
         self, monkeypatch, sqs_create_queue, assert_host_customisation
     ):
@@ -162,6 +168,7 @@ class TestSQS:
         assert queue_name in queue_url
         assert f":{external_port}" in queue_url
 
+    @markers.aws.only_localstack
     def test_domain_strategy(self, monkeypatch, sqs_create_queue, assert_host_customisation):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")
 
@@ -171,6 +178,7 @@ class TestSQS:
         assert_host_customisation(queue_url, use_localstack_cloud=True)
         assert queue_name in queue_url
 
+    @markers.aws.only_localstack
     def test_path_strategy(self, monkeypatch, sqs_create_queue, assert_host_customisation):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "path")
 
@@ -183,6 +191,7 @@ class TestSQS:
 
 class TestLambda:
     @pytest.mark.skipif(condition=is_old_provider(), reason="Not implemented for legacy provider")
+    @markers.aws.only_localstack
     def test_function_url(self, assert_host_customisation, create_lambda_function, aws_client):
         function_name = f"function-{short_uid()}"
         handler_code = ""
@@ -203,6 +212,7 @@ class TestLambda:
         assert_host_customisation(function_url, use_localstack_cloud=True)
 
     @pytest.mark.skipif(condition=is_new_provider(), reason="Not implemented for new provider")
+    @markers.aws.only_localstack
     def test_http_api_for_function_url(
         self, assert_host_customisation, create_lambda_function, aws_http_client_factory
     ):

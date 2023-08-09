@@ -20,6 +20,8 @@ import pytest
 import requests
 from constructs import Construct
 
+from localstack.testing.pytest import markers
+
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
 
@@ -288,6 +290,7 @@ class TestNoteTakingScenario:
             # here we could add some initial setup, e.g. pre-filling the app with data
             yield prov
 
+    @markers.aws.unknown
     def test_notes_rest_api(self, infrastructure):
         outputs = infrastructure.get_stack_outputs("NoteTakingStack")
         gateway_url = outputs["GatewayUrl"]
@@ -352,6 +355,7 @@ class TestNoteTakingScenario:
         assert response.status_code == 404
         assert json.loads(response.text) == {"status": False, "error": "Item not found."}
 
+    @markers.aws.unknown
     def test_another_scenario(self, aws_client, infrastructure):
         # TODO test something different
         #   added to test the skipping of infra-teardown

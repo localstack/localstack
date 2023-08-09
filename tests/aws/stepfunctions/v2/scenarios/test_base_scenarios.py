@@ -16,6 +16,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestBaseScenarios:
+    @markers.aws.unknown
     def test_parallel_state(
         self,
         aws_client,
@@ -37,6 +38,7 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_map_state(
         self,
         aws_client,
@@ -57,6 +59,7 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_map_state_legacy(
         self,
         aws_client,
@@ -77,6 +80,7 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_map_state_item_selector(
         self,
         aws_client,
@@ -97,6 +101,7 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_map_state_parameters_legacy(
         self,
         aws_client,
@@ -117,6 +122,7 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_map_state_item_selector_singleton(
         self,
         aws_client,
@@ -137,6 +143,7 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_map_state_parameters_singleton_legacy(
         self,
         aws_client,
@@ -157,6 +164,7 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_map_state_catch(
         self,
         aws_client,
@@ -177,6 +185,7 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_map_state_catch_legacy(
         self,
         aws_client,
@@ -197,6 +206,7 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_map_state_retry(
         self,
         aws_client,
@@ -217,6 +227,7 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_map_state_retry_multiple_retriers(
         self,
         aws_client,
@@ -237,6 +248,7 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_map_state_retry_legacy(
         self,
         aws_client,
@@ -257,6 +269,7 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_map_state_break_condition(
         self,
         aws_client,
@@ -277,6 +290,7 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_map_state_break_condition_legacy(
         self,
         aws_client,
