@@ -142,7 +142,7 @@ VALID_OPERATIONS = [
     "GenerateDataKeyPairWithoutPlaintext",
 ]
 
-# special tag name to allow specifying a custom ID for new REST APIs
+# special tag name to allow specifying a custom ID for created keys
 TAG_KEY_CUSTOM_ID = "_custom_id_"
 
 
@@ -203,7 +203,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         store = kms_stores[account_id][region_name]
         key = KmsKey(request, account_id, region_name)
 
-        # check if the _custom_id_ tag is specified, to set a user-defined ID for this key
+        # check if the _custom_id_ tag is specified, to set a user-defined KeyId for this key
         tags_dict = {tag["TagKey"]: tag["TagValue"] for tag in request.get("Tags", [])}
         custom_id = tags_dict.get(TAG_KEY_CUSTOM_ID)
         if custom_id and custom_id.strip():
