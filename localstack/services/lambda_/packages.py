@@ -82,7 +82,7 @@ class LambdaGoRuntimePackageInstaller(ArchiveDownloadAndExtractInstaller):
         )
 
     def _get_install_marker_path(self, install_dir: str) -> str:
-        return os.path.join(install_dir, "lambda-mock")
+        return os.path.join(install_dir, "aws-lambda-mock")
 
     def _install(self, target: InstallTarget) -> None:
         super()._install(target)
