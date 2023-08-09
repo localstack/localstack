@@ -166,7 +166,7 @@ pytestmark = markers.snapshot.skip_snapshot_verify(
 class TestLambdaBaseFeatures:
     @markers.snapshot.skip_snapshot_verify(paths=["$..LogResult"])
     @markers.aws.validated
-    def test_large_payloads(self, caplog, create_lambda_function, snapshot, aws_client):
+    def test_large_payloads(self, caplog, create_lambda_function, aws_client):
         """Testing large payloads sent to lambda functions (~5MB)"""
         # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
         caplog.set_level(logging.INFO)
@@ -178,12 +178,13 @@ class TestLambdaBaseFeatures:
             runtime=Runtime.python3_10,
         )
         large_value = "test123456" * 100 * 1000 * 5
-        snapshot.add_transformer(snapshot.transform.regex(large_value, "<large-value>"))
         payload = {"test": large_value}  # 5MB payload
         result = aws_client.lambda_.invoke(
             FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
         )
-        snapshot.match("invocation_response", result)
+        # do not use snapshots here - loading 5MB json takes ~14 sec
+        assert "FunctionError" not in result
+        assert payload == json.loads(to_str(result["Payload"].read()))
 
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,

@@ -105,6 +105,8 @@ class LambdaService:
         Stop the whole lambda service
         """
         shutdown_futures = []
+        for event_manager in self.event_managers.values():
+            shutdown_futures.append(self.task_executor.submit(event_manager.stop))
         for version_manager in self.lambda_running_versions.values():
             shutdown_futures.append(self.task_executor.submit(version_manager.stop))
         for version_manager in self.lambda_starting_versions.values():
@@ -123,6 +125,11 @@ class LambdaService:
         :param qualified_arn: Qualified arn for the version to stop
         """
         LOG.debug("Stopping version %s", qualified_arn)
+        event_manager = self.event_managers.pop(qualified_arn, None)
+        if not event_manager:
+            LOG.debug("Could not find event manager to stop for function %s...", qualified_arn)
+        else:
+            self.task_executor.submit(event_manager.stop)
         version_manager = self.lambda_running_versions.pop(
             qualified_arn, self.lambda_starting_versions.pop(qualified_arn, None)
         )
