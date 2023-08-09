@@ -107,7 +107,11 @@ class AssignmentService(OtherServiceEndpoint):
             )
 
     def stop_environments_for_version(self, function_version: FunctionVersion):
-        for env in self.environments.get(function_version.qualified_arn, {}).values():
+        # We have to materialize the list before iterating due to concurrency
+        environments_to_stop = list(
+            self.environments.get(function_version.qualified_arn, {}).values()
+        )
+        for env in environments_to_stop:
             self.stop_environment(env)
 
     def scale_provisioned_concurrency(
@@ -137,6 +141,7 @@ class AssignmentService(OtherServiceEndpoint):
             futures.append(self.provisioning_pool.submit(execution_environment.start))
         # 2) Kill all existing
         for env in current_provisioned_environments:
+            # TODO: think about concurrent updates while deleting a function
             futures.append(self.provisioning_pool.submit(self.stop_environment, env))
 
         return futures
