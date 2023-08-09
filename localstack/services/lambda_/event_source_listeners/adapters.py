@@ -22,6 +22,7 @@ from localstack.services.lambda_.lambda_utils import event_source_arn_matches
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.json import BytesEncoder
 from localstack.utils.strings import to_bytes, to_str
+from localstack.utils.threads import FuncThread
 
 LOG = logging.getLogger(__name__)
 
@@ -142,25 +143,23 @@ class EventSourceAsfAdapter(EventSourceAdapter):
         self.lambda_service = lambda_service
 
     def invoke(self, function_arn, context, payload, invocation_type, callback=None):
+        def _invoke(*args, **kwargs):
+            # split ARN ( a bit unnecessary since we build an ARN again in the service)
+            fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(function_arn).groupdict()
 
-        # split ARN ( a bit unnecessary since we build an ARN again in the service)
-        fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(function_arn).groupdict()
+            result = self.lambda_service.invoke(
+                # basically function ARN
+                function_name=fn_parts["function_name"],
+                qualifier=fn_parts["qualifier"],
+                region=fn_parts["region_name"],
+                account_id=fn_parts["account_id"],
+                invocation_type=invocation_type,
+                client_context=json.dumps(context or {}),
+                payload=to_bytes(json.dumps(payload or {}, cls=BytesEncoder)),
+                request_id=gen_amzn_requestid(),
+            )
 
-        ft = self.lambda_service.invoke(
-            # basically function ARN
-            function_name=fn_parts["function_name"],
-            qualifier=fn_parts["qualifier"],
-            region=fn_parts["region_name"],
-            account_id=fn_parts["account_id"],
-            invocation_type=invocation_type,
-            client_context=json.dumps(context or {}),
-            payload=to_bytes(json.dumps(payload or {}, cls=BytesEncoder)),
-            request_id=gen_amzn_requestid(),
-        )
-
-        if callback:
-
-            def mapped_callback(result: InvocationResult) -> None:
+            if callback:
                 try:
                     error = None
                     if result.is_error:
@@ -185,7 +184,8 @@ class EventSourceAsfAdapter(EventSourceAdapter):
                         error=e,
                     )
 
-            ft.add_done_callback(mapped_callback)
+        thread = FuncThread(_invoke)
+        thread.start()
 
     def invoke_with_statuscode(
         self,

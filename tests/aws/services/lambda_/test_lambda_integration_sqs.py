@@ -26,7 +26,7 @@ from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMB
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 LAMBDA_SQS_INTEGRATION_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_sqs_integration.py")
 LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE = os.path.join(
-    THIS_FOLDER, "functions", "lambda_sqs_batch_item_failure.py"
+    THIS_FOLDER, "functions/lambda_sqs_batch_item_failure.py"
 )
 
 
@@ -448,7 +448,7 @@ def test_report_batch_item_failures(
 ):
     """This test verifies the SQS Lambda integration feature Reporting batch item failures
     redrive policy, and the lambda is invoked the correct number of times. The test retries twice and the event
-    source mapping should then automatically move the message to the DQL, but not earlier (see
+    source mapping should then automatically move the message to the DLQ, but not earlier (see
     https://github.com/localstack/localstack/issues/5283)"""
 
     # create queue used in the lambda to send invocation results to (to verify lambda was invoked)
