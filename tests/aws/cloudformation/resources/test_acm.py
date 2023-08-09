@@ -17,7 +17,7 @@ Outputs:
 """
 
 
-@markers.parity.only_localstack
+@markers.aws.only_localstack
 def test_cfn_acm_certificate(deploy_cfn_template, aws_client):
     domain = f"domain-{short_uid()}.com"
     deploy_cfn_template(template=TEST_TEMPLATE, template_mapping={"domain": domain})

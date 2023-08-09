@@ -21,6 +21,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestGeneric:
+    @markers.aws.unknown
     def test_format_1(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -34,6 +35,7 @@ class TestGeneric:
             input_values,
         )
 
+    @markers.aws.unknown
     def test_format_2(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):

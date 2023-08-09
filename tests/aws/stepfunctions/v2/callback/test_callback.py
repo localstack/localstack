@@ -26,6 +26,7 @@ pytestmark = pytest.mark.skipif(
 )
 class TestCallback:
     @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
+    @markers.aws.unknown
     def test_sqs_wait_for_task_token(
         self,
         aws_client,
@@ -66,6 +67,7 @@ class TestCallback:
         )
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
+    @markers.aws.unknown
     def test_sqs_wait_for_task_token_timeout(
         self,
         aws_client,
@@ -104,6 +106,7 @@ class TestCallback:
         )
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
+    @markers.aws.unknown
     def test_sqs_failure_in_wait_for_task_token(
         self,
         aws_client,
@@ -144,6 +147,7 @@ class TestCallback:
         )
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
+    @markers.aws.unknown
     def test_sqs_wait_for_task_tok_with_heartbeat(
         self,
         aws_client,
@@ -184,6 +188,7 @@ class TestCallback:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_start_execution_sync(
         self,
         aws_client,
@@ -230,6 +235,7 @@ class TestCallback:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_start_execution_sync_delegate_failure(
         self,
         aws_client,
@@ -283,6 +289,7 @@ class TestCallback:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_start_execution_sync_delegate_timeout(
         self,
         aws_client,

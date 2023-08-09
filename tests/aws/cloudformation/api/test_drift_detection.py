@@ -6,7 +6,7 @@ from localstack.testing.pytest import markers
 
 
 @pytest.mark.skip(reason="Not implemented")
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_drift_detection_on_lambda(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     stack = deploy_cfn_template(

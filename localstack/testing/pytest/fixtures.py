@@ -1732,15 +1732,6 @@ def secondary_account_id(secondary_aws_client):
 
 
 @pytest.hookimpl
-def pytest_configure(config: Config):
-    # TODO: migrate towards "whitebox" or similar structure
-    config.addinivalue_line(
-        "markers",
-        "only_localstack: mark the test as incompatible with AWS / can't be run with AWS_CLOUD target",
-    )
-
-
-@pytest.hookimpl
 def pytest_collection_modifyitems(config: Config, items: list[Item]):
     only_localstack = pytest.mark.skipif(
         os.environ.get("TEST_TARGET") == "AWS_CLOUD",
@@ -1778,6 +1769,7 @@ def create_rest_apigw(aws_client_factory):
     def _create_apigateway_function(**kwargs):
         region_name = kwargs.pop("region_name", None)
         apigateway_client = aws_client_factory(region_name=region_name).apigateway
+        kwargs.setdefault("name", f"api-{short_uid()}")
 
         response = apigateway_client.create_rest_api(**kwargs)
         api_id = response.get("id")

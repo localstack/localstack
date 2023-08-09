@@ -1,8 +1,10 @@
 import os
 
+from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
+@markers.aws.unknown
 def test_domain(deploy_cfn_template, aws_client):
     name = f"domain-{short_uid()}"
 

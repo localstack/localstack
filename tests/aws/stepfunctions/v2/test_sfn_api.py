@@ -28,6 +28,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestSnfApi:
+    @markers.aws.unknown
     def test_create_delete_valid_sm(
         self,
         create_iam_role_for_sfn,
@@ -72,6 +73,7 @@ class TestSnfApi:
             "$..message",
         ]
     )
+    @markers.aws.unknown
     def test_create_delete_invalid_sm(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot
     ):
@@ -87,6 +89,7 @@ class TestSnfApi:
             create_state_machine(name=sm_name, definition=definition_str, roleArn=snf_role_arn)
         sfn_snapshot.match("invalid_definition_1", resource_not_found.value.response)
 
+    @markers.aws.unknown
     def test_delete_nonexistent_sm(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -110,6 +113,7 @@ class TestSnfApi:
         )
         sfn_snapshot.match("deletion_resp_1", deletion_resp_1)
 
+    @markers.aws.unknown
     def test_create_exact_duplicate_sm(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -149,6 +153,7 @@ class TestSnfApi:
         )
         sfn_snapshot.match("describe_resp_1_2", describe_resp_1_2)
 
+    @markers.aws.unknown
     def test_create_duplicate_definition_format_sm(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -176,6 +181,7 @@ class TestSnfApi:
             create_state_machine(name=sm_name, definition=definition_str_2, roleArn=snf_role_arn)
         sfn_snapshot.match("already_exists_1", resource_not_found.value.response)
 
+    @markers.aws.unknown
     def test_create_duplicate_sm_name(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -206,6 +212,7 @@ class TestSnfApi:
             create_state_machine(name=sm_name, definition=definition_str_2, roleArn=snf_role_arn)
         sfn_snapshot.match("already_exists_1", resource_not_found.value.response)
 
+    @markers.aws.unknown
     def test_list_sms(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -261,6 +268,7 @@ class TestSnfApi:
         lst_resp = aws_client.stepfunctions.list_state_machines()
         sfn_snapshot.match("lst_resp_del_end", lst_resp)
 
+    @markers.aws.unknown
     def test_start_execution(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -293,6 +301,7 @@ class TestSnfApi:
         exec_hist_resp = aws_client.stepfunctions.get_execution_history(executionArn=execution_arn)
         sfn_snapshot.match("exec_hist_resp", exec_hist_resp)
 
+    @markers.aws.unknown
     def test_invalid_start_execution_arn(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -320,6 +329,7 @@ class TestSnfApi:
         sfn_snapshot.match("start_exec_of_deleted", resource_not_found.value.response)
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
+    @markers.aws.unknown
     def test_invalid_start_execution_input(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -371,6 +381,7 @@ class TestSnfApi:
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(start_res_null, 2))
         sfn_snapshot.match("start_res_null", start_res_null)
 
+    @markers.aws.unknown
     def test_stop_execution(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):

@@ -33,6 +33,7 @@ def handler(event, context):
 
 
 @pytest.mark.parametrize("lambda_processor_enabled", [True, False])
+@markers.aws.unknown
 def test_firehose_http(
     aws_client, lambda_processor_enabled: bool, create_lambda_function, httpserver: HTTPServer
 ):
@@ -127,6 +128,7 @@ def test_firehose_http(
 
 class TestFirehoseIntegration:
     @markers.skip_offline
+    @markers.aws.unknown
     def test_kinesis_firehose_elasticsearch_s3_backup(
         self, s3_bucket, kinesis_create_stream, cleanups, aws_client
     ):
@@ -230,6 +232,7 @@ class TestFirehoseIntegration:
 
     @markers.skip_offline
     @pytest.mark.parametrize("opensearch_endpoint_strategy", ["domain", "path", "port"])
+    @markers.aws.unknown
     def test_kinesis_firehose_opensearch_s3_backup(
         self,
         s3_bucket,
@@ -341,6 +344,7 @@ class TestFirehoseIntegration:
             aws_client.firehose.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
             aws_client.opensearch.delete_domain(DomainName=domain_name)
 
+    @markers.aws.unknown
     def test_delivery_stream_with_kinesis_as_source(
         self, s3_bucket, kinesis_create_stream, cleanups, aws_client
     ):

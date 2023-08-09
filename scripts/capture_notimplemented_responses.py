@@ -73,6 +73,7 @@ def simulate_call(service: str, op: str) -> RowEntry:
     parameters = generate_request(op_model) or {}
     result = _make_api_call(client, service, op, parameters)
     error_msg = result.get("error_message", "")
+
     if result.get("error_code", "") == "InternalError":
         # some deeper investigation necessary, check for some common errors here and retry
         if service == "apigateway" and "Unexpected HTTP method" in error_msg:
@@ -133,7 +134,9 @@ def simulate_call(service: str, op: str) -> RowEntry:
                 else:
                     # keyword argument not found in the parameters
                     break
-
+    elif result.get("error_code", "") == "UnsupportedOperation" and service == "stepfunctions":
+        # the stepfunction lib returns 500 for not implemented + UnsupportedOperation
+        result["status_code"] = 501  # reflect that this is not implemented
     if result.get("status_code") in [0, 901, 902, 903]:
         # something went wrong, we do not know exactly what/why - just try again one more time
         logging.debug(

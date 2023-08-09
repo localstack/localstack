@@ -6,7 +6,7 @@ PUBLICATION_RETRIES = 20
 
 
 class TestNotifications:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_sqs_queue_names(self, aws_client):
         queue_name = f"{short_uid()}.fifo"
 
@@ -19,6 +19,7 @@ class TestNotifications:
         finally:
             aws_client.sqs.delete_queue(QueueUrl=queue["QueueUrl"])
 
+    @markers.aws.unknown
     def test_sns_to_sqs(
         self, sqs_create_queue, sns_create_topic, sqs_receive_num_messages, aws_client
     ):

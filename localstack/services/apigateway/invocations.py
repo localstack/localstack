@@ -14,7 +14,7 @@ from localstack.services.apigateway.helpers import (
     ModelResolver,
     extract_path_params,
     extract_query_string_params,
-    get_apigateway_store,
+    get_apigateway_store_for_invocation,
     get_cors_response,
     make_error_response,
     select_integration_response,
@@ -57,9 +57,7 @@ class RequestValidator:
 
     def __init__(self, context: ApiInvocationContext, store: ApiGatewayStore = None):
         self.context = context
-        store = store or get_apigateway_store(
-            account_id=context.account_id, region=context.region_name
-        )
+        store = store or get_apigateway_store_for_invocation(context=context)
         if not (container := store.rest_apis.get(context.api_id)):
             # TODO: find the right exception
             raise NotFound()

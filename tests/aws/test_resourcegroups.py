@@ -1,9 +1,11 @@
 import json
 
+from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
 
 class TestResourceGroups:
+    @markers.aws.unknown
     def test_create_group(self, aws_client):
         resource_group_client = aws_client.resource_groups
         name = "resource_group-{}".format(short_uid())
