@@ -412,7 +412,7 @@ def resourcegroupstaggingapi():
 
 @aws_provider(api="resource-groups")
 def resource_groups():
-    from localstack.services.resourcegroups.provider import ResourceGroupsProvider
+    from localstack.services.resource_groups.provider import ResourceGroupsProvider
 
     provider = ResourceGroupsProvider()
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
