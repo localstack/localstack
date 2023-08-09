@@ -91,8 +91,6 @@ TEST_LAMBDA_INVOCATION_TYPE = os.path.join(THIS_FOLDER, "functions/lambda_invoca
 TEST_LAMBDA_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_version.py")
 TEST_LAMBDA_CONTEXT_REQID = os.path.join(THIS_FOLDER, "functions/lambda_context.py")
 
-TEST_GOLANG_LAMBDA_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/example-handler-{os}-{arch}.tar.gz"
-
 # TODO: arch conditional should only apply in CI because it prevents test execution in multi-arch environments
 PYTHON_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["python"]
