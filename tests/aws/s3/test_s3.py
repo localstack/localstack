@@ -5982,6 +5982,7 @@ class TestS3PresignedUrl:
         )
 
         # AWS seems to detected what kind of signature is missing from the policy fields
+        print(response.content)
         exception = xmltodict.parse(response.content)
         exception["StatusCode"] = response.status_code
         snapshot.match("exception-missing-signature", exception)
