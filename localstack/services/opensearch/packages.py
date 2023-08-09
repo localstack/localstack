@@ -117,7 +117,7 @@ class OpensearchPackageInstaller(PackageInstaller):
         # create & copy SSL certs to opensearch config dir
         install_predefined_cert_if_available()
         config_path = os.path.join(install_dir, "config")
-        _, cert_file_name, key_file_name = create_ssl_cert()
+        _, cert_file_name, key_file_name = create_ssl_cert(additional_sans=config.ADDITIONAL_SANS)
         shutil.copyfile(cert_file_name, os.path.join(config_path, "cert.crt"))
         shutil.copyfile(key_file_name, os.path.join(config_path, "cert.key"))
 

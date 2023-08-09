@@ -3,9 +3,12 @@ import re
 import threading
 import time
 import unittest
+from ipaddress import IPv4Address
 from unittest.mock import MagicMock
 
 import pytest
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
 
 from localstack.utils.collections import is_none_or_empty
 from localstack.utils.crypto import (
@@ -250,6 +253,45 @@ def test_generate_ssl_cert():
         target_file=new_tmp_file(), overwrite=True
     )
     _assert(load_file(cert_file_name), load_file(key_file_name))
+
+    # clean up
+    rm_rf(cert_file_name)
+    rm_rf(key_file_name)
+
+
+def test_generate_ssl_cert_with_additional_sans():
+    additional_dns_names = ["example.com", "foo.example.com"]
+
+    def _assert(cert, key):
+        # assert that file markers are in place
+        assert PEM_CERT_START in cert
+        assert PEM_CERT_END in cert
+        assert re.match(PEM_KEY_START_REGEX, key.replace("\n", " "))
+        assert re.match(rf".*{PEM_KEY_END_REGEX}", key.replace("\n", " "))
+
+    # generate cert and get content directly
+    cert = generate_ssl_cert(additional_sans=", ".join(additional_dns_names))
+    _assert(cert, cert)
+
+    # generate cert to file and load content from there
+    target_file, cert_file_name, key_file_name = generate_ssl_cert(
+        target_file=new_tmp_file(), overwrite=True
+    )
+    _assert(load_file(cert_file_name), load_file(key_file_name))
+
+    # verify the SANs with `cryptography`
+    loaded_cert = x509.load_pem_x509_certificate(cert.encode("utf8"), default_backend())
+    san = loaded_cert.extensions.get_extension_for_class(x509.SubjectAlternativeName)
+    san_dns_names = san.value.get_values_for_type(x509.DNSName)
+    for name in additional_dns_names + [
+        "test.localhost.atlassian.io",
+        "localhost.localstack.cloud",
+        "localhost",
+    ]:
+        assert name in san_dns_names
+
+    san_ip_addresses = san.value.get_values_for_type(x509.IPAddress)
+    assert IPv4Address("127.0.0.1") in san_ip_addresses
 
     # clean up
     rm_rf(cert_file_name)

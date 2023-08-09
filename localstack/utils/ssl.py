@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Optional
 
 from localstack import config
 from localstack.constants import API_ENDPOINT, SSL_CERT_URL, SSL_CERT_URL_FALLBACK
@@ -18,6 +19,9 @@ def install_predefined_cert_if_available():
     try:
         if config.SKIP_SSL_CERT_DOWNLOAD:
             LOG.debug("Skipping download of local SSL cert, as SKIP_SSL_CERT_DOWNLOAD=1")
+            return
+        if config.ADDITIONAL_SANS:
+            LOG.debug("Skipping download of local SSL cert, as ADDITIONAL_SANS is set")
             return
         setup_ssl_cert()
     except Exception:
@@ -62,6 +66,8 @@ def get_cert_pem_file_path():
     return config.CUSTOM_SSL_CERT_PATH or os.path.join(config.dirs.cache, _SERVER_CERT_PEM_FILE)
 
 
-def create_ssl_cert(serial_number=None):
+def create_ssl_cert(serial_number=None, additional_sans: Optional[str] = None):
     cert_pem_file = get_cert_pem_file_path()
-    return generate_ssl_cert(cert_pem_file, serial_number=serial_number)
+    return generate_ssl_cert(
+        cert_pem_file, serial_number=serial_number, additional_sans=additional_sans
+    )
