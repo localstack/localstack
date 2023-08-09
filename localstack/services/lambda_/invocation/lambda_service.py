@@ -566,7 +566,7 @@ def store_lambda_archive(
         )
     # store all buckets in us-east-1 for now
     s3_client = connect_to(region_name=AWS_REGION_US_EAST_1, aws_access_key_id=BUCKET_ACCOUNT).s3
-    bucket_name = f"awslambda-{region_name}-tasks"
+    bucket_name = f"lambda-{region_name}-tasks"
     # s3 create bucket is idempotent
     s3_client.create_bucket(Bucket=bucket_name)
     code_id = f"{function_name}-{uuid.uuid4()}"
