@@ -108,10 +108,10 @@ class TestIntegration:
             DeliveryStreamName=stream_name, Record={"Data": to_bytes(test_data)}
         )
         # check records in target bucket
-        all_objects = testutil.list_all_s3_objects()
+        all_objects = testutil.list_all_s3_objects(aws_client.s3)
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
         # check file layout in target bucket
-        all_objects = testutil.map_all_s3_objects(buckets=[bucket_name])
+        all_objects = testutil.map_all_s3_objects(buckets=[bucket_name], s3_client=aws_client.s3)
         for key in all_objects.keys():
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
@@ -145,10 +145,10 @@ class TestIntegration:
             DeliveryStreamName=stream_name, Record={"Data": to_bytes(test_data)}
         )
         # check records in target bucket
-        all_objects = testutil.list_all_s3_objects()
+        all_objects = testutil.list_all_s3_objects(aws_client.s3)
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
         # check file layout in target bucket
-        all_objects = testutil.map_all_s3_objects(buckets=[bucket_name])
+        all_objects = testutil.map_all_s3_objects(buckets=[bucket_name], s3_client=aws_client.s3)
         for key in all_objects.keys():
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
@@ -197,7 +197,7 @@ class TestIntegration:
 
         # check records in target bucket
         def _assert_objects_created():
-            all_objects = testutil.list_all_s3_objects()
+            all_objects = testutil.list_all_s3_objects(aws_client.s3)
             testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
 
         retry(_assert_objects_created, sleep=1, retries=4)
@@ -587,7 +587,7 @@ def test_kinesis_lambda_forward_chain(
 
     def check_results():
         LOGGER.debug("check results")
-        all_objects = testutil.list_all_s3_objects()
+        all_objects = testutil.list_all_s3_objects(aws_client.s3)
         testutil.assert_objects(test_data, all_objects)
 
     # check results
