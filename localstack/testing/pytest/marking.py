@@ -66,12 +66,12 @@ class Markers:
 
 @pytest.hookimpl
 def pytest_collection_modifyitems(
-    session: pytest.Session, config: Any, items: list[pytest.Item]
+    session: pytest.Session, config: Any, items: List[pytest.Item]
 ) -> None:
     """Enforce that each test has exactly one"""
     marker_errors = []
     for item in items:
-        # TODO: we should only concern ourselves with tests in tests/aws/
+        # we should only concern ourselves with tests in tests/aws/
         if "tests/aws" not in item.fspath.dirname:
             continue
 
