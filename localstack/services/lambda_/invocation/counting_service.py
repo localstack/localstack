@@ -103,14 +103,11 @@ class CountingService:
         # TODO: write a test with reserved concurrency=0 (or unavailble) and an async invoke
         # TODO: write a test for reserved concurrency scheduling preference
 
-        # TODO: fix locking => currently locks during yield !!!
-        # with scoped_tracker.lock:
         # Tracker:
         # * per function version for provisioned concurrency
         # * per function for on-demand
         # => we can derive unreserved_concurrent_executions but could also consider a dedicated (redundant) counter
 
-        # 1) Check for free provisioned concurrency
         # NOTE: potential challenge if an update happens in between reserving the lease here and actually assigning
         # * Increase provisioned: It could happen that we give a lease for provisioned-concurrency although
         # brand new provisioned environments are not yet initialized.
@@ -118,109 +115,93 @@ class CountingService:
         # against the limit but they are not because we already updated the concurrency config to fewer envs.
         # TODO: check that we don't give a lease while updating provisioned concurrency
 
-        # Locking design:
-
-        # with LOCK
-        #   decide which lease_type
-        #   get lease
-
-        # yield lease
-
-        # with LOCK
-        #   give up lease (depending on lease_type)
-
-        # LOCK
-        provisioned_concurrency_config = function.provisioned_concurrency_configs.get(
-            function_version.id.qualifier
-        )
-        if provisioned_concurrency_config:
-            available_provisioned_concurrency = (
-                provisioned_concurrency_config.provisioned_concurrent_executions
-                - provisioned_scoped_tracker.function_concurrency[qualified_arn]
+        lease_type = None
+        with scoped_tracker.lock:
+            # 1) Check for free provisioned concurrency
+            provisioned_concurrency_config = function.provisioned_concurrency_configs.get(
+                function_version.id.qualifier
             )
-            if available_provisioned_concurrency > 0:
-                provisioned_scoped_tracker.function_concurrency[qualified_arn] += 1
-                try:
-                    # UNLOCK
-                    yield "provisioned-concurrency"
-                finally:
-                    # LOCK
-                    provisioned_scoped_tracker.function_concurrency[qualified_arn] -= 1
-                    # UNLOCK
-                return
-
-        # 2) reserved concurrency set => reserved concurrent executions only limited by local function limit
-        if function.reserved_concurrent_executions is not None:
-            on_demand_running_invocation_count = scoped_tracker.function_concurrency[
-                unqualified_function_arn
-            ]
-            available_reserved_concurrency = (
-                function.reserved_concurrent_executions
-                - CountingService._calculate_provisioned_concurrency_sum(function)
-                - on_demand_running_invocation_count
-            )
-            if available_reserved_concurrency:
-                scoped_tracker.function_concurrency[unqualified_function_arn] += 1
-                try:
-                    # UNLOCK
-                    yield "on-demand"
-                finally:
-                    # LOCK
-                    scoped_tracker.function_concurrency[unqualified_function_arn] -= 1
-                    # UNLOCK
-                return
-            else:
-                # UNLOCK
-                raise TooManyRequestsException(
-                    "Rate Exceeded.",
-                    Reason="ReservedFunctionConcurrentInvocationLimitExceeded",
-                    Type="User",
+            if provisioned_concurrency_config:
+                available_provisioned_concurrency = (
+                    provisioned_concurrency_config.provisioned_concurrent_executions
+                    - provisioned_scoped_tracker.function_concurrency[qualified_arn]
                 )
-        # 3) no reserved concurrency set. => consider account/region-global state instead
-        else:
-            # TODO: find better name (maybe check AWS docs ;) => unavailable_concurrency
-            total_used_concurrency = 0
-            store = lambda_stores[account][region]
-            for fn in store.functions.values():
-                if fn.reserved_concurrent_executions is not None:
-                    total_used_concurrency += fn.reserved_concurrent_executions
-                else:
-                    fn_provisioned_concurrency = (
-                        CountingService._calculate_provisioned_concurrency_sum(fn)
-                    )
-                    total_used_concurrency += fn_provisioned_concurrency
-                    fn_on_demand_running_invocations = scoped_tracker.function_concurrency[
-                        fn.latest().id.unqualified_arn()
+                if available_provisioned_concurrency > 0:
+                    provisioned_scoped_tracker.function_concurrency[qualified_arn] += 1
+                    lease_type = "provisioned-concurrency"
+
+            if not lease_type:
+                # 2) reserved concurrency set => reserved concurrent executions only limited by local function limit
+                #    and no provisioned concurrency available
+                if function.reserved_concurrent_executions is not None:
+                    on_demand_running_invocation_count = scoped_tracker.function_concurrency[
+                        unqualified_function_arn
                     ]
-                    total_used_concurrency += fn_on_demand_running_invocations
+                    available_reserved_concurrency = (
+                        function.reserved_concurrent_executions
+                        - CountingService._calculate_provisioned_concurrency_sum(function)
+                        - on_demand_running_invocation_count
+                    )
+                    if available_reserved_concurrency:
+                        scoped_tracker.function_concurrency[unqualified_function_arn] += 1
+                        lease_type = "on-demand"
+                    else:
+                        raise TooManyRequestsException(
+                            "Rate Exceeded.",
+                            Reason="ReservedFunctionConcurrentInvocationLimitExceeded",
+                            Type="User",
+                        )
+                # 3) no reserved concurrency set and no provisioned concurrency available.
+                #    => consider account/region-global state instead
+                else:
+                    # TODO: find better name (maybe check AWS docs ;) => unavailable_concurrency
+                    total_used_concurrency = 0
+                    store = lambda_stores[account][region]
+                    for fn in store.functions.values():
+                        if fn.reserved_concurrent_executions is not None:
+                            total_used_concurrency += fn.reserved_concurrent_executions
+                        else:
+                            fn_provisioned_concurrency = (
+                                CountingService._calculate_provisioned_concurrency_sum(fn)
+                            )
+                            total_used_concurrency += fn_provisioned_concurrency
+                            fn_on_demand_running_invocations = scoped_tracker.function_concurrency[
+                                fn.latest().id.unqualified_arn()
+                            ]
+                            total_used_concurrency += fn_on_demand_running_invocations
 
-            available_unreserved_concurrency = (
-                config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS - total_used_concurrency
-            )
-            if available_unreserved_concurrency > 0:
-                scoped_tracker.function_concurrency[unqualified_function_arn] += 1
-                try:
-                    # UNLOCK
-                    yield "on-demand"
-                finally:
-                    # LOCK
+                    available_unreserved_concurrency = (
+                        config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS - total_used_concurrency
+                    )
+                    if available_unreserved_concurrency > 0:
+                        scoped_tracker.function_concurrency[unqualified_function_arn] += 1
+                        lease_type = "on-demand"
+                    else:
+                        if available_unreserved_concurrency < 0:
+                            LOG.error(
+                                "Invalid function concurrency state detected for function: %s | available unreserved concurrency: %d",
+                                unqualified_function_arn,
+                                available_unreserved_concurrency,
+                            )
+                        raise TooManyRequestsException(
+                            "Rate Exceeded.",
+                            Reason="ReservedFunctionConcurrentInvocationLimitExceeded",
+                            Type="User",
+                        )
+        try:
+            yield lease_type
+        finally:
+            with scoped_tracker.lock:
+                if lease_type == "provisioned-concurrency":
+                    provisioned_scoped_tracker.function_concurrency[qualified_arn] -= 1
+                elif lease_type == "on-demand":
                     scoped_tracker.function_concurrency[unqualified_function_arn] -= 1
-                    # UNLOCK
-                return
-            elif available_unreserved_concurrency == 0:
-                # UNLOCK
-                raise TooManyRequestsException(
-                    "Rate Exceeded.",
-                    Reason="ReservedFunctionConcurrentInvocationLimitExceeded",
-                    Type="User",
-                )
-            else:  # sanity check for available_unreserved_concurrency < 0
-                # UNLOCK
-                LOG.warning(
-                    "Invalid function concurrency state detected for function: %s | available unreserved concurrency: %d",
-                    unqualified_function_arn,
-                    available_unreserved_concurrency,
-                )
+                else:
+                    LOG.error(
+                        "Invalid lease type detected for function: %s: %s",
+                        unqualified_function_arn,
+                        lease_type,
+                    )
 
     # TODO: refactor into module
     @staticmethod

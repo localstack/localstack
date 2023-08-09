@@ -128,6 +128,9 @@ class Poller:
             )
 
     def stop(self):
+        LOG.debug(
+            "Shutting down event poller %s", self.version_manager.function_version.qualified_arn
+        )
         self._shutdown_event.set()
         self.invoker_pool.shutdown(cancel_futures=True)
 
@@ -403,6 +406,11 @@ class LambdaEventManager:
         self.poller_thread.start()
 
     def stop(self) -> None:
-        self.poller.stop()
-        sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
-        sqs_client.delete_queue(QueueUrl=self.event_queue_url)
+        LOG.debug("Stopping event manager %s", self.version_manager.function_version.qualified_arn)
+        if self.poller:
+            self.poller.stop()
+            self.poller = None
+        if self.event_queue_url:
+            sqs_client = connect_to(aws_access_key_id=INTERNAL_RESOURCE_ACCOUNT).sqs
+            sqs_client.delete_queue(QueueUrl=self.event_queue_url)
+            self.event_queue_url = None

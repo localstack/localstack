@@ -414,22 +414,6 @@
       }
     }
   },
-  "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_large_payloads": {
-    "recorded-date": "02-05-2023, 16:51:29",
-    "recorded-content": {
-      "invocation_response": {
-        "ExecutedVersion": "$LATEST",
-        "Payload": {
-          "test": "<large-value>"
-        },
-        "StatusCode": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_invocation_with_logs[python3.9]": {
     "recorded-date": "17-02-2023, 14:01:27",
     "recorded-content": {
