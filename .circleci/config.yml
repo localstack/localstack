@@ -71,6 +71,9 @@ jobs:
       - run:
           name: Linting
           command: make lint
+      - run:
+          name: Checking AWS compatibility markers
+          command: make check-aws-markers
 
   unit-tests:
     executor: ubuntu-machine-amd64

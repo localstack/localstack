@@ -2272,8 +2272,7 @@ class TestSNSProvider:
         # binary payload in base64 encoded by AWS, UTF-8 for JSON
         # https://docs.aws.amazon.com/sns/latest/api/API_MessageAttributeValue.html
 
-    @markers.aws.only_localstack
-    @markers.aws.validated
+    @markers.aws.only_localstack  # TODO: clarify
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     def test_subscribe_external_http_endpoint(
         self, sns_create_http_endpoint, raw_message_delivery, aws_client, snapshot

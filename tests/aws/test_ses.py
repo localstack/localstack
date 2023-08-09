@@ -348,8 +348,7 @@ class TestSES:
         assert original_rule_set["Rules"] == rule_set["Rules"]
         assert [x["Name"] for x in rule_set["Rules"]] == rule_names
 
-    @markers.aws.only_localstack
-    @markers.aws.validated
+    @markers.aws.only_localstack  # TODO: clarify
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Message.delivery.processingTimeMillis",
@@ -429,8 +428,7 @@ class TestSES:
         messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
 
-    @markers.aws.only_localstack
-    @markers.aws.validated
+    @markers.aws.only_localstack  # TODO: clarify
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Message.delivery.processingTimeMillis",
@@ -510,8 +508,7 @@ class TestSES:
         messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
 
-    @markers.aws.only_localstack
-    @markers.aws.validated
+    @markers.aws.only_localstack  # TODO: clarify
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Message.delivery.processingTimeMillis",
