@@ -504,7 +504,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             table_description.update(table_content)
 
         if "StreamSpecification" in table_definitions:
-            create_dynamodb_stream(table_definitions, table_description.get("LatestStreamLabel"))
+            create_dynamodb_stream(
+                context.account_id,
+                context.region,
+                table_definitions,
+                table_description.get("LatestStreamLabel"),
+            )
 
         if "TableClass" in table_definitions:
             table_class = table_description.pop("TableClass", None) or table_definitions.pop(
@@ -534,7 +539,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         table_arn = result.get("TableDescription", {}).get("TableArn")
         table_arn = self.fix_table_arn(table_arn)
-        dynamodbstreams_api.delete_streams(table_arn)
+        dynamodbstreams_api.delete_streams(context.account_id, context.region, table_arn)
 
         store = get_store(context.account_id, context.region)
         store.TABLE_TAGS.pop(table_arn, None)
@@ -659,7 +664,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # TODO: DDB streams must also be created for replicas
         if update_table_input.get("StreamSpecification"):
             create_dynamodb_stream(
-                update_table_input, result["TableDescription"].get("LatestStreamLabel")
+                context.account_id,
+                context.region,
+                update_table_input,
+                result["TableDescription"].get("LatestStreamLabel"),
             )
 
         return result
@@ -1652,13 +1660,15 @@ def has_event_sources_or_streams_enabled(table_name: str, cache: Dict = None):
     if not table_name:
         return
     table_arn = arns.dynamodb_table_arn(table_name)
+    account_id = extract_account_id_from_arn(table_arn)
+    region_name = extract_region_from_arn(table_arn)
     cached = cache.get(table_arn)
     if isinstance(cached, bool):
         return cached
     lambda_client = connect_to().awslambda
-    sources = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)[
-        "EventSourceMappings"
-    ]
+    sources = lambda_client.list_event_source_mappings(
+        account_id, region_name, EventSourceArn=table_arn
+    )["EventSourceMappings"]
     result = False
     if sources:
         result = True
@@ -1669,8 +1679,6 @@ def has_event_sources_or_streams_enabled(table_name: str, cache: Dict = None):
     # get table name from table_arn
     # since batch_write and transact write operations passing table_arn instead of table_name
     table_name = table_arn.split("/", 1)[-1]
-    account_id = extract_account_id_from_arn(table_arn)
-    region_name = extract_region_from_arn(table_arn)
     table_definitions: Dict = get_store(account_id, region_name).table_definitions
     if not result and table_definitions.get(table_name):
         if table_definitions[table_name].get("KinesisDataStreamDestinationStatus") == "ACTIVE":
@@ -1739,7 +1747,7 @@ def get_updated_records(table_name: str, existing_items: List) -> List:
     return result
 
 
-def create_dynamodb_stream(data, latest_stream_label):
+def create_dynamodb_stream(account_id: str, region_name: str, data, latest_stream_label):
     stream = data["StreamSpecification"]
     enabled = stream.get("StreamEnabled")
 
@@ -1748,6 +1756,8 @@ def create_dynamodb_stream(data, latest_stream_label):
         view_type = stream["StreamViewType"]
 
         dynamodbstreams_api.add_dynamodb_stream(
+            account_id=account_id,
+            region_name=region_name,
             table_name=table_name,
             latest_stream_label=latest_stream_label,
             view_type=view_type,
