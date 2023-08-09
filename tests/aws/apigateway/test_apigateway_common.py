@@ -547,6 +547,8 @@ class TestStages:
                 {"op": "replace", "path": "/description", "value": "stage new"},
                 {"op": "replace", "path": "/variables/var1", "value": "test"},
                 {"op": "replace", "path": "/variables/var2", "value": "test2"},
+                {"op": "replace", "path": "/*/*/throttling/burstLimit", "value": "123"},
+                {"op": "replace", "path": "/*/*/caching/enabled", "value": "true"},
             ],
         )
         snapshot.match("update-stage", response)
