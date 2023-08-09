@@ -1679,7 +1679,7 @@
     }
   },
   "tests/aws/s3/test_s3.py::TestS3::test_multipart_copy_object_etag": {
-    "recorded-date": "03-08-2023, 04:17:57",
+    "recorded-date": "10-08-2023, 01:22:44",
     "recorded-content": {
       "multipart-upload": {
         "Bucket": "<bucket:1>",
@@ -1693,6 +1693,17 @@
         }
       },
       "copy-object": {
+        "CopyObjectResult": {
+          "ETag": "\"eee506dd7ada7ded524c77e359a0e7c6\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-in-place": {
         "CopyObjectResult": {
           "ETag": "\"eee506dd7ada7ded524c77e359a0e7c6\"",
           "LastModified": "datetime"
@@ -9475,6 +9486,172 @@
         }
       },
       "put-object-legal-hold-off": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_get_object_preconditions[get_object]": {
+    "recorded-date": "10-08-2023, 01:14:32",
+    "recorded-content": {
+      "precondition-if-match": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "precondition-if-unmodified-since": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-Unmodified-Since",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "precondition-if-none-match": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
+      "copy-precondition-if-modified-since": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
+      "obj-ignore-future-modified-since": {
+        "AcceptRanges": "bytes",
+        "Body": "data",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "etag-missing-quotes": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
+      "obj-success": {
+        "AcceptRanges": "bytes",
+        "Body": "data",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_get_object_preconditions[head_object]": {
+    "recorded-date": "10-08-2023, 01:14:38",
+    "recorded-content": {
+      "precondition-if-match": {
+        "Error": {
+          "Code": "412",
+          "Message": "Precondition Failed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "precondition-if-unmodified-since": {
+        "Error": {
+          "Code": "412",
+          "Message": "Precondition Failed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "precondition-if-none-match": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
+      "copy-precondition-if-modified-since": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
+      "obj-ignore-future-modified-since": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "etag-missing-quotes": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
+      "obj-success": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

@@ -90,10 +90,16 @@ class S3StoredObject(abc.ABC, Iterable[bytes]):
     def seek(self, offset: int, whence: int = 0) -> int:
         pass
 
+    @property
     @abc.abstractmethod
     def checksum(self) -> Optional[str]:
         if not self.s3_object.checksum_algorithm:
             return None
+
+    @property
+    @abc.abstractmethod
+    def etag(self) -> str:
+        pass
 
     @abc.abstractmethod
     def __iter__(self) -> Iterator[bytes]:
