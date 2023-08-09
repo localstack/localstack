@@ -117,6 +117,19 @@ class CountingService:
         # * Decrease provisioned: It could happen that we have running invocations that should still be counted
         # against the limit but they are not because we already updated the concurrency config to fewer envs.
         # TODO: check that we don't give a lease while updating provisioned concurrency
+
+        # Locking design:
+
+        # with LOCK
+        #   decide which lease_type
+        #   get lease
+
+        # yield lease
+
+        # with LOCK
+        #   give up lease (depending on lease_type)
+
+        # LOCK
         provisioned_concurrency_config = function.provisioned_concurrency_configs.get(
             function_version.id.qualifier
         )
@@ -128,9 +141,12 @@ class CountingService:
             if available_provisioned_concurrency > 0:
                 provisioned_scoped_tracker.function_concurrency[qualified_arn] += 1
                 try:
+                    # UNLOCK
                     yield "provisioned-concurrency"
                 finally:
+                    # LOCK
                     provisioned_scoped_tracker.function_concurrency[qualified_arn] -= 1
+                    # UNLOCK
                 return
 
         # 2) reserved concurrency set => reserved concurrent executions only limited by local function limit
@@ -146,11 +162,15 @@ class CountingService:
             if available_reserved_concurrency:
                 scoped_tracker.function_concurrency[unqualified_function_arn] += 1
                 try:
+                    # UNLOCK
                     yield "on-demand"
                 finally:
+                    # LOCK
                     scoped_tracker.function_concurrency[unqualified_function_arn] -= 1
+                    # UNLOCK
                 return
             else:
+                # UNLOCK
                 raise TooManyRequestsException(
                     "Rate Exceeded.",
                     Reason="ReservedFunctionConcurrentInvocationLimitExceeded",
@@ -180,17 +200,22 @@ class CountingService:
             if available_unreserved_concurrency > 0:
                 scoped_tracker.function_concurrency[unqualified_function_arn] += 1
                 try:
+                    # UNLOCK
                     yield "on-demand"
                 finally:
+                    # LOCK
                     scoped_tracker.function_concurrency[unqualified_function_arn] -= 1
+                    # UNLOCK
                 return
             elif available_unreserved_concurrency == 0:
+                # UNLOCK
                 raise TooManyRequestsException(
                     "Rate Exceeded.",
                     Reason="ReservedFunctionConcurrentInvocationLimitExceeded",
                     Type="User",
                 )
             else:  # sanity check for available_unreserved_concurrency < 0
+                # UNLOCK
                 LOG.warning(
                     "Invalid function concurrency state detected for function: %s | available unreserved concurrency: %d",
                     unqualified_function_arn,
