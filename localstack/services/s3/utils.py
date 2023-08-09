@@ -683,7 +683,7 @@ def parse_expiration_header(
         return None, None
 
 
-def validate_dict_fields(data: dict, required_fields: set, optional_fields: set):
+def validate_dict_fields(data: dict, required_fields: set, optional_fields: set = None):
     """
     Validate whether the `data` dict contains at least the required fields and not more than the union of the required
     and optional fields
@@ -694,6 +694,8 @@ def validate_dict_fields(data: dict, required_fields: set, optional_fields: set)
     :param optional_fields: a set containing the optional fields
     :return: bool, whether the dict is valid or not
     """
+    if optional_fields is None:
+        optional_fields = set()
     return (set_fields := set(data)) >= required_fields and set_fields <= (
         required_fields | optional_fields
     )
@@ -763,3 +765,21 @@ def get_unique_key_id(
     bucket: BucketName, object_key: ObjectKey, version_id: ObjectVersionId
 ) -> str:
     return f"{bucket}/{object_key}/{version_id or 'null'}"
+
+
+def get_retention_from_now(days: int = None, years: int = None) -> datetime.datetime:
+    """
+    This calculates a retention date from now, adding days or years to it
+    :param days: provided days
+    :param years: provided years, exclusive with days
+    :return: return a datetime object
+    """
+    if not days and not years:
+        raise ValueError("Either 'days' or 'years' needs to be provided")
+    now = datetime.datetime.now(tz=ZoneInfo("GMT"))
+    if days:
+        retention = now + datetime.timedelta(days=days)
+    else:
+        retention = now.replace(year=now.year + years)
+
+    return retention

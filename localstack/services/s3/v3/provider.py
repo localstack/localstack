@@ -12,6 +12,7 @@ from localstack.aws.api.s3 import (
     MFA,
     AbortMultipartUploadOutput,
     AccessControlPolicy,
+    AccessDenied,
     AccountId,
     AnalyticsConfiguration,
     AnalyticsId,
@@ -65,8 +66,11 @@ from localstack.aws.api.s3 import (
     GetObjectAttributesOutput,
     GetObjectAttributesParts,
     GetObjectAttributesRequest,
+    GetObjectLegalHoldOutput,
+    GetObjectLockConfigurationOutput,
     GetObjectOutput,
     GetObjectRequest,
+    GetObjectRetentionOutput,
     GetObjectTaggingOutput,
     GrantFullControl,
     GrantRead,
@@ -113,6 +117,13 @@ from localstack.aws.api.s3 import (
     Object,
     ObjectIdentifier,
     ObjectKey,
+    ObjectLockConfiguration,
+    ObjectLockConfigurationNotFoundError,
+    ObjectLockEnabled,
+    ObjectLockLegalHold,
+    ObjectLockMode,
+    ObjectLockRetention,
+    ObjectLockToken,
     ObjectVersion,
     ObjectVersionId,
     ObjectVersionStorageClass,
@@ -120,8 +131,11 @@ from localstack.aws.api.s3 import (
     Part,
     PartNumberMarker,
     Prefix,
+    PutObjectLegalHoldOutput,
+    PutObjectLockConfigurationOutput,
     PutObjectOutput,
     PutObjectRequest,
+    PutObjectRetentionOutput,
     PutObjectTaggingOutput,
     RequestPayer,
     RestoreObjectOutput,
@@ -153,10 +167,12 @@ from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.constants import ARCHIVES_STORAGE_CLASSES, DEFAULT_BUCKET_ENCRYPTION
 from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
 from localstack.services.s3.exceptions import (
+    InvalidBucketState,
     InvalidLocationConstraint,
     InvalidRequest,
     MalformedXML,
     NoSuchConfiguration,
+    NoSuchObjectLockConfiguration,
 )
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
 from localstack.services.s3.utils import (
@@ -168,18 +184,21 @@ from localstack.services.s3.utils import (
     get_kms_key_arn,
     get_lifecycle_rule_from_object,
     get_owner_for_account_id,
+    get_retention_from_now,
     get_system_metadata_from_request,
     get_unique_key_id,
     is_bucket_name_valid,
     parse_range_header,
     parse_tagging_header,
     serialize_expiration_header,
+    validate_dict_fields,
     validate_kms_key_id,
     validate_tag_set,
 )
 from localstack.services.s3.v3.models import (
     BucketCorsIndex,
     EncryptionParameters,
+    ObjectLockParameters,
     S3Bucket,
     S3DeleteMarker,
     S3Multipart,
@@ -464,15 +483,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         #  grant_write_acp: GrantWriteACP = None,
         #  -
         #  request_payer: RequestPayer = None,
-        #  object_lock_mode: ObjectLockMode = None,
-        #  object_lock_retain_until_date: ObjectLockRetainUntilDate = None,
-        #  object_lock_legal_hold_status: ObjectLockLegalHoldStatus = None,
         bucket_name = request["Bucket"]
         store, s3_bucket = self._get_cross_account_bucket(context, bucket_name)
 
-        if (
-            storage_class := request.get("StorageClass")
-        ) is not None and storage_class not in STORAGE_CLASSES:
+        if (storage_class := request.get("StorageClass")) is not None and (
+            storage_class not in STORAGE_CLASSES or storage_class == StorageClass.OUTPOSTS
+        ):
             raise InvalidStorageClass(
                 "The storage class you specified is not valid", StorageClassRequested=storage_class
             )
@@ -497,8 +513,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
             body = AwsChunkedDecoder(body, decoded_content_length)
 
-        # TODO check if key already exist, and if it is locked with LegalHold? so we don't override it if protected
-
         version_id = generate_version_id(s3_bucket.versioning_status)
 
         checksum_algorithm = request.get("ChecksumAlgorithm")
@@ -512,6 +526,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             store,
         )
 
+        lock_parameters = get_object_lock_parameters_from_bucket_and_request(request, s3_bucket)
+
         s3_object = S3Object(
             key=key,
             version_id=version_id,
@@ -524,9 +540,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             encryption=encryption_parameters.encryption,
             kms_key_id=encryption_parameters.kms_key_id,
             bucket_key_enabled=encryption_parameters.bucket_key_enabled,
-            lock_mode=request.get("ObjectLockMode"),
-            lock_legal_status=request.get("ObjectLockLegalHoldStatus"),
-            lock_until=request.get("ObjectLockRetainUntilDate"),
+            lock_mode=lock_parameters.lock_mode,
+            lock_legal_status=lock_parameters.lock_legal_status,
+            lock_until=lock_parameters.lock_until,
             website_redirect_location=request.get("WebsiteRedirectLocation"),
             expiration=None,  # TODO, from lifecycle, or should it be updated with config?
             acl=None,
@@ -669,9 +685,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO: missing returned fields
         #     RequestCharged: Optional[RequestCharged]
         #     ReplicationStatus: Optional[ReplicationStatus]
-        #     ObjectLockMode: Optional[ObjectLockMode]
-        #     ObjectLockRetainUntilDate: Optional[ObjectLockRetainUntilDate]
-        #     ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
+
+        if s3_object.lock_mode:
+            response["ObjectLockMode"] = s3_object.lock_mode
+            if s3_object.lock_until:
+                response["ObjectLockRetainUntilDate"] = s3_object.lock_until
+        if s3_object.lock_legal_status:
+            response["ObjectLockLegalHoldStatus"] = s3_object.lock_legal_status
 
         return response
 
@@ -727,6 +747,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.restore:
             response["Restore"] = s3_object.restore
 
+        if range_header := request.get("Range"):
+            range_data = parse_range_header(range_header, s3_object.size)
+            response["ContentLength"] = range_data.content_length
+
         add_encryption_to_response(response, s3_object=s3_object)
 
         if s3_object.is_current and s3_bucket.lifecycle_rules:
@@ -743,14 +767,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 #  apply them everytime we get/head an object
                 response["Expiration"] = expiration_header
 
-        # TODO: missing return fields:
-        # ArchiveStatus: Optional[ArchiveStatus]
+        if s3_object.lock_mode:
+            response["ObjectLockMode"] = s3_object.lock_mode
+            if s3_object.lock_until:
+                response["ObjectLockRetainUntilDate"] = s3_object.lock_until
+        if s3_object.lock_legal_status:
+            response["ObjectLockLegalHoldStatus"] = s3_object.lock_legal_status
 
-        # RequestCharged: Optional[RequestCharged]
-        # ReplicationStatus: Optional[ReplicationStatus]
-        # ObjectLockMode: Optional[ObjectLockMode]
-        # ObjectLockRetainUntilDate: Optional[ObjectLockRetainUntilDate]
-        # ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
+        # TODO: missing return fields:
+        #  ArchiveStatus: Optional[ArchiveStatus]
+        #  RequestCharged: Optional[RequestCharged]
+        #  ReplicationStatus: Optional[ReplicationStatus]
 
         return response
 
@@ -802,20 +829,24 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if key not in s3_bucket.objects:
             return DeleteObjectOutput()
 
-        if not (found_object := s3_bucket.objects.pop(object_key=key, version_id=version_id)):
+        if not (s3_object := s3_bucket.objects.get(key, version_id)):
             raise InvalidArgument(
                 "Invalid version id specified",
                 ArgumentName="versionId",
                 ArgumentValue=version_id,
             )
 
-        response = DeleteObjectOutput(VersionId=found_object.version_id)
+        if s3_object.is_locked(bypass_governance_retention):
+            raise AccessDenied("Access Denied")
 
-        if isinstance(found_object, S3DeleteMarker):
+        s3_bucket.objects.pop(object_key=key, version_id=version_id)
+        response = DeleteObjectOutput(VersionId=s3_object.version_id)
+
+        if isinstance(s3_object, S3DeleteMarker):
             response["DeleteMarker"] = True
         else:
-            self._storage_backend.remove(bucket, found_object)
-            self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
+            self._storage_backend.remove(bucket, s3_object)
+            self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
             store.TAGS.tags.pop(get_unique_key_id(bucket, key, version_id), None)
 
         return response
@@ -899,7 +930,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 continue
 
             if not (
-                found_object := s3_bucket.objects.pop(object_key=object_key, version_id=version_id)
+                found_object := s3_bucket.objects.get(object_key=object_key, version_id=version_id)
             ):
                 errors.append(
                     Error(
@@ -911,6 +942,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 )
                 continue
 
+            if found_object.is_locked(bypass_governance_retention):
+                errors.append(
+                    Error(
+                        Code="AccessDenied",
+                        Key=object_key,
+                        Message="Access Denied",
+                        VersionId=version_id,
+                    )
+                )
+                continue
+
+            s3_bucket.objects.pop(object_key=object_key, version_id=version_id)
             if not quiet:
                 deleted_object = DeletedObject(
                     Key=object_key,
@@ -958,9 +1001,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # copy_source_if_unmodified_since: CopySourceIfUnmodifiedSince = None,
         #
         # request_payer: RequestPayer = None,
-        # object_lock_mode: ObjectLockMode = None,
-        # object_lock_retain_until_date: ObjectLockRetainUntilDate = None,
-        # object_lock_legal_hold_status: ObjectLockLegalHoldStatus = None,
         dest_bucket = request["Bucket"]
         dest_key = request["Key"]
         store = self.get_store(context.account_id, context.region)
@@ -989,7 +1029,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         metadata_directive = request.get("MetadataDirective")
         website_redirect_location = request.get("WebsiteRedirectLocation")
         # we need to check for identity of the object, to see if the default one has been changed
-        is_default_encryption = dest_s3_bucket.encryption_rule is DEFAULT_BUCKET_ENCRYPTION
+        is_default_encryption = (
+            dest_s3_bucket.encryption_rule is DEFAULT_BUCKET_ENCRYPTION
+            and src_s3_object.encryption == "AES256"
+        )
         if src_key == dest_key and not any(
             (
                 storage_class,
@@ -1024,6 +1067,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             dest_s3_bucket,
             store,
         )
+        lock_parameters = get_object_lock_parameters_from_bucket_and_request(
+            request, dest_s3_bucket
+        )
 
         s3_object = S3Object(
             key=dest_key,
@@ -1037,10 +1083,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             checksum_algorithm=request.get("ChecksumAlgorithm") or src_s3_object.checksum_algorithm,
             encryption=encryption_parameters.encryption,
             kms_key_id=encryption_parameters.kms_key_id,
-            bucket_key_enabled=encryption_parameters.bucket_key_enabled,
-            lock_mode=request.get("ObjectLockMode"),
-            lock_legal_status=request.get("ObjectLockLegalHoldStatus"),
-            lock_until=request.get("ObjectLockRetainUntilDate"),
+            bucket_key_enabled=request.get(
+                "BucketKeyEnabled"
+            ),  # CopyObject does not inherit from the bucket here
+            lock_mode=lock_parameters.lock_mode,
+            lock_legal_status=lock_parameters.lock_legal_status,
+            lock_until=lock_parameters.lock_until,
             website_redirect_location=website_redirect_location,
             expiration=None,  # TODO, from lifecycle
             acl=None,
@@ -1086,8 +1134,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         add_encryption_to_response(response, s3_object=s3_object)
 
-        if src_version_id:
-            response["CopySourceVersionId"] = src_version_id
+        if src_s3_bucket.versioning_status and src_s3_object.version_id:
+            response["CopySourceVersionId"] = src_s3_object.version_id
 
         # RequestCharged: Optional[RequestCharged] # TODO
         self._notify(context, s3_bucket=dest_s3_bucket, s3_object=s3_object)
@@ -1539,9 +1587,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not (s3_bucket := store.buckets.get(bucket_name)):
             raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket_name)
 
-        if (
-            storage_class := request.get("StorageClass")
-        ) is not None and storage_class not in STORAGE_CLASSES:
+        if (storage_class := request.get("StorageClass")) is not None and (
+            storage_class not in STORAGE_CLASSES or storage_class == StorageClass.OUTPOSTS
+        ):
             raise InvalidStorageClass(
                 "The storage class you specified is not valid", StorageClassRequested=storage_class
             )
@@ -1570,9 +1618,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             s3_bucket,
             store,
         )
+        lock_parameters = get_object_lock_parameters_from_bucket_and_request(request, s3_bucket)
 
         # validate encryption values
-
         s3_multipart = S3Multipart(
             key=key,
             storage_class=storage_class,
@@ -1583,9 +1631,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             encryption=encryption_parameters.encryption,
             kms_key_id=encryption_parameters.kms_key_id,
             bucket_key_enabled=encryption_parameters.bucket_key_enabled,
-            lock_mode=request.get("ObjectLockMode"),
-            lock_legal_status=request.get("ObjectLockLegalHoldStatus"),
-            lock_until=request.get("ObjectLockRetainUntilDate"),
+            lock_mode=lock_parameters.lock_mode,
+            lock_legal_status=lock_parameters.lock_legal_status,
+            lock_until=lock_parameters.lock_until,
             website_redirect_location=request.get("WebsiteRedirectLocation"),
             expiration=None,  # TODO, from lifecycle, or should it be updated with config?
             acl=None,
@@ -1608,7 +1656,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # - AbortDate: lifecycle related,not currently supported, todo
         # - AbortRuleId: lifecycle related, not currently supported, todo
         # - RequestCharged: todo
-        # - ChecksumAlgorithm: not currently supported, todo
 
         return response
 
@@ -1763,8 +1810,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             CopyPartResult=result,
         )
 
-        if src_version_id:
-            response["CopySourceVersionId"] = src_version_id
+        if src_s3_bucket.versioning_status and src_s3_object.version_id:
+            response["CopySourceVersionId"] = src_s3_object.version_id
 
         add_encryption_to_response(response, s3_object=s3_multipart.object)
 
@@ -1978,9 +2025,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO implement Prefix/Delimiter/CommonPrefixes/EncodingType and truncating results
         # should be common from ListObjects?ListVersions
 
-        #     NextKeyMarker: Optional[NextKeyMarker] ?
-        #     NextUploadIdMarker: Optional[NextUploadIdMarker] ?
-
         response = ListMultipartUploadsOutput(
             Bucket=bucket,
             IsTruncated=False,
@@ -1988,6 +2032,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             MaxUploads=max_uploads or 1000,
             UploadIdMarker=upload_id_marker or "",
         )
+        if delimiter:
+            response["Delimiter"] = delimiter
+
         # TODO: implement locking for iteration
         uploads = [
             MultipartUpload(
@@ -2001,6 +2048,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             for multipart in s3_multiparts.values()
         ]
         response["Uploads"] = uploads
+        if uploads:
+            last_upload = uploads[-1]
+            response["NextUploadIdMarker"] = last_upload["UploadId"]
+            response["NextKeyMarker"] = last_upload["Key"]
 
         return response
 
@@ -2023,16 +2074,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 message="The Versioning element must be specified",
             )
 
+        if s3_bucket.object_lock_enabled:
+            raise InvalidBucketState(
+                "An Object Lock configuration is present on this bucket, so the versioning state cannot be changed."
+            )
+
         if versioning_status not in ("Enabled", "Suspended"):
             raise MalformedXML()
 
         if not s3_bucket.versioning_status:
             s3_bucket.objects = VersionedKeyStore.from_key_store(s3_bucket.objects)
-
-        elif s3_bucket.versioning_status == "Enabled" and versioning_configuration == "Suspended":
-            for current_object_version in s3_bucket.objects.values():
-                current_object_version.version_id = "null"
-                # TODO: update filestorage
 
         s3_bucket.versioning_status = versioning_status
 
@@ -2595,6 +2646,214 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # does not raise error if the bucket did not have a config, will simply return
         s3_bucket.website_configuration = None
 
+    def get_object_lock_configuration(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetObjectLockConfigurationOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        if not s3_bucket.object_lock_enabled:
+            raise ObjectLockConfigurationNotFoundError(
+                "Object Lock configuration does not exist for this bucket",
+                BucketName=bucket,
+            )
+
+        response = GetObjectLockConfigurationOutput(
+            ObjectLockConfiguration=ObjectLockConfiguration(
+                ObjectLockEnabled=ObjectLockEnabled.Enabled
+            )
+        )
+        if s3_bucket.object_lock_default_retention:
+            response["ObjectLockConfiguration"]["Rule"] = {
+                "DefaultRetention": s3_bucket.object_lock_default_retention
+            }
+
+        return response
+
+    def put_object_lock_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        object_lock_configuration: ObjectLockConfiguration = None,
+        request_payer: RequestPayer = None,
+        token: ObjectLockToken = None,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> PutObjectLockConfigurationOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        if not s3_bucket.object_lock_enabled:
+            raise InvalidBucketState(
+                "Object Lock configuration cannot be enabled on existing buckets"
+            )
+
+        if (
+            not object_lock_configuration
+            or object_lock_configuration.get("ObjectLockEnabled") != "Enabled"
+        ):
+            raise MalformedXML()
+
+        if "Rule" not in object_lock_configuration:
+            s3_bucket.object_lock_default_retention = None
+            return PutObjectLockConfigurationOutput()
+        elif not (rule := object_lock_configuration["Rule"]) or not (
+            default_retention := rule.get("DefaultRetention")
+        ):
+            raise MalformedXML()
+
+        if "Mode" not in default_retention or (
+            ("Days" in default_retention and "Years" in default_retention)
+            or ("Days" not in default_retention and "Years" not in default_retention)
+        ):
+            raise MalformedXML()
+
+        s3_bucket.object_lock_default_retention = default_retention
+
+        return PutObjectLockConfigurationOutput()
+
+    def get_object_legal_hold(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        version_id: ObjectVersionId = None,
+        request_payer: RequestPayer = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetObjectLegalHoldOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        if not s3_bucket.object_lock_enabled:
+            raise InvalidRequest("Bucket is missing Object Lock Configuration")
+
+        s3_object = s3_bucket.get_object(
+            key=key,
+            version_id=version_id,
+            http_method="GET",
+        )
+        if not s3_object.lock_legal_status:
+            raise NoSuchObjectLockConfiguration(
+                "The specified object does not have a ObjectLock configuration"
+            )
+
+        return GetObjectLegalHoldOutput(
+            LegalHold=ObjectLockLegalHold(Status=s3_object.lock_legal_status)
+        )
+
+    def put_object_legal_hold(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        legal_hold: ObjectLockLegalHold = None,
+        request_payer: RequestPayer = None,
+        version_id: ObjectVersionId = None,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> PutObjectLegalHoldOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not legal_hold:
+            raise MalformedXML()
+
+        if not s3_bucket.object_lock_enabled:
+            raise InvalidRequest("Bucket is missing Object Lock Configuration")
+
+        s3_object = s3_bucket.get_object(
+            key=key,
+            version_id=version_id,
+            http_method="PUT",
+        )
+        # TODO: check casing
+        if not (status := legal_hold.get("Status")) or status not in ("ON", "OFF"):
+            raise MalformedXML()
+
+        s3_object.lock_legal_status = status
+
+        # TODO: return RequestCharged
+        return PutObjectRetentionOutput()
+
+    def get_object_retention(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        version_id: ObjectVersionId = None,
+        request_payer: RequestPayer = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetObjectRetentionOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        if not s3_bucket.object_lock_enabled:
+            raise InvalidRequest("Bucket is missing Object Lock Configuration")
+
+        s3_object = s3_bucket.get_object(
+            key=key,
+            version_id=version_id,
+            http_method="GET",
+        )
+        if not s3_object.lock_mode:
+            raise NoSuchObjectLockConfiguration(
+                "The specified object does not have a ObjectLock configuration"
+            )
+
+        return GetObjectRetentionOutput(
+            Retention=ObjectLockRetention(
+                Mode=s3_object.lock_mode,
+                RetainUntilDate=s3_object.lock_until,
+            )
+        )
+
+    def put_object_retention(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        retention: ObjectLockRetention = None,
+        request_payer: RequestPayer = None,
+        version_id: ObjectVersionId = None,
+        bypass_governance_retention: BypassGovernanceRetention = None,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> PutObjectRetentionOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        if not s3_bucket.object_lock_enabled:
+            raise InvalidRequest("Bucket is missing Object Lock Configuration")
+
+        s3_object = s3_bucket.get_object(
+            key=key,
+            version_id=version_id,
+            http_method="PUT",
+        )
+
+        if retention and not validate_dict_fields(
+            retention, required_fields={"Mode", "RetainUntilDate"}
+        ):
+            raise MalformedXML()
+
+        if (
+            not retention
+            or (s3_object.lock_until and s3_object.lock_until > retention["RetainUntilDate"])
+        ) and not (
+            bypass_governance_retention and s3_object.lock_mode == ObjectLockMode.GOVERNANCE
+        ):
+            raise AccessDenied("Access Denied")
+
+        s3_object.lock_mode = retention["Mode"] if retention else None
+        s3_object.lock_until = retention["RetainUntilDate"] if retention else None
+
+        # TODO: return RequestCharged
+        return PutObjectRetentionOutput()
+
     # ###### THIS ARE UNIMPLEMENTED METHODS TO ALLOW TESTING, DO NOT COUNT THEM AS DONE ###### #
 
     def delete_bucket_ownership_controls(
@@ -2675,3 +2934,23 @@ def get_encryption_parameters_from_request_and_bucket(
                 kms_key_id = store.aws_managed_kms_key_id
 
     return EncryptionParameters(encryption, kms_key_id, bucket_key_enabled)
+
+
+def get_object_lock_parameters_from_bucket_and_request(
+    request: PutObjectRequest | CopyObjectRequest | CreateMultipartUploadRequest,
+    s3_bucket: S3Bucket,
+):
+    # TODO: also validate here?
+    lock_mode = request.get("ObjectLockMode")
+    lock_legal_status = request.get("ObjectLockLegalHoldStatus")
+    lock_until = request.get("ObjectLockRetainUntilDate")
+
+    if default_retention := s3_bucket.object_lock_default_retention:
+        lock_mode = lock_mode or default_retention.get("Mode")
+        if lock_mode and not lock_until:
+            lock_until = get_retention_from_now(
+                days=default_retention.get("Days"),
+                years=default_retention.get("Years"),
+            )
+
+    return ObjectLockParameters(lock_until, lock_legal_status, lock_mode)
