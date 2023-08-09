@@ -204,8 +204,10 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainPr
         # Validations
         assert model["DomainName"]
 
-        if model["physical_resource_id"] is None:
+        if not request.custom_context.get(REPEATED_INVOCATION):
             # resource is not ready
+            # this is the first time this callback is invoked
+            request.custom_context[REPEATED_INVOCATION] = True
 
             # Defaults
 
@@ -226,7 +228,8 @@ class OpenSearchServiceDomainProvider(ResourceProvider[OpenSearchServiceDomainPr
             res = request.aws_client_factory.opensearch.create_domain(
                 DomainName=model["DomainName"]
             )
-            model["physical_resource_id"] = res["DomainStatus"]["ARN"]
+            model["Arn"] = res["DomainStatus"]["ARN"]
+            model["DomainArn"] = res["DomainStatus"]["ARN"]
             return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
 
         # check on the status of the domain to see if it has been created yet or not
