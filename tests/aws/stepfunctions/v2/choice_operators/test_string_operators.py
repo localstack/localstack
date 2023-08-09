@@ -34,6 +34,7 @@ TYPE_COMPARISONS_VARS: Final[list[Any]] = [
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestStrings:
+    @markers.aws.unknown
     def test_string_equals(
         self,
         aws_client,
@@ -54,6 +55,7 @@ class TestStrings:
             comparisons=[*type_equals, (" ", "     "), ("\t\n", "\t\r\n"), ("Hello", "Hello")],
         )
 
+    @markers.aws.unknown
     def test_string_equals_path(
         self,
         aws_client,
@@ -78,6 +80,7 @@ class TestStrings:
             add_literal_value=False,
         )
 
+    @markers.aws.unknown
     def test_string_greater_than(
         self,
         aws_client,
@@ -94,6 +97,7 @@ class TestStrings:
             comparisons=[("", ""), ("A", "A "), ("A", "A\t\n\r"), ("AB", "ABC")],
         )
 
+    @markers.aws.unknown
     def test_string_greater_than_path(
         self,
         aws_client,
@@ -111,6 +115,7 @@ class TestStrings:
             add_literal_value=False,
         )
 
+    @markers.aws.unknown
     def test_string_greater_than_equals(
         self,
         aws_client,
@@ -127,6 +132,7 @@ class TestStrings:
             comparisons=[("", ""), ("A", "AB"), ("AB", "A")],
         )
 
+    @markers.aws.unknown
     def test_string_greater_than_equals_path(
         self,
         aws_client,
@@ -144,6 +150,7 @@ class TestStrings:
             add_literal_value=False,
         )
 
+    @markers.aws.unknown
     def test_string_less_than(
         self,
         aws_client,
@@ -160,6 +167,7 @@ class TestStrings:
             comparisons=[("", ""), ("A", "AB"), ("AB", "A")],
         )
 
+    @markers.aws.unknown
     def test_string_less_than_path(
         self,
         aws_client,
@@ -177,6 +185,7 @@ class TestStrings:
             add_literal_value=False,
         )
 
+    @markers.aws.unknown
     def test_string_less_than_equals(
         self,
         aws_client,
@@ -193,6 +202,7 @@ class TestStrings:
             comparisons=[("", ""), ("A", "AB"), ("AB", "A")],
         )
 
+    @markers.aws.unknown
     def test_string_less_than_equals_path(
         self,
         aws_client,

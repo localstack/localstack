@@ -14,7 +14,7 @@ __all__ = [
     "kinesis",
     "kinesisfirehose",
     "kms",
-    "awslambda",
+    "lambda_",
     "logs",
     "redshift",
     "resourcegroups",

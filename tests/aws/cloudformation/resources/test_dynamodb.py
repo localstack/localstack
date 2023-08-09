@@ -6,6 +6,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
+@markers.aws.unknown
 def test_deploy_stack_with_dynamodb_table(deploy_cfn_template, aws_client):
     env = "Staging"
     ddb_table_name_prefix = f"ddb-table-{short_uid()}"
@@ -31,6 +32,7 @@ def test_deploy_stack_with_dynamodb_table(deploy_cfn_template, aws_client):
     assert ddb_table_name not in rs["TableNames"]
 
 
+@markers.aws.unknown
 def test_globalindex_read_write_provisioned_throughput_dynamodb_table(
     deploy_cfn_template, aws_client
 ):
@@ -56,7 +58,7 @@ def test_globalindex_read_write_provisioned_throughput_dynamodb_table(
         assert isinstance(test_write_capacity, int)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
@@ -77,7 +79,7 @@ def test_default_name_for_table(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("table_description", response)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",

@@ -19,6 +19,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestEncodeDecode:
+    @markers.aws.unknown
     def test_base_64_encode(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -32,6 +33,7 @@ class TestEncodeDecode:
             input_values,
         )
 
+    @markers.aws.unknown
     def test_base_64_decode(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):

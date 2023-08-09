@@ -114,7 +114,7 @@ class TestRoute53Resolver:
         else:
             return True
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..SecurityGroupIds"])
     @pytest.mark.parametrize(
         "direction, hostId",
@@ -148,7 +148,7 @@ class TestRoute53Resolver:
         )
         snapshot.match("create_resolver_endpoint_res", create_resolver_endpoint_res)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_route53resolver_bad_create_endpoint_security_groups(self, snapshot, aws_client):
         request_id = short_uid()
         resolver_endpoint_name = f"rs-{request_id}"
@@ -164,7 +164,7 @@ class TestRoute53Resolver:
             )
         snapshot.match("inavlid_param_request_res", inavlid_param_request_res.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..SecurityGroupIds"])
     def test_multiple_create_resolver_endpoint_with_same_req_id(
         self, cleanups, snapshot, aws_client
@@ -213,7 +213,7 @@ class TestRoute53Resolver:
             res_exists_ex.value.response.get("ResponseMetadata", {}).get("HTTPStatusCode"),
         )
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..SecurityGroupIds"])
     def test_update_resolver_endpoint(self, cleanups, snapshot, aws_client):
         request_id = short_uid()
@@ -248,7 +248,7 @@ class TestRoute53Resolver:
             update_resolver_endpoint_res["Status"] = "OPERATIONAL"
         snapshot.match("update_resolver_endpoint_res", update_resolver_endpoint_res)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..SecurityGroupIds"])
     def test_delete_resolver_endpoint(self, cleanups, snapshot, aws_client):
         request_id = short_uid()
@@ -271,7 +271,7 @@ class TestRoute53Resolver:
         )
         snapshot.match("delete_resolver_endpoint_res", delete_resolver_endpoint)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_delete_non_existent_resolver_endpoint(self, snapshot, aws_client):
         resolver_endpoint_id = "rslvr-123"
         with pytest.raises(
@@ -289,7 +289,7 @@ class TestRoute53Resolver:
             resource_not_found.value.response.get("ResponseMetadata", {}).get("HTTPStatusCode"),
         )
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..SecurityGroupIds", "$..ShareStatus"])
     def test_create_resolver_rule(self, cleanups, snapshot, aws_client):
         request_id = short_uid()
@@ -334,7 +334,7 @@ class TestRoute53Resolver:
         )
         snapshot.match("delete_resolver_rule_res", delete_resolver_rule_res)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..SecurityGroupIds"])
     def test_create_resolver_rule_with_invalid_direction(self, cleanups, snapshot, aws_client):
         request_id = short_uid()
@@ -375,7 +375,7 @@ class TestRoute53Resolver:
 
         snapshot.match("invalid_request_ex", inavlid_request.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..SecurityGroupIds", "$..ShareStatus"])
     def test_multipe_create_resolver_rule(self, cleanups, snapshot, aws_client):
         request_id = short_uid()
@@ -424,7 +424,7 @@ class TestRoute53Resolver:
             )
             snapshot.match(f"delete_resolver_rule_res{ind}", delete_resolver_rule)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_delete_non_existent_resolver_rule(self, snapshot, aws_client):
         resolver_rule_id = "id-123"
         with pytest.raises(
@@ -433,7 +433,7 @@ class TestRoute53Resolver:
             aws_client.route53resolver.delete_resolver_rule(ResolverRuleId=resolver_rule_id)
         snapshot.match("resource_not_found_res", resource_not_found.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_disassociate_non_existent_association(self, snapshot, aws_client):
         with pytest.raises(
             aws_client.route53resolver.exceptions.ResourceNotFoundException
@@ -443,7 +443,7 @@ class TestRoute53Resolver:
             )
         snapshot.match("resource_not_found_res", resource_not_found)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_create_resolver_query_log_config(self, cleanups, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("Name"))
         request_id = short_uid()
@@ -466,7 +466,7 @@ class TestRoute53Resolver:
         )
         snapshot.match("delete_resolver_query_log_config_res", delete_resolver_config)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_delete_non_existent_resolver_query_log_config(self, snapshot, aws_client):
         resolver_rqlc_id = "test_123"
         with pytest.raises(
@@ -484,7 +484,7 @@ class TestRoute53Resolver:
             resource_not_found.value.response.get("ResponseMetadata", {}).get("HTTPStatusCode"),
         )
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..SecurityGroupIds", "$..ShareStatus", "$..StatusMessage"]
     )
@@ -557,7 +557,7 @@ class TestRoute53Resolver:
         )
         snapshot.match("disassociate_resolver_rule_res", disassociate_resolver_rule_res)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..ManagedOwnerName"])
     def test_list_firewall_domain_lists(self, cleanups, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("Id"))

@@ -168,3 +168,9 @@ def import_apigw(aws_client):
 
     for rest_api_id in rest_api_ids:
         delete_rest_api(aws_client.apigateway, restApiId=rest_api_id)
+
+
+@pytest.fixture
+def apigw_add_transformers(snapshot):
+    snapshot.add_transformer(snapshot.transform.jsonpath("$..items..id", "id"))
+    snapshot.add_transformer(snapshot.transform.key_value("deploymentId"))

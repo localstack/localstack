@@ -1107,7 +1107,7 @@ def is_change_set_finished(aws_client):
 @pytest.fixture
 def wait_until_lambda_ready(aws_client):
     def _wait_until_ready(function_name: str, qualifier: str = None, client=None):
-        client = client or aws_client.awslambda
+        client = client or aws_client.lambda_
 
         def _is_not_pending():
             kwargs = {}
@@ -1170,13 +1170,13 @@ def create_lambda_function_aws(aws_client):
 
     def _create_lambda_function(**kwargs):
         def _create_function():
-            resp = aws_client.awslambda.create_function(**kwargs)
+            resp = aws_client.lambda_.create_function(**kwargs)
             lambda_arns.append(resp["FunctionArn"])
 
             def _is_not_pending():
                 try:
                     result = (
-                        aws_client.awslambda.get_function(FunctionName=resp["FunctionName"])[
+                        aws_client.lambda_.get_function(FunctionName=resp["FunctionName"])[
                             "Configuration"
                         ]["State"]
                         != "Pending"
@@ -1197,7 +1197,7 @@ def create_lambda_function_aws(aws_client):
 
     for arn in lambda_arns:
         try:
-            aws_client.awslambda.delete_function(FunctionName=arn)
+            aws_client.lambda_.delete_function(FunctionName=arn)
         except Exception:
             LOG.debug(f"Unable to delete function {arn=} in cleanup")
 
@@ -1206,7 +1206,7 @@ def create_lambda_function_aws(aws_client):
 def create_lambda_function(aws_client, wait_until_lambda_ready, lambda_su_role):
     lambda_arns_and_clients = []
     log_groups = []
-    lambda_client = aws_client.awslambda
+    lambda_client = aws_client.lambda_
     logs_client = aws_client.logs
     s3_client = aws_client.s3
 
@@ -1732,15 +1732,6 @@ def secondary_account_id(secondary_aws_client):
 
 
 @pytest.hookimpl
-def pytest_configure(config: Config):
-    # TODO: migrate towards "whitebox" or similar structure
-    config.addinivalue_line(
-        "markers",
-        "only_localstack: mark the test as incompatible with AWS / can't be run with AWS_CLOUD target",
-    )
-
-
-@pytest.hookimpl
 def pytest_collection_modifyitems(config: Config, items: list[Item]):
     only_localstack = pytest.mark.skipif(
         os.environ.get("TEST_TARGET") == "AWS_CLOUD",
@@ -1778,6 +1769,7 @@ def create_rest_apigw(aws_client_factory):
     def _create_apigateway_function(**kwargs):
         region_name = kwargs.pop("region_name", None)
         apigateway_client = aws_client_factory(region_name=region_name).apigateway
+        kwargs.setdefault("name", f"api-{short_uid()}")
 
         response = apigateway_client.create_rest_api(**kwargs)
         api_id = response.get("id")

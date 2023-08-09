@@ -7,6 +7,7 @@ import pytest
 
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.connect import connect_to
+from localstack.testing.pytest import markers
 from localstack.testing.scenario.provisioning import InfraProvisioner
 from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import wait_until
@@ -76,22 +77,24 @@ class TestLambdaDestinationScenario:
         with provisioner.provisioner() as prov:
             yield prov
 
+    @markers.aws.unknown
     def test_infra(self, infrastructure, aws_client):
         outputs = infrastructure.get_stack_outputs("LambdaTestStack")
         collect_fn_name = outputs["CollectFunctionName"]
         main_fn_name = outputs["DestinationFunctionName"]
         topic_arn = outputs["DestinationTopicArn"]
 
-        aws_client.awslambda.get_function(FunctionName=main_fn_name)
-        aws_client.awslambda.get_function(FunctionName=collect_fn_name)
+        aws_client.lambda_.get_function(FunctionName=main_fn_name)
+        aws_client.lambda_.get_function(FunctionName=collect_fn_name)
 
-        eic = aws_client.awslambda.get_function_event_invoke_config(FunctionName=main_fn_name)
+        eic = aws_client.lambda_.get_function_event_invoke_config(FunctionName=main_fn_name)
         assert eic["MaximumRetryAttempts"] == 0
         assert eic["DestinationConfig"]["OnSuccess"]["Destination"] == topic_arn
         assert eic["DestinationConfig"]["OnFailure"]["Destination"] == topic_arn
 
         aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
 
+    @markers.aws.unknown
     def test_destination_sns(self, infrastructure, aws_client):
         outputs = infrastructure.get_stack_outputs("LambdaTestStack")
         invoke_fn_name = outputs["DestinationFunctionName"]
@@ -100,14 +103,14 @@ class TestLambdaDestinationScenario:
         msg = f"message-{short_uid()}"
 
         # Success case
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=invoke_fn_name,
             Payload=to_bytes(json.dumps({"message": msg, "should_fail": "0"})),
             InvocationType=InvocationType.Event,
         )
 
         # Failure case
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=invoke_fn_name,
             Payload=to_bytes(json.dumps({"message": msg, "should_fail": "1"})),
             InvocationType=InvocationType.Event,

@@ -20,6 +20,7 @@ from requests.models import Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.api import RequestContext
 from localstack.aws.api.apigateway import (
     Authorizer,
     ConnectionType,
@@ -130,8 +131,14 @@ class OpenAPIExt:
 # TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
 
 
-def get_apigateway_store(account_id: str = None, region: str = None) -> ApiGatewayStore:
-    return apigateway_stores[account_id or get_aws_account_id()][region or aws_stack.get_region()]
+def get_apigateway_store(context: RequestContext) -> ApiGatewayStore:
+    return apigateway_stores[context.account_id][context.region]
+
+
+def get_apigateway_store_for_invocation(context: ApiInvocationContext) -> ApiGatewayStore:
+    account_id = context.account_id or get_aws_account_id()
+    region_name = context.region_name or aws_stack.get_region()
+    return apigateway_stores[account_id][region_name]
 
 
 class ApiGatewayIntegrationError(Exception):
@@ -802,10 +809,11 @@ def add_documentation_parts(rest_api_container, documentation):
 
 
 def import_api_from_openapi_spec(
-    rest_api: RestAPI, body: Dict, query_params: Dict, account_id: str = None, region: str = None
+    rest_api: RestAPI, body: dict, context: RequestContext
 ) -> Optional[RestAPI]:
     """Import an API from an OpenAPI spec document"""
 
+    query_params: dict = context.request.values.to_dict()
     resolved_schema = resolve_references(copy.deepcopy(body), rest_api_id=rest_api.id)
 
     # TODO:
@@ -824,7 +832,7 @@ def import_api_from_openapi_spec(
     # authorizers map to avoid duplication
     authorizers = {}
 
-    store = get_apigateway_store(account_id=account_id, region=region)
+    store = get_apigateway_store(context=context)
     rest_api_container = store.rest_apis[rest_api.id]
 
     def is_api_key_required(path_payload: dict) -> bool:

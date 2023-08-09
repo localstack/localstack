@@ -35,6 +35,7 @@ class TestServerless:
         # run('cd %s; npm run undeploy -- --region=%s' % (cls.get_base_dir(), aws_stack.get_region()))
 
     @markers.skip_offline
+    @markers.aws.unknown
     def test_event_rules_deployed(self, aws_client, setup_and_teardown):
         events = aws_client.events
         rules = events.list_rules()["Rules"]
@@ -52,11 +53,12 @@ class TestServerless:
         assert {"source": ["customSource"]} == json.loads(rule["EventPattern"])
 
     @markers.skip_offline
+    @markers.aws.unknown
     def test_dynamodb_stream_handler_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-dynamodbStreamHandler"
         table_name = "Test"
 
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
         dynamodb_client = aws_client.dynamodb
 
         resp = lambda_client.list_functions()
@@ -72,12 +74,13 @@ class TestServerless:
         assert event_source_arn == resp["Table"]["LatestStreamArn"]
 
     @markers.skip_offline
+    @markers.aws.unknown
     def test_kinesis_stream_handler_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-kinesisStreamHandler"
         function_name2 = "sls-test-local-kinesisConsumerHandler"
         stream_name = "KinesisTestStream"
 
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
         kinesis_client = aws_client.kinesis
 
         resp = lambda_client.list_functions()
@@ -101,11 +104,12 @@ class TestServerless:
         retry(assert_invocations, sleep=2, retries=20)
 
     @markers.skip_offline
+    @markers.aws.unknown
     def test_queue_handler_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-queueHandler"
         queue_name = "sls-test-local-CreateQueue"
 
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
         sqs_client = aws_client.sqs
 
         resp = lambda_client.list_functions()
@@ -128,10 +132,11 @@ class TestServerless:
         assert 3 == redrive_policy["maxReceiveCount"]
 
     @markers.skip_offline
+    @markers.aws.unknown
     def test_lambda_with_configs_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-test"
 
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
@@ -145,11 +150,12 @@ class TestServerless:
         assert 7200 == resp.get("MaximumEventAgeInSeconds")
 
     @markers.skip_offline
+    @markers.aws.unknown
     def test_apigateway_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-router"
         existing_api_ids = setup_and_teardown
 
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
@@ -174,6 +180,7 @@ class TestServerless:
             )
 
     @markers.skip_offline
+    @markers.aws.unknown
     def test_s3_bucket_deployed(self, aws_client, setup_and_teardown):
         s3_client = aws_client.s3
         bucket_name = "testing-bucket"

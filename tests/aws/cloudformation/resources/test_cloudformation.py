@@ -61,6 +61,7 @@ class SignalSuccess(Thread):
 
 
 @markers.snapshot.skip_snapshot_verify(paths=["$..WaitConditionName"])
+@markers.aws.validated
 def test_waitcondition(deploy_cfn_template, snapshot, aws_client):
     """
     Complicated test, since we have a wait condition that must signal
@@ -93,7 +94,7 @@ def test_waitcondition(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("waitcondition_ref", {"WaitConditionName": wait_condition_name})
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_create_macro(deploy_cfn_template, create_lambda_function, snapshot, aws_client):
     macro_name = f"macro-{short_uid()}"
     snapshot.add_transformer(snapshot.transform.regex(macro_name, "<macro-name>"))

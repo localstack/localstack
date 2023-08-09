@@ -870,7 +870,7 @@ LAMBDA_CONTAINER_REGISTRY = (
 )
 
 # PUBLIC: base images for Lambda (default) https://docs.aws.amazon.com/lambda/latest/dg/runtimes-images.html
-# localstack/services/awslambda/invocation/lambda_models.py:IMAGE_MAPPING
+# localstack/services/lambda_/invocation/lambda_models.py:IMAGE_MAPPING
 # Customize the Docker image of Lambda runtimes, either by:
 # a) pattern with <runtime> placeholder, e.g. custom-repo/lambda-<runtime>:2022
 # b) json dict mapping the <runtime> to an image, e.g. {"python3.9": "custom-repo/lambda-py:thon3.9"}

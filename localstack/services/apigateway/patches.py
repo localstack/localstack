@@ -129,7 +129,6 @@ def apply_patches():
         apigateway_models.Authorizer,
         apigateway_models.DomainName,
         apigateway_models.MethodResponse,
-        apigateway_models.Stage,
     ]
     for model_class in model_classes:
         model_class.apply_operations = (
@@ -138,71 +137,12 @@ def apply_patches():
 
     # fix data types for some json-patch operation values
 
-    def method_response_apply_operations(self, patch_operations):
-        result = method_response_apply_operations_orig(self, patch_operations)
-        params = self.get("responseParameters") or {}
-        bool_params_prefixes = ["method.response.querystring", "method.response.header"]
-        for param, value in params.items():
-            for param_prefix in bool_params_prefixes:
-                if param.startswith(param_prefix) and not isinstance(value, bool):
-                    params[param] = str(value) in {"true", "True"}
+    @patch(apigateway_models.Stage._get_default_method_settings)
+    def _get_default_method_settings(fn, self):
+        result = fn(self)
+        result["cacheDataEncrypted"] = False
+        result["throttlingRateLimit"] = 10000.0
         return result
-
-    method_response_apply_operations_orig = apigateway_models.MethodResponse.apply_operations
-    apigateway_models.MethodResponse.apply_operations = method_response_apply_operations
-
-    def stage_apply_operations(self, patch_operations):
-        result = stage_apply_operations_orig(self, patch_operations)
-        key_mappings = {
-            "metrics/enabled": ("metricsEnabled", bool),
-            "logging/loglevel": ("loggingLevel", str),
-            "logging/dataTrace": ("dataTraceEnabled", bool),
-            "throttling/burstLimit": ("throttlingBurstLimit", int),
-            "throttling/rateLimit": ("throttlingRateLimit", float),
-            "caching/enabled": ("cachingEnabled", bool),
-            "caching/ttlInSeconds": ("cacheTtlInSeconds", int),
-            "caching/dataEncrypted": ("cacheDataEncrypted", bool),
-            "caching/requireAuthorizationForCacheControl": (
-                "requireAuthorizationForCacheControl",
-                bool,
-            ),
-            "caching/unauthorizedCacheControlHeaderStrategy": (
-                "unauthorizedCacheControlHeaderStrategy",
-                str,
-            ),
-        }
-
-        def cast_value(_value, value_type):
-            if _value is None:
-                return _value
-            if value_type == bool:
-                return str(_value) in {"true", "True"}
-            return value_type(_value)
-
-        method_settings = getattr(self, camelcase_to_underscores("methodSettings"), {})
-        setattr(self, camelcase_to_underscores("methodSettings"), method_settings)
-        for operation in patch_operations:
-            path = operation["path"]
-            parts = path.strip("/").split("/")
-            if len(parts) >= 4:
-                if operation["op"] not in ["add", "replace"]:
-                    continue
-                key1 = "/".join(parts[:-2])
-                setting_key = f"{parts[-2]}/{parts[-1]}"
-                setting_name, setting_type = key_mappings.get(setting_key)
-                keys = [key1]
-                for key in keys:
-                    setting = method_settings[key] = method_settings.get(key) or {}
-                    value = operation.get("value")
-                    value = cast_value(value, setting_type)
-                    setting[setting_name] = value
-            if operation["op"] == "remove":
-                method_settings.pop(path, None)
-                method_settings.pop(path.lstrip("/"), None)
-        return result
-
-    stage_apply_operations_orig = apigateway_models.Stage.apply_operations
-    apigateway_models.Stage.apply_operations = stage_apply_operations
 
     # patch integration error responses
     @patch(apigateway_models.Resource.get_integration)
@@ -234,6 +174,15 @@ def apply_patches():
         )
 
         return resp
+
+    @patch(apigateway_models.Stage.to_json)
+    def apigateway_models_stage_to_json(fn, self):
+        result = fn(self)
+
+        if "documentationVersion" not in result:
+            result["documentationVersion"] = getattr(self, "documentation_version", None)
+
+        return result
 
     @patch(APIGatewayResponse.individual_deployment)
     def individual_deployment(fn, self, request, full_url, headers, *args, **kwargs):

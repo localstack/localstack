@@ -1,7 +1,8 @@
+from localstack.aws.api.dynamodb import CreateTableOutput, DescribeTableOutput
 from localstack.aws.connect import connect_to
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.utils.aws.aws_models import KinesisStream
-from localstack.utils.aws.aws_stack import LOG, connect_to_resource
+from localstack.utils.aws.aws_stack import LOG
 from localstack.utils.functions import run_safe
 from localstack.utils.sync import poll_condition
 
@@ -29,7 +30,7 @@ def create_s3_bucket(bucket_name: str, s3_client=None):
     return s3_client.create_bucket(Bucket=bucket_name, **kwargs)
 
 
-# TODO: convert this into a fixture?
+# TODO: Harmonise the return value
 def create_dynamodb_table(
     table_name: str,
     partition_key: str,
@@ -37,7 +38,7 @@ def create_dynamodb_table(
     region_name: str = None,
     client=None,
     wait_for_active: bool = True,
-):
+) -> CreateTableOutput | DescribeTableOutput:
     """Utility method to create a DynamoDB table"""
 
     dynamodb = client or connect_to(region_name=region_name).dynamodb
@@ -58,7 +59,7 @@ def create_dynamodb_table(
     except Exception as e:
         if "ResourceInUseException" in str(e):
             # Table already exists -> return table reference
-            return connect_to_resource("dynamodb", region_name=region_name).Table(table_name)
+            return dynamodb.describe_table(TableName=table_name)
         if "AccessDeniedException" in str(e):
             raise
 

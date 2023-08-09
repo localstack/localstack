@@ -46,7 +46,7 @@ OAS_30_CIRCULAR_REF_WITH_REQUEST_BODY = os.path.join(
     PARENT_DIR, "files", "openapi.spec.circular-ref-with-request-body.json"
 )
 OAS_30_STAGE_VARIABLES = os.path.join(PARENT_DIR, "files", "openapi.spec.stage-variables.json")
-TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "awslambda/functions/lambda_echo.py")
+TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "lambda_/functions/lambda_echo.py")
 
 
 @pytest.fixture
@@ -194,7 +194,7 @@ def apigateway_placeholder_authorizer_lambda_invocation_arn(aws_client, lambda_s
             zip_file = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
 
             # create_response is the original create call response, even though the fixture waits until it's not pending
-            create_response = aws_client.awslambda.create_function(
+            create_response = aws_client.lambda_.create_function(
                 FunctionName=f"test-authorizer-import-{short_uid()}",
                 Runtime=Runtime.python3_10,
                 Handler="handler.handler",
@@ -208,7 +208,7 @@ def apigateway_placeholder_authorizer_lambda_invocation_arn(aws_client, lambda_s
             def _is_not_pending():
                 try:
                     result = (
-                        aws_client.awslambda.get_function(
+                        aws_client.lambda_.get_function(
                             FunctionName=create_response["FunctionName"]
                         )["Configuration"]["State"]
                         != "Pending"
@@ -231,7 +231,7 @@ def apigateway_placeholder_authorizer_lambda_invocation_arn(aws_client, lambda_s
 
         for arn in lambda_arns:
             try:
-                aws_client.awslambda.delete_function(FunctionName=arn)
+                aws_client.lambda_.delete_function(FunctionName=arn)
             except Exception:
                 LOG.debug(f"Unable to delete function {arn=} in cleanup")
 
@@ -253,14 +253,14 @@ def apigw_deploy_rest_api(aws_client):
 
 
 class TestApiGatewayImportRestApi:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_import_rest_api(self, import_apigw, snapshot):
         spec_file = load_file(OPENAPI_SPEC_PULUMI_JSON)
         response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
 
         snapshot.match("import_rest_api", response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.no_apigw_snap_transformers  # not using the API Gateway default transformers
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -325,7 +325,7 @@ class TestApiGatewayImportRestApi:
         # integrationResponse
         apigw_snapshot_imported_resources(rest_api_id=rest_api_id, resources=response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$.resources.items..resourceMethods.GET",  # TODO: this is really weird, after importing, AWS returns them empty?
@@ -370,7 +370,7 @@ class TestApiGatewayImportRestApi:
             # waiting before cleaning up to avoid TooManyRequests, as we create multiple REST APIs
             time.sleep(15)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize("base_path_type", ["ignore", "prepend", "split"])
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -450,7 +450,7 @@ class TestApiGatewayImportRestApi:
             # then you realize LocalStack is needed!
             time.sleep(20)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize("base_path_type", ["ignore", "prepend", "split"])
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -558,7 +558,7 @@ class TestApiGatewayImportRestApi:
         url = api_invoke_url(rest_api_id, stage=stage_name, path=resource_path)
         retry(assert_request_ok, retries=10, sleep=2, request_url=url)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$.resources.items..resourceMethods.GET",  # AWS does not show them after import
@@ -598,7 +598,7 @@ class TestApiGatewayImportRestApi:
         # integrationResponse
         apigw_snapshot_imported_resources(rest_api_id=rest_api_id, resources=response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.no_apigw_snap_transformers  # not using the API Gateway default transformers
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -645,6 +645,7 @@ class TestApiGatewayImportRestApi:
             # TODO: this is really weird, after importing, AWS returns them empty?
         ]
     )
+    @markers.aws.validated
     def test_import_with_circular_models_and_request_validation(
         self, import_apigw, apigw_snapshot_imported_resources, aws_client, snapshot
     ):
@@ -726,7 +727,7 @@ class TestApiGatewayImportRestApi:
         assert request.status_code == 400
         assert request.json().get("message") == "Invalid request body"
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_import_with_stage_variables(self, import_apigw, aws_client, echo_http_server_post):
 
         spec_file = load_file(OAS_30_STAGE_VARIABLES)

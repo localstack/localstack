@@ -49,7 +49,7 @@ def send_event_to_target(
         clients = connect_to(region_name=region)
 
     if ":lambda:" in target_arn:
-        lambda_client = clients.awslambda.request_metadata(
+        lambda_client = clients.lambda_.request_metadata(
             service_principal=source_service, source_arn=source_arn
         )
         lambda_client.invoke(
@@ -71,7 +71,9 @@ def send_event_to_target(
         queue_url = get_sqs_queue_url(target_arn)
         msg_group_id = collections.get_safe(target_attributes, "$.SqsParameters.MessageGroupId")
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
-        sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), **kwargs)
+        sqs_client.send_message(
+            QueueUrl=queue_url, MessageBody=json.dumps(event, separators=(",", ":")), **kwargs
+        )
 
     elif ":states:" in target_arn:
         stepfunctions_client = connect_to(region_name=region).stepfunctions
@@ -96,14 +98,16 @@ def send_event_to_target(
                 service_principal=source_service, source_arn=source_arn
             )
             eventbus_name = target_arn.split(":")[-1].split("/")[-1]
+            detail = event.get("detail") or event
+            resources = event.get("resources") or [source_arn] if source_arn else []
             events_client.put_events(
                 Entries=[
                     {
                         "EventBusName": eventbus_name,
-                        "Source": event.get("source"),
-                        "DetailType": event.get("detail-type"),
-                        "Detail": json.dumps(event.get("detail", {})),
-                        "Resources": event.get("resources", []),
+                        "Source": event.get("source", source_service) or "",
+                        "DetailType": event.get("detail-type", ""),
+                        "Detail": json.dumps(detail),
+                        "Resources": resources,
                     }
                 ]
             )

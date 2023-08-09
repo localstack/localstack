@@ -1,8 +1,10 @@
 import json
 
+import pytest
 import requests
+from botocore.exceptions import ClientError
 
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws.arns import parse_arn
@@ -15,7 +17,7 @@ from tests.aws.apigateway.apigateway_fixtures import (
     create_rest_api_stage,
     create_rest_resource_method,
 )
-from tests.aws.awslambda.test_lambda import TEST_LAMBDA_AWS_PROXY
+from tests.aws.lambda_.test_lambda import TEST_LAMBDA_AWS_PROXY
 
 
 class TestApiGatewayCommon:
@@ -24,7 +26,7 @@ class TestApiGatewayCommon:
     requests/responses from the API.
     """
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$.invalid-request-body.Type",
@@ -53,7 +55,7 @@ class TestApiGatewayCommon:
             handler_file=TEST_LAMBDA_AWS_PROXY,
             runtime=LAMBDA_RUNTIME_PYTHON39,
         )
-        lambda_arn = aws_client.awslambda.get_function(FunctionName=fn_name)["Configuration"][
+        lambda_arn = aws_client.lambda_.get_function(FunctionName=fn_name)["Configuration"][
             "FunctionArn"
         ]
         # matching on lambda id for reference replacement in snapshots
@@ -118,7 +120,7 @@ class TestApiGatewayCommon:
 
         source_arn = f"arn:aws:execute-api:{region}:{account_id}:{api_id}/*/*/test/*"
 
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             FunctionName=lambda_arn,
             StatementId=str(short_uid()),
             Action="lambda:InvokeFunction",
@@ -258,7 +260,7 @@ class TestApiGatewayCommon:
 
 
 class TestUsagePlans:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_api_key_required_for_methods(
         self,
         aws_client,
@@ -370,7 +372,7 @@ class TestUsagePlans:
 
         retry(_assert_with_key, retries=retries, sleep=sleep, expected_status_code=403)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_usage_plan_crud(self, create_rest_apigw, snapshot, aws_client, echo_http_server_post):
         snapshot.add_transformer(snapshot.transform.key_value("id", reference_replacement=True))
         snapshot.add_transformer(snapshot.transform.key_value("name"))
@@ -438,3 +440,118 @@ class TestUsagePlans:
             ],
         )
         snapshot.match("update-usage-plan", response)
+
+
+class TestDocumentations:
+    @markers.aws.validated
+    def test_documentation_parts_and_versions(
+        self, aws_client, create_rest_apigw, apigw_add_transformers, snapshot
+    ):
+        client = aws_client.apigateway
+
+        # create API
+        api_id, api_name, root_id = create_rest_apigw()
+
+        # create documentation part
+        response = client.create_documentation_part(
+            restApiId=api_id,
+            location={"type": "API"},
+            properties=json.dumps({"foo": "bar"}),
+        )
+        snapshot.match("create-part-response", response)
+
+        response = client.get_documentation_parts(restApiId=api_id)
+        snapshot.match("get-parts-response", response)
+
+        # create/update/get documentation version
+
+        response = client.create_documentation_version(
+            restApiId=api_id, documentationVersion="v123"
+        )
+        snapshot.match("create-version-response", response)
+
+        response = client.update_documentation_version(
+            restApiId=api_id,
+            documentationVersion="v123",
+            patchOperations=[{"op": "replace", "path": "/description", "value": "doc version new"}],
+        )
+        snapshot.match("update-version-response", response)
+
+        response = client.get_documentation_version(restApiId=api_id, documentationVersion="v123")
+        snapshot.match("get-version-response", response)
+
+
+class TestStages:
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..createdDate", "$..lastUpdatedDate"])
+    def test_create_update_stages(
+        self, aws_client, create_rest_apigw, apigw_add_transformers, snapshot
+    ):
+        client = aws_client.apigateway
+
+        # create API, method, integration, deployment
+        api_id, api_name, root_id = create_rest_apigw()
+        client.put_method(
+            restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
+        )
+        client.put_integration(restApiId=api_id, resourceId=root_id, httpMethod="GET", type="MOCK")
+        response = client.create_deployment(restApiId=api_id)
+        deployment_id = response["id"]
+
+        # create documentation
+        client.create_documentation_part(
+            restApiId=api_id,
+            location={"type": "API"},
+            properties=json.dumps({"foo": "bar"}),
+        )
+        client.create_documentation_version(restApiId=api_id, documentationVersion="v123")
+
+        # create stage
+        response = client.create_stage(
+            restApiId=api_id,
+            stageName="s1",
+            deploymentId=deployment_id,
+            description="my stage",
+            documentationVersion="v123",
+        )
+        snapshot.match("create-stage", response)
+
+        # negative tests for immutable/non-updateable attributes
+
+        with pytest.raises(ClientError) as ctx:
+            client.update_stage(
+                restApiId=api_id,
+                stageName="s1",
+                patchOperations=[
+                    {"op": "replace", "path": "/documentation_version", "value": "123"}
+                ],
+            )
+        snapshot.match("error-update-doc-version", ctx.value.response)
+
+        with pytest.raises(ClientError) as ctx:
+            client.update_stage(
+                restApiId=api_id,
+                stageName="s1",
+                patchOperations=[
+                    {"op": "replace", "path": "/tags/tag1", "value": "value1"},
+                ],
+            )
+        snapshot.match("error-update-tags", ctx.value.response)
+
+        # update & get stage
+
+        response = client.update_stage(
+            restApiId=api_id,
+            stageName="s1",
+            patchOperations=[
+                {"op": "replace", "path": "/description", "value": "stage new"},
+                {"op": "replace", "path": "/variables/var1", "value": "test"},
+                {"op": "replace", "path": "/variables/var2", "value": "test2"},
+                {"op": "replace", "path": "/*/*/throttling/burstLimit", "value": "123"},
+                {"op": "replace", "path": "/*/*/caching/enabled", "value": "true"},
+            ],
+        )
+        snapshot.match("update-stage", response)
+
+        response = client.get_stage(restApiId=api_id, stageName="s1")
+        snapshot.match("get-stage", response)

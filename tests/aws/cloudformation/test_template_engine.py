@@ -93,7 +93,7 @@ def create_macro(
 
 
 class TestTypes:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_implicit_type_conversion(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.sqs_api())
         stack = deploy_cfn_template(template=TMPL, max_wait=180)
@@ -117,6 +117,7 @@ class TestIntrinsicFunctions:
             ("Fn::Or", "1", "1", True),
         ],
     )
+    @markers.aws.unknown
     def test_and_or_functions(
         self,
         intrinsic_fn,
@@ -146,7 +147,7 @@ class TestIntrinsicFunctions:
         bucket_names = [b["Name"] for b in buckets["Buckets"]]
         assert (bucket_name in bucket_names) == expected_bucket_created
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_base64_sub_and_getatt_functions(self, deploy_cfn_template):
         template_path = os.path.join(
             os.path.dirname(__file__), "../templates/functions_getatt_sub_base64.yml"
@@ -159,7 +160,7 @@ class TestIntrinsicFunctions:
         converted_string = base64.b64encode(bytes(original_string, "utf-8")).decode("utf-8")
         assert converted_string == deployed.outputs["Encoded"]
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_split_length_and_join_functions(self, deploy_cfn_template):
         template_path = os.path.join(
             os.path.dirname(__file__), "../templates/functions_select_split_join.yml"
@@ -183,7 +184,7 @@ class TestIntrinsicFunctions:
         # assert f"{first_value}_{second_value}" == deployed.outputs["SplitJoin"]
         # assert 2 == deployed.outputs["LengthResult"]
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="functions not currently supported")
     def test_to_json_functions(self, deploy_cfn_template):
         template_path = os.path.join(
@@ -206,7 +207,7 @@ class TestIntrinsicFunctions:
         assert json_result["key2"] == second_value
         assert "value1" == deployed.outputs["Result2"]
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_find_map_function(self, deploy_cfn_template):
         template_path = os.path.join(
             os.path.dirname(__file__), "../templates/function_find_in_map.yml"
@@ -218,7 +219,7 @@ class TestIntrinsicFunctions:
 
         assert deployed.outputs["Result"] == "us-east-1"
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="function not currently supported")
     def test_cidr_function(self, deploy_cfn_template):
         template_path = os.path.join(os.path.dirname(__file__), "../templates/functions_cidr.yml")
@@ -231,7 +232,7 @@ class TestIntrinsicFunctions:
 
         assert deployed.outputs["Address"] == "10.0.0.0/24"
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="function not currently supported")
     def test_get_azs_function(self, deploy_cfn_template):
         template_path = os.path.join(
@@ -247,7 +248,7 @@ class TestIntrinsicFunctions:
         zone = "us-east-1a"  # TODO parametrize
         assert zone in deployed.outputs["Zones"]
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_sub_not_ready(self, deploy_cfn_template):
         template_path = os.path.join(
             os.path.dirname(__file__), "../templates/sub_dependencies.yaml"
@@ -260,6 +261,7 @@ class TestIntrinsicFunctions:
 
 class TestImports:
     @pytest.mark.skip(reason="flaky due to issues in parameter handling and re-resolving")
+    @markers.aws.unknown
     def test_stack_imports(self, deploy_cfn_template, aws_client):
         result = aws_client.cloudformation.list_imports(ExportName="_unknown_")
         assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -293,7 +295,7 @@ class TestImports:
 
 
 class TestSsmParameters:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_create_stack_with_ssm_parameters(
         self, create_parameter, deploy_cfn_template, snapshot, aws_client
     ):
@@ -325,6 +327,7 @@ class TestSsmParameters:
         tags = aws_client.sns.list_tags_for_resource(ResourceArn=matching[0])
         snapshot.match("topic-tags", tags)
 
+    @markers.aws.unknown
     def test_resolve_ssm(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
@@ -338,6 +341,7 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
 
+    @markers.aws.unknown
     def test_resolve_ssm_with_version(self, create_parameter, deploy_cfn_template, aws_client):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value_v0 = f"param-value-{short_uid()}"
@@ -361,6 +365,7 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value_v1
 
+    @markers.aws.unknown
     def test_resolve_ssm_secure(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
@@ -387,6 +392,7 @@ class TestSecretsManagerParameters:
             "resolve_secretsmanager.yaml",
         ],
     )
+    @markers.aws.unknown
     def test_resolve_secretsmanager(self, create_secret, deploy_cfn_template, template_name):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
@@ -404,7 +410,7 @@ class TestSecretsManagerParameters:
 
 class TestPreviousValues:
     @pytest.mark.xfail(reason="outputs don't behave well in combination with conditions")
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_parameter_usepreviousvalue_behavior(
         self, deploy_cfn_template, is_stack_updated, aws_client
     ):
@@ -454,7 +460,7 @@ class TestPreviousValues:
 
 
 class TestImportValues:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_import_values_across_stacks(self, deploy_cfn_template, aws_client):
         export_name = f"b-{short_uid()}"
 
@@ -489,7 +495,7 @@ class TestImportValues:
 
 
 class TestMacros:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_macro_deployment(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
     ):
@@ -503,7 +509,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_9,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
         )
 
         stack_with_macro = deploy_cfn_template(
@@ -521,7 +527,7 @@ class TestMacros:
         snapshot.match("stack_outputs", stack_with_macro.outputs)
         snapshot.match("stack_resource_descriptions", description)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..TemplateBody.Resources.Parameter.LogicalResourceId",
@@ -548,7 +554,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -582,7 +588,7 @@ class TestMacros:
         snapshot.match("processed_template", processed_template)
 
     @pytest.mark.skip(reason="Snippet macros not yet supported")
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "template_to_transform",
         ["transformation_snippet_topic.yml", "transformation_snippet_topic.json"],
@@ -608,7 +614,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -639,7 +645,7 @@ class TestMacros:
         snapshot.match("processed_template", processed_template)
 
     @pytest.mark.skip(reason="Snippet macros not yet supported")
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_scope_order_and_parameters(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
     ):
@@ -657,7 +663,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -680,7 +686,7 @@ class TestMacros:
         )
         snapshot.match("processed_template", processed_template)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..TemplateBody.Resources.Parameter.LogicalResourceId",
@@ -711,7 +717,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -749,7 +755,7 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.key_value("RoleName", "role-name"))
         snapshot.match("processed_template", processed_template)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Event.fragment.Conditions",
@@ -777,7 +783,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -810,7 +816,7 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_to_validate_template_limit_for_macro(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
     ):
@@ -826,7 +832,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -862,7 +868,7 @@ class TestMacros:
         )
         snapshot.match("error_response", response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_error_pass_macro_as_reference(self, snapshot, aws_client):
         """
         This test shows that the CFn will reject any transformation name that has been specified as reference, for
@@ -883,7 +889,7 @@ class TestMacros:
             )
         snapshot.match("error", ex.value.response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     def test_functions_and_references_during_transformation(
         self, deploy_cfn_template, create_lambda_function, snapshot, cleanups, aws_client
     ):
@@ -899,7 +905,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -942,6 +948,7 @@ class TestMacros:
             "raise_error.py",
         ],
     )
+    @markers.aws.validated
     def test_failed_state(
         self,
         deploy_cfn_template,
@@ -964,7 +971,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -1006,7 +1013,7 @@ class TestMacros:
 
 
 class TestStackEvents:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..EventId",

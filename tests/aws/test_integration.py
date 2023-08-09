@@ -7,6 +7,7 @@ import time
 import pytest
 
 from localstack.testing.aws.util import get_lambda_logs
+from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns
 from localstack.utils.common import (
@@ -22,8 +23,8 @@ from localstack.utils.common import (
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.sync import poll_condition
 
-from .awslambda.functions import lambda_integration
-from .awslambda.test_lambda import (
+from .lambda_.functions import lambda_integration
+from .lambda_.test_lambda import (
     PYTHON_TEST_RUNTIMES,
     TEST_LAMBDA_PUT_ITEM_FILE,
     TEST_LAMBDA_PYTHON,
@@ -59,7 +60,7 @@ def scheduled_test_lambda(aws_client):
     resp = testutil.create_lambda_function(
         handler_file=handler_file, func_name=scheduled_lambda_name
     )
-    aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=scheduled_lambda_name)
+    aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=scheduled_lambda_name)
     func_arn = resp["CreateFunctionResponse"]["FunctionArn"]
 
     # create scheduled Lambda function
@@ -77,6 +78,7 @@ def scheduled_test_lambda(aws_client):
 
 @pytest.mark.usefixtures("scheduled_test_lambda")
 class TestIntegration:
+    @markers.aws.unknown
     def test_firehose_s3(self, firehose_create_delivery_stream, s3_create_bucket, aws_client):
         stream_name = f"fh-stream-{short_uid()}"
         bucket_name = s3_create_bucket()
@@ -106,13 +108,14 @@ class TestIntegration:
             DeliveryStreamName=stream_name, Record={"Data": to_bytes(test_data)}
         )
         # check records in target bucket
-        all_objects = testutil.list_all_s3_objects()
+        all_objects = testutil.list_all_s3_objects(aws_client.s3)
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
         # check file layout in target bucket
-        all_objects = testutil.map_all_s3_objects(buckets=[bucket_name])
+        all_objects = testutil.map_all_s3_objects(buckets=[bucket_name], s3_client=aws_client.s3)
         for key in all_objects.keys():
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
+    @markers.aws.unknown
     def test_firehose_extended_s3(
         self, firehose_create_delivery_stream, s3_create_bucket, aws_client
     ):
@@ -142,13 +145,14 @@ class TestIntegration:
             DeliveryStreamName=stream_name, Record={"Data": to_bytes(test_data)}
         )
         # check records in target bucket
-        all_objects = testutil.list_all_s3_objects()
+        all_objects = testutil.list_all_s3_objects(aws_client.s3)
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
         # check file layout in target bucket
-        all_objects = testutil.map_all_s3_objects(buckets=[bucket_name])
+        all_objects = testutil.map_all_s3_objects(buckets=[bucket_name], s3_client=aws_client.s3)
         for key in all_objects.keys():
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
+    @markers.aws.unknown
     def test_firehose_kinesis_to_s3(self, kinesis_create_stream, aws_client):
         stream_name = f"fh-stream-{short_uid()}"
 
@@ -193,7 +197,7 @@ class TestIntegration:
 
         # check records in target bucket
         def _assert_objects_created():
-            all_objects = testutil.list_all_s3_objects()
+            all_objects = testutil.list_all_s3_objects(aws_client.s3)
             testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
 
         retry(_assert_objects_created, sleep=1, retries=4)
@@ -201,6 +205,7 @@ class TestIntegration:
         # clean up
         aws_client.firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
 
+    @markers.aws.unknown
     def test_lambda_streams_batch_and_transactions(
         self,
         kinesis_create_stream,
@@ -251,12 +256,12 @@ class TestIntegration:
                 func_name=lambda_ddb_name,
                 envvars={"KINESIS_STREAM_NAME": stream_name},
             )
-            uuid = aws_client.awslambda.create_event_source_mapping(
+            uuid = aws_client.lambda_.create_event_source_mapping(
                 FunctionName=lambda_ddb_name,
                 EventSourceArn=ddb_event_source_arn,
                 StartingPosition="TRIM_HORIZON",
             )["UUID"]
-            cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=uuid))
+            cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
 
             # submit a batch with writes
             aws_client.dynamodb.batch_write_item(
@@ -527,6 +532,7 @@ class TestIntegration:
             # cleanup
             process.stop()
 
+    @markers.aws.unknown
     def test_scheduled_lambda(self, aws_client, scheduled_test_lambda):
         def check_invocation(*args):
             assert get_lambda_logs(scheduled_test_lambda, aws_client.logs)
@@ -535,6 +541,7 @@ class TestIntegration:
         retry(check_invocation, retries=14, sleep=5)
 
 
+@markers.aws.unknown
 def test_kinesis_lambda_forward_chain(
     kinesis_create_stream, create_lambda_function, cleanups, aws_client
 ):
@@ -554,7 +561,7 @@ def test_kinesis_lambda_forward_chain(
     )
     lambda_1_event_source_uuid = lambda_1_resp["CreateEventSourceMappingResponse"]["UUID"]
     cleanups.append(
-        lambda: aws_client.awslambda.delete_event_source_mapping(UUID=lambda_1_event_source_uuid)
+        lambda: aws_client.lambda_.delete_event_source_mapping(UUID=lambda_1_event_source_uuid)
     )
     lambda_2_resp = create_lambda_function(
         func_name=lambda2_name,
@@ -564,7 +571,7 @@ def test_kinesis_lambda_forward_chain(
     )
     lambda_2_event_source_uuid = lambda_2_resp["CreateEventSourceMappingResponse"]["UUID"]
     cleanups.append(
-        lambda: aws_client.awslambda.delete_event_source_mapping(UUID=lambda_2_event_source_uuid)
+        lambda: aws_client.lambda_.delete_event_source_mapping(UUID=lambda_2_event_source_uuid)
     )
 
     # publish test record
@@ -580,7 +587,7 @@ def test_kinesis_lambda_forward_chain(
 
     def check_results():
         LOGGER.debug("check results")
-        all_objects = testutil.list_all_s3_objects()
+        all_objects = testutil.list_all_s3_objects(aws_client.s3)
         testutil.assert_objects(test_data, all_objects)
 
     # check results
@@ -592,6 +599,7 @@ parametrize_python_runtimes = pytest.mark.parametrize("runtime", PYTHON_TEST_RUN
 
 class TestLambdaOutgoingSdkCalls:
     @parametrize_python_runtimes
+    @markers.aws.unknown
     def test_lambda_send_message_to_sqs(
         self, create_lambda_function, sqs_create_queue, runtime, lambda_su_role, aws_client
     ):
@@ -613,7 +621,7 @@ class TestLambdaOutgoingSdkCalls:
             "region_name": aws_client.sqs.meta.region_name,
         }
 
-        aws_client.awslambda.invoke(FunctionName=function_name, Payload=json.dumps(event))
+        aws_client.lambda_.invoke(FunctionName=function_name, Payload=json.dumps(event))
 
         # assert that message has been received on the Queue
         def receive_message():
@@ -625,6 +633,7 @@ class TestLambdaOutgoingSdkCalls:
         assert event["message"] == message["Body"]
 
     @parametrize_python_runtimes
+    @markers.aws.unknown
     def test_lambda_put_item_to_dynamodb(
         self,
         create_lambda_function,
@@ -662,7 +671,7 @@ class TestLambdaOutgoingSdkCalls:
 
         assert poll_condition(wait_for_table_created, timeout=30)
 
-        aws_client.awslambda.invoke(FunctionName=function_name, Payload=json.dumps(event))
+        aws_client.lambda_.invoke(FunctionName=function_name, Payload=json.dumps(event))
 
         rs = aws_client.dynamodb.scan(TableName=table_name)
 
@@ -673,6 +682,7 @@ class TestLambdaOutgoingSdkCalls:
             assert data[item["id"]["S"]] == item["data"]["S"]
 
     @parametrize_python_runtimes
+    @markers.aws.unknown
     def test_lambda_start_stepfunctions_execution(
         self, create_lambda_function, runtime, lambda_su_role, cleanups, aws_client
     ):
@@ -717,7 +727,7 @@ class TestLambdaOutgoingSdkCalls:
             lambda: aws_client.stepfunctions.delete_state_machine(stateMachineArn=sm_arn)
         )
 
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=function_name,
             Payload=json.dumps(
                 {

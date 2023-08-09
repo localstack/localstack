@@ -38,7 +38,7 @@ def delete_stack_after_process(cfn_client, stack_name):
 
 
 class TestStackPolicy:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_policy_lifecycle(self, deploy_cfn_template, snapshot, aws_client):
         stack = deploy_cfn_template(
@@ -79,7 +79,7 @@ class TestStackPolicy:
         obtained_policy = aws_client.cloudformation.get_stack_policy(StackName=stack.stack_name)
         snapshot.match("policy_deleted", obtained_policy)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_set_policy_with_url(self, deploy_cfn_template, s3_create_bucket, snapshot, aws_client):
         """Test to validate the setting of a Stack Policy through an URL"""
@@ -104,7 +104,7 @@ class TestStackPolicy:
         obtained_policy = aws_client.cloudformation.get_stack_policy(StackName=stack.stack_name)
         snapshot.match("policy", obtained_policy)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_set_invalid_policy_with_url(
         self, deploy_cfn_template, s3_create_bucket, snapshot, aws_client
@@ -135,7 +135,7 @@ class TestStackPolicy:
         error_response = ex.value.response
         snapshot.match("error", error_response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_set_empty_policy_with_url(
         self, deploy_cfn_template, s3_create_bucket, snapshot, aws_client
@@ -162,7 +162,7 @@ class TestStackPolicy:
         obtained_policy = aws_client.cloudformation.get_stack_policy(StackName=stack.stack_name)
         snapshot.match("policy", obtained_policy)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_set_policy_both_policy_and_url(
         self, deploy_cfn_template, s3_create_bucket, snapshot, aws_client
@@ -202,7 +202,7 @@ class TestStackPolicy:
         error_response = ex.value.response
         snapshot.match("error", error_response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_empty_policy(self, deploy_cfn_template, snapshot, aws_client):
         stack = deploy_cfn_template(
@@ -220,7 +220,7 @@ class TestStackPolicy:
         policy = aws_client.cloudformation.get_stack_policy(StackName=stack.stack_name)
         snapshot.match("policy", policy)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_not_json_policy(self, deploy_cfn_template, snapshot, aws_client):
         """Test to validate the error response when setting and Invalid Policy"""
@@ -239,7 +239,7 @@ class TestStackPolicy:
         error_response = ex.value.response
         snapshot.match("error", error_response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_different_principal_attribute(self, deploy_cfn_template, snapshot, aws_client):
         stack = deploy_cfn_template(
@@ -267,7 +267,7 @@ class TestStackPolicy:
         error_response = ex.value.response["Error"]
         snapshot.match("error", error_response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_different_action_attribute(self, deploy_cfn_template, snapshot, aws_client):
         stack = deploy_cfn_template(
@@ -295,7 +295,7 @@ class TestStackPolicy:
         error_response = ex.value.response
         snapshot.match("error", error_response)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     @pytest.mark.parametrize("resource_type", ["AWS::S3::Bucket", "AWS::SNS::Topic"])
     def test_prevent_update(self, resource_type, deploy_cfn_template, aws_client):
@@ -344,7 +344,7 @@ class TestStackPolicy:
         finally:
             delete_stack_after_process(aws_client.cloudformation, stack.stack_name)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     @pytest.mark.parametrize(
         "resource",
@@ -401,7 +401,7 @@ class TestStackPolicy:
         finally:
             delete_stack_after_process(aws_client.cloudformation, stack.stack_name)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_prevent_modifying_with_policy_specifying_resource_id(
         self, deploy_cfn_template, aws_client
@@ -449,7 +449,7 @@ class TestStackPolicy:
         finally:
             delete_stack_after_process(aws_client.cloudformation, stack.stack_name)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_prevent_replacement(self, deploy_cfn_template, aws_client):
         template = load_file(
@@ -492,7 +492,7 @@ class TestStackPolicy:
         finally:
             delete_stack_after_process(aws_client.cloudformation, stack.stack_name)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_update_with_policy(self, deploy_cfn_template, aws_client):
         """
@@ -527,7 +527,7 @@ class TestStackPolicy:
             parameters={"TopicName": f"topic-{short_uid()}", "BucketName": f"bucket-{short_uid()}"},
         )
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_update_with_empty_policy(self, deploy_cfn_template, is_stack_updated, aws_client):
         """
@@ -556,7 +556,7 @@ class TestStackPolicy:
 
         retry(_assert_stack_is_updated, retries=5, sleep=2, sleep_before=1)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     @pytest.mark.parametrize("reverse_statements", [False, True])
     def test_update_with_overlapping_policies(
@@ -611,7 +611,7 @@ class TestStackPolicy:
 
         delete_stack_after_process(aws_client.cloudformation, stack.stack_name)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_create_stack_with_policy(self, snapshot, cleanup_stacks, aws_client):
         stack_name = f"stack-{short_uid()}"
@@ -639,7 +639,7 @@ class TestStackPolicy:
         snapshot.match("policy", obtained_policy)
         cleanup_stacks([stack_name])
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_set_policy_with_update_operation(
         self, deploy_cfn_template, is_stack_updated, snapshot, cleanup_stacks, aws_client
@@ -681,7 +681,7 @@ class TestStackPolicy:
 
         delete_stack_after_process(aws_client.cloudformation, stack.stack_name)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skip(reason="Not implemented")
     def test_policy_during_update(
         self, deploy_cfn_template, is_stack_updated, snapshot, cleanup_stacks, aws_client

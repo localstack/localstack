@@ -384,7 +384,7 @@ def send_notification_for_subscriber(
         # make sure we don't run into a socket timeout
         region = arns.extract_region_from_arn(lambda_function_config)
         connection_config = botocore.config.Config(read_timeout=300)
-        lambda_client = connect_to(config=connection_config, region_name=region).awslambda
+        lambda_client = connect_to(config=connection_config, region_name=region).lambda_
         try:
             lambda_client.invoke(
                 FunctionName=lambda_function_config,

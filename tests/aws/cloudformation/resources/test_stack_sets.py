@@ -23,7 +23,7 @@ def wait_stack_set_operation(aws_client):
     return waiter
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_create_stack_set_with_stack_instances(
     account_id,
     region,

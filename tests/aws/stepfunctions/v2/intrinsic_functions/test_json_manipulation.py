@@ -21,6 +21,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestJsonManipulation:
+    @markers.aws.unknown
     def test_string_to_json(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -45,6 +46,7 @@ class TestJsonManipulation:
             input_values,
         )
 
+    @markers.aws.unknown
     def test_json_to_string(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -68,6 +70,7 @@ class TestJsonManipulation:
             input_values_jsons,
         )
 
+    @markers.aws.unknown
     def test_json_merge(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):

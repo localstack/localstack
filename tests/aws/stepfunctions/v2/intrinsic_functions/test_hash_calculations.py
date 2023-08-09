@@ -19,6 +19,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestHashCalculations:
+    @markers.aws.unknown
     def test_hash(self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client):
         hash_bindings = [
             ("input data", "MD5"),

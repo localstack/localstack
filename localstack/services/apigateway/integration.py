@@ -168,7 +168,7 @@ def call_lambda(
     clients = get_service_factory(
         region_name=region_name, role_arn=invocation_context.integration.get("credentials")
     )
-    inv_result = clients.awslambda.request_metadata(
+    inv_result = clients.lambda_.request_metadata(
         service_principal=ServicePrincipal.apigateway, source_arn=get_source_arn(invocation_context)
     ).invoke(
         FunctionName=function_arn,

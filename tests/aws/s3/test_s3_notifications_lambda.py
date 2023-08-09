@@ -14,12 +14,12 @@ from localstack.utils.sync import retry
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON_TRIGGERED_S3 = os.path.join(
-    THIS_FOLDER, "../awslambda", "functions", "lambda_triggered_by_s3.py"
+    THIS_FOLDER, "../lambda_", "functions", "lambda_triggered_by_s3.py"
 )
 
 
 class TestS3NotificationsToLambda:
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
     )
@@ -62,7 +62,7 @@ class TestS3NotificationsToLambda:
             handler_file=TEST_LAMBDA_PYTHON_TRIGGERED_S3, func_name=function_name, role=lambda_role
         )["CreateFunctionResponse"]
 
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             StatementId="1",
             FunctionName=function_name,
             Action="lambda:InvokeFunction",
@@ -97,7 +97,7 @@ class TestS3NotificationsToLambda:
 
         retry(check_table, retries=5, sleep=1)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER,
         paths=["$..data.s3.object.eTag", "$..data.s3.object.versionId", "$..data.s3.object.size"],
@@ -147,7 +147,7 @@ class TestS3NotificationsToLambda:
             handler_file=TEST_LAMBDA_PYTHON_TRIGGERED_S3, func_name=function_name, role=lambda_role
         )["CreateFunctionResponse"]
 
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             StatementId="1",
             FunctionName=function_name,
             Action="lambda:InvokeFunction",
@@ -192,7 +192,7 @@ class TestS3NotificationsToLambda:
 
         retry(check_table, retries=20, sleep=2)
 
-    @markers.parity.aws_validated
+    @markers.aws.validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="no validation implemented")
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not LEGACY_S3_PROVIDER,

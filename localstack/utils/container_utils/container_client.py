@@ -454,8 +454,6 @@ class DockerRunFlags:
 # TODO: remove Docker/Podman compatibility switches (in particular strip_wellknown_repo_prefixes=...)
 #  from the container client base interface and introduce derived Podman client implementations instead!
 class ContainerClient(metaclass=ABCMeta):
-    STOP_TIMEOUT = 0
-
     @abstractmethod
     def get_system_info(self) -> dict:
         """Returns the docker system-wide information as dictionary (``docker info``)."""
@@ -515,11 +513,10 @@ class ContainerClient(metaclass=ABCMeta):
         return ip
 
     @abstractmethod
-    def stop_container(self, container_name: str, timeout: int = None):
+    def stop_container(self, container_name: str, timeout: int = 10):
         """Stops container with given name
         :param container_name: Container identifier (name or id) of the container to be stopped
         :param timeout: Timeout after which SIGKILL is sent to the container.
-                        If not specified, defaults to `STOP_TIMEOUT`
         """
 
     @abstractmethod

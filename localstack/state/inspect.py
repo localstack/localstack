@@ -76,10 +76,10 @@ class ReflectionStateLocator:
 
         match service_name:
             # lambda is a special case in package and module naming
-            # the store attribute is `awslambda_stores` in `localstack.services.awslambda.lambda_models`
+            # the store attribute is `lambda_stores` in `localstack.services.lambda_.lambda_models`
             case "lambda":
                 modules = [
-                    ("localstack.services.awslambda.lambda_models", "awslambda_stores"),
+                    ("localstack.services.lambda_.lambda_models", "lambda_stores"),
                     ("moto.awslambda.models", "lambda_backends"),
                 ]
                 _visit_modules(modules)

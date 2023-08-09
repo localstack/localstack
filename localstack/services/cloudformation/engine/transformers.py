@@ -1,8 +1,8 @@
 import logging
 from typing import Dict, Type, Union
 
+from localstack.aws.connect import connect_to
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
 from localstack.utils.objects import recurse_object
 
 LOG = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class AwsIncludeTransformer(Transformer):
 
         location = parameters.get("Location")
         if location and location.startswith("s3://"):
-            s3_client = aws_stack.connect_to_resource("s3")
+            s3_client = connect_to().s3
             bucket, _, path = location.removeprefix("s3://").partition("/")
             content = testutil.download_s3_object(s3_client, bucket, path)
             content = parse_template(content)

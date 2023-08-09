@@ -14,7 +14,7 @@ from localstack.utils.strings import to_bytes
 from tests.aws.apigateway.apigateway_fixtures import api_invoke_url
 
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "awslambda/functions/lambda_echo.py")
+TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "lambda_/functions/lambda_echo.py")
 
 TEST_TEMPLATE_1 = """
 AWSTemplateFormatVersion: '2010-09-09'
@@ -51,6 +51,7 @@ Resources:
 """
 
 
+@markers.aws.unknown
 def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
     api_name = f"rest-api-{short_uid()}"
     custom_id = short_uid()
@@ -105,7 +106,7 @@ def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
     assert mappings[0] == "(none)"
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_cfn_apigateway_swagger_import(deploy_cfn_template, echo_http_server_post, aws_client):
     api_name = f"rest-api-{short_uid()}"
     deploy_cfn_template(
@@ -131,7 +132,7 @@ def test_cfn_apigateway_swagger_import(deploy_cfn_template, echo_http_server_pos
     assert content["url"].endswith("/post")
 
 
-@markers.parity.only_localstack
+@markers.aws.only_localstack
 def test_url_output(tmp_http_server, deploy_cfn_template):
     test_port, invocations, proxy = tmp_http_server
     integration_uri = f"http://localhost:{test_port}/{{proxy}}"
@@ -157,7 +158,7 @@ def test_url_output(tmp_http_server, deploy_cfn_template):
     assert f"https://{api_id}.execute-api.{constants.LOCALHOST_HOSTNAME}:4566" in api_url
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$.get-method-post.methodIntegration.connectionType",  # TODO: maybe because this is a MOCK integration
@@ -210,7 +211,7 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, aws_client, snapshot
     assert not apis
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=["$.get-resources.items..resourceMethods.ANY"]  # TODO: empty in AWS
 )
@@ -261,7 +262,7 @@ def test_cfn_deploy_apigateway_models(deploy_cfn_template, snapshot, aws_client)
     assert result.status_code == 400
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
 
@@ -292,7 +293,7 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
         aws_client.apigateway.delete_usage_plan(usagePlanId=plan["id"])
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$.resources.items..resourceMethods.GET"  # TODO: this is really weird, after importing, AWS returns them empty?
@@ -332,6 +333,7 @@ def test_cfn_deploy_apigateway_from_s3_swagger(
     snapshot.match("resources", resources)
 
 
+@markers.aws.unknown
 def test_cfn_apigateway_rest_api(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "../../templates/apigateway.json")
@@ -361,7 +363,7 @@ def test_cfn_apigateway_rest_api(deploy_cfn_template, aws_client):
     assert not apis
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_account(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -379,7 +381,7 @@ def test_account(deploy_cfn_template, aws_client):
     assert account_info["cloudwatchRoleArn"] == stack.outputs["RoleArn"]
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 def test_update_usage_plan(deploy_cfn_template, aws_client):
     rest_api_name = f"api-{short_uid()}"
     stack = deploy_cfn_template(
@@ -409,6 +411,7 @@ def test_update_usage_plan(deploy_cfn_template, aws_client):
         aws_client.apigateway.delete_usage_plan(usagePlanId=plan["id"])
 
 
+@markers.aws.validated
 def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_client):
     template = """
     Parameters:
@@ -452,7 +455,7 @@ def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_clie
     snapshot.match("rest-api", rest_api)
 
 
-@markers.parity.aws_validated
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$.put-ssm-param.Tier",
