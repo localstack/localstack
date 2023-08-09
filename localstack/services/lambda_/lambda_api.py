@@ -55,7 +55,7 @@ from localstack.services.lambda_.lambda_utils import (
     get_zip_bytes,
     validate_filters,
 )
-from localstack.services.lambda_.packages import awslambda_go_runtime_package
+from localstack.services.lambda_.packages import lambda_go_runtime_package
 from localstack.utils.archives import unzip
 from localstack.utils.aws import arns, aws_stack, resources
 from localstack.utils.aws.arns import extract_region_from_arn
@@ -817,7 +817,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
             lambda_handler = execute
 
         if runtime.startswith("go1") and not use_docker():
-            awslambda_go_runtime_package.install()
+            lambda_go_runtime_package.install()
 
             ensure_readable(main_file)
 

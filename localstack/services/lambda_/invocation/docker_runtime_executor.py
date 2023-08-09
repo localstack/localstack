@@ -24,7 +24,7 @@ from localstack.services.lambda_.lambda_utils import (
     get_all_container_networks_for_lambda,
     get_main_endpoint_from_container,
 )
-from localstack.services.lambda_.packages import awslambda_runtime_package
+from localstack.services.lambda_.packages import lambda_runtime_package
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
@@ -164,7 +164,7 @@ resolver = RuntimeImageResolver()
 
 
 def get_runtime_client_path() -> Path:
-    installer = awslambda_runtime_package.get_installer()
+    installer = lambda_runtime_package.get_installer()
     installer.install()
     return Path(installer.get_installed_dir())
 
@@ -174,7 +174,7 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
         raise NotImplementedError("Custom images are currently not supported")
     src_init = get_runtime_client_path()
     # copy init file
-    target_init = awslambda_runtime_package.get_installer().get_executable_path()
+    target_init = lambda_runtime_package.get_installer().get_executable_path()
     shutil.copy(src_init, target_init)
     target_init.chmod(0o755)
     # copy code

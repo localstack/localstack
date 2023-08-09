@@ -7,18 +7,18 @@ from localstack.runtime import hooks
 LOG = logging.getLogger(__name__)
 
 
-@package(name="awslambda-go-runtime")
-def awslambda_go_runtime_package() -> Package:
-    from localstack.services.lambda_.packages import awslambda_go_runtime_package
+@package(name="lambda-go-runtime")
+def lambda_go_runtime_package() -> Package:
+    from localstack.services.lambda_.packages import lambda_go_runtime_package
 
-    return awslambda_go_runtime_package
+    return lambda_go_runtime_package
 
 
-@package(name="awslambda-runtime")
-def awslambda_runtime_package() -> Package:
-    from localstack.services.lambda_.packages import awslambda_runtime_package
+@package(name="lambda-runtime")
+def lambda_runtime_package() -> Package:
+    from localstack.services.lambda_.packages import lambda_runtime_package
 
-    return awslambda_runtime_package
+    return lambda_runtime_package
 
 
 @package(name="lambda-java-libs")

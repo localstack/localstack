@@ -32,10 +32,7 @@ from localstack.services.lambda_.lambda_utils import (
     rm_docker_container,
     store_lambda_logs,
 )
-from localstack.services.lambda_.packages import (
-    awslambda_go_runtime_package,
-    lambda_java_libs_package,
-)
+from localstack.services.lambda_.packages import lambda_go_runtime_package, lambda_java_libs_package
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
@@ -1601,7 +1598,7 @@ class LambdaExecutorLocal(LambdaExecutor):
             lambda_function.envvars["AWS_LAMBDA_EVENT_BODY"] = json.dumps(json_safe(event))
         else:
             LOG.warning("Unable to get function details for local execution of Golang Lambda")
-        go_installer = awslambda_go_runtime_package.get_installer()
+        go_installer = lambda_go_runtime_package.get_installer()
         cmd = go_installer.get_executable_path()
         LOG.debug("Running Golang Lambda with runtime: %s", cmd)
         result = self._execute_in_custom_runtime(cmd, lambda_function=lambda_function)

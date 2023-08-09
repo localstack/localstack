@@ -15,21 +15,22 @@ LAMBDA_RUNTIME_VERSION = config.LAMBDA_INIT_RELEASE_VERSION or LAMBDA_RUNTIME_DE
 
 # GO Lambda runtime
 GO_RUNTIME_VERSION = "0.4.0"
+# NOTE: We have a typo in the repository name "awslamba"
 GO_RUNTIME_DOWNLOAD_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/awslamba-go-runtime-{version}-{os}-{arch}.tar.gz"
 
 
-class AWSLambdaRuntimePackage(Package):
+class LambdaRuntimePackage(Package):
     def __init__(self, default_version: str = LAMBDA_RUNTIME_VERSION):
-        super().__init__(name="AwsLambda", default_version=default_version)
+        super().__init__(name="Lambda", default_version=default_version)
 
     def get_versions(self) -> List[str]:
         return [LAMBDA_RUNTIME_VERSION]
 
     def _get_installer(self, version: str) -> PackageInstaller:
-        return AWSLambdaRuntimePackageInstaller(name="lambda_-runtime", version=version)
+        return LambdaRuntimePackageInstaller(name="lambda-runtime", version=version)
 
 
-class AWSLambdaRuntimePackageInstaller(DownloadInstaller):
+class LambdaRuntimePackageInstaller(DownloadInstaller):
     def _get_arch(self):
         arch = get_arch()
         return "x86_64" if arch == "amd64" else arch
@@ -53,26 +54,26 @@ class AWSLambdaRuntimePackageInstaller(DownloadInstaller):
         os.chmod(install_location, mode=st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
-class AWSLambdaGoRuntimePackage(Package):
+class LambdaGoRuntimePackage(Package):
     def __init__(self, default_version: str = GO_RUNTIME_VERSION):
-        super().__init__(name="AwsLambdaGo", default_version=default_version)
+        super().__init__(name="LambdaGo", default_version=default_version)
 
     def get_versions(self) -> List[str]:
         return [GO_RUNTIME_VERSION]
 
     def _get_installer(self, version: str) -> PackageInstaller:
-        return AWSLambdaGoRuntimePackageInstaller(name="awslamba-go-runtime", version=version)
+        return LambdaGoRuntimePackageInstaller(name="lambda-go-runtime", version=version)
 
 
-class AWSLambdaGoRuntimePackageInstaller(ArchiveDownloadAndExtractInstaller):
+class LambdaGoRuntimePackageInstaller(ArchiveDownloadAndExtractInstaller):
     def _get_download_url(self) -> str:
         system = platform.system().lower()
         arch = get_arch()
 
         if system not in ["linux"]:
-            raise SystemNotSupportedException(f"Unsupported os {system} for awslambda-go-runtime")
+            raise SystemNotSupportedException(f"Unsupported os {system} for lambda-go-runtime")
         if arch not in ["amd64", "arm64"]:
-            raise SystemNotSupportedException(f"Unsupported arch {arch} for awslambda-go-runtime")
+            raise SystemNotSupportedException(f"Unsupported arch {arch} for lambda-go-runtime")
 
         return GO_RUNTIME_DOWNLOAD_URL_TEMPLATE.format(
             version=GO_RUNTIME_VERSION,
@@ -81,7 +82,7 @@ class AWSLambdaGoRuntimePackageInstaller(ArchiveDownloadAndExtractInstaller):
         )
 
     def _get_install_marker_path(self, install_dir: str) -> str:
-        return os.path.join(install_dir, "aws-lambda-mock")
+        return os.path.join(install_dir, "lambda-mock")
 
     def _install(self, target: InstallTarget) -> None:
         super()._install(target)
@@ -104,7 +105,7 @@ URL_LOCALSTACK_FAT_JAR = (
 )
 
 
-class AWSLambdaJavaPackage(Package):
+class LambdaJavaPackage(Package):
     def __init__(self):
         super().__init__("LambdaJavaLibs", "0.2.22")
 
@@ -112,14 +113,14 @@ class AWSLambdaJavaPackage(Package):
         return ["0.2.22", "0.2.21"]
 
     def _get_installer(self, version: str) -> PackageInstaller:
-        return AWSLambdaJavaPackageInstaller("lambda-java-libs", version)
+        return LambdaJavaPackageInstaller("lambda-java-libs", version)
 
 
-class AWSLambdaJavaPackageInstaller(DownloadInstaller):
+class LambdaJavaPackageInstaller(DownloadInstaller):
     def _get_download_url(self) -> str:
         return URL_LOCALSTACK_FAT_JAR.format(ver=self.version, mvn_repo=MAVEN_REPO_URL)
 
 
-awslambda_runtime_package = AWSLambdaRuntimePackage()
-awslambda_go_runtime_package = AWSLambdaGoRuntimePackage()
-lambda_java_libs_package = AWSLambdaJavaPackage()
+lambda_runtime_package = LambdaRuntimePackage()
+lambda_go_runtime_package = LambdaGoRuntimePackage()
+lambda_java_libs_package = LambdaJavaPackage()
