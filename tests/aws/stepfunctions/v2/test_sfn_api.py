@@ -418,6 +418,7 @@ class TestSnfApi:
         exec_hist_resp = aws_client.stepfunctions.get_execution_history(executionArn=execution_arn)
         sfn_snapshot.match("exec_hist_resp", exec_hist_resp)
 
+    @markers.aws.validated
     def test_create_update_state_machine_base_definition(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -468,6 +469,7 @@ class TestSnfApi:
         )
         sfn_snapshot.match("describe_resp_t2", describe_resp_t2)
 
+    @markers.aws.validated
     def test_create_update_state_machine_base_role_arn(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -516,6 +518,7 @@ class TestSnfApi:
         )
         sfn_snapshot.match("describe_resp_t2", describe_resp_t2)
 
+    @markers.aws.validated
     def test_create_update_state_machine_base_definition_and_role(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -572,6 +575,7 @@ class TestSnfApi:
         )
         sfn_snapshot.match("describe_resp_t2", describe_resp_t2)
 
+    @markers.aws.validated
     def test_create_update_state_machine_base_update_none(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
@@ -604,6 +608,7 @@ class TestSnfApi:
             )
         sfn_snapshot.match("null_required_parameter", null_required_parameter.value)
 
+    @markers.aws.validated
     def test_create_update_state_machine_same_parameters(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
     ):
