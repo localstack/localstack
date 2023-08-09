@@ -68,7 +68,7 @@ class Markers:
 def pytest_collection_modifyitems(
     session: pytest.Session, config: Any, items: List[pytest.Item]
 ) -> None:
-    """Enforce that each test has exactly one"""
+    """Enforce that each test has exactly one aws compatibility marker"""
     marker_errors = []
     for item in items:
         # we should only concern ourselves with tests in tests/aws/
