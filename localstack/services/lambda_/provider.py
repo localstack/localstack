@@ -10,7 +10,7 @@ from typing import IO, Optional, Tuple
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api import RequestContext, handler
+from localstack.aws.api import RequestContext, ServiceException, handler
 from localstack.aws.api.lambda_ import (
     AccountLimit,
     AccountUsage,
@@ -116,7 +116,9 @@ from localstack.aws.api.lambda_ import (
     ResourceNotFoundException,
     Runtime,
     RuntimeVersionConfig,
-    ServiceException,
+)
+from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
+from localstack.aws.api.lambda_ import (
     SnapStart,
     SnapStartApplyOn,
     SnapStartOptimizationStatus,
@@ -745,11 +747,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         account_id=context.account_id,
                     )
                 else:
-                    raise ServiceException("Gotta have s3 bucket or zip file")
+                    raise LambdaServiceException("Gotta have s3 bucket or zip file")
             elif package_type == PackageType.Image:
                 image = request_code.get("ImageUri")
                 if not image:
-                    raise ServiceException("Gotta have an image when package type is image")
+                    raise LambdaServiceException("Gotta have an image when package type is image")
                 image = create_image_code(image_uri=image)
 
                 image_config_req = request.get("ImageConfig", {})
@@ -1013,7 +1015,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             code = None
             image = create_image_code(image_uri=image)
         else:
-            raise ServiceException("Gotta have s3 bucket or zip file or image")
+            raise LambdaServiceException("Gotta have s3 bucket or zip file or image")
 
         old_function_version = function.versions.get("$LATEST")
         replace_kwargs = {"code": code} if code else {"image": image}
@@ -1263,7 +1265,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         except Exception as e:
             LOG.error("Error while invoking lambda", exc_info=e)
             # TODO map to correct exception
-            raise ServiceException("Internal error while executing lambda") from e
+            raise LambdaServiceException("Internal error while executing lambda") from e
 
         if invocation_type == InvocationType.Event:
             # This happens when invocation type is event
