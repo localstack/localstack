@@ -755,7 +755,7 @@ def test_restjson_opensearch_with_botocore():
     )
 
 
-def test_restjson_awslambda_invoke_with_botocore():
+def test_restjson_lambda_invoke_with_botocore():
     _botocore_parser_integration_test(
         service="lambda",
         action="Invoke",

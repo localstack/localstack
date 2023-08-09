@@ -90,7 +90,7 @@ class TestCdkInit:
             },
         )
 
-        resp = aws_client.awslambda.list_functions()
+        resp = aws_client.lambda_.list_functions()
         functions = [func for func in resp["Functions"] if stack.stack_name in func["FunctionName"]]
 
         assert len(functions) == 2

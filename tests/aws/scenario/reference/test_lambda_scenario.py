@@ -39,7 +39,7 @@ class TestBasicLambda:
 
     @markers.aws.unknown
     def test_scenario_validate_infra(self, aws_client, infrastructure):
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
         function_name = infrastructure.get_stack_outputs(stack_name="LambdaTestStack")[
             "FunctionName"
         ]
@@ -84,7 +84,7 @@ class TestBasicLambdaInS3:
 
     @markers.aws.unknown
     def test_scenario_validate_infra(self, aws_client, infrastructure):
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
         function_name = infrastructure.get_stack_outputs(stack_name="LambdaTestStack")[
             "FunctionName"
         ]

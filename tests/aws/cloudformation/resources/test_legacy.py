@@ -432,7 +432,7 @@ class TestCloudFormation:
         role_name = f"role-{short_uid()}"
         function_name = f"func-{short_uid()}"
         package_path = os.path.join(
-            os.path.dirname(__file__), "../../awslambda/functions/lambda_echo.js"
+            os.path.dirname(__file__), "../../lambda_/functions/lambda_echo.js"
         )
         template = json.loads(
             load_file(
@@ -462,7 +462,7 @@ class TestCloudFormation:
             stack_name=stack.stack_name, template=json.dumps(template), is_update=True
         )
 
-        rs = aws_client.awslambda.get_function(FunctionName=function_name)
+        rs = aws_client.lambda_.get_function(FunctionName=function_name)
         assert rs["Configuration"]["FunctionName"] == function_name
         assert (
             "AWS_NODEJS_CONNECTION_REUSE_ENABLED" in rs["Configuration"]["Environment"]["Variables"]
@@ -544,7 +544,7 @@ class TestCloudFormation:
         key = f"key-{short_uid()}"
 
         package_path = os.path.join(
-            os.path.dirname(__file__), "../../awslambda/functions/lambda_echo.js"
+            os.path.dirname(__file__), "../../lambda_/functions/lambda_echo.js"
         )
 
         s3_create_bucket(Bucket=bucket, ACL="public-read")
@@ -563,7 +563,7 @@ class TestCloudFormation:
         )
         deploy_cfn_template(template=template, parameters={"Environment": environment})
 
-        functions = aws_client.awslambda.list_functions()["Functions"]
+        functions = aws_client.lambda_.list_functions()["Functions"]
         # assert Lambda functions created with expected name and ARN
         func_prefix = f"test-{environment}-connectionHandler"
         functions = [func for func in functions if func["FunctionName"].startswith(func_prefix)]
@@ -809,7 +809,7 @@ class TestCloudFormation:
 
         # Checking required values for Lambda function and IAM Role
         list_functions = list_all_resources(
-            lambda kwargs: aws_client.awslambda.list_functions(**kwargs),
+            lambda kwargs: aws_client.lambda_.list_functions(**kwargs),
             last_token_attr_name="nextToken",
             list_attr_name="Functions",
         )
@@ -843,7 +843,7 @@ class TestCloudFormation:
         # Checking new required values for Lambda function and IAM Role
 
         list_functions = list_all_resources(
-            lambda kwargs: aws_client.awslambda.list_functions(**kwargs),
+            lambda kwargs: aws_client.lambda_.list_functions(**kwargs),
             last_token_attr_name="nextToken",
             list_attr_name="Functions",
         )

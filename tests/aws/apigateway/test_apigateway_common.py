@@ -4,7 +4,7 @@ import pytest
 import requests
 from botocore.exceptions import ClientError
 
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws.arns import parse_arn
@@ -17,7 +17,7 @@ from tests.aws.apigateway.apigateway_fixtures import (
     create_rest_api_stage,
     create_rest_resource_method,
 )
-from tests.aws.awslambda.test_lambda import TEST_LAMBDA_AWS_PROXY
+from tests.aws.lambda_.test_lambda import TEST_LAMBDA_AWS_PROXY
 
 
 class TestApiGatewayCommon:
@@ -55,7 +55,7 @@ class TestApiGatewayCommon:
             handler_file=TEST_LAMBDA_AWS_PROXY,
             runtime=LAMBDA_RUNTIME_PYTHON39,
         )
-        lambda_arn = aws_client.awslambda.get_function(FunctionName=fn_name)["Configuration"][
+        lambda_arn = aws_client.lambda_.get_function(FunctionName=fn_name)["Configuration"][
             "FunctionArn"
         ]
         # matching on lambda id for reference replacement in snapshots
@@ -120,7 +120,7 @@ class TestApiGatewayCommon:
 
         source_arn = f"arn:aws:execute-api:{region}:{account_id}:{api_id}/*/*/test/*"
 
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             FunctionName=lambda_arn,
             StatementId=str(short_uid()),
             Action="lambda:InvokeFunction",

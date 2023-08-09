@@ -2,7 +2,7 @@ import json
 import os
 from typing import Literal
 
-from localstack.services.awslambda.lambda_api import use_docker
+from localstack.services.lambda_.lambda_api import use_docker
 from localstack.utils.common import to_str
 from localstack.utils.sync import ShortCircuitWaitException, retry
 from localstack.utils.testutil import get_lambda_log_events

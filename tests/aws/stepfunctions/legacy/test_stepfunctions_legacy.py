@@ -14,8 +14,8 @@ from localstack.utils.json import clone
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from localstack.utils.threads import parallelize
-from tests.aws.awslambda.functions import lambda_environment
-from tests.aws.awslambda.test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_PYTHON_ECHO
+from tests.aws.lambda_.functions import lambda_environment
+from tests.aws.lambda_.test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_PYTHON_ECHO
 from tests.aws.stepfunctions.utils import is_new_provider
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -175,7 +175,7 @@ LOG = logging.getLogger(__name__)
 
 @pytest.fixture(scope="module")
 def setup_and_tear_down(aws_client):
-    lambda_client = aws_client.awslambda
+    lambda_client = aws_client.lambda_
 
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_ENV), get_content=True)
     zip_file2 = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)

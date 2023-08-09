@@ -23,8 +23,8 @@ from localstack.utils.common import (
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.sync import poll_condition
 
-from .awslambda.functions import lambda_integration
-from .awslambda.test_lambda import (
+from .lambda_.functions import lambda_integration
+from .lambda_.test_lambda import (
     PYTHON_TEST_RUNTIMES,
     TEST_LAMBDA_PUT_ITEM_FILE,
     TEST_LAMBDA_PYTHON,
@@ -60,7 +60,7 @@ def scheduled_test_lambda(aws_client):
     resp = testutil.create_lambda_function(
         handler_file=handler_file, func_name=scheduled_lambda_name
     )
-    aws_client.awslambda.get_waiter("function_active_v2").wait(FunctionName=scheduled_lambda_name)
+    aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=scheduled_lambda_name)
     func_arn = resp["CreateFunctionResponse"]["FunctionArn"]
 
     # create scheduled Lambda function
@@ -256,12 +256,12 @@ class TestIntegration:
                 func_name=lambda_ddb_name,
                 envvars={"KINESIS_STREAM_NAME": stream_name},
             )
-            uuid = aws_client.awslambda.create_event_source_mapping(
+            uuid = aws_client.lambda_.create_event_source_mapping(
                 FunctionName=lambda_ddb_name,
                 EventSourceArn=ddb_event_source_arn,
                 StartingPosition="TRIM_HORIZON",
             )["UUID"]
-            cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=uuid))
+            cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
 
             # submit a batch with writes
             aws_client.dynamodb.batch_write_item(
@@ -561,7 +561,7 @@ def test_kinesis_lambda_forward_chain(
     )
     lambda_1_event_source_uuid = lambda_1_resp["CreateEventSourceMappingResponse"]["UUID"]
     cleanups.append(
-        lambda: aws_client.awslambda.delete_event_source_mapping(UUID=lambda_1_event_source_uuid)
+        lambda: aws_client.lambda_.delete_event_source_mapping(UUID=lambda_1_event_source_uuid)
     )
     lambda_2_resp = create_lambda_function(
         func_name=lambda2_name,
@@ -571,7 +571,7 @@ def test_kinesis_lambda_forward_chain(
     )
     lambda_2_event_source_uuid = lambda_2_resp["CreateEventSourceMappingResponse"]["UUID"]
     cleanups.append(
-        lambda: aws_client.awslambda.delete_event_source_mapping(UUID=lambda_2_event_source_uuid)
+        lambda: aws_client.lambda_.delete_event_source_mapping(UUID=lambda_2_event_source_uuid)
     )
 
     # publish test record
@@ -621,7 +621,7 @@ class TestLambdaOutgoingSdkCalls:
             "region_name": aws_client.sqs.meta.region_name,
         }
 
-        aws_client.awslambda.invoke(FunctionName=function_name, Payload=json.dumps(event))
+        aws_client.lambda_.invoke(FunctionName=function_name, Payload=json.dumps(event))
 
         # assert that message has been received on the Queue
         def receive_message():
@@ -671,7 +671,7 @@ class TestLambdaOutgoingSdkCalls:
 
         assert poll_condition(wait_for_table_created, timeout=30)
 
-        aws_client.awslambda.invoke(FunctionName=function_name, Payload=json.dumps(event))
+        aws_client.lambda_.invoke(FunctionName=function_name, Payload=json.dumps(event))
 
         rs = aws_client.dynamodb.scan(TableName=table_name)
 
@@ -727,7 +727,7 @@ class TestLambdaOutgoingSdkCalls:
             lambda: aws_client.stepfunctions.delete_state_machine(stateMachineArn=sm_arn)
         )
 
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=function_name,
             Payload=json.dumps(
                 {

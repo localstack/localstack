@@ -49,7 +49,7 @@ def send_event_to_target(
         clients = connect_to(region_name=region)
 
     if ":lambda:" in target_arn:
-        lambda_client = clients.awslambda.request_metadata(
+        lambda_client = clients.lambda_.request_metadata(
             service_principal=source_service, source_arn=source_arn
         )
         lambda_client.invoke(

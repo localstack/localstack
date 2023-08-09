@@ -749,7 +749,7 @@ def generate(resource_type: str, write: bool, write_tests: bool):
         "Resource types: https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/resource-types.html"
     )
     console.print(
-        # awslambda should become lambda (re-use the same list we use for generating the models)
+        # lambda_ should become lambda (re-use the same list we use for generating the models)
         f"Resource reference: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-{resource_name.service.lower()}-{resource_name.resource.lower()}.html\n"
     )
     console.print("Wondering where to get started?")

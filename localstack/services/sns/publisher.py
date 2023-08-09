@@ -167,7 +167,7 @@ class LambdaTopicPublisher(TopicPublisher):
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         try:
             region = extract_region_from_arn(subscriber["Endpoint"])
-            lambda_client = connect_to(region_name=region).awslambda.request_metadata(
+            lambda_client = connect_to(region_name=region).lambda_.request_metadata(
                 source_arn=subscriber["TopicArn"], service_principal="sns"
             )
             event = self.prepare_message(context.message, subscriber)

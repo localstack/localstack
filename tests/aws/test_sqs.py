@@ -30,8 +30,8 @@ from localstack.testing.snapshots.transformer import GenericTransformer
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 
-from .awslambda.functions import lambda_integration
-from .awslambda.test_lambda import TEST_LAMBDA_PYTHON
+from .lambda_.functions import lambda_integration
+from .lambda_.test_lambda import TEST_LAMBDA_PYTHON
 
 TEST_POLICY = """
 {
@@ -989,7 +989,7 @@ class TestSqsProvider:
             batch.append({"Id": str(i), "MessageBody": str(i)})
         aws_client.sqs.send_message_batch(QueueUrl=queue_url, Entries=batch)
 
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=lambda_name, Payload=json.dumps(delete_batch_payload), LogType="Tail"
         )
 
@@ -2952,7 +2952,7 @@ class TestSqsProvider:
         queue_arn = "arn:aws:sqs:{}:{}:{}".format(
             region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
-        aws_client.awslambda.create_event_source_mapping(
+        aws_client.lambda_.create_event_source_mapping(
             EventSourceArn=queue_arn, FunctionName=lambda_name
         )
 

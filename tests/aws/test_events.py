@@ -22,7 +22,7 @@ from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
-from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
+from .lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 
@@ -562,7 +562,7 @@ class TestEvents:
         bus_name = f"bus-{short_uid()}"
 
         # clean up
-        cleanups.append(lambda: aws_client.awslambda.delete_function(FunctionName=function_name))
+        cleanups.append(lambda: aws_client.lambda_.delete_function(FunctionName=function_name))
         cleanups.append(
             lambda: clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id)
         )
@@ -1723,17 +1723,17 @@ class TestEvents:
             func_name=fn_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             runtime=Runtime.python3_9,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
         )
 
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             FunctionName=fn_name,
             StatementId="AllowFnInvokeStatement",
             Action="lambda:InvokeFunction",
             Principal="events.amazonaws.com",
         )
 
-        fn_arn = aws_client.awslambda.get_function(FunctionName=fn_name)["Configuration"][
+        fn_arn = aws_client.lambda_.get_function(FunctionName=fn_name)["Configuration"][
             "FunctionArn"
         ]
         aws_client.events.put_rule(

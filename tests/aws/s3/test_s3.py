@@ -39,7 +39,7 @@ from localstack.constants import (
     TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
-from localstack.services.awslambda.lambda_utils import (
+from localstack.services.lambda_.lambda_utils import (
     LAMBDA_RUNTIME_NODEJS14X,
     LAMBDA_RUNTIME_PYTHON39,
 )
@@ -3102,7 +3102,7 @@ class TestS3:
         create_lambda_function(
             handler_file=os.path.join(
                 os.path.dirname(__file__),
-                "../awslambda",
+                "../lambda_",
                 "functions",
                 "lambda_triggered_by_sqs_download_s3_file.py",
             ),
@@ -3117,7 +3117,7 @@ class TestS3:
                 }
             ),
         )
-        aws_client.awslambda.invoke(FunctionName=function_name, InvocationType="Event")
+        aws_client.lambda_.invoke(FunctionName=function_name, InvocationType="Event")
 
         # TODO maybe this check can be improved (do not rely on logs)
         retry(
@@ -3302,7 +3302,7 @@ class TestS3:
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../awslambda/functions/lambda_s3_integration.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration.js"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
@@ -3319,7 +3319,7 @@ class TestS3:
         )
         s3_create_bucket(Bucket=function_name)
 
-        response = aws_client.awslambda.invoke(FunctionName=function_name)
+        response = aws_client.lambda_.invoke(FunctionName=function_name)
         presigned_url = response["Payload"].read()
         presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
 
@@ -7032,7 +7032,7 @@ class TestS3PresignedUrl:
         assert StorageClass.STANDARD not in url
 
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../awslambda/functions/lambda_s3_integration_presign.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_presign.js"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
@@ -7049,7 +7049,7 @@ class TestS3PresignedUrl:
         )
         s3_create_bucket(Bucket=function_name)
 
-        response = aws_client.awslambda.invoke(FunctionName=function_name)
+        response = aws_client.lambda_.invoke(FunctionName=function_name)
         presigned_url = response["Payload"].read()
         presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
         assert StorageClass.STANDARD in presigned_url
@@ -7096,7 +7096,7 @@ class TestS3PresignedUrl:
         assert "=AES256" not in url
 
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../awslambda/functions/lambda_s3_integration_sdk_v2.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_sdk_v2.js"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
@@ -7113,7 +7113,7 @@ class TestS3PresignedUrl:
         )
         s3_create_bucket(Bucket=function_name)
 
-        response = aws_client.awslambda.invoke(FunctionName=function_name)
+        response = aws_client.lambda_.invoke(FunctionName=function_name)
         presigned_url = response["Payload"].read()
         presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
         assert "=AES256" in presigned_url

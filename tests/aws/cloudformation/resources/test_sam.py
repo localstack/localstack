@@ -33,6 +33,6 @@ def test_sam_template(deploy_cfn_template, aws_client):
     )
 
     # run Lambda test invocation
-    result = aws_client.awslambda.invoke(FunctionName=func_name)
+    result = aws_client.lambda_.invoke(FunctionName=func_name)
     result = json.loads(to_str(result["Payload"].read()))
     assert result == {"hello": "world"}

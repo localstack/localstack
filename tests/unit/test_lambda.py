@@ -8,13 +8,13 @@ from unittest import mock
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.services.awslambda import lambda_api, lambda_executors, lambda_utils
-from localstack.services.awslambda.lambda_api import get_lambda_policy_name
-from localstack.services.awslambda.lambda_executors import OutputLog
-from localstack.services.awslambda.lambda_utils import (
+from localstack.services.lambda_ import lambda_api, lambda_executors, lambda_utils
+from localstack.services.lambda_.lambda_api import get_lambda_policy_name
+from localstack.services.lambda_.lambda_executors import OutputLog
+from localstack.services.lambda_.lambda_utils import (
     API_PATH_ROOT,
-    get_awslambda_store,
-    get_awslambda_store_for_arn,
+    get_lambda_store_v1,
+    get_lambda_store_v1_for_arn,
 )
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -133,14 +133,14 @@ class TestLambdaAPI(unittest.TestCase):
             )
 
     def test_get_event_source_mapping(self):
-        region = get_awslambda_store()
+        region = get_lambda_store_v1()
         with self.app.test_request_context():
             region.event_source_mappings.append({"UUID": self.TEST_UUID})
             result = lambda_api.get_event_source_mapping(self.TEST_UUID)
             self.assertEqual(self.TEST_UUID, json.loads(result.get_data()).get("UUID"))
 
     def test_get_event_sources(self):
-        region = get_awslambda_store()
+        region = get_lambda_store_v1()
         with self.app.test_request_context():
             region.event_source_mappings.append(
                 {"UUID": self.TEST_UUID, "EventSourceArn": "the_arn"}
@@ -156,7 +156,7 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(0, len(result))
 
     def test_get_event_sources_with_paths(self):
-        region = get_awslambda_store()
+        region = get_lambda_store_v1()
         with self.app.test_request_context():
             region.event_source_mappings.append(
                 {"UUID": self.TEST_UUID, "EventSourceArn": "the_arn/path/subpath"}
@@ -169,7 +169,7 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(1, len(result))
 
     def test_delete_event_source_mapping(self):
-        region = get_awslambda_store()
+        region = get_lambda_store_v1()
         with self.app.test_request_context():
             region.event_source_mappings.append({"UUID": self.TEST_UUID})
             result = lambda_api.delete_event_source_mapping(self.TEST_UUID)
@@ -188,7 +188,7 @@ class TestLambdaAPI(unittest.TestCase):
         context.request.environ["HTTP_X_AMZ_INVOCATION_TYPE"] = "RequestResponse"
         self._create_function(self.FUNCTION_NAME)
 
-    @mock.patch("localstack.services.awslambda.lambda_api.run_lambda")
+    @mock.patch("localstack.services.lambda_.lambda_api.run_lambda")
     def test_invoke_plain_text_response(self, mock_run_lambda):
         with self.app.test_request_context() as context:
             self._request_response(context)
@@ -200,7 +200,7 @@ class TestLambdaAPI(unittest.TestCase):
             headers = response[2]
             self.assertEqual("text/plain", headers["Content-Type"])
 
-    @mock.patch("localstack.services.awslambda.lambda_api.run_lambda")
+    @mock.patch("localstack.services.lambda_.lambda_api.run_lambda")
     def test_invoke_empty_plain_text_response(self, mock_run_lambda):
         with self.app.test_request_context() as context:
             self._request_response(context)
@@ -212,7 +212,7 @@ class TestLambdaAPI(unittest.TestCase):
             headers = response[2]
             self.assertEqual("text/plain", headers["Content-Type"])
 
-    @mock.patch("localstack.services.awslambda.lambda_api.run_lambda")
+    @mock.patch("localstack.services.lambda_.lambda_api.run_lambda")
     def test_invoke_empty_map_json_response(self, mock_run_lambda):
         with self.app.test_request_context() as context:
             self._request_response(context)
@@ -222,7 +222,7 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(200, response[1])
             self.assertEqual("application/json", response[0].headers["Content-Type"])
 
-    @mock.patch("localstack.services.awslambda.lambda_api.run_lambda")
+    @mock.patch("localstack.services.lambda_.lambda_api.run_lambda")
     def test_invoke_populated_map_json_response(self, mock_run_lambda):
         with self.app.test_request_context() as context:
             self._request_response(context)
@@ -232,7 +232,7 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(200, response[1])
             self._assert_contained({"Content-Type": "application/json"}, response[0].headers)
 
-    @mock.patch("localstack.services.awslambda.lambda_api.run_lambda")
+    @mock.patch("localstack.services.lambda_.lambda_api.run_lambda")
     def test_invoke_empty_list_json_response(self, mock_run_lambda):
         with self.app.test_request_context() as context:
             self._request_response(context)
@@ -242,7 +242,7 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(200, response[1])
             self._assert_contained({"Content-Type": "application/json"}, response[0].headers)
 
-    @mock.patch("localstack.services.awslambda.lambda_api.run_lambda")
+    @mock.patch("localstack.services.lambda_.lambda_api.run_lambda")
     def test_invoke_populated_list_json_response(self, mock_run_lambda):
         with self.app.test_request_context() as context:
             self._request_response(context)
@@ -252,7 +252,7 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(200, response[1])
             self._assert_contained({"Content-Type": "application/json"}, response[0].headers)
 
-    @mock.patch("localstack.services.awslambda.lambda_api.run_lambda")
+    @mock.patch("localstack.services.lambda_.lambda_api.run_lambda")
     def test_invoke_string_json_response(self, mock_run_lambda):
         with self.app.test_request_context() as context:
             self._request_response(context)
@@ -262,7 +262,7 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(200, response[1])
             self._assert_contained({"Content-Type": "application/json"}, response[0].headers)
 
-    @mock.patch("localstack.services.awslambda.lambda_api.run_lambda")
+    @mock.patch("localstack.services.lambda_.lambda_api.run_lambda")
     def test_invoke_integer_json_response(self, mock_run_lambda):
         with self.app.test_request_context() as context:
             self._request_response(context)
@@ -272,7 +272,7 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(200, response[1])
             self._assert_contained({"Content-Type": "application/json"}, response[0].headers)
 
-    @mock.patch("localstack.services.awslambda.lambda_api.run_lambda")
+    @mock.patch("localstack.services.lambda_.lambda_api.run_lambda")
     def test_invoke_float_json_response(self, mock_run_lambda):
         with self.app.test_request_context() as context:
             self._request_response(context)
@@ -283,7 +283,7 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(200, response[1])
             self._assert_contained({"Content-Type": "application/json"}, response[0].headers)
 
-    @mock.patch("localstack.services.awslambda.lambda_api.run_lambda")
+    @mock.patch("localstack.services.lambda_.lambda_api.run_lambda")
     def test_invoke_boolean_json_response(self, mock_run_lambda):
         with self.app.test_request_context() as context:
             self._request_response(context)
@@ -293,7 +293,7 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(200, response[1])
             self._assert_contained({"Content-Type": "application/json"}, response[0].headers)
 
-    @mock.patch("localstack.services.awslambda.lambda_api.run_lambda")
+    @mock.patch("localstack.services.lambda_.lambda_api.run_lambda")
     def test_invoke_null_json_response(self, mock_run_lambda):
         with self.app.test_request_context() as context:
             self._request_response(context)
@@ -1017,7 +1017,7 @@ class TestLambdaAPI(unittest.TestCase):
     def _create_function(self, function_name, tags=None):
         if tags is None:
             tags = {}
-        region = get_awslambda_store()
+        region = get_lambda_store_v1()
         arn = lambda_api.func_arn(function_name)
         region.lambdas[arn] = LambdaFunction(arn)
         region.lambdas[arn].versions = {
@@ -1040,7 +1040,7 @@ class TestLambdaAPI(unittest.TestCase):
     def _update_function_code(self, function_name, tags=None):
         if tags is None:
             tags = {}
-        region = get_awslambda_store()
+        region = get_lambda_store_v1()
         arn = lambda_api.func_arn(function_name)
         region.lambdas[arn].versions.update(
             {
@@ -1143,11 +1143,11 @@ class TestLambdaEventInvokeConfig(unittest.TestCase):
 
 
 class TestLambdaStore:
-    def test_get_awslambda_store_for_arn(self):
+    def test_get_lambda_store_v1_for_arn(self):
         default_region = aws_stack.get_region()
 
         def _lookup(resource_id, region):
-            store = get_awslambda_store_for_arn(resource_id)
+            store = get_lambda_store_v1_for_arn(resource_id)
             assert store
             assert store._region_name == region
 

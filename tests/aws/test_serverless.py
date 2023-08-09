@@ -58,7 +58,7 @@ class TestServerless:
         function_name = "sls-test-local-dynamodbStreamHandler"
         table_name = "Test"
 
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
         dynamodb_client = aws_client.dynamodb
 
         resp = lambda_client.list_functions()
@@ -80,7 +80,7 @@ class TestServerless:
         function_name2 = "sls-test-local-kinesisConsumerHandler"
         stream_name = "KinesisTestStream"
 
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
         kinesis_client = aws_client.kinesis
 
         resp = lambda_client.list_functions()
@@ -109,7 +109,7 @@ class TestServerless:
         function_name = "sls-test-local-queueHandler"
         queue_name = "sls-test-local-CreateQueue"
 
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
         sqs_client = aws_client.sqs
 
         resp = lambda_client.list_functions()
@@ -136,7 +136,7 @@ class TestServerless:
     def test_lambda_with_configs_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-test"
 
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
@@ -155,7 +155,7 @@ class TestServerless:
         function_name = "sls-test-local-router"
         existing_api_ids = setup_and_teardown
 
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]

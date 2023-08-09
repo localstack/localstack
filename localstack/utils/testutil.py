@@ -26,8 +26,8 @@ import requests
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import LOCALHOST_HOSTNAME, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
-from localstack.services.awslambda.lambda_api import LAMBDA_TEST_ROLE
-from localstack.services.awslambda.lambda_utils import (
+from localstack.services.lambda_.lambda_api import LAMBDA_TEST_ROLE
+from localstack.services.lambda_.lambda_utils import (
     LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME,
     LAMBDA_DEFAULT_STARTING_POSITION,
@@ -126,7 +126,7 @@ def create_lambda_archive(
 
 # TODO: remove all occurrences
 def delete_lambda_function(name, region_name: str = None):
-    client = connect_externally_to(region_name=region_name).awslambda
+    client = connect_externally_to(region_name=region_name).lambda_
     client.delete_function(FunctionName=name)
 
 
@@ -211,7 +211,7 @@ def create_lambda_function(
 
     starting_position = starting_position or LAMBDA_DEFAULT_STARTING_POSITION
     runtime = runtime or LAMBDA_DEFAULT_RUNTIME
-    client = client or connect_to(region_name=region_name).awslambda
+    client = client or connect_to(region_name=region_name).lambda_
 
     # load zip file content if handler_file is specified
     if not zip_file and handler_file:

@@ -29,8 +29,8 @@ from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
-from .awslambda.functions import lambda_integration
-from .awslambda.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
+from .lambda_.functions import lambda_integration
+from .lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
 
 LOG = logging.getLogger(__name__)
 
@@ -110,7 +110,7 @@ class TestSNSSubscription:
             role=lambda_su_role,
         )
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             FunctionName=function_name,
             StatementId=permission_id,
             Action="lambda:InvokeFunction",
@@ -744,7 +744,7 @@ class TestSNSProvider:
 
         # allow the SNS topic to invoke the lambda
         permission_id = f"test-statement-{short_uid()}"
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             FunctionName=function_name,
             StatementId=permission_id,
             Action="lambda:InvokeFunction",
@@ -873,7 +873,7 @@ class TestSNSProvider:
 
         snapshot.match("subscription-attributes", response_attributes)
 
-        aws_client.awslambda.delete_function(FunctionName=lambda_name)
+        aws_client.lambda_.delete_function(FunctionName=lambda_name)
 
         aws_client.sns.publish(
             TopicArn=topic_arn,
@@ -3816,7 +3816,7 @@ class TestSNSPublishDelivery:
             role=lambda_su_role,
         )
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             FunctionName=function_name,
             StatementId=permission_id,
             Action="lambda:InvokeFunction",

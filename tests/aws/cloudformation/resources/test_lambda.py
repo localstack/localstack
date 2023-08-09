@@ -102,19 +102,19 @@ def test_cfn_function_url(deploy_cfn_template, snapshot, aws_client):
     )
     snapshot.match("url_resource", url_resource)
 
-    url_config = aws_client.awslambda.get_function_url_config(
+    url_config = aws_client.lambda_.get_function_url_config(
         FunctionName=deploy.outputs["LambdaName"]
     )
     snapshot.match("url_config", url_config)
 
-    with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException) as e:
-        aws_client.awslambda.get_function_url_config(
+    with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
+        aws_client.lambda_.get_function_url_config(
             FunctionName=deploy.outputs["LambdaName"], Qualifier="unknownalias"
         )
 
     snapshot.match("exception_url_config_nonexistent_version", e.value.response)
 
-    url_config_arn = aws_client.awslambda.get_function_url_config(
+    url_config_arn = aws_client.lambda_.get_function_url_config(
         FunctionName=deploy.outputs["LambdaArn"]
     )
     snapshot.match("url_config_arn", url_config_arn)
@@ -147,9 +147,7 @@ def test_lambda_alias(deploy_cfn_template, snapshot, aws_client):
         parameters={"FunctionName": function_name, "AliasName": alias_name},
     )
 
-    role_arn = aws_client.awslambda.get_function(FunctionName=function_name)["Configuration"][
-        "Role"
-    ]
+    role_arn = aws_client.lambda_.get_function(FunctionName=function_name)["Configuration"]["Role"]
     snapshot.add_transformer(
         snapshot.transform.regex(role_arn.partition("role/")[-1], "<role-name>"), priority=-1
     )
@@ -159,7 +157,7 @@ def test_lambda_alias(deploy_cfn_template, snapshot, aws_client):
     )
     snapshot.match("stack_resource_descriptions", description)
 
-    alias = aws_client.awslambda.get_alias(FunctionName=function_name, Name=alias_name)
+    alias = aws_client.lambda_.get_alias(FunctionName=function_name, Name=alias_name)
     snapshot.match("Alias", alias)
 
 
@@ -170,7 +168,9 @@ def test_lambda_code_signing_config(deploy_cfn_template, snapshot, account_id, a
     snapshot.add_transformer(snapshot.transform.lambda_api())
     snapshot.add_transformer(SortingTransformer("StackResources", lambda x: x["LogicalResourceId"]))
 
-    signer_arn = f"arn:aws:signer:{aws_client.awslambda.meta.region_name}:{account_id}:/signing-profiles/test"
+    signer_arn = (
+        f"arn:aws:signer:{aws_client.lambda_.meta.region_name}:{account_id}:/signing-profiles/test"
+    )
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -184,7 +184,7 @@ def test_lambda_code_signing_config(deploy_cfn_template, snapshot, account_id, a
 
     snapshot.match(
         "config",
-        aws_client.awslambda.get_code_signing_config(CodeSigningConfigArn=stack.outputs["Arn"]),
+        aws_client.lambda_.get_code_signing_config(CodeSigningConfigArn=stack.outputs["Arn"]),
     )
 
 
@@ -201,7 +201,7 @@ def test_event_invoke_config(deploy_cfn_template, snapshot, aws_client):
         max_wait=180,
     )
 
-    event_invoke_config = aws_client.awslambda.get_function_event_invoke_config(
+    event_invoke_config = aws_client.lambda_.get_function_event_invoke_config(
         FunctionName=stack.outputs["FunctionName"],
         Qualifier=stack.outputs["FunctionQualifier"],
     )
@@ -247,7 +247,7 @@ def test_lambda_version(deploy_cfn_template, snapshot, aws_client):
         max_wait=240,
     )
 
-    invoke_result = aws_client.awslambda.invoke(
+    invoke_result = aws_client.lambda_.invoke(
         FunctionName=deployment.outputs["FunctionName"], Payload=b"{}"
     )
     assert 200 <= invoke_result["StatusCode"] < 300
@@ -259,8 +259,8 @@ def test_lambda_version(deploy_cfn_template, snapshot, aws_client):
 
     function_name = deployment.outputs["FunctionName"]
     function_version = deployment.outputs["FunctionVersion"]
-    versions_by_fn = aws_client.awslambda.list_versions_by_function(FunctionName=function_name)
-    get_function_version = aws_client.awslambda.get_function(
+    versions_by_fn = aws_client.lambda_.list_versions_by_function(FunctionName=function_name)
+    get_function_version = aws_client.lambda_.get_function(
         FunctionName=function_name, Qualifier=function_version
     )
 
@@ -281,10 +281,10 @@ def test_lambda_cfn_run(deploy_cfn_template, aws_client):
     )
     fn_name = deployment.outputs["FunctionName"]
     assert (
-        aws_client.awslambda.get_function(FunctionName=fn_name)["Configuration"]["State"]
+        aws_client.lambda_.get_function(FunctionName=fn_name)["Configuration"]["State"]
         == State.Active
     )
-    aws_client.awslambda.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
+    aws_client.lambda_.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
 
 
 @pytest.mark.skip(reason="broken/notimplemented")
@@ -305,10 +305,10 @@ def test_lambda_vpc(deploy_cfn_template, aws_client):
         max_wait=600,
     )
     assert (
-        aws_client.awslambda.get_function(FunctionName=fn_name)["Configuration"]["State"]
+        aws_client.lambda_.get_function(FunctionName=fn_name)["Configuration"]["State"]
         == State.Active
     )
-    aws_client.awslambda.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
+    aws_client.lambda_.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
 
 
 @pytest.mark.xfail(condition=is_new_provider(), reason="fails/times out with new provider")
@@ -331,7 +331,7 @@ def test_update_lambda_permissions(deploy_cfn_template, aws_client):
         ),
     )
 
-    policy = aws_client.awslambda.get_policy(FunctionName=stack.outputs["FunctionName"])
+    policy = aws_client.lambda_.get_policy(FunctionName=stack.outputs["FunctionName"])
 
     # The behaviour of thi principal acocunt setting changes with aws or lambda providers
     principal = json.loads(policy["Policy"])["Statement"][0]["Principal"]
@@ -361,7 +361,7 @@ def test_multiple_lambda_permissions_for_singlefn(deploy_cfn_template, snapshot,
     snapshot.add_transformer(snapshot.transform.regex(fn_name, "<fn-name>"))
     snapshot.add_transformer(SortingTransformer("Statement", lambda s: s["Sid"]))
 
-    policy = aws_client.awslambda.get_policy(FunctionName=fn_name)
+    policy = aws_client.lambda_.get_policy(FunctionName=fn_name)
     # load the policy json, so we can properly snapshot it
     policy["Policy"] = json.loads(policy["Policy"])
     snapshot.match("policy", policy)
@@ -427,9 +427,9 @@ class TestCfnLambdaIntegrations:
         fn_name = deployment.outputs["FunctionName"]
         topic_arn = deployment.outputs["TopicArn"]
 
-        get_function_result = aws_client.awslambda.get_function(FunctionName=fn_name)
+        get_function_result = aws_client.lambda_.get_function(FunctionName=fn_name)
         get_topic_attributes_result = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
-        get_policy_result = aws_client.awslambda.get_policy(FunctionName=fn_name)
+        get_policy_result = aws_client.lambda_.get_policy(FunctionName=fn_name)
         snapshot.match("get_function_result", get_function_result)
         snapshot.match("get_topic_attributes_result", get_topic_attributes_result)
         snapshot.match("get_policy_result", get_policy_result)
@@ -530,8 +530,8 @@ class TestCfnLambdaIntegrations:
         snapshot.match("stack_resources", stack_resources)
 
         # query service APIs for resource states
-        get_function_result = aws_client.awslambda.get_function(FunctionName=fn_name)
-        get_esm_result = aws_client.awslambda.get_event_source_mapping(UUID=esm_id)
+        get_function_result = aws_client.lambda_.get_function(FunctionName=fn_name)
+        get_esm_result = aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
         get_queue_atts_result = aws_client.sqs.get_queue_attributes(
             QueueUrl=queue_url, AttributeNames=["All"]
         )
@@ -566,7 +566,7 @@ class TestCfnLambdaIntegrations:
         def wait_esm_active():
             try:
                 return (
-                    aws_client.awslambda.get_event_source_mapping(UUID=esm_id)["State"] == "Enabled"
+                    aws_client.lambda_.get_event_source_mapping(UUID=esm_id)["State"] == "Enabled"
                 )
             except Exception as e:
                 print(e)
@@ -586,8 +586,8 @@ class TestCfnLambdaIntegrations:
         assert wait_until(wait_logs)
 
         deployment.destroy()
-        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException):
-            aws_client.awslambda.get_event_source_mapping(UUID=esm_id)
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
+            aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
 
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
@@ -695,8 +695,8 @@ class TestCfnLambdaIntegrations:
         snapshot.match("stack_resources", stack_resources)
 
         # query service APIs for resource states
-        get_function_result = aws_client.awslambda.get_function(FunctionName=fn_name)
-        get_esm_result = aws_client.awslambda.get_event_source_mapping(UUID=esm_id)
+        get_function_result = aws_client.lambda_.get_function(FunctionName=fn_name)
+        get_esm_result = aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
 
         describe_table_result = aws_client.dynamodb.describe_table(TableName=table_name)
         describe_stream_result = aws_client.dynamodbstreams.describe_stream(StreamArn=stream_arn)
@@ -732,7 +732,7 @@ class TestCfnLambdaIntegrations:
         def wait_esm_active():
             try:
                 return (
-                    aws_client.awslambda.get_event_source_mapping(UUID=esm_id)["State"] == "Enabled"
+                    aws_client.lambda_.get_event_source_mapping(UUID=esm_id)["State"] == "Enabled"
                 )
             except Exception as e:
                 print(e)
@@ -754,8 +754,8 @@ class TestCfnLambdaIntegrations:
         assert wait_until(wait_logs)
 
         deployment.destroy()
-        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException):
-            aws_client.awslambda.get_event_source_mapping(UUID=esm_id)
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
+            aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
 
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
@@ -843,8 +843,8 @@ class TestCfnLambdaIntegrations:
         snapshot.match("stack_resources", stack_resources)
 
         # query service APIs for resource states
-        get_function_result = aws_client.awslambda.get_function(FunctionName=fn_name)
-        get_esm_result = aws_client.awslambda.get_event_source_mapping(UUID=esm_id)
+        get_function_result = aws_client.lambda_.get_function(FunctionName=fn_name)
+        get_esm_result = aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
         describe_stream_result = aws_client.kinesis.describe_stream(StreamName=stream_name)
         role_arn = get_function_result["Configuration"]["Role"]
         role_name = role_arn.partition("role/")[-1]
@@ -877,7 +877,7 @@ class TestCfnLambdaIntegrations:
         def wait_esm_active():
             try:
                 return (
-                    aws_client.awslambda.get_event_source_mapping(UUID=esm_id)["State"] == "Enabled"
+                    aws_client.lambda_.get_event_source_mapping(UUID=esm_id)["State"] == "Enabled"
                 )
             except Exception as e:
                 print(e)
@@ -901,8 +901,8 @@ class TestCfnLambdaIntegrations:
 
         deployment.destroy()
 
-        with pytest.raises(aws_client.awslambda.exceptions.ResourceNotFoundException):
-            aws_client.awslambda.get_event_source_mapping(UUID=esm_id)
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
+            aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
 
 
 class TestCfnLambdaDestinations:
@@ -1005,14 +1005,14 @@ class TestCfnLambdaDestinations:
         msg = f"message-{short_uid()}"
 
         # Success case
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=invoke_fn_name,
             Payload=to_bytes(json.dumps({"message": msg, "should_fail": "0"})),
             InvocationType=InvocationType.Event,
         )
 
         # Failure case
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=invoke_fn_name,
             Payload=to_bytes(json.dumps({"message": msg, "should_fail": "1"})),
             InvocationType=InvocationType.Event,
@@ -1034,7 +1034,7 @@ def test_python_lambda_code_deployed_via_s3(deploy_cfn_template, aws_client, s3_
     bucket_key = "handler.zip"
     zip_file = create_lambda_archive(
         load_file(
-            os.path.join(os.path.dirname(__file__), "../../awslambda/functions/lambda_echo.py")
+            os.path.join(os.path.dirname(__file__), "../../lambda_/functions/lambda_echo.py")
         ),
         get_content=True,
         runtime=Runtime.python3_10,
@@ -1053,7 +1053,7 @@ def test_python_lambda_code_deployed_via_s3(deploy_cfn_template, aws_client, s3_
     )
 
     function_name = deployment.outputs["LambdaName"]
-    invocation_result = aws_client.awslambda.invoke(
+    invocation_result = aws_client.lambda_.invoke(
         FunctionName=function_name, Payload=json.dumps({"hello": "world"})
     )
     payload = json.loads(to_str(invocation_result["Payload"].read()))
