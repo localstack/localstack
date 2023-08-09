@@ -166,6 +166,7 @@ from localstack.services.s3.utils import (
     capitalize_header_name_from_snake_case,
     extract_bucket_key_version_id_from_copy_source,
     get_bucket_from_moto,
+    get_failed_precondition_copy_source,
     get_key_from_moto_bucket,
     get_lifecycle_rule_from_object,
     get_object_checksum_for_algorithm,
@@ -599,36 +600,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
 
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html
-        condition = None
         source_object_last_modified = source_key_object.last_modified.replace(
             tzinfo=ZoneInfo("GMT")
         )
-        if (cs_if_match := request.get("CopySourceIfMatch")) and source_key_object.etag.strip(
-            '"'
-        ) != cs_if_match.strip('"'):
-            condition = "x-amz-copy-source-If-Match"
-
-        elif (
-            cs_id_unmodified_since := request.get("CopySourceIfUnmodifiedSince")
-        ) and source_object_last_modified > cs_id_unmodified_since:
-            condition = "x-amz-copy-source-If-Unmodified-Since"
-
-        elif (
-            cs_if_none_match := request.get("CopySourceIfNoneMatch")
-        ) and source_key_object.etag.strip('"') == cs_if_none_match.strip('"'):
-            condition = "x-amz-copy-source-If-None-Match"
-
-        elif (
-            cs_id_modified_since := request.get("CopySourceIfModifiedSince")
-        ) and source_object_last_modified < cs_id_modified_since < datetime.datetime.now(
-            tz=ZoneInfo("GMT")
+        if failed_condition := get_failed_precondition_copy_source(
+            request, source_object_last_modified, source_key_object.etag
         ):
-            condition = "x-amz-copy-source-If-Modified-Since"
-
-        if condition:
             raise PreconditionFailed(
                 "At least one of the pre-conditions you specified did not hold",
-                Condition=condition,
+                Condition=failed_condition,
             )
 
         response: CopyObjectOutput = call_moto(context)

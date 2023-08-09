@@ -130,6 +130,7 @@ from localstack.aws.api.s3 import (
     OptionalObjectAttributesList,
     Part,
     PartNumberMarker,
+    PreconditionFailed,
     Prefix,
     PutObjectLegalHoldOutput,
     PutObjectLockConfigurationOutput,
@@ -164,7 +165,11 @@ from localstack.aws.handlers import preprocess_request, serve_custom_service_req
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.codec import AwsChunkedDecoder
-from localstack.services.s3.constants import ARCHIVES_STORAGE_CLASSES, DEFAULT_BUCKET_ENCRYPTION
+from localstack.services.s3.constants import (
+    ALLOWED_HEADER_OVERRIDES,
+    ARCHIVES_STORAGE_CLASSES,
+    DEFAULT_BUCKET_ENCRYPTION,
+)
 from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
 from localstack.services.s3.exceptions import (
     InvalidBucketState,
@@ -180,6 +185,7 @@ from localstack.services.s3.utils import (
     create_s3_kms_managed_key_for_region,
     extract_bucket_key_version_id_from_copy_source,
     get_class_attrs_from_spec_class,
+    get_failed_precondition_copy_source,
     get_full_default_bucket_location,
     get_kms_key_arn,
     get_lifecycle_rule_from_object,
@@ -192,6 +198,7 @@ from localstack.services.s3.utils import (
     parse_tagging_header,
     serialize_expiration_header,
     validate_dict_fields,
+    validate_failed_precondition,
     validate_kms_key_id,
     validate_tag_set,
 )
@@ -551,7 +558,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_stored_object = self._storage_backend.open(bucket_name, s3_object)
         s3_stored_object.write(body)
 
-        if checksum_algorithm and s3_object.checksum_value != s3_stored_object.checksum():
+        if checksum_algorithm and s3_object.checksum_value != s3_stored_object.checksum:
             self._storage_backend.remove(bucket_name, s3_object)
             raise InvalidRequest(
                 f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
@@ -600,16 +607,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request: GetObjectRequest,
     ) -> GetObjectOutput:
         # TODO: missing handling parameters:
-        #  if_match: IfMatch = None,
-        #  if_modified_since: IfModifiedSince = None,
-        #  if_none_match: IfNoneMatch = None,
-        #  if_unmodified_since: IfUnmodifiedSince = None,
-        #  response_cache_control: ResponseCacheControl = None,
-        #  response_content_disposition: ResponseContentDisposition = None,
-        #  response_content_encoding: ResponseContentEncoding = None,
-        #  response_content_language: ResponseContentLanguage = None,
-        #  response_content_type: ResponseContentType = None,
-        #  response_expires: ResponseExpires = None,
         #  request_payer: RequestPayer = None,
         #  part_number: PartNumber = None,
         #  expected_bucket_owner: AccountId = None,
@@ -626,6 +623,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             version_id=version_id,
             http_method="GET",
         )
+
+        validate_failed_precondition(request, s3_object.last_modified, s3_object.etag)
 
         response = GetObjectOutput(
             AcceptRanges="bytes",
@@ -693,6 +692,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.lock_legal_status:
             response["ObjectLockLegalHoldStatus"] = s3_object.lock_legal_status
 
+        for request_param, response_param in ALLOWED_HEADER_OVERRIDES.items():
+            if request_param_value := request.get(request_param):  # noqa
+                response[response_param] = request_param_value  # noqa
+
         return response
 
     @handler("HeadObject", expand=False)
@@ -708,16 +711,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket_name)
 
         # TODO implement PartNumber, don't know about part number + version id?
-        #  if_match: IfMatch = None,
-        #  if_modified_since: IfModifiedSince = None,
-        #  if_none_match: IfNoneMatch = None,
-        #  if_unmodified_since: IfUnmodifiedSince = None,
-
         s3_object = s3_bucket.get_object(
             key=object_key,
             version_id=request.get("VersionId"),
             http_method="HEAD",
         )
+
+        validate_failed_precondition(request, s3_object.last_modified, s3_object.etag)
 
         response = HeadObjectOutput(
             AcceptRanges="bytes",
@@ -726,7 +726,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.user_metadata:
             response["Metadata"] = s3_object.user_metadata
 
-        # TODO implements if_match if_modified_since if_none_match if_unmodified_since
         if checksum_algorithm := s3_object.checksum_algorithm:
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
                 response[f"Checksum{checksum_algorithm.upper()}"] = checksum  # noqa
@@ -995,11 +994,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # grant_read_acp: GrantReadACP = None,
         # grant_write_acp: GrantWriteACP = None,
         #
-        # copy_source_if_match: CopySourceIfMatch = None,
-        # copy_source_if_modified_since: CopySourceIfModifiedSince = None,
-        # copy_source_if_none_match: CopySourceIfNoneMatch = None,
-        # copy_source_if_unmodified_since: CopySourceIfUnmodifiedSince = None,
-        #
         # request_payer: RequestPayer = None,
         dest_bucket = request["Bucket"]
         dest_key = request["Key"]
@@ -1022,6 +1016,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO: validate StorageClass for ARCHIVES one
         if src_s3_object.storage_class in ARCHIVES_STORAGE_CLASSES:
             raise
+
+        if failed_condition := get_failed_precondition_copy_source(
+            request, src_s3_object.last_modified, src_s3_object.etag
+        ):
+            raise PreconditionFailed(
+                "At least one of the pre-conditions you specified did not hold",
+                Condition=failed_condition,
+            )
 
         # TODO validate order of validation
         storage_class = request.get("StorageClass")
@@ -1073,7 +1075,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         s3_object = S3Object(
             key=dest_key,
-            etag=src_s3_object.etag,
             size=src_s3_object.size,
             version_id=dest_version_id,
             storage_class=storage_class,
@@ -1100,7 +1101,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             dest_bucket=dest_bucket,
             dest_object=s3_object,
         )
-        s3_object.checksum_value = s3_stored_object.checksum() or src_s3_object.checksum_value
+        s3_object.checksum_value = s3_stored_object.checksum or src_s3_object.checksum_value
+        s3_object.etag = s3_stored_object.etag or src_s3_object.etag
 
         # Object copied from Glacier object should not have expiry
         # TODO: verify this assumption from moto?
@@ -1231,6 +1233,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["CommonPrefixes"] = common_prefixes
         if delimiter and next_key_marker:
             response["NextMarker"] = next_key_marker
+        if s3_bucket.bucket_region != "us-east-1":
+            response["BucketRegion"] = s3_bucket.bucket_region
 
         # RequestCharged: Optional[RequestCharged]  # TODO
         return response
@@ -1345,6 +1349,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["ContinuationToken"] = continuation_token
         if start_after:
             response["StartAfter"] = start_after
+        if s3_bucket.bucket_region != "us-east-1":
+            response["BucketRegion"] = s3_bucket.bucket_region
 
         # RequestCharged: Optional[RequestCharged]  # TODO
         return response
@@ -1714,7 +1720,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         stored_s3_part = stored_multipart.open(s3_part)
         stored_s3_part.write(body)
 
-        if checksum_algorithm and s3_part.checksum_value != stored_s3_part.checksum():
+        if checksum_algorithm and s3_part.checksum_value != stored_s3_part.checksum:
             stored_multipart.remove_part(s3_part)
             raise InvalidRequest(
                 f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
