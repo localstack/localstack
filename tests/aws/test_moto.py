@@ -10,9 +10,11 @@ from localstack.aws.api import ServiceException, handler
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError
 from localstack.services import moto
 from localstack.services.moto import MotoFallbackDispatcher
+from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
 
+@markers.aws.unknown
 def test_call_with_sqs_creates_state_correctly():
     qname = f"queue-{short_uid()}"
 
@@ -35,6 +37,7 @@ def test_call_with_sqs_creates_state_correctly():
     assert url not in response.get("QueueUrls", [])
 
 
+@markers.aws.unknown
 def test_call_sqs_invalid_call_raises_http_exception():
     with pytest.raises(ServiceException) as e:
         moto.call_moto(
@@ -49,6 +52,7 @@ def test_call_sqs_invalid_call_raises_http_exception():
     e.match("The specified queue does not exist")
 
 
+@markers.aws.unknown
 def test_call_non_implemented_operation():
     with pytest.raises(NotImplementedError):
         # we'll need to keep finding methods that moto doesn't implement ;-)
@@ -57,6 +61,7 @@ def test_call_non_implemented_operation():
         )
 
 
+@markers.aws.unknown
 def test_call_with_sqs_modifies_state_in_moto_backend():
     """Whitebox test to check that moto backends are populated correctly"""
     from moto.sqs.models import sqs_backends
@@ -75,6 +80,7 @@ def test_call_with_sqs_modifies_state_in_moto_backend():
 @pytest.mark.parametrize(
     "payload", ["foobar", b"foobar", BytesIO(b"foobar")], ids=["str", "bytes", "IO[bytes]"]
 )
+@markers.aws.unknown
 def test_call_s3_with_streaming_trait(payload, monkeypatch):
     monkeypatch.setenv("MOTO_S3_CUSTOM_ENDPOINTS", "s3.localhost.localstack.cloud:4566")
 
@@ -112,6 +118,7 @@ def test_call_s3_with_streaming_trait(payload, monkeypatch):
     moto.call_moto(moto.create_aws_request_context("s3", "DeleteBucket", {"Bucket": bucket_name}))
 
 
+@markers.aws.unknown
 def test_call_include_response_metadata():
     ctx = moto.create_aws_request_context("sqs", "ListQueues")
 
@@ -122,6 +129,7 @@ def test_call_include_response_metadata():
     assert "ResponseMetadata" in response
 
 
+@markers.aws.unknown
 def test_call_with_modified_request():
     from moto.sqs.models import sqs_backends
 
@@ -138,6 +146,7 @@ def test_call_with_modified_request():
     moto.call_moto(moto.create_aws_request_context("sqs", "DeleteQueue", {"QueueUrl": url}))
 
 
+@markers.aws.unknown
 def test_call_with_es_creates_state_correctly():
     domain_name = f"domain-{short_uid()}"
     response = moto.call_moto(
@@ -166,6 +175,7 @@ def test_call_with_es_creates_state_correctly():
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
 
+@markers.aws.unknown
 def test_call_multi_region_backends():
     from moto.sqs.models import sqs_backends
 
@@ -193,6 +203,7 @@ def test_call_multi_region_backends():
     del sqs_backends[DEFAULT_MOTO_ACCOUNT_ID]["eu-central-1"].queues[qname_eu]
 
 
+@markers.aws.unknown
 def test_call_with_sqs_invalid_call_raises_exception():
     with pytest.raises(ServiceException):
         moto.call_moto(
@@ -206,6 +217,7 @@ def test_call_with_sqs_invalid_call_raises_exception():
         )
 
 
+@markers.aws.unknown
 def test_call_with_sqs_returns_service_response():
     qname = f"queue-{short_uid()}"
 
@@ -238,6 +250,7 @@ class FakeSqsProvider(FakeSqsApi):
         return moto.call_moto(context)
 
 
+@markers.aws.unknown
 def test_moto_fallback_dispatcher():
     provider = FakeSqsProvider()
     dispatcher = MotoFallbackDispatcher(provider)
@@ -294,6 +307,7 @@ class FakeS3Provider:
         raise NotImplementedAvoidFallbackError
 
 
+@markers.aws.unknown
 def test_moto_fallback_dispatcher_error_handling(monkeypatch):
     """
     This test checks if the error handling (marshalling / unmarshalling) works correctly on all levels, including
@@ -329,6 +343,7 @@ def test_moto_fallback_dispatcher_error_handling(monkeypatch):
         _dispatch("PutObject", {"Bucket": bucket_name, "Key": "key"})
 
 
+@markers.aws.unknown
 def test_request_with_response_header_location_fields():
     # CreateHostedZoneResponse has a member "Location" that's located in the headers
     zone_name = f"zone-{short_uid()}.com"

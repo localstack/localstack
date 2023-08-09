@@ -6,6 +6,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
 
+@markers.aws.unknown
 def test_bucketpolicy(deploy_cfn_template, aws_client):
     bucket_name = f"ls-bucket-{short_uid()}"
     deploy_result = deploy_cfn_template(
@@ -46,6 +47,7 @@ def test_bucket_autoname(deploy_cfn_template, aws_client):
     assert result.stack_name.lower() in output["OutputValue"]
 
 
+@markers.aws.unknown
 def test_bucket_versioning(deploy_cfn_template, aws_client):
     result = deploy_cfn_template(
         template_path=os.path.join(

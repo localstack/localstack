@@ -19,6 +19,7 @@ PUBLICATION_RETRIES = 5
 
 
 class TestCloudwatch:
+    @markers.aws.unknown
     def test_put_metric_data(self, aws_client):
         metric_name = "metric-%s" % short_uid()
         namespace = "namespace-%s" % short_uid()
@@ -90,6 +91,7 @@ class TestCloudwatch:
         assert poll_condition(lambda: get_stats() >= 1, timeout=10)
         snapshot.match("get_metric_statistics", stats)
 
+    @markers.aws.unknown
     def test_put_metric_data_gzip(self, aws_client):
         metric_name = "test-metric"
         namespace = "namespace"
@@ -121,6 +123,7 @@ class TestCloudwatch:
         assert 1 == len(rs["Metrics"])
         assert namespace == rs["Metrics"][0]["Namespace"]
 
+    @markers.aws.unknown
     def test_get_metric_data(self, aws_client):
 
         aws_client.cloudwatch.put_metric_data(
@@ -209,6 +212,7 @@ class TestCloudwatch:
         result = json.loads(to_str(result.content))
         assert len(result["metrics"]) >= 3
 
+    @markers.aws.unknown
     def test_multiple_dimensions(self, aws_client):
 
         namespaces = [
@@ -241,6 +245,7 @@ class TestCloudwatch:
         assert metrics
         assert len(metrics) == len(namespaces) * num_dimensions
 
+    @markers.aws.unknown
     def test_describe_alarms_converts_date_format_correctly(self, aws_client):
         alarm_name = "a-%s" % short_uid()
         aws_client.cloudwatch.put_metric_alarm(
@@ -256,6 +261,7 @@ class TestCloudwatch:
         finally:
             aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name])
 
+    @markers.aws.unknown
     def test_put_composite_alarm_describe_alarms_converts_date_format_correctly(self, aws_client):
         alarm_name = "a-%s" % short_uid()
         alarm_rule = 'ALARM("my_other_alarm")'
@@ -271,6 +277,7 @@ class TestCloudwatch:
         finally:
             aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name])
 
+    @markers.aws.unknown
     def test_store_tags(self, aws_client):
         alarm_name = "a-%s" % short_uid()
         response = aws_client.cloudwatch.put_metric_alarm(
@@ -296,6 +303,7 @@ class TestCloudwatch:
         # clean up
         aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name])
 
+    @markers.aws.unknown
     def test_list_metrics_uniqueness(self, aws_client):
         # create metrics with same namespace and dimensions but different metric names
         aws_client.cloudwatch.put_metric_data(
@@ -335,6 +343,7 @@ class TestCloudwatch:
         results = aws_client.cloudwatch.list_metrics(Namespace="AWS/EC2")["Metrics"]
         assert 2 == len(results)
 
+    @markers.aws.unknown
     def test_put_metric_alarm_escape_character(self, cleanups, aws_client):
         aws_client.cloudwatch.put_metric_alarm(
             AlarmName="cpu-mon",
@@ -353,6 +362,7 @@ class TestCloudwatch:
         result = aws_client.cloudwatch.describe_alarms(AlarmNames=["cpu-mon"])
         assert result.get("MetricAlarms")[0]["AlarmDescription"] == "<"
 
+    @markers.aws.unknown
     def test_set_alarm(self, sns_create_topic, sqs_create_queue, aws_client):
         # create topics for state 'ALARM' and 'OK'
         sns_topic_alarm = sns_create_topic()

@@ -22,6 +22,7 @@ def test_sam_policies(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("list_attached_role_policies", roles)
 
 
+@markers.aws.unknown
 def test_sam_template(deploy_cfn_template, aws_client):
 
     # deploy template
@@ -32,6 +33,6 @@ def test_sam_template(deploy_cfn_template, aws_client):
     )
 
     # run Lambda test invocation
-    result = aws_client.awslambda.invoke(FunctionName=func_name)
+    result = aws_client.lambda_.invoke(FunctionName=func_name)
     result = json.loads(to_str(result["Payload"].read()))
     assert result == {"hello": "world"}

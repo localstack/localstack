@@ -48,6 +48,7 @@ def test_stream_creation(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("stream_description", description)
 
 
+@markers.aws.unknown
 def test_default_parameters_kinesis(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -68,6 +69,7 @@ def test_default_parameters_kinesis(deploy_cfn_template, aws_client):
     assert found
 
 
+@markers.aws.unknown
 def test_cfn_handle_kinesis_firehose_resources(deploy_cfn_template, aws_client):
     kinesis_stream_name = f"kinesis-stream-{short_uid()}"
     firehose_role_name = f"firehose-role-{short_uid()}"
@@ -162,6 +164,7 @@ Resources:
 """
 
 
+@markers.aws.unknown
 def test_dynamodb_stream_response_with_cf(deploy_cfn_template, aws_client):
     template = TEST_TEMPLATE_28 % "EventTable"
     deploy_cfn_template(template=template)

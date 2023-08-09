@@ -13,7 +13,7 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON, LOCALHOST
 from localstack.services.apigateway.helpers import path_based_url
-from localstack.services.awslambda.lambda_utils import get_main_endpoint_from_container
+from localstack.services.lambda_.lambda_utils import get_main_endpoint_from_container
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -22,9 +22,10 @@ from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry
 from tests.aws.apigateway.apigateway_fixtures import api_invoke_url, create_rest_api_deployment
 from tests.aws.apigateway.conftest import DEFAULT_STAGE_NAME
-from tests.aws.awslambda.test_lambda import TEST_LAMBDA_LIBS
+from tests.aws.lambda_.test_lambda import TEST_LAMBDA_LIBS
 
 
+@markers.aws.unknown
 def test_http_integration(create_rest_apigw, aws_client, echo_http_server):
     api_id, _, root_id = create_rest_apigw(name="my_api", description="this is my api")
 
@@ -265,6 +266,7 @@ def test_put_integration_responses(create_rest_apigw, aws_client, echo_http_serv
     snapshot.match("get-integration-response-put", response)
 
 
+@markers.aws.unknown
 def test_put_integration_response_with_response_template(aws_client, echo_http_server_post):
     response = aws_client.apigateway.create_rest_api(name="my_api", description="this is my api")
     api_id = response["id"]
@@ -312,6 +314,7 @@ def test_put_integration_response_with_response_template(aws_client, echo_http_s
 
 
 # TODO: add snapshot test!
+@markers.aws.unknown
 def test_put_integration_validation(aws_client, echo_http_server, echo_http_server_post):
     response = aws_client.apigateway.create_rest_api(name="my_api", description="this is my api")
     api_id = response["id"]
@@ -482,6 +485,7 @@ def create_vpc_endpoint(default_vpc, aws_client):
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..endpointConfiguration.types", "$..policy.Statement..Resource"]
 )
+@markers.aws.validated
 def test_create_execute_api_vpc_endpoint(
     create_rest_api_with_integration,
     dynamodb_create_table,
@@ -631,7 +635,7 @@ def test_create_execute_api_vpc_endpoint(
     )
 
     def _invoke_api():
-        result = aws_client.awslambda.invoke(FunctionName=func_name, Payload="{}")
+        result = aws_client.lambda_.invoke(FunctionName=func_name, Payload="{}")
         result = json.loads(to_str(result["Payload"].read()))
         items = json.loads(result["content"])["Items"]
         assert len(items) == len(item_ids)

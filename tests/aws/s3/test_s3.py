@@ -39,7 +39,7 @@ from localstack.constants import (
     TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
-from localstack.services.awslambda.lambda_utils import (
+from localstack.services.lambda_.lambda_utils import (
     LAMBDA_RUNTIME_NODEJS14X,
     LAMBDA_RUNTIME_PYTHON39,
 )
@@ -997,6 +997,75 @@ class TestS3:
                 Bucket=s3_bucket, Key=fake_key, UploadId=fake_upload_id
             )
         snapshot.match("abort-exc", e.value.response)
+
+    @pytest.mark.xfail(condition=not NATIVE_S3_PROVIDER, reason="not implemented in moto")
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
+    @markers.aws.validated
+    def test_multipart_complete_multipart_too_small(self, s3_bucket, snapshot, aws_client):
+        key_name = "test-upload-part-exc"
+        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        upload_id = response["UploadId"]
+
+        parts = []
+
+        for i in range(1, 3):
+            upload_part = aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=BytesIO(b"data"),
+                PartNumber=i,
+                UploadId=upload_id,
+            )
+            parts.append({"ETag": upload_part["ETag"], "PartNumber": i})
+            snapshot.match(f"upload-part{i}", upload_part)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket, Key=key_name, UploadId=upload_id
+            )
+        snapshot.match("complete-exc-no-parts", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket, Key=key_name, UploadId=upload_id, MultipartUpload={"Parts": parts}
+            )
+        snapshot.match("complete-exc-too-small", e.value.response)
+
+    @pytest.mark.xfail(condition=not NATIVE_S3_PROVIDER, reason="not implemented in moto")
+    @markers.aws.validated
+    def test_multipart_complete_multipart_wrong_part(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("UploadId"))
+        key_name = "test-upload-part-exc"
+        response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        upload_id = response["UploadId"]
+
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=BytesIO(b"data"),
+            PartNumber=1,
+            UploadId=upload_id,
+        )
+        part_etag = upload_part["ETag"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                UploadId=upload_id,
+                MultipartUpload={"Parts": [{"ETag": part_etag, "PartNumber": 2}]},
+            )
+        snapshot.match("complete-exc-wrong-part-number", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            wrong_etag = "d41d8cd98f00b204e9800998ecf8427e"
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                UploadId=upload_id,
+                MultipartUpload={"Parts": [{"ETag": wrong_etag, "PartNumber": 1}]},
+            )
+        snapshot.match("complete-exc-wrong-etag", e.value.response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -3033,7 +3102,7 @@ class TestS3:
         create_lambda_function(
             handler_file=os.path.join(
                 os.path.dirname(__file__),
-                "../awslambda",
+                "../lambda_",
                 "functions",
                 "lambda_triggered_by_sqs_download_s3_file.py",
             ),
@@ -3048,7 +3117,7 @@ class TestS3:
                 }
             ),
         )
-        aws_client.awslambda.invoke(FunctionName=function_name, InvocationType="Event")
+        aws_client.lambda_.invoke(FunctionName=function_name, InvocationType="Event")
 
         # TODO maybe this check can be improved (do not rely on logs)
         retry(
@@ -3233,7 +3302,7 @@ class TestS3:
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../awslambda/functions/lambda_s3_integration.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration.js"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
@@ -3250,7 +3319,7 @@ class TestS3:
         )
         s3_create_bucket(Bucket=function_name)
 
-        response = aws_client.awslambda.invoke(FunctionName=function_name)
+        response = aws_client.lambda_.invoke(FunctionName=function_name)
         presigned_url = response["Payload"].read()
         presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
 
@@ -3322,6 +3391,7 @@ class TestS3:
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..Error.RequestID"]
     )
+    @markers.aws.validated
     def test_bucket_does_not_exist(self, s3_vhost_client, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = f"bucket-does-not-exist-{short_uid()}"
@@ -5536,6 +5606,7 @@ class TestS3:
         [True, False],
     )
     @markers.snapshot.skip_snapshot_verify(paths=["$..x-amz-server-side-encryption"])
+    @markers.aws.validated
     def test_get_object_content_length_with_virtual_host(
         self,
         s3_bucket,
@@ -5581,6 +5652,7 @@ class TestS3MultiAccounts:
         """
         return secondary_aws_client.s3
 
+    @markers.aws.unknown
     def test_shared_bucket_namespace(self, primary_client, secondary_client):
         # Ensure that the bucket name space is shared by all accounts and regions
         primary_client.create_bucket(Bucket="foo")
@@ -5592,6 +5664,7 @@ class TestS3MultiAccounts:
             )
         exc.match("BucketAlreadyExists")
 
+    @markers.aws.unknown
     def test_cross_account_access(self, primary_client, secondary_client):
         # Ensure that following operations can be performed across accounts
         # - ListObjects
@@ -5909,6 +5982,7 @@ class TestS3PresignedUrl:
         )
 
         # AWS seems to detected what kind of signature is missing from the policy fields
+        print(response.content)
         exception = xmltodict.parse(response.content)
         exception["StatusCode"] = response.status_code
         snapshot.match("exception-missing-signature", exception)
@@ -6959,7 +7033,7 @@ class TestS3PresignedUrl:
         assert StorageClass.STANDARD not in url
 
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../awslambda/functions/lambda_s3_integration_presign.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_presign.js"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
@@ -6976,7 +7050,7 @@ class TestS3PresignedUrl:
         )
         s3_create_bucket(Bucket=function_name)
 
-        response = aws_client.awslambda.invoke(FunctionName=function_name)
+        response = aws_client.lambda_.invoke(FunctionName=function_name)
         presigned_url = response["Payload"].read()
         presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
         assert StorageClass.STANDARD in presigned_url
@@ -7023,7 +7097,7 @@ class TestS3PresignedUrl:
         assert "=AES256" not in url
 
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../awslambda/functions/lambda_s3_integration_sdk_v2.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_sdk_v2.js"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
@@ -7040,7 +7114,7 @@ class TestS3PresignedUrl:
         )
         s3_create_bucket(Bucket=function_name)
 
-        response = aws_client.awslambda.invoke(FunctionName=function_name)
+        response = aws_client.lambda_.invoke(FunctionName=function_name)
         presigned_url = response["Payload"].read()
         presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
         assert "=AES256" in presigned_url
@@ -7109,6 +7183,7 @@ class TestS3PresignedUrl:
         "signature_version",
         ["s3", "s3v4"],
     )
+    @markers.aws.unknown
     def test_s3_presign_url_encoding(
         self, aws_client, s3_bucket, signature_version, patch_s3_skip_signature_validation_false
     ):

@@ -206,6 +206,9 @@ lint:              		  ## Run code linter to check code style
 lint-modified:     		  ## Run code linter on modified files
 	($(VENV_RUN); python -m pflake8 --show-source `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` )
 
+check-aws-markers:     		  ## Lightweight check to ensure all AWS tests have proper compatibilty markers set
+	($(VENV_RUN); python -m pytest --co tests/aws/)
+
 format:            		  ## Run black and isort code formatter
 	($(VENV_RUN); python -m isort localstack tests; python -m black localstack tests )
 

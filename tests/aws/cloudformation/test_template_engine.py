@@ -117,6 +117,7 @@ class TestIntrinsicFunctions:
             ("Fn::Or", "1", "1", True),
         ],
     )
+    @markers.aws.unknown
     def test_and_or_functions(
         self,
         intrinsic_fn,
@@ -260,6 +261,7 @@ class TestIntrinsicFunctions:
 
 class TestImports:
     @pytest.mark.skip(reason="flaky due to issues in parameter handling and re-resolving")
+    @markers.aws.unknown
     def test_stack_imports(self, deploy_cfn_template, aws_client):
         result = aws_client.cloudformation.list_imports(ExportName="_unknown_")
         assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -325,6 +327,7 @@ class TestSsmParameters:
         tags = aws_client.sns.list_tags_for_resource(ResourceArn=matching[0])
         snapshot.match("topic-tags", tags)
 
+    @markers.aws.unknown
     def test_resolve_ssm(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
@@ -338,6 +341,7 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
 
+    @markers.aws.unknown
     def test_resolve_ssm_with_version(self, create_parameter, deploy_cfn_template, aws_client):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value_v0 = f"param-value-{short_uid()}"
@@ -361,6 +365,7 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value_v1
 
+    @markers.aws.unknown
     def test_resolve_ssm_secure(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
@@ -387,6 +392,7 @@ class TestSecretsManagerParameters:
             "resolve_secretsmanager.yaml",
         ],
     )
+    @markers.aws.unknown
     def test_resolve_secretsmanager(self, create_secret, deploy_cfn_template, template_name):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
@@ -503,7 +509,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_9,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
         )
 
         stack_with_macro = deploy_cfn_template(
@@ -548,7 +554,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -608,7 +614,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -657,7 +663,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -711,7 +717,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -777,7 +783,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -826,7 +832,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -899,7 +905,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 
@@ -942,6 +948,7 @@ class TestMacros:
             "raise_error.py",
         ],
     )
+    @markers.aws.validated
     def test_failed_state(
         self,
         deploy_cfn_template,
@@ -964,7 +971,7 @@ class TestMacros:
             func_name=func_name,
             handler_file=macro_function_path,
             runtime=Runtime.python3_8,
-            client=aws_client.awslambda,
+            client=aws_client.lambda_,
             timeout=1,
         )
 

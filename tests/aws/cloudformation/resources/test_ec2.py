@@ -3,6 +3,7 @@ import os
 from localstack.testing.pytest import markers
 
 
+@markers.aws.unknown
 def test_vpc_creates_default_sg(deploy_cfn_template, aws_client):
     result = deploy_cfn_template(
         template_path=os.path.join(
@@ -42,6 +43,7 @@ def test_cfn_with_multiple_route_tables(deploy_cfn_template, aws_client):
     assert len(resp["RouteTables"]) == 4
 
 
+@markers.aws.unknown
 def test_cfn_with_multiple_route_table_associations(deploy_cfn_template, aws_client):
     # TODO: stack does not deploy to AWS
     stack = deploy_cfn_template(

@@ -6,7 +6,7 @@ from secrets import token_urlsafe
 from typing import Literal, Optional, Union
 
 from localstack import config
-from localstack.aws.api.s3 import (  # EntityTooSmall,; InvalidPart,
+from localstack.aws.api.s3 import (
     AccountId,
     AnalyticsConfiguration,
     AnalyticsId,
@@ -17,11 +17,13 @@ from localstack.aws.api.s3 import (  # EntityTooSmall,; InvalidPart,
     ChecksumAlgorithm,
     CompletedPartList,
     CORSConfiguration,
+    EntityTooSmall,
     ETag,
     Expiration,
     IntelligentTieringConfiguration,
     IntelligentTieringId,
     InvalidArgument,
+    InvalidPart,
     LifecycleRules,
     LoggingEnabled,
     Metadata,
@@ -169,7 +171,8 @@ class S3Bucket:
                         Method=http_method,
                         ResourceType="DeleteMarker",
                         DeleteMarker=True,
-                        Allow="delete",
+                        Allow="DELETE",
+                        VersionId=s3_object_version.version_id,
                     )
                 return s3_object_version
 
@@ -183,6 +186,7 @@ class S3Bucket:
                     "The specified key does not exist.",
                     Key=key,
                     DeleteMarker=True,
+                    VersionId=s3_object.version_id,
                 )
 
         return s3_object
@@ -405,13 +409,12 @@ class S3Multipart:
 
             s3_part = self.parts.get(part_number)
             if not s3_part or s3_part.etag != part_etag:
-                raise
-                # raise InvalidPart(
-                #     "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
-                #     ETag=part_etag,
-                #     PartNumber=part_number,
-                #     UploadId=self.id,
-                # )
+                raise InvalidPart(
+                    "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
+                    ETag=part_etag,
+                    PartNumber=part_number,
+                    UploadId=self.id,
+                )
 
             # TODO: this part is currently not implemented, time permitting
             # part_checksum = part.get(checksum_key) if self.object.checksum_algorithm else None
@@ -419,14 +422,13 @@ class S3Multipart:
             #     raise Exception()
 
             if index != last_part_index and s3_part.size < S3_UPLOAD_PART_MIN_SIZE:
-                raise
-                # raise EntityTooSmall(
-                #     "Your proposed upload is smaller than the minimum allowed size",
-                #     ETag=part_etag,
-                #     PartNumber=part_number,
-                #     MinSizeAllowed=S3_UPLOAD_PART_MIN_SIZE,
-                #     ProposedSize=s3_part.size,
-                # )
+                raise EntityTooSmall(
+                    "Your proposed upload is smaller than the minimum allowed size",
+                    ETag=part_etag,
+                    PartNumber=part_number,
+                    MinSizeAllowed=S3_UPLOAD_PART_MIN_SIZE,
+                    ProposedSize=s3_part.size,
+                )
 
             object_etag.update(bytes.fromhex(s3_part.etag))
             # TODO verify this, it seems wrong

@@ -112,7 +112,7 @@ def execute_macro(parsed_template: dict, macro: dict, stack_parameters: list) ->
         "templateParameterValues": formatted_stack_parameters,
     }
 
-    client = connect_to().awslambda
+    client = connect_to().lambda_
     invocation = client.invoke(
         FunctionName=macro_definition["FunctionName"], Payload=json.dumps(event)
     )

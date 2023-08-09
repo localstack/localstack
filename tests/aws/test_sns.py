@@ -29,8 +29,8 @@ from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
-from .awslambda.functions import lambda_integration
-from .awslambda.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
+from .lambda_.functions import lambda_integration
+from .lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
 
 LOG = logging.getLogger(__name__)
 
@@ -110,7 +110,7 @@ class TestSNSSubscription:
             role=lambda_su_role,
         )
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             FunctionName=function_name,
             StatementId=permission_id,
             Action="lambda:InvokeFunction",
@@ -744,7 +744,7 @@ class TestSNSProvider:
 
         # allow the SNS topic to invoke the lambda
         permission_id = f"test-statement-{short_uid()}"
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             FunctionName=function_name,
             StatementId=permission_id,
             Action="lambda:InvokeFunction",
@@ -873,7 +873,7 @@ class TestSNSProvider:
 
         snapshot.match("subscription-attributes", response_attributes)
 
-        aws_client.awslambda.delete_function(FunctionName=lambda_name)
+        aws_client.lambda_.delete_function(FunctionName=lambda_name)
 
         aws_client.sns.publish(
             TopicArn=topic_arn,
@@ -2272,8 +2272,7 @@ class TestSNSProvider:
         # binary payload in base64 encoded by AWS, UTF-8 for JSON
         # https://docs.aws.amazon.com/sns/latest/api/API_MessageAttributeValue.html
 
-    @markers.aws.only_localstack
-    @markers.aws.validated
+    @markers.aws.only_localstack  # TODO: clarify
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     def test_subscribe_external_http_endpoint(
         self, sns_create_http_endpoint, raw_message_delivery, aws_client, snapshot
@@ -3574,7 +3573,6 @@ class TestSNSProvider:
         snapshot.match("token-not-exists", e.value.response)
 
 
-@markers.aws.only_localstack
 class TestSNSMultiAccounts:
     @pytest.fixture
     def sns_primary_client(self, aws_client):
@@ -3592,6 +3590,7 @@ class TestSNSMultiAccounts:
     def sqs_secondary_client(self, secondary_aws_client):
         return secondary_aws_client.sqs
 
+    @markers.aws.only_localstack
     def test_cross_account_access(self, sns_primary_client, sns_secondary_client):
         # Cross-account access is supported for below operations.
         # This list is taken from ActionName param of the AddPermissions operation
@@ -3635,6 +3634,7 @@ class TestSNSMultiAccounts:
 
         assert sns_secondary_client.delete_topic(TopicArn=topic_arn)
 
+    @markers.aws.only_localstack
     def test_cross_account_publish_to_sqs(
         self,
         sns_primary_client,
@@ -3816,7 +3816,7 @@ class TestSNSPublishDelivery:
             role=lambda_su_role,
         )
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             FunctionName=function_name,
             StatementId=permission_id,
             Action="lambda:InvokeFunction",
@@ -3872,8 +3872,8 @@ class TestSNSPublishDelivery:
         snapshot.match("delivery-events", events)
 
 
-@markers.aws.only_localstack
 class TestSNSRetrospectionEndpoints:
+    @markers.aws.only_localstack
     def test_publish_to_platform_endpoint_can_retrospect(
         self, sns_create_topic, sns_subscription, sns_create_platform_application, aws_client
     ):
@@ -3992,6 +3992,7 @@ class TestSNSRetrospectionEndpoints:
         msg_with_region = requests.get(msgs_url, params={"region": "us-east-1"}).json()
         assert not msg_with_region["platform_endpoint_messages"]
 
+    @markers.aws.only_localstack
     def test_publish_sms_can_retrospect(self, sns_create_topic, sns_subscription, aws_client):
         sns_store = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 

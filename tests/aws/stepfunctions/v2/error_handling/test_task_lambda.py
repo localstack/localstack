@@ -25,6 +25,7 @@ pytestmark = pytest.mark.skipif(
     ]
 )
 class TestTaskLambda:
+    @markers.aws.unknown
     def test_raise_exception(
         self,
         aws_client,
@@ -57,6 +58,7 @@ class TestTaskLambda:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_raise_exception_catch(
         self,
         aws_client,
@@ -89,6 +91,7 @@ class TestTaskLambda:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_no_such_function(
         self,
         aws_client,
@@ -121,6 +124,7 @@ class TestTaskLambda:
             exec_input,
         )
 
+    @markers.aws.unknown
     def test_no_such_function_catch(
         self,
         aws_client,

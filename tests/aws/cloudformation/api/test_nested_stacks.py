@@ -10,6 +10,7 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 
 
+@markers.aws.unknown
 def test_nested_stack(deploy_cfn_template, s3_create_bucket, aws_client):
     # upload template to S3
     artifacts_bucket = f"cf-artifacts-{short_uid()}"

@@ -7,6 +7,7 @@ from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.common import short_uid
 
 
+@markers.aws.unknown
 def test_parameter_defaults(deploy_cfn_template, aws_client):
     ssm_parameter_value = f"custom-{short_uid()}"
 

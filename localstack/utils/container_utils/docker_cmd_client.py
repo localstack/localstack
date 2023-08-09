@@ -111,9 +111,7 @@ class CmdDockerClient(ContainerClient):
         else:
             return DockerContainerStatus.DOWN
 
-    def stop_container(self, container_name: str, timeout: int = None) -> None:
-        if timeout is None:
-            timeout = self.STOP_TIMEOUT
+    def stop_container(self, container_name: str, timeout: int = 10) -> None:
         cmd = self._docker_cmd()
         cmd += ["stop", "--time", str(timeout), container_name]
         LOG.debug("Stopping container with cmd %s", cmd)

@@ -1,7 +1,7 @@
 """
 Custom pytest mark typings
 """
-from typing import Callable, List, Optional
+from typing import Any, Callable, List, Optional
 
 import pytest
 
@@ -33,7 +33,7 @@ class SkipSnapshotVerifyMarker:
         self,
         *,
         paths: "Optional[List[str]]" = None,
-        condition: "Optional[Callable[[...], bool]]" = None
+        condition: "Optional[Callable[[...], bool]]" = None,
     ):
         ...
 
@@ -59,3 +59,33 @@ class Markers:
     only_on_amd64 = pytest.mark.only_on_amd64
     resource_heavy = pytest.mark.resource_heavy
     only_in_docker = pytest.mark.only_in_docker
+
+
+# pytest plugin
+
+
+@pytest.hookimpl
+def pytest_collection_modifyitems(
+    session: pytest.Session, config: Any, items: List[pytest.Item]
+) -> None:
+    """Enforce that each test has exactly one aws compatibility marker"""
+    marker_errors = []
+    for item in items:
+        # we should only concern ourselves with tests in tests/aws/
+        if "tests/aws" not in item.fspath.dirname:
+            continue
+
+        aws_markers = list()
+        for mark in item.iter_markers():
+            if mark.name.startswith("aws_"):
+                aws_markers.append(mark.name)
+
+        if len(aws_markers) > 1:
+            marker_errors.append(f"{item.nodeid}: Too many aws markers specified: {aws_markers}")
+        elif len(aws_markers) == 0:
+            marker_errors.append(
+                f"{item.nodeid}: Missing aws marker. Specify at least one marker, e.g. @markers.aws.validated"
+            )
+
+    if marker_errors:
+        raise pytest.UsageError(*marker_errors)

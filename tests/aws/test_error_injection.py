@@ -4,7 +4,7 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.testing.pytest import markers
-from localstack.utils.aws import aws_stack, resources
+from localstack.utils.aws import resources
 from localstack.utils.common import short_uid
 
 from .test_integration import PARTITION_KEY
@@ -35,78 +35,79 @@ class TestErrorInjection:
             aws_client.kinesis.delete_stream(StreamName=stream_name)
 
     @markers.aws.only_localstack
-    def test_dynamodb_error_injection(self, monkeypatch):
-        table = self.get_dynamodb_table()
+    def test_dynamodb_error_injection(self, monkeypatch, aws_client, dynamodb_create_table):
+        table_name = dynamodb_create_table()["TableDescription"]["TableName"]
 
-        try:
-            partition_key = short_uid()
-            self.assert_zero_probability_read_error_injection(table, partition_key)
+        partition_key = short_uid()
+        self.assert_zero_probability_read_error_injection(
+            aws_client.dynamodb, table_name, partition_key
+        )
 
-            # with a probability of 1, always throw errors
-            monkeypatch.setattr(config, "DYNAMODB_ERROR_PROBABILITY", 1.0)
-            with pytest.raises(ClientError) as exc:
-                table.get_item(Key={PARTITION_KEY: partition_key})
-            exc.match("ProvisionedThroughputExceededException")
-        finally:
-            table.delete()
-
-    @markers.aws.only_localstack
-    def test_dynamodb_read_error_injection(self, monkeypatch):
-        table = self.get_dynamodb_table()
-
-        try:
-            partition_key = short_uid()
-            self.assert_zero_probability_read_error_injection(table, partition_key)
-
-            # with a probability of 1, always throw errors
-            monkeypatch.setattr(config, "DYNAMODB_READ_ERROR_PROBABILITY", 1.0)
-            with pytest.raises(ClientError) as exc:
-                table.get_item(Key={PARTITION_KEY: partition_key})
-            exc.match("ProvisionedThroughputExceededException")
-        finally:
-            table.delete()
+        # with a probability of 1, always throw errors
+        monkeypatch.setattr(config, "DYNAMODB_ERROR_PROBABILITY", 1.0)
+        with pytest.raises(ClientError) as exc:
+            aws_client.dynamodb.get_item(
+                TableName=table_name, Key={PARTITION_KEY: {"S": partition_key}}
+            )
+        exc.match("ProvisionedThroughputExceededException")
 
     @markers.aws.only_localstack
-    def test_dynamodb_write_error_injection(self, monkeypatch):
-        table = self.get_dynamodb_table()
+    def test_dynamodb_read_error_injection(self, monkeypatch, aws_client, dynamodb_create_table):
+        table_name = dynamodb_create_table()["TableDescription"]["TableName"]
 
-        try:
-            # by default, no errors
-            test_no_errors = table.put_item(Item={PARTITION_KEY: short_uid(), "data": "foobar123"})
-            assert test_no_errors["ResponseMetadata"]["HTTPStatusCode"] == 200
+        partition_key = short_uid()
+        self.assert_zero_probability_read_error_injection(
+            aws_client.dynamodb, table_name, partition_key
+        )
 
-            # with a probability of 1, always throw errors
-            monkeypatch.setattr(config, "DYNAMODB_WRITE_ERROR_PROBABILITY", 1.0)
-            with pytest.raises(ClientError) as exc:
-                table.put_item(Item={PARTITION_KEY: short_uid(), "data": "foobar123"})
-            exc.match("ProvisionedThroughputExceededException")
+        # with a probability of 1, always throw errors
+        monkeypatch.setattr(config, "DYNAMODB_READ_ERROR_PROBABILITY", 1.0)
+        with pytest.raises(ClientError) as exc:
+            aws_client.dynamodb.get_item(
+                TableName=table_name, Key={PARTITION_KEY: {"S": partition_key}}
+            )
+        exc.match("ProvisionedThroughputExceededException")
 
-            # BatchWriteItem throws ProvisionedThroughputExceededException if ALL items in Batch are Throttled
-            with pytest.raises(ClientError) as exc:
-                with table.batch_writer() as batch:
-                    for _ in range(3):
-                        batch.put_item(
-                            Item={
-                                PARTITION_KEY: short_uid(),
-                                "data": "foobar123",
-                            }
-                        )
-            exc.match("ProvisionedThroughputExceededException")
-        finally:
-            table.delete()
+    @markers.aws.only_localstack
+    def test_dynamodb_write_error_injection(self, monkeypatch, aws_client, dynamodb_create_table):
+        table_name = dynamodb_create_table()["TableDescription"]["TableName"]
 
-    def get_dynamodb_table(self):
-        # set max_attempts=1 to speed up the test execution
-        dynamodb = aws_stack.connect_to_resource("dynamodb", config=self.retry_config())
-        table_name = f"table-{short_uid()}"
-        resources.create_dynamodb_table(table_name, partition_key=PARTITION_KEY)
-        return dynamodb.Table(table_name)
+        # by default, no errors
+        test_no_errors = aws_client.dynamodb.put_item(
+            TableName=table_name,
+            Item={PARTITION_KEY: {"S": short_uid()}, "data": {"S": "foobar123"}},
+        )
+        assert test_no_errors["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        # with a probability of 1, always throw errors
+        monkeypatch.setattr(config, "DYNAMODB_WRITE_ERROR_PROBABILITY", 1.0)
+        with pytest.raises(ClientError) as exc:
+            aws_client.dynamodb.put_item(
+                TableName=table_name,
+                Item={PARTITION_KEY: {"S": short_uid()}, "data": {"S": "foobar123"}},
+            )
+        exc.match("ProvisionedThroughputExceededException")
+
+        # BatchWriteItem throws ProvisionedThroughputExceededException if ALL items in Batch are Throttled
+        with pytest.raises(ClientError) as exc:
+            for _ in range(3):
+                aws_client.dynamodb.put_item(
+                    TableName=table_name,
+                    Item={
+                        PARTITION_KEY: {"S": short_uid()},
+                        "data": {"S": "foobar123"},
+                    },
+                )
+        exc.match("ProvisionedThroughputExceededException")
 
     def retry_config(self):
         # set max_attempts=1 to speed up the test execution
         return Config(retries={"max_attempts": 1})
 
-    def assert_zero_probability_read_error_injection(self, table, partition_key):
+    @staticmethod
+    def assert_zero_probability_read_error_injection(dynamodb_client, table_name, partition_key):
         # by default, no errors
-        test_no_errors = table.get_item(Key={PARTITION_KEY: partition_key})
+        test_no_errors = dynamodb_client.get_item(
+            TableName=table_name, Key={PARTITION_KEY: {"S": partition_key}}
+        )
         assert test_no_errors["ResponseMetadata"]["HTTPStatusCode"] == 200

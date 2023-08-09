@@ -1,4 +1,8 @@
+from localstack.testing.pytest import markers
+
+
 class TestRGSAIntegrations:
+    @markers.aws.unknown
     def test_get_resources(self, aws_client):
         vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
         try:

@@ -8,6 +8,7 @@ from localstack.constants import (
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
+from localstack.testing.pytest import markers
 
 remote_endpoint = "https://%s:%s" % (LOCALHOST_HOSTNAME, EDGE_PORT)
 
@@ -21,6 +22,7 @@ def s3control_client(aws_client_factory):
     ).s3control
 
 
+@markers.aws.unknown
 def test_lifecycle_public_access_block(s3control_client):
     with pytest.raises(ClientError) as ce:
         s3control_client.get_public_access_block(AccountId=TEST_AWS_ACCOUNT_ID)
@@ -45,6 +47,7 @@ def test_lifecycle_public_access_block(s3control_client):
     s3control_client.delete_public_access_block(AccountId=TEST_AWS_ACCOUNT_ID)
 
 
+@markers.aws.unknown
 def test_public_access_block_validations(s3control_client):
     with pytest.raises(ClientError) as error:
         s3control_client.get_public_access_block(AccountId="111111111111")

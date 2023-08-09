@@ -14,7 +14,7 @@ from localstack.utils.sync import retry
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON_TRIGGERED_S3 = os.path.join(
-    THIS_FOLDER, "../awslambda", "functions", "lambda_triggered_by_s3.py"
+    THIS_FOLDER, "../lambda_", "functions", "lambda_triggered_by_s3.py"
 )
 
 
@@ -62,7 +62,7 @@ class TestS3NotificationsToLambda:
             handler_file=TEST_LAMBDA_PYTHON_TRIGGERED_S3, func_name=function_name, role=lambda_role
         )["CreateFunctionResponse"]
 
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             StatementId="1",
             FunctionName=function_name,
             Action="lambda:InvokeFunction",
@@ -147,7 +147,7 @@ class TestS3NotificationsToLambda:
             handler_file=TEST_LAMBDA_PYTHON_TRIGGERED_S3, func_name=function_name, role=lambda_role
         )["CreateFunctionResponse"]
 
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             StatementId="1",
             FunctionName=function_name,
             Action="lambda:InvokeFunction",

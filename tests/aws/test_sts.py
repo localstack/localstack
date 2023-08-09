@@ -91,6 +91,7 @@ TEST_SAML_ASSERTION = """
 
 
 class TestSTSIntegrations:
+    @markers.aws.unknown
     def test_assume_role(self, aws_client):
         test_role_session_name = "s3-access-example"
         test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
@@ -104,6 +105,7 @@ class TestSTSIntegrations:
             assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
             assert assume_role_id_parts[1] == test_role_session_name
 
+    @markers.aws.unknown
     def test_assume_role_with_web_identity(self, aws_client):
         test_role_session_name = "web_token"
         test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
@@ -120,6 +122,7 @@ class TestSTSIntegrations:
             assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
             assert assume_role_id_parts[1] == test_role_session_name
 
+    @markers.aws.unknown
     def test_assume_role_with_saml(self, aws_client):
         account_id = "000000000000"
         role_name = "test-role"
@@ -152,6 +155,7 @@ class TestSTSIntegrations:
             assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
             assert assume_role_id_parts[1] == fed_name
 
+    @markers.aws.unknown
     def test_get_federation_token(self, aws_client):
         token_name = "TestName"
         response = aws_client.sts.get_federation_token(Name=token_name)

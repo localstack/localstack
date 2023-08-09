@@ -34,14 +34,14 @@ LOG = logging.getLogger(__name__)
 def attribute_name_to_service_name(attribute_name):
     """
     Converts a python-compatible attribute name to the boto service name
-    :param attribute_name: Python compatible attribute name. In essential the service name, if it is a python keyword
-        prefixed by `aws`, and all `-` replaced by `_`.
+    :param attribute_name: Python compatible attribute name using the following replacements:
+                            a) Add an underscore suffix `_` to any reserved Python keyword (PEP-8).
+                            b) Replace any dash `-` with an underscore `_`
     :return:
     """
-    if attribute_name.startswith("aws"):
-        # remove aws prefix for services named like a keyword.
-        # Most notably, "awslambda" -> "lambda"
-        attribute_name = attribute_name[3:]
+    if attribute_name.endswith("_"):
+        # lambda_ -> lambda
+        attribute_name = attribute_name[:-1]
     # replace all _ with -: cognito_idp -> cognito-idp
     return attribute_name.replace("_", "-")
 

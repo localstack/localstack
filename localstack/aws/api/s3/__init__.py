@@ -808,6 +808,29 @@ class BucketNotEmpty(ServiceException):
     BucketName: Optional[BucketName]
 
 
+ProposedSize = int
+MinSizeAllowed = int
+
+
+class EntityTooSmall(ServiceException):
+    code: str = "EntityTooSmall"
+    sender_fault: bool = False
+    status_code: int = 400
+    ETag: Optional[ETag]
+    MinSizeAllowed: Optional[MinSizeAllowed]
+    PartNumber: Optional[PartNumber]
+    ProposedSize: Optional[ProposedSize]
+
+
+class InvalidPart(ServiceException):
+    code: str = "InvalidPart"
+    sender_fault: bool = False
+    status_code: int = 400
+    ETag: Optional[ETag]
+    UploadId: Optional[MultipartUploadId]
+    PartNumber: Optional[PartNumber]
+
+
 AbortDate = datetime
 
 

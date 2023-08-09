@@ -5,6 +5,7 @@ import aws_cdk as cdk
 import aws_cdk.aws_lambda as awslambda
 import pytest
 
+from localstack.testing.pytest import markers
 from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
 from localstack.utils.strings import to_str
 
@@ -36,8 +37,9 @@ class TestBasicLambda:
         yield provisioner
         provisioner.teardown()
 
+    @markers.aws.unknown
     def test_scenario_validate_infra(self, aws_client, infrastructure):
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
         function_name = infrastructure.get_stack_outputs(stack_name="LambdaTestStack")[
             "FunctionName"
         ]
@@ -80,8 +82,9 @@ class TestBasicLambdaInS3:
         with provisioner.provisioner() as prov:
             yield prov
 
+    @markers.aws.unknown
     def test_scenario_validate_infra(self, aws_client, infrastructure):
-        lambda_client = aws_client.awslambda
+        lambda_client = aws_client.lambda_
         function_name = infrastructure.get_stack_outputs(stack_name="LambdaTestStack")[
             "FunctionName"
         ]
