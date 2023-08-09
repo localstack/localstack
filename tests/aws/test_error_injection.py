@@ -46,7 +46,9 @@ class TestErrorInjection:
         # with a probability of 1, always throw errors
         monkeypatch.setattr(config, "DYNAMODB_ERROR_PROBABILITY", 1.0)
         with pytest.raises(ClientError) as exc:
-            aws_client.dynamodb.get_item(TableName=table_name, Key={PARTITION_KEY: partition_key})
+            aws_client.dynamodb.get_item(
+                TableName=table_name, Key={PARTITION_KEY: {"S": partition_key}}
+            )
         exc.match("ProvisionedThroughputExceededException")
 
     @markers.aws.only_localstack
@@ -61,7 +63,9 @@ class TestErrorInjection:
         # with a probability of 1, always throw errors
         monkeypatch.setattr(config, "DYNAMODB_READ_ERROR_PROBABILITY", 1.0)
         with pytest.raises(ClientError) as exc:
-            aws_client.dynamodb.get_item(TableName=table_name, Key={PARTITION_KEY: partition_key})
+            aws_client.dynamodb.get_item(
+                TableName=table_name, Key={PARTITION_KEY: {"S": partition_key}}
+            )
         exc.match("ProvisionedThroughputExceededException")
 
     @markers.aws.only_localstack
