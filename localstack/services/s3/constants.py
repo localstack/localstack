@@ -2,6 +2,7 @@ from localstack.aws.api.s3 import (
     BucketCannedACL,
     ObjectCannedACL,
     Permission,
+    PublicAccessBlockConfiguration,
     ServerSideEncryption,
     ServerSideEncryptionByDefault,
     ServerSideEncryptionRule,
@@ -108,4 +109,11 @@ DEFAULT_BUCKET_ENCRYPTION = ServerSideEncryptionRule(
         SSEAlgorithm=ServerSideEncryption.AES256,
     ),
     BucketKeyEnabled=False,
+)
+
+DEFAULT_PUBLIC_BLOCK_ACCESS = PublicAccessBlockConfiguration(
+    BlockPublicAcls=True,
+    BlockPublicPolicy=True,
+    RestrictPublicBuckets=True,
+    IgnorePublicAcls=True,
 )
