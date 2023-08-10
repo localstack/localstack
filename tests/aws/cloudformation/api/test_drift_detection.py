@@ -13,7 +13,7 @@ def test_drift_detection_on_lambda(deploy_cfn_template, snapshot, aws_client):
         template_path=os.path.join(os.path.dirname(__file__), "../../templates/lambda_simple.yml")
     )
 
-    aws_client.awslambda.update_function_configuration(
+    aws_client.lambda_.update_function_configuration(
         FunctionName=stack.outputs["LambdaName"],
         Runtime="python3.8",
         Description="different description",

@@ -789,7 +789,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
             )
-        elif (part_number := request.get("PartNumber", 0)) < 1 or part_number >= 10000:
+        elif (part_number := request.get("PartNumber", 0)) < 1 or part_number > 10000:
             raise InvalidArgument(
                 "Part number must be an integer between 1 and 10000, inclusive",
                 ArgumentName="partNumber",

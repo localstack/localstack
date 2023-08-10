@@ -371,7 +371,7 @@
     }
   },
   "tests/aws/apigateway/test_apigateway_common.py::TestStages::test_create_update_stages": {
-    "recorded-date": "06-08-2023, 18:38:05",
+    "recorded-date": "09-08-2023, 15:09:29",
     "recorded-content": {
       "create-stage": {
         "cacheClusterEnabled": false,
@@ -419,7 +419,19 @@
         "description": "stage new",
         "documentationVersion": "v123",
         "lastUpdatedDate": "datetime",
-        "methodSettings": {},
+        "methodSettings": {
+          "*/*": {
+            "cacheDataEncrypted": false,
+            "cacheTtlInSeconds": 300,
+            "cachingEnabled": true,
+            "dataTraceEnabled": false,
+            "metricsEnabled": false,
+            "requireAuthorizationForCacheControl": true,
+            "throttlingBurstLimit": 123,
+            "throttlingRateLimit": 10000.0,
+            "unauthorizedCacheControlHeaderStrategy": "SUCCEED_WITH_RESPONSE_HEADER"
+          }
+        },
         "stageName": "s1",
         "tracingEnabled": false,
         "variables": {
@@ -439,7 +451,19 @@
         "description": "stage new",
         "documentationVersion": "v123",
         "lastUpdatedDate": "datetime",
-        "methodSettings": {},
+        "methodSettings": {
+          "*/*": {
+            "cacheDataEncrypted": false,
+            "cacheTtlInSeconds": 300,
+            "cachingEnabled": true,
+            "dataTraceEnabled": false,
+            "metricsEnabled": false,
+            "requireAuthorizationForCacheControl": true,
+            "throttlingBurstLimit": 123,
+            "throttlingRateLimit": 10000.0,
+            "unauthorizedCacheControlHeaderStrategy": "SUCCEED_WITH_RESPONSE_HEADER"
+          }
+        },
         "stageName": "s1",
         "tracingEnabled": false,
         "variables": {

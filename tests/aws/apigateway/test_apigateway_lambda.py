@@ -4,14 +4,14 @@ import pytest
 import requests
 from botocore.exceptions import ClientError
 
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.apigateway.apigateway_fixtures import api_invoke_url, create_rest_resource
 from tests.aws.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
-from tests.aws.awslambda.test_lambda import TEST_LAMBDA_AWS_PROXY, TEST_LAMBDA_PYTHON_ECHO
+from tests.aws.lambda_.test_lambda import TEST_LAMBDA_AWS_PROXY, TEST_LAMBDA_PYTHON_ECHO
 
 
 @markers.aws.validated

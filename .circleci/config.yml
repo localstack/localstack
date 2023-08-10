@@ -112,7 +112,7 @@ jobs:
           environment:
             LAMBDA_EXECUTOR: "local"
             PROVIDER_OVERRIDE_LAMBDA: "legacy"
-            TEST_PATH: "tests/aws/awslambda/ tests/aws/test_integration.py tests/aws/apigateway/test_apigateway_basic.py tests/aws/cloudformation/resources/test_lambda.py"
+            TEST_PATH: "tests/aws/lambda_/ tests/aws/test_integration.py tests/aws/apigateway/test_apigateway_basic.py tests/aws/cloudformation/resources/test_lambda.py"
             COVERAGE_ARGS: "-p"
           command: |
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='legacy-lambda-local'" make test-coverage
@@ -244,16 +244,16 @@ jobs:
             - run:
                 name: compute-src-hashes
                 command: |
-                  find tests/aws/awslambda/functions/common -type f -path '**/src/**' -not -path '*/.*' | xargs sha256sum > /tmp/common-functions-checksums
+                  find tests/aws/lambda_/functions/common -type f -path '**/src/**' -not -path '*/.*' | xargs sha256sum > /tmp/common-functions-checksums
             - restore_cache:
                 key: common-functions-{{ checksum "/tmp/common-functions-checksums" }}
             - run:
                 name: pre-build lambda common test packages
-                command: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/awslambda/functions/common
+                command: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/lambda_/functions/common
             - save_cache:
                 key: common-functions-{{ checksum "/tmp/common-functions-checksums" }}
                 paths:
-                  - "tests/aws/awslambda/functions/common"
+                  - "tests/aws/lambda_/functions/common"
       - prepare-pytest-tinybird
       - run:
           name: Run integration tests

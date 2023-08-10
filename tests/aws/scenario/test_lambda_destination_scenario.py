@@ -84,10 +84,10 @@ class TestLambdaDestinationScenario:
         main_fn_name = outputs["DestinationFunctionName"]
         topic_arn = outputs["DestinationTopicArn"]
 
-        aws_client.awslambda.get_function(FunctionName=main_fn_name)
-        aws_client.awslambda.get_function(FunctionName=collect_fn_name)
+        aws_client.lambda_.get_function(FunctionName=main_fn_name)
+        aws_client.lambda_.get_function(FunctionName=collect_fn_name)
 
-        eic = aws_client.awslambda.get_function_event_invoke_config(FunctionName=main_fn_name)
+        eic = aws_client.lambda_.get_function_event_invoke_config(FunctionName=main_fn_name)
         assert eic["MaximumRetryAttempts"] == 0
         assert eic["DestinationConfig"]["OnSuccess"]["Destination"] == topic_arn
         assert eic["DestinationConfig"]["OnFailure"]["Destination"] == topic_arn
@@ -103,14 +103,14 @@ class TestLambdaDestinationScenario:
         msg = f"message-{short_uid()}"
 
         # Success case
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=invoke_fn_name,
             Payload=to_bytes(json.dumps({"message": msg, "should_fail": "0"})),
             InvocationType=InvocationType.Event,
         )
 
         # Failure case
-        aws_client.awslambda.invoke(
+        aws_client.lambda_.invoke(
             FunctionName=invoke_fn_name,
             Payload=to_bytes(json.dumps({"message": msg, "should_fail": "1"})),
             InvocationType=InvocationType.Event,

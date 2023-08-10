@@ -108,9 +108,9 @@
 
 # Lambda
 /localstack/aws/api/lambda_/ @joe4dev @dfangl @dominikschubert
-/localstack/services/awslambda/ @joe4dev @dfangl @dominikschubert
-/localstack/services/cloudformation/models/awslambda.py @joe4dev @dfangl @dominikschubert
-/tests/aws/awslambda/ @joe4dev @dfangl @dominikschubert
+/localstack/services/lambda_/ @joe4dev @dfangl @dominikschubert
+/localstack/services/cloudformation/models/lambda_.py @joe4dev @dfangl @dominikschubert
+/tests/aws/lambda_/ @joe4dev @dfangl @dominikschubert
 
 # Logs
 /localstack/aws/api/logs/ @steffyP

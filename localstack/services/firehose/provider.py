@@ -681,7 +681,7 @@ class FirehoseProvider(FirehoseApi):
                     record["Data"] = to_str(record["Data"])
             event = {"records": records}
             event = to_bytes(json.dumps(event))
-            client = connect_to(region_name=extract_region_from_arn(lambda_arn)).awslambda
+            client = connect_to(region_name=extract_region_from_arn(lambda_arn)).lambda_
             response = client.invoke(FunctionName=lambda_arn, Payload=event)
             result = response.get("Payload").read()
             result = json.loads(to_str(result))

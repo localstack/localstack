@@ -21,7 +21,7 @@ class LambdaFunctionErrorException(Exception):
 
 
 def exec_lambda_function(env: Environment, parameters: dict) -> None:
-    lambda_client = connect_to().awslambda
+    lambda_client = connect_to().lambda_
     invocation_resp: InvocationResponse = lambda_client.invoke(**parameters)
 
     func_error: Optional[str] = invocation_resp.get("FunctionError")

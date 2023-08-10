@@ -619,7 +619,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         request_id_element = ETree.SubElement(root, "RequestId")
         request_id_element.text = request_id
 
-        self._add_additional_error_tags(error, root, shape, mime_type)
+        self._add_additional_error_tags(vars(error), root, shape, mime_type)
 
         response.set_response(self._encode_payload(self._node_to_string(root, mime_type)))
 
@@ -636,7 +636,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             self._default_serialize(error_tag, "Sender", None, "Type", mime_type)
 
     def _add_additional_error_tags(
-        self, error: ServiceException, node: ETree, shape: StructureShape, mime_type: str
+        self, parameters: dict, node: ETree, shape: StructureShape, mime_type: str
     ):
         if shape:
             params = {}
@@ -644,8 +644,8 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             for member in shape.members:
                 # XML protocols do not add modeled default fields to the root node
                 # (tested for cloudfront, route53, cloudwatch, iam)
-                if member.lower() not in ["code", "message"] and hasattr(error, member):
-                    params[member] = getattr(error, member)
+                if member.lower() not in ["code", "message"] and member in parameters:
+                    params[member] = parameters[member]
 
             # If there is an error shape with members which should be set, they need to be added to the node
             if params:
@@ -1512,7 +1512,10 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         self._add_error_tags(error, root, mime_type)
         request_id_element = ETree.SubElement(root, "RequestId")
         request_id_element.text = request_id
-        self._add_additional_error_tags(error, root, shape, mime_type)
+
+        header_params, payload_params = self._partition_members(vars(error), shape)
+        self._add_additional_error_tags(payload_params, root, shape, mime_type)
+        self._process_header_members(header_params, response, shape)
 
         response.set_response(self._encode_payload(self._node_to_string(root, mime_type)))
 

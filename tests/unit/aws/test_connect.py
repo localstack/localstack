@@ -159,7 +159,7 @@ class TestClientFactory:
             "appsync",
             "athena",
             "autoscaling",
-            "awslambda",
+            "lambda_",
             "backup",
             "batch",
             "ce",
@@ -265,13 +265,13 @@ class TestClientFactory:
             "source_arn": "arn:aws:apigateway:us-east-1::/apis/api-id",
         }
         internal_factory = InternalClientFactory()
-        internal_lambda_client = internal_factory(endpoint_url=endpoint_url).awslambda
+        internal_lambda_client = internal_factory(endpoint_url=endpoint_url).lambda_
         internal_lambda_client.request_metadata(
             service_principal=sent_dto["service_principal"], source_arn=sent_dto["source_arn"]
         ).list_functions()
         assert internal_dto == sent_dto
         external_factory = ExternalClientFactory()
-        external_lambda_client = external_factory(endpoint_url=endpoint_url).awslambda
+        external_lambda_client = external_factory(endpoint_url=endpoint_url).lambda_
         external_lambda_client.list_functions()
         assert internal_dto is None
 
@@ -289,7 +289,7 @@ class TestClientFactory:
 
         endpoint_url = create_dummy_request_parameter_gateway([echo_request_handler])
 
-        factory(endpoint_url=endpoint_url).awslambda.list_functions()
+        factory(endpoint_url=endpoint_url).lambda_.list_functions()
 
         assert test_params == {"is_internal": True}
 
@@ -314,7 +314,7 @@ class TestClientFactory:
             endpoint_url=endpoint_url,
             aws_access_key_id="AKIAQAAAAAAALX6GRE2E",
             aws_secret_access_key="something",
-        ).awslambda.list_functions()
+        ).lambda_.list_functions()
 
         assert test_params == {"is_internal": True, "access_key_id": "AKIAQAAAAAAALX6GRE2E"}
 
@@ -347,7 +347,7 @@ class TestClientFactory:
         assert test_params == {"is_internal": True, "service_principal": "apigateway"}
         test_params = {}
 
-        client.awslambda.list_functions()
+        client.lambda_.list_functions()
 
         assert test_params == {"is_internal": True, "access_key_id": "ASIAQAAAAAAAKZ4L3POJ"}
 
@@ -372,7 +372,7 @@ class TestClientFactory:
             "service_principal": "apigatway",
             "source_arn": "arn:aws:apigateway:us-east-1::/apis/a1a1a1a1",
         }
-        clients.awslambda.request_metadata(
+        clients.lambda_.request_metadata(
             source_arn=expected_result["source_arn"],
             service_principal=expected_result["service_principal"],
         ).list_functions()
@@ -395,7 +395,7 @@ class TestClientFactory:
         )
 
         expected_result = {"is_internal": False, "params": None}
-        clients.awslambda.list_functions()
+        clients.lambda_.list_functions()
 
         assert test_params == expected_result
 
@@ -421,6 +421,6 @@ class TestClientFactory:
         )
 
         expected_result = {"is_internal": False, "params": None, "region": "eu-central-1"}
-        clients.awslambda.list_functions()
+        clients.lambda_.list_functions()
 
         assert test_params == expected_result

@@ -26,8 +26,8 @@ from localstack.services.apigateway.helpers import (
     host_based_url,
     path_based_url,
 )
-from localstack.services.awslambda.lambda_api import add_event_source, use_docker
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.services.lambda_.lambda_api import add_event_source, use_docker
+from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack, queries
@@ -59,7 +59,7 @@ from tests.aws.apigateway.conftest import (
     APIGATEWAY_STEPFUNCTIONS_POLICY,
     STEPFUNCTIONS_ASSUME_ROLE_POLICY,
 )
-from tests.aws.awslambda.test_lambda import (
+from tests.aws.lambda_.test_lambda import (
     TEST_LAMBDA_AWS_PROXY,
     TEST_LAMBDA_HTTP_RUST,
     TEST_LAMBDA_NODEJS,
@@ -274,7 +274,7 @@ class TestAPIGateway:
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             runtime=Runtime.python3_9,
         )
-        lambda_arn = aws_client.awslambda.get_function(FunctionName=fn_name)["Configuration"][
+        lambda_arn = aws_client.lambda_.get_function(FunctionName=fn_name)["Configuration"][
             "FunctionArn"
         ]
 
@@ -339,7 +339,7 @@ class TestAPIGateway:
         aws_account_id = aws_client.sts.get_caller_identity()["Account"]
         source_arn = f"arn:aws:execute-api:{region_name}:{aws_account_id}:{api_id}/*/*/test"
 
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             FunctionName=lambda_arn,
             StatementId=str(short_uid()),
             Action="lambda:InvokeFunction",
@@ -1374,7 +1374,7 @@ class TestAPIGateway:
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             runtime=LAMBDA_RUNTIME_PYTHON39,
         )
-        lambda_arn = aws_client.awslambda.get_function(FunctionName=fn_name)["Configuration"][
+        lambda_arn = aws_client.lambda_.get_function(FunctionName=fn_name)["Configuration"][
             "FunctionArn"
         ]
 
@@ -1425,7 +1425,7 @@ class TestAPIGateway:
         )
 
         source_arn = f"arn:aws:execute-api:{region_name}:{aws_account_id}:{api_id}/*/*/test"
-        aws_client.awslambda.add_permission(
+        aws_client.lambda_.add_permission(
             FunctionName=lambda_arn,
             StatementId=str(short_uid()),
             Action="lambda:InvokeFunction",
@@ -1646,8 +1646,8 @@ def test_rest_api_multi_region(
         runtime=Runtime.nodejs16_x,
         region_name="us-west-1",
     )
-    lambda_eu_west_1_client = aws_client_factory(region_name="eu-west-1").awslambda
-    lambda_us_west_1_client = aws_client_factory(region_name="us-west-1").awslambda
+    lambda_eu_west_1_client = aws_client_factory(region_name="eu-west-1").lambda_
+    lambda_us_west_1_client = aws_client_factory(region_name="us-west-1").lambda_
     lambda_eu_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
     lambda_us_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
     lambda_eu_arn = arns.lambda_function_arn(lambda_name, region_name="eu-west-1")

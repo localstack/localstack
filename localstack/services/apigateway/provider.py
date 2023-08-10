@@ -142,7 +142,9 @@ STAGE_UPDATE_PATHS = [
     "/*/*/metrics/enabled",
     "/*/*/logging/dataTrace",
     "/*/*/logging/loglevel",
-    "/*/*/throttling/burstLimit /*/*/throttling/rateLimit /*/*/caching/ttlInSeconds",
+    "/*/*/throttling/burstLimit",
+    "/*/*/throttling/rateLimit",
+    "/*/*/caching/ttlInSeconds",
     "/*/*/caching/enabled",
     "/*/*/caching/dataEncrypted",
     "/*/*/caching/requireAuthorizationForCacheControl",
@@ -845,19 +847,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             stage.documentation_version = request.get("documentationVersion")
 
         response = stage.to_json()
-        response.setdefault("cacheClusterStatus", "NOT_AVAILABLE")
-        response.setdefault("tracingEnabled", False)
-        if not response.get("variables"):
-            response.pop("variables", None)
-
+        self._patch_stage_response(response)
         return response
 
     def get_stage(self, context: RequestContext, rest_api_id: String, stage_name: String) -> Stage:
         response = call_moto(context)
-        response.setdefault("cacheClusterStatus", "NOT_AVAILABLE")
-        response.setdefault("tracingEnabled", False)
-        if not response.get("variables"):
-            response.pop("variables", None)
+        self._patch_stage_response(response)
         return response
 
     @handler("UpdateStage")
@@ -880,19 +875,32 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         patch_operations = patch_operations or []
         for patch_operation in patch_operations:
-            if not any(re.match(regex, patch_operation["path"]) for regex in path_regexes):
+            patch_path = patch_operation["path"]
+            path_valid = patch_path in STAGE_UPDATE_PATHS or any(
+                re.match(regex, patch_path) for regex in path_regexes
+            )
+            if not path_valid:
                 valid_paths = f"[{', '.join(STAGE_UPDATE_PATHS)}]"
+                # note: weird formatting in AWS - required for snapshot testing
+                valid_paths = valid_paths.replace("/burstLimit, /", "/burstLimit /")
+                valid_paths = valid_paths.replace("/rateLimit, /", "/rateLimit /")
                 raise BadRequestException(
                     f"Invalid method setting path: {patch_operation['path']}. Must be one of: {valid_paths}"
                 )
         _patch_api_gateway_entity(moto_stage, patch_operations)
 
+        moto_stage.apply_operations(patch_operations)
+
         response = moto_stage.to_json()
+        self._patch_stage_response(response)
+        return response
+
+    def _patch_stage_response(self, response: dict):
+        """Apply a few patches required for AWS parity"""
         response.setdefault("cacheClusterStatus", "NOT_AVAILABLE")
         response.setdefault("tracingEnabled", False)
         if not response.get("variables"):
             response.pop("variables", None)
-        return response
 
     # authorizers
 

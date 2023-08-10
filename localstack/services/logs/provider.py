@@ -252,7 +252,7 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
         raise ResourceNotFoundException("The specified log group does not exist.")
 
     if ":lambda:" in destination_arn:
-        client = connect_to(region_name=extract_region_from_arn(destination_arn)).awslambda
+        client = connect_to(region_name=extract_region_from_arn(destination_arn)).lambda_
         lambda_name = arns.lambda_function_name(destination_arn)
         try:
             client.get_function(FunctionName=lambda_name)
@@ -341,7 +341,7 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
         event = {"awslogs": {"data": base64.b64encode(output.getvalue()).decode("utf-8")}}
 
         if ":lambda:" in self.destination_arn:
-            client = connect_to(region_name=extract_region_from_arn(self.destination_arn)).awslambda
+            client = connect_to(region_name=extract_region_from_arn(self.destination_arn)).lambda_
             lambda_name = arns.lambda_function_name(self.destination_arn)
             client.invoke(FunctionName=lambda_name, Payload=json.dumps(event))
         if ":kinesis:" in self.destination_arn:

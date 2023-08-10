@@ -1,6 +1,6 @@
 {
   "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_object_versioned": {
-    "recorded-date": "15-06-2023, 23:22:07",
+    "recorded-date": "01-08-2023, 22:17:12",
     "recorded-content": {
       "put-object": {
         "ETag": "\"a9a43d6b467d3dc6514412c3a4987415\"",
@@ -145,7 +145,7 @@
       "delete-with-bad-version": {
         "Error": {
           "ArgumentName": "versionId",
-          "ArgumentValue": "HPniJFCxqTsMuIH9KX8K8wEjNUgmABCD",
+          "ArgumentValue": "<argument-value:1>",
           "Code": "InvalidArgument",
           "Message": "Invalid version id specified"
         },
@@ -202,8 +202,52 @@
     }
   },
   "tests/aws/s3/test_s3_api.py::TestS3BucketCRUD::test_delete_versioned_bucket_with_objects": {
-    "recorded-date": "25-07-2023, 01:56:39",
-    "recorded-content": {}
+    "recorded-date": "01-08-2023, 16:54:38",
+    "recorded-content": {
+      "delete-with-obj-and-delete-marker": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "BucketNotEmpty",
+          "Message": "The bucket you tried to delete is not empty. You must delete all versions in the bucket."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "delete-obj-by-version": {
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-with-only-delete-marker": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "BucketNotEmpty",
+          "Message": "The bucket you tried to delete is not empty. You must delete all versions in the bucket."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "delete-marker-by-version": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "success-delete-bucket": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
   },
   "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_get_object_with_version_unversioned_bucket": {
     "recorded-date": "27-07-2023, 00:53:12",
@@ -413,7 +457,7 @@
     }
   },
   "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_objects_versioned": {
-    "recorded-date": "27-07-2023, 01:49:47",
+    "recorded-date": "01-08-2023, 22:22:24",
     "recorded-content": {
       "put-object": {
         "ETag": "\"a9a43d6b467d3dc6514412c3a4987415\"",
@@ -429,12 +473,17 @@
           {
             "DeleteMarker": true,
             "DeleteMarkerVersionId": "<version-id:2>",
-            "Key": "wrongkey"
+            "Key": "test-delete"
           },
           {
             "DeleteMarker": true,
             "DeleteMarkerVersionId": "<delete-marker-version-id:1>",
-            "Key": "test-delete"
+            "Key": "wrongkey"
+          },
+          {
+            "DeleteMarker": true,
+            "DeleteMarkerVersionId": "<delete-marker-version-id:2>",
+            "Key": "wrongkey-x"
           }
         ],
         "ResponseMetadata": {
@@ -445,6 +494,8 @@
       "delete-objects-marker": {
         "Deleted": [
           {
+            "DeleteMarker": true,
+            "DeleteMarkerVersionId": "<version-id:2>",
             "Key": "test-delete",
             "VersionId": "<version-id:2>"
           }
@@ -458,13 +509,13 @@
         "Errors": [
           {
             "Code": "NoSuchVersion",
-            "Key": "wrong-key-2",
+            "Key": "test-delete",
             "Message": "The specified version does not exist.",
             "VersionId": "<version-id:3>"
           },
           {
             "Code": "NoSuchVersion",
-            "Key": "test-delete",
+            "Key": "wrong-key-2",
             "Message": "The specified version does not exist.",
             "VersionId": "<version-id:3>"
           }
@@ -478,6 +529,644 @@
         "Deleted": [
           {
             "Key": "test-delete",
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3BucketVersioning::test_bucket_versioning_crud": {
+    "recorded-date": "01-08-2023, 16:50:36",
+    "recorded-content": {
+      "get-versioning-before": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-versioning-suspended-before": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-versioning-after-suspended": {
+        "Status": "Suspended",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-versioning-enabled-lowercase": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-versioning-enabled-capitalized": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-versioning-after-enabled": {
+        "Status": "Enabled",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-versioning-suspended-after": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-versioning-empty": {
+        "Error": {
+          "Code": "IllegalVersioningConfigurationException",
+          "Message": "The Versioning element must be specified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-versioning-no-bucket": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-versioning-no-bucket": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_put_object_on_suspended_bucket": {
+    "recorded-date": "01-08-2023, 22:59:19",
+    "recorded-content": {
+      "put-object-0": {
+        "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-1": {
+        "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-2": {
+        "ETag": "\"0aafaa2dd225df253328c024ceb9efc1\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-enabled": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"0aafaa2dd225df253328c024ceb9efc1\"",
+            "IsLatest": true,
+            "Key": "test-version",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
+            "IsLatest": false,
+            "Key": "test-version",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
+            "IsLatest": false,
+            "Key": "test-version",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-suspended": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"0aafaa2dd225df253328c024ceb9efc1\"",
+            "IsLatest": true,
+            "Key": "test-version",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
+            "IsLatest": false,
+            "Key": "test-version",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
+            "IsLatest": false,
+            "Key": "test-version",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-suspended": {
+        "ETag": "\"bb7af07292c35f415ac7da933eb5c927\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-suspended-after-put": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"bb7af07292c35f415ac7da933eb5c927\"",
+            "IsLatest": true,
+            "Key": "test-version",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 22,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:4>"
+          },
+          {
+            "ETag": "\"0aafaa2dd225df253328c024ceb9efc1\"",
+            "IsLatest": false,
+            "Key": "test-version",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
+            "IsLatest": false,
+            "Key": "test-version",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
+            "IsLatest": false,
+            "Key": "test-version",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-suspended-overwrite": {
+        "ETag": "\"bb7af07292c35f415ac7da933eb5c927\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-suspended-after-overwrite": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"bb7af07292c35f415ac7da933eb5c927\"",
+            "IsLatest": true,
+            "Key": "test-version",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 22,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:4>"
+          },
+          {
+            "ETag": "\"0aafaa2dd225df253328c024ceb9efc1\"",
+            "IsLatest": false,
+            "Key": "test-version",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
+            "IsLatest": false,
+            "Key": "test-version",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
+            "IsLatest": false,
+            "Key": "test-version",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-current": {
+        "AcceptRanges": "bytes",
+        "Body": "test-version-suspended",
+        "ContentLength": 22,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"bb7af07292c35f415ac7da933eb5c927\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectCRUD::test_delete_object_on_suspended_bucket": {
+    "recorded-date": "01-08-2023, 23:07:50",
+    "recorded-content": {
+      "put-object-0": {
+        "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-1": {
+        "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-suspended": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
+            "IsLatest": true,
+            "Key": "test-delete-suspended",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
+            "IsLatest": false,
+            "Key": "test-delete-suspended",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-object-no-version": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list-suspended-delete": {
+        "DeleteMarkers": [
+          {
+            "IsLatest": true,
+            "Key": "test-delete-suspended",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "VersionId": "<version-id:3>"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
+            "IsLatest": false,
+            "Key": "test-delete-suspended",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
+            "IsLatest": false,
+            "Key": "test-delete-suspended",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-suspended": {
+        "ETag": "\"195a8078a76b2922899312bf556585e1\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-suspended-put": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"195a8078a76b2922899312bf556585e1\"",
+            "IsLatest": true,
+            "Key": "test-delete-suspended",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 35,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
+            "IsLatest": false,
+            "Key": "test-delete-suspended",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
+            "IsLatest": false,
+            "Key": "test-delete-suspended",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-object-no-version-after-put": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list-suspended-after-put": {
+        "DeleteMarkers": [
+          {
+            "IsLatest": true,
+            "Key": "test-delete-suspended",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "VersionId": "<version-id:3>"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"066f1ebd4608b82ed545041ff2254d36\"",
+            "IsLatest": false,
+            "Key": "test-delete-suspended",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "ETag": "\"b8cb478d2b9408033ceb93aa90386661\"",
+            "IsLatest": false,
+            "Key": "test-delete-suspended",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 14,
+            "StorageClass": "STANDARD",
             "VersionId": "<version-id:1>"
           }
         ],

@@ -46,7 +46,7 @@ OAS_30_CIRCULAR_REF_WITH_REQUEST_BODY = os.path.join(
     PARENT_DIR, "files", "openapi.spec.circular-ref-with-request-body.json"
 )
 OAS_30_STAGE_VARIABLES = os.path.join(PARENT_DIR, "files", "openapi.spec.stage-variables.json")
-TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "awslambda/functions/lambda_echo.py")
+TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "lambda_/functions/lambda_echo.py")
 
 
 @pytest.fixture
@@ -194,7 +194,7 @@ def apigateway_placeholder_authorizer_lambda_invocation_arn(aws_client, lambda_s
             zip_file = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
 
             # create_response is the original create call response, even though the fixture waits until it's not pending
-            create_response = aws_client.awslambda.create_function(
+            create_response = aws_client.lambda_.create_function(
                 FunctionName=f"test-authorizer-import-{short_uid()}",
                 Runtime=Runtime.python3_10,
                 Handler="handler.handler",
@@ -208,7 +208,7 @@ def apigateway_placeholder_authorizer_lambda_invocation_arn(aws_client, lambda_s
             def _is_not_pending():
                 try:
                     result = (
-                        aws_client.awslambda.get_function(
+                        aws_client.lambda_.get_function(
                             FunctionName=create_response["FunctionName"]
                         )["Configuration"]["State"]
                         != "Pending"
@@ -231,7 +231,7 @@ def apigateway_placeholder_authorizer_lambda_invocation_arn(aws_client, lambda_s
 
         for arn in lambda_arns:
             try:
-                aws_client.awslambda.delete_function(FunctionName=arn)
+                aws_client.lambda_.delete_function(FunctionName=arn)
             except Exception:
                 LOG.debug(f"Unable to delete function {arn=} in cleanup")
 

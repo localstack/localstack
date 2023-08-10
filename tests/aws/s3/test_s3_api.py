@@ -5,12 +5,15 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer import SortingTransformer
+from localstack.utils.strings import short_uid
 
 
 @pytest.mark.skipif(
     condition=not config.NATIVE_S3_PROVIDER,
     reason="These are WIP tests for the new native S3 provider",
 )
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])  # TODO: encryption
 class TestS3BucketCRUD:
     @markers.aws.validated
     def test_delete_bucket_with_objects(self, s3_bucket, aws_client, snapshot):
@@ -69,6 +72,7 @@ class TestS3BucketCRUD:
     condition=not config.NATIVE_S3_PROVIDER,
     reason="These are WIP tests for the new native S3 provider",
 )
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])  # TODO: encryption
 class TestS3ObjectCRUD:
     @markers.aws.validated
     def test_delete_object(self, s3_bucket, aws_client, snapshot):
@@ -120,6 +124,7 @@ class TestS3ObjectCRUD:
     @markers.aws.validated
     def test_delete_object_versioned(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("ArgumentValue"))
         # enable versioning on the bucket
         aws_client.s3.put_bucket_versioning(
             Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
@@ -198,7 +203,6 @@ class TestS3ObjectCRUD:
         assert "x-amz-version-id" not in response_headers
 
         # try to delete with a wrong VersionId
-        # TODO: VALIDATION OF VERSION ID
         with pytest.raises(ClientError) as e:
             aws_client.s3.delete_object(
                 Bucket=s3_bucket,
@@ -219,6 +223,8 @@ class TestS3ObjectCRUD:
     def test_delete_objects_versioned(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(snapshot.transform.key_value("DeleteMarkerVersionId"))
+        snapshot.add_transformer(SortingTransformer("Deleted", itemgetter("Key")))
+        snapshot.add_transformer(SortingTransformer("Errors", itemgetter("Key")))
         # enable versioning on the bucket
         aws_client.s3.put_bucket_versioning(
             Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
@@ -235,6 +241,7 @@ class TestS3ObjectCRUD:
                 "Objects": [
                     {"Key": key_name},
                     {"Key": "wrongkey"},
+                    {"Key": "wrongkey-x"},
                 ]
             },
         )
@@ -292,14 +299,9 @@ class TestS3ObjectCRUD:
     def test_delete_object_locked(self):
         pass
 
-    @markers.aws.unknown
-    def test_delete_object_on_suspended_bucket(self):
-        pass
-
     @markers.aws.validated
     def test_get_object_with_version_unversioned_bucket(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
-
         key_name = "test-version"
         put_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=key_name, Body="test-version")
         snapshot.match("put-object", put_object)
@@ -312,6 +314,98 @@ class TestS3ObjectCRUD:
 
         get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name, VersionId="null")
         snapshot.match("get-obj-with-null-version", get_obj)
+
+    @markers.aws.validated
+    def test_put_object_on_suspended_bucket(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        # enable versioning on the bucket
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        key_name = "test-version"
+        for i in range(3):
+            put_object = aws_client.s3.put_object(
+                Bucket=s3_bucket, Key=key_name, Body=f"test-version-{i}"
+            )
+            snapshot.match(f"put-object-{i}", put_object)
+
+        list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-enabled", list_object_versions)
+        assert len(list_object_versions["Versions"]) == 3
+
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Suspended"}
+        )
+
+        list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-suspended", list_object_versions)
+        assert len(list_object_versions["Versions"]) == 3
+
+        put_object = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=key_name, Body="test-version-suspended"
+        )
+        snapshot.match("put-object-suspended", put_object)
+
+        list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-suspended-after-put", list_object_versions)
+        assert len(list_object_versions["Versions"]) == 4
+
+        put_object = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=key_name, Body="test-version-suspended"
+        )
+        snapshot.match("put-object-suspended-overwrite", put_object)
+
+        list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-suspended-after-overwrite", list_object_versions)
+        assert len(list_object_versions["Versions"]) == 4
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("get-object-current", get_object)
+
+    @markers.aws.validated
+    def test_delete_object_on_suspended_bucket(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        # enable versioning on the bucket
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        key_name = "test-delete-suspended"
+        for i in range(2):
+            put_object = aws_client.s3.put_object(
+                Bucket=s3_bucket, Key=key_name, Body=f"test-version-{i}"
+            )
+            snapshot.match(f"put-object-{i}", put_object)
+
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Suspended"}
+        )
+
+        list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-suspended", list_object_versions)
+        assert len(list_object_versions["Versions"]) == 2
+
+        # delete object with no version specified
+        delete_object_no_version = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("delete-object-no-version", delete_object_no_version)
+
+        list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-suspended-delete", list_object_versions)
+        # assert len(list_object_versions["Versions"]) == 2
+
+        put_object = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=key_name, Body="test-version-suspended-after-delete"
+        )
+        snapshot.match("put-object-suspended", put_object)
+
+        list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-suspended-put", list_object_versions)
+
+        # delete object with no version specified again, should overwrite the last object
+        delete_object_no_version = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("delete-object-no-version-after-put", delete_object_no_version)
+
+        list_object_versions = aws_client.s3.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-suspended-after-put", list_object_versions)
 
     @markers.aws.validated
     def test_list_object_versions_order_unversioned(self, s3_bucket, aws_client, snapshot):
@@ -337,3 +431,57 @@ class TestS3ObjectCRUD:
 
         # TODO: test with Next? xxx
         # TODO: test with ListObject/ListObjectV2
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3BucketVersioning:
+    @markers.aws.validated
+    def test_bucket_versioning_crud(self, aws_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        get_versioning_before = aws_client.s3.get_bucket_versioning(Bucket=s3_bucket)
+        snapshot.match("get-versioning-before", get_versioning_before)
+
+        put_versioning_suspended_before = aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Suspended"}
+        )
+        snapshot.match("put-versioning-suspended-before", put_versioning_suspended_before)
+
+        get_versioning_before = aws_client.s3.get_bucket_versioning(Bucket=s3_bucket)
+        snapshot.match("get-versioning-after-suspended", get_versioning_before)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_versioning(
+                Bucket=s3_bucket, VersioningConfiguration={"Status": "enabled"}
+            )
+        snapshot.match("put-versioning-enabled-lowercase", e.value.response)
+
+        put_versioning_enabled = aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        snapshot.match("put-versioning-enabled-capitalized", put_versioning_enabled)
+
+        get_versioning_after = aws_client.s3.get_bucket_versioning(Bucket=s3_bucket)
+        snapshot.match("get-versioning-after-enabled", get_versioning_after)
+
+        put_versioning_suspended_after = aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Suspended"}
+        )
+        snapshot.match("put-versioning-suspended-after", put_versioning_suspended_after)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_versioning(Bucket=s3_bucket, VersioningConfiguration={})
+        snapshot.match("put-versioning-empty", e.value.response)
+
+        fake_bucket = f"myrandombucket{short_uid()}-{short_uid()}"
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_versioning(
+                Bucket=fake_bucket, VersioningConfiguration={"Status": "Suspended"}
+            )
+        snapshot.match("put-versioning-no-bucket", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_versioning(Bucket=fake_bucket)
+        snapshot.match("get-versioning-no-bucket", e.value.response)

@@ -104,7 +104,6 @@ class TypedServiceClientFactory(abc.ABC):
     appsync: Union["AppSyncClient", "MetadataRequestInjector[AppSyncClient]"]
     athena: Union["AthenaClient", "MetadataRequestInjector[AthenaClient]"]
     autoscaling: Union["AutoScalingClient", "MetadataRequestInjector[AutoScalingClient]"]
-    awslambda: Union["LambdaClient", "MetadataRequestInjector[LambdaClient]"]
     backup: Union["BackupClient", "MetadataRequestInjector[BackupClient]"]
     batch: Union["BatchClient", "MetadataRequestInjector[BatchClient]"]
     ce: Union["CostExplorerClient", "MetadataRequestInjector[CostExplorerClient]"]
@@ -163,6 +162,7 @@ class TypedServiceClientFactory(abc.ABC):
     ]
     kms: Union["KMSClient", "MetadataRequestInjector[KMSClient]"]
     lakeformation: Union["LakeFormationClient", "MetadataRequestInjector[LakeFormationClient]"]
+    lambda_: Union["LambdaClient", "MetadataRequestInjector[LambdaClient]"]
     logs: Union["CloudWatchLogsClient", "MetadataRequestInjector[CloudWatchLogsClient]"]
     mediaconvert: Union["MediaConvertClient", "MetadataRequestInjector[MediaConvertClient]"]
     mediastore: Union["MediaStoreClient", "MetadataRequestInjector[MediaStoreClient]"]
@@ -235,9 +235,9 @@ class ServicePrincipal(str):
     """
 
     apigateway = "apigateway"
-    awslambda = "lambda"
     events = "events"
     firehose = "firehose"
+    lambda_ = "lambda"
     s3 = "s3"
     sns = "sns"
     sqs = "sqs"

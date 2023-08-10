@@ -14,7 +14,7 @@ from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns
 from localstack.utils.common import now_utc, poll_condition, retry, short_uid
-from tests.aws.awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
+from tests.aws.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
 logs_role = {
     "Statement": {
@@ -283,10 +283,10 @@ class TestCloudWatchLogs:
             func_name=test_lambda_name,
             runtime=Runtime.python3_9,
         )
-        aws_client.awslambda.invoke(FunctionName=test_lambda_name, Payload=b"{}")
+        aws_client.lambda_.invoke(FunctionName=test_lambda_name, Payload=b"{}")
         # get account-id to set the correct policy
         account_id = aws_client.sts.get_caller_identity()["Account"]
-        result = aws_client.awslambda.add_permission(
+        result = aws_client.lambda_.add_permission(
             FunctionName=test_lambda_name,
             StatementId=test_lambda_name,
             Principal=f"logs.{config.AWS_REGION_US_EAST_1}.amazonaws.com",

@@ -1665,10 +1665,10 @@ def has_event_sources_or_streams_enabled(table_name: str, cache: Dict = None):
     cached = cache.get(table_arn)
     if isinstance(cached, bool):
         return cached
-    lambda_client = connect_to().awslambda
-    sources = lambda_client.list_event_source_mappings(
-        account_id, region_name, EventSourceArn=table_arn
-    )["EventSourceMappings"]
+    lambda_client = connect_to(aws_access_key_id=account_id, region_name=region_name).lambda_
+    sources = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)[
+        "EventSourceMappings"
+    ]
     result = False
     if sources:
         result = True
