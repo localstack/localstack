@@ -1076,6 +1076,23 @@
         "documentation": "<p>The requested partnumber is not satisfiable</p>",
         "exception": true
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/OwnershipControlsNotFoundError",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>The bucket ownership controls were not found</p>",
+        "exception": true
+      }
     }
   ]
 }
