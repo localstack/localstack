@@ -58,7 +58,9 @@ def scheduled_test_lambda(aws_client):
     handler_file = new_tmp_file()
     save_file(handler_file, TEST_HANDLER)
     resp = testutil.create_lambda_function(
-        handler_file=handler_file, func_name=scheduled_lambda_name
+        handler_file=handler_file,
+        func_name=scheduled_lambda_name,
+        client=aws_client.lambda_,
     )
     aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=scheduled_lambda_name)
     func_arn = resp["CreateFunctionResponse"]["FunctionArn"]
@@ -255,6 +257,7 @@ class TestIntegration:
                 handler_file=TEST_LAMBDA_PYTHON,
                 func_name=lambda_ddb_name,
                 envvars={"KINESIS_STREAM_NAME": stream_name},
+                client=aws_client.lambda_,
             )
             uuid = aws_client.lambda_.create_event_source_mapping(
                 FunctionName=lambda_ddb_name,
@@ -558,6 +561,7 @@ def test_kinesis_lambda_forward_chain(
         zip_file=zip_file,
         event_source_arn=get_event_source_arn(stream1_name, aws_client.kinesis),
         starting_position="TRIM_HORIZON",
+        client=aws_client.lambda_,
     )
     lambda_1_event_source_uuid = lambda_1_resp["CreateEventSourceMappingResponse"]["UUID"]
     cleanups.append(
@@ -568,6 +572,7 @@ def test_kinesis_lambda_forward_chain(
         zip_file=zip_file,
         event_source_arn=get_event_source_arn(stream2_name, aws_client.kinesis),
         starting_position="TRIM_HORIZON",
+        client=aws_client.lambda_,
     )
     lambda_2_event_source_uuid = lambda_2_resp["CreateEventSourceMappingResponse"]["UUID"]
     cleanups.append(
@@ -613,6 +618,7 @@ class TestLambdaOutgoingSdkCalls:
             func_name=function_name,
             runtime=runtime,
             role=lambda_su_role,
+            client=aws_client.lambda_,
         )
 
         event = {
@@ -653,6 +659,7 @@ class TestLambdaOutgoingSdkCalls:
             func_name=function_name,
             runtime=runtime,
             role=lambda_su_role,
+            client=aws_client.lambda_,
         )
 
         data = {short_uid(): f"data-{i}" for i in range(3)}
@@ -696,6 +703,7 @@ class TestLambdaOutgoingSdkCalls:
             func_name=function_name,
             runtime=runtime,
             role=lambda_su_role,
+            client=aws_client.lambda_,
         )
 
         resource_lambda_arn = create_lambda_function(
@@ -703,6 +711,7 @@ class TestLambdaOutgoingSdkCalls:
             func_name=resource_lambda_name,
             runtime=runtime,
             role=lambda_su_role,
+            client=aws_client.lambda_,
         )["CreateFunctionResponse"]["FunctionArn"]
 
         state_machine_def = {
