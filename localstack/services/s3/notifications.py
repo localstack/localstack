@@ -39,6 +39,7 @@ from localstack.services.s3.utils import (
     get_bucket_from_moto,
     get_key_from_moto_bucket,
 )
+from localstack.services.s3.v3.models import S3Bucket, S3DeleteMarker, S3Object
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn, s3_bucket_arn
 from localstack.utils.aws.client_types import ServicePrincipal
@@ -161,6 +162,55 @@ class S3EventNotificationContext:
             key_expiry=key_expiry,
             key_storage_class=storage_class,
             key_version_id=key.version_id if bucket.is_versioned else None,  # todo: check this?
+            xray=request_context.request.headers.get(HEADER_AMZN_XRAY),
+        )
+
+    @classmethod
+    def from_request_context_native(
+        cls,
+        request_context: RequestContext,
+        s3_bucket: S3Bucket,
+        s3_object: S3Object | S3DeleteMarker,
+    ) -> "S3EventNotificationContext":
+        """
+        Create an S3EventNotificationContext from a RequestContext.
+        The key is not always present in the request context depending on the event type. In that case, we can use
+        a provided one.
+        :param request_context: RequestContext
+        :param s3_bucket: S3Bucket
+        :param s3_object: S3Object passed directly to the context
+        :return: S3EventNotificationContext
+        """
+        bucket_name = request_context.service_request["Bucket"]
+
+        # TODO: test notification format when the concerned key is FakeDeleteMarker
+        # it might not send notification, or s3:ObjectRemoved:DeleteMarkerCreated which we don't support yet
+        if isinstance(s3_object, S3DeleteMarker):
+            etag = ""
+            key_size = 0
+            key_expiry = None
+            storage_class = ""
+        else:
+            etag = s3_object.etag.strip('"')
+            key_size = s3_object.size
+            key_expiry = s3_object.expires
+            storage_class = s3_object.storage_class
+
+        return cls(
+            request_id=request_context.request_id,
+            event_type=EVENT_OPERATION_MAP.get(request_context.operation.wire_name, ""),
+            event_time=datetime.datetime.now(),
+            region=request_context.region,
+            bucket_name=bucket_name,
+            bucket_location=s3_bucket.bucket_region,
+            key_name=quote(s3_object.key),
+            key_etag=etag,
+            key_size=key_size,
+            key_expiry=key_expiry,
+            key_storage_class=storage_class,
+            key_version_id=s3_object.version_id
+            if s3_bucket.versioning_status
+            else None,  # todo: check this?
             xray=request_context.request.headers.get(HEADER_AMZN_XRAY),
         )
 
