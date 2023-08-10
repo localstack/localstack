@@ -12,6 +12,7 @@ from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.s3 import (
     MFA,
     AbortMultipartUploadOutput,
+    AccelerateConfiguration,
     AccessControlPolicy,
     AccessDenied,
     AccountId,
@@ -55,6 +56,7 @@ from localstack.aws.api.s3 import (
     Error,
     Expiration,
     FetchOwner,
+    GetBucketAccelerateConfigurationOutput,
     GetBucketAnalyticsConfigurationOutput,
     GetBucketCorsOutput,
     GetBucketEncryptionOutput,
@@ -3090,6 +3092,48 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
 
         s3_bucket.policy = None
+
+    def get_bucket_accelerate_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
+    ) -> GetBucketAccelerateConfigurationOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        response = GetBucketAccelerateConfigurationOutput()
+        if s3_bucket.accelerate_status:
+            response["Status"] = s3_bucket.accelerate_status
+
+        return response
+
+    def put_bucket_accelerate_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        accelerate_configuration: AccelerateConfiguration,
+        expected_bucket_owner: AccountId = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if "." in bucket:
+            raise InvalidRequest(
+                "S3 Transfer Acceleration is not supported for buckets with periods (.) in their names"
+            )
+
+        if not (status := accelerate_configuration.get("Status")) or status not in (
+            "Enabled",
+            "Suspended",
+        ):
+            raise MalformedXML()
+
+        s3_bucket.accelerate_status = status
 
     # ###### THIS ARE UNIMPLEMENTED METHODS TO ALLOW TESTING, DO NOT COUNT THEM AS DONE ###### #
 
