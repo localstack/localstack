@@ -45,7 +45,8 @@ def test_router_integration(serve_asgi_adapter):
     router.add("/foo/<id>", _handler)
 
     server = serve_asgi_adapter(
-        wsgi_app=None, websocket_listener=WebsocketRequest.listener(router.dispatch)
+        wsgi_app=None,
+        websocket_listener=WebsocketRequest.listener(router.dispatch),
     )
     client = websocket.WebSocket()
     client.connect(server.url.replace("http://", "ws://") + "/foo/bar")

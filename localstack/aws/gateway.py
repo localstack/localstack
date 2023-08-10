@@ -40,6 +40,7 @@ class Gateway:
         response = Response(status=101)
         self.process(request, response)
 
+        # only send the populated response if the websocket hasn't already done so before
         if response.status_code != 101:
             if request.is_upgraded():
                 return

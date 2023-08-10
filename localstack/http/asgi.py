@@ -27,7 +27,7 @@ if t.TYPE_CHECKING:
         WebsocketSendEvent,
     )
 
-    WebsocketResponse = t.Union[
+    _WebsocketResponse = t.Union[
         WebsocketAcceptEvent,
         WebsocketSendEvent,
         WebsocketResponseStartEvent,
@@ -35,7 +35,7 @@ if t.TYPE_CHECKING:
         WebsocketCloseEvent,
     ]
 
-    WebsocketRequest = t.Union[
+    _WebsocketRequest = t.Union[
         WebsocketConnectEvent,
         WebsocketReceiveEvent,
         WebsocketDisconnectEvent,
@@ -340,13 +340,13 @@ class ASGIWebsocket:
         self._send = send
         self._loop = loop
 
-    async def send_async(self, event: "WebsocketResponse"):
+    async def send_async(self, event: "_WebsocketResponse"):
         await self._send(event)
 
-    async def receive_async(self) -> "WebsocketRequest":
+    async def receive_async(self) -> "_WebsocketRequest":
         return await self._receive()
 
-    def send(self, event: "WebsocketResponse", timeout: float = None) -> None:
+    def send(self, event: "_WebsocketResponse", timeout: float = None) -> None:
         """
         Sends an event to the Websocket. Events can be:
 
@@ -361,7 +361,7 @@ class ASGIWebsocket:
             timeout=timeout
         )
 
-    def receive(self, timeout: float = None) -> "WebsocketRequest":
+    def receive(self, timeout: float = None) -> "_WebsocketRequest":
         """
         Listens on the websocket and returns the next event. Events can be:
 

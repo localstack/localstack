@@ -1,8 +1,12 @@
 import pytest
 import requests
+import websocket
+from werkzeug import Response
 from werkzeug.exceptions import Forbidden
 
 from localstack.config import get_edge_url
+from localstack.http import route
+from localstack.http.websocket import WebsocketRequest
 from localstack.services.edge import ROUTER
 
 
@@ -73,3 +77,46 @@ class TestExceptionHandlers:
         response = requests.get(get_edge_url() + "/_raise_error")
         assert response.status_code == 404
         assert "<Error><Code>NoSuchBucket</Code>" in response.text
+
+    def test_websockets_served_through_edge_router(self, cleanups):
+        @route("/_ws/<param>", methods=["WEBSOCKET"])
+        def _echo_websocket_handler(request: WebsocketRequest, param: str):
+            with request.accept() as ws:
+                ws.send(f"hello {param}")
+                for data in iter(ws):
+                    ws.send(f"echo {data}")
+                    if data == "exit":
+                        return
+
+        rule = ROUTER.add(_echo_websocket_handler)
+        cleanups.append(lambda: ROUTER.remove(rule))
+
+        url = get_edge_url(protocol="ws") + "/_ws/world"
+
+        socket = websocket.WebSocket()
+        socket.connect(url)
+        assert socket.connected
+        assert socket.recv() == "hello world"
+        socket.send("foobar")
+        assert socket.recv() == "echo foobar"
+        socket.send("exit")
+        assert socket.recv() == "echo exit"
+
+        socket.shutdown()
+
+    def test_websocket_reject_through_edge_router(self, cleanups):
+        @route("/_ws/<param>", methods=["WEBSOCKET"])
+        def _echo_websocket_handler(request: WebsocketRequest, param: str):
+            request.reject(Response("nope", 403))
+
+        rule = ROUTER.add(_echo_websocket_handler)
+        cleanups.append(lambda: ROUTER.remove(rule))
+
+        url = get_edge_url(protocol="ws") + "/_ws/world"
+
+        socket = websocket.WebSocket()
+        with pytest.raises(websocket.WebSocketBadStatusException) as e:
+            socket.connect(url)
+
+            assert e.value.status_code == 403
+            assert e.value.resp_body == "nope"
