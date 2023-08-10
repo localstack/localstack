@@ -41,3 +41,8 @@ class InvalidBucketState(CommonServiceException):
 class NoSuchObjectLockConfiguration(CommonServiceException):
     def __init__(self, message=None):
         super().__init__("NoSuchObjectLockConfiguration", status_code=404, message=message)
+
+
+class MalformedPolicy(CommonServiceException):
+    def __init__(self, message=None):
+        super().__init__("MalformedPolicy", status_code=400, message=message)

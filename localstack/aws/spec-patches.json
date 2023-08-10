@@ -1094,7 +1094,7 @@
         "exception": true
       }
     },
-        {
+    {
       "op": "add",
       "path": "/shapes/NoSuchPublicAccessBlockConfiguration",
       "value": {
@@ -1108,6 +1108,23 @@
           "httpStatusCode": 404
         },
         "documentation": "<p>The public access block configuration was not found</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchBucketPolicy",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>The bucket policy does not exist</p>",
         "exception": true
       }
     }
