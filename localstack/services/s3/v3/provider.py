@@ -60,6 +60,7 @@ from localstack.aws.api.s3 import (
     GetBucketInventoryConfigurationOutput,
     GetBucketLifecycleConfigurationOutput,
     GetBucketLocationOutput,
+    GetBucketRequestPaymentOutput,
     GetBucketTaggingOutput,
     GetBucketVersioningOutput,
     GetBucketWebsiteOutput,
@@ -141,6 +142,7 @@ from localstack.aws.api.s3 import (
     PutObjectRetentionOutput,
     PutObjectTaggingOutput,
     RequestPayer,
+    RequestPaymentConfiguration,
     RestoreObjectOutput,
     RestoreRequest,
     S3Api,
@@ -2877,6 +2879,36 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # TODO: return RequestCharged
         return PutObjectRetentionOutput()
+
+    def put_bucket_request_payment(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        request_payment_configuration: RequestPaymentConfiguration,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        # TODO: this currently only mock the operation, but its actual effect is not emulated
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        payer = request_payment_configuration.get("Payer")
+        if payer not in ["Requester", "BucketOwner"]:
+            raise MalformedXML()
+
+        s3_bucket.payer = payer
+
+    def get_bucket_request_payment(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketRequestPaymentOutput:
+        # TODO: this currently only mock the operation, but its actual effect is not emulated
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        return GetBucketRequestPaymentOutput(Payer=s3_bucket.payer)
 
     # ###### THIS ARE UNIMPLEMENTED METHODS TO ALLOW TESTING, DO NOT COUNT THEM AS DONE ###### #
 
