@@ -310,11 +310,11 @@ def parse_and_apply_numeric_filter(
     record_value: Dict, numeric_filter: List[Union[str, int]]
 ) -> bool:
     if len(numeric_filter) % 2 > 0:
-        LOG.warn("Invalid numeric lambda filter given")
+        LOG.warning("Invalid numeric lambda filter given")
         return True
 
     if not isinstance(record_value, (int, float)):
-        LOG.warn(f"Record {record_value} seem not to be a valid number")
+        LOG.warning(f"Record {record_value} seem not to be a valid number")
         return False
 
     for idx in range(0, len(numeric_filter), 2):
@@ -331,7 +331,7 @@ def parse_and_apply_numeric_filter(
             if numeric_filter[idx] == "<=" and not (record_value <= float(numeric_filter[idx + 1])):
                 return False
         except ValueError:
-            LOG.warn(
+            LOG.warning(
                 f"Could not convert filter value {numeric_filter[idx + 1]} to a valid number value for filtering"
             )
     return True
@@ -349,7 +349,7 @@ def verify_dict_filter(record_value: any, dict_filter: Dict[str, any]) -> bool:
             fits_filter = bool(filter_value)  # exists means that the key exists in the event record
         elif key.lower() == "prefix":
             if not isinstance(record_value, str):
-                LOG.warn(f"Record Value {record_value} does not seem to be a valid string.")
+                LOG.warning(f"Record Value {record_value} does not seem to be a valid string.")
             fits_filter = isinstance(record_value, str) and record_value.startswith(
                 str(filter_value)
             )
@@ -379,7 +379,7 @@ def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]) ->
                     if isinstance(value[0], dict):
                         append_record = verify_dict_filter(record_value, value[0])
                 else:
-                    LOG.warn(f"Empty lambda filter: {key}")
+                    LOG.warning(f"Empty lambda filter: {key}")
             elif isinstance(value, dict):
                 append_record = filter_stream_record(value, record_value)
         else:
