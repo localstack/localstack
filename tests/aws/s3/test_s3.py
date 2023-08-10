@@ -2068,9 +2068,9 @@ class TestS3:
         snapshot.match("copy-success", copy_obj_all_positive)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not is_native_provider(),
-        paths=["$..ServerSideEncryption"],
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not validate properly",
     )
     @pytest.mark.parametrize("method", ("get_object", "head_object"))
     def test_s3_get_object_preconditions(self, s3_bucket, snapshot, aws_client, method):
@@ -3259,9 +3259,9 @@ class TestS3:
         assert copy_etag != multipart_etag
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not is_native_provider(),
-        paths=["$..ServerSideEncryption"],
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not validate properly",
     )
     def test_get_object_part(self, s3_bucket, s3_multipart_upload, snapshot, aws_client):
         snapshot.add_transformer(
