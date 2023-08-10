@@ -1279,3 +1279,38 @@ class TestS3BucketOwnershipControls:
         with pytest.raises(ClientError) as e:
             s3_create_bucket(ObjectOwnership="")
         snapshot.match("ownership-non-value-at-creation", e.value.response)
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3PublicAccessBlock:
+    @markers.aws.validated
+    def test_crud_public_access_block(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        get_public_access_block = aws_client.s3.get_public_access_block(Bucket=s3_bucket)
+        snapshot.match("get-default-public-access-block", get_public_access_block)
+
+        put_public_access_block = aws_client.s3.put_public_access_block(
+            Bucket=s3_bucket,
+            PublicAccessBlockConfiguration={
+                "BlockPublicAcls": False,
+                "IgnorePublicAcls": False,
+                "BlockPublicPolicy": False,
+            },
+        )
+        snapshot.match("put-public-access-block", put_public_access_block)
+
+        get_public_access_block = aws_client.s3.get_public_access_block(Bucket=s3_bucket)
+        snapshot.match("get-public-access-block", get_public_access_block)
+
+        delete_public_access_block = aws_client.s3.delete_public_access_block(Bucket=s3_bucket)
+        snapshot.match("delete-public-access-block", delete_public_access_block)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_public_access_block(Bucket=s3_bucket)
+        snapshot.match("get-public-access-block-after-delete", e.value.response)
+
+        delete_public_access_block = aws_client.s3.delete_public_access_block(Bucket=s3_bucket)
+        snapshot.match("idempotent-delete-public-access-block", delete_public_access_block)

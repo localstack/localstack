@@ -2435,5 +2435,67 @@
         }
       }
     }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3PublicAccessBlock::test_crud_public_access_block": {
+    "recorded-date": "10-08-2023, 03:29:18",
+    "recorded-content": {
+      "get-default-public-access-block": {
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-public-access-block": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-public-access-block": {
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": false,
+          "BlockPublicPolicy": false,
+          "IgnorePublicAcls": false,
+          "RestrictPublicBuckets": false
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-public-access-block": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-public-access-block-after-delete": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchPublicAccessBlockConfiguration",
+          "Message": "The public access block configuration was not found"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "idempotent-delete-public-access-block": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3PublicAccessBlock::test_public_access_block_exc": {
+    "recorded-date": "10-08-2023, 03:30:54",
+    "recorded-content": {}
   }
 }

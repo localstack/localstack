@@ -74,6 +74,7 @@ from localstack.aws.api.s3 import (
     GetObjectRequest,
     GetObjectRetentionOutput,
     GetObjectTaggingOutput,
+    GetPublicAccessBlockOutput,
     GrantFullControl,
     GrantRead,
     GrantReadACP,
@@ -113,6 +114,7 @@ from localstack.aws.api.s3 import (
     NoSuchCORSConfiguration,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
+    NoSuchPublicAccessBlockConfiguration,
     NoSuchTagSet,
     NoSuchUpload,
     NoSuchWebsiteConfiguration,
@@ -139,6 +141,7 @@ from localstack.aws.api.s3 import (
     PartNumberMarker,
     PreconditionFailed,
     Prefix,
+    PublicAccessBlockConfiguration,
     PutObjectLegalHoldOutput,
     PutObjectLockConfigurationOutput,
     PutObjectOutput,
@@ -2972,13 +2975,67 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         s3_bucket.object_ownership = None
 
-    # ###### THIS ARE UNIMPLEMENTED METHODS TO ALLOW TESTING, DO NOT COUNT THEM AS DONE ###### #
+    def get_public_access_block(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetPublicAccessBlockOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not s3_bucket.public_access_block:
+            raise NoSuchPublicAccessBlockConfiguration(
+                "The public access block configuration was not found", BucketName=bucket
+            )
+
+        return GetPublicAccessBlockOutput(
+            PublicAccessBlockConfiguration=s3_bucket.public_access_block
+        )
+
+    def put_public_access_block(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        public_access_block_configuration: PublicAccessBlockConfiguration,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        # TODO: this currently only mock the operation, but its actual effect is not emulated
+        #  as we do not enforce ACL directly. Also, this should take the most restrictive between S3Control and the
+        #  bucket configuration. See s3control
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        public_access_block_fields = {
+            "BlockPublicAcls",
+            "BlockPublicPolicy",
+            "IgnorePublicAcls",
+            "RestrictPublicBuckets",
+        }
+        if not validate_dict_fields(
+            public_access_block_configuration,
+            required_fields=set(),
+            optional_fields=public_access_block_fields,
+        ):
+            raise MalformedXML()
+
+        for field in public_access_block_fields:
+            if public_access_block_configuration.get(field) is None:
+                public_access_block_configuration[field] = False
+
+        s3_bucket.public_access_block = public_access_block_configuration
 
     def delete_public_access_block(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
     ) -> None:
-        # TODO: implement, this is just for CORS tests to be able to run
-        pass
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        s3_bucket.public_access_block = None
+
+    # ###### THIS ARE UNIMPLEMENTED METHODS TO ALLOW TESTING, DO NOT COUNT THEM AS DONE ###### #
 
     def put_bucket_acl(
         self,

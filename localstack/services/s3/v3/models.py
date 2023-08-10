@@ -61,7 +61,11 @@ from localstack.aws.api.s3 import (
     WebsiteConfiguration,
     WebsiteRedirectLocation,
 )
-from localstack.services.s3.constants import DEFAULT_BUCKET_ENCRYPTION, S3_UPLOAD_PART_MIN_SIZE
+from localstack.services.s3.constants import (
+    DEFAULT_BUCKET_ENCRYPTION,
+    DEFAULT_PUBLIC_BLOCK_ACCESS,
+    S3_UPLOAD_PART_MIN_SIZE,
+)
 from localstack.services.s3.utils import (
     get_owner_for_account_id,
     iso_8601_datetime_without_milliseconds_s3,
@@ -103,7 +107,7 @@ class S3Bucket:
     notification_configuration: NotificationConfiguration
     payer: Payer
     encryption_rule: Optional[ServerSideEncryptionRule]
-    public_access_block: PublicAccessBlockConfiguration
+    public_access_block: Optional[PublicAccessBlockConfiguration]
     accelerate_status: BucketAccelerateStatus
     object_lock_enabled: bool
     object_ownership: ObjectOwnership
@@ -135,6 +139,7 @@ class S3Bucket:
         self.encryption_rule = DEFAULT_BUCKET_ENCRYPTION
         self.creation_date = datetime.now(tz=_gmt_zone_info)
         self.payer = Payer.BucketOwner
+        self.public_access_block = DEFAULT_PUBLIC_BLOCK_ACCESS
         self.multiparts = {}
         self.notification_configuration = {}
         self.cors_rules = None
