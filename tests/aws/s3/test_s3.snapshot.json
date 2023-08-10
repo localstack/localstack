@@ -9658,5 +9658,100 @@
         }
       }
     }
+  },
+  "tests/aws/s3/test_s3.py::TestS3::test_get_object_part": {
+    "recorded-date": "10-08-2023, 02:06:55",
+    "recorded-content": {
+      "multipart-upload": {
+        "Bucket": "<bucket:1>",
+        "ETag": "\"2848839dc84e13fa00a0944e760e233b-2\"",
+        "Key": "test.file",
+        "Location": "<location:1>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-part": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"2848839dc84e13fa00a0944e760e233b-2\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "PartsCount": 2,
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get-object-part": {
+        "AcceptRanges": "bytes",
+        "Body": "test content 123",
+        "ContentLength": 16,
+        "ContentRange": "bytes 5242896-5242911/5242912",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"2848839dc84e13fa00a0944e760e233b-2\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "PartsCount": 2,
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "part-doesnt-exist": {
+        "Error": {
+          "ActualPartCount": "2",
+          "Code": "InvalidPartNumber",
+          "Message": "The requested partnumber is not satisfiable",
+          "PartNumberRequested": "10"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 416
+        }
+      },
+      "part-with-range": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Cannot specify both Range header and partNumber query parameter"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "part-no-multipart": {
+        "Error": {
+          "ActualPartCount": "1",
+          "Code": "InvalidPartNumber",
+          "Message": "The requested partnumber is not satisfiable",
+          "PartNumberRequested": "2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 416
+        }
+      },
+      "get-obj-no-multipart": {
+        "AcceptRanges": "bytes",
+        "Body": "test-123",
+        "ContentLength": 8,
+        "ContentRange": "bytes 0-7/8",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"ca6d00e33edff0e9cb3782d31182de33\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      }
+    }
   }
 }
