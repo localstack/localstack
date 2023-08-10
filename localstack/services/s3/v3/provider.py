@@ -85,6 +85,7 @@ from localstack.aws.api.s3 import (
     InvalidArgument,
     InvalidBucketName,
     InvalidObjectState,
+    InvalidPartNumber,
     InvalidPartOrder,
     InvalidStorageClass,
     InventoryConfiguration,
@@ -129,6 +130,7 @@ from localstack.aws.api.s3 import (
     ObjectVersionStorageClass,
     OptionalObjectAttributesList,
     Part,
+    PartNumber,
     PartNumberMarker,
     PreconditionFailed,
     Prefix,
@@ -181,6 +183,7 @@ from localstack.services.s3.exceptions import (
 )
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
 from localstack.services.s3.utils import (
+    ObjectRange,
     add_expiration_days_to_datetime,
     create_s3_kms_managed_key_for_region,
     extract_bucket_key_version_id_from_copy_source,
@@ -651,8 +654,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         s3_stored_object = self._storage_backend.open(bucket_name, s3_object)
 
-        if range_header := request.get("Range"):
+        range_header = request.get("Range")
+        part_number = request.get("PartNumber")
+        if range_header and part_number:
+            raise InvalidRequest("Cannot specify both Range header and partNumber query parameter")
+        range_data = None
+        if range_header:
             range_data = parse_range_header(range_header, s3_object.size)
+        elif part_number:
+            range_data = get_part_range(s3_object, part_number)
+
+        if range_data:
             s3_stored_object.seek(range_data.begin)
             response["Body"] = LimitedIterableStream(
                 s3_stored_object, max_length=range_data.content_length
@@ -730,10 +742,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
                 response[f"Checksum{checksum_algorithm.upper()}"] = checksum  # noqa
 
-        if range_header := request.get("Range"):
-            range_data = parse_range_header(range_header, s3_object.size)
-            response["ContentLength"] = range_data.content_length
-
         if s3_object.parts:
             response["PartsCount"] = len(s3_object.parts)
 
@@ -746,9 +754,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.restore:
             response["Restore"] = s3_object.restore
 
-        if range_header := request.get("Range"):
+        range_header = request.get("Range")
+        part_number = request.get("PartNumber")
+        if range_header and part_number:
+            raise InvalidRequest("Cannot specify both Range header and partNumber query parameter")
+        range_data = None
+        if range_header:
             range_data = parse_range_header(range_header, s3_object.size)
+        elif part_number:
+            range_data = get_part_range(s3_object, part_number)
+
+        if range_data:
             response["ContentLength"] = range_data.content_length
+            response["StatusCode"] = 206
 
         add_encryption_to_response(response, s3_object=s3_object)
 
@@ -2960,3 +2978,40 @@ def get_object_lock_parameters_from_bucket_and_request(
             )
 
     return ObjectLockParameters(lock_until, lock_legal_status, lock_mode)
+
+
+def get_part_range(s3_object: S3Object, part_number: PartNumber) -> ObjectRange:
+    """
+    Calculate the range value from a part Number for an S3 Object
+    :param s3_object: S3Object
+    :param part_number: the wanted part from the S3Object
+    :return: an ObjectRange used to return only a slice of an Object
+    """
+    if not s3_object.parts:
+        if part_number > 1:
+            raise InvalidPartNumber(
+                "The requested partnumber is not satisfiable",
+                PartNumberRequested=part_number,
+                ActualPartCount=1,
+            )
+        return ObjectRange(
+            begin=0,
+            end=s3_object.size - 1,
+            content_length=s3_object.size,
+            content_range=f"bytes 0-{s3_object.size - 1}/{s3_object.size}",
+        )
+    elif not (part_data := s3_object.parts.get(part_number)):
+        raise InvalidPartNumber(
+            "The requested partnumber is not satisfiable",
+            PartNumberRequested=part_number,
+            ActualPartCount=len(s3_object.parts),
+        )
+
+    begin, part_length = part_data
+    end = begin + part_length - 1
+    return ObjectRange(
+        begin=begin,
+        end=end,
+        content_length=part_length,
+        content_range=f"bytes {begin}-{end}/{s3_object.size}",
+    )

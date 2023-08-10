@@ -11,7 +11,7 @@ from readerwriterlock import rwlock
 
 from localstack.aws.api.s3 import BucketName, MultipartUploadId, PartNumber
 from localstack.services.s3.constants import S3_CHUNK_SIZE
-from localstack.services.s3.utils import ChecksumHash, ParsedRange, get_s3_checksum
+from localstack.services.s3.utils import ChecksumHash, ObjectRange, get_s3_checksum
 from localstack.services.s3.v3.models import S3Multipart, S3Object, S3Part
 
 from .core import LimitedStream, S3ObjectStore, S3StoredMultipart, S3StoredObject
@@ -279,7 +279,7 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         s3_part: S3Part,
         src_bucket: BucketName,
         src_s3_object: S3Object,
-        range_data: ParsedRange,
+        range_data: ObjectRange,
     ) -> EphemeralS3StoredObject:
         """
         Create and add an EphemeralS3StoredObject to the Multipart collection, with an S3Object as input. This will

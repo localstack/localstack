@@ -122,6 +122,14 @@
     },
     {
       "op": "add",
+      "path": "/shapes/HeadObjectOutput/members/StatusCode",
+      "value": {
+        "shape": "GetObjectResponseStatusCode",
+        "location": "statusCode"
+      }
+    },
+    {
+      "op": "add",
       "path": "/shapes/NoSuchKey/members/Key",
       "value": {
         "shape": "ObjectKey"
@@ -1046,6 +1054,26 @@
           "httpStatusCode": 404
         },
         "documentation": "<p>Object Lock configuration does not exist for this bucket</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidPartNumber",
+      "value": {
+        "type": "structure",
+        "members": {
+          "PartNumberRequested": {
+            "shape": "PartNumber"
+          },
+          "ActualPartCount": {
+            "shape": "PartNumber"
+          }
+        },
+        "error": {
+          "httpStatusCode": 416
+        },
+        "documentation": "<p>The requested partnumber is not satisfiable</p>",
         "exception": true
       }
     }

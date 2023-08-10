@@ -249,7 +249,7 @@ class S3Object:
     website_redirect_location: Optional[WebsiteRedirectLocation]
     acl: Optional[str]  # TODO: we need to change something here, how it's done?
     is_current: bool
-    parts: Optional[list[tuple[int, int]]]
+    parts: Optional[dict[int, tuple[int, int]]]
     restore: Optional[Restore]
 
     def __init__(
@@ -297,7 +297,7 @@ class S3Object:
         self.website_redirect_location = website_redirect_location
         self.is_current = True
         self.last_modified = datetime.now(tz=_gmt_zone_info)
-        self.parts = []
+        self.parts = {}
         self.restore = None
 
     def get_system_metadata_fields(self) -> dict:
@@ -488,8 +488,9 @@ class S3Multipart:
                 )
 
             object_etag.update(bytes.fromhex(s3_part.etag))
-            # TODO verify this, it seems wrong
-            self.object.parts.append((pos, s3_part.size))
+            # keep track of the parts size, as it can be queried afterward on the object as a Range
+            self.object.parts[part_number] = (pos, s3_part.size)
+            pos += s3_part.size
 
             multipart_etag = f"{object_etag.hexdigest()}-{len(parts)}"
             self.object.etag = multipart_etag

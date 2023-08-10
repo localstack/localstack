@@ -170,7 +170,7 @@ class S3CRC32Checksum:
         return self.checksum.to_bytes(4, "big")
 
 
-class ParsedRange(NamedTuple):
+class ObjectRange(NamedTuple):
     """
     NamedTuple representing a parsed Range header with the requested S3 object size
     https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range
@@ -182,13 +182,13 @@ class ParsedRange(NamedTuple):
     end: int  # the end of the end
 
 
-def parse_range_header(range_header: str, object_size: int) -> ParsedRange:
+def parse_range_header(range_header: str, object_size: int) -> ObjectRange:
     """
     Takes a Range header, and returns a dataclass containing the necessary information to return only a slice of an
     S3 object
     :param range_header: a Range header
     :param object_size: the requested S3 object total size
-    :return: ParsedRange
+    :return: ObjectRange
     """
     last = object_size - 1
     _, rspec = range_header.split("=")
@@ -212,7 +212,7 @@ def parse_range_header(range_header: str, object_size: int) -> ParsedRange:
             RangeRequested=range_header,
         )
 
-    return ParsedRange(
+    return ObjectRange(
         content_range=f"bytes {begin}-{end}/{object_size}",
         content_length=end - begin + 1,
         begin=begin,
