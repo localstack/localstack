@@ -1486,7 +1486,7 @@
     }
   },
   "tests/aws/s3/test_s3.py::TestS3::test_s3_request_payer_exceptions": {
-    "recorded-date": "03-08-2023, 04:17:18",
+    "recorded-date": "10-08-2023, 02:34:43",
     "recorded-content": {
       "wrong-payer-type": {
         "Error": {
@@ -1496,6 +1496,17 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      },
+      "wrong-bucket-name": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
     }
