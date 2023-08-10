@@ -868,6 +868,13 @@ class OwnershipControlsNotFoundError(ServiceException):
     BucketName: Optional[BucketName]
 
 
+class NoSuchPublicAccessBlockConfiguration(ServiceException):
+    code: str = "NoSuchPublicAccessBlockConfiguration"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
 AbortDate = datetime
 
 
