@@ -1379,3 +1379,58 @@ class TestS3BucketPolicy:
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy="{}")
         snapshot.match("put-bucket-policy-empty-json", e.value.response)
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3BucketAccelerateConfiguration:
+    @markers.aws.validated
+    def test_bucket_acceleration_configuration_crud(self, s3_bucket, snapshot, aws_client):
+        get_default_config = aws_client.s3.get_bucket_accelerate_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-default-accelerate-config", get_default_config)
+
+        response = aws_client.s3.put_bucket_accelerate_configuration(
+            Bucket=s3_bucket,
+            AccelerateConfiguration={"Status": "Enabled"},
+        )
+        snapshot.match("put-bucket-accelerate-config-enabled", response)
+
+        response = aws_client.s3.get_bucket_accelerate_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-accelerate-config-enabled", response)
+
+        response = aws_client.s3.put_bucket_accelerate_configuration(
+            Bucket=s3_bucket,
+            AccelerateConfiguration={"Status": "Suspended"},
+        )
+        snapshot.match("put-bucket-accelerate-config-disabled", response)
+
+        response = aws_client.s3.get_bucket_accelerate_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-accelerate-config-disabled", response)
+
+    @markers.aws.validated
+    def test_bucket_acceleration_configuration_exc(
+        self, s3_bucket, s3_create_bucket, snapshot, aws_client
+    ):
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_accelerate_configuration(
+                Bucket=s3_bucket,
+                AccelerateConfiguration={"Status": "enabled"},
+            )
+        snapshot.match("put-bucket-accelerate-config-lowercase", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_accelerate_configuration(
+                Bucket=s3_bucket,
+                AccelerateConfiguration={"Status": "random"},
+            )
+        snapshot.match("put-bucket-accelerate-config-random", e.value.response)
+
+        bucket_with_name = s3_create_bucket(Bucket=f"test.bucket.{long_uid()}")
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_accelerate_configuration(
+                Bucket=bucket_with_name,
+                AccelerateConfiguration={"Status": "random"},
+            )
+        snapshot.match("put-bucket-accelerate-config-dot-bucket", e.value.response)
