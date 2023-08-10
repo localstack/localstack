@@ -165,7 +165,9 @@ def dynamodb_table_exists(table_name, client=None):
 
 class EventForwarder:
     @classmethod
-    def forward_to_targets(cls, records: List[Dict], background: bool = True):
+    def forward_to_targets(
+        cls, account_id: str, region_name: str, records: List[Dict], background: bool = True
+    ):
         def _forward(*args):
             # forward to kinesis stream
             records_to_kinesis = copy.deepcopy(records)
@@ -174,15 +176,15 @@ class EventForwarder:
             # forward to lambda and ddb_streams
             forward_records = cls.prepare_records_to_forward_to_ddb_stream(records)
             records_to_ddb = copy.deepcopy(forward_records)
-            cls.forward_to_ddb_stream(records_to_ddb)
+            cls.forward_to_ddb_stream(account_id, region_name, records_to_ddb)
 
         if background:
             return start_worker_thread(_forward)
         _forward()
 
     @staticmethod
-    def forward_to_ddb_stream(records):
-        dynamodbstreams_api.forward_events(records)
+    def forward_to_ddb_stream(account_id: str, region_name: str, records):
+        dynamodbstreams_api.forward_events(account_id, region_name, records)
 
     @staticmethod
     def forward_to_kinesis_stream(records):
@@ -740,7 +742,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 record["dynamodb"]["StreamViewType"] = stream_spec["StreamViewType"]
             if existing_item:
                 record["dynamodb"]["OldImage"] = existing_item
-            self.forward_stream_records([record], table_name=table_name)
+            self.forward_stream_records(
+                context.account_id, context.region, [record], table_name=table_name
+            )
         return result
 
     @handler("DeleteItem", expand=False)
@@ -778,7 +782,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 )
                 if stream_spec:
                     record["dynamodb"]["StreamViewType"] = stream_spec["StreamViewType"]
-                self.forward_stream_records([record], table_name=table_name)
+                self.forward_stream_records(
+                    context.account_id, context.region, [record], table_name=table_name
+                )
 
         return result
 
@@ -818,7 +824,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 )
                 if stream_spec:
                     record["dynamodb"]["StreamViewType"] = stream_spec["StreamViewType"]
-                self.forward_stream_records([record], table_name=table_name)
+                self.forward_stream_records(
+                    context.account_id, context.region, [record], table_name=table_name
+                )
         return result
 
     @handler("GetItem", expand=False)
@@ -901,7 +909,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 )
             )
         if event_sources_or_streams_enabled:
-            self.forward_stream_records(records)
+            self.forward_stream_records(context.account_id, context.region, records)
 
         # update response
         if any(unprocessed_items):
@@ -970,7 +978,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 )
             )
         if event_sources_or_streams_enabled:
-            self.forward_stream_records(records)
+            self.forward_stream_records(context.account_id, context.region, records)
 
         return result
 
@@ -1012,7 +1020,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
         if event_sources_or_streams_enabled:
             records = get_updated_records(table_name, existing_items)
-            self.forward_stream_records(records, table_name=table_name)
+            self.forward_stream_records(
+                context.account_id, context.region, records, table_name=table_name
+            )
 
         return result
 
@@ -1561,12 +1571,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 i += 1
         return records, unprocessed_items
 
-    def forward_stream_records(self, records: List[Dict], table_name: str = None):
+    def forward_stream_records(
+        self, account_id: str, region_name: str, records: List[Dict], table_name: str = None
+    ):
         if records and "eventName" in records[0]:
             if table_name:
                 for record in records:
                     record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
-            EventForwarder.forward_to_targets(records, background=True)
+            EventForwarder.forward_to_targets(account_id, region_name, records, background=True)
 
     def get_record_template(self) -> Dict:
         return {
@@ -1672,7 +1684,7 @@ def has_event_sources_or_streams_enabled(table_name: str, cache: Dict = None):
     result = False
     if sources:
         result = True
-    if not result and dynamodbstreams_api.get_stream_for_table(table_arn):
+    if not result and dynamodbstreams_api.get_stream_for_table(account_id, region_name, table_arn):
         result = True
 
     # if kinesis streaming destination is enabled
