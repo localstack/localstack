@@ -2924,7 +2924,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_reserved_concurrency_async_queue": {
-    "recorded-date": "02-05-2023, 16:55:59",
+    "recorded-date": "10-08-2023, 23:24:24",
     "recorded-content": {
       "fn": {
         "Architectures": [
@@ -2985,18 +2985,6 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 429
-        }
-      },
-      "put_function_concurrency_qualified_arn_exc": {
-        "Error": {
-          "Code": "InvalidParameterValueException",
-          "Message": "This operation is permitted on Lambda functions only. Aliases and versions do not support this operation. Please specify either a function name or an unqualified function ARN."
-        },
-        "Type": "User",
-        "message": "This operation is permitted on Lambda functions only. Aliases and versions do not support this operation. Please specify either a function name or an unqualified function ARN.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
         }
       }
     }

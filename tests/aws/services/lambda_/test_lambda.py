@@ -13,6 +13,7 @@ from botocore.response import StreamingBody
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
+from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.services.lambda_.lambda_api import use_docker
 from localstack.testing.aws.lambda_utils import (
     concurrency_update_done,
@@ -132,6 +133,26 @@ def read_streams(payload: T) -> T:
         else:
             new_payload[k] = v
     return new_payload
+
+
+def check_concurrency_quota(aws_client: ServiceLevelClientFactory, min_concurrent_executions: int):
+    account_settings = aws_client.lambda_.get_account_settings()
+    concurrent_executions = account_settings["AccountLimit"]["ConcurrentExecutions"]
+    if concurrent_executions < min_concurrent_executions:
+        pytest.skip(
+            "Account limit for Lambda ConcurrentExecutions is too low:"
+            f" ({concurrent_executions}/{min_concurrent_executions})."
+            " Request a quota increase on AWS: https://console.aws.amazon.com/servicequotas/home"
+        )
+    else:
+        unreserved_concurrent_executions = account_settings["AccountLimit"][
+            "UnreservedConcurrentExecutions"
+        ]
+        if unreserved_concurrent_executions < min_concurrent_executions:
+            LOG.warning(
+                "Insufficient UnreservedConcurrentExecutions available for this test. "
+                "Ensure that no other tests use any reserved or provisioned concurrency."
+            )
 
 
 @pytest.fixture(autouse=True)
@@ -1314,6 +1335,7 @@ class TestLambdaMultiAccounts:
         assert secondary_client.delete_function(FunctionName=func_arn)
 
 
+# TODO: add check_concurrency_quota for all these tests
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaConcurrency:
     @markers.aws.validated
@@ -1594,9 +1616,10 @@ class TestLambdaConcurrency:
         assert result2 == "on-demand"
 
     @markers.aws.validated
-    def test_reserved_concurrency_async_queue(
-        self, create_lambda_function, snapshot, sqs_create_queue, aws_client
-    ):
+    def test_reserved_concurrency_async_queue(self, create_lambda_function, snapshot, aws_client):
+        min_concurrent_executions = 10 + 2
+        check_concurrency_quota(aws_client, min_concurrent_executions)
+
         func_name = f"test_lambda_{short_uid()}"
         create_lambda_function(
             func_name=func_name,
@@ -1612,30 +1635,29 @@ class TestLambdaConcurrency:
         snapshot.match("fn", fn)
         fn_arn = fn["FunctionArn"]
 
-        # sequential execution
+        # configure reserved concurrency for sequential execution
         put_fn_concurrency = aws_client.lambda_.put_function_concurrency(
             FunctionName=func_name, ReservedConcurrentExecutions=1
         )
         snapshot.match("put_fn_concurrency", put_fn_concurrency)
 
+        # warm up the Lambda function to mitigate flakiness due to cold start
+        aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
+
+        # simultaneously queue two event invocations
         aws_client.lambda_.invoke(
-            FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 10})
+            FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 15})
         )
         aws_client.lambda_.invoke(
             FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 10})
         )
 
-        time.sleep(4)  # make sure one is already in the "queue" and one is being executed
+        # Ensure one event invocation is being executed and the other one is in the queue.
+        time.sleep(5)
 
         with pytest.raises(aws_client.lambda_.exceptions.TooManyRequestsException) as e:
             aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
         snapshot.match("too_many_requests_exc", e.value.response)
-
-        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
-            aws_client.lambda_.put_function_concurrency(
-                FunctionName=fn_arn, ReservedConcurrentExecutions=2
-            )
-        snapshot.match("put_function_concurrency_qualified_arn_exc", e.value.response)
 
         aws_client.lambda_.put_function_concurrency(
             FunctionName=func_name, ReservedConcurrentExecutions=2
@@ -1646,7 +1668,10 @@ class TestLambdaConcurrency:
             log_events = aws_client.logs.filter_log_events(
                 logGroupName=f"/aws/lambda/{func_name}",
             )["events"]
-            assert len([e["message"] for e in log_events if e["message"].startswith("REPORT")]) == 3
+            invocation_count = len(
+                [event["message"] for event in log_events if event["message"].startswith("REPORT")]
+            )
+            assert invocation_count == 4
 
         retry(assert_events, retries=120, sleep=2)
 
