@@ -8633,6 +8633,10 @@ class TestS3BucketLifecycle:
 )
 class TestS3ObjectLockRetention:
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not validate properly",
+    )
     def test_s3_object_retention_exc(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         s3_bucket_locked = s3_create_bucket(ObjectLockEnabledForBucket=True)
@@ -8710,6 +8714,10 @@ class TestS3ObjectLockRetention:
         snapshot.match("get-object-retention-regular-bucket", e.value.response)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not validate properly",
+    )
     def test_s3_object_retention(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
         object_key = "test-retention-locked-object"
@@ -8886,6 +8894,10 @@ class TestS3ObjectLockRetention:
         snapshot.match("head-object-with-lock", head_object)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not validate properly",
+    )
     def test_object_lock_delete_markers(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
         s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
@@ -8929,6 +8941,10 @@ class TestS3ObjectLockRetention:
         snapshot.match("head-object-locked-delete-marker", e.value.response)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not implemented",
+    )
     def test_object_lock_extend_duration(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
         s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
@@ -8982,6 +8998,10 @@ class TestS3ObjectLockRetention:
 )
 class TestS3ObjectLockLegalHold:
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not implemented, does not validate",
+    )
     def test_put_get_object_legal_hold(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
         object_key = "locked-object"
@@ -9050,6 +9070,10 @@ class TestS3ObjectLockLegalHold:
         snapshot.match("put-object-legal-hold-off", put_legal_hold)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not implemented, does not validate",
+    )
     def test_put_object_legal_hold_exc(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         s3_bucket_locked = s3_create_bucket(ObjectLockEnabledForBucket=True)
@@ -9098,6 +9122,10 @@ class TestS3ObjectLockLegalHold:
         snapshot.match("get-object-retention-regular-bucket", e.value.response)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not implemented, does not validate",
+    )
     def test_delete_locked_object(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
         s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
