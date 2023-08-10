@@ -43,12 +43,12 @@ if t.TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
-WebsocketEnvironment: t.TypeAlias = t.Dict[str, t.Any]
+WebSocketEnvironment: t.TypeAlias = t.Dict[str, t.Any]
 """Special WSGIEnvironment that has an `asgi.websocket` key that stores a `Websocket` instance."""
 
 
 def populate_wsgi_environment(
-    environ: t.Union["WSGIEnvironment", WebsocketEnvironment],
+    environ: t.Union["WSGIEnvironment", WebSocketEnvironment],
     scope: t.Union["HTTPScope", "WebsocketScope"],
 ):
     """
@@ -316,7 +316,7 @@ class ASGILifespanListener:
         pass
 
 
-class ASGIWebsocket:
+class ASGIWebSocket:
     """
     A wrapper around an ASGI ``WebsocketScope`` and relevant IO objects that can be used to interact with the websocket
     in synchronous code.
@@ -402,12 +402,12 @@ class ASGIWebsocket:
         )
 
 
-class WebsocketListener(t.Protocol):
+class WebSocketListener(t.Protocol):
     """
     Similar protocol to a WSGIApplication, only it expects a Websocket instead of a WSGIEnvironment.
     """
 
-    def __call__(self, environ: WebsocketEnvironment):
+    def __call__(self, environ: WebSocketEnvironment):
         """
         Called when a new Websocket connection is established. To initiate the connection, you need to perform the
         connect handshake yourself. First, receive the ``websocket.connect`` event, and then send the
@@ -458,7 +458,7 @@ class ASGIAdapter:
         event_loop: AbstractEventLoop = None,
         executor: Executor = None,
         lifespan_listener: ASGILifespanListener = None,
-        websocket_listener: WebsocketListener = None,
+        websocket_listener: WebSocketListener = None,
     ):
         self.wsgi_app = wsgi_app
         self.event_loop = event_loop or asyncio.get_event_loop()
@@ -555,7 +555,7 @@ class ASGIAdapter:
         scope: "WebsocketScope",
         receive: "ASGIReceiveCallable",
         send: "ASGISendCallable",
-    ) -> WebsocketEnvironment:
+    ) -> WebSocketEnvironment:
         """
         Creates an IO-ready pseudo-WSGI environment from the given ASGI Websocket scope.
 
@@ -564,10 +564,10 @@ class ASGIAdapter:
         :param send: send callable
         :return: a new websocket environment
         """
-        environ: WebsocketEnvironment = {}
+        environ: WebSocketEnvironment = {}
         populate_wsgi_environment(environ, scope)
         environ["REQUEST_METHOD"] = "WEBSOCKET"
-        environ["asgi.websocket"] = ASGIWebsocket(scope, receive, send, self.event_loop)
+        environ["asgi.websocket"] = ASGIWebSocket(scope, receive, send, self.event_loop)
         return environ
 
     async def handle_websocket(

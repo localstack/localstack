@@ -11,7 +11,7 @@ import requests
 import websocket
 from werkzeug import Request, Response
 
-from localstack.http.asgi import ASGILifespanListener, WebsocketEnvironment
+from localstack.http.asgi import ASGILifespanListener, WebSocketEnvironment
 
 LOG = logging.getLogger(__name__)
 
@@ -371,7 +371,7 @@ def test_lifespan_listener(serve_asgi_adapter):
 
 def test_websocket_listener(serve_asgi_adapter):
     class WebsocketApp:
-        def __call__(self, environ: WebsocketEnvironment):
+        def __call__(self, environ: WebSocketEnvironment):
             ws = environ["asgi.websocket"]
             event = ws.receive()
             assert event["type"] == "websocket.connect"

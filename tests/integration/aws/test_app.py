@@ -6,7 +6,7 @@ from werkzeug.exceptions import Forbidden
 
 from localstack.config import get_edge_url
 from localstack.http import route
-from localstack.http.websocket import WebsocketRequest
+from localstack.http.websocket import WebSocketRequest
 from localstack.services.edge import ROUTER
 
 
@@ -80,7 +80,7 @@ class TestExceptionHandlers:
 
     def test_websockets_served_through_edge_router(self, cleanups):
         @route("/_ws/<param>", methods=["WEBSOCKET"])
-        def _echo_websocket_handler(request: WebsocketRequest, param: str):
+        def _echo_websocket_handler(request: WebSocketRequest, param: str):
             with request.accept() as ws:
                 ws.send(f"hello {param}")
                 for data in iter(ws):
@@ -106,7 +106,7 @@ class TestExceptionHandlers:
 
     def test_websocket_reject_through_edge_router(self, cleanups):
         @route("/_ws/<param>", methods=["WEBSOCKET"])
-        def _echo_websocket_handler(request: WebsocketRequest, param: str):
+        def _echo_websocket_handler(request: WebSocketRequest, param: str):
             request.reject(Response("nope", 403))
 
         rule = ROUTER.add(_echo_websocket_handler)
@@ -120,3 +120,18 @@ class TestExceptionHandlers:
 
             assert e.value.status_code == 403
             assert e.value.resp_body == "nope"
+
+    def test_ssl_websockets(self, cleanups):
+        @route("/_ws/<param>", methods=["WEBSOCKET"])
+        def _echo_websocket_handler(request: WebSocketRequest, param: str):
+            with request.accept() as ws:
+                ws.send(f"hello {param}")
+
+        rule = ROUTER.add(_echo_websocket_handler)
+        cleanups.append(lambda: ROUTER.remove(rule))
+
+        url = get_edge_url("localhost.localstack.cloud", protocol="wss") + "/_ws/world"
+        socket = websocket.WebSocket()
+        socket.connect(url)
+        assert socket.connected
+        assert socket.recv() == "hello world"

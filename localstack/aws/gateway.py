@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 from localstack.http import Request, Response
-from localstack.http.websocket import WebsocketRequest
+from localstack.http.websocket import WebSocketRequest
 
 from .api import RequestContext
 from .chain import ExceptionHandler, Handler, HandlerChain
@@ -36,7 +36,7 @@ class Gateway:
 
         chain.handle(context, response)
 
-    def accept(self, request: WebsocketRequest):
+    def accept(self, request: WebSocketRequest):
         response = Response(status=101)
         self.process(request, response)
 
