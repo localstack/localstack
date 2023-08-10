@@ -3039,18 +3039,19 @@ class TestS3:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_s3_request_payer_exceptions(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_request_payment(
                 Bucket=s3_bucket, RequestPaymentConfiguration={"Payer": "Random"}
             )
         snapshot.match("wrong-payer-type", e.value.response)
 
-        # TODO: check if no luck or AccessDenied is normal?
-        # with pytest.raises(ClientError) as e:
-        #     s3_client.put_bucket_request_payment(
-        #         Bucket="fake_bucket", RequestPaymentConfiguration={"Payer": "Requester"}
-        #     )
-        # snapshot.match("wrong-bucket-name", e.value.response)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_request_payment(
+                Bucket=f"fake-bucket-{long_uid()}",
+                RequestPaymentConfiguration={"Payer": "Requester"},
+            )
+        snapshot.match("wrong-bucket-name", e.value.response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(

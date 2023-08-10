@@ -134,6 +134,7 @@ class S3Bucket:
         self.object_lock_enabled = object_lock_enabled_for_bucket
         self.encryption_rule = DEFAULT_BUCKET_ENCRYPTION
         self.creation_date = datetime.now(tz=_gmt_zone_info)
+        self.payer = Payer.BucketOwner
         self.multiparts = {}
         self.notification_configuration = {}
         self.cors_rules = None
