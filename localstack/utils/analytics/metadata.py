@@ -185,4 +185,4 @@ def _mount_machine_file(container):
     machine_file = os.path.join(config.dirs.cache, "machine.json")
     if os.path.isfile(machine_file):
         target = os.path.join(config.dirs.for_container().cache, "machine.json")
-        container.volumes.add(VolumeBind(machine_file, target, read_only=True))
+        container.config.volumes.add(VolumeBind(machine_file, target, read_only=True))

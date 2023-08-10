@@ -1,4 +1,3 @@
-import copy
 import functools
 import logging
 import os
@@ -375,8 +374,6 @@ class LocalstackContainer:
         self.config = self._get_default_configuration(name)
         self.logfile = os.path.join(config.dirs.tmp, f"{self.config.name}_container.log")
 
-        self.additional_flags = []  # TODO: see comment in run()
-
     def _get_default_configuration(self, name: str = None) -> ContainerConfiguration:
         """Returns a ContainerConfiguration populated with default values or values gathered from the
         environment for starting the LocalStack container."""
@@ -390,30 +387,20 @@ class LocalstackContainer:
             entrypoint=os.environ.get("ENTRYPOINT"),
             command=shlex.split(os.environ.get("CMD", "")) or None,
             env_vars={},
+            additional_flags="",
         )
 
     def run(self):
         if isinstance(DOCKER_CLIENT, CmdDockerClient):
             DOCKER_CLIENT.default_run_outfile = self.logfile
 
-        # FIXME: this is pretty awkward, but additional_flags in the LocalstackContainer API was always a
-        #  list of ["-e FOO=BAR", ...], whereas in the DockerClient it is expected to be a string. so we
-        #  need to re-assemble it here. the better way would be to not use additional_flags here all
-        #  together. it is still used in ext in `configure_pro_container` which could be refactored to use
-        #  the additional port bindings.
-        cfg = copy.deepcopy(self.config)
-        if not cfg.additional_flags:
-            cfg.additional_flags = ""
-        if self.additional_flags:
-            cfg.additional_flags += " " + " ".join(self.additional_flags)
-
         # TODO: there could be a --network flag in `additional_flags`. we solve a similar problem for the
         #  ports using `extract_port_flags`. maybe it would be better to consolidate all this into the
         #  ContainerConfig object, like ContainerConfig.update_from_flags(str).
-        self._ensure_container_network(cfg.network)
+        self._ensure_container_network(self.config.network)
 
         try:
-            return DOCKER_CLIENT.run_container_from_config(cfg)
+            return DOCKER_CLIENT.run_container_from_config(self.config)
         except ContainerException as e:
             if LOG.isEnabledFor(logging.DEBUG):
                 LOG.exception("Error while starting LocalStack container")
@@ -442,28 +429,8 @@ class LocalstackContainer:
     # that code should ideally be refactored soon-ish to use the config instead.
 
     @property
-    def env_vars(self) -> Dict[str, str]:
-        return self.config.env_vars
-
-    @property
-    def entrypoint(self) -> Optional[str]:
-        return self.config.entrypoint
-
-    @entrypoint.setter
-    def entrypoint(self, value: str):
-        self.config.entrypoint = value
-
-    @property
     def name(self) -> str:
         return self.config.name
-
-    @property
-    def volumes(self) -> VolumeMappings:
-        return self.config.volumes
-
-    @property
-    def ports(self) -> PortMappings:
-        return self.config.ports
 
 
 class LocalstackContainerServer(Server):
@@ -529,37 +496,39 @@ def configure_container(container: LocalstackContainer):
     Configuration routine for the LocalstackContainer.
     """
     # get additional configured flags
+    cfg = container.config
+
     user_flags = config.DOCKER_FLAGS
-    user_flags = extract_port_flags(user_flags, container.ports)
-    container.additional_flags.extend(shlex.split(user_flags))
+    user_flags = extract_port_flags(user_flags, cfg.ports)
+    cfg.additional_flags += user_flags
 
     # get additional parameters from plugins
     hooks.configure_localstack_container.run(container)
 
     # construct default port mappings
-    container.ports.add(get_edge_port_http())
+    cfg.ports.add(get_edge_port_http())
     for port in range(config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END):
-        container.ports.add(port)
+        cfg.ports.add(port)
 
     if config.DEVELOP:
-        container.ports.add(config.DEVELOP_PORT)
+        cfg.ports.add(config.DEVELOP_PORT)
 
     # environment variables
     # pass through environment variables defined in config
     for env_var in config.CONFIG_ENV_VARS:
         value = os.environ.get(env_var, None)
         if value is not None:
-            container.env_vars[env_var] = value
-    container.env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
+            cfg.env_vars[env_var] = value
+    cfg.env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
 
     # TODO this is default now, remove once a considerate time is passed
     # to activate proper signal handling
-    container.env_vars["SET_TERM_HANDLER"] = "1"
+    cfg.env_vars["SET_TERM_HANDLER"] = "1"
 
     configure_volume_mounts(container)
 
     # mount docker socket
-    container.volumes.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
+    cfg.volumes.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
 
     container.privileged = True
 
@@ -583,7 +552,7 @@ def configure_container_from_cli_params(container: LocalstackContainer, params: 
 
 
 def configure_volume_mounts(container: LocalstackContainer):
-    container.volumes.add(VolumeBind(config.VOLUME_DIR, DEFAULT_VOLUME_DIR))
+    container.config.volumes.add(VolumeBind(config.VOLUME_DIR, DEFAULT_VOLUME_DIR))
 
 
 @log_duration()

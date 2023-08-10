@@ -12,7 +12,7 @@ def configure_edge_port(container):
     LOG.debug("configuring container with edge ports: %s", ports)
     for port in ports:
         if port:
-            container.ports.add(port)
+            container.config.ports.add(port)
 
 
 # Register the ArnPartitionRewriteListener only if the feature flag is enabled
