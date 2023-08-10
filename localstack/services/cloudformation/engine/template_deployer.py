@@ -99,7 +99,8 @@ def get_attr_from_model_instance(
         parts = attribute_name.split(".")
         attribute = properties
         for part in parts:
-            attribute = attribute.get(part)
+            if attribute:
+                attribute = attribute.get(part)
         return attribute
 
     # If we couldn't find the attribute, this is actually an irrecoverable error.
