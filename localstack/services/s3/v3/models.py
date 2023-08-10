@@ -130,7 +130,7 @@ class S3Bucket:
         # If ObjectLock is enabled, it forces the bucket to be versioned as well
         self.versioning_status = None if not object_lock_enabled_for_bucket else "Enabled"
         self.objects = KeyStore() if not object_lock_enabled_for_bucket else VersionedKeyStore()
-        self.object_ownership = object_ownership
+        self.object_ownership = object_ownership or ObjectOwnership.BucketOwnerEnforced
         self.object_lock_enabled = object_lock_enabled_for_bucket
         self.encryption_rule = DEFAULT_BUCKET_ENCRYPTION
         self.creation_date = datetime.now(tz=_gmt_zone_info)
