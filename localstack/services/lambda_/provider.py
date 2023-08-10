@@ -2339,7 +2339,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         fn_count = 0
         code_size_sum = 0
         reserved_concurrency_sum = 0
-        # TODO: fix calculation (see lambda service get_available_fn_concurrency etc)
         for fn in state.functions.values():
             fn_count += 1
             for fn_version in fn.versions.values():
@@ -2444,6 +2443,25 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise InvalidParameterValueException(
                 "Requested Provisioned Concurrency should not be greater than the reservedConcurrentExecution for function",
                 Type="User",
+            )
+
+        if provisioned_concurrent_executions > config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS:
+            raise InvalidParameterValueException(
+                f"Specified ConcurrentExecutions for function is greater than account's unreserved concurrency"
+                f" [{config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS}]."
+            )
+
+        settings = self.get_account_settings(context)
+        unreserved_concurrent_executions = settings["AccountLimit"][
+            "UnreservedConcurrentExecutions"
+        ]
+        if (
+            provisioned_concurrent_executions
+            > unreserved_concurrent_executions - config.LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY
+        ):
+            raise InvalidParameterValueException(
+                f"Specified ConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below"
+                f" its minimum value of [{config.LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY}]."
             )
 
         provisioned_config = ProvisionedConcurrencyConfiguration(

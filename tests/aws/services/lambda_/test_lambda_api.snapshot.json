@@ -4541,69 +4541,67 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency_exceptions": {
-    "recorded-date": "17-02-2023, 12:35:56",
+    "recorded-date": "10-08-2023, 19:58:28",
     "recorded-content": {
-      "put_concurrency_unknown_fn": {
+      "put_function_concurrency_with_function_name_doesnotexist": {
         "Error": {
           "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST"
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist:$LATEST"
         },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST",
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist:$LATEST",
         "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
         }
       },
-      "put_concurrency_unknown_fn_invalid_concurrency": {
+      "put_function_concurrency_with_function_name_doesnotexist_and_invalid_concurrency": {
         "Error": {
           "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST"
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist:$LATEST"
         },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST",
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist:$LATEST",
         "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
         }
       },
-      "put_concurrency_known_fn_concurrency_limit_exceeded": {
+      "put_function_concurrency_with_qualified_arn": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [100]."
+          "Message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [10]."
         },
-        "message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [100].",
+        "message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [10].",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
         }
       },
-      "put_0_response": {
+      "put_function_concurrency_with_concurrency_limit_exceeded": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [10]."
+        },
+        "message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [10].",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency": {
+    "recorded-date": "10-08-2023, 19:48:37",
+    "recorded-content": {
+      "put_function_concurrency_with_reserved_0": {
         "ReservedConcurrentExecutions": 0,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
-      "put_1_response": {
-        "ReservedConcurrentExecutions": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete_response": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 204
-        }
-      }
-    }
-  },
-  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency": {
-    "recorded-date": "17-02-2023, 12:38:26",
-    "recorded-content": {
-      "put_function_concurrency": {
+      "put_function_concurrency_with_reserved_1": {
         "ReservedConcurrentExecutions": 1,
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4617,13 +4615,13 @@
           "HTTPStatusCode": 200
         }
       },
-      "delete_function_concurrency": {
+      "delete_response": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 204
         }
       },
-      "get_function_concurrency_postdelete": {
+      "get_function_concurrency_after_delete": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -6519,7 +6517,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_lambda_provisioned_lifecycle": {
-    "recorded-date": "17-02-2023, 12:32:55",
+    "recorded-date": "10-08-2023, 20:09:13",
     "recorded-content": {
       "publish_version_result": {
         "Architectures": [
@@ -13153,6 +13151,33 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_provisioned_concurrency_limits": {
+    "recorded-date": "10-08-2023, 22:35:31",
+    "recorded-content": {
+      "put_provisioned_concurrency_account_limit_exceeded": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Specified ConcurrentExecutions for function is greater than account's unreserved concurrency [<unreserved_concurrency>]."
+        },
+        "message": "Specified ConcurrentExecutions for function is greater than account's unreserved concurrency [<unreserved_concurrency>].",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put_provisioned_concurrency_below_unreserved_min_value": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Specified ConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [<min_unreserved_concurrency>]."
+        },
+        "message": "Specified ConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [<min_unreserved_concurrency>].",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
