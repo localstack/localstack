@@ -107,6 +107,13 @@
     },
     {
       "op": "add",
+      "path": "/shapes/BucketAlreadyOwnedByYou/error",
+      "value": {
+        "httpStatusCode": 409
+      }
+    },
+    {
+      "op": "add",
       "path": "/shapes/GetObjectOutput/members/StatusCode",
       "value": {
         "shape": "GetObjectResponseStatusCode",
