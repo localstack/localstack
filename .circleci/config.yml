@@ -100,6 +100,7 @@ jobs:
           paths:
             - repo/target/coverage/
 
+# TODO: re-enable all tests
 #  itest-lambda-legacy-local:
 #    executor: ubuntu-machine-amd64
 #    working_directory: /tmp/workspace/repo
@@ -127,6 +128,7 @@ jobs:
 #      - store_test_results:
 #          path: target/reports/
 
+# TODO: re-enable all tests
 #  itest-sfn-v2-provider:
 #    executor: ubuntu-machine-amd64
 #    working_directory: /tmp/workspace/repo
@@ -259,7 +261,7 @@ jobs:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
           command: |
-            TEST_FILES=$(circleci tests glob "tests/aws/lambda_/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
+            TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
             COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
             TEST_PATH=$TEST_FILES \
@@ -413,6 +415,7 @@ workflows:
       - itest-s3-stream-provider:
           requires:
             - preflight
+# TODO: re-enable all tests
 #      - itest-lambda-legacy-local:
 #          requires:
 #            - preflight
@@ -458,6 +461,7 @@ workflows:
             - docker-build-amd64
       - report:
           requires:
+# TODO: re-enable all tests
 #            - itest-lambda-legacy-local
 #            - itest-sfn-v2-provider
             - docker-test-amd64
@@ -469,6 +473,7 @@ workflows:
             branches:
               only: master
           requires:
+# TODO: re-enable all tests
 #            - itest-lambda-legacy-local
 #            - itest-sfn-v2-provider
             - docker-test-amd64
