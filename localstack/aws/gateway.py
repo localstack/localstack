@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 from localstack.http import Request, Response
-from localstack.http.asgi import Websocket
+from localstack.http.asgi import ASGIWebsocket
 from localstack.http.websocket import WebsocketRequest
 
 from .api import RequestContext
@@ -37,32 +37,22 @@ class Gateway:
 
         chain.handle(context, response)
 
-    def accept(self, websocket: Websocket):
+    def accept(self, websocket: ASGIWebsocket):
         request = WebsocketRequest(websocket)
+        with request:
+            for line in request:
+                print(line)
+
+        request.handshake()
+        request.respond()
+
         response = Response()
         self.process(request, response)
 
-        if response.response:
-            if response is not None:
-                websocket.send(
-                    {
-                        "type": "websocket.http.response.start",
-                        "status": response.status_code,
-                        "headers": [],
-                    }
-                )
-                for chunk in response.iter_encoded():
-                    websocket.send(
-                        {
-                            "type": "websocket.http.response.body",
-                            "body": chunk,
-                            "more_body": True,
-                        }
-                    )
-                websocket.send(
-                    {
-                        "type": "websocket.http.response.body",
-                        "body": b"",
-                        "more_body": False,
-                    }
-                )
+        if response.status_code not in [0, None]:
+            if request.is_upgraded():
+                raise "Cannot send response after connection has been upgraded"
+        else:
+            websocket.respond(
+                response.status_code, response.headers.to_wsgi_list(), response.iter_encoded()
+            )

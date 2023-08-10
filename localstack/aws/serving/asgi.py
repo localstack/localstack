@@ -5,7 +5,7 @@ from typing import Optional
 
 from localstack.aws.gateway import Gateway
 from localstack.aws.serving.wsgi import WsgiGateway
-from localstack.http.asgi import ASGIAdapter, ASGILifespanListener, WebsocketListener
+from localstack.http.asgi import ASGIAdapter, ASGILifespanListener
 
 
 class _ThreadPool(concurrent.futures.thread.ThreadPoolExecutor):
@@ -40,7 +40,7 @@ class AsgiGateway:
         event_loop: Optional[AbstractEventLoop] = None,
         threads: int = 1000,
         lifespan_listener: Optional[ASGILifespanListener] = None,
-        websocket_listener: Optional[WebsocketListener] = None,
+        websocket_listener=None,
     ) -> None:
         self.gateway = gateway
 

@@ -43,9 +43,13 @@ if t.TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
+WebsocketEnvironment: t.TypeAlias = t.Dict[str, t.Any]
+"""Special WSGIEnvironment that has an `asgi.websocket` key that stores a `Websocket` instance."""
+
 
 def populate_wsgi_environment(
-    environ: "WSGIEnvironment", scope: t.Union["HTTPScope", "WebsocketScope"]
+    environ: t.Union["WSGIEnvironment", WebsocketEnvironment],
+    scope: t.Union["HTTPScope", "WebsocketScope"],
 ):
     """
     Adds the non-IO parts (e.g., excluding wsgi.input) from the ASGI HTTPScope to the WSGI Environment.
@@ -312,7 +316,7 @@ class ASGILifespanListener:
         pass
 
 
-class Websocket:
+class ASGIWebsocket:
     """
     A wrapper around an ASGI ``WebsocketScope`` and relevant IO objects that can be used to interact with the websocket
     in synchronous code.
@@ -323,8 +327,6 @@ class Websocket:
     _scope: "WebsocketScope"
     _receive: "ASGIReceiveCallable"
     _send: "ASGISendCallable"
-
-    environ: "WSGIEnvironment"
 
     def __init__(
         self,
@@ -337,12 +339,6 @@ class Websocket:
         self._receive = receive
         self._send = send
         self._loop = loop
-
-        # populate a pseudo-WSGI environment with "WEBSOCKET" as method
-        # this can later be used to construct a sans-IO Werkzeug request
-        self.environ = {}
-        populate_wsgi_environment(self.environ, self._scope)
-        self.environ["REQUEST_METHOD"] = "WEBSOCKET"
 
     async def send_async(self, event: "WebsocketResponse"):
         await self._send(event)
@@ -378,15 +374,47 @@ class Websocket:
         """
         return asyncio.run_coroutine_threadsafe(self.receive_async(), self._loop).result(timeout)
 
+    def respond(
+        self, status: int, headers: list[tuple[str, str]] = None, body: t.Iterable[bytes] = None
+    ):
+        self.send(
+            {
+                "type": "websocket.http.response.start",
+                "status": status,
+                "headers": [(h[0].encode("latin1"), h[1].encode("latin1")) for h in headers],
+            }
+        )
+        if body:
+            for chunk in body:
+                self.send(
+                    {
+                        "type": "websocket.http.response.body",
+                        "body": chunk,
+                        "more_body": True,
+                    }
+                )
+        self.send(
+            {
+                "type": "websocket.http.response.body",
+                "body": b"",
+                "more_body": False,
+            }
+        )
 
-class WebsocketListener:
-    def accept(self, websocket: Websocket):
+
+class WebsocketListener(t.Protocol):
+    """
+    Similar protocol to a WSGIApplication, only it expects a Websocket instead of a WSGIEnvironment.
+    """
+
+    def __call__(self, environ: WebsocketEnvironment):
         """
         Called when a new Websocket connection is established. To initiate the connection, you need to perform the
         connect handshake yourself. First, receive the ``websocket.connect`` event, and then send the
         ``websocket.accept`` event. Here's a minimal example::
 
-            def accept(self, websocket: Websocket):
+            def accept(self, environ: WebsocketEnvironment):
+                websocket = environ['asgi.websocket']
                 event = websocket.receive()
                 if event['type'] == "websocket.connect":
                     websocket.send({
@@ -408,9 +436,9 @@ class WebsocketListener:
                         return
                     print(event)
 
-        :param websocket: The new Websocket connection
+        :param environ: The new Websocket environment
         """
-        pass
+        raise NotImplementedError
 
 
 class ASGIAdapter:
@@ -459,15 +487,6 @@ class ASGIAdapter:
 
         raise NotImplementedError("Unhandled protocol %s" % scope["type"])
 
-    async def handle_websocket(
-        self, scope: "WebsocketScope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
-    ):
-        if not self.websocket_listener:
-            raise NotImplementedError("No websocket listener attached")
-
-        ws = Websocket(scope, receive, send, self.event_loop)
-        await self.event_loop.run_in_executor(self.executor, self.websocket_listener.accept, ws)
-
     def to_wsgi_environment(
         self,
         scope: "HTTPScope",
@@ -484,9 +503,8 @@ class ASGIAdapter:
         populate_wsgi_environment(environ, scope)
         # add IO wrappers
         environ["wsgi.input"] = create_wsgi_input(receive, event_loop=self.event_loop)
-        environ[
-            "wsgi.input_terminated"
-        ] = True  # indicates that the stream is EOF terminated per request
+        # indicate that the stream is EOF terminated per request
+        environ["wsgi.input_terminated"] = True
         return environ
 
     async def handle_http(
@@ -531,6 +549,47 @@ class ASGIAdapter:
             if iterable and hasattr(iterable, "aclose"):
                 await iterable.aclose()
             await response.close()
+
+    def to_websocket_environment(
+        self,
+        scope: "WebsocketScope",
+        receive: "ASGIReceiveCallable",
+        send: "ASGISendCallable",
+    ) -> WebsocketEnvironment:
+        """
+        Creates an IO-ready pseudo-WSGI environment from the given ASGI Websocket scope.
+
+        :param scope: the websocket scope
+        :param receive: receive callable
+        :param send: send callable
+        :return: a new websocket environment
+        """
+        environ: WebsocketEnvironment = {}
+        populate_wsgi_environment(environ, scope)
+        environ["REQUEST_METHOD"] = "WEBSOCKET"
+        environ["asgi.websocket"] = ASGIWebsocket(scope, receive, send, self.event_loop)
+        return environ
+
+    async def handle_websocket(
+        self, scope: "WebsocketScope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
+    ):
+        if not self.websocket_listener:
+            raise NotImplementedError("No websocket listener attached")
+
+        # populate a pseudo-WSGI environment with "WEBSOCKET" as method
+        # this can later be used to construct a sans-IO Werkzeug request
+        environ = self.to_websocket_environment(scope, receive, send)
+
+        try:
+            await self.event_loop.run_in_executor(self.executor, self.websocket_listener, environ)
+        except Exception as e:
+            LOG.error(
+                "Error while trying to schedule execution: %s with environment %s",
+                e,
+                environ,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            raise
 
     async def handle_lifespan(
         self, scope: "HTTPScope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
