@@ -875,6 +875,13 @@ class NoSuchPublicAccessBlockConfiguration(ServiceException):
     BucketName: Optional[BucketName]
 
 
+class NoSuchBucketPolicy(ServiceException):
+    code: str = "NoSuchBucketPolicy"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
 AbortDate = datetime
 
 
