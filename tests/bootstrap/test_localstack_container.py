@@ -11,7 +11,7 @@ class TestLocalstackContainerServer:
     def test_lifecycle(self):
 
         server = LocalstackContainerServer()
-        server.container.ports.add(config.EDGE_PORT)
+        server.container.config.ports.add(config.EDGE_PORT)
 
         assert not server.is_up()
         try:
