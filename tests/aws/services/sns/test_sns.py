@@ -886,6 +886,11 @@ class TestSNSSubscriptionLambda:
         snapshot,
         aws_client,
     ):
+        """Tests an async event chain: SNS => Lambda => SNS DLQ => SQS
+        1) SNS => Lambda: An SNS subscription triggers the Lambda function asynchronously.
+        2) Lambda => SNS DLQ: A failing Lambda function triggers the SNS DLQ after all retries are exhausted.
+        3) SNS DLQ => SQS: An SNS subscription forwards the DLQ message to SQS.
+        """
         snapshot.add_transformer(
             snapshot.transform.jsonpath(
                 "$..Messages..MessageAttributes.RequestID.Value", "request-id"
@@ -933,6 +938,12 @@ class TestSNSSubscriptionLambda:
             Endpoint=lambda_arn,
         )
 
+        # Set retries to zero to speed up the test
+        aws_client.lambda_.put_function_event_invoke_config(
+            FunctionName=function_name,
+            MaximumRetryAttempts=0,
+        )
+
         payload = {
             lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1,
         }
@@ -945,11 +956,8 @@ class TestSNSSubscriptionLambda:
             assert len(result["Messages"]) > 0
             return result
 
-        # check that the SQS queue subscribed to the SNS topic used as DLQ received the error from the lambda
-        # on AWS, event retries can be quite delayed, so we have to wait up to 6 minutes here
-        # reduced retries when using localstack to avoid tests flaking
-        retries = 120 if is_aws_cloud() else 3
-        messages = retry(receive_dlq, retries=retries, sleep=3)
+        sleep = 3 if is_aws_cloud() else 1
+        messages = retry(receive_dlq, retries=30, sleep=sleep)
 
         messages["Messages"][0]["Body"] = json.loads(messages["Messages"][0]["Body"])
         messages["Messages"][0]["Body"]["Message"] = json.loads(
