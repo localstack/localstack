@@ -3258,6 +3258,52 @@ class TestS3:
         assert copy_etag != multipart_etag
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=["$..ServerSideEncryption"],
+    )
+    def test_get_object_part(self, s3_bucket, s3_multipart_upload, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("Bucket"),
+            ]
+        )
+        key = "test.file"
+        content = "test content 123"
+
+        response = s3_multipart_upload(bucket=s3_bucket, key=key, data=content, parts=2)
+        snapshot.match("multipart-upload", response)
+
+        head_object_part = aws_client.s3.head_object(Bucket=s3_bucket, Key=key, PartNumber=2)
+        snapshot.match("head-object-part", head_object_part)
+
+        get_object_part = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, PartNumber=2)
+        snapshot.match("get-object-part", get_object_part)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key, PartNumber=10)
+        snapshot.match("part-doesnt-exist", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(
+                Bucket=s3_bucket,
+                Key=key,
+                PartNumber=2,
+                Range="bytes=0-8",
+            )
+        snapshot.match("part-with-range", e.value.response)
+
+        key_no_part = "key-no-part"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key_no_part, Body="test-123")
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key_no_part, PartNumber=2)
+        snapshot.match("part-no-multipart", e.value.response)
+
+        get_obj_no_part = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_no_part, PartNumber=1)
+        snapshot.match("get-obj-no-multipart", get_obj_no_part)
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
     @markers.snapshot.skip_snapshot_verify(
         condition=lambda: not is_native_provider(),
