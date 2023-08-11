@@ -9,11 +9,17 @@ from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.strings import short_uid
 
 
+def is_native_provider():
+    return config.NATIVE_S3_PROVIDER
+
+
 @pytest.mark.skipif(
     condition=not config.NATIVE_S3_PROVIDER,
     reason="These are WIP tests for the new native S3 provider",
 )
-@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])  # TODO: encryption
+@markers.snapshot.skip_snapshot_verify(
+    condition=lambda: not is_native_provider(), paths=["$..ServerSideEncryption"]
+)
 class TestS3BucketCRUD:
     @markers.aws.validated
     def test_delete_bucket_with_objects(self, s3_bucket, aws_client, snapshot):
@@ -72,7 +78,9 @@ class TestS3BucketCRUD:
     condition=not config.NATIVE_S3_PROVIDER,
     reason="These are WIP tests for the new native S3 provider",
 )
-@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])  # TODO: encryption
+@markers.snapshot.skip_snapshot_verify(
+    condition=lambda: not is_native_provider(), paths=["$..ServerSideEncryption"]
+)
 class TestS3ObjectCRUD:
     @markers.aws.validated
     def test_delete_object(self, s3_bucket, aws_client, snapshot):
@@ -485,3 +493,195 @@ class TestS3BucketVersioning:
         with pytest.raises(ClientError) as e:
             aws_client.s3.get_bucket_versioning(Bucket=fake_bucket)
         snapshot.match("get-versioning-no-bucket", e.value.response)
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3BucketEncryption:
+    @markers.aws.validated
+    def test_s3_default_bucket_encryption(self, s3_bucket, aws_client, snapshot):
+        get_default_encryption = aws_client.s3.get_bucket_encryption(Bucket=s3_bucket)
+        snapshot.match("default-bucket-encryption", get_default_encryption)
+
+        delete_bucket_encryption = aws_client.s3.delete_bucket_encryption(Bucket=s3_bucket)
+        snapshot.match("delete-bucket-encryption", delete_bucket_encryption)
+
+        delete_bucket_encryption_2 = aws_client.s3.delete_bucket_encryption(Bucket=s3_bucket)
+        snapshot.match("delete-bucket-encryption-idempotent", delete_bucket_encryption_2)
+
+        bucket_versioning = aws_client.s3.get_bucket_versioning(Bucket=s3_bucket)
+        snapshot.match("get-bucket-no-encryption", bucket_versioning)
+
+    @markers.aws.validated
+    def test_s3_default_bucket_encryption_exc(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        fake_bucket = f"fakebucket-{short_uid()}-{short_uid()}"
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_encryption(Bucket=fake_bucket)
+        snapshot.match("get-bucket-enc-no-bucket", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_bucket_encryption(Bucket=fake_bucket)
+        snapshot.match("delete-bucket-enc-no-bucket", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_encryption(
+                Bucket=fake_bucket, ServerSideEncryptionConfiguration={"Rules": []}
+            )
+        snapshot.match("put-bucket-enc-no-bucket", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_encryption(
+                Bucket=s3_bucket, ServerSideEncryptionConfiguration={"Rules": []}
+            )
+        snapshot.match("put-bucket-encryption-no-rules", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_encryption(
+                Bucket=s3_bucket,
+                ServerSideEncryptionConfiguration={
+                    "Rules": [
+                        {
+                            "ApplyServerSideEncryptionByDefault": {
+                                "SSEAlgorithm": "aws:kms",
+                            },
+                            "BucketKeyEnabled": True,
+                        },
+                        {
+                            "ApplyServerSideEncryptionByDefault": {
+                                "SSEAlgorithm": "AES256",
+                            },
+                        },
+                    ]
+                },
+            )
+        snapshot.match("put-bucket-encryption-two-rules", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_encryption(
+                Bucket=s3_bucket,
+                ServerSideEncryptionConfiguration={
+                    "Rules": [
+                        {
+                            "ApplyServerSideEncryptionByDefault": {
+                                "SSEAlgorithm": "AES256",
+                                "KMSMasterKeyID": "randomkeyid",
+                            },
+                        }
+                    ]
+                },
+            )
+        snapshot.match("put-bucket-encryption-kms-with-aes", e.value.response)
+
+    @markers.aws.validated
+    def test_s3_bucket_encryption_sse_s3(self, s3_bucket, aws_client, snapshot):
+        # AES256 is already the default
+        # so set something with the BucketKey, which should only be set for KMS, to see if it returns
+        put_bucket_enc = aws_client.s3.put_bucket_encryption(
+            Bucket=s3_bucket,
+            ServerSideEncryptionConfiguration={
+                "Rules": [
+                    {
+                        "ApplyServerSideEncryptionByDefault": {
+                            "SSEAlgorithm": "AES256",
+                        },
+                        "BucketKeyEnabled": True,
+                    }
+                ]
+            },
+        )
+        snapshot.match("put-bucket-enc", put_bucket_enc)
+
+        key_name = "key-encrypted"
+        put_object_encrypted = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=key_name, Body="test-encrypted"
+        )
+        snapshot.match("put-object-encrypted", put_object_encrypted)
+
+        head_object_encrypted = aws_client.s3.head_object(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("head-object-encrypted", head_object_encrypted)
+
+        get_object_encrypted = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("get-object-encrypted", get_object_encrypted)
+
+    @markers.aws.validated
+    # there is currently no server side encryption is place in LS, ETag will be different
+    @markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
+    def test_s3_bucket_encryption_sse_kms(self, s3_bucket, kms_key, aws_client, snapshot):
+
+        put_bucket_enc = aws_client.s3.put_bucket_encryption(
+            Bucket=s3_bucket,
+            ServerSideEncryptionConfiguration={
+                "Rules": [
+                    {
+                        "ApplyServerSideEncryptionByDefault": {
+                            "SSEAlgorithm": "aws:kms",
+                            "KMSMasterKeyID": kms_key["KeyId"],
+                        },
+                        "BucketKeyEnabled": True,
+                    }
+                ]
+            },
+        )
+        snapshot.match("put-bucket-enc", put_bucket_enc)
+
+        get_bucket_enc = aws_client.s3.get_bucket_encryption(Bucket=s3_bucket)
+        snapshot.match("get-bucket-enc", get_bucket_enc)
+
+        key_name = "key-encrypted"
+        put_object_encrypted = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=key_name, Body="test-encrypted"
+        )
+        snapshot.match("put-object-encrypted", put_object_encrypted)
+
+        head_object_encrypted = aws_client.s3.head_object(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("head-object-encrypted", head_object_encrypted)
+
+        get_object_encrypted = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("get-object-encrypted", get_object_encrypted)
+
+    @markers.aws.validated
+    # there is currently no server side encryption is place in LS, ETag will be different
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..ETag",
+            "$.managed-kms-key.KeyMetadata.KeyManager",  # TODO: we have no internal way to create KMS key
+        ]
+    )
+    def test_s3_bucket_encryption_sse_kms_aws_managed_key(self, s3_bucket, aws_client, snapshot):
+        # if you don't provide a KMS key, AWS will use an AWS managed one.
+        put_bucket_enc = aws_client.s3.put_bucket_encryption(
+            Bucket=s3_bucket,
+            ServerSideEncryptionConfiguration={
+                "Rules": [
+                    {
+                        "ApplyServerSideEncryptionByDefault": {
+                            "SSEAlgorithm": "aws:kms",
+                        },
+                        "BucketKeyEnabled": True,
+                    }
+                ]
+            },
+        )
+        snapshot.match("put-bucket-enc", put_bucket_enc)
+
+        get_bucket_enc = aws_client.s3.get_bucket_encryption(Bucket=s3_bucket)
+        snapshot.match("get-bucket-enc", get_bucket_enc)
+
+        key_name = "key-encrypted"
+        put_object_encrypted = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=key_name, Body="test-encrypted"
+        )
+        snapshot.match("put-object-encrypted", put_object_encrypted)
+
+        kms_key_id = put_object_encrypted["SSEKMSKeyId"]
+        kms_key_data = aws_client.kms.describe_key(KeyId=kms_key_id)
+        snapshot.match("managed-kms-key", kms_key_data)
+
+        head_object_encrypted = aws_client.s3.head_object(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("head-object-encrypted", head_object_encrypted)
+
+        get_object_encrypted = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("get-object-encrypted", get_object_encrypted)

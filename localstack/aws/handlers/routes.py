@@ -29,4 +29,4 @@ class RouterHandler(Handler):
             chain.stop()
         except NotFound:
             if self.respond_not_found:
-                chain.respond(404)
+                chain.respond(404, "not found")

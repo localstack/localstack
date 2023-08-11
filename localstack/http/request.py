@@ -278,6 +278,9 @@ def restore_payload(request: Request) -> bytes:
       inevitably become the the basis of proxying werkzeug requests. The alternative is to build our own request object
       that memoizes the original payload before parsing.
     """
+    if request.shallow:
+        return b""
+
     data = request.data
 
     if request.method != "POST":

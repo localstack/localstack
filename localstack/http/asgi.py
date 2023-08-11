@@ -11,19 +11,55 @@ from urllib.parse import quote, unquote, urlparse
 
 if t.TYPE_CHECKING:
     from _typeshed import WSGIApplication, WSGIEnvironment
-    from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, HTTPScope, Scope
+    from hypercorn.typing import (
+        ASGIReceiveCallable,
+        ASGISendCallable,
+        HTTPScope,
+        Scope,
+        WebsocketAcceptEvent,
+        WebsocketCloseEvent,
+        WebsocketConnectEvent,
+        WebsocketDisconnectEvent,
+        WebsocketReceiveEvent,
+        WebsocketResponseBodyEvent,
+        WebsocketResponseStartEvent,
+        WebsocketScope,
+        WebsocketSendEvent,
+    )
+
+    _WebsocketResponse = t.Union[
+        WebsocketAcceptEvent,
+        WebsocketSendEvent,
+        WebsocketResponseStartEvent,
+        WebsocketResponseBodyEvent,
+        WebsocketCloseEvent,
+    ]
+
+    _WebsocketRequest = t.Union[
+        WebsocketConnectEvent,
+        WebsocketReceiveEvent,
+        WebsocketDisconnectEvent,
+    ]
 
 LOG = logging.getLogger(__name__)
 
+WebSocketEnvironment: t.TypeAlias = t.Dict[str, t.Any]
+"""Special WSGIEnvironment that has an `asgi.websocket` key that stores a `Websocket` instance."""
 
-def populate_wsgi_environment(environ: "WSGIEnvironment", scope: "HTTPScope"):
+
+def populate_wsgi_environment(
+    environ: t.Union["WSGIEnvironment", WebSocketEnvironment],
+    scope: t.Union["HTTPScope", "WebsocketScope"],
+):
     """
-    Adds the non-IO parts (e.g., excluding wsgi.input) from the ASGI HTTPScope to the WSGI Environment.
+    Adds the non-IO parts (e.g., excluding wsgi.input) from the ASGI HTTPScope to the WSGI Environment. See
+    WSGI Compatibility for more information on why this works:
+    https://asgi.readthedocs.io/en/latest/specs/www.html#wsgi-compatibility
 
     :param environ: the WSGI environment to populate
     :param scope: the ASGI scope as source
     """
-    environ["REQUEST_METHOD"] = scope["method"]
+    environ["REQUEST_METHOD"] = scope.get("method", "GET")
     # path/uri info
     # prepare the paths for the "WSGI decoding dance" done by werkzeug
     environ["SCRIPT_NAME"] = unquote(quote(scope.get("root_path", "").rstrip("/")), "latin-1")
@@ -282,6 +318,131 @@ class ASGILifespanListener:
         pass
 
 
+class ASGIWebSocket:
+    """
+    A wrapper around an ASGI ``WebsocketScope`` and relevant IO objects that can be used to interact with the websocket
+    in synchronous code.
+
+    For send and receive event formats, see https://asgi.readthedocs.io/en/latest/specs/www.html#websocket.
+    """
+
+    _scope: "WebsocketScope"
+    _receive: "ASGIReceiveCallable"
+    _send: "ASGISendCallable"
+
+    def __init__(
+        self,
+        scope: "WebsocketScope",
+        receive: "ASGIReceiveCallable",
+        send: "ASGISendCallable",
+        loop: AbstractEventLoop,
+    ):
+        self._scope = scope
+        self._receive = receive
+        self._send = send
+        self._loop = loop
+
+    async def send_async(self, event: "_WebsocketResponse"):
+        await self._send(event)
+
+    async def receive_async(self) -> "_WebsocketRequest":
+        return await self._receive()
+
+    def send(self, event: "_WebsocketResponse", timeout: float = None) -> None:
+        """
+        Sends an event to the Websocket. Events can be:
+
+        - websocket.accept: https://asgi.readthedocs.io/en/latest/specs/www.html#accept-send-event
+        - websocket.send: https://asgi.readthedocs.io/en/latest/specs/www.html#send-send-event
+        - websocket.close: https://asgi.readthedocs.io/en/latest/specs/www.html#close-send-event
+
+        :param event: The event to send
+        :param timeout: The number of seconds to wait for the result of the async call
+        """
+        return asyncio.run_coroutine_threadsafe(self.send_async(event), self._loop).result(
+            timeout=timeout
+        )
+
+    def receive(self, timeout: float = None) -> "_WebsocketRequest":
+        """
+        Listens on the websocket and returns the next event. Events can be:
+
+        - websocket.connect: https://asgi.readthedocs.io/en/latest/specs/www.html#connect-receive-event
+        - websocket.receive: https://asgi.readthedocs.io/en/latest/specs/www.html#receive-receive-event
+        - websocket.disconnect: https://asgi.readthedocs.io/en/latest/specs/www.html#disconnect-receive-event-ws
+
+        :param timeout: The number of seconds to wait for the event
+        :return: The received event
+        """
+        return asyncio.run_coroutine_threadsafe(self.receive_async(), self._loop).result(timeout)
+
+    def respond(
+        self, status: int, headers: list[tuple[str, str]] = None, body: t.Iterable[bytes] = None
+    ):
+        self.send(
+            {
+                "type": "websocket.http.response.start",
+                "status": status,
+                "headers": [(h[0].encode("latin1"), h[1].encode("latin1")) for h in headers],
+            }
+        )
+        if body:
+            for chunk in body:
+                self.send(
+                    {
+                        "type": "websocket.http.response.body",
+                        "body": chunk,
+                        "more_body": True,
+                    }
+                )
+        self.send(
+            {
+                "type": "websocket.http.response.body",
+                "body": b"",
+                "more_body": False,
+            }
+        )
+
+
+class WebSocketListener(t.Protocol):
+    """
+    Similar protocol to a WSGIApplication, only it expects a Websocket instead of a WSGIEnvironment.
+    """
+
+    def __call__(self, environ: WebSocketEnvironment):
+        """
+        Called when a new Websocket connection is established. To initiate the connection, you need to perform the
+        connect handshake yourself. First, receive the ``websocket.connect`` event, and then send the
+        ``websocket.accept`` event. Here's a minimal example::
+
+            def accept(self, environ: WebsocketEnvironment):
+                websocket = environ['asgi.websocket']
+                event = websocket.receive()
+                if event['type'] == "websocket.connect":
+                    websocket.send({
+                        "type": "websocket.accept",
+                        "subprotocol": None,
+                        "headers": [],
+                    })
+                else:
+                    websocket.send({
+                        "type": "websocket.close",
+                        "code": 1002, # protocol error
+                        "reason": None,
+                    })
+                    return
+
+                while True:
+                    event = websocket.receive()
+                    if event["type"] == "websocket.disconnect":
+                        return
+                    print(event)
+
+        :param environ: The new Websocket environment
+        """
+        raise NotImplementedError
+
+
 class ASGIAdapter:
     """
     Adapter to expose a WSGIApplication as an ASGI3Application. This allows you to serve synchronous WSGI applications
@@ -299,11 +460,13 @@ class ASGIAdapter:
         event_loop: AbstractEventLoop = None,
         executor: Executor = None,
         lifespan_listener: ASGILifespanListener = None,
+        websocket_listener: WebSocketListener = None,
     ):
         self.wsgi_app = wsgi_app
         self.event_loop = event_loop or asyncio.get_event_loop()
         self.executor = executor
         self.lifespan_listener = lifespan_listener or ASGILifespanListener()
+        self.websocket_listener = websocket_listener
 
     async def __call__(
         self, scope: "Scope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
@@ -320,6 +483,9 @@ class ASGIAdapter:
 
         if scope["type"] == "lifespan":
             return await self.handle_lifespan(scope, receive, send)
+
+        if scope["type"] == "websocket":
+            return await self.handle_websocket(scope, receive, send)
 
         raise NotImplementedError("Unhandled protocol %s" % scope["type"])
 
@@ -339,9 +505,8 @@ class ASGIAdapter:
         populate_wsgi_environment(environ, scope)
         # add IO wrappers
         environ["wsgi.input"] = create_wsgi_input(receive, event_loop=self.event_loop)
-        environ[
-            "wsgi.input_terminated"
-        ] = True  # indicates that the stream is EOF terminated per request
+        # indicate that the stream is EOF terminated per request
+        environ["wsgi.input_terminated"] = True
         return environ
 
     async def handle_http(
@@ -386,6 +551,47 @@ class ASGIAdapter:
             if iterable and hasattr(iterable, "aclose"):
                 await iterable.aclose()
             await response.close()
+
+    def to_websocket_environment(
+        self,
+        scope: "WebsocketScope",
+        receive: "ASGIReceiveCallable",
+        send: "ASGISendCallable",
+    ) -> WebSocketEnvironment:
+        """
+        Creates an IO-ready pseudo-WSGI environment from the given ASGI Websocket scope.
+
+        :param scope: the websocket scope
+        :param receive: receive callable
+        :param send: send callable
+        :return: a new websocket environment
+        """
+        environ: WebSocketEnvironment = {}
+        populate_wsgi_environment(environ, scope)
+        environ["REQUEST_METHOD"] = "WEBSOCKET"
+        environ["asgi.websocket"] = ASGIWebSocket(scope, receive, send, self.event_loop)
+        return environ
+
+    async def handle_websocket(
+        self, scope: "WebsocketScope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
+    ):
+        if not self.websocket_listener:
+            raise NotImplementedError("No websocket listener attached")
+
+        # populate a pseudo-WSGI environment with "WEBSOCKET" as method
+        # this can later be used to construct a sans-IO Werkzeug request
+        environ = self.to_websocket_environment(scope, receive, send)
+
+        try:
+            await self.event_loop.run_in_executor(self.executor, self.websocket_listener, environ)
+        except Exception as e:
+            LOG.error(
+                "Error while trying to schedule execution: %s with environment %s",
+                e,
+                environ,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            raise
 
     async def handle_lifespan(
         self, scope: "HTTPScope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
