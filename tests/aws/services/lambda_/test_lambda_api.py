@@ -2662,10 +2662,14 @@ class TestLambdaProvisionedConcurrency:
     def test_lambda_provisioned_lifecycle(
         self, create_lambda_function, snapshot, aws_client, monkeypatch
     ):
-        extra_provisioned_concurrency = 1
-        min_concurrent_executions = 10 + extra_provisioned_concurrency
+        min_unreservered_executions = 10
+        # Required +2 for the extra alias
+        min_concurrent_executions = min_unreservered_executions + 2
         monkeypatch.setattr(
             config, "LAMBDA_LIMITS_CONCURRENT_EXECUTIONS", min_concurrent_executions
+        )
+        monkeypatch.setattr(
+            config, "LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY", min_unreservered_executions
         )
         check_concurrency_quota(aws_client, min_concurrent_executions)
 
@@ -2700,7 +2704,7 @@ class TestLambdaProvisionedConcurrency:
         put_provisioned_on_version = aws_client.lambda_.put_provisioned_concurrency_config(
             FunctionName=function_name,
             Qualifier=function_version,
-            ProvisionedConcurrentExecutions=extra_provisioned_concurrency,
+            ProvisionedConcurrentExecutions=1,
         )
         snapshot.match("put_provisioned_on_version", put_provisioned_on_version)
         with pytest.raises(aws_client.lambda_.exceptions.ResourceConflictException) as e:
@@ -2738,14 +2742,14 @@ class TestLambdaProvisionedConcurrency:
         put_provisioned_on_alias = aws_client.lambda_.put_provisioned_concurrency_config(
             FunctionName=function_name,
             Qualifier=alias_name,
-            ProvisionedConcurrentExecutions=extra_provisioned_concurrency,
+            ProvisionedConcurrentExecutions=1,
         )
         snapshot.match("put_provisioned_on_alias", put_provisioned_on_alias)
         with pytest.raises(aws_client.lambda_.exceptions.ResourceConflictException) as e:
             aws_client.lambda_.put_provisioned_concurrency_config(
                 FunctionName=function_name,
                 Qualifier=function_version,
-                ProvisionedConcurrentExecutions=extra_provisioned_concurrency,
+                ProvisionedConcurrentExecutions=1,
             )
         snapshot.match("put_provisioned_on_version_conflict", e.value.response)
 
