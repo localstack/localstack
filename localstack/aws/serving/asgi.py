@@ -6,6 +6,7 @@ from typing import Optional
 from localstack.aws.gateway import Gateway
 from localstack.aws.serving.wsgi import WsgiGateway
 from localstack.http.asgi import ASGIAdapter, ASGILifespanListener
+from localstack.http.websocket import WebSocketRequest
 
 
 class _ThreadPool(concurrent.futures.thread.ThreadPoolExecutor):
@@ -40,16 +41,18 @@ class AsgiGateway:
         event_loop: Optional[AbstractEventLoop] = None,
         threads: int = 1000,
         lifespan_listener: Optional[ASGILifespanListener] = None,
+        websocket_listener=None,
     ) -> None:
         self.gateway = gateway
 
         self.event_loop = event_loop or asyncio.get_event_loop()
         self.executor = _ThreadPool(threads, thread_name_prefix="asgi_gw")
-        self.wsgi = ASGIAdapter(
+        self.adapter = ASGIAdapter(
             WsgiGateway(gateway),
             event_loop=event_loop,
             executor=self.executor,
             lifespan_listener=lifespan_listener,
+            websocket_listener=websocket_listener or WebSocketRequest.listener(gateway.accept),
         )
         self._closed = False
 
@@ -64,7 +67,7 @@ class AsgiGateway:
         if self._closed:
             raise RuntimeError("Cannot except new request on closed ASGIGateway")
 
-        return await self.wsgi(scope, receive, send)
+        return await self.adapter(scope, receive, send)
 
     def close(self):
         """
