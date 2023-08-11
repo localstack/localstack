@@ -41,7 +41,28 @@ class TestSnfApi:
             exec_input,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
+    def test_state_fail_empty(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.RAISE_EMPTY_FAILURE)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     def test_event_bridge_events_base(
         self,
         create_iam_role_for_sfn,

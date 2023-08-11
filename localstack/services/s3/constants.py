@@ -1,4 +1,12 @@
-from localstack.aws.api.s3 import BucketCannedACL, ObjectCannedACL, Permission, StorageClass
+from localstack.aws.api.s3 import (
+    BucketCannedACL,
+    ObjectCannedACL,
+    Permission,
+    ServerSideEncryption,
+    ServerSideEncryptionByDefault,
+    ServerSideEncryptionRule,
+    StorageClass,
+)
 
 S3_VIRTUAL_HOST_FORWARDED_HEADER = "x-s3-vhost-forwarded-for"
 
@@ -94,3 +102,10 @@ SIGNATURE_V4_PARAMS = [
 # This is AWS recommended size when uploading chunks
 # https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-streaming.html
 S3_CHUNK_SIZE = 65536
+
+DEFAULT_BUCKET_ENCRYPTION = ServerSideEncryptionRule(
+    ApplyServerSideEncryptionByDefault=ServerSideEncryptionByDefault(
+        SSEAlgorithm=ServerSideEncryption.AES256,
+    ),
+    BucketKeyEnabled=False,
+)

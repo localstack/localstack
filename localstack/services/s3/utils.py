@@ -33,6 +33,7 @@ from localstack.aws.api.s3 import (
     ObjectKey,
     ObjectVersionId,
     Owner,
+    SSEKMSKeyId,
 )
 from localstack.aws.connect import connect_to
 from localstack.services.s3.constants import (
@@ -200,9 +201,9 @@ def parse_range_header(range_header: str, object_size: int) -> ParsedRange:
         raise Exception("TODO")
     if begin < 0 or end > last or begin > min(end, last):
         raise InvalidRange(
-            "",
+            "The requested range is not satisfiable",
             ActualObjectSize=str(object_size),
-            RangeRequest=range_header,
+            RangeRequested=range_header,
         )
 
     return ParsedRange(
@@ -354,7 +355,7 @@ def uses_host_addressing(headers: Dict[str, str]) -> bool:
 
 
 def get_class_attrs_from_spec_class(spec_class: Type[str]) -> set[str]:
-    return {attr for attr in vars(spec_class) if not attr.startswith("__")}
+    return {getattr(spec_class, attr) for attr in vars(spec_class) if not attr.startswith("__")}
 
 
 def get_system_metadata_from_request(request: dict) -> Metadata:
@@ -495,6 +496,37 @@ def capitalize_header_name_from_snake_case(header_name: str) -> str:
     return "-".join([part.capitalize() for part in header_name.split("-")])
 
 
+def get_kms_key_arn(kms_key: str, account_id: str, bucket_region: str = None) -> Optional[str]:
+    """
+    In S3, the KMS key can be passed as a KeyId or a KeyArn. This method allows to always get the KeyArn from either.
+    It can also validate if the key is in the same region, and raise an exception.
+    :param kms_key: the KMS key id or ARN
+    :param account_id: the bucket account id
+    :param bucket_region: the bucket region
+    :raise KMS.NotFoundException if the key is not in the same region
+    :return: the key ARN if found and enabled
+    """
+    if not kms_key:
+        return None
+    try:
+        parsed_arn = parse_arn(kms_key)
+        key_region = parsed_arn["region"]
+        # the KMS key should be in the same region as the bucket, we can raise an exception without calling KMS
+        if bucket_region and key_region != bucket_region:
+            raise CommonServiceException(
+                code="KMS.NotFoundException", message=f"Invalid arn {key_region}"
+            )
+
+    except InvalidArnException:
+        # if it fails, the passed ID is a UUID with no region data
+        key_id = kms_key
+        # recreate the ARN manually with the bucket region and bucket owner
+        # if the KMS key is cross-account, user should provide an ARN and not a KeyId
+        kms_key = arns.kms_key_arn(key_id=key_id, account_id=account_id, region_name=bucket_region)
+
+    return kms_key
+
+
 # TODO: replace Any by a replacement for S3Bucket, some kind of defined type?
 def validate_kms_key_id(kms_key: str, bucket: FakeBucket | Any) -> None:
     """
@@ -510,28 +542,17 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket | Any) -> None:
     else:
         bucket_region = bucket.bucket_region
 
-    try:
-        parsed_arn = parse_arn(kms_key)
-        key_region = parsed_arn["region"]
-        # the KMS key should be in the same region as the bucket, we can raise an exception without calling KMS
-        if key_region != bucket_region:
-            raise CommonServiceException(
-                code="KMS.NotFoundException", message=f"Invalid arn {key_region}"
-            )
+    if hasattr(bucket, "account_id"):
+        bucket_account_id = bucket.account_id
+    else:
+        bucket_account_id = bucket.bucket_account_id
 
-    except InvalidArnException:
-        # if it fails, the passed ID is a UUID with no region data
-        key_id = kms_key
-        # recreate the ARN manually with the bucket region and bucket owner
-        # if the KMS key is cross-account, user should provide an ARN and not a KeyId
-        kms_key = arns.kms_key_arn(
-            key_id=key_id, account_id=bucket.account_id, region_name=bucket_region
-        )
+    kms_key_arn = get_kms_key_arn(kms_key, bucket_account_id, bucket_region)
 
     # the KMS key should be in the same region as the bucket, create the client in the bucket region
     kms_client = connect_to(region_name=bucket_region).kms
     try:
-        key = kms_client.describe_key(KeyId=kms_key)
+        key = kms_client.describe_key(KeyId=kms_key_arn)
         if not key["KeyMetadata"]["Enabled"]:
             if key["KeyMetadata"]["KeyState"] == "PendingDeletion":
                 raise CommonServiceException(
@@ -548,6 +569,15 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket | Any) -> None:
                 code="KMS.NotFoundException", message=e.response["Error"]["Message"]
             )
         raise
+
+
+def create_s3_kms_managed_key_for_region(region_name: str) -> SSEKMSKeyId:
+    kms_client = connect_to(region_name=region_name).kms
+    key = kms_client.create_key(
+        Description="Default key that protects my S3 objects when no other key is defined"
+    )
+
+    return key["KeyMetadata"]["Arn"]
 
 
 def rfc_1123_datetime(src: datetime.datetime) -> str:

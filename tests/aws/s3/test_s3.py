@@ -2591,6 +2591,12 @@ class TestS3:
         assert chunk_size == len(content)
         snapshot.match("get-object", resp)
 
+        range_header = f"bytes={chunk_size}-2048"
+        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key, Range=range_header)
+        content = resp["Body"].read()
+        assert chunk_size == len(content)
+        snapshot.match("get-object-2", resp)
+
     @markers.aws.validated
     def test_download_fileobj_multiple_range_requests(self, s3_bucket, aws_client):
         object_key = "test-download_fileobj"
@@ -3675,11 +3681,10 @@ class TestS3:
         rs = aws_client.s3.get_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("get_object", rs)
 
-        range_content = 17
         rs = aws_client.s3.get_object(
             Bucket=bucket_name,
             Key=object_key,
-            Range=f"bytes=0-{range_content-1}",
+            Range="bytes=0-16",
         )
         snapshot.match("get_object_range", rs)
 

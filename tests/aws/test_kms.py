@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+import uuid
 from datetime import datetime
 from random import getrandbits
 
@@ -98,6 +99,15 @@ class TestKMS:
         assert response["KeyId"] == key_id
         assert f":{TEST_AWS_REGION_NAME}:" in response["Arn"]
         assert f":{account_id}:" in response["Arn"]
+
+    @markers.aws.only_localstack
+    def test_create_key_custom_id(self, kms_create_key, aws_client):
+        custom_id = str(uuid.uuid4())
+        key_id = kms_create_key(Tags=[{"TagKey": "_custom_id_", "TagValue": custom_id}])["KeyId"]
+        assert custom_id == key_id
+        result = aws_client.kms.describe_key(KeyId=key_id)["KeyMetadata"]
+        assert result["KeyId"] == key_id
+        assert result["Arn"].endswith(f":key/{key_id}")
 
     @markers.aws.validated
     def test_get_key_in_different_region(self, kms_client_for_region, kms_create_key, snapshot):
