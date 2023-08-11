@@ -1,4 +1,5 @@
 import base64
+import copy
 import datetime
 import logging
 from secrets import token_urlsafe
@@ -41,6 +42,7 @@ from localstack.aws.api.s3 import (
     EncodingType,
     Error,
     FetchOwner,
+    GetBucketEncryptionOutput,
     GetBucketLocationOutput,
     GetBucketVersioningOutput,
     GetObjectAttributesOutput,
@@ -71,6 +73,7 @@ from localstack.aws.api.s3 import (
     MultipartUploadId,
     NoSuchBucket,
     NoSuchUpload,
+    NotificationConfiguration,
     Object,
     ObjectIdentifier,
     ObjectKey,
@@ -88,6 +91,8 @@ from localstack.aws.api.s3 import (
     RestoreRequest,
     S3Api,
     ServerSideEncryption,
+    ServerSideEncryptionConfiguration,
+    SkipValidation,
     SSECustomerAlgorithm,
     SSECustomerKey,
     SSECustomerKeyMD5,
@@ -104,17 +109,20 @@ from localstack.aws.api.s3 import (
 )
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.codec import AwsChunkedDecoder
-from localstack.services.s3.constants import ARCHIVES_STORAGE_CLASSES
+from localstack.services.s3.constants import ARCHIVES_STORAGE_CLASSES, DEFAULT_BUCKET_ENCRYPTION
 from localstack.services.s3.exceptions import (
     InvalidLocationConstraint,
     InvalidRequest,
     MalformedXML,
 )
+from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
 from localstack.services.s3.utils import (
     add_expiration_days_to_datetime,
+    create_s3_kms_managed_key_for_region,
     extract_bucket_key_version_id_from_copy_source,
     get_class_attrs_from_spec_class,
     get_full_default_bucket_location,
+    get_kms_key_arn,
     get_owner_for_account_id,
     get_system_metadata_from_request,
     is_bucket_name_valid,
@@ -122,6 +130,7 @@ from localstack.services.s3.utils import (
     validate_kms_key_id,
 )
 from localstack.services.s3.v3.models import (
+    EncryptionParameters,
     S3Bucket,
     S3DeleteMarker,
     S3Multipart,
@@ -138,6 +147,7 @@ from localstack.utils.strings import to_str
 LOG = logging.getLogger(__name__)
 
 STORAGE_CLASSES = get_class_attrs_from_spec_class(StorageClass)
+SSE_ALGORITHMS = get_class_attrs_from_spec_class(ServerSideEncryption)
 
 # TODO: pre-signed URLS -> REMAP parameters from querystring to headers???
 #  create a handler which handle pre-signed and remap before parsing the request!
@@ -147,6 +157,47 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def __init__(self) -> None:
         super().__init__()
         self._storage_backend = EphemeralS3ObjectStore()
+        self._notification_dispatcher = NotificationDispatcher()
+
+    def on_before_stop(self):
+        self._notification_dispatcher.shutdown()
+
+    def _notify(
+        self,
+        context: RequestContext,
+        s3_bucket: S3Bucket,
+        s3_object: S3Object | S3DeleteMarker = None,
+        s3_notif_ctx: S3EventNotificationContext = None,
+    ):
+        """
+        :param context: the RequestContext, to retrieve more information about the incoming notification
+        :param s3_bucket: the S3Bucket object
+        :param s3_object: the S3Object object if S3EventNotificationContext is not given
+        :param s3_notif_ctx: S3EventNotificationContext, in case we need specific data only available in the API call
+        :return:
+        """
+        if s3_bucket.notification_configuration:
+            if not s3_notif_ctx:
+                s3_notif_ctx = S3EventNotificationContext.from_request_context_native(
+                    context,
+                    s3_bucket=s3_bucket,
+                    s3_object=s3_object,
+                )
+
+            self._notification_dispatcher.send_notifications(
+                s3_notif_ctx, s3_bucket.notification_configuration
+            )
+
+    def _verify_notification_configuration(
+        self,
+        notification_configuration: NotificationConfiguration,
+        skip_destination_validation: SkipValidation,
+        context: RequestContext,
+        bucket_name: str,
+    ):
+        self._notification_dispatcher.verify_configuration(
+            notification_configuration, skip_destination_validation, context, bucket_name
+        )
 
     @staticmethod
     def get_store(account_id: str, region_name: str) -> S3Store:
@@ -186,7 +237,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
             # if the existing bucket has the same owner, the behaviour will depend on the region
             if bucket_region != "us-east-1":
-                raise BucketAlreadyOwnedByYou()
+                raise BucketAlreadyOwnedByYou(
+                    "Your previous request to create the named bucket succeeded and you already own it.",
+                    BucketName=bucket_name,
+                )
 
         s3_bucket = S3Bucket(
             name=bucket_name,
@@ -340,6 +394,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
         )
 
+        encryption_parameters = get_encryption_parameters_from_request_and_bucket(
+            request,
+            s3_bucket,
+            store,
+        )
+
         s3_object = S3Object(
             key=key,
             version_id=version_id,
@@ -349,9 +409,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             system_metadata=system_metadata,
             checksum_algorithm=checksum_algorithm,
             checksum_value=checksum_value,
-            encryption=request.get("ServerSideEncryption"),
-            kms_key_id=request.get("SSEKMSKeyId"),
-            bucket_key_enabled=request.get("BucketKeyEnabled"),
+            encryption=encryption_parameters.encryption,
+            kms_key_id=encryption_parameters.kms_key_id,
+            bucket_key_enabled=encryption_parameters.bucket_key_enabled,
             lock_mode=request.get("ObjectLockMode"),
             lock_legal_status=request.get("ObjectLockLegalHoldStatus"),
             lock_until=request.get("ObjectLockRetainUntilDate"),
@@ -388,6 +448,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["Expiration"] = s3_object.expiration  # TODO: properly parse the datetime
 
         add_encryption_to_response(response, s3_object=s3_object)
+        self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
 
         return response
 
@@ -442,10 +503,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.website_redirect_location:
             response["WebsiteRedirectLocation"] = s3_object.website_redirect_location
 
+        if s3_object.restore:
+            response["Restore"] = s3_object.restore
+
         if checksum_algorithm := s3_object.checksum_algorithm:
-            # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
-            response["ContentEncoding"] = ""
-            if request.get("ChecksumMode", "").upper() == "ENABLED":
+            if (request.get("ChecksumMode") or "").upper() == "ENABLED":
                 response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
 
         s3_stored_object = self._storage_backend.open(bucket_name, s3_object)
@@ -462,9 +524,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         else:
             response["Body"] = s3_stored_object
 
+        add_encryption_to_response(response, s3_object=s3_object)
+
         # TODO: missing returned fields
         #     Expiration: Optional[Expiration]
-        #     Restore: Optional[Restore]
         #     RequestCharged: Optional[RequestCharged]
         #     ReplicationStatus: Optional[ReplicationStatus]
         #     TagCount: Optional[TagCount]
@@ -507,9 +570,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # TODO implements if_match if_modified_since if_none_match if_unmodified_since
         if checksum_algorithm := s3_object.checksum_algorithm:
-            # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
-            response["ContentEncoding"] = ""
-            if request.get("ChecksumMode", "").upper() == "ENABLED":
+            if (request.get("ChecksumMode") or "").upper() == "ENABLED":
                 response[f"Checksum{checksum_algorithm.upper()}"] = checksum  # noqa
 
         if range_header := request.get("Range"):
@@ -525,9 +586,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.website_redirect_location:
             response["WebsiteRedirectLocation"] = s3_object.website_redirect_location
 
+        if s3_object.restore:
+            response["Restore"] = s3_object.restore
+
+        add_encryption_to_response(response, s3_object=s3_object)
+
         # TODO: missing return fields:
         # Expiration: Optional[Expiration]
-        # Restore: Optional[Restore]
         # ArchiveStatus: Optional[ArchiveStatus]
 
         # RequestCharged: Optional[RequestCharged]
@@ -566,7 +631,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             # TODO: RequestCharged
             if found_object:
                 self._storage_backend.remove(bucket, found_object)
-
+                self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
             return DeleteObjectOutput()
 
         if not version_id:
@@ -575,6 +640,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             # TODO: verify with Suspended bucket? does it override last version or still append?? big question
             #  I think it puts a delete marker with a `null` VersionId, which deletes the object under
             s3_bucket.objects.set(key, delete_marker)
+            # TODO: make a proper difference between DeleteMarker and S3Object, not done yet
+            #  s3:ObjectRemoved:DeleteMarkerCreated
+            self._notify(context, s3_bucket=s3_bucket, s3_object=delete_marker)
+
             return DeleteObjectOutput(VersionId=delete_marker.version_id, DeleteMarker=True)
 
         if key not in s3_bucket.objects:
@@ -593,6 +662,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["DeleteMarker"] = True
         else:
             self._storage_backend.remove(bucket, found_object)
+            self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
 
         return response
 
@@ -643,6 +713,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 found_object = s3_bucket.objects.pop(object_key, None)
                 if found_object:
                     to_remove.append(found_object)
+                    self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
+                # small hack to not create a fake object for nothing
+                elif s3_bucket.notification_configuration:
+                    # DeleteObjects is a bit weird, even if the object didn't exist, S3 will trigger a notification
+                    # for a non-existing object being deleted
+                    self._notify(
+                        context, s3_bucket=s3_bucket, s3_object=S3Object(key=object_key, etag="")
+                    )
 
                 if not quiet:
                     deleted.append(DeletedObject(Key=object_key))
@@ -653,6 +731,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 delete_marker_id = generate_version_id(s3_bucket.versioning_status)
                 delete_marker = S3DeleteMarker(key=object_key, version_id=delete_marker_id)
                 s3_bucket.objects.set(object_key, delete_marker)
+                # TODO: make a difference between DeleteMarker and S3Object
+                self._notify(context, s3_bucket=s3_bucket, s3_object=delete_marker)
                 if not quiet:
                     deleted.append(
                         DeletedObject(
@@ -690,6 +770,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if isinstance(found_object, S3Object):
                 to_remove.append(found_object)
 
+            self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
+
         # TODO: request charged
         self._storage_backend.remove(bucket, to_remove)
         response: DeleteObjectsOutput = {}
@@ -720,9 +802,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # copy_source_if_unmodified_since: CopySourceIfUnmodifiedSince = None,
         #
         # tagging_directive: TaggingDirective = None,
-        # server_side_encryption: ServerSideEncryption = None,
-        # ssekms_key_id: SSEKMSKeyId = None,
-        # bucket_key_enabled: BucketKeyEnabled = None,
         #
         # request_payer: RequestPayer = None,
         # tagging: TaggingHeader = None,
@@ -756,28 +835,39 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         server_side_encryption = request.get("ServerSideEncryption")
         metadata_directive = request.get("MetadataDirective")
         website_redirect_location = request.get("WebsiteRedirectLocation")
+        # we need to check for identity of the object, to see if the default one has been changed
+        is_default_encryption = dest_s3_bucket.encryption_rule is DEFAULT_BUCKET_ENCRYPTION
         if src_key == dest_key and not any(
             (
                 storage_class,
                 server_side_encryption,
                 metadata_directive == "REPLACE",
                 website_redirect_location,
-                dest_s3_bucket.encryption_rule,  # S3 will allow copy in place if the bucket has encryption configured
+                dest_s3_bucket.encryption_rule
+                and not is_default_encryption,  # S3 will allow copy in place if the bucket has encryption configured
             )
         ):
             raise InvalidRequest(
-                "This copy request is illegal because it is trying to copy an object to itself without changing the"
+                "This copy request is illegal because it is trying to copy an object to itself without changing the "
                 "object's metadata, storage class, website redirect location or encryption attributes."
             )
 
         if metadata_directive == "REPLACE":
             user_metadata = request.get("Metadata")
             system_metadata = get_system_metadata_from_request(request)
+            if not system_metadata.get("ContentType"):
+                system_metadata["ContentType"] = "binary/octet-stream"
         else:
             user_metadata = src_s3_object.user_metadata
             system_metadata = src_s3_object.system_metadata
 
         dest_version_id = generate_version_id(dest_s3_bucket.versioning_status)
+
+        encryption_parameters = get_encryption_parameters_from_request_and_bucket(
+            request,
+            dest_s3_bucket,
+            store,
+        )
 
         s3_object = S3Object(
             key=dest_key,
@@ -789,9 +879,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             user_metadata=user_metadata,
             system_metadata=system_metadata,
             checksum_algorithm=request.get("ChecksumAlgorithm") or src_s3_object.checksum_algorithm,
-            encryption=request.get("ServerSideEncryption"),
-            kms_key_id=request.get("SSEKMSKeyId"),
-            bucket_key_enabled=request.get("BucketKeyEnabled"),
+            encryption=encryption_parameters.encryption,
+            kms_key_id=encryption_parameters.kms_key_id,
+            bucket_key_enabled=encryption_parameters.bucket_key_enabled,
             lock_mode=request.get("ObjectLockMode"),
             lock_legal_status=request.get("ObjectLockLegalHoldStatus"),
             lock_until=request.get("ObjectLockRetainUntilDate"),
@@ -837,6 +927,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["CopySourceVersionId"] = src_version_id
 
         # RequestCharged: Optional[RequestCharged] # TODO
+        self._notify(context, s3_bucket=dest_s3_bucket, s3_object=s3_object)
 
         return response
 
@@ -1255,6 +1346,21 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO: add a way to transition from ongoing-request=true to false? for now it is instant
         s3_object.restore = f'ongoing-request="false", expiry-date="{restore_expiration_date}"'
 
+        s3_notif_ctx_initiated = S3EventNotificationContext.from_request_context_native(
+            context,
+            s3_bucket=s3_bucket,
+            s3_object=s3_object,
+        )
+        self._notify(context, s3_bucket=s3_bucket, s3_notif_ctx=s3_notif_ctx_initiated)
+        # But because it's instant in LocalStack, we can directly send the Completed notification as well
+        # We just need to copy the context so that we don't mutate the first context while it could be sent
+        # And modify its event type from `ObjectRestore:Post` to `ObjectRestore:Completed`
+        s3_notif_ctx_completed = copy.copy(s3_notif_ctx_initiated)
+        s3_notif_ctx_completed.event_type = s3_notif_ctx_completed.event_type.replace(
+            "Post", "Completed"
+        )
+        self._notify(context, s3_bucket=s3_bucket, s3_notif_ctx=s3_notif_ctx_completed)
+
         # TODO: request charged
         return RestoreObjectOutput(StatusCode=status_code)
 
@@ -1300,6 +1406,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO: validate the algorithm?
         checksum_algorithm = request.get("ChecksumAlgorithm")
 
+        encryption_parameters = get_encryption_parameters_from_request_and_bucket(
+            request,
+            s3_bucket,
+            store,
+        )
+
         # validate encryption values
 
         s3_multipart = S3Multipart(
@@ -1309,9 +1421,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             user_metadata=request.get("Metadata"),
             system_metadata=system_metadata,
             checksum_algorithm=checksum_algorithm,
-            encryption=request.get("ServerSideEncryption"),
-            kms_key_id=request.get("SSEKMSKeyId"),
-            bucket_key_enabled=request.get("BucketKeyEnabled"),
+            encryption=encryption_parameters.encryption,
+            kms_key_id=encryption_parameters.kms_key_id,
+            bucket_key_enabled=encryption_parameters.bucket_key_enabled,
             lock_mode=request.get("ObjectLockMode"),
             lock_legal_status=request.get("ObjectLockLegalHoldStatus"),
             lock_until=request.get("ObjectLockRetainUntilDate"),
@@ -1546,8 +1658,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # creation and completion? AWS validate this
         version_id = generate_version_id(s3_bucket.versioning_status)
         s3_multipart.object.version_id = version_id
-
-        s3_multipart.complete_multipart(parts_numbers)
+        s3_multipart.complete_multipart(parts)
 
         stored_multipart = self._storage_backend.get_multipart(bucket, s3_multipart)
         stored_multipart.complete_multipart(parts_numbers)
@@ -1587,6 +1698,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["Expiration"] = s3_object.expiration  # TODO: properly parse the datetime
 
         add_encryption_to_response(response, s3_object=s3_object)
+
+        self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
 
         return response
 
@@ -1770,6 +1883,98 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         return GetBucketVersioningOutput(Status=s3_bucket.versioning_status)
 
+    def get_bucket_encryption(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketEncryptionOutput:
+        # AWS now encrypts bucket by default with AES256, see:
+        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/default-bucket-encryption.html
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not s3_bucket.encryption_rule:
+            return GetBucketEncryptionOutput()
+
+        return GetBucketEncryptionOutput(
+            ServerSideEncryptionConfiguration={"Rules": [s3_bucket.encryption_rule]}
+        )
+
+    def put_bucket_encryption(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        server_side_encryption_configuration: ServerSideEncryptionConfiguration,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not (rules := server_side_encryption_configuration.get("Rules")):
+            raise MalformedXML()
+
+        if len(rules) != 1 or not (
+            encryption := rules[0].get("ApplyServerSideEncryptionByDefault")
+        ):
+            raise MalformedXML()
+
+        if not (sse_algorithm := encryption.get("SSEAlgorithm")):
+            raise MalformedXML()
+
+        if sse_algorithm not in SSE_ALGORITHMS:
+            raise MalformedXML()
+
+        if sse_algorithm != ServerSideEncryption.aws_kms and "KMSMasterKeyID" in encryption:
+            raise InvalidArgument(
+                "a KMSMasterKeyID is not applicable if the default sse algorithm is not aws:kms",
+                ArgumentName="ApplyServerSideEncryptionByDefault",
+            )
+        # elif master_kms_key := encryption.get("KMSMasterKeyID"):
+        # TODO: validate KMS key? not currently done in moto
+        # You can pass either the KeyId or the KeyArn. If cross-account, it has to be the ARN.
+        # It's always saved as the ARN in the bucket configuration.
+        # kms_key_arn = get_kms_key_arn(master_kms_key, s3_bucket.bucket_account_id)
+        # encryption["KMSMasterKeyID"] = master_kms_key
+
+        s3_bucket.encryption_rule = rules[0]
+
+    def delete_bucket_encryption(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        s3_bucket.encryption_rule = None
+
+    def put_bucket_notification_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        notification_configuration: NotificationConfiguration,
+        expected_bucket_owner: AccountId = None,
+        skip_destination_validation: SkipValidation = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        self._verify_notification_configuration(
+            notification_configuration, skip_destination_validation, context, bucket
+        )
+        s3_bucket.notification_configuration = notification_configuration
+
+    def get_bucket_notification_configuration(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> NotificationConfiguration:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        return s3_bucket.notification_configuration or NotificationConfiguration()
+
 
 def generate_version_id(bucket_versioning_status: str) -> str | None:
     if not bucket_versioning_status:
@@ -1785,3 +1990,36 @@ def add_encryption_to_response(response: dict, s3_object: S3Object):
             response["SSEKMSKeyId"] = s3_object.kms_key_id
             if s3_object.bucket_key_enabled is not None:
                 response["BucketKeyEnabled"] = s3_object.bucket_key_enabled
+
+
+def get_encryption_parameters_from_request_and_bucket(
+    request: PutObjectRequest | CopyObjectRequest | CreateMultipartUploadRequest,
+    s3_bucket: S3Bucket,
+    store: S3Store,
+) -> EncryptionParameters:
+    encryption = request.get("ServerSideEncryption")
+    kms_key_id = request.get("SSEKMSKeyId")
+    bucket_key_enabled = request.get("BucketKeyEnabled")
+    if s3_bucket.encryption_rule:
+        bucket_key_enabled = bucket_key_enabled or s3_bucket.encryption_rule.get("BucketKeyEnabled")
+        encryption = (
+            encryption
+            or s3_bucket.encryption_rule["ApplyServerSideEncryptionByDefault"]["SSEAlgorithm"]
+        )
+        if encryption == ServerSideEncryption.aws_kms:
+            key_id = kms_key_id or s3_bucket.encryption_rule[
+                "ApplyServerSideEncryptionByDefault"
+            ].get("KMSMasterKeyID")
+            kms_key_id = get_kms_key_arn(key_id, s3_bucket.bucket_account_id)
+            if not kms_key_id:
+                # if not key is provided, AWS will use an AWS managed KMS key
+                # create it if it doesn't already exist, and save it in the store per region
+                if not store.aws_managed_kms_key_id:
+                    managed_kms_key_id = create_s3_kms_managed_key_for_region(
+                        s3_bucket.bucket_region
+                    )
+                    store.aws_managed_kms_key_id = managed_kms_key_id
+
+                kms_key_id = store.aws_managed_kms_key_id
+
+    return EncryptionParameters(encryption, kms_key_id, bucket_key_enabled)

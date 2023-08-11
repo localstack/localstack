@@ -458,6 +458,22 @@ class TestDockerClient:
         ports.add(45180, 80)
         create_container("alpine", ports=ports)
 
+    def test_create_with_exposed_ports(self, docker_client: ContainerClient, create_container):
+        exposed_ports = ["45000", "45001/udp"]
+        container = create_container(
+            "alpine",
+            command=["sh", "-c", "while true; do sleep 1; done"],
+            exposed_ports=exposed_ports,
+        )
+        docker_client.start_container(container.container_id)
+        inspection_result = docker_client.inspect_container(container.container_id)
+        assert inspection_result["Config"]["ExposedPorts"] == {
+            f"{port}/tcp" if "/" not in port else port: {} for port in exposed_ports
+        }
+        assert inspection_result["NetworkSettings"]["Ports"] == {
+            f"{port}/tcp" if "/" not in port else port: None for port in exposed_ports
+        }
+
     @pytest.mark.skipif(
         condition=in_docker(), reason="cannot test volume mounts from host when in docker"
     )

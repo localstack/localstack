@@ -587,7 +587,7 @@ class BucketAlreadyExists(ServiceException):
 class BucketAlreadyOwnedByYou(ServiceException):
     code: str = "BucketAlreadyOwnedByYou"
     sender_fault: bool = False
-    status_code: int = 400
+    status_code: int = 409
     BucketName: Optional[BucketName]
 
 
