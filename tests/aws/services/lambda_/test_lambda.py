@@ -1908,6 +1908,8 @@ class TestLambdaVersions:
         snapshot.match("invocation_result_v1_end", invocation_result_v1)
 
 
+# TODO: test if routing is static for a single invocation:
+#  Do retries for an event invoke, take the same "path" for every retry?
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaAliases:
     @markers.aws.validated
