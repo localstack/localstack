@@ -1378,6 +1378,7 @@ class TestLambdaConcurrency:
         )
         snapshot.match("get_function_concurrency_deleted", deleted_concurrency_result)
 
+    # TODO: update snapshot, add check_concurrency, and enable this test
     @pytest.mark.skip(reason="Requires prefer-provisioned feature")
     @markers.aws.validated
     def test_lambda_concurrency_block(self, snapshot, create_lambda_function, aws_client):

@@ -11,25 +11,38 @@ from localstack.services.lambda_.invocation.lambda_models import (
     InitializationType,
 )
 from localstack.services.lambda_.invocation.models import lambda_stores
-from localstack.utils.objects import singleton_factory
 
 LOG = logging.getLogger(__name__)
 
 
 class ConcurrencyTracker:
-    """Keeps track of the number of running invocations per function"""
+    """Keeps track of the number of concurrent executions per lock scope (e.g., per function or function version).
+    The lock scope depends on the provisioning type (i.e., on-demand or provisioned):
+    * on-demand concurrency per function: unqualified arn ending with my-function
+    * provisioned concurrency per function version: qualified arn ending with my-function:1
+    """
 
+    # Lock scope => concurrent executions counter
+    concurrent_executions: dict[str, int]
+    # Lock for safely updating the concurrent executions counter
     lock: RLock
 
-    # Concurrency tracker for provisioned concurrency can have a lock per function-version, rather than per function
-    # function ARN (unqualified or qualified) => number of currently running invocations
-    function_concurrency: dict[str, int]
-
     def __init__(self):
-        self.function_concurrency = defaultdict(int)
+        self.concurrent_executions = defaultdict(int)
         self.lock = RLock()
 
+    def increment(self, scope: str) -> None:
+        self.concurrent_executions[scope] += 1
 
+    def atomic_decrement(self, scope: str):
+        with self.lock:
+            self.decrement(scope)
+
+    def decrement(self, scope: str) -> None:
+        self.concurrent_executions[scope] -= 1
+
+
+# TODO: consider creating an abstracted view for simpler API alike this ?!
 # class CountingServiceView:
 #
 #     counting_service: "CountingService"
@@ -40,83 +53,101 @@ class ConcurrencyTracker:
 #         self.counting_service = counting_service
 #         self.account = account
 #         self.region = region
-#
-#     @contextlib.contextmanager
-#     def get_invocation_lease(self) -> InitializationType:
-#
-#         # self.counting_service.get_invocation_lease()
+
+# @classmethod
+# def get_view(cls, account, region) -> CountingServiceView:
+#     return CountingServiceView(cls.get(), account, region)
+
+# counting_service=CountingService.get_view(
+#     account=function_version.id.account, region=function_version.id.region
+# ),
+
+
+def calculate_provisioned_concurrency_sum(function: Function) -> int:
+    """Returns the total provisioned concurrency for a given function, including all versions."""
+    provisioned_concurrency_sum_for_fn = sum(
+        [
+            provisioned_configs.provisioned_concurrent_executions
+            for provisioned_configs in function.provisioned_concurrency_configs.values()
+        ]
+    )
+    return provisioned_concurrency_sum_for_fn
 
 
 class CountingService:
     """
-    scope: per region and account
-    enforcement of quota limits
-    called on *each* invoke
-    count invocations, keep track of concurrent invocations, ....
+    The CountingService enforces quota limits per region and account in get_invocation_lease()
+    for every Lambda invocation. It uses separate ConcurrencyTrackers for on-demand and provisioned concurrency
+    to keep track of the number of concurrent invocations.
+
+    Concurrency limits are per region and account:
+    https://repost.aws/knowledge-center/lambda-concurrency-limit-increase
+    https://docs.aws.amazon.com/lambda/latest/dg/lambda-concurrency.htm
+    https://docs.aws.amazon.com/lambda/latest/dg/monitoring-concurrency.html
     """
 
-    # Concurrency limits are per region and account
-    # * https://repost.aws/knowledge-center/lambda-concurrency-limit-increase
-    # * https://docs.aws.amazon.com/lambda/latest/dg/lambda-concurrency.htm
-    # (account, region) => ConcurrencyTracker
+    # (account, region) => ConcurrencyTracker (unqualified arn) => concurrent executions
     on_demand_concurrency_trackers: dict[(str, str), ConcurrencyTracker]
-    # (account, region) => ConcurrencyTracker
+    # Lock for safely initializing new on-demand concurrency trackers
+    on_demand_init_lock: RLock
+
+    # (account, region) => ConcurrencyTracker (qualified arn) => concurrent executions
     provisioned_concurrency_trackers: dict[(str, str), ConcurrencyTracker]
-    # Lock for creating concurrency tracker
-    lock: RLock
+    # Lock for safely initializing new provisioned concurrency trackers
+    provisioned_concurrency_init_lock: RLock
 
     def __init__(self):
         self.on_demand_concurrency_trackers = {}
+        self.on_demand_init_lock = RLock()
         self.provisioned_concurrency_trackers = {}
-        self.lock = RLock()
+        self.provisioned_concurrency_init_lock = RLock()
 
     @contextlib.contextmanager
     def get_invocation_lease(
         self, function: Function, function_version: FunctionVersion
     ) -> InitializationType:
+        """An invocation lease reserves the right to schedule an invocation.
+        The returned lease type can either be on-demand or provisioned.
+        Scheduling preference:
+        1) Check for free provisioned concurrency => provisioned
+        2) Check for reserved concurrency => on-demand
+        3) Check for unreserved concurrency => on-demand
+        """
         account = function_version.id.account
         region = function_version.id.region
         scope_tuple = (account, region)
-        scoped_tracker = self.on_demand_concurrency_trackers.get(scope_tuple)
-        if not scoped_tracker:
-            with self.lock:
-                scoped_tracker = self.on_demand_concurrency_trackers.get(scope_tuple)
-                if not scoped_tracker:
-                    scoped_tracker = self.on_demand_concurrency_trackers[
-                        scope_tuple
-                    ] = ConcurrencyTracker()
-        unqualified_function_arn = function_version.id.unqualified_arn()
-
-        qualified_arn = function_version.id.qualified_arn()
-        provisioned_scoped_tracker = self.provisioned_concurrency_trackers.get(scope_tuple)
-        if not provisioned_scoped_tracker:
-            # MAYBE: could create separate lock for provisioned concurrency tracker (i.e., optimization)
-            with self.lock:
-                provisioned_scoped_tracker = self.provisioned_concurrency_trackers.get(scope_tuple)
-                if not provisioned_scoped_tracker:
-                    provisioned_scoped_tracker = self.provisioned_concurrency_trackers[
+        on_demand_tracker = self.on_demand_concurrency_trackers.get(scope_tuple)
+        # Double-checked locking pattern to initialize an on-demand concurrency tracker if it does not exist
+        if not on_demand_tracker:
+            with self.provisioned_concurrency_init_lock:
+                on_demand_tracker = self.on_demand_concurrency_trackers.get(scope_tuple)
+                if not on_demand_tracker:
+                    on_demand_tracker = self.on_demand_concurrency_trackers[
                         scope_tuple
                     ] = ConcurrencyTracker()
 
-        # Daniel: async event handling. How do we know whether we can re-schedule the event?
-        # Events can stay in the queue for hours.
-        # TODO: write a test with reserved concurrency=0 (or unavailble) and an async invoke
-        # TODO: write a test for reserved concurrency scheduling preference
+        provisioned_tracker = self.provisioned_concurrency_trackers.get(scope_tuple)
+        # Double-checked locking pattern to initialize a provisioned concurrency tracker if it does not exist
+        if not provisioned_tracker:
+            with self.on_demand_init_lock:
+                provisioned_tracker = self.provisioned_concurrency_trackers.get(scope_tuple)
+                if not provisioned_tracker:
+                    provisioned_tracker = self.provisioned_concurrency_trackers[
+                        scope_tuple
+                    ] = ConcurrencyTracker()
 
-        # Tracker:
-        # * per function version for provisioned concurrency
-        # * per function for on-demand
-        # => we can derive unreserved_concurrent_executions but could also consider a dedicated (redundant) counter
-
-        # NOTE: potential challenge if an update happens in between reserving the lease here and actually assigning
+        # TODO: check that we don't give a lease while updating provisioned concurrency
+        # Potential challenge if an update happens in between reserving the lease here and actually assigning
         # * Increase provisioned: It could happen that we give a lease for provisioned-concurrency although
         # brand new provisioned environments are not yet initialized.
         # * Decrease provisioned: It could happen that we have running invocations that should still be counted
         # against the limit but they are not because we already updated the concurrency config to fewer envs.
-        # TODO: check that we don't give a lease while updating provisioned concurrency
+
+        unqualified_function_arn = function_version.id.unqualified_arn()
+        qualified_arn = function_version.id.qualified_arn()
 
         lease_type = None
-        with scoped_tracker.lock:
+        with provisioned_tracker.lock:
             # 1) Check for free provisioned concurrency
             provisioned_concurrency_config = function.provisioned_concurrency_configs.get(
                 function_version.id.qualifier
@@ -124,26 +155,27 @@ class CountingService:
             if provisioned_concurrency_config:
                 available_provisioned_concurrency = (
                     provisioned_concurrency_config.provisioned_concurrent_executions
-                    - provisioned_scoped_tracker.function_concurrency[qualified_arn]
+                    - provisioned_tracker.concurrent_executions[qualified_arn]
                 )
                 if available_provisioned_concurrency > 0:
-                    provisioned_scoped_tracker.function_concurrency[qualified_arn] += 1
+                    provisioned_tracker.increment(qualified_arn)
                     lease_type = "provisioned-concurrency"
 
+        with on_demand_tracker.lock:
             if not lease_type:
-                # 2) reserved concurrency set => reserved concurrent executions only limited by local function limit
-                #    and no provisioned concurrency available
+                # 2) If reserved concurrency is set AND no provisioned concurrency available:
+                # => Check if enough reserved concurrency is available for the specific function.
                 if function.reserved_concurrent_executions is not None:
-                    on_demand_running_invocation_count = scoped_tracker.function_concurrency[
+                    on_demand_running_invocation_count = on_demand_tracker.concurrent_executions[
                         unqualified_function_arn
                     ]
                     available_reserved_concurrency = (
                         function.reserved_concurrent_executions
-                        - CountingService._calculate_provisioned_concurrency_sum(function)
+                        - calculate_provisioned_concurrency_sum(function)
                         - on_demand_running_invocation_count
                     )
                     if available_reserved_concurrency:
-                        scoped_tracker.function_concurrency[unqualified_function_arn] += 1
+                        on_demand_tracker.increment(unqualified_function_arn)
                         lease_type = "on-demand"
                     else:
                         raise TooManyRequestsException(
@@ -151,30 +183,32 @@ class CountingService:
                             Reason="ReservedFunctionConcurrentInvocationLimitExceeded",
                             Type="User",
                         )
-                # 3) no reserved concurrency set and no provisioned concurrency available.
-                #    => consider account/region-global state instead
+                # 3) If no reserved concurrency is set AND no provisioned concurrency available.
+                # => Check the entire state within the scope of account and region.
                 else:
-                    # TODO: find better name (maybe check AWS docs ;) => unavailable_concurrency
+                    # TODO: Consider a dedicated counter for unavailable concurrency with locks for updates on
+                    #  reserved and provisioned concurrency if this is too slow
+                    # The total concurrency allocated or used (i.e., unavailable concurrency) per account and region
                     total_used_concurrency = 0
                     store = lambda_stores[account][region]
                     for fn in store.functions.values():
                         if fn.reserved_concurrent_executions is not None:
                             total_used_concurrency += fn.reserved_concurrent_executions
                         else:
-                            fn_provisioned_concurrency = (
-                                CountingService._calculate_provisioned_concurrency_sum(fn)
-                            )
+                            fn_provisioned_concurrency = calculate_provisioned_concurrency_sum(fn)
                             total_used_concurrency += fn_provisioned_concurrency
-                            fn_on_demand_running_invocations = scoped_tracker.function_concurrency[
-                                fn.latest().id.unqualified_arn()
-                            ]
-                            total_used_concurrency += fn_on_demand_running_invocations
+                            fn_on_demand_concurrent_executions = (
+                                on_demand_tracker.concurrent_executions[
+                                    fn.latest().id.unqualified_arn()
+                                ]
+                            )
+                            total_used_concurrency += fn_on_demand_concurrent_executions
 
                     available_unreserved_concurrency = (
                         config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS - total_used_concurrency
                     )
                     if available_unreserved_concurrency > 0:
-                        scoped_tracker.function_concurrency[unqualified_function_arn] += 1
+                        on_demand_tracker.increment(unqualified_function_arn)
                         lease_type = "on-demand"
                     else:
                         if available_unreserved_concurrency < 0:
@@ -191,35 +225,13 @@ class CountingService:
         try:
             yield lease_type
         finally:
-            with scoped_tracker.lock:
-                if lease_type == "provisioned-concurrency":
-                    provisioned_scoped_tracker.function_concurrency[qualified_arn] -= 1
-                elif lease_type == "on-demand":
-                    scoped_tracker.function_concurrency[unqualified_function_arn] -= 1
-                else:
-                    LOG.error(
-                        "Invalid lease type detected for function: %s: %s",
-                        unqualified_function_arn,
-                        lease_type,
-                    )
-
-    # TODO: refactor into module
-    @staticmethod
-    def _calculate_provisioned_concurrency_sum(function: Function) -> int:
-        provisioned_concurrency_sum_for_fn = sum(
-            [
-                provisioned_configs.provisioned_concurrent_executions
-                for provisioned_configs in function.provisioned_concurrency_configs.values()
-            ]
-        )
-        return provisioned_concurrency_sum_for_fn
-
-    # Alternative: create in service
-    @staticmethod
-    @singleton_factory
-    def get() -> "CountingService":
-        return CountingService()
-
-    # @classmethod
-    # def get_view(cls, account, region) -> CountingServiceView:
-    #     return CountingServiceView(cls.get(), account, region)
+            if lease_type == "provisioned-concurrency":
+                provisioned_tracker.atomic_decrement(qualified_arn)
+            elif lease_type == "on-demand":
+                on_demand_tracker.atomic_decrement(unqualified_function_arn)
+            else:
+                LOG.error(
+                    "Invalid lease type detected for function: %s: %s",
+                    unqualified_function_arn,
+                    lease_type,
+                )
