@@ -211,9 +211,7 @@ class Poller:
             if invocation_result.is_error:  # invocation error
                 failure_cause = None
                 # Reserved concurrency == 0
-                # TODO: maybe we should not send the invoke at all; testing?!
                 if self.version_manager.function.reserved_concurrent_executions == 0:
-                    # TODO: replace with constants from spec/model
                     failure_cause = "ZeroReservedConcurrency"
                 # Maximum retries exhausted
                 elif sqs_invocation.retries >= max_retry_attempts:
@@ -239,6 +237,7 @@ class Poller:
                     delay_seconds = sqs_invocation.retries * config.LAMBDA_RETRY_BASE_DELAY_SECONDS
                     # TODO: max SQS message size limit could break parity with AWS because
                     #  our SQSInvocation contains additional fields! 256kb is max for both Lambda payload + SQS
+                    # TODO: write test with max SQS message size
                     sqs_client.send_message(
                         QueueUrl=self.event_queue_url,
                         MessageBody=sqs_invocation.encode(),
