@@ -31,13 +31,16 @@ class StateFail(CommonStateField):
         self.error = state_props.get(ErrorDecl)
 
     def _eval_state(self, env: Environment) -> None:
+        task_failed_event_details = TaskFailedEventDetails()
+        if self.error:
+            task_failed_event_details["error"] = self.error.error
+        if self.cause:
+            task_failed_event_details["cause"] = self.cause.cause
+
+        error_name = CustomErrorName(self.error.error) if self.error else None
         failure_event = FailureEvent(
-            error_name=CustomErrorName(self.error.error),
+            error_name=error_name,
             event_type=HistoryEventType.TaskFailed,
-            event_details=EventDetails(
-                taskFailedEventDetails=TaskFailedEventDetails(
-                    error=self.error.error, cause=self.cause.cause
-                )
-            ),
+            event_details=EventDetails(taskFailedEventDetails=task_failed_event_details),
         )
         raise FailureEventException(failure_event=failure_event)
