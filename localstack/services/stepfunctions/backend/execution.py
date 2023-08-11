@@ -40,7 +40,10 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.execution_worker import ExecutionWorker
 from localstack.services.stepfunctions.backend.execution_worker_comm import ExecutionWorkerComm
-from localstack.services.stepfunctions.backend.state_machine import StateMachine
+from localstack.services.stepfunctions.backend.state_machine import (
+    StateMachineInstance,
+    StateMachineVersion,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -73,7 +76,7 @@ class Execution:
     name: Final[str]
     role_arn: Final[Arn]
     exec_arn: Final[Arn]
-    state_machine: Final[StateMachine]
+    state_machine: Final[StateMachineInstance]
     start_date: Final[Timestamp]
     input_data: Final[Optional[dict]]
     input_details: Final[Optional[CloudWatchEventsExecutionDataDetails]]
@@ -95,7 +98,7 @@ class Execution:
         name: str,
         role_arn: Arn,
         exec_arn: Arn,
-        state_machine: StateMachine,
+        state_machine: StateMachineInstance,
         start_date: Timestamp,
         input_data: Optional[dict] = None,
         trace_header: Optional[TraceHeader] = None,
@@ -142,14 +145,24 @@ class Execution:
         return describe_output
 
     def to_execution_list_item(self) -> ExecutionListItem:
-        return ExecutionListItem(
+        if isinstance(self.state_machine, StateMachineVersion):
+            state_machine_arn = self.state_machine.source_arn
+            state_machine_version_arn = self.state_machine.arn
+        else:
+            state_machine_arn = self.state_machine.arn
+            state_machine_version_arn = None
+
+        item = ExecutionListItem(
             executionArn=self.exec_arn,
-            stateMachineArn=self.state_machine.arn,
+            stateMachineArn=state_machine_arn,
             name=self.name,
             status=self.exec_status,
             startDate=self.start_date,
             stopDate=self.stop_date,
         )
+        if state_machine_version_arn is not None:
+            item["stateMachineVersionArn"] = state_machine_version_arn
+        return item
 
     def to_history_output(self) -> GetExecutionHistoryOutput:
         event_history: HistoryEventList = self.exec_worker.env.event_history.get_event_history()

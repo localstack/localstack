@@ -6,10 +6,12 @@ from typing import Optional
 from localstack.aws.api import RequestContext
 from localstack.aws.api.stepfunctions import (
     Arn,
+    ConflictException,
     CreateStateMachineInput,
     CreateStateMachineOutput,
     Definition,
     DeleteStateMachineOutput,
+    DeleteStateMachineVersionOutput,
     DescribeExecutionOutput,
     DescribeStateMachineOutput,
     ExecutionList,
@@ -24,6 +26,7 @@ from localstack.aws.api.stepfunctions import (
     ListExecutionsOutput,
     ListExecutionsPageToken,
     ListStateMachinesOutput,
+    ListStateMachineVersionsOutput,
     LoggingConfiguration,
     LongArn,
     MissingRequiredParameter,
@@ -31,7 +34,9 @@ from localstack.aws.api.stepfunctions import (
     PageSize,
     PageToken,
     Publish,
+    PublishStateMachineVersionOutput,
     ReverseOrder,
+    RevisionId,
     SendTaskFailureOutput,
     SendTaskHeartbeatOutput,
     SendTaskSuccessOutput,
@@ -51,6 +56,7 @@ from localstack.aws.api.stepfunctions import (
     TraceHeader,
     TracingConfiguration,
     UpdateStateMachineOutput,
+    ValidationException,
     VersionDescription,
 )
 from localstack.services.stepfunctions.asl.eval.callback.callback import (
@@ -61,7 +67,11 @@ from localstack.services.stepfunctions.asl.eval.callback.callback import (
 )
 from localstack.services.stepfunctions.asl.parse.asl_parser import AmazonStateLanguageParser
 from localstack.services.stepfunctions.backend.execution import Execution
-from localstack.services.stepfunctions.backend.state_machine import StateMachine
+from localstack.services.stepfunctions.backend.state_machine import (
+    StateMachineInstance,
+    StateMachineRevision,
+    StateMachineVersion,
+)
 from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
 from localstack.utils.aws.arns import ArnData, parse_arn
 from localstack.utils.aws.arns import state_machine_arn as aws_stack_state_machine_arn
@@ -90,16 +100,21 @@ class StepFunctionsProvider(StepfunctionsApi):
             )
         return execution
 
-    def _is_idempotent_create_state_machine(
+    def _idempotent_revision(
         self, context: RequestContext, request: CreateStateMachineInput
-    ) -> Optional[StateMachine]:
+    ) -> Optional[StateMachineRevision]:
         # CreateStateMachine's idempotency check is based on the state machine name, definition, type,
         # LoggingConfiguration and TracingConfiguration.
         # If a following request has a different roleArn or tags, Step Functions will ignore these differences and
         # treat it as an idempotent request of the previous. In this case, roleArn and tags will not be updated, even
         # if they are different.
-        state_machines: list[StateMachine] = list(self.get_store(context).state_machines.values())
-        for state_machine in state_machines:
+        state_machines: list[StateMachineInstance] = list(
+            self.get_store(context).state_machines.values()
+        )
+        revisions = filter(
+            lambda state_machine: isinstance(state_machine, StateMachineRevision), state_machines
+        )
+        for state_machine in revisions:
             check = all(
                 [
                     state_machine.name == request["name"],
@@ -113,10 +128,14 @@ class StepFunctionsProvider(StepfunctionsApi):
                 return state_machine
         return None
 
-    def _state_machine_by_name(self, context: RequestContext, name: str) -> Optional[StateMachine]:
-        state_machines: list[StateMachine] = list(self.get_store(context).state_machines.values())
+    def _revision_by_name(
+        self, context: RequestContext, name: str
+    ) -> Optional[StateMachineInstance]:
+        state_machines: list[StateMachineInstance] = list(
+            self.get_store(context).state_machines.values()
+        )
         for state_machine in state_machines:
-            if state_machine.name == name:
+            if isinstance(state_machine, StateMachineRevision) and state_machine.name == name:
                 return state_machine
         return None
 
@@ -133,9 +152,12 @@ class StepFunctionsProvider(StepfunctionsApi):
     def create_state_machine(
         self, context: RequestContext, request: CreateStateMachineInput
     ) -> CreateStateMachineOutput:
+        if not request.get("publish", False) and request.get("versionDescription"):
+            raise ValidationException("Version description can only be set when publish is true")
+
         # CreateStateMachine is an idempotent API. Subsequent requests won’t create a duplicate resource if it was
         # already created.
-        idem_state_machine: Optional[StateMachine] = self._is_idempotent_create_state_machine(
+        idem_state_machine: Optional[StateMachineRevision] = self._idempotent_revision(
             context=context, request=request
         )
         if idem_state_machine is not None:
@@ -143,7 +165,7 @@ class StepFunctionsProvider(StepfunctionsApi):
                 stateMachineArn=idem_state_machine.arn, creationDate=idem_state_machine.create_date
             )
 
-        state_machine_with_name: Optional[StateMachine] = self._state_machine_by_name(
+        state_machine_with_name: Optional[StateMachineRevision] = self._revision_by_name(
             context=context, name=request["name"]
         )
         if state_machine_with_name is not None:
@@ -159,10 +181,12 @@ class StepFunctionsProvider(StepfunctionsApi):
             name=name, account_id=context.account_id, region_name=context.region
         )
 
-        if not name and arn in self.get_store(context).state_machines:
+        state_machines = self.get_store(context).state_machines
+
+        if not name and arn in state_machines:
             raise InvalidName()
 
-        state_machine = StateMachine(
+        state_machine = StateMachineRevision(
             name=name,
             arn=arn,
             role_arn=request["roleArn"],
@@ -173,11 +197,21 @@ class StepFunctionsProvider(StepfunctionsApi):
             tracing_config=request.get("tracingConfiguration"),
         )
 
-        self.get_store(context).state_machines[arn] = state_machine
+        state_machines[arn] = state_machine
 
-        return CreateStateMachineOutput(
-            stateMachineArn=state_machine.arn, creationDate=datetime.datetime.now()
+        create_output = CreateStateMachineOutput(
+            stateMachineArn=state_machine.arn, creationDate=state_machine.create_date
         )
+
+        if request.get("publish", False):
+            version_description = request.get("versionDescription")
+            state_machine_version = state_machine.create_version(description=version_description)
+            if state_machine_version is not None:
+                state_machine_version_arn = state_machine_version.arn
+                state_machines[state_machine_version_arn] = state_machine_version
+                create_output["stateMachineVersionArn"] = state_machine_version_arn
+
+        return create_output
 
     def describe_state_machine(
         self, context: RequestContext, state_machine_arn: Arn
@@ -185,7 +219,7 @@ class StepFunctionsProvider(StepfunctionsApi):
         state_machine = self.get_store(context).state_machines.get(state_machine_arn)
         if state_machine is None:
             raise InvalidArn()
-        return state_machine.to_describe_output()
+        return state_machine.describe()
 
     def send_task_heartbeat(
         self, context: RequestContext, task_token: TaskToken
@@ -252,7 +286,7 @@ class StepFunctionsProvider(StepfunctionsApi):
         input: SensitiveData = None,
         trace_header: TraceHeader = None,
     ) -> StartExecutionOutput:
-        state_machine: Optional[StateMachine] = self.get_store(context).state_machines.get(
+        state_machine: Optional[StateMachineInstance] = self.get_store(context).state_machines.get(
             state_machine_arn
         )
         if not state_machine:
@@ -269,8 +303,13 @@ class StepFunctionsProvider(StepfunctionsApi):
             except Exception as ex:
                 raise InvalidExecutionInput(str(ex))  # TODO: report parsing error like AWS.
 
+        normalised_state_machine_arn = (
+            state_machine.source_arn
+            if isinstance(state_machine, StateMachineVersion)
+            else state_machine.arn
+        )
         exec_name = name or long_uid()  # TODO: validate name format
-        arn_data: ArnData = parse_arn(state_machine_arn)
+        arn_data: ArnData = parse_arn(normalised_state_machine_arn)
         exec_arn = ":".join(
             [
                 "arn",
@@ -328,11 +367,38 @@ class StepFunctionsProvider(StepfunctionsApi):
     ) -> ListStateMachinesOutput:
         # TODO: add paging support.
         state_machines: StateMachineList = [
-            sm.to_state_machine_list_item()
+            sm.itemise()
             for sm in self.get_store(context).state_machines.values()
+            if isinstance(sm, StateMachineRevision)
         ]
-        state_machines.sort(key=lambda si: si["creationDate"])
+        state_machines.sort(key=lambda item: item["creationDate"])
         return ListStateMachinesOutput(stateMachines=state_machines)
+
+    def list_state_machine_versions(
+        self,
+        context: RequestContext,
+        state_machine_arn: Arn,
+        next_token: PageToken = None,
+        max_results: PageSize = None,
+    ) -> ListStateMachineVersionsOutput:
+        # TODO: add paging support.
+        state_machines = self.get_store(context).state_machines
+        state_machine_revision = state_machines.get(state_machine_arn)
+        if not isinstance(state_machine_revision, StateMachineRevision):
+            raise InvalidArn()
+
+        state_machine_version_items = list()
+        for version_arn in state_machine_revision.versions.values():
+            state_machine_version = state_machines[version_arn]
+            if isinstance(state_machine_version, StateMachineVersion):
+                state_machine_version_items.append(state_machine_version.itemise())
+            else:
+                raise RuntimeError(
+                    f"Expected {version_arn} to be a StateMachine Version, but gott '{type(state_machine_version)}'."
+                )
+
+        state_machine_version_items.sort(key=lambda item: item["creationDate"], reverse=True)
+        return ListStateMachineVersionsOutput(stateMachineVersions=state_machine_version_items)
 
     def get_execution_history(
         self,
@@ -352,8 +418,26 @@ class StepFunctionsProvider(StepfunctionsApi):
         self, context: RequestContext, state_machine_arn: Arn
     ) -> DeleteStateMachineOutput:
         # TODO: halt executions?
-        self.get_store(context).state_machines.pop(state_machine_arn, None)
+        state_machines = self.get_store(context).state_machines
+        state_machine = state_machines.get(state_machine_arn)
+        if isinstance(state_machine, StateMachineRevision):
+            state_machines.pop(state_machine_arn)
+            for version_arn in state_machine.versions.values():
+                state_machines.pop(version_arn, None)
         return DeleteStateMachineOutput()
+
+    def delete_state_machine_version(
+        self, context: RequestContext, state_machine_version_arn: LongArn
+    ) -> DeleteStateMachineVersionOutput:
+        state_machines = self.get_store(context).state_machines
+        state_machine_version = state_machines.get(state_machine_version_arn)
+        if isinstance(state_machine_version, StateMachineVersion):
+            state_machines.pop(state_machine_version.arn)
+            state_machine_revision = state_machines.get(state_machine_version.source_arn)
+            if isinstance(state_machine_revision, StateMachineRevision):
+                state_machine_revision.delete_version(state_machine_version_arn)
+
+        return DeleteStateMachineVersionOutput()
 
     def stop_execution(
         self,
@@ -378,9 +462,11 @@ class StepFunctionsProvider(StepfunctionsApi):
         publish: Publish = None,
         version_description: VersionDescription = None,
     ) -> UpdateStateMachineOutput:
-        state_machine = self.get_store(context).state_machines.get(state_machine_arn)
-        if state_machine is None:
-            raise InvalidArn()
+        state_machines = self.get_store(context).state_machines
+
+        state_machine = state_machines.get(state_machine_arn)
+        if not isinstance(state_machine, StateMachineRevision):
+            raise StateMachineDoesNotExist(f"State Machine Does Not Exist: '{state_machine_arn}'")
 
         if not any([definition, role_arn, logging_configuration]):
             raise MissingRequiredParameter(
@@ -390,9 +476,53 @@ class StepFunctionsProvider(StepfunctionsApi):
         if definition is not None:
             self._validate_definition(definition=definition)
 
-        revision_id = state_machine.add_revision(definition=definition, role_arn=role_arn)
+        revision_id = state_machine.create_revision(definition=definition, role_arn=role_arn)
+
+        version_arn = None
+        if publish:
+            version = state_machine.create_version(description=version_description)
+            if version is not None:
+                version_arn = version.arn
+                state_machines[version_arn] = version
+            else:
+                target_revision_id = revision_id or state_machine.revision_id
+                version_arn = state_machine.versions[target_revision_id]
 
         update_output = UpdateStateMachineOutput(updateDate=datetime.datetime.now())
         if revision_id is not None:
             update_output["revisionId"] = revision_id
+        if version_arn is not None:
+            update_output["stateMachineVersionArn"] = version_arn
         return update_output
+
+    def publish_state_machine_version(
+        self,
+        context: RequestContext,
+        state_machine_arn: Arn,
+        revision_id: RevisionId = None,
+        description: VersionDescription = None,
+    ) -> PublishStateMachineVersionOutput:
+        state_machines = self.get_store(context).state_machines
+
+        state_machine_revision = state_machines.get(state_machine_arn)
+        if not isinstance(state_machine_revision, StateMachineRevision):
+            raise InvalidArn()
+
+        if revision_id is not None and state_machine_revision.revision_id != revision_id:
+            raise ConflictException(
+                f"Failed to publish the State Machine version for revision {revision_id}. "
+                f"The current State Machine revision is {state_machine_revision.revision_id}."
+            )
+
+        state_machine_version = state_machine_revision.create_version(description=description)
+        if state_machine_version is not None:
+            state_machines[state_machine_version.arn] = state_machine_version
+        else:
+            target_revision_id = revision_id or state_machine_revision.revision_id
+            state_machine_version_arn = state_machine_revision.versions.get(target_revision_id)
+            state_machine_version = state_machines[state_machine_version_arn]
+
+        return PublishStateMachineVersionOutput(
+            creationDate=state_machine_version.create_date,
+            stateMachineVersionArn=state_machine_version.arn,
+        )
