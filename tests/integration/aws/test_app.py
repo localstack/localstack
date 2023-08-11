@@ -78,6 +78,12 @@ class TestExceptionHandlers:
         assert response.status_code == 404
         assert "<Error><Code>NoSuchBucket</Code>" in response.text
 
+
+class TestWebSocketIntegration:
+    """
+    Test for the WebSocket/HandlerChain integration.
+    """
+
     def test_websockets_served_through_edge_router(self, cleanups):
         @route("/_ws/<param>", methods=["WEBSOCKET"])
         def _echo_websocket_handler(request: WebSocketRequest, param: str):
@@ -104,6 +110,24 @@ class TestExceptionHandlers:
 
         socket.shutdown()
 
+    def test_return_response(self, cleanups):
+        @route("/_ws/<param>", methods=["WEBSOCKET"])
+        def _echo_websocket_handler(request: WebSocketRequest, param: str):
+            # if the websocket isn't rejected or accepted, we can use the router to return a response
+            return Response("oh noes", 501)
+
+        rule = ROUTER.add(_echo_websocket_handler)
+        cleanups.append(lambda: ROUTER.remove(rule))
+
+        url = get_edge_url(protocol="ws") + "/_ws/world"
+
+        socket = websocket.WebSocket()
+        with pytest.raises(websocket.WebSocketBadStatusException) as e:
+            socket.connect(url)
+
+        assert e.value.status_code == 501
+        assert e.value.resp_body == b"oh noes"
+
     def test_websocket_reject_through_edge_router(self, cleanups):
         @route("/_ws/<param>", methods=["WEBSOCKET"])
         def _echo_websocket_handler(request: WebSocketRequest, param: str):
@@ -118,8 +142,8 @@ class TestExceptionHandlers:
         with pytest.raises(websocket.WebSocketBadStatusException) as e:
             socket.connect(url)
 
-            assert e.value.status_code == 403
-            assert e.value.resp_body == "nope"
+        assert e.value.status_code == 403
+        assert e.value.resp_body == b"nope"
 
     def test_ssl_websockets(self, cleanups):
         @route("/_ws/<param>", methods=["WEBSOCKET"])

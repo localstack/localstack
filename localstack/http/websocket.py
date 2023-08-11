@@ -41,7 +41,6 @@ class WebSocket:
 
     request: "WebSocketRequest"
     socket: ASGIWebSocket
-    encoding: str = "utf-8"
 
     def __init__(self, request: "WebSocketRequest", socket: ASGIWebSocket):
         self.request = request
@@ -67,6 +66,9 @@ class WebSocket:
         :param text_or_bytes: the data to send. Use strings for text-mode sockets (default).
         :param timeout: the timeout in seconds to wait before raising a timeout error
         """
+        if text_or_bytes is None:
+            raise ValueError("text_or_bytes cannot be None")
+
         if isinstance(text_or_bytes, str):
             self.socket.send(
                 {
@@ -77,19 +79,24 @@ class WebSocket:
                 timeout=timeout,
             )
         else:
-            self.socket.send(
-                {
-                    "type": "websocket.send",
-                    "bytes": text_or_bytes,
-                    "text": None,
-                },
-                timeout=timeout,
-            )
+            try:
+                self.socket.send(
+                    {
+                        "type": "websocket.send",
+                        "bytes": text_or_bytes,
+                        "text": None,
+                    },
+                    timeout=timeout,
+                )
+            except TypeError as e:
+                raise WebSocketProtocolError(
+                    f"Cannot send data type {type(text_or_bytes)} over websocket"
+                ) from e
 
-    def receive(self) -> str:
+    def receive(self) -> str | bytes:
         """
-        Receive text data from the websocket. This will automatically decode the data if the websocket is in
-        binary mode.
+        Receive the next data package from the websocket. Will be string or byte data and set the
+        underlying binary for the frame automatically.
 
         :raise WebSocketDisconnectedError: if the websocket was closed in the meantime
         :raise WebSocketProtocolError: error in the interaction between the app and the webserver
@@ -103,7 +110,7 @@ class WebSocket:
 
             buf = event.get("bytes")
             if buf is not None:
-                return buf.decode(self.encoding)
+                return buf
 
             raise WebSocketProtocolError(
                 "Both bytes and text are None in the websocket.receive event."

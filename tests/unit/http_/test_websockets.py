@@ -1,12 +1,17 @@
 import json
 import threading
+from queue import Queue
 
 import pytest
 import websocket
 from werkzeug.datastructures import Headers
 
 from localstack.http import Router
-from localstack.http.websocket import WebSocketDisconnectedError, WebSocketRequest
+from localstack.http.websocket import (
+    WebSocketDisconnectedError,
+    WebSocketProtocolError,
+    WebSocketRequest,
+)
 
 
 def test_websocket_basic_interaction(serve_asgi_adapter):
@@ -82,6 +87,55 @@ def test_websocket_headers(serve_asgi_adapter):
     headers = json.loads(doc)
     assert headers["Connection"] == "Upgrade"
     assert headers["Authorization"] == "Basic let-me-in"
+
+
+def test_binary_and_text_mode(serve_asgi_adapter):
+    received = Queue()
+
+    @WebSocketRequest.listener
+    def echo_headers(request: WebSocketRequest):
+        with request.accept() as ws:
+            ws.send(b"foo")
+            ws.send("textfoo")
+            received.put(ws.receive())
+            received.put(ws.receive())
+
+    server = serve_asgi_adapter(wsgi_app=None, websocket_listener=echo_headers)
+
+    client = websocket.WebSocket()
+    client.connect(server.url.replace("http://", "ws://"))
+
+    assert client.handshake_response.status == 101
+    data = client.recv()
+    assert data == b"foo"
+
+    data = client.recv()
+    assert data == "textfoo"
+
+    client.send("textbar")
+    client.send_binary(b"bar")
+
+    assert received.get(timeout=5) == "textbar"
+    assert received.get(timeout=5) == b"bar"
+
+
+def test_send_non_confirming_data(serve_asgi_adapter):
+    match = Queue()
+
+    @WebSocketRequest.listener
+    def echo_headers(request: WebSocketRequest):
+        with request.accept() as ws:
+            with pytest.raises(WebSocketProtocolError) as e:
+                ws.send({"foo": "bar"})
+            match.put(e)
+
+    server = serve_asgi_adapter(wsgi_app=None, websocket_listener=echo_headers)
+
+    client = websocket.WebSocket()
+    client.connect(server.url.replace("http://", "ws://"))
+
+    e = match.get(timeout=5)
+    assert e.match("Cannot send data type <class 'dict'> over websocket")
 
 
 def test_router_integration(serve_asgi_adapter):

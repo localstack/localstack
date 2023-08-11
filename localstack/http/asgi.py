@@ -52,7 +52,9 @@ def populate_wsgi_environment(
     scope: t.Union["HTTPScope", "WebsocketScope"],
 ):
     """
-    Adds the non-IO parts (e.g., excluding wsgi.input) from the ASGI HTTPScope to the WSGI Environment.
+    Adds the non-IO parts (e.g., excluding wsgi.input) from the ASGI HTTPScope to the WSGI Environment. See
+    WSGI Compatibility for more information on why this works:
+    https://asgi.readthedocs.io/en/latest/specs/www.html#wsgi-compatibility
 
     :param environ: the WSGI environment to populate
     :param scope: the ASGI scope as source
