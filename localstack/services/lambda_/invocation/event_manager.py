@@ -124,7 +124,10 @@ class Poller:
                 self.invoker_pool.submit(self.handle_message, message)
         except Exception as e:
             LOG.error(
-                "Error while polling lambda events %s", e, exc_info=LOG.isEnabledFor(logging.DEBUG)
+                "Error while polling lambda events for function %s: %s",
+                self.version_manager.function_version.qualified_arn,
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
 
     def stop(self):
