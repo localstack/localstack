@@ -2813,7 +2813,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_reserved_concurrency": {
-    "recorded-date": "02-05-2023, 16:56:17",
+    "recorded-date": "11-08-2023, 12:01:28",
     "recorded-content": {
       "fn": {
         "Architectures": [
@@ -2901,6 +2901,7 @@
       },
       "msg": {
         "Attributes": {
+          "AWSTraceHeader": "Root=1-64d606f7-07ba3df604ddb3c84216649d;Sampled=0",
           "ApproximateFirstReceiveTimestamp": "timestamp",
           "ApproximateReceiveCount": "1",
           "SenderId": "<sender-id>",

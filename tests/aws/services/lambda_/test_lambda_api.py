@@ -2349,7 +2349,7 @@ class TestLambdaEventInvokeConfig:
 # NOTE: These tests are inherently a bit flaky on AWS since they depend on account/region global usage limits/quotas
 # Against AWS, these tests might require increasing the service quota for concurrent executions (e.g., 10 => 101):
 # https://us-east-1.console.aws.amazon.com/servicequotas/home/services/lambda/quotas/L-B99A9384
-# New accounts in an organization have by default a quota of 10 or 50 though
+# New accounts in an organization have by default a quota of 10 or 50.
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaReservedConcurrency:
     @markers.aws.validated
@@ -2373,34 +2373,73 @@ class TestLambdaReservedConcurrency:
         )
 
         function_name = f"lambda_func-{short_uid()}"
-        create_function_response = create_lambda_function(
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+        fn = aws_client.lambda_.get_function_configuration(
+            FunctionName=function_name, Qualifier="$LATEST"
+        )
+
+        qualified_arn_latest = fn["FunctionArn"]
+        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
+            aws_client.lambda_.put_function_concurrency(
+                FunctionName=qualified_arn_latest, ReservedConcurrentExecutions=0
+            )
+        snapshot.match("put_function_concurrency_with_qualified_arn", e.value.response)
+
+    @markers.aws.validated
+    def test_function_concurrency_limits(
+        self, aws_client, aws_client_factory, create_lambda_function, snapshot, monkeypatch
+    ):
+        """Test limits exceptions separately because they require custom transformers."""
+        monkeypatch.setattr(config, "LAMBDA_LIMITS_CONCURRENT_EXECUTIONS", 5)
+        monkeypatch.setattr(config, "LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY", 3)
+
+        # We need to replace limits that are specific to AWS accounts (see test_provisioned_concurrency_limits)
+        # Unlike for provisioned concurrency, reserved concurrency does not have a different error message for
+        # values higher than the account limit of concurrent executions.
+        prefix = re.escape("minimum value of [")
+        number_pattern = "\d+"  # noqa W605
+        suffix = re.escape("]")
+        min_unreserved_regex = re.compile(f"(?<={prefix}){number_pattern}(?={suffix})")
+        snapshot.add_transformer(
+            snapshot.transform.regex(min_unreserved_regex, "<min_unreserved_concurrency>")
+        )
+
+        lambda_client = aws_client.lambda_
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
 
-        qualified_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
-        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
-            aws_client.lambda_.put_function_concurrency(
-                FunctionName=qualified_arn, ReservedConcurrentExecutions=2
-            )
-        snapshot.match("put_function_concurrency_with_qualified_arn", e.value.response)
-
         account_settings = aws_client.lambda_.get_account_settings()
-        unreserved_concurrent_executions = account_settings["AccountLimit"][
-            "UnreservedConcurrentExecutions"
-        ]
-        with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
-            aws_client.lambda_.put_function_concurrency(
+        concurrent_executions = account_settings["AccountLimit"]["ConcurrentExecutions"]
+
+        # Higher reserved concurrency than ConcurrentExecutions account limit
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_function_concurrency(
                 FunctionName=function_name,
-                ReservedConcurrentExecutions=unreserved_concurrent_executions + 1,
+                ReservedConcurrentExecutions=concurrent_executions + 1,
             )
-        snapshot.match("put_function_concurrency_with_concurrency_limit_exceeded", e.value.response)
+        snapshot.match("put_function_concurrency_account_limit_exceeded", e.value.response)
+
+        # Not enough UnreservedConcurrentExecutions available in account
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_function_concurrency(
+                FunctionName=function_name,
+                ReservedConcurrentExecutions=concurrent_executions,
+            )
+        snapshot.match("put_function_concurrency_below_unreserved_min_value", e.value.response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider)
     def test_function_concurrency(self, create_lambda_function, snapshot, aws_client, monkeypatch):
         """Testing the api of the put function concurrency action"""
+        # A lower limits (e.g., 11) could work if the minium unreservered concurrency is lower as well
         min_concurrent_executions = 101
         monkeypatch.setattr(
             config, "LAMBDA_LIMITS_CONCURRENT_EXECUTIONS", min_concurrent_executions
@@ -2635,7 +2674,7 @@ class TestLambdaProvisionedConcurrency:
         account_settings = aws_client.lambda_.get_account_settings()
         concurrent_executions = account_settings["AccountLimit"]["ConcurrentExecutions"]
 
-        # Higher concurrency than ConcurrentExecutions account limit
+        # Higher provisioned concurrency than ConcurrentExecutions account limit
         with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
             lambda_client.put_provisioned_concurrency_config(
                 FunctionName=function_name,
