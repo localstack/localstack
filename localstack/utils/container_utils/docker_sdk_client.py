@@ -587,6 +587,7 @@ class SdkDockerClient(ContainerClient):
         command: Optional[Union[List[str], str]] = None,
         mount_volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
+        exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
         cap_add: Optional[List[str]] = None,
@@ -638,8 +639,13 @@ class SdkDockerClient(ContainerClient):
                 kwargs["security_opt"] = security_opt
             if dns:
                 kwargs["dns"] = ensure_list(dns)
+            if exposed_ports:
+                # This is not exactly identical to --expose, as they are listed in the "HostConfig" on docker inspect
+                # but the behavior should be identical
+                kwargs["ports"] = {port: [] for port in exposed_ports}
             if ports:
-                kwargs["ports"] = ports.to_dict()
+                kwargs.setdefault("ports", {})
+                kwargs["ports"].update(ports.to_dict())
             if workdir:
                 kwargs["working_dir"] = workdir
             if privileged:
@@ -702,6 +708,7 @@ class SdkDockerClient(ContainerClient):
         command: Optional[Union[List[str], str]] = None,
         mount_volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
+        exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
         cap_add: Optional[List[str]] = None,
@@ -737,6 +744,7 @@ class SdkDockerClient(ContainerClient):
                 command=command,
                 mount_volumes=mount_volumes,
                 ports=ports,
+                exposed_ports=exposed_ports,
                 env_vars=env_vars,
                 user=user,
                 cap_add=cap_add,
