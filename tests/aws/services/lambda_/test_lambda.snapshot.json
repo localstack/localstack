@@ -3246,5 +3246,22 @@
         "END RequestId: <uuid:1>"
       ]
     }
+  },
+  "tests/aws/lambda_/test_lambda.py::TestLambdaFeatures::test_invoke_exceptions": {
+    "recorded-date": "11-08-2023, 15:57:21",
+    "recorded-content": {
+      "invoke_function_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

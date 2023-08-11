@@ -262,9 +262,7 @@ class LambdaService:
         function = state.functions.get(function_name)
 
         if function is None:
-            raise ResourceNotFoundException(
-                f"Function not found: {invoked_arn}", Type="User"
-            )  # TODO: test
+            raise ResourceNotFoundException(f"Function not found: {invoked_arn}", Type="User")
 
         if qualifier_is_alias(qualifier):
             alias = function.aliases.get(qualifier)
