@@ -99,8 +99,9 @@ def get_attr_from_model_instance(
         parts = attribute_name.split(".")
         attribute = properties
         for part in parts:
-            if attribute:
-                attribute = attribute.get(part)
+            if attribute is None:
+                return None
+            attribute = attribute.get(part)
         return attribute
 
     # If we couldn't find the attribute, this is actually an irrecoverable error.
@@ -111,7 +112,6 @@ def get_attr_from_model_instance(
     #     f"Failed to resolve attribute for Fn::GetAtt in {resource_type}: {resource_id}.{attribute_name}"
     # )  # TODO: check CFn behavior via snapshot
     return attribute_candidate
-
 
 def resolve_ref(
     stack_name: str,
