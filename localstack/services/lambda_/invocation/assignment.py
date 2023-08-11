@@ -54,7 +54,6 @@ class AssignmentService(OtherServiceEndpoint):
             except InvalidStatusException:
                 pass
         else:
-            # TODO: use constant for provisioning type
             if provisioning_type == "provisioned-concurrency":
                 raise AssignmentException(
                     "No provisioned concurrency environment available despite lease."

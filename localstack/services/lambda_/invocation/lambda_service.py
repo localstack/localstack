@@ -23,7 +23,7 @@ from localstack.aws.api.lambda_ import (
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import AWS_REGION_US_EAST_1
-from localstack.services.lambda_ import api_utils, usage
+from localstack.services.lambda_ import usage
 from localstack.services.lambda_.api_utils import (
     lambda_arn,
     qualified_lambda_arn,
@@ -199,8 +199,7 @@ class LambdaService:
                 function_version=function_version,
                 lambda_service=self,
                 function=fn,
-                # TODO: inject specific view
-                counting_service=CountingService(),
+                counting_service=self.counting_service,
                 assignment_service=self.assignment_service,
             )
             self.lambda_starting_versions[qualified_arn] = version_manager
@@ -229,7 +228,7 @@ class LambdaService:
         :param invocation_type: Invocation Type
         :param client_context: Client Context, if applicable
         :param payload: Invocation payload
-        :return: A future for the invocation result
+        :return: The invocation result
         """
         # Invoked arn (for lambda context) does not have qualifier if not supplied
         invoked_arn = lambda_arn(
@@ -291,7 +290,7 @@ class LambdaService:
         if payload is None:
             payload = b"{}"
         if invocation_type is None:
-            invocation_type = "RequestResponse"
+            invocation_type = InvocationType.RequestResponse
         if invocation_type == InvocationType.DryRun:
             return None
         # TODO payload verification  An error occurred (InvalidRequestContentException) when calling the Invoke operation: Could not parse request body into json: Could not parse payload into json: Unexpected character (''' (code 39)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')
@@ -406,105 +405,6 @@ class LambdaService:
         if old_event_manager:
             self.task_executor.submit(old_event_manager.stop)
 
-    def report_invocation_start(self, unqualified_function_arn: str):
-        """
-        Track beginning of a new function invocation.
-        Always make sure this is followed by a call to report_invocation_end downstream
-
-        :param unqualified_function_arn: e.g. arn:aws:lambda:us-east-1:123456789012:function:concurrency-fn
-        """
-        fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(unqualified_function_arn).groupdict()
-        account = fn_parts["account_id"]
-
-        tracker = self._concurrency_trackers[account]
-        with tracker.lock:
-            tracker.function_concurrency[unqualified_function_arn] += 1
-
-    def report_invocation_end(self, unqualified_function_arn: str):
-        """
-        Track end of a function invocation. Should have a corresponding report_invocation_start call upstream
-
-        :param unqualified_function_arn: e.g. arn:aws:lambda:us-east-1:123456789012:function:concurrency-fn
-        """
-        fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(unqualified_function_arn).groupdict()
-        account = fn_parts["account_id"]
-
-        tracker = self._concurrency_trackers[account]
-        with tracker.lock:
-            tracker.function_concurrency[unqualified_function_arn] -= 1
-            if tracker.function_concurrency[unqualified_function_arn] < 0:
-                LOG.warning(
-                    "Invalid function concurrency state detected for function: %s | recorded concurrency: %d",
-                    unqualified_function_arn,
-                    tracker.function_concurrency[unqualified_function_arn],
-                )
-
-    def get_available_fn_concurrency(self, unqualified_function_arn: str) -> int:
-        """
-        Calculate available capacity for new invocations in the function's account & region.
-        If the function has a reserved concurrency set, only this pool of reserved concurrency is considered.
-        Otherwise all unreserved concurrent invocations in the function's account/region are aggregated and checked against the current account settings.
-        """
-        fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(unqualified_function_arn).groupdict()
-        region = fn_parts["region_name"]
-        account = fn_parts["account_id"]
-        function_name = fn_parts["function_name"]
-
-        tracker = self._concurrency_trackers[account]
-        store = lambda_stores[account][region]
-
-        with tracker.lock:
-            # reserved concurrency set => reserved concurrent executions only limited by local function limit
-            if store.functions[function_name].reserved_concurrent_executions is not None:
-                fn = store.functions[function_name]
-                available_unreserved_concurrency = (
-                    fn.reserved_concurrent_executions - self._calculate_used_concurrency(fn)
-                )
-            # no reserved concurrency set. => consider account/region-global state instead
-            else:
-                available_unreserved_concurrency = config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS - sum(
-                    [
-                        self._calculate_actual_reserved_concurrency(fn)
-                        for fn in store.functions.values()
-                    ]
-                )
-
-            if available_unreserved_concurrency < 0:
-                LOG.warning(
-                    "Invalid function concurrency state detected for function: %s | available unreserved concurrency: %d",
-                    unqualified_function_arn,
-                    available_unreserved_concurrency,
-                )
-                return 0
-            return available_unreserved_concurrency
-
-    def _calculate_actual_reserved_concurrency(self, fn: Function) -> int:
-        """
-        Calculates how much of the "global" concurrency pool this function takes up.
-        This is either the reserved concurrency or its actual used concurrency (which can never exceed the reserved concurrency).
-        """
-        reserved_concurrency = fn.reserved_concurrent_executions
-        if reserved_concurrency:
-            return reserved_concurrency
-
-        return self._calculate_used_concurrency(fn)
-
-    def _calculate_used_concurrency(self, fn: Function) -> int:
-        """
-        Calculates the total used concurrency for a function in its own scope, i.e. without potentially considering reserved concurrency
-
-        :return: sum of function's provisioned concurrency and unreserved+unprovisioned invocations (e.g. spillover)
-        """
-        provisioned_concurrency_sum_for_fn = sum(
-            [
-                provisioned_configs.provisioned_concurrent_executions
-                for provisioned_configs in fn.provisioned_concurrency_configs.values()
-            ]
-        )
-        tracker = self._concurrency_trackers[fn.latest().id.account]
-        tracked_concurrency = tracker.function_concurrency[fn.latest().id.unqualified_arn()]
-        return provisioned_concurrency_sum_for_fn + tracked_concurrency
-
     def update_alias(self, old_alias: VersionAlias, new_alias: VersionAlias, function: Function):
         # if pointer changed, need to restart provisioned
         provisioned_concurrency_config = function.provisioned_concurrency_configs.get(
@@ -546,6 +446,9 @@ class LambdaService:
         except Exception as e:
             LOG.debug("Cannot assume role %s: %s", role_arn, e)
             return False
+
+
+# TODO: Move helper functions out of lambda_service into a separate module
 
 
 def is_code_used(code: S3Code, function: Function) -> bool:
