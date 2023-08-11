@@ -5,7 +5,6 @@ import io
 import logging
 import random
 import uuid
-from collections import defaultdict
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from datetime import datetime
 from hashlib import sha256
@@ -64,20 +63,6 @@ LAMBDA_DEFAULT_TIMEOUT_SECONDS = 3
 LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 
-# TODO: scope to account & region instead?
-class ConcurrencyTracker:
-    """account-scoped concurrency tracker that keeps track of the number of running invocations per function"""
-
-    lock: RLock
-
-    # function unqualified ARN => number of currently running invocations
-    function_concurrency: dict[str, int]
-
-    def __init__(self):
-        self.function_concurrency = defaultdict(int)
-        self.lock = RLock()
-
-
 class LambdaService:
     # mapping from qualified ARN to version manager
     lambda_running_versions: dict[str, LambdaVersionManager]
@@ -88,8 +73,7 @@ class LambdaService:
     task_executor: Executor
 
     assignment_service: AssignmentService
-    # account => concurrency tracker
-    _concurrency_trackers: dict[str, ConcurrencyTracker]
+    counting_service: CountingService
 
     def __init__(self) -> None:
         self.lambda_running_versions = {}
@@ -98,7 +82,7 @@ class LambdaService:
         self.lambda_version_manager_lock = RLock()
         self.task_executor = ThreadPoolExecutor()
         self.assignment_service = AssignmentService()
-        self._concurrency_trackers = defaultdict(ConcurrencyTracker)
+        self.counting_service = CountingService()
 
     def stop(self) -> None:
         """
@@ -183,10 +167,7 @@ class LambdaService:
                 function_version=function_version,
                 lambda_service=self,
                 function=fn,
-                counting_service=CountingService.get(),
-                # counting_service=CountingService.get_view(
-                #     account=function_version.id.account, region=function_version.id.region
-                # ),
+                counting_service=self.counting_service,
                 assignment_service=self.assignment_service,
             )
             self.lambda_starting_versions[qualified_arn] = version_manager

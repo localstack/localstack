@@ -13,7 +13,6 @@ from localstack.aws.api.lambda_ import (
 )
 from localstack.services.lambda_.invocation.assignment import AssignmentService
 from localstack.services.lambda_.invocation.counting_service import CountingService
-from localstack.services.lambda_.invocation.docker_runtime_executor import InitializationType
 from localstack.services.lambda_.invocation.execution_environment import ExecutionEnvironment
 from localstack.services.lambda_.invocation.lambda_models import (
     Function,
@@ -186,30 +185,33 @@ class LambdaVersionManager:
         2.(nogood) fail fast fail hard
 
         """
-        # lease should be specific for on-demand or provisioned, lease can return the type
         # TODO: try/catch handle case when no lease available (e.g., reserved concurrency, worker scenario)
         with self.counting_service.get_invocation_lease(
             self.function, self.function_version
-        ) as provisioning_type:  # TODO: do we need to pass more here?
-            # potential race condition when changing provisioned concurrency
-            # get_environment blocks and potentially creates a new execution environment for this invocation
-            with self.get_environment(provisioning_type) as execution_env:
+        ) as provisioning_type:
+            # TODO: potential race condition when changing provisioned concurrency after getting the lease but before
+            #   getting an an environment
+            # Blocks and potentially creates a new execution environment for this invocation
+            with self.assignment_service.get_environment(
+                self.function_version, provisioning_type
+            ) as execution_env:
                 invocation_result = execution_env.invoke(invocation)
                 invocation_result.executed_version = self.function_version.id.qualifier
                 self.store_logs(invocation_result=invocation_result, execution_env=execution_env)
+
+        # TODO: does this need to happen async?
         start_thread(
             lambda *args, **kwargs: record_cw_metric_invocation(
                 function_name=self.function.function_name,
                 region_name=self.function_version.id.region,
-            )
+            ),
+            # TODO: improve thread naming
+            name="record-cloudwatch-metric",
         )
         LOG.debug("Got logs for invocation '%s'", invocation.request_id)
         for log_line in invocation_result.logs.splitlines():
             LOG.debug("> %s", truncate(log_line, config.LAMBDA_TRUNCATE_STDOUT))
         return invocation_result
-
-    def get_environment(self, provisioning_type: InitializationType):
-        return self.assignment_service.get_environment(self.function_version, provisioning_type)
 
     def store_logs(
         self, invocation_result: InvocationResult, execution_env: ExecutionEnvironment
