@@ -113,6 +113,7 @@ def get_attr_from_model_instance(
     # )  # TODO: check CFn behavior via snapshot
     return attribute_candidate
 
+
 def resolve_ref(
     stack_name: str,
     resources: dict,
