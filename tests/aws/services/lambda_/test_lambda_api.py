@@ -1892,6 +1892,8 @@ pytestmark = markers.snapshot.skip_snapshot_verify(
         "$..Environment",  # missing
         "$..HTTPStatusCode",  # 201 vs 200
         "$..Layers",
+        "$..RuntimeVersionConfig",
+        "$..SnapStart",
         "$..CreateFunctionResponse.RuntimeVersionConfig",
         "$..CreateFunctionResponse.SnapStart",
     ],
