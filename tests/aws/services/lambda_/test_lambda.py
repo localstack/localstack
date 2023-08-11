@@ -975,6 +975,13 @@ class TestLambdaFeatures:
         assert "END" in logs
         assert "REPORT" in logs
 
+    @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..Message"])
+    @markers.aws.validated
+    def test_invoke_exceptions(self, aws_client, snapshot):
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
+            aws_client.lambda_.invoke(FunctionName="doesnotexist")
+        snapshot.match("invoke_function_doesnotexist", e.value.response)
+
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..LogResult", "$..Payload.context.memory_limit_in_mb"]
     )
