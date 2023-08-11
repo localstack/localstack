@@ -42,27 +42,6 @@ class ConcurrencyTracker:
         self.concurrent_executions[scope] -= 1
 
 
-# TODO: consider creating an abstracted view for simpler API alike this ?!
-# class CountingServiceView:
-#
-#     counting_service: "CountingService"
-#     account: str
-#     region: str
-#
-#     def __init__(self, counting_service: "CountingService", account: str, region: str):
-#         self.counting_service = counting_service
-#         self.account = account
-#         self.region = region
-
-# @classmethod
-# def get_view(cls, account, region) -> CountingServiceView:
-#     return CountingServiceView(cls.get(), account, region)
-
-# counting_service=CountingService.get_view(
-#     account=function_version.id.account, region=function_version.id.region
-# ),
-
-
 def calculate_provisioned_concurrency_sum(function: Function) -> int:
     """Returns the total provisioned concurrency for a given function, including all versions."""
     provisioned_concurrency_sum_for_fn = sum(
