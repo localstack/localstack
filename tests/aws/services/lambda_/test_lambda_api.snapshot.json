@@ -4541,7 +4541,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency_exceptions": {
-    "recorded-date": "10-08-2023, 19:58:28",
+    "recorded-date": "11-08-2023, 11:58:18",
     "recorded-content": {
       "put_function_concurrency_with_function_name_doesnotexist": {
         "Error": {
@@ -4570,20 +4570,10 @@
       "put_function_concurrency_with_qualified_arn": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [10]."
+          "Message": "This operation is permitted on Lambda functions only. Aliases and versions do not support this operation. Please specify either a function name or an unqualified function ARN."
         },
-        "message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [10].",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
-      "put_function_concurrency_with_concurrency_limit_exceeded": {
-        "Error": {
-          "Code": "InvalidParameterValueException",
-          "Message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [10]."
-        },
-        "message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [10].",
+        "Type": "User",
+        "message": "This operation is permitted on Lambda functions only. Aliases and versions do not support this operation. Please specify either a function name or an unqualified function ARN.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -4592,7 +4582,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency": {
-    "recorded-date": "10-08-2023, 19:48:37",
+    "recorded-date": "11-08-2023, 12:10:51",
     "recorded-content": {
       "put_function_concurrency_with_reserved_0": {
         "ReservedConcurrentExecutions": 0,
@@ -13175,6 +13165,33 @@
           "Message": "Specified ConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [<min_unreserved_concurrency>]."
         },
         "message": "Specified ConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [<min_unreserved_concurrency>].",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency_limits": {
+    "recorded-date": "11-08-2023, 12:18:53",
+    "recorded-content": {
+      "put_function_concurrency_account_limit_exceeded": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [<min_unreserved_concurrency>]."
+        },
+        "message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [<min_unreserved_concurrency>].",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put_function_concurrency_below_unreserved_min_value": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [<min_unreserved_concurrency>]."
+        },
+        "message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [<min_unreserved_concurrency>].",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400

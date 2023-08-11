@@ -1678,6 +1678,7 @@ class TestLambdaConcurrency:
         # TODO: snapshot logs & request ID for correlation after request id gets propagated
         #  https://github.com/localstack/localstack/pull/7874
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Attributes.AWSTraceHeader"])
     @markers.aws.validated
     def test_reserved_concurrency(
         self, create_lambda_function, snapshot, sqs_create_queue, aws_client
@@ -1731,7 +1732,7 @@ class TestLambdaConcurrency:
         )
         snapshot.match("put_event_invoke_conf", put_event_invoke_conf)
 
-        time.sleep(3)  # just to be sure
+        time.sleep(3)  # just to be sure the event invoke config is active
 
         invoke_result = aws_client.lambda_.invoke(FunctionName=fn_arn, InvocationType="Event")
         snapshot.match("invoke_result", invoke_result)
