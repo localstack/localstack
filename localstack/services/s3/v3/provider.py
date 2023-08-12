@@ -26,6 +26,7 @@ from localstack.aws.api.s3 import (
     BucketLoggingStatus,
     BucketName,
     BucketNotEmpty,
+    BucketVersioningStatus,
     BypassGovernanceRetention,
     ChecksumAlgorithm,
     ChecksumCRC32,
@@ -69,6 +70,7 @@ from localstack.aws.api.s3 import (
     GetBucketLoggingOutput,
     GetBucketOwnershipControlsOutput,
     GetBucketPolicyOutput,
+    GetBucketReplicationOutput,
     GetBucketRequestPaymentOutput,
     GetBucketTaggingOutput,
     GetBucketVersioningOutput,
@@ -159,6 +161,8 @@ from localstack.aws.api.s3 import (
     PutObjectRequest,
     PutObjectRetentionOutput,
     PutObjectTaggingOutput,
+    ReplicationConfiguration,
+    ReplicationConfigurationNotFoundError,
     RequestPayer,
     RequestPaymentConfiguration,
     RestoreObjectOutput,
@@ -250,7 +254,8 @@ from localstack.services.s3.validation import (
     validate_website_configuration,
 )
 from localstack.services.s3.website_hosting import register_website_hosting_routes
-from localstack.utils.strings import to_str
+from localstack.utils.aws.arns import s3_bucket_name
+from localstack.utils.strings import short_uid, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -3190,6 +3195,68 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             return GetBucketLoggingOutput()
 
         return GetBucketLoggingOutput(LoggingEnabled=s3_bucket.logging)
+
+    def put_bucket_replication(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        replication_configuration: ReplicationConfiguration,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        token: ObjectLockToken = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        if not s3_bucket.versioning_status == BucketVersioningStatus.Enabled:
+            raise InvalidRequest(
+                "Versioning must be 'Enabled' on the bucket to apply a replication configuration"
+            )
+
+        if not (rules := replication_configuration.get("Rules")):
+            raise MalformedXML()
+
+        for rule in rules:
+            if "ID" not in rule:
+                rule["ID"] = short_uid()
+
+            dest_bucket_arn = rule.get("Destination", {}).get("Bucket")
+            dest_bucket_name = s3_bucket_name(dest_bucket_arn)
+            if (
+                not (dest_s3_bucket := store.buckets.get(dest_bucket_name))
+                or not dest_s3_bucket.versioning_status == BucketVersioningStatus.Enabled
+            ):
+                # according to AWS testing the same exception is raised if the bucket does not exist
+                # or if versioning was disabled
+                raise InvalidRequest("Destination bucket must have versioning enabled.")
+
+        # TODO more validation on input
+        s3_bucket.replication = replication_configuration
+
+    def get_bucket_replication(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketReplicationOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not s3_bucket.replication:
+            raise ReplicationConfigurationNotFoundError(
+                "The replication configuration was not found",
+                BucketName=bucket,
+            )
+
+        return GetBucketReplicationOutput(ReplicationConfiguration=s3_bucket.replication)
+
+    def delete_bucket_replication(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        s3_bucket.replication = None
 
     # ###### THIS ARE UNIMPLEMENTED METHODS TO ALLOW TESTING, DO NOT COUNT THEM AS DONE ###### #
 
