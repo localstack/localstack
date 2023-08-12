@@ -108,7 +108,7 @@ class S3Bucket:
     payer: Payer
     encryption_rule: Optional[ServerSideEncryptionRule]
     public_access_block: Optional[PublicAccessBlockConfiguration]
-    accelerate_status: BucketAccelerateStatus
+    accelerate_status: Optional[BucketAccelerateStatus]
     object_lock_enabled: bool
     object_ownership: ObjectOwnership
     intelligent_tiering_configurations: dict[IntelligentTieringId, IntelligentTieringConfiguration]
@@ -142,6 +142,7 @@ class S3Bucket:
         self.public_access_block = DEFAULT_PUBLIC_BLOCK_ACCESS
         self.multiparts = {}
         self.notification_configuration = {}
+        self.logging = {}
         self.cors_rules = None
         self.lifecycle_rules = None
         self.website_configuration = None
