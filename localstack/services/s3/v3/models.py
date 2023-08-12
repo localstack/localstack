@@ -152,6 +152,7 @@ class S3Bucket:
         self.analytics_configurations = {}
         self.inventory_configurations = {}
         self.object_lock_default_retention = {}
+        self.replication = None
 
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
         self.owner = get_owner_for_account_id(account_id)
