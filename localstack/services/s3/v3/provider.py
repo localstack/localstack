@@ -23,6 +23,7 @@ from localstack.aws.api.s3 import (
     BucketAlreadyOwnedByYou,
     BucketCannedACL,
     BucketLifecycleConfiguration,
+    BucketLoggingStatus,
     BucketName,
     BucketNotEmpty,
     BypassGovernanceRetention,
@@ -45,6 +46,7 @@ from localstack.aws.api.s3 import (
     CreateBucketRequest,
     CreateMultipartUploadOutput,
     CreateMultipartUploadRequest,
+    CrossLocationLoggingProhibitted,
     Delete,
     DeletedObject,
     DeleteMarkerEntry,
@@ -64,6 +66,7 @@ from localstack.aws.api.s3 import (
     GetBucketInventoryConfigurationOutput,
     GetBucketLifecycleConfigurationOutput,
     GetBucketLocationOutput,
+    GetBucketLoggingOutput,
     GetBucketOwnershipControlsOutput,
     GetBucketPolicyOutput,
     GetBucketRequestPaymentOutput,
@@ -96,6 +99,7 @@ from localstack.aws.api.s3 import (
     InvalidPartNumber,
     InvalidPartOrder,
     InvalidStorageClass,
+    InvalidTargetBucketForLogging,
     InventoryConfiguration,
     InventoryId,
     KeyMarker,
@@ -3134,6 +3138,58 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise MalformedXML()
 
         s3_bucket.accelerate_status = status
+
+    def put_bucket_logging(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        bucket_logging_status: BucketLoggingStatus,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not (logging_config := bucket_logging_status.get("LoggingEnabled")):
+            s3_bucket.logging = {}
+            return
+
+        # the target bucket must be in the same account
+        if not (target_bucket_name := logging_config.get("TargetBucket")):
+            raise MalformedXML()
+
+        if not logging_config.get("TargetPrefix"):
+            logging_config["TargetPrefix"] = ""
+
+        # TODO: validate Grants
+
+        if not (target_s3_bucket := store.buckets.get(bucket)):
+            raise InvalidTargetBucketForLogging(
+                "The target bucket for logging does not exist",
+                TargetBucket=target_bucket_name,
+            )
+
+        if target_s3_bucket.bucket_region != s3_bucket.bucket_region:
+            raise CrossLocationLoggingProhibitted(
+                "Cross S3 location logging not allowed. ",
+                TargetBucketLocation=target_s3_bucket.bucket_region,
+            )
+
+        s3_bucket.logging = logging_config
+
+    def get_bucket_logging(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketLoggingOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not s3_bucket.logging:
+            return GetBucketLoggingOutput()
+
+        return GetBucketLoggingOutput(LoggingEnabled=s3_bucket.logging)
 
     # ###### THIS ARE UNIMPLEMENTED METHODS TO ALLOW TESTING, DO NOT COUNT THEM AS DONE ###### #
 
