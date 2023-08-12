@@ -3,7 +3,7 @@ import json
 
 import requests
 
-from localstack.services.apigateway.helpers import path_based_url, connect_api_gateway_to_sqs
+from localstack.services.apigateway.helpers import connect_api_gateway_to_sqs, path_based_url
 from localstack.testing.pytest import markers
 from localstack.utils.aws import queries
 from localstack.utils.aws import resources as resource_util
@@ -43,11 +43,20 @@ def test_api_gateway_sqs_integration(self, aws_client):
     assert 1 == len(messages)
     assert test_data == json.loads(base64.b64decode(messages[0]["Body"]))
 
+
 @markers.aws.validated
-def test_sqs_aws_integration(create_rest_apigw, sqs_create_queue, aws_client, create_role_with_policy, region, account_id, snapshot):
+def test_sqs_aws_integration(
+    create_rest_apigw,
+    sqs_create_queue,
+    aws_client,
+    create_role_with_policy,
+    region,
+    account_id,
+    snapshot,
+):
     # create target SQS stream
     queue_name = f"queue-{short_uid()}"
-    queue_url = sqs_create_queue(QueueName=queue_name)
+    sqs_create_queue(QueueName=queue_name)
 
     # create invocation role
     _, role_arn = create_role_with_policy(
@@ -60,7 +69,9 @@ def test_sqs_aws_integration(create_rest_apigw, sqs_create_queue, aws_client, cr
     )
 
     resource_id = aws_client.apigateway.create_resource(
-        restApiId=api_id, parentId=root, pathPart="sqs",
+        restApiId=api_id,
+        parentId=root,
+        pathPart="sqs",
     )["id"]
 
     aws_client.apigateway.put_method(
@@ -78,8 +89,10 @@ def test_sqs_aws_integration(create_rest_apigw, sqs_create_queue, aws_client, cr
         integrationHttpMethod="POST",
         uri=f"arn:aws:apigateway:{region}:sqs:path/{account_id}/{queue_name}",
         credentials=role_arn,
-        requestParameters={"integration.request.header.Content-Type": "'application/x-www-form-urlencoded'"},
-        requestTemplates={"application/json": 'Action=SendMessage&MessageBody=$input.body'},
+        requestParameters={
+            "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'"
+        },
+        requestTemplates={"application/json": "Action=SendMessage&MessageBody=$input.body"},
         passthroughBehavior="NEVER",
     )
 
@@ -88,7 +101,7 @@ def test_sqs_aws_integration(create_rest_apigw, sqs_create_queue, aws_client, cr
         resourceId=resource_id,
         httpMethod="POST",
         statusCode="200",
-        responseModels={"application/json": "Empty"}
+        responseModels={"application/json": "Empty"},
     )
 
     aws_client.apigateway.put_integration_response(
@@ -96,7 +109,7 @@ def test_sqs_aws_integration(create_rest_apigw, sqs_create_queue, aws_client, cr
         resourceId=resource_id,
         httpMethod="POST",
         statusCode="200",
-        responseTemplates={"application/json": '{\"message\": \"great success!\"}'}
+        responseTemplates={"application/json": '{"message": "great success!"}'},
     )
 
     response = aws_client.apigateway.create_deployment(restApiId=api_id)
@@ -119,4 +132,3 @@ def test_sqs_aws_integration(create_rest_apigw, sqs_create_queue, aws_client, cr
 
     response_data = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
     snapshot.match("sqs-aws-integration", response_data)
-
