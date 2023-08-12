@@ -10,6 +10,9 @@ class CallbackTemplates(TemplateLoader):
     SFN_START_EXECUTION_SYNC: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/sfn_start_execution_sync.json5"
     )
+    SFN_START_EXECUTION_SYNC2: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/sfn_start_execution_sync2.json5"
+    )
     SQS_SUCCESS_ON_TASK_TOKEN: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/sqs_success_on_task_token.json5"
     )
