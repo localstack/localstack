@@ -685,3 +685,357 @@ class TestS3BucketEncryption:
 
         get_object_encrypted = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
         snapshot.match("get-object-encrypted", get_object_encrypted)
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3BucketObjectTagging:
+    @markers.aws.validated
+    def test_bucket_tagging_crud(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_tagging(Bucket=s3_bucket)
+        snapshot.match("get-bucket-tags-empty", e.value.response)
+
+        tag_set = {"TagSet": [{"Key": "tag1", "Value": "tag1"}, {"Key": "tag2", "Value": ""}]}
+
+        put_bucket_tags = aws_client.s3.put_bucket_tagging(Bucket=s3_bucket, Tagging=tag_set)
+        snapshot.match("put-bucket-tags", put_bucket_tags)
+
+        get_bucket_tags = aws_client.s3.get_bucket_tagging(Bucket=s3_bucket)
+        snapshot.match("get-bucket-tags", get_bucket_tags)
+
+        tag_set_2 = {"TagSet": [{"Key": "tag3", "Value": "tag3"}]}
+
+        put_bucket_tags = aws_client.s3.put_bucket_tagging(Bucket=s3_bucket, Tagging=tag_set_2)
+        snapshot.match("put-bucket-tags-overwrite", put_bucket_tags)
+
+        get_bucket_tags = aws_client.s3.get_bucket_tagging(Bucket=s3_bucket)
+        snapshot.match("get-bucket-tags-overwritten", get_bucket_tags)
+
+        delete_bucket_tags = aws_client.s3.delete_bucket_tagging(Bucket=s3_bucket)
+        snapshot.match("delete-bucket-tags", delete_bucket_tags)
+
+        # test idempotency of delete
+        aws_client.s3.delete_bucket_tagging(Bucket=s3_bucket)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_tagging(Bucket=s3_bucket)
+        e.match("NoSuchTagSet")
+
+        # setting an empty tag set is the same as effectively deleting the TagSet
+        tag_set_empty = {"TagSet": []}
+
+        put_bucket_tags = aws_client.s3.put_bucket_tagging(Bucket=s3_bucket, Tagging=tag_set_empty)
+        snapshot.match("put-bucket-tags-empty", put_bucket_tags)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_tagging(Bucket=s3_bucket)
+        e.match("NoSuchTagSet")
+
+    @markers.aws.validated
+    def test_bucket_tagging_exc(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        fake_bucket = f"fake-bucket-{short_uid()}-{short_uid()}"
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_tagging(Bucket=fake_bucket)
+        snapshot.match("get-no-bucket-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_bucket_tagging(Bucket=fake_bucket)
+        snapshot.match("delete-no-bucket-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_tagging(Bucket=fake_bucket, Tagging={"TagSet": []})
+        snapshot.match("put-no-bucket-tags", e.value.response)
+
+    @markers.aws.validated
+    def test_object_tagging_crud(self, s3_bucket, aws_client, snapshot):
+        object_key = "test-object-tagging"
+        put_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="test-tagging")
+        snapshot.match("put-object", put_object)
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-empty", get_bucket_tags)
+
+        tag_set = {"TagSet": [{"Key": "tag1", "Value": "tag1"}, {"Key": "tag2", "Value": ""}]}
+
+        put_bucket_tags = aws_client.s3.put_object_tagging(
+            Bucket=s3_bucket, Key=object_key, Tagging=tag_set
+        )
+        snapshot.match("put-object-tags", put_bucket_tags)
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags", get_bucket_tags)
+
+        tag_set_2 = {"TagSet": [{"Key": "tag3", "Value": "tag3"}]}
+
+        put_bucket_tags = aws_client.s3.put_object_tagging(
+            Bucket=s3_bucket, Key=object_key, Tagging=tag_set_2
+        )
+        snapshot.match("put-object-tags-overwrite", put_bucket_tags)
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-overwritten", get_bucket_tags)
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-obj-after-tags", get_object)
+
+        delete_bucket_tags = aws_client.s3.delete_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("delete-object-tags", delete_bucket_tags)
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-deleted", get_bucket_tags)
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-obj-after-tags-deleted", get_object)
+
+    @markers.aws.validated
+    def test_object_tagging_exc(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        snapshot.add_transformer(snapshot.transform.regex(s3_bucket, replacement="<bucket:1>"))
+        fake_bucket = f"fake-bucket-{short_uid()}-{short_uid()}"
+        fake_key = "fake-key"
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_tagging(Bucket=fake_bucket, Key=fake_key)
+        snapshot.match("get-no-bucket-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object_tagging(Bucket=fake_bucket, Key=fake_key)
+        snapshot.match("delete-no-bucket-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_tagging(
+                Bucket=fake_bucket, Tagging={"TagSet": []}, Key=fake_key
+            )
+        snapshot.match("put-no-bucket-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=fake_key)
+        snapshot.match("get-no-key-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object_tagging(Bucket=s3_bucket, Key=fake_key)
+        snapshot.match("delete-no-key-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_tagging(Bucket=s3_bucket, Tagging={"TagSet": []}, Key=fake_key)
+        snapshot.match("put-no-key-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            tagging = "key1=val1&key1=val2"
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=fake_key, Body="", Tagging=tagging)
+        snapshot.match("put-obj-duplicate-tagging", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            tagging = "key1=val1,key2=val2"
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=fake_key, Body="", Tagging=tagging)
+        snapshot.match("put-obj-wrong-format", e.value.response)
+
+    @markers.aws.validated
+    def test_object_tagging_versioned(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        object_key = "test-version-tagging"
+        version_ids = []
+        for i in range(2):
+            put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body=f"test-{i}")
+            snapshot.match(f"put-obj-{i}", put_obj)
+            version_ids.append(put_obj["VersionId"])
+
+        version_id_1, version_id_2 = version_ids
+
+        tag_set_2 = {"TagSet": [{"Key": "tag3", "Value": "tag3"}]}
+
+        # test without specifying a VersionId
+        put_bucket_tags = aws_client.s3.put_object_tagging(
+            Bucket=s3_bucket, Key=object_key, Tagging=tag_set_2
+        )
+        snapshot.match("put-object-tags-current-version", put_bucket_tags)
+        assert put_bucket_tags["VersionId"] == version_id_2
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-current-version", get_bucket_tags)
+
+        tag_set_2 = {"TagSet": [{"Key": "tag1", "Value": "tag1"}]}
+        # test by specifying a VersionId to Version1
+        put_bucket_tags = aws_client.s3.put_object_tagging(
+            Bucket=s3_bucket, Key=object_key, VersionId=version_id_1, Tagging=tag_set_2
+        )
+        snapshot.match("put-object-tags-previous-version", put_bucket_tags)
+        assert put_bucket_tags["VersionId"] == version_id_1
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(
+            Bucket=s3_bucket, Key=object_key, VersionId=version_id_1
+        )
+        snapshot.match("get-object-tags-previous-version", get_bucket_tags)
+
+        # Put a DeleteMarker on top of the stack
+        delete_current = aws_client.s3.delete_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("put-delete-marker", delete_current)
+
+        # test to put/get tagging on a DeleteMarker
+        put_bucket_tags = aws_client.s3.put_object_tagging(
+            Bucket=s3_bucket, Key=object_key, VersionId=version_id_1, Tagging=tag_set_2
+        )
+        snapshot.match("put-object-tags-delete-marker", put_bucket_tags)
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(
+            Bucket=s3_bucket, Key=object_key, VersionId=version_id_1
+        )
+        snapshot.match("get-object-tags-delete-marker", get_bucket_tags)
+
+    @markers.aws.validated
+    def test_put_object_with_tags(self, s3_bucket, aws_client, snapshot):
+        object_key = "test-put-object-tagging"
+        # tagging must be a URL encoded string directly
+        tag_set = "tag1=tag1&tag2=tag2&tag="
+        put_object = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=object_key, Body="test-tagging", Tagging=tag_set
+        )
+        snapshot.match("put-object", put_object)
+
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        # only TagSet set with the query string format are unordered, so not using the SortingTransformer
+        get_object_tags["TagSet"].sort(key=itemgetter("Key"))
+        snapshot.match("get-object-tags", get_object_tags)
+
+        tag_set_2 = {"TagSet": [{"Key": "tag3", "Value": "tag3"}]}
+        put_bucket_tags = aws_client.s3.put_object_tagging(
+            Bucket=s3_bucket, Key=object_key, Tagging=tag_set_2
+        )
+        snapshot.match("put-object-tags", put_bucket_tags)
+
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-override", get_object_tags)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-obj", head_object)
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-obj", get_object)
+
+        tagging = "wrongquery&wrongagain"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="", Tagging=tagging)
+
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        # only TagSet set with the query string format are unordered, so not using the SortingTransformer
+        get_object_tags["TagSet"].sort(key=itemgetter("Key"))
+        snapshot.match("get-object-tags-wrong-format-qs", get_object_tags)
+
+        tagging = "key1&&&key2"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="", Tagging=tagging)
+
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-wrong-format-qs-2", get_object_tags)
+
+    @markers.aws.validated
+    def test_object_tags_delete_or_overwrite_object(self, s3_bucket, aws_client, snapshot):
+        # verify that tags aren't kept after object deletion
+        object_key = "test-put-object-tagging-kept"
+        aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=object_key, Body="create", Tagging="tag1=val1"
+        )
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-after-creation", get_bucket_tags)
+
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="overwrite")
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-after-overwrite", get_bucket_tags)
+
+        # put some tags to verify they won't be kept
+        tag_set = {"TagSet": [{"Key": "tag3", "Value": "tag3"}]}
+        aws_client.s3.put_object_tagging(Bucket=s3_bucket, Key=object_key, Tagging=tag_set)
+
+        aws_client.s3.delete_object(Bucket=s3_bucket, Key=object_key)
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="recreate")
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-after-recreation", get_bucket_tags)
+
+    @markers.aws.validated
+    def test_tagging_validation(self, s3_bucket, aws_client, snapshot):
+        object_key = "tagging-validation"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body=b"")
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_tagging(
+                Bucket=s3_bucket,
+                Tagging={
+                    "TagSet": [
+                        {"Key": "Key1", "Value": "Val1"},
+                        {"Key": "Key1", "Value": "Val1"},
+                    ]
+                },
+            )
+        snapshot.match("put-bucket-tags-duplicate-keys", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_tagging(
+                Bucket=s3_bucket,
+                Tagging={
+                    "TagSet": [
+                        {"Key": "Key1,Key2", "Value": "Val1"},
+                    ]
+                },
+            )
+        snapshot.match("put-bucket-tags-invalid-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_tagging(
+                Bucket=s3_bucket,
+                Tagging={
+                    "TagSet": [
+                        {"Key": "Key1", "Value": "Val1,Val2"},
+                    ]
+                },
+            )
+        snapshot.match("put-bucket-tags-invalid-value", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_tagging(
+                Bucket=s3_bucket,
+                Tagging={
+                    "TagSet": [
+                        {"Key": "aws:prefixed", "Value": "Val1"},
+                    ]
+                },
+            )
+        snapshot.match("put-bucket-tags-aws-prefixed", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_tagging(
+                Bucket=s3_bucket,
+                Key=object_key,
+                Tagging={
+                    "TagSet": [
+                        {"Key": "Key1", "Value": "Val1"},
+                        {"Key": "Key1", "Value": "Val1"},
+                    ]
+                },
+            )
+
+        snapshot.match("put-object-tags-duplicate-keys", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_tagging(
+                Bucket=s3_bucket,
+                Key=object_key,
+                Tagging={"TagSet": [{"Key": "Key1,Key2", "Value": "Val1"}]},
+            )
+
+        snapshot.match("put-object-tags-invalid-field", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_tagging(
+                Bucket=s3_bucket,
+                Key=object_key,
+                Tagging={"TagSet": [{"Key": "aws:prefixed", "Value": "Val1"}]},
+            )
+        snapshot.match("put-object-tags-aws-prefixed", e.value.response)

@@ -992,6 +992,45 @@
         "documentation": "<p>One or more of the specified parts could not be found. The part might not have been uploaded, or the specified entity tag might not have matched the part's entity tag.</p>",
         "exception": true
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchTagSet",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>There is no tag set associated with the bucket.</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/operations/PutBucketTagging/http/responseCode",
+      "value": 204
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidTag",
+      "value": {
+        "type": "structure",
+        "members": {
+          "TagKey": {
+            "shape": "ObjectKey"
+          },
+          "TagValue": {
+            "shape": "Value"
+          }
+        },
+        "documentation": "<p>The tag provided was not a valid tag. This error can occur if the tag did not pass input validation.</p>",
+        "exception": true
+      }
     }
   ]
 }

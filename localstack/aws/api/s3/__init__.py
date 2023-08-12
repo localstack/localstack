@@ -831,6 +831,21 @@ class InvalidPart(ServiceException):
     PartNumber: Optional[PartNumber]
 
 
+class NoSuchTagSet(ServiceException):
+    code: str = "NoSuchTagSet"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
+class InvalidTag(ServiceException):
+    code: str = "InvalidTag"
+    sender_fault: bool = False
+    status_code: int = 400
+    TagKey: Optional[ObjectKey]
+    TagValue: Optional[Value]
+
+
 AbortDate = datetime
 
 
