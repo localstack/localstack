@@ -15,7 +15,7 @@ from tests.aws.apigateway.test_apigateway_basic import TEST_STAGE_NAME
 
 
 @markers.aws.unknown
-def test_api_gateway_sqs_integration(self, aws_client):
+def test_api_gateway_sqs_integration(aws_client):
     # create target SQS stream
     queue_name = f"queue-{short_uid()}"
     resource_util.create_sqs_queue(queue_name)
