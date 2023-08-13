@@ -1,6 +1,5 @@
 from localstack.aws.api.s3 import (
-    BucketCannedACL,
-    ObjectCannedACL,
+    Grantee,
     Permission,
     PublicAccessBlockConfiguration,
     ServerSideEncryption,
@@ -8,6 +7,7 @@ from localstack.aws.api.s3 import (
     ServerSideEncryptionRule,
     StorageClass,
 )
+from localstack.aws.api.s3 import Type as GranteeType
 
 S3_VIRTUAL_HOST_FORWARDED_HEADER = "x-s3-vhost-forwarded-for"
 
@@ -16,23 +16,14 @@ S3_UPLOAD_PART_MIN_SIZE = 5242880
 This is minimum size allowed by S3 when uploading more than one part for a Multipart Upload, except for the last part
 """
 
-VALID_CANNED_ACLS_BUCKET = {
-    # https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
-    # bucket-owner-read + bucket-owner-full-control are allowed, but ignored for buckets
-    ObjectCannedACL.private,
-    ObjectCannedACL.authenticated_read,
-    ObjectCannedACL.aws_exec_read,
-    ObjectCannedACL.bucket_owner_full_control,
-    ObjectCannedACL.bucket_owner_read,
-    ObjectCannedACL.public_read,
-    ObjectCannedACL.public_read_write,
-    BucketCannedACL.log_delivery_write,
-}
+AUTHENTICATED_USERS_ACL_GROUP = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
+ALL_USERS_ACL_GROUP = "http://acs.amazonaws.com/groups/global/AllUsers"
+LOG_DELIVERY_ACL_GROUP = "http://acs.amazonaws.com/groups/s3/LogDelivery"
 
 VALID_ACL_PREDEFINED_GROUPS = {
-    "http://acs.amazonaws.com/groups/global/AuthenticatedUsers",
-    "http://acs.amazonaws.com/groups/global/AllUsers",
-    "http://acs.amazonaws.com/groups/s3/LogDelivery",
+    AUTHENTICATED_USERS_ACL_GROUP,
+    ALL_USERS_ACL_GROUP,
+    LOG_DELIVERY_ACL_GROUP,
 }
 
 VALID_GRANTEE_PERMISSIONS = {
@@ -117,3 +108,7 @@ DEFAULT_PUBLIC_BLOCK_ACCESS = PublicAccessBlockConfiguration(
     RestrictPublicBuckets=True,
     IgnorePublicAcls=True,
 )
+
+AUTHENTICATED_USERS_ACL_GRANTEE = Grantee(URI=AUTHENTICATED_USERS_ACL_GROUP, Type=GranteeType.Group)
+ALL_USERS_ACL_GRANTEE = Grantee(URI=ALL_USERS_ACL_GROUP, Type=GranteeType.Group)
+LOG_DELIVERY_ACL_GRANTEE = Grantee(URI=LOG_DELIVERY_ACL_GROUP, Type=GranteeType.Group)
