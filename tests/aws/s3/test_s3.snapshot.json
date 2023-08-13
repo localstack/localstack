@@ -5373,7 +5373,7 @@
     }
   },
   "tests/aws/s3/test_s3.py::TestS3::test_put_object_acl_on_delete_marker": {
-    "recorded-date": "04-08-2023, 23:53:09",
+    "recorded-date": "13-08-2023, 02:27:00",
     "recorded-content": {
       "put-obj-1": {
         "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
@@ -5394,23 +5394,53 @@
         }
       },
       "delete-object": {
-        "Deleted": [
-          {
-            "DeleteMarker": true,
-            "DeleteMarkerVersionId": "PY9ezDfMH8Xgs0AK1ri_1goNuAwSqcbA",
-            "Key": "test-key-versioned"
-          }
-        ],
+        "DeleteMarker": true,
+        "VersionId": "<version-id:3>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPStatusCode": 204
         }
       },
-      "key-delete-marker": {
+      "put-acl-delete-marker": {
         "Error": {
           "Code": "MethodNotAllowed",
           "Message": "The specified method is not allowed against this resource.",
           "Method": "PUT",
+          "ResourceType": "DeleteMarker"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 405
+        }
+      },
+      "get-acl-delete-marker": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "test-key-versioned",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put-acl-delete-marker-version-id": {
+        "Error": {
+          "Code": "MethodNotAllowed",
+          "Message": "The specified method is not allowed against this resource.",
+          "Method": "PUT",
+          "ResourceType": "DeleteMarker"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 405
+        }
+      },
+      "get-acl-delete-marker-version-id": {
+        "Error": {
+          "Code": "MethodNotAllowed",
+          "Message": "The specified method is not allowed against this resource.",
+          "Method": "GET",
           "ResourceType": "DeleteMarker"
         },
         "ResponseMetadata": {

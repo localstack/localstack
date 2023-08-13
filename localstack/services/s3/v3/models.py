@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 from localstack import config
 from localstack.aws.api import CommonServiceException
 from localstack.aws.api.s3 import (
+    AccessControlPolicy,
     AccountId,
     AnalyticsConfiguration,
     AnalyticsId,
@@ -67,7 +68,6 @@ from localstack.services.s3.constants import (
     S3_UPLOAD_PART_MIN_SIZE,
 )
 from localstack.services.s3.utils import (
-    get_owner_for_account_id,
     iso_8601_datetime_without_milliseconds_s3,
     rfc_1123_datetime,
 )
@@ -101,7 +101,7 @@ class S3Bucket:
     lifecycle_rules: Optional[LifecycleRules]
     policy: Optional[Policy]
     website_configuration: Optional[WebsiteConfiguration]
-    acl: str  # TODO: change this
+    acl: AccessControlPolicy
     cors_rules: Optional[CORSConfiguration]
     logging: LoggingEnabled
     notification_configuration: NotificationConfiguration
@@ -124,7 +124,8 @@ class S3Bucket:
         name: BucketName,
         account_id: AccountId,
         bucket_region: BucketRegion,
-        acl=None,  # TODO: validate ACL first, create utils for validating and consolidating
+        owner: Owner,
+        acl: AccessControlPolicy = None,
         object_ownership: ObjectOwnership = None,
         object_lock_enabled_for_bucket: bool = None,
     ):
@@ -153,9 +154,9 @@ class S3Bucket:
         self.inventory_configurations = {}
         self.object_lock_default_retention = {}
         self.replication = None
-
+        self.acl = acl
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
-        self.owner = get_owner_for_account_id(account_id)
+        self.owner = owner
         self.bucket_arn = arns.s3_bucket_arn(self.name)
 
     def get_object(
@@ -225,6 +226,16 @@ class S3Bucket:
                 raise NoSuchKey("The specified key does not exist.", Key=key)
 
             elif raise_for_delete_marker and isinstance(s3_object, S3DeleteMarker):
+                if http_method not in ("HEAD", "GET"):
+                    raise MethodNotAllowed(
+                        "The specified method is not allowed against this resource.",
+                        Method=http_method,
+                        ResourceType="DeleteMarker",
+                        DeleteMarker=True,
+                        Allow="DELETE",
+                        VersionId=s3_object.version_id,
+                    )
+
                 raise NoSuchKey(
                     "The specified key does not exist.",
                     Key=key,
@@ -240,6 +251,7 @@ class S3Object:
     key: ObjectKey
     version_id: Optional[ObjectVersionId]
     bucket: BucketName
+    owner: Optional[Owner]
     size: Optional[Size]
     etag: Optional[ETag]
     user_metadata: Metadata
@@ -257,7 +269,7 @@ class S3Object:
     lock_legal_status: Optional[ObjectLockLegalHoldStatus]
     lock_until: Optional[datetime]
     website_redirect_location: Optional[WebsiteRedirectLocation]
-    acl: Optional[str]  # TODO: we need to change something here, how it's done?
+    acl: Optional[AccessControlPolicy]
     is_current: bool
     parts: Optional[dict[int, tuple[int, int]]]
     restore: Optional[Restore]
@@ -282,7 +294,8 @@ class S3Object:
         lock_legal_status: Optional[ObjectLockLegalHoldStatus] = None,
         lock_until: Optional[datetime] = None,
         website_redirect_location: Optional[WebsiteRedirectLocation] = None,
-        acl: Optional[str] = None,  # TODO
+        acl: Optional[AccessControlPolicy] = None,  # TODO
+        owner: Optional[Owner] = None,
     ):
         self.key = key
         self.user_metadata = (
@@ -309,6 +322,7 @@ class S3Object:
         self.last_modified = datetime.now(tz=_gmt_zone_info)
         self.parts = {}
         self.restore = None
+        self.owner = owner
 
     def get_system_metadata_fields(self) -> dict:
         headers = {
@@ -433,11 +447,12 @@ class S3Multipart:
         lock_legal_status: Optional[ObjectLockLegalHoldStatus] = None,
         lock_until: Optional[datetime] = None,
         website_redirect_location: Optional[WebsiteRedirectLocation] = None,
-        acl: Optional[str] = None,  # TODO
+        acl: Optional[AccessControlPolicy] = None,  # TODO
         user_metadata: Optional[Metadata] = None,
         system_metadata: Optional[Metadata] = None,
         initiator: Optional[Owner] = None,
         tagging: Optional[dict[str, str]] = None,
+        owner: Optional[Owner] = None,
     ):
         self.id = token_urlsafe(96)  # MultipartUploadId is 128 characters long
         self.initiated = datetime.now(tz=_gmt_zone_info)
@@ -461,6 +476,7 @@ class S3Multipart:
             lock_until=lock_until,
             website_redirect_location=website_redirect_location,
             acl=acl,
+            owner=owner,
         )
 
     def complete_multipart(self, parts: CompletedPartList):
