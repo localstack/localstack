@@ -2832,7 +2832,8 @@ class TestS3:
             "$..ServerSideEncryption",
             "$..Deleted..DeleteMarker",
             "$..Deleted..DeleteMarkerVersionId",
-            "$.get-acl-delete-marker-version-id",  # Moto is not handling that case well with versioning
+            "$.get-acl-delete-marker-version-id.Error",  # Moto is not handling that case well with versioning
+            "$.get-acl-delete-marker-version-id.ResponseMetadata",
         ],
     )
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
