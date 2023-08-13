@@ -17,12 +17,16 @@ from moto.s3.utils import clean_key_name
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.s3 import (
+    AccessControlPolicy,
+    BucketCannedACL,
     BucketName,
     ChecksumAlgorithm,
     CopyObjectRequest,
     CopySource,
     ETag,
     GetObjectRequest,
+    Grant,
+    Grantee,
     HeadObjectRequest,
     InvalidArgument,
     InvalidRange,
@@ -34,23 +38,28 @@ from localstack.aws.api.s3 import (
     MethodNotAllowed,
     NoSuchBucket,
     NoSuchKey,
+    ObjectCannedACL,
     ObjectKey,
     ObjectSize,
     ObjectVersionId,
     Owner,
+    Permission,
     PreconditionFailed,
     SSEKMSKeyId,
     TaggingHeader,
     TagSet,
 )
+from localstack.aws.api.s3 import Type as GranteeType
 from localstack.aws.connect import connect_to
 from localstack.services.s3.constants import (
+    ALL_USERS_ACL_GRANTEE,
+    AUTHENTICATED_USERS_ACL_GRANTEE,
+    LOG_DELIVERY_ACL_GRANTEE,
     S3_CHUNK_SIZE,
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
     SIGNATURE_V2_PARAMS,
     SIGNATURE_V4_PARAMS,
     SYSTEM_METADATA_SETTABLE_HEADERS,
-    VALID_CANNED_ACLS_BUCKET,
 )
 from localstack.services.s3.exceptions import InvalidRequest
 from localstack.utils.aws import arns
@@ -325,13 +334,13 @@ def is_bucket_name_valid(bucket_name: str) -> bool:
     return True if re.match(BUCKET_NAME_REGEX, bucket_name) else False
 
 
-def is_canned_acl_bucket_valid(canned_acl: str) -> bool:
-    return canned_acl in VALID_CANNED_ACLS_BUCKET
+def get_permission_header_name(permission: Permission) -> str:
+    return f"x-amz-grant-{permission.replace('_', '-').lower()}"
 
 
-def get_header_name(capitalized_field: str) -> str:
-    headers_parts = re.split(r"([A-Z][a-z]+)", capitalized_field)
-    return f"x-amz-{'-'.join([part.lower() for part in headers_parts if part])}"
+def get_permission_from_header(capitalized_field: str) -> Permission:
+    headers_parts = [part.upper() for part in re.split(r"([A-Z][a-z]+)", capitalized_field) if part]
+    return "_".join(headers_parts[1:])
 
 
 def is_valid_canonical_id(canonical_id: str) -> bool:
@@ -860,3 +869,42 @@ def validate_failed_precondition(
             code="NotModified",
             status_code=304,
         )
+
+
+def get_canned_acl(
+    canned_acl: BucketCannedACL | ObjectCannedACL, owner: Owner
+) -> AccessControlPolicy:
+    """
+    Return the proper Owner and Grants from a CannedACL
+    See https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
+    :param canned_acl: an S3 CannedACL
+    :param owner: the current owner of the bucket or object
+    :return: an AccessControlPolicy containing the Grants and Owner
+    """
+    owner_grantee = Grantee(**owner, Type=GranteeType.CanonicalUser)
+    grants = [Grant(Grantee=owner_grantee, Permission=Permission.FULL_CONTROL)]
+
+    match canned_acl:
+        case ObjectCannedACL.private:
+            pass  # no other permissions
+        case ObjectCannedACL.public_read:
+            grants.append(Grant(Grantee=ALL_USERS_ACL_GRANTEE, Permission=Permission.READ))
+
+        case ObjectCannedACL.public_read_write:
+            grants.append(Grant(Grantee=ALL_USERS_ACL_GRANTEE, Permission=Permission.READ))
+            grants.append(Grant(Grantee=ALL_USERS_ACL_GRANTEE, Permission=Permission.WRITE))
+        case ObjectCannedACL.authenticated_read:
+            grants.append(
+                Grant(Grantee=AUTHENTICATED_USERS_ACL_GRANTEE, Permission=Permission.READ)
+            )
+        case ObjectCannedACL.bucket_owner_read:
+            pass  # TODO: bucket owner ACL
+        case ObjectCannedACL.bucket_owner_full_control:
+            pass  # TODO: bucket owner ACL
+        case ObjectCannedACL.aws_exec_read:
+            pass  # TODO: bucket owner, EC2 Read
+        case BucketCannedACL.log_delivery_write:
+            grants.append(Grant(Grantee=LOG_DELIVERY_ACL_GRANTEE, Permission=Permission.READ_ACP))
+            grants.append(Grant(Grantee=LOG_DELIVERY_ACL_GRANTEE, Permission=Permission.WRITE))
+
+    return AccessControlPolicy(Owner=owner, Grants=grants)

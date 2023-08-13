@@ -2832,6 +2832,8 @@ class TestS3:
             "$..ServerSideEncryption",
             "$..Deleted..DeleteMarker",
             "$..Deleted..DeleteMarkerVersionId",
+            "$.get-acl-delete-marker-version-id.Error",  # Moto is not handling that case well with versioning
+            "$.get-acl-delete-marker-version-id.ResponseMetadata",
         ],
     )
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
@@ -2849,18 +2851,32 @@ class TestS3:
         put_obj_2 = aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="something-v2")
         snapshot.match("put-obj-2", put_obj_2)
 
-        # delete objects
-        response = aws_client.s3.delete_objects(
-            Bucket=s3_bucket,
-            Delete={
-                "Objects": [{"Key": object_key}],
-            },
-        )
+        response = aws_client.s3.delete_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("delete-object", response)
+        delete_marker_version_id = response["VersionId"]
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object_acl(Bucket=s3_bucket, Key=object_key, ACL="public-read")
-        snapshot.match("key-delete-marker", e.value.response)
+        snapshot.match("put-acl-delete-marker", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_acl(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-acl-delete-marker", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_acl(
+                Bucket=s3_bucket,
+                Key=object_key,
+                VersionId=delete_marker_version_id,
+                ACL="public-read",
+            )
+        snapshot.match("put-acl-delete-marker-version-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_acl(
+                Bucket=s3_bucket, Key=object_key, VersionId=delete_marker_version_id
+            )
+        snapshot.match("get-acl-delete-marker-version-id", e.value.response)
 
     @markers.aws.validated
     def test_s3_request_payer(self, s3_bucket, snapshot, aws_client):

@@ -6,6 +6,7 @@ import logging
 from collections import defaultdict
 from operator import itemgetter
 from secrets import token_urlsafe
+from typing import Union
 
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -60,6 +61,7 @@ from localstack.aws.api.s3 import (
     Expiration,
     FetchOwner,
     GetBucketAccelerateConfigurationOutput,
+    GetBucketAclOutput,
     GetBucketAnalyticsConfigurationOutput,
     GetBucketCorsOutput,
     GetBucketEncryptionOutput,
@@ -70,11 +72,13 @@ from localstack.aws.api.s3 import (
     GetBucketLoggingOutput,
     GetBucketOwnershipControlsOutput,
     GetBucketPolicyOutput,
+    GetBucketPolicyStatusOutput,
     GetBucketReplicationOutput,
     GetBucketRequestPaymentOutput,
     GetBucketTaggingOutput,
     GetBucketVersioningOutput,
     GetBucketWebsiteOutput,
+    GetObjectAclOutput,
     GetObjectAttributesOutput,
     GetObjectAttributesParts,
     GetObjectAttributesRequest,
@@ -84,12 +88,8 @@ from localstack.aws.api.s3 import (
     GetObjectRequest,
     GetObjectRetentionOutput,
     GetObjectTaggingOutput,
+    GetObjectTorrentOutput,
     GetPublicAccessBlockOutput,
-    GrantFullControl,
-    GrantRead,
-    GrantReadACP,
-    GrantWrite,
-    GrantWriteACP,
     HeadBucketOutput,
     HeadObjectOutput,
     HeadObjectRequest,
@@ -119,6 +119,7 @@ from localstack.aws.api.s3 import (
     MaxKeys,
     MaxParts,
     MaxUploads,
+    MissingSecurityHeader,
     MultipartUpload,
     MultipartUploadId,
     NoSuchBucket,
@@ -146,6 +147,7 @@ from localstack.aws.api.s3 import (
     ObjectVersionId,
     ObjectVersionStorageClass,
     OptionalObjectAttributesList,
+    Owner,
     OwnershipControls,
     OwnershipControlsNotFoundError,
     Part,
@@ -155,6 +157,9 @@ from localstack.aws.api.s3 import (
     PreconditionFailed,
     Prefix,
     PublicAccessBlockConfiguration,
+    PutBucketAclRequest,
+    PutObjectAclOutput,
+    PutObjectAclRequest,
     PutObjectLegalHoldOutput,
     PutObjectLockConfigurationOutput,
     PutObjectOutput,
@@ -205,6 +210,7 @@ from localstack.services.s3.exceptions import (
     MalformedXML,
     NoSuchConfiguration,
     NoSuchObjectLockConfiguration,
+    UnexpectedContent,
 )
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
 from localstack.services.s3.utils import (
@@ -212,12 +218,14 @@ from localstack.services.s3.utils import (
     add_expiration_days_to_datetime,
     create_s3_kms_managed_key_for_region,
     extract_bucket_key_version_id_from_copy_source,
+    get_canned_acl,
     get_class_attrs_from_spec_class,
     get_failed_precondition_copy_source,
     get_full_default_bucket_location,
     get_kms_key_arn,
     get_lifecycle_rule_from_object,
     get_owner_for_account_id,
+    get_permission_from_header,
     get_retention_from_now,
     get_system_metadata_from_request,
     get_unique_key_id,
@@ -246,8 +254,11 @@ from localstack.services.s3.v3.models import (
 from localstack.services.s3.v3.storage.core import LimitedIterableStream
 from localstack.services.s3.v3.storage.ephemeral import EphemeralS3ObjectStore
 from localstack.services.s3.validation import (
+    parse_grants_in_headers,
+    validate_acl_acp,
     validate_bucket_analytics_configuration,
     validate_bucket_intelligent_tiering_configuration,
+    validate_canned_acl,
     validate_cors_configuration,
     validate_inventory_configuration,
     validate_lifecycle_configuration,
@@ -417,15 +428,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 f"Invalid x-amz-object-ownership header: {object_ownership}",
                 ArgumentName="x-amz-object-ownership",
             )
-
+        # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
+        owner = get_owner_for_account_id(context.account_id)
+        acl = get_access_control_policy_for_new_resource_request(request, owner=owner)
         s3_bucket = S3Bucket(
             name=bucket_name,
             account_id=context.account_id,
             bucket_region=bucket_region,
-            acl=None,  # TODO: validate ACL first, create utils for validating and consolidating
+            owner=owner,
+            acl=acl,
             object_ownership=request.get("ObjectOwnership"),
             object_lock_enabled_for_bucket=request.get("ObjectLockEnabledForBucket"),
         )
+
         store.buckets[bucket_name] = s3_bucket
         store.global_bucket_map[bucket_name] = s3_bucket.bucket_account_id
         self._cors_handler.invalidate_cache()
@@ -520,13 +535,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request: PutObjectRequest,
     ) -> PutObjectOutput:
         # TODO: validate order of validation
-        # TODO: still need to handle following parameters:
-        #  acl: ObjectCannedACL = None,
-        #  grant_full_control: GrantFullControl = None,
-        #  grant_read: GrantRead = None,
-        #  grant_read_acp: GrantReadACP = None,
-        #  grant_write_acp: GrantWriteACP = None,
-        #  -
+        # TODO: still need to handle following parameters
         #  request_payer: RequestPayer = None,
         bucket_name = request["Bucket"]
         store, s3_bucket = self._get_cross_account_bucket(context, bucket_name)
@@ -546,9 +555,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         system_metadata = get_system_metadata_from_request(request)
         if not system_metadata.get("ContentType"):
             system_metadata["ContentType"] = "binary/octet-stream"
-
-        # TODO: get all default from bucket once it is implemented
-        # validate encryption values
 
         body = request.get("Body")
         # check if chunked request
@@ -573,6 +579,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         lock_parameters = get_object_lock_parameters_from_bucket_and_request(request, s3_bucket)
 
+        acl = get_access_control_policy_for_new_resource_request(request, owner=s3_bucket.owner)
+
         s3_object = S3Object(
             key=key,
             version_id=version_id,
@@ -589,8 +597,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             lock_legal_status=lock_parameters.lock_legal_status,
             lock_until=lock_parameters.lock_until,
             website_redirect_location=request.get("WebsiteRedirectLocation"),
-            expiration=None,  # TODO, from lifecycle, or should it be updated with config?
-            acl=None,
+            acl=acl,
+            owner=s3_bucket.owner,  # TODO: for now we only have one owner, but it can depends on Bucket settings
         )
 
         s3_stored_object = self._storage_backend.open(bucket_name, s3_object)
@@ -1126,6 +1134,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             request, dest_s3_bucket
         )
 
+        acl = get_access_control_policy_for_new_resource_request(
+            request, owner=dest_s3_bucket.owner
+        )
+
         s3_object = S3Object(
             key=dest_key,
             size=src_s3_object.size,
@@ -1145,7 +1157,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             lock_until=lock_parameters.lock_until,
             website_redirect_location=website_redirect_location,
             expiration=None,  # TODO, from lifecycle
-            acl=None,
+            acl=acl,
+            owner=dest_s3_bucket.owner,
         )
 
         s3_stored_object = self._storage_backend.copy(
@@ -1635,11 +1648,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request: CreateMultipartUploadRequest,
     ) -> CreateMultipartUploadOutput:
         # TODO: handle missing parameters:
-        #  acl: ObjectCannedACL = None,
-        #  grant_full_control: GrantFullControl = None,
-        #  grant_read: GrantRead = None,
-        #  grant_read_acp: GrantReadACP = None,
-        #  grant_write_acp: GrantWriteACP = None,
         #  request_payer: RequestPayer = None,
         store = self.get_store(context.account_id, context.region)
         bucket_name = request["Bucket"]
@@ -1665,10 +1673,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not system_metadata.get("ContentType"):
             system_metadata["ContentType"] = "binary/octet-stream"
 
-        # TODO: get all default from bucket, maybe extract logic
-
-        # TODO: consolidate ACL into one, and validate it
-
         # TODO: validate the algorithm?
         checksum_algorithm = request.get("ChecksumAlgorithm")
 
@@ -1678,6 +1682,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             store,
         )
         lock_parameters = get_object_lock_parameters_from_bucket_and_request(request, s3_bucket)
+
+        acl = get_access_control_policy_for_new_resource_request(request, owner=s3_bucket.owner)
 
         # validate encryption values
         s3_multipart = S3Multipart(
@@ -1695,9 +1701,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             lock_until=lock_parameters.lock_until,
             website_redirect_location=request.get("WebsiteRedirectLocation"),
             expiration=None,  # TODO, from lifecycle, or should it be updated with config?
-            acl=None,
+            acl=acl,
             initiator=get_owner_for_account_id(context.account_id),
             tagging=tagging,
+            owner=s3_bucket.owner,
         )
 
         s3_bucket.multiparts[s3_multipart.id] = s3_multipart
@@ -1740,15 +1747,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 "The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
             )
+        elif (part_number := request.get("PartNumber", 0)) < 1 or part_number > 10000:
+            raise InvalidArgument(
+                "Part number must be an integer between 1 and 10000, inclusive",
+                ArgumentName="partNumber",
+                ArgumentValue=part_number,
+            )
 
         # TODO: validate key?
         if s3_multipart.object.key != request.get("Key"):
             pass
-
-        part_number = request.get("PartNumber")
-        # TODO: validate PartNumber
-        # if part_number > 10000:
-        # raise InvalidMaxPartNumberArgument(part_number)
 
         body = request.get("Body")
         headers = context.request.headers
@@ -1833,14 +1841,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 UploadId=upload_id,
             )
 
+        elif (part_number := request.get("PartNumber", 0)) < 1 or part_number > 10000:
+            raise InvalidArgument(
+                "Part number must be an integer between 1 and 10000, inclusive",
+                ArgumentName="partNumber",
+                ArgumentValue=part_number,
+            )
+
         # TODO: validate key?
         if s3_multipart.object.key != dest_key:
             pass
-
-        part_number = request.get("PartNumber")
-        # TODO: validate PartNumber
-        # if part_number > 10000:
-        # raise InvalidMaxPartNumberArgument(part_number)
 
         source_range = request.get("CopySourceRange")
         # TODO implement copy source IF (done in ASF provider)
@@ -3258,25 +3268,92 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         s3_bucket.replication = None
 
-    # ###### THIS ARE UNIMPLEMENTED METHODS TO ALLOW TESTING, DO NOT COUNT THEM AS DONE ###### #
-
+    @handler("PutBucketAcl", expand=False)
     def put_bucket_acl(
         self,
         context: RequestContext,
-        bucket: BucketName,
-        acl: BucketCannedACL = None,
-        access_control_policy: AccessControlPolicy = None,
-        content_md5: ContentMD5 = None,
-        checksum_algorithm: ChecksumAlgorithm = None,
-        grant_full_control: GrantFullControl = None,
-        grant_read: GrantRead = None,
-        grant_read_acp: GrantReadACP = None,
-        grant_write: GrantWrite = None,
-        grant_write_acp: GrantWriteACP = None,
-        expected_bucket_owner: AccountId = None,
+        request: PutBucketAclRequest,
     ) -> None:
-        # TODO: implement, this is just for CORS tests to be able to run
-        pass
+        bucket = request["Bucket"]
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        acp = get_access_control_policy_from_acl_request(
+            request=request, owner=s3_bucket.owner, request_body=context.request.data
+        )
+        s3_bucket.acl = acp
+
+    def get_bucket_acl(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketAclOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        return GetBucketAclOutput(Owner=s3_bucket.acl["Owner"], Grants=s3_bucket.acl["Grants"])
+
+    @handler("PutObjectAcl", expand=False)
+    def put_object_acl(
+        self,
+        context: RequestContext,
+        request: PutObjectAclRequest,
+    ) -> PutObjectAclOutput:
+        bucket = request["Bucket"]
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        s3_object = s3_bucket.get_object(
+            key=request["Key"],
+            version_id=request.get("VersionId"),
+            http_method="PUT",
+        )
+        acp = get_access_control_policy_from_acl_request(
+            request=request, owner=s3_object.owner, request_body=context.request.data
+        )
+        previous_acl = s3_object.acl
+        s3_object.acl = acp
+
+        if previous_acl != acp:
+            self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
+
+        # TODO: RequestCharged
+        return PutObjectAclOutput()
+
+    def get_object_acl(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        version_id: ObjectVersionId = None,
+        request_payer: RequestPayer = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetObjectAclOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        s3_object = s3_bucket.get_object(
+            key=key,
+            version_id=version_id,
+        )
+        # TODO: RequestCharged
+        return GetObjectAclOutput(Owner=s3_object.acl["Owner"], Grants=s3_object.acl["Grants"])
+
+    def get_bucket_policy_status(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketPolicyStatusOutput:
+        raise NotImplementedError
+
+    def get_object_torrent(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        request_payer: RequestPayer = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetObjectTorrentOutput:
+        raise NotImplementedError
 
 
 def generate_version_id(bucket_versioning_status: str) -> str | None:
@@ -3383,3 +3460,106 @@ def get_part_range(s3_object: S3Object, part_number: PartNumber) -> ObjectRange:
         content_length=part_length,
         content_range=f"bytes {begin}-{end}/{s3_object.size}",
     )
+
+
+def get_acl_headers_from_request(
+    request: Union[
+        PutObjectRequest,
+        CreateMultipartUploadRequest,
+        CopyObjectRequest,
+        CreateBucketRequest,
+        PutBucketAclRequest,
+        PutObjectAclRequest,
+    ]
+) -> list[tuple[str, str]]:
+    permission_keys = [
+        "GrantFullControl",
+        "GrantRead",
+        "GrantReadACP",
+        "GrantWrite",
+        "GrantWriteACP",
+    ]
+    acl_headers = [
+        (permission, grant_header)
+        for permission in permission_keys
+        if (grant_header := request.get(permission))
+    ]
+    return acl_headers
+
+
+def get_access_control_policy_from_acl_request(
+    request: Union[PutBucketAclRequest, PutObjectAclRequest],
+    owner: Owner,
+    request_body: bytes,
+) -> AccessControlPolicy:
+    canned_acl = request.get("ACL")
+    acl_headers = get_acl_headers_from_request(request)
+
+    # FIXME: this is very dirty, but the parser does not differentiate between an empty body and an empty XML node
+    # errors are different depending on that data, so we need to access the context. Modifying the parser for this
+    # use case seems dangerous
+    is_acp_in_body = request_body
+
+    if not (canned_acl or acl_headers or is_acp_in_body):
+        raise MissingSecurityHeader(
+            "Your request was missing a required header", MissingHeaderName="x-amz-acl"
+        )
+
+    elif canned_acl and acl_headers:
+        raise InvalidRequest("Specifying both Canned ACLs and Header Grants is not allowed")
+
+    elif (canned_acl or acl_headers) and is_acp_in_body:
+        raise UnexpectedContent("This request does not support content")
+
+    if canned_acl:
+        validate_canned_acl(canned_acl)
+        acp = get_canned_acl(canned_acl, owner=owner)
+
+    elif acl_headers:
+        grants = []
+        for permission, grantees_values in acl_headers:
+            permission = get_permission_from_header(permission)
+            partial_grants = parse_grants_in_headers(permission, grantees_values)
+            grants.extend(partial_grants)
+
+        acp = AccessControlPolicy(Owner=owner, Grants=grants)
+    else:
+        acp = request.get("AccessControlPolicy")
+        validate_acl_acp(acp)
+        if (
+            owner.get("DisplayName")
+            and acp["Grants"]
+            and "DisplayName" not in acp["Grants"][0]["Grantee"]
+        ):
+            acp["Grants"][0]["Grantee"]["DisplayName"] = owner["DisplayName"]
+
+    return acp
+
+
+def get_access_control_policy_for_new_resource_request(
+    request: Union[
+        PutObjectRequest, CreateMultipartUploadRequest, CopyObjectRequest, CreateBucketRequest
+    ],
+    owner: Owner,
+) -> AccessControlPolicy:
+    # TODO: this is basic ACL, not taking into account Bucket settings. Revisit once we really implement ACLs.
+    canned_acl = request.get("ACL")
+    acl_headers = get_acl_headers_from_request(request)
+
+    if not (canned_acl or acl_headers):
+        return get_canned_acl(BucketCannedACL.private, owner=owner)
+
+    elif canned_acl and acl_headers:
+        raise InvalidRequest("Specifying both Canned ACLs and Header Grants is not allowed")
+
+    if canned_acl:
+        validate_canned_acl(canned_acl)
+        return get_canned_acl(canned_acl, owner=owner)
+
+    grants = []
+    for permission, grantees_values in acl_headers:
+        permission = get_permission_from_header(permission)
+        partial_grants = parse_grants_in_headers(permission, grantees_values)
+        grants.extend(partial_grants)
+
+    return AccessControlPolicy(Owner=owner, Grants=grants)
