@@ -3,8 +3,7 @@ import hashlib
 import logging
 import re
 import zlib
-from dataclasses import dataclass
-from typing import IO, Any, Dict, Literal, Optional, Protocol, Tuple, Type, Union
+from typing import IO, Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Type, Union
 from urllib import parse as urlparser
 from zoneinfo import ZoneInfo
 
@@ -32,6 +31,7 @@ from localstack.aws.api.s3 import (
     NoSuchBucket,
     NoSuchKey,
     ObjectKey,
+    ObjectSize,
     ObjectVersionId,
     Owner,
     SSEKMSKeyId,
@@ -164,10 +164,9 @@ class S3CRC32Checksum:
         return self.checksum.to_bytes(4, "big")
 
 
-@dataclass
-class ParsedRange:
+class ParsedRange(NamedTuple):
     """
-    Dataclass representing a parsed Range header with the requested S3 object size
+    NamedTuple representing a parsed Range header with the requested S3 object size
     https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range
     """
 
@@ -622,7 +621,10 @@ def serialize_expiration_header(
 
 
 def get_lifecycle_rule_from_object(
-    lifecycle_conf_rules: LifecycleRules, moto_object: FakeKey, object_tags: dict[str, str]
+    lifecycle_conf_rules: LifecycleRules,
+    object_key: ObjectKey,
+    size: ObjectSize,
+    object_tags: dict[str, str],
 ) -> LifecycleRule:
     for rule in lifecycle_conf_rules:
         if not (expiration := rule.get("Expiration")) or "ExpiredObjectDeleteMarker" in expiration:
@@ -633,13 +635,13 @@ def get_lifecycle_rule_from_object(
 
         if and_rules := rule_filter.get("And"):
             if all(
-                _match_lifecycle_filter(key, value, moto_object, object_tags)
+                _match_lifecycle_filter(key, value, object_key, size, object_tags)
                 for key, value in and_rules.items()
             ):
                 return rule
 
         if any(
-            _match_lifecycle_filter(key, value, moto_object, object_tags)
+            _match_lifecycle_filter(key, value, object_key, size, object_tags)
             for key, value in rule_filter.items()
         ):
             # after validation, we can only one of `Prefix`, `Tag`, `ObjectSizeGreaterThan` or `ObjectSizeLessThan` in
@@ -648,17 +650,21 @@ def get_lifecycle_rule_from_object(
 
 
 def _match_lifecycle_filter(
-    filter_key: str, filter_value, moto_object: FakeKey, object_tags: dict[str, str]
+    filter_key: str,
+    filter_value: str | int | dict[str, str],
+    object_key: ObjectKey,
+    size: ObjectSize,
+    object_tags: dict[str, str],
 ):
     match filter_key:
         case "Prefix":
-            return moto_object.name.startswith(filter_value)
+            return object_key.startswith(filter_value)
         case "Tag":
             return object_tags.get(filter_value.get("Key")) == filter_value.get("Value")
         case "ObjectSizeGreaterThan":
-            return moto_object.size > filter_value
+            return size > filter_value
         case "ObjectSizeLessThan":
-            return moto_object.size < filter_value
+            return size < filter_value
         case "Tags":  # this is inside the `And` field
             return all(object_tags.get(tag.get("Key")) == tag.get("Value") for tag in filter_value)
 

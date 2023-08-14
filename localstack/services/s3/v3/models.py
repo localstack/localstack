@@ -25,6 +25,8 @@ from localstack.aws.api.s3 import (
     IntelligentTieringId,
     InvalidArgument,
     InvalidPart,
+    InventoryConfiguration,
+    InventoryId,
     LifecycleRules,
     LoggingEnabled,
     Metadata,
@@ -86,7 +88,7 @@ class S3Bucket:
     multiparts: dict[MultipartUploadId, "S3Multipart"]
     objects: Union["KeyStore", "VersionedKeyStore"]
     versioning_status: BucketVersioningStatus | None
-    lifecycle_rules: LifecycleRules
+    lifecycle_rules: Optional[LifecycleRules]
     policy: Optional[Policy]
     website_configuration: WebsiteConfiguration
     acl: str  # TODO: change this
@@ -100,8 +102,9 @@ class S3Bucket:
     object_ownership: ObjectOwnership
     object_lock_configuration: Optional[ObjectLockConfiguration]
     object_lock_enabled: bool
-    intelligent_tiering_configuration: dict[IntelligentTieringId, IntelligentTieringConfiguration]
-    analytics_configuration: dict[AnalyticsId, AnalyticsConfiguration]
+    intelligent_tiering_configurations: dict[IntelligentTieringId, IntelligentTieringConfiguration]
+    analytics_configurations: dict[AnalyticsId, AnalyticsConfiguration]
+    inventory_configurations: dict[InventoryId, InventoryConfiguration]
     replication: ReplicationConfiguration
     owner: Owner
 
@@ -127,6 +130,10 @@ class S3Bucket:
         self.versioning_status = None
         self.notification_configuration = {}
         self.cors_rules = None
+        self.lifecycle_rules = None
+        self.intelligent_tiering_configurations = {}
+        self.analytics_configurations = {}
+        self.inventory_configurations = {}
 
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
         self.owner = get_owner_for_account_id(account_id)
@@ -213,7 +220,7 @@ class S3Object:
     system_metadata: Metadata
     last_modified: datetime
     expires: Optional[datetime]
-    expiration: Optional[Expiration]  # come from lifecycle
+    expiration: Optional[Expiration]  # right now, this is stored in the provider cache
     storage_class: StorageClass | ObjectStorageClass
     encryption: Optional[ServerSideEncryption]  # inherit bucket
     kms_key_id: Optional[SSEKMSKeyId]  # inherit bucket
@@ -288,6 +295,10 @@ class S3Object:
 
         for metadata_key, metadata_value in self.system_metadata.items():
             headers[metadata_key] = metadata_value
+
+        # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
+        if "ContentEncoding" not in headers and self.checksum_algorithm:
+            headers["ContentEncoding"] = ""
 
         return headers
 
