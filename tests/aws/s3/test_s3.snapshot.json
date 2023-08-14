@@ -3503,7 +3503,7 @@
       }
     }
   },
-  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_expires": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedPost::test_post_request_expires": {
     "recorded-date": "04-08-2023, 23:58:47",
     "recorded-content": {
       "exception": {
@@ -3517,25 +3517,7 @@
       }
     }
   },
-  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_malformed_policy": {
-    "recorded-date": "04-10-2022, 20:42:19",
-    "recorded-content": {
-      "exception": {
-        "Error": {
-          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
-          "Code": "SignatureDoesNotMatch",
-          "HostId": "host-id",
-          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
-          "RequestId": "<request-id:1>",
-          "SignatureProvided": "<signature-provided:1>",
-          "StringToSign": "<string-to-sign>",
-          "StringToSignBytes": "<string-to-sign-bytes:1>"
-        },
-        "StatusCode": 403
-      }
-    }
-  },
-  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_malformed_policy[s3]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedPost::test_post_request_malformed_policy[s3]": {
     "recorded-date": "04-08-2023, 23:58:49",
     "recorded-content": {
       "exception-policy": {
@@ -3553,7 +3535,7 @@
       }
     }
   },
-  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_malformed_policy[s3v4]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedPost::test_post_request_malformed_policy[s3v4]": {
     "recorded-date": "04-08-2023, 23:58:51",
     "recorded-content": {
       "exception-policy": {
@@ -3571,7 +3553,7 @@
       }
     }
   },
-  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_signature[s3]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedPost::test_post_request_missing_signature[s3]": {
     "recorded-date": "04-08-2023, 23:58:52",
     "recorded-content": {
       "exception-missing-signature": {
@@ -3587,7 +3569,7 @@
       }
     }
   },
-  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_signature[s3v4]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedPost::test_post_request_missing_signature[s3v4]": {
     "recorded-date": "04-08-2023, 23:58:54",
     "recorded-content": {
       "exception-missing-signature": {
@@ -3603,7 +3585,7 @@
       }
     }
   },
-  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_fields[s3]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedPost::test_post_request_missing_fields[s3]": {
     "recorded-date": "04-08-2023, 23:58:56",
     "recorded-content": {
       "exception-missing-fields": {
@@ -3628,7 +3610,7 @@
       }
     }
   },
-  "tests/aws/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_fields[s3v4]": {
+  "tests/aws/s3/test_s3.py::TestS3PresignedPost::test_post_request_missing_fields[s3v4]": {
     "recorded-date": "04-08-2023, 23:58:58",
     "recorded-content": {
       "exception-missing-fields": {
@@ -9819,6 +9801,119 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 206
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_tags[single]": {
+    "recorded-date": "14-08-2023, 19:32:11",
+    "recorded-content": {
+      "get-tagging": {
+        "TagSet": [
+          {
+            "Key": "TagName",
+            "Value": "TagValue"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_tags[list]": {
+    "recorded-date": "14-08-2023, 19:32:13",
+    "recorded-content": {
+      "get-tagging": {
+        "TagSet": [
+          {
+            "Key": "TagName",
+            "Value": "TagValue"
+          },
+          {
+            "Key": "TagName2",
+            "Value": "TagValue2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_tags[invalid]": {
+    "recorded-date": "14-08-2023, 19:32:14",
+    "recorded-content": {
+      "get-tagging": {
+        "TagSet": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_tags[notxml]": {
+    "recorded-date": "14-08-2023, 19:32:16",
+    "recorded-content": {
+      "tagging-error": {
+        "Error": {
+          "Code": "MalformedXML",
+          "HostId": "<host-id:1>",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema",
+          "RequestId": "<request-id:1>"
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_metadata": {
+    "recorded-date": "14-08-2023, 19:54:15",
+    "recorded-content": {
+      "head-object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 17,
+        "ContentType": "text/plain",
+        "ETag": "\"a7d8531d918474360de3e2eaeb110cda\"",
+        "Expires": "datetime",
+        "LastModified": "datetime",
+        "Metadata": {
+          "test-1": "test-meta-1",
+          "test-2": "test-meta-2"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_storage_class": {
+    "recorded-date": "14-08-2023, 20:14:49",
+    "recorded-content": {
+      "head-object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 23,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f73f1a2dbae1bbd6c42f86e771298073\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "StorageClass": "STANDARD_IA",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invalid-storage-error": {
+        "Error": {
+          "Code": "InvalidStorageClass",
+          "HostId": "<host-id:2>",
+          "Message": "The storage class you specified is not valid",
+          "RequestId": "<request-id:2>",
+          "StorageClassRequested": "FakeClass"
         }
       }
     }

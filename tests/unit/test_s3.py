@@ -17,6 +17,7 @@ from localstack.services.s3 import presigned_url
 from localstack.services.s3 import utils as s3_utils_asf
 from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.constants import S3_CHUNK_SIZE
+from localstack.services.s3.exceptions import MalformedXML
 from localstack.services.s3.legacy import multipart_content, s3_listener, s3_starter, s3_utils
 from localstack.services.s3.v3.models import S3Multipart, S3Object, S3Part
 from localstack.services.s3.v3.storage.ephemeral import EphemeralS3ObjectStore
@@ -782,6 +783,34 @@ class TestS3UtilsAsf:
     )
     def test_validate_dict_fields(self, data, required, optional, result):
         assert s3_utils_asf.validate_dict_fields(data, required, optional) == result
+
+    @pytest.mark.parametrize(
+        "tagging, result",
+        [
+            (
+                "<Tagging><TagSet><Tag><Key>TagName</Key><Value>TagValue</Value></Tag></TagSet></Tagging>",
+                {"TagName": "TagValue"},
+            ),
+            (
+                "<Tagging><TagSet><Tag><Key>TagName</Key><Value>TagValue</Value></Tag><Tag><Key>TagName2</Key><Value>TagValue2</Value></Tag></TagSet></Tagging>",
+                {"TagName": "TagValue", "TagName2": "TagValue2"},
+            ),
+            (
+                "<InvalidXmlTagging></InvalidXmlTagging>",
+                None,
+            ),
+        ],
+        ids=["single", "list", "invalid"],
+    )
+    def test_parse_post_object_tagging_xml(self, tagging, result):
+        assert s3_utils_asf.parse_post_object_tagging_xml(tagging) == result
+
+    def test_parse_post_object_tagging_xml_exception(self):
+        with pytest.raises(MalformedXML) as e:
+            s3_utils_asf.parse_post_object_tagging_xml("not-xml")
+        e.match(
+            "The XML you provided was not well-formed or did not validate against our published schema"
+        )
 
 
 class TestS3PresignedUrlAsf:
