@@ -9506,6 +9506,10 @@ class TestS3PresignedPost:
             snapshot.match("get-tagging", tagging)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=["$..ServerSideEncryption"],
+    )
     def test_post_object_with_metadata(self, s3_bucket, aws_client, snapshot):
         object_key = "test-presigned-post-key-metadata"
         object_expires = rfc_1123_datetime(
