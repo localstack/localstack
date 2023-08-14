@@ -2500,8 +2500,20 @@
     }
   },
   "tests/aws/s3/test_s3.py::TestS3DeepArchive::test_s3_get_deep_archive_object_restore": {
-    "recorded-date": "05-08-2023, 00:17:19",
+    "recorded-date": "14-08-2023, 22:35:53",
     "recorded-content": {
+      "get-object-invalid-state": {
+        "Error": {
+          "Code": "InvalidObjectState",
+          "Message": "The operation is not valid for the object's storage class",
+          "StorageClass": "DEEP_ARCHIVE"
+        },
+        "StorageClass": "DEEP_ARCHIVE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
       "get_object_invalid_state": {
         "Error": {
           "Code": "InvalidObjectState",
