@@ -5,6 +5,7 @@ import json
 import logging
 import re
 import time
+from functools import cached_property
 from typing import Dict, List, Mapping, Optional, Tuple, TypedDict
 from urllib import parse as urlparse
 
@@ -13,6 +14,7 @@ from botocore.awsrequest import AWSRequest, create_request_object
 from botocore.compat import HTTPHeaders, urlsplit
 from botocore.credentials import Credentials, ReadOnlyCredentials
 from botocore.exceptions import NoCredentialsError
+from botocore.model import ServiceModel
 from botocore.utils import percent_encode_sequence
 from werkzeug.datastructures import Headers, ImmutableMultiDict
 
@@ -26,6 +28,8 @@ from localstack.aws.api.s3 import (
     SignatureDoesNotMatch,
 )
 from localstack.aws.chain import HandlerChain
+from localstack.aws.protocol.op_router import RestServiceOperationRouter
+from localstack.aws.protocol.service_router import get_service_catalog
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Request, Response
 from localstack.services.s3.constants import SIGNATURE_V2_PARAMS, SIGNATURE_V4_PARAMS
@@ -33,6 +37,7 @@ from localstack.services.s3.utils import (
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
     _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
+    extract_bucket_name_and_key_from_headers_and_path,
     forwarded_from_virtual_host_addressed_request,
     is_bucket_name_valid,
     is_presigned_url_request,
@@ -90,9 +95,7 @@ class NotValidSigV4SignatureContext(TypedDict):
     canonical_request: str
 
 
-FindSigV4Result = Tuple[
-    Optional["S3SigV4SignatureContext"], Optional[NotValidSigV4SignatureContext]
-]
+FindSigV4Result = Tuple["S3SigV4SignatureContext", Optional[NotValidSigV4SignatureContext]]
 
 
 class HmacV1QueryAuthValidation(HmacV1QueryAuth):
@@ -176,32 +179,55 @@ def s3_presigned_url_response_handler(_: HandlerChain, context: RequestContext, 
         response.data = b""
 
 
-def s3_presigned_url_request_handler(_: HandlerChain, context: RequestContext, __: Response):
-    """
-    Handler to validate S3 presigned URL. Checks the validity of the request signature, and raises an error if
-    `S3_SKIP_SIGNATURE_VALIDATION` is set to False
-    """
-    if not context.service or context.service.service_name != "s3":
-        return
+class S3PreSignedURLRequestHandler:
+    @cached_property
+    def _service(self) -> ServiceModel:
+        return get_service_catalog().get("s3")
 
-    if not is_presigned_url_request(context):
-        # validate headers, as some can raise ValueError in Moto
-        _validate_headers_for_moto(context.request.headers)
-        return
-    # will raise exceptions if the url is not valid, except if S3_SKIP_SIGNATURE_VALIDATION is True
-    # will still try to validate it and log if there's an error
+    @cached_property
+    def _s3_op_router(self) -> RestServiceOperationRouter:
+        return RestServiceOperationRouter(self._service)
 
-    # We save the query args as a set to save time for lookup in validation
-    query_arg_set = set(context.request.args)
+    def __call__(self, _: HandlerChain, context: RequestContext, __: Response):
+        """
+        Handler to validate S3 pre-signed URL. Checks the validity of the request signature, and raises an error if
+        `S3_SKIP_SIGNATURE_VALIDATION` is set to False
+        """
+        if not context.service or context.service.service_name != "s3":
+            return
+        try:
+            if not is_presigned_url_request(context):
+                # validate headers, as some can raise ValueError in Moto
+                _validate_headers_for_moto(context.request.headers)
+                return
+            # will raise exceptions if the url is not valid, except if S3_SKIP_SIGNATURE_VALIDATION is True
+            # will still try to validate it and log if there's an error
 
-    if is_valid_sig_v2(query_arg_set):
-        validate_presigned_url_s3(context)
+            # We save the query args as a set to save time for lookup in validation
+            query_arg_set = set(context.request.args)
 
-    elif is_valid_sig_v4(query_arg_set):
-        validate_presigned_url_s3v4(context)
+            if is_valid_sig_v2(query_arg_set):
+                validate_presigned_url_s3(context)
 
-    _validate_headers_for_moto(context.request.headers)
-    LOG.debug("Valid presign url.")
+            elif is_valid_sig_v4(query_arg_set):
+                validate_presigned_url_s3v4(context)
+
+            _validate_headers_for_moto(context.request.headers)
+            LOG.debug("Valid presign url.")
+
+        except Exception:
+            # as we are raising before the ServiceRequestParser, we need to
+            context.service = self._service
+            context.operation = self._get_op_from_request(context.request)
+            raise
+
+    def _get_op_from_request(self, request: Request):
+        try:
+            op, _ = self._s3_op_router.match(request)
+            return op
+        except Exception:
+            # if we can't parse the request, just set GetObject
+            return self._service.operation_model("GetObject")
 
 
 def is_expired(expiry_datetime: datetime.datetime):
@@ -348,7 +374,7 @@ def validate_presigned_url_s3v4(context: RequestContext) -> None:
     :return:
     """
     sigv4_context, exception = _find_valid_signature_through_ports(context)
-    if not sigv4_context:
+    if exception:
         if config.S3_SKIP_SIGNATURE_VALIDATION:
             LOG.warning(
                 "Signatures do not match, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1"
@@ -401,7 +427,7 @@ def _find_valid_signature_through_ports(context: RequestContext) -> FindSigV4Res
     # get the signature from the request
     signature, canonical_request, string_to_sign = sigv4_context.get_signature_data()
     if signature == request_sig:
-        return signature, None
+        return sigv4_context, None
 
     # if the signature does not match, save the data for the exception
     exception_context = NotValidSigV4SignatureContext(
@@ -424,10 +450,10 @@ def _find_valid_signature_through_ports(context: RequestContext) -> FindSigV4Res
         # we ignore the additional data because we want the exception raised to match the original request
         signature, _, _ = sigv4_context.get_signature_data()
         if signature == request_sig:
-            return signature, None
+            return sigv4_context, None
 
     # Return the exception data from the original request after trying to loop through ports
-    return None, exception_context
+    return sigv4_context, exception_context
 
 
 class S3SigV4SignatureContext:
@@ -435,7 +461,9 @@ class S3SigV4SignatureContext:
         self.request = context.request
         self._query_parameters = context.request.args
         self._headers = context.request.headers
-        self._bucket = context.service_request.get("Bucket")
+        self._bucket, _ = extract_bucket_name_and_key_from_headers_and_path(
+            context.request.headers, context.request.path
+        )
         self._request_method = context.request.method
 
         credentials = ReadOnlyCredentials(
