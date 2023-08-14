@@ -93,7 +93,7 @@ class KinesisMockServer(Server):
             env_vars["PERSIST_PATH"] = os.path.relpath(self._data_dir)
             env_vars["PERSIST_FILE_NAME"] = self._data_filename
             env_vars["PERSIST_INTERVAL"] = config.KINESIS_MOCK_PERSIST_INTERVAL
-        
+
         if self._initialize_streams:
             env_vars["INITIALIZE_STREAMS"] = self._initialize_streams
 
