@@ -126,6 +126,7 @@ class S3Bucket:
         self.multiparts = {}
         self.versioning_status = None
         self.notification_configuration = {}
+        self.cors_rules = None
 
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
         self.owner = get_owner_for_account_id(account_id)
