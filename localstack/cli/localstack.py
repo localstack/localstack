@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple
 
 from localstack import config
 from localstack.utils.analytics.cli import publish_invocation
+from localstack.utils.json import CustomEncoder
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -204,7 +205,7 @@ def cmd_config_validate(file: str) -> None:
 def _print_config_json() -> None:
     import json
 
-    console.print(json.dumps(dict(config.collect_config_items())))
+    console.print(json.dumps(dict(config.collect_config_items()), cls=CustomEncoder))
 
 
 def _print_config_pairs() -> None:

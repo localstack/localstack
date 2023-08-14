@@ -2,10 +2,6 @@
 
 set -eo pipefail
 shopt -s nullglob
-if [[ ! $EDGE_PORT ]]
-then
-  EDGE_PORT=4566
-fi
 
 # the Dockerfile creates .pro-version file for the pro image and .bigdata-pro-version for the bigdata image.
 # When trying to activate pro features with any other version, a warning is printed.
