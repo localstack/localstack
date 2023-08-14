@@ -6,7 +6,7 @@ import logging
 from collections import defaultdict
 from operator import itemgetter
 from secrets import token_urlsafe
-from typing import Union
+from typing import IO, Union
 
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -19,6 +19,7 @@ from localstack.aws.api.s3 import (
     AccountId,
     AnalyticsConfiguration,
     AnalyticsId,
+    Body,
     Bucket,
     BucketAlreadyExists,
     BucketAlreadyOwnedByYou,
@@ -154,6 +155,7 @@ from localstack.aws.api.s3 import (
     PartNumber,
     PartNumberMarker,
     Policy,
+    PostResponse,
     PreconditionFailed,
     Prefix,
     PublicAccessBlockConfiguration,
@@ -213,9 +215,11 @@ from localstack.services.s3.exceptions import (
     UnexpectedContent,
 )
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
+from localstack.services.s3.presigned_url import validate_post_policy
 from localstack.services.s3.utils import (
     ObjectRange,
     add_expiration_days_to_datetime,
+    create_redirect_for_post_request,
     create_s3_kms_managed_key_for_region,
     extract_bucket_key_version_id_from_copy_source,
     get_canned_acl,
@@ -230,9 +234,11 @@ from localstack.services.s3.utils import (
     get_system_metadata_from_request,
     get_unique_key_id,
     is_bucket_name_valid,
+    parse_post_object_tagging_xml,
     parse_range_header,
     parse_tagging_header,
     serialize_expiration_header,
+    str_to_rfc_1123_datetime,
     validate_dict_fields,
     validate_failed_precondition,
     validate_kms_key_id,
@@ -581,6 +587,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         acl = get_access_control_policy_for_new_resource_request(request, owner=s3_bucket.owner)
 
+        if tagging := request.get("Tagging"):
+            tagging = parse_tagging_header(tagging)
+
         s3_object = S3Object(
             key=key,
             version_id=version_id,
@@ -615,8 +624,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # in case we are overriding an object, delete the tags entry
         key_id = get_unique_key_id(bucket_name, key, version_id)
         store.TAGS.tags.pop(key_id, None)
-        if tagging_header := request.get("Tagging"):
-            tagging = parse_tagging_header(tagging_header)
+        if tagging:
             store.TAGS.tags[key_id] = tagging
 
         # TODO: returned fields
@@ -3366,6 +3374,177 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         expected_bucket_owner: AccountId = None,
     ) -> GetObjectTorrentOutput:
         raise NotImplementedError
+
+    def post_object(
+        self, context: RequestContext, bucket: BucketName, body: IO[Body] = None
+    ) -> PostResponse:
+        # see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
+        # TODO: signature validation is not implemented for pre-signed POST
+        # policy validation is not implemented either, except expiration and mandatory fields
+        # This operation is the only one using form for storing the request data. We will have to do some manual
+        # parsing here, as no specs are present for this, as no client directly implements this operation.
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        form = context.request.form
+        validate_post_policy(form)
+
+        fileobj = context.request.files["file"]
+        object_key = context.request.form.get("key")
+        if "${filename}" in object_key:
+            object_key = object_key.replace("${filename}", fileobj.filename)
+
+        if canned_acl := form.get("acl"):
+            validate_canned_acl(canned_acl)
+            acp = get_canned_acl(canned_acl, owner=s3_bucket.owner)
+        else:
+            acp = get_canned_acl(BucketCannedACL.private, owner=s3_bucket.owner)
+
+        post_system_settable_headers = [
+            "Cache-Control",
+            "Content-Type",
+            "Content-Disposition",
+            "Content-Encoding",
+        ]
+        system_metadata = {}
+        for system_metadata_field in post_system_settable_headers:
+            if field_value := form.get(system_metadata_field):
+                system_metadata[system_metadata_field.replace("-", "")] = field_value
+
+        if not system_metadata.get("ContentType"):
+            system_metadata["ContentType"] = "binary/octet-stream"
+
+        user_metadata = {
+            field.removeprefix("x-amz-meta-").lower(): form.get(field)
+            for field in form
+            if field.startswith("x-amz-meta-")
+        }
+
+        if tagging := form.get("tagging"):
+            # this is weird, as it's direct XML in the form, we need to parse it direcly
+            tagging = parse_post_object_tagging_xml(tagging)
+
+        if (storage_class := form.get("x-amz-storage-class")) is not None and (
+            storage_class not in STORAGE_CLASSES or storage_class == StorageClass.OUTPOSTS
+        ):
+            raise InvalidStorageClass(
+                "The storage class you specified is not valid", StorageClassRequested=storage_class
+            )
+
+        encryption_request = {
+            "ServerSideEncryption": form.get("x-amz-server-side-encryption"),
+            "SSEKMSKeyId": form.get("x-amz-server-side-encryption-aws-kms-key-id"),
+            "BucketKeyEnabled": form.get("x-amz-server-side-encryption-bucket-key-enabled"),
+        }
+
+        encryption_parameters = get_encryption_parameters_from_request_and_bucket(
+            encryption_request,
+            s3_bucket,
+            store,
+        )
+
+        checksum_algorithm = form.get("x-amz-checksum-algorithm")
+        checksum_value = (
+            form.get(f"x-amz-checksum-{checksum_algorithm.lower()}") if checksum_algorithm else None
+        )
+        expires = (
+            str_to_rfc_1123_datetime(expires_str) if (expires_str := form.get("Expires")) else None
+        )
+
+        version_id = generate_version_id(s3_bucket.versioning_status)
+
+        s3_object = S3Object(
+            key=object_key,
+            version_id=version_id,
+            storage_class=storage_class,
+            expires=expires,
+            user_metadata=user_metadata,
+            system_metadata=system_metadata,
+            checksum_algorithm=checksum_algorithm,
+            checksum_value=checksum_value,
+            encryption=encryption_parameters.encryption,
+            kms_key_id=encryption_parameters.kms_key_id,
+            bucket_key_enabled=encryption_parameters.bucket_key_enabled,
+            website_redirect_location=form.get("x-amz-website-redirect-location"),
+            acl=acp,
+            owner=s3_bucket.owner,  # TODO: for now we only have one owner, but it can depends on Bucket settings
+        )
+
+        s3_stored_object = self._storage_backend.open(bucket, s3_object)
+        s3_stored_object.write(fileobj.stream)
+
+        if checksum_algorithm and s3_object.checksum_value != s3_stored_object.checksum:
+            self._storage_backend.remove(bucket, s3_object)
+            raise InvalidRequest(
+                f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
+            )
+
+        s3_bucket.objects.set(object_key, s3_object)
+
+        # in case we are overriding an object, delete the tags entry
+        key_id = get_unique_key_id(bucket, object_key, version_id)
+        store.TAGS.tags.pop(key_id, None)
+        if tagging:
+            store.TAGS.tags[key_id] = tagging
+
+        response = PostResponse()
+        # hacky way to set the etag in the headers as well: two locations for one value
+        response["ETagHeader"] = s3_object.quoted_etag
+
+        if redirect := form.get("success_action_redirect"):
+            # we need to create the redirect, as the parser could not return the moto-calculated one
+            try:
+                redirect = create_redirect_for_post_request(
+                    base_redirect=redirect,
+                    bucket=bucket,
+                    object_key=object_key,
+                    etag=s3_object.quoted_etag,
+                )
+                response["LocationHeader"] = redirect
+                response["StatusCode"] = 303
+            except ValueError:
+                # If S3 cannot interpret the URL, it acts as if the field is not present.
+                response["StatusCode"] = form.get("success_action_status", 204)
+
+        elif status_code := form.get("success_action_status"):
+            response["StatusCode"] = status_code
+        else:
+            response["StatusCode"] = 204
+
+        response["LocationHeader"] = response.get(
+            "LocationHeader", f"{get_full_default_bucket_location(bucket)}{object_key}"
+        )
+
+        if s3_bucket.versioning_status == "Enabled":
+            response["VersionId"] = s3_object.version_id
+
+        if s3_object.checksum_algorithm:
+            response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
+
+        if s3_bucket.lifecycle_rules:
+            if expiration_header := self._get_expiration_header(
+                s3_bucket.lifecycle_rules,
+                bucket,
+                s3_object,
+                store.TAGS.tags.get(key_id, {}),
+            ):
+                # TODO: we either apply the lifecycle to existing objects when we set the new rules, or we need to
+                #  apply them everytime we get/head an object
+                response["Expiration"] = expiration_header
+
+        add_encryption_to_response(response, s3_object=s3_object)
+
+        self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
+
+        if response["StatusCode"] == "201":
+            # if the StatusCode is 201, S3 returns an XML body with additional information
+            response["ETag"] = s3_object.quoted_etag
+            response["Bucket"] = bucket
+            response["Key"] = object_key
+            response["Location"] = response["LocationHeader"]
+
+        return response
 
 
 def generate_version_id(bucket_versioning_status: str) -> str | None:
