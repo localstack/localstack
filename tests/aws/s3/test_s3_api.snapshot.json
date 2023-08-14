@@ -1491,5 +1491,624 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_bucket_tagging_crud": {
+    "recorded-date": "02-08-2023, 22:18:20",
+    "recorded-content": {
+      "get-bucket-tags-empty": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchTagSet",
+          "Message": "The TagSet does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put-bucket-tags": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-bucket-tags": {
+        "TagSet": [
+          {
+            "Key": "tag1",
+            "Value": "tag1"
+          },
+          {
+            "Key": "tag2",
+            "Value": ""
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-bucket-tags-overwrite": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-bucket-tags-overwritten": {
+        "TagSet": [
+          {
+            "Key": "tag3",
+            "Value": "tag3"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-bucket-tags": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "put-bucket-tags-empty": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_crud": {
+    "recorded-date": "02-08-2023, 23:23:45",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tags-empty": {
+        "TagSet": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-tags": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tags": {
+        "TagSet": [
+          {
+            "Key": "tag1",
+            "Value": "tag1"
+          },
+          {
+            "Key": "tag2",
+            "Value": ""
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-tags-overwrite": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tags-overwritten": {
+        "TagSet": [
+          {
+            "Key": "tag3",
+            "Value": "tag3"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-after-tags": {
+        "AcceptRanges": "bytes",
+        "Body": "test-tagging",
+        "ContentLength": 12,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-object-tags": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-object-tags-deleted": {
+        "TagSet": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-after-tags-deleted": {
+        "AcceptRanges": "bytes",
+        "Body": "test-tagging",
+        "ContentLength": 12,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_object_with_tags": {
+    "recorded-date": "03-08-2023, 01:21:13",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tags": {
+        "TagSet": [
+          {
+            "Key": "tag",
+            "Value": ""
+          },
+          {
+            "Key": "tag1",
+            "Value": "tag1"
+          },
+          {
+            "Key": "tag2",
+            "Value": "tag2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-tags": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tags-override": {
+        "TagSet": [
+          {
+            "Key": "tag3",
+            "Value": "tag3"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-obj": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 12,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj": {
+        "AcceptRanges": "bytes",
+        "Body": "test-tagging",
+        "ContentLength": 12,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"b635a7fc30aa9091e0d236bee77e6844\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tags-wrong-format-qs": {
+        "TagSet": [
+          {
+            "Key": "wrongagain",
+            "Value": ""
+          },
+          {
+            "Key": "wrongquery",
+            "Value": ""
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tags-wrong-format-qs-2": {
+        "TagSet": [
+          {
+            "Key": "key1",
+            "Value": ""
+          },
+          {
+            "Key": "key2",
+            "Value": ""
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_bucket_tagging_exc": {
+    "recorded-date": "02-08-2023, 22:32:41",
+    "recorded-content": {
+      "get-no-bucket-tags": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-no-bucket-tags": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put-no-bucket-tags": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_versioned": {
+    "recorded-date": "02-08-2023, 23:14:16",
+    "recorded-content": {
+      "put-obj-0": {
+        "ETag": "\"86639701cdcc5b39438a5f009bd74cb1\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-obj-1": {
+        "ETag": "\"70a37754eb5a2e7db8cd887aaf11cda7\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-tags-current-version": {
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tags-current-version": {
+        "TagSet": [
+          {
+            "Key": "tag3",
+            "Value": "tag3"
+          }
+        ],
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-tags-previous-version": {
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tags-previous-version": {
+        "TagSet": [
+          {
+            "Key": "tag1",
+            "Value": "tag1"
+          }
+        ],
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-delete-marker": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "put-object-tags-delete-marker": {
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tags-delete-marker": {
+        "TagSet": [
+          {
+            "Key": "tag1",
+            "Value": "tag1"
+          }
+        ],
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_exc": {
+    "recorded-date": "03-08-2023, 00:04:47",
+    "recorded-content": {
+      "get-no-bucket-tags": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-no-bucket-tags": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put-no-bucket-tags": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-no-key-tags": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "<bucket:1>/fake-key",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-no-key-tags": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "fake-key",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put-no-key-tags": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "fake-key",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put-obj-duplicate-tagging": {
+        "Error": {
+          "ArgumentName": "x-amz-tagging",
+          "ArgumentValue": "key1=val1&key1=val2",
+          "Code": "InvalidArgument",
+          "Message": "The header 'x-amz-tagging' shall be encoded as UTF-8 then URLEncoded URL query parameters without tag name duplicates."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-obj-wrong-format": {
+        "Error": {
+          "ArgumentName": "x-amz-tagging",
+          "ArgumentValue": "key1=val1,key2=val2",
+          "Code": "InvalidArgument",
+          "Message": "The header 'x-amz-tagging' shall be encoded as UTF-8 then URLEncoded URL query parameters without tag name duplicates."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tags_delete_or_overwrite_object": {
+    "recorded-date": "02-08-2023, 23:52:10",
+    "recorded-content": {
+      "get-object-after-creation": {
+        "TagSet": [
+          {
+            "Key": "tag1",
+            "Value": "val1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-after-overwrite": {
+        "TagSet": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-after-recreation": {
+        "TagSet": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_tagging_validation": {
+    "recorded-date": "03-08-2023, 01:07:47",
+    "recorded-content": {
+      "put-bucket-tags-duplicate-keys": {
+        "Error": {
+          "Code": "InvalidTag",
+          "Message": "Cannot provide multiple Tags with the same key",
+          "TagKey": "Key1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-bucket-tags-invalid-key": {
+        "Error": {
+          "Code": "InvalidTag",
+          "Message": "The TagKey you have provided is invalid",
+          "TagKey": "Key1,Key2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-bucket-tags-invalid-value": {
+        "Error": {
+          "Code": "InvalidTag",
+          "Message": "The TagValue you have provided is invalid",
+          "TagKey": "Key1",
+          "TagValue": "Val1,Val2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-bucket-tags-aws-prefixed": {
+        "Error": {
+          "Code": "InvalidTag",
+          "Message": "System tags cannot be added/updated by requester",
+          "TagKey": "aws:prefixed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-tags-duplicate-keys": {
+        "Error": {
+          "Code": "InvalidTag",
+          "Message": "Cannot provide multiple Tags with the same key",
+          "TagKey": "Key1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-tags-invalid-field": {
+        "Error": {
+          "Code": "InvalidTag",
+          "Message": "The TagKey you have provided is invalid",
+          "TagKey": "Key1,Key2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-tags-aws-prefixed": {
+        "Error": {
+          "Code": "InvalidTag",
+          "Message": "Your TagKey cannot be prefixed with aws:",
+          "TagKey": "aws:prefixed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
