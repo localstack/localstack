@@ -954,7 +954,7 @@ class TestDynamoDB:
             Item={"Artist": {"S": "item_1"}, "SongTitle": {"S": "Song Value 1"}},
         )
 
-        # Ensure item in US and EU
+        # Ensure GetItem in US and EU
         item_us_east = dynamodb_us_east_1.get_item(
             TableName=table_name,
             Key={"Artist": {"S": "item_1"}, "SongTitle": {"S": "Song Value 1"}},
@@ -965,6 +965,26 @@ class TestDynamoDB:
             Key={"Artist": {"S": "item_1"}, "SongTitle": {"S": "Song Value 1"}},
         )["Item"]
         assert item_eu_west
+
+        # Ensure Scan in US and EU
+        scan_us_east = dynamodb_us_east_1.scan(TableName=table_name)
+        assert scan_us_east["Items"]
+        scan_eu_west = dynamodb_eu_west_1.scan(TableName=table_name)
+        assert scan_eu_west["Items"]
+
+        # Ensure Query in US and EU
+        query_us_east = dynamodb_us_east_1.query(
+            TableName=table_name,
+            KeyConditionExpression="Artist = :artist",
+            ExpressionAttributeValues={":artist": {"S": "item_1"}},
+        )
+        assert query_us_east["Items"]
+        query_eu_west = dynamodb_eu_west_1.query(
+            TableName=table_name,
+            KeyConditionExpression="Artist = :artist",
+            ExpressionAttributeValues={":artist": {"S": "item_1"}},
+        )
+        assert query_eu_west["Items"]
 
         # Delete EU replica
         dynamodb_ap_south_1.update_table(
