@@ -8,9 +8,10 @@ from urllib import parse as urlparser
 from zoneinfo import ZoneInfo
 
 import moto.s3.models as moto_s3_models
+import xmltodict
 from botocore.exceptions import ClientError
 from botocore.utils import InvalidArnException
-from moto.s3.exceptions import MalformedXML, MissingBucket
+from moto.s3.exceptions import MissingBucket
 from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 from moto.s3.utils import clean_key_name
 
@@ -61,7 +62,7 @@ from localstack.services.s3.constants import (
     SIGNATURE_V4_PARAMS,
     SYSTEM_METADATA_SETTABLE_HEADERS,
 )
-from localstack.services.s3.exceptions import InvalidRequest
+from localstack.services.s3.exceptions import InvalidRequest, MalformedXML
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import checksum_crc32, checksum_crc32c, hash_sha1, hash_sha256
@@ -908,3 +909,53 @@ def get_canned_acl(
             grants.append(Grant(Grantee=LOG_DELIVERY_ACL_GRANTEE, Permission=Permission.WRITE))
 
     return AccessControlPolicy(Owner=owner, Grants=grants)
+
+
+def create_redirect_for_post_request(
+    base_redirect: str, bucket: BucketName, object_key: ObjectKey, etag: ETag
+):
+    """
+    POST requests can redirect if successful. It will take the URL provided and append query string parameters
+    (key, bucket and ETag). It needs to be a full URL.
+    :param base_redirect: the URL provided for redirection
+    :param bucket: bucket name
+    :param object_key: object key
+    :param etag: key ETag
+    :return: the URL provided with the new appended query string parameters
+    """
+    parts = urlparser.urlparse(base_redirect)
+    if not parts.netloc:
+        raise ValueError("The provided URL is not valid")
+    queryargs = urlparser.parse_qs(parts.query)
+    queryargs["key"] = [object_key]
+    queryargs["bucket"] = [bucket]
+    queryargs["etag"] = [etag]
+    redirect_queryargs = urlparser.urlencode(queryargs, doseq=True)
+    newparts = (
+        parts.scheme,
+        parts.netloc,
+        parts.path,
+        parts.params,
+        redirect_queryargs,
+        parts.fragment,
+    )
+    return urlparser.urlunparse(newparts)
+
+
+def parse_post_object_tagging_xml(tagging: str) -> Optional[dict]:
+    try:
+        tag_set = {}
+        tags = xmltodict.parse(tagging)
+        xml_tags = tags.get("Tagging", {}).get("TagSet", {}).get("Tag", [])
+        if not xml_tags:
+            # if the Tagging does not respect the schema, just return
+            return
+        if not isinstance(xml_tags, list):
+            xml_tags = [xml_tags]
+        for tag in xml_tags:
+            tag_set[tag["Key"]] = tag["Value"]
+
+        return tag_set
+
+    except Exception:
+        raise MalformedXML()
