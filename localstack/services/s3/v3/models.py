@@ -368,7 +368,7 @@ class S3DeleteMarker:
         self.is_current = True
 
     @staticmethod
-    def is_locked(*_, **__) -> bool:
+    def is_locked(*args, **kwargs) -> bool:
         # an S3DeleteMarker cannot be lock protected
         return False
 
