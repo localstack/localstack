@@ -1127,6 +1127,13 @@
         "documentation": "<p>The bucket policy does not exist</p>",
         "exception": true
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidObjectState/error",
+      "value": {
+        "httpStatusCode": 403
+      }
     }
   ]
 }
