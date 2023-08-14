@@ -669,6 +669,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             version_id=version_id,
             http_method="GET",
         )
+        if s3_object.expires and s3_object.expires < datetime.datetime.now(
+            tz=s3_object.expires.tzinfo
+        ):
+            # TODO: old behaviour was deleting key instantly if expired. AWS cleans up only once a day generally
+            #  you can still HeadObject on it and you get the expiry time until scheduled deletion
+            kwargs = {"Key": object_key}
+            if version_id:
+                kwargs["VersionId"] = version_id
+            raise NoSuchKey("The specified key does not exist.", **kwargs)
 
         validate_failed_precondition(request, s3_object.last_modified, s3_object.etag)
 
@@ -1069,6 +1078,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not (src_s3_bucket := store.buckets.get(src_bucket)):
             # TODO: validate this
             raise NoSuchBucket("The specified bucket does not exist", BucketName=src_bucket)
+
+        if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
+            validate_kms_key_id(sse_kms_key_id, dest_s3_bucket)
 
         # validate method not allowed?
         # if the object is a delete marker, get_object will raise, like AWS
@@ -1965,7 +1977,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             Bucket=bucket,
             Key=key,
             ETag=s3_object.quoted_etag,
-            Location=f"{get_full_default_bucket_location(bucket)}{bucket}",
+            Location=f"{get_full_default_bucket_location(bucket)}{key}",
         )
 
         if s3_object.version_id:
