@@ -155,7 +155,7 @@ from localstack.services.s3.exceptions import (
     NoSuchConfiguration,
     UnexpectedContent,
 )
-from localstack.services.s3.models import S3Store, get_moto_s3_backend, s3_stores
+from localstack.services.s3.models import BucketCorsIndex, S3Store, get_moto_s3_backend, s3_stores
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
 from localstack.services.s3.presigned_url import (
     s3_presigned_url_request_handler,
@@ -247,7 +247,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def __init__(self) -> None:
         super().__init__()
         self._notification_dispatcher = NotificationDispatcher()
-        self._cors_handler = S3CorsHandler()
+        self._cors_handler = S3CorsHandler(BucketCorsIndex())
         # runtime cache of Lifecycle Expiration headers, as they need to be calculated everytime we fetch an object
         # in case the rules have changed
         self._expiration_cache: dict[BucketName, dict[ObjectKey, Expiration]] = defaultdict(dict)
