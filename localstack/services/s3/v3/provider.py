@@ -194,7 +194,11 @@ from localstack.aws.api.s3 import (
     VersioningConfiguration,
     WebsiteConfiguration,
 )
-from localstack.aws.handlers import preprocess_request, serve_custom_service_request_handlers
+from localstack.aws.handlers import (
+    modify_service_response,
+    preprocess_request,
+    serve_custom_service_request_handlers,
+)
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.codec import AwsChunkedDecoder
@@ -215,7 +219,10 @@ from localstack.services.s3.exceptions import (
     UnexpectedContent,
 )
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
-from localstack.services.s3.presigned_url import validate_post_policy
+from localstack.services.s3.presigned_url import (
+    s3_presigned_url_response_handler,
+    validate_post_policy,
+)
 from localstack.services.s3.utils import (
     ObjectRange,
     add_expiration_days_to_datetime,
@@ -298,6 +305,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def on_after_init(self):
         preprocess_request.append(self._cors_handler)
         serve_custom_service_request_handlers.append(s3_cors_request_handler)
+        modify_service_response.append(S3Provider.service, s3_presigned_url_response_handler)
         register_website_hosting_routes(router=ROUTER)
 
     def on_before_stop(self):
