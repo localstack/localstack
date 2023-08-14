@@ -7,6 +7,7 @@ from collections import defaultdict
 from operator import itemgetter
 from secrets import token_urlsafe
 from typing import IO, Union
+from urllib import parse as urlparse
 
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -194,7 +195,11 @@ from localstack.aws.api.s3 import (
     VersioningConfiguration,
     WebsiteConfiguration,
 )
-from localstack.aws.handlers import preprocess_request, serve_custom_service_request_handlers
+from localstack.aws.handlers import (
+    modify_service_response,
+    preprocess_request,
+    serve_custom_service_request_handlers,
+)
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.codec import AwsChunkedDecoder
@@ -215,7 +220,10 @@ from localstack.services.s3.exceptions import (
     UnexpectedContent,
 )
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
-from localstack.services.s3.presigned_url import validate_post_policy
+from localstack.services.s3.presigned_url import (
+    s3_presigned_url_response_handler,
+    validate_post_policy,
+)
 from localstack.services.s3.utils import (
     ObjectRange,
     add_expiration_days_to_datetime,
@@ -298,6 +306,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def on_after_init(self):
         preprocess_request.append(self._cors_handler)
         serve_custom_service_request_handlers.append(s3_cors_request_handler)
+        modify_service_response.append(S3Provider.service, s3_presigned_url_response_handler)
         register_website_hosting_routes(router=ROUTER)
 
     def on_before_stop(self):
@@ -687,6 +696,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 kwargs["VersionId"] = version_id
             raise NoSuchKey("The specified key does not exist.", **kwargs)
 
+        if s3_object.storage_class in ARCHIVES_STORAGE_CLASSES and not s3_object.restore:
+            raise InvalidObjectState(
+                "The operation is not valid for the object's storage class",
+                StorageClass=s3_object.storage_class,
+            )
+
+        if not config.S3_SKIP_KMS_KEY_VALIDATION and s3_object.kms_key_id:
+            validate_kms_key_id(kms_key=s3_object.kms_key_id, bucket=s3_bucket)
+
         validate_failed_precondition(request, s3_object.last_modified, s3_object.etag)
 
         response = GetObjectOutput(
@@ -779,13 +797,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store = self.get_store(context.account_id, context.region)
         bucket_name = request["Bucket"]
         object_key = request["Key"]
+        version_id = request.get("VersionId")
         if not (s3_bucket := store.buckets.get(bucket_name)):
             raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket_name)
 
         # TODO implement PartNumber, don't know about part number + version id?
         s3_object = s3_bucket.get_object(
             key=object_key,
-            version_id=request.get("VersionId"),
+            version_id=version_id,
             http_method="HEAD",
         )
 
@@ -830,7 +849,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         add_encryption_to_response(response, s3_object=s3_object)
 
-        if s3_object.is_current and s3_bucket.lifecycle_rules:
+        # if you specify the VersionId, AWS won't return the Expiration header, even if that's the current version
+        if not version_id and s3_bucket.lifecycle_rules:
             object_tags = store.TAGS.tags.get(
                 get_unique_key_id(bucket_name, object_key, s3_object.version_id)
             )
@@ -1094,9 +1114,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # if the object is a delete marker, get_object will raise, like AWS
         src_s3_object = src_s3_bucket.get_object(key=src_key, version_id=src_version_id)
 
-        # TODO: validate StorageClass for ARCHIVES one
-        if src_s3_object.storage_class in ARCHIVES_STORAGE_CLASSES:
-            raise
+        if src_s3_object.storage_class in ARCHIVES_STORAGE_CLASSES and not src_s3_object.restore:
+            raise InvalidObjectState(
+                "Operation is not valid for the source object's storage class",
+                StorageClass=src_s3_object.storage_class,
+            )
 
         if failed_condition := get_failed_precondition_copy_source(
             request, src_s3_object.last_modified, src_s3_object.etag
@@ -1124,6 +1146,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 website_redirect_location,
                 dest_s3_bucket.encryption_rule
                 and not is_default_encryption,  # S3 will allow copy in place if the bucket has encryption configured
+                src_s3_object.restore,
             )
         ):
             raise InvalidRequest(
@@ -1251,16 +1274,22 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         is_truncated = False
         next_key_marker = None
         max_keys = max_keys or 1000
-        prefix = prefix or ""
+        prefix = urlparse.quote(prefix or "")
+        delimiter = urlparse.quote(delimiter or "")
 
         s3_objects: list[Object] = []
 
         all_objects = s3_bucket.objects.values()
         # sort by key
         all_objects.sort(key=lambda r: r.key)
-
         for s3_object in all_objects:
-            key = s3_object.key
+            if count >= max_keys:
+                is_truncated = True
+                if s3_objects:
+                    next_key_marker = s3_objects[-1]["Key"]
+                break
+
+            key = urlparse.quote(s3_object.key)
             # skip all keys that alphabetically come before key_marker
             if marker:
                 if key <= marker:
@@ -1296,10 +1325,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             s3_objects.append(object_data)
 
             count += 1
-            if count >= max_keys:
-                is_truncated = True
-                next_key_marker = s3_object.key
-                break
 
         common_prefixes = [CommonPrefix(Prefix=prefix) for prefix in sorted(common_prefixes)]
 
@@ -1351,7 +1376,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         is_truncated = False
         next_continuation_token = None
         max_keys = max_keys or 1000
-        prefix = prefix or ""
+        prefix = urlparse.quote(prefix or "")
+        delimiter = urlparse.quote(delimiter or "")
         decoded_continuation_token = (
             to_str(base64.urlsafe_b64decode(continuation_token.encode()))
             if continuation_token
@@ -1365,7 +1391,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         all_objects.sort(key=lambda r: r.key)
 
         for s3_object in all_objects:
-            key = s3_object.key
+            key = urlparse.quote(s3_object.key)
             # skip all keys that alphabetically come before key_marker
             # TODO: what if there's StartAfter AND ContinuationToken
             if continuation_token:
@@ -1464,7 +1490,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         next_key_marker = None
         next_version_id_marker = None
         max_keys = max_keys or 1000
-        prefix = prefix or ""
+        prefix = urlparse.quote(prefix or "")
+        delimiter = urlparse.quote(delimiter or "")
 
         object_versions: list[ObjectVersion] = []
         delete_markers: list[DeleteMarkerEntry] = []
@@ -1474,7 +1501,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         all_versions.sort(key=lambda r: (r.key, -r.last_modified.timestamp()))
 
         for version in all_versions:
-            key = version.key
+            key = urlparse.quote(version.key)
             # skip all keys that alphabetically come before key_marker
             if key_marker:
                 if key < key_marker:
@@ -1849,9 +1876,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # validate method not allowed?
         src_s3_object = src_s3_bucket.get_object(key=src_key, version_id=src_version_id)
-        # TODO: validate StorageClass for ARCHIVES one
-        if src_s3_object.storage_class in ARCHIVES_STORAGE_CLASSES:
-            pass
+
+        if src_s3_object.storage_class in ARCHIVES_STORAGE_CLASSES and not src_s3_object.restore:
+            raise InvalidObjectState(
+                "Operation is not valid for the source object's storage class",
+                StorageClass=src_s3_object.storage_class,
+            )
 
         upload_id = request.get("UploadId")
         if not (s3_multipart := dest_s3_bucket.multiparts.get(upload_id)):
@@ -3200,7 +3230,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # TODO: validate Grants
 
-        if not (target_s3_bucket := store.buckets.get(bucket)):
+        if not (target_s3_bucket := store.buckets.get(target_bucket_name)):
             raise InvalidTargetBucketForLogging(
                 "The target bucket for logging does not exist",
                 TargetBucket=target_bucket_name,
@@ -3559,7 +3589,7 @@ def add_encryption_to_response(response: dict, s3_object: S3Object):
         response["ServerSideEncryption"] = encryption
         if encryption == ServerSideEncryption.aws_kms:
             response["SSEKMSKeyId"] = s3_object.kms_key_id
-            if s3_object.bucket_key_enabled is not None:
+            if s3_object.bucket_key_enabled:
                 response["BucketKeyEnabled"] = s3_object.bucket_key_enabled
 
 
