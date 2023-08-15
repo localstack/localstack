@@ -2,6 +2,8 @@ import base64
 import copy
 import datetime
 import logging
+from collections import defaultdict
+from operator import itemgetter
 from secrets import token_urlsafe
 
 from localstack import config
@@ -9,10 +11,15 @@ from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.s3 import (
     MFA,
     AbortMultipartUploadOutput,
+    AccessControlPolicy,
     AccountId,
+    AnalyticsConfiguration,
+    AnalyticsId,
     Bucket,
     BucketAlreadyExists,
     BucketAlreadyOwnedByYou,
+    BucketCannedACL,
+    BucketLifecycleConfiguration,
     BucketName,
     BucketNotEmpty,
     BypassGovernanceRetention,
@@ -29,6 +36,7 @@ from localstack.aws.api.s3 import (
     CopyObjectRequest,
     CopyObjectResult,
     CopyPartResult,
+    CORSConfiguration,
     CreateBucketOutput,
     CreateBucketRequest,
     CreateMultipartUploadOutput,
@@ -38,27 +46,49 @@ from localstack.aws.api.s3 import (
     DeleteMarkerEntry,
     DeleteObjectOutput,
     DeleteObjectsOutput,
+    DeleteObjectTaggingOutput,
     Delimiter,
     EncodingType,
     Error,
+    Expiration,
     FetchOwner,
+    GetBucketAnalyticsConfigurationOutput,
+    GetBucketCorsOutput,
     GetBucketEncryptionOutput,
+    GetBucketIntelligentTieringConfigurationOutput,
+    GetBucketInventoryConfigurationOutput,
+    GetBucketLifecycleConfigurationOutput,
     GetBucketLocationOutput,
+    GetBucketTaggingOutput,
     GetBucketVersioningOutput,
     GetObjectAttributesOutput,
     GetObjectAttributesParts,
     GetObjectAttributesRequest,
     GetObjectOutput,
     GetObjectRequest,
+    GetObjectTaggingOutput,
+    GrantFullControl,
+    GrantRead,
+    GrantReadACP,
+    GrantWrite,
+    GrantWriteACP,
     HeadBucketOutput,
     HeadObjectOutput,
     HeadObjectRequest,
+    IntelligentTieringConfiguration,
+    IntelligentTieringId,
     InvalidArgument,
     InvalidBucketName,
     InvalidObjectState,
     InvalidPartOrder,
     InvalidStorageClass,
+    InventoryConfiguration,
+    InventoryId,
     KeyMarker,
+    LifecycleRules,
+    ListBucketAnalyticsConfigurationsOutput,
+    ListBucketIntelligentTieringConfigurationsOutput,
+    ListBucketInventoryConfigurationsOutput,
     ListBucketsOutput,
     ListMultipartUploadsOutput,
     ListObjectsOutput,
@@ -72,6 +102,10 @@ from localstack.aws.api.s3 import (
     MultipartUpload,
     MultipartUploadId,
     NoSuchBucket,
+    NoSuchCORSConfiguration,
+    NoSuchKey,
+    NoSuchLifecycleConfiguration,
+    NoSuchTagSet,
     NoSuchUpload,
     NotificationConfiguration,
     Object,
@@ -86,6 +120,7 @@ from localstack.aws.api.s3 import (
     Prefix,
     PutObjectOutput,
     PutObjectRequest,
+    PutObjectTaggingOutput,
     RequestPayer,
     RestoreObjectOutput,
     RestoreRequest,
@@ -98,6 +133,7 @@ from localstack.aws.api.s3 import (
     SSECustomerKeyMD5,
     StartAfter,
     StorageClass,
+    Tagging,
     Token,
     UploadIdMarker,
     UploadPartCopyOutput,
@@ -107,13 +143,16 @@ from localstack.aws.api.s3 import (
     VersionIdMarker,
     VersioningConfiguration,
 )
+from localstack.aws.handlers import preprocess_request, serve_custom_service_request_handlers
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.constants import ARCHIVES_STORAGE_CLASSES, DEFAULT_BUCKET_ENCRYPTION
+from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
 from localstack.services.s3.exceptions import (
     InvalidLocationConstraint,
     InvalidRequest,
     MalformedXML,
+    NoSuchConfiguration,
 )
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
 from localstack.services.s3.utils import (
@@ -123,13 +162,19 @@ from localstack.services.s3.utils import (
     get_class_attrs_from_spec_class,
     get_full_default_bucket_location,
     get_kms_key_arn,
+    get_lifecycle_rule_from_object,
     get_owner_for_account_id,
     get_system_metadata_from_request,
+    get_unique_key_id,
     is_bucket_name_valid,
     parse_range_header,
+    parse_tagging_header,
+    serialize_expiration_header,
     validate_kms_key_id,
+    validate_tag_set,
 )
 from localstack.services.s3.v3.models import (
+    BucketCorsIndex,
     EncryptionParameters,
     S3Bucket,
     S3DeleteMarker,
@@ -142,6 +187,13 @@ from localstack.services.s3.v3.models import (
 )
 from localstack.services.s3.v3.storage.core import LimitedIterableStream
 from localstack.services.s3.v3.storage.ephemeral import EphemeralS3ObjectStore
+from localstack.services.s3.validation import (
+    validate_bucket_analytics_configuration,
+    validate_bucket_intelligent_tiering_configuration,
+    validate_cors_configuration,
+    validate_inventory_configuration,
+    validate_lifecycle_configuration,
+)
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
@@ -158,6 +210,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         super().__init__()
         self._storage_backend = EphemeralS3ObjectStore()
         self._notification_dispatcher = NotificationDispatcher()
+        self._cors_handler = S3CorsHandler(BucketCorsIndex())
+
+        # runtime cache of Lifecycle Expiration headers, as they need to be calculated everytime we fetch an object
+        # in case the rules have changed
+        self._expiration_cache: dict[BucketName, dict[ObjectKey, Expiration]] = defaultdict(dict)
+
+    def on_after_init(self):
+        preprocess_request.append(self._cors_handler)
+        serve_custom_service_request_handlers.append(s3_cors_request_handler)
 
     def on_before_stop(self):
         self._notification_dispatcher.shutdown()
@@ -198,6 +259,36 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._notification_dispatcher.verify_configuration(
             notification_configuration, skip_destination_validation, context, bucket_name
         )
+
+    def _get_expiration_header(
+        self,
+        lifecycle_rules: LifecycleRules,
+        bucket: BucketName,
+        s3_object: S3Object,
+        object_tags: dict[str, str],
+    ) -> Expiration:
+        """
+        This method will check if the key matches a Lifecycle filter, and return the serializer header if that's
+        the case. We're caching it because it can change depending on the set rules on the bucket.
+        We can't use `lru_cache` as the parameters needs to be hashable
+        :param lifecycle_rules: the bucket LifecycleRules
+        :param moto_object: FakeKey from moto
+        :param object_tags: the object tags
+        :return: the Expiration header if there's a rule matching
+        """
+        if cached_exp := self._expiration_cache.get(bucket, {}).get(s3_object.key):
+            return cached_exp
+
+        if lifecycle_rule := get_lifecycle_rule_from_object(
+            lifecycle_rules, s3_object.key, s3_object.size, object_tags
+        ):
+            expiration_header = serialize_expiration_header(
+                lifecycle_rule["ID"],
+                lifecycle_rule["Expiration"],
+                s3_object.last_modified,
+            )
+            self._expiration_cache[bucket][s3_object.key] = expiration_header
+            return expiration_header
 
     @staticmethod
     def get_store(account_id: str, region_name: str) -> S3Store:
@@ -252,6 +343,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
         store.buckets[bucket_name] = s3_bucket
         store.global_bucket_map[bucket_name] = s3_bucket.bucket_account_id
+        self._cors_handler.invalidate_cache()
 
         # Location is always contained in response -> full url for LocationConstraint outside us-east-1
         location = (
@@ -281,6 +373,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         store.buckets.pop(bucket)
         store.global_bucket_map.pop(bucket)
+        self._cors_handler.invalidate_cache()
+        self._expiration_cache.pop(bucket, None)
 
     def list_buckets(
         self,
@@ -349,7 +443,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         #  grant_write_acp: GrantWriteACP = None,
         #  -
         #  request_payer: RequestPayer = None,
-        #  tagging: TaggingHeader = None,
         #  object_lock_mode: ObjectLockMode = None,
         #  object_lock_retain_until_date: ObjectLockRetainUntilDate = None,
         #  object_lock_legal_hold_status: ObjectLockLegalHoldStatus = None,
@@ -431,7 +524,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         s3_bucket.objects.set(key, s3_object)
 
-        # TODO: tags: do we have tagging service or do we manually handle? see utils TaggingService
+        # in case we are overriding an object, delete the tags entry
+        key_id = get_unique_key_id(bucket_name, key, version_id)
+        store.TAGS.tags.pop(key_id, None)
+        if tagging_header := request.get("Tagging"):
+            tagging = parse_tagging_header(tagging_header)
+            store.TAGS.tags[key_id] = tagging
 
         # TODO: returned fields
         # RequestCharged: Optional[RequestCharged]  # TODO
@@ -444,8 +542,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.checksum_algorithm:
             response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
 
-        if s3_object.expiration:
-            response["Expiration"] = s3_object.expiration  # TODO: properly parse the datetime
+        if s3_bucket.lifecycle_rules:
+            if expiration_header := self._get_expiration_header(
+                s3_bucket.lifecycle_rules,
+                bucket_name,
+                s3_object,
+                store.TAGS.tags.get(key_id, {}),
+            ):
+                # TODO: we either apply the lifecycle to existing objects when we set the new rules, or we need to
+                #  apply them everytime we get/head an object
+                response["Expiration"] = expiration_header
 
         add_encryption_to_response(response, s3_object=s3_object)
         self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
@@ -476,6 +582,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store = self.get_store(context.account_id, context.region)
         bucket_name = request["Bucket"]
         object_key = request["Key"]
+        version_id = request.get("VersionId")
         if not (s3_bucket := store.buckets.get(bucket_name)):
             raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket_name)
 
@@ -483,7 +590,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         s3_object = s3_bucket.get_object(
             key=object_key,
-            version_id=request.get("VersionId"),
+            version_id=version_id,
             http_method="GET",
         )
 
@@ -526,11 +633,25 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         add_encryption_to_response(response, s3_object=s3_object)
 
+        if object_tags := store.TAGS.tags.get(
+            get_unique_key_id(bucket_name, object_key, version_id)
+        ):
+            response["TagCount"] = len(object_tags)
+
+        if s3_object.is_current and s3_bucket.lifecycle_rules:
+            if expiration_header := self._get_expiration_header(
+                s3_bucket.lifecycle_rules,
+                bucket_name,
+                s3_object,
+                object_tags,
+            ):
+                # TODO: we either apply the lifecycle to existing objects when we set the new rules, or we need to
+                #  apply them everytime we get/head an object
+                response["Expiration"] = expiration_header
+
         # TODO: missing returned fields
-        #     Expiration: Optional[Expiration]
         #     RequestCharged: Optional[RequestCharged]
         #     ReplicationStatus: Optional[ReplicationStatus]
-        #     TagCount: Optional[TagCount]
         #     ObjectLockMode: Optional[ObjectLockMode]
         #     ObjectLockRetainUntilDate: Optional[ObjectLockRetainUntilDate]
         #     ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
@@ -591,8 +712,21 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         add_encryption_to_response(response, s3_object=s3_object)
 
+        if s3_object.is_current and s3_bucket.lifecycle_rules:
+            object_tags = store.TAGS.tags.get(
+                get_unique_key_id(bucket_name, object_key, s3_object.version_id)
+            )
+            if expiration_header := self._get_expiration_header(
+                s3_bucket.lifecycle_rules,
+                bucket_name,
+                s3_object,
+                object_tags,
+            ):
+                # TODO: we either apply the lifecycle to existing objects when we set the new rules, or we need to
+                #  apply them everytime we get/head an object
+                response["Expiration"] = expiration_header
+
         # TODO: missing return fields:
-        # Expiration: Optional[Expiration]
         # ArchiveStatus: Optional[ArchiveStatus]
 
         # RequestCharged: Optional[RequestCharged]
@@ -632,6 +766,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if found_object:
                 self._storage_backend.remove(bucket, found_object)
                 self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
+                store.TAGS.tags.pop(get_unique_key_id(bucket, key, version_id), None)
+
             return DeleteObjectOutput()
 
         if not version_id:
@@ -663,6 +799,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         else:
             self._storage_backend.remove(bucket, found_object)
             self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
+            store.TAGS.tags.pop(get_unique_key_id(bucket, key, version_id), None)
 
         return response
 
@@ -714,6 +851,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 if found_object:
                     to_remove.append(found_object)
                     self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
+                    store.TAGS.tags.pop(get_unique_key_id(bucket, object_key, version_id), None)
                 # small hack to not create a fake object for nothing
                 elif s3_bucket.notification_configuration:
                     # DeleteObjects is a bit weird, even if the object didn't exist, S3 will trigger a notification
@@ -771,6 +909,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 to_remove.append(found_object)
 
             self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
+            store.TAGS.tags.pop(get_unique_key_id(bucket, object_key, version_id), None)
 
         # TODO: request charged
         self._storage_backend.remove(bucket, to_remove)
@@ -801,10 +940,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # copy_source_if_none_match: CopySourceIfNoneMatch = None,
         # copy_source_if_unmodified_since: CopySourceIfUnmodifiedSince = None,
         #
-        # tagging_directive: TaggingDirective = None,
-        #
         # request_payer: RequestPayer = None,
-        # tagging: TaggingHeader = None,
         # object_lock_mode: ObjectLockMode = None,
         # object_lock_retain_until_date: ObjectLockRetainUntilDate = None,
         # object_lock_legal_hold_status: ObjectLockLegalHoldStatus = None,
@@ -851,6 +987,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 "This copy request is illegal because it is trying to copy an object to itself without changing the "
                 "object's metadata, storage class, website redirect location or encryption attributes."
             )
+
+        if tagging := request.get("Tagging"):
+            tagging = parse_tagging_header(tagging)
 
         if metadata_directive == "REPLACE":
             user_metadata = request.get("Metadata")
@@ -901,6 +1040,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # Object copied from Glacier object should not have expiry
         # TODO: verify this assumption from moto?
         dest_s3_bucket.objects.set(dest_key, s3_object)
+
+        dest_key_id = get_unique_key_id(dest_bucket, dest_key, dest_version_id)
+        if (request.get("TaggingDirective")) == "REPLACE":
+            store.TAGS.tags[dest_key_id] = tagging
+        else:
+            src_key_id = get_unique_key_id(src_bucket, src_key, src_version_id)
+            store.TAGS.tags[dest_key_id] = copy.copy(store.TAGS.tags.get(src_key_id, {}))
 
         copy_object_result = CopyObjectResult(
             ETag=s3_object.quoted_etag,
@@ -1377,7 +1523,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         #  grant_read_acp: GrantReadACP = None,
         #  grant_write_acp: GrantWriteACP = None,
         #  request_payer: RequestPayer = None,
-        #  tagging: TaggingHeader = None,
         store = self.get_store(context.account_id, context.region)
         bucket_name = request["Bucket"]
         if not (s3_bucket := store.buckets.get(bucket_name)):
@@ -1392,6 +1537,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
             validate_kms_key_id(sse_kms_key_id, s3_bucket)
+
+        if tagging := request.get("Tagging"):
+            tagging = parse_tagging_header(tagging_header=tagging)
 
         key = request["Key"]
 
@@ -1431,6 +1579,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             expiration=None,  # TODO, from lifecycle, or should it be updated with config?
             acl=None,
             initiator=get_owner_for_account_id(context.account_id),
+            tagging=tagging,
         )
 
         s3_bucket.multiparts[s3_multipart.id] = s3_multipart
@@ -1670,6 +1819,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # remove the multipart now that it's complete
         self._storage_backend.remove_multipart(bucket, s3_multipart)
         s3_bucket.multiparts.pop(s3_multipart.id, None)
+
+        key_id = get_unique_key_id(bucket, key, version_id)
+        store.TAGS.tags.pop(key_id, None)
+        if s3_multipart.tagging:
+            store.TAGS.tags[key_id] = s3_multipart.tagging
 
         # TODO: validate if you provide wrong checksum compared to the given algorithm? should you calculate it anyway
         #  when you complete? sounds weird, not sure how that works?
@@ -1974,6 +2128,454 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
 
         return s3_bucket.notification_configuration or NotificationConfiguration()
+
+    def put_bucket_tagging(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        tagging: Tagging,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if "TagSet" not in tagging:
+            raise MalformedXML()
+
+        validate_tag_set(tagging["TagSet"], type_set="bucket")
+
+        # remove the previous tags before setting the new ones, it overwrites the whole TagSet
+        store.TAGS.tags.pop(s3_bucket.bucket_arn, None)
+        store.TAGS.tag_resource(s3_bucket.bucket_arn, tags=tagging["TagSet"])
+
+    def get_bucket_tagging(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketTaggingOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        tag_set = store.TAGS.list_tags_for_resource(s3_bucket.bucket_arn, root_name="Tags")["Tags"]
+        if not tag_set:
+            raise NoSuchTagSet(
+                "The TagSet does not exist",
+                BucketName=bucket,
+            )
+
+        return GetBucketTaggingOutput(TagSet=tag_set)
+
+    def delete_bucket_tagging(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        store.TAGS.tags.pop(s3_bucket.bucket_arn, None)
+
+    def put_object_tagging(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        tagging: Tagging,
+        version_id: ObjectVersionId = None,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
+    ) -> PutObjectTaggingOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        s3_object = s3_bucket.get_object(
+            key=key,
+            version_id=version_id,
+            raise_for_delete_marker=False,  # We can tag DeleteMarker
+        )
+
+        if "TagSet" not in tagging:
+            raise MalformedXML()
+
+        validate_tag_set(tagging["TagSet"], type_set="object")
+
+        key_id = get_unique_key_id(bucket, key, version_id)
+        # remove the previous tags before setting the new ones, it overwrites the whole TagSet
+        store.TAGS.tags.pop(key_id, None)
+        store.TAGS.tag_resource(key_id, tags=tagging["TagSet"])
+        response = PutObjectTaggingOutput()
+        if s3_object.version_id:
+            response["VersionId"] = s3_object.version_id
+
+        self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
+
+        return response
+
+    def get_object_tagging(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        version_id: ObjectVersionId = None,
+        expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
+    ) -> GetObjectTaggingOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        try:
+            s3_object = s3_bucket.get_object(
+                key=key,
+                version_id=version_id,
+                raise_for_delete_marker=False,  # We can tag DeleteMarker
+            )
+        except NoSuchKey as e:
+            # There a weird AWS validated bug in S3: the returned key contains the bucket name as well
+            # follow AWS on this one
+            e.Key = f"{bucket}/{key}"
+            raise e
+
+        tag_set = store.TAGS.list_tags_for_resource(get_unique_key_id(bucket, key, version_id))[
+            "Tags"
+        ]
+        response = GetObjectTaggingOutput(TagSet=tag_set)
+        if s3_object.version_id:
+            response["VersionId"] = s3_object.version_id
+
+        return response
+
+    def delete_object_tagging(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        version_id: ObjectVersionId = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> DeleteObjectTaggingOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        s3_object = s3_bucket.get_object(
+            key=key,
+            version_id=version_id,
+            raise_for_delete_marker=False,
+        )
+
+        store.TAGS.tags.pop(get_unique_key_id(bucket, key, version_id), None)
+        response = DeleteObjectTaggingOutput()
+        if s3_object.version_id:
+            response["VersionId"] = s3_object.version_id
+
+        self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
+
+        return response
+
+    def put_bucket_cors(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        cors_configuration: CORSConfiguration,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        validate_cors_configuration(cors_configuration)
+        s3_bucket.cors_rules = cors_configuration
+        self._cors_handler.invalidate_cache()
+
+    def get_bucket_cors(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketCorsOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not s3_bucket.cors_rules:
+            raise NoSuchCORSConfiguration(
+                "The CORS configuration does not exist",
+                BucketName=bucket,
+            )
+        return GetBucketCorsOutput(CORSRules=s3_bucket.cors_rules["CORSRules"])
+
+    def delete_bucket_cors(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if s3_bucket.cors_rules:
+            self._cors_handler.invalidate_cache()
+            s3_bucket.cors_rules = None
+
+    def get_bucket_lifecycle_configuration(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketLifecycleConfigurationOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not s3_bucket.lifecycle_rules:
+            raise NoSuchLifecycleConfiguration(
+                "The lifecycle configuration does not exist",
+                BucketName=bucket,
+            )
+
+        return GetBucketLifecycleConfigurationOutput(Rules=s3_bucket.lifecycle_rules)
+
+    def put_bucket_lifecycle_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        lifecycle_configuration: BucketLifecycleConfiguration = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        validate_lifecycle_configuration(lifecycle_configuration)
+        # TODO: we either apply the lifecycle to existing objects when we set the new rules, or we need to apply them
+        #  everytime we get/head an object
+        # for now, we keep a cache and get it everytime we fetch an object
+        s3_bucket.lifecycle_rules = lifecycle_configuration["Rules"]
+        self._expiration_cache[bucket].clear()
+
+    def delete_bucket_lifecycle(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        s3_bucket.lifecycle_rules = None
+        self._expiration_cache[bucket].clear()
+
+    def put_bucket_analytics_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: AnalyticsId,
+        analytics_configuration: AnalyticsConfiguration,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        validate_bucket_analytics_configuration(
+            id=id, analytics_configuration=analytics_configuration
+        )
+
+        s3_bucket.analytics_configurations[id] = analytics_configuration
+
+    def get_bucket_analytics_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: AnalyticsId,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketAnalyticsConfigurationOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not (analytic_config := s3_bucket.analytics_configurations.get(id)):
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+
+        return GetBucketAnalyticsConfigurationOutput(AnalyticsConfiguration=analytic_config)
+
+    def list_bucket_analytics_configurations(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        continuation_token: Token = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> ListBucketAnalyticsConfigurationsOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        return ListBucketAnalyticsConfigurationsOutput(
+            IsTruncated=False,
+            AnalyticsConfigurationList=sorted(
+                s3_bucket.analytics_configurations.values(),
+                key=itemgetter("Id"),
+            ),
+        )
+
+    def delete_bucket_analytics_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: AnalyticsId,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not s3_bucket.analytics_configurations.pop(id, None):
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+
+    def put_bucket_intelligent_tiering_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: IntelligentTieringId,
+        intelligent_tiering_configuration: IntelligentTieringConfiguration,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        validate_bucket_intelligent_tiering_configuration(id, intelligent_tiering_configuration)
+
+        s3_bucket.intelligent_tiering_configurations[id] = intelligent_tiering_configuration
+
+    def get_bucket_intelligent_tiering_configuration(
+        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
+    ) -> GetBucketIntelligentTieringConfigurationOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not (itier_config := s3_bucket.intelligent_tiering_configurations.get(id)):
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+
+        return GetBucketIntelligentTieringConfigurationOutput(
+            IntelligentTieringConfiguration=itier_config
+        )
+
+    def delete_bucket_intelligent_tiering_configuration(
+        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not s3_bucket.intelligent_tiering_configurations.pop(id, None):
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+
+    def list_bucket_intelligent_tiering_configurations(
+        self, context: RequestContext, bucket: BucketName, continuation_token: Token = None
+    ) -> ListBucketIntelligentTieringConfigurationsOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        return ListBucketIntelligentTieringConfigurationsOutput(
+            IsTruncated=False,
+            IntelligentTieringConfigurationList=sorted(
+                s3_bucket.intelligent_tiering_configurations.values(),
+                key=itemgetter("Id"),
+            ),
+        )
+
+    def put_bucket_inventory_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: InventoryId,
+        inventory_configuration: InventoryConfiguration,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        validate_inventory_configuration(
+            config_id=id, inventory_configuration=inventory_configuration
+        )
+        s3_bucket.inventory_configurations[id] = inventory_configuration
+
+    def get_bucket_inventory_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: InventoryId,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketInventoryConfigurationOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not (inv_config := s3_bucket.inventory_configurations.get(id)):
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+        return GetBucketInventoryConfigurationOutput(InventoryConfiguration=inv_config)
+
+    def list_bucket_inventory_configurations(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        continuation_token: Token = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> ListBucketInventoryConfigurationsOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        return ListBucketInventoryConfigurationsOutput(
+            IsTruncated=False,
+            InventoryConfigurationList=sorted(
+                s3_bucket.inventory_configurations.values(), key=itemgetter("Id")
+            ),
+        )
+
+    def delete_bucket_inventory_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: InventoryId,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not s3_bucket.inventory_configurations.pop(id, None):
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+
+    # ###### THIS ARE UNIMPLEMENTED METHODS TO ALLOW TESTING, DO NOT COUNT THEM AS DONE ###### #
+
+    def delete_bucket_ownership_controls(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        # TODO: implement, this is just for CORS tests to be able to run
+        pass
+
+    def delete_public_access_block(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        # TODO: implement, this is just for CORS tests to be able to run
+        pass
+
+    def put_bucket_acl(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        acl: BucketCannedACL = None,
+        access_control_policy: AccessControlPolicy = None,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        grant_full_control: GrantFullControl = None,
+        grant_read: GrantRead = None,
+        grant_read_acp: GrantReadACP = None,
+        grant_write: GrantWrite = None,
+        grant_write_acp: GrantWriteACP = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        # TODO: implement, this is just for CORS tests to be able to run
+        pass
 
 
 def generate_version_id(bucket_versioning_status: str) -> str | None:

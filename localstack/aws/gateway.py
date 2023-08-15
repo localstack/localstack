@@ -2,6 +2,7 @@ import logging
 from typing import List
 
 from localstack.http import Request, Response
+from localstack.http.websocket import WebSocketRequest
 
 from .api import RequestContext
 from .chain import ExceptionHandler, Handler, HandlerChain
@@ -34,3 +35,15 @@ class Gateway:
         context.request = request
 
         chain.handle(context, response)
+
+    def accept(self, request: WebSocketRequest):
+        response = Response(status=101)
+        self.process(request, response)
+
+        # only send the populated response if the websocket hasn't already done so before
+        if response.status_code != 101:
+            if request.is_upgraded():
+                return
+            if request.is_rejected():
+                return
+            request.reject(response)

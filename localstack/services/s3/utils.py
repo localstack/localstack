@@ -3,15 +3,14 @@ import hashlib
 import logging
 import re
 import zlib
-from dataclasses import dataclass
-from typing import IO, Any, Dict, Literal, Optional, Protocol, Tuple, Type, Union
+from typing import IO, Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Type, Union
 from urllib import parse as urlparser
 from zoneinfo import ZoneInfo
 
 import moto.s3.models as moto_s3_models
 from botocore.exceptions import ClientError
 from botocore.utils import InvalidArnException
-from moto.s3.exceptions import MissingBucket
+from moto.s3.exceptions import MalformedXML, MissingBucket
 from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 from moto.s3.utils import clean_key_name
 
@@ -23,6 +22,7 @@ from localstack.aws.api.s3 import (
     CopySource,
     InvalidArgument,
     InvalidRange,
+    InvalidTag,
     LifecycleExpiration,
     LifecycleRule,
     LifecycleRules,
@@ -31,9 +31,12 @@ from localstack.aws.api.s3 import (
     NoSuchBucket,
     NoSuchKey,
     ObjectKey,
+    ObjectSize,
     ObjectVersionId,
     Owner,
     SSEKMSKeyId,
+    TaggingHeader,
+    TagSet,
 )
 from localstack.aws.connect import connect_to
 from localstack.services.s3.constants import (
@@ -62,6 +65,8 @@ BUCKET_NAME_REGEX = (
 REGION_REGEX = r"[a-z]{2}-[a-z]+-[0-9]{1,}"
 PORT_REGEX = r"(:[\d]{0,6})?"
 
+TAG_REGEX = re.compile(r"^[\w\s.:/=+\-@]*$")
+
 S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expression (separated by .) followed by .s3
     r"^(http(s)?://)?((?!s3\.)[^\./]+)\."  # the negative lookahead part is for considering buckets
     r"(((s3(-website)?\.({}\.)?)localhost(\.localstack\.cloud)?)|(localhost\.localstack\.cloud)|"
@@ -71,10 +76,6 @@ S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expr
     REGION_REGEX, REGION_REGEX, PORT_REGEX
 )
 _s3_virtual_host_regex = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
-
-PATTERN_UUID = re.compile(
-    r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
-)
 
 
 RFC1123 = "%a, %d %b %Y %H:%M:%S GMT"
@@ -163,10 +164,9 @@ class S3CRC32Checksum:
         return self.checksum.to_bytes(4, "big")
 
 
-@dataclass
-class ParsedRange:
+class ParsedRange(NamedTuple):
     """
-    Dataclass representing a parsed Range header with the requested S3 object size
+    NamedTuple representing a parsed Range header with the requested S3 object size
     https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range
     """
 
@@ -621,7 +621,10 @@ def serialize_expiration_header(
 
 
 def get_lifecycle_rule_from_object(
-    lifecycle_conf_rules: LifecycleRules, moto_object: FakeKey, object_tags: dict[str, str]
+    lifecycle_conf_rules: LifecycleRules,
+    object_key: ObjectKey,
+    size: ObjectSize,
+    object_tags: dict[str, str],
 ) -> LifecycleRule:
     for rule in lifecycle_conf_rules:
         if not (expiration := rule.get("Expiration")) or "ExpiredObjectDeleteMarker" in expiration:
@@ -632,13 +635,13 @@ def get_lifecycle_rule_from_object(
 
         if and_rules := rule_filter.get("And"):
             if all(
-                _match_lifecycle_filter(key, value, moto_object, object_tags)
+                _match_lifecycle_filter(key, value, object_key, size, object_tags)
                 for key, value in and_rules.items()
             ):
                 return rule
 
         if any(
-            _match_lifecycle_filter(key, value, moto_object, object_tags)
+            _match_lifecycle_filter(key, value, object_key, size, object_tags)
             for key, value in rule_filter.items()
         ):
             # after validation, we can only one of `Prefix`, `Tag`, `ObjectSizeGreaterThan` or `ObjectSizeLessThan` in
@@ -647,17 +650,21 @@ def get_lifecycle_rule_from_object(
 
 
 def _match_lifecycle_filter(
-    filter_key: str, filter_value, moto_object: FakeKey, object_tags: dict[str, str]
+    filter_key: str,
+    filter_value: str | int | dict[str, str],
+    object_key: ObjectKey,
+    size: ObjectSize,
+    object_tags: dict[str, str],
 ):
     match filter_key:
         case "Prefix":
-            return moto_object.name.startswith(filter_value)
+            return object_key.startswith(filter_value)
         case "Tag":
             return object_tags.get(filter_value.get("Key")) == filter_value.get("Value")
         case "ObjectSizeGreaterThan":
-            return moto_object.size > filter_value
+            return size > filter_value
         case "ObjectSizeLessThan":
-            return moto_object.size < filter_value
+            return size < filter_value
         case "Tags":  # this is inside the `And` field
             return all(object_tags.get(tag.get("Key")) == tag.get("Value") for tag in filter_value)
 
@@ -690,3 +697,69 @@ def validate_dict_fields(data: dict, required_fields: set, optional_fields: set)
     return (set_fields := set(data)) >= required_fields and set_fields <= (
         required_fields | optional_fields
     )
+
+
+def parse_tagging_header(tagging_header: TaggingHeader) -> dict:
+    try:
+        parsed_tags = urlparser.parse_qs(tagging_header, keep_blank_values=True)
+        tags: dict[str, str] = {}
+        for key, val in parsed_tags.items():
+            if len(val) != 1 or not TAG_REGEX.match(key) or not TAG_REGEX.match(val[0]):
+                raise InvalidArgument(
+                    "The header 'x-amz-tagging' shall be encoded as UTF-8 then URLEncoded URL query parameters without tag name duplicates.",
+                    ArgumentName="x-amz-tagging",
+                    ArgumentValue=tagging_header,
+                )
+            elif key.startswith("aws:"):
+                raise
+            tags[key] = val[0]
+        return tags
+
+    except ValueError:
+        raise InvalidArgument(
+            "The header 'x-amz-tagging' shall be encoded as UTF-8 then URLEncoded URL query parameters without tag name duplicates.",
+            ArgumentName="x-amz-tagging",
+            ArgumentValue=tagging_header,
+        )
+
+
+def validate_tag_set(tag_set: TagSet, type_set: Literal["bucket", "object"] = "bucket"):
+    keys = set()
+    for tag in tag_set:
+        if set(tag) != {"Key", "Value"}:
+            raise MalformedXML()
+
+        key = tag["Key"]
+        if key in keys:
+            raise InvalidTag(
+                "Cannot provide multiple Tags with the same key",
+                TagKey=key,
+            )
+
+        if key.startswith("aws:"):
+            if type_set == "bucket":
+                message = "System tags cannot be added/updated by requester"
+            else:
+                message = "Your TagKey cannot be prefixed with aws:"
+            raise InvalidTag(
+                message,
+                TagKey=key,
+            )
+
+        if not TAG_REGEX.match(key):
+            raise InvalidTag(
+                "The TagKey you have provided is invalid",
+                TagKey=key,
+            )
+        elif not TAG_REGEX.match(tag["Value"]):
+            raise InvalidTag(
+                "The TagValue you have provided is invalid", TagKey=key, TagValue=tag["Value"]
+            )
+
+        keys.add(key)
+
+
+def get_unique_key_id(
+    bucket: BucketName, object_key: ObjectKey, version_id: ObjectVersionId
+) -> str:
+    return f"{bucket}/{object_key}/{version_id or 'null'}"

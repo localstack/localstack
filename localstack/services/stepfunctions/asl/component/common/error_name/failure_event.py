@@ -6,13 +6,13 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 
 
 class FailureEvent:
-    error_name: Final[ErrorName]
+    error_name: Final[Optional[ErrorName]]
     event_type: Final[HistoryEventType]
     event_details: Final[Optional[EventDetails]]
 
     def __init__(
         self,
-        error_name: ErrorName,
+        error_name: Optional[ErrorName],
         event_type: HistoryEventType,
         event_details: Optional[EventDetails] = None,
     ):

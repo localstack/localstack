@@ -1,12 +1,18 @@
 import logging
 import re
-from typing import Optional, Tuple
+from typing import Optional, Protocol, Tuple
 
 from werkzeug.datastructures import Headers
 
 from localstack import config
 from localstack.aws.api import RequestContext
-from localstack.aws.api.s3 import AccessForbidden, BadRequest, CORSRule, CORSRules
+from localstack.aws.api.s3 import (
+    AccessForbidden,
+    BadRequest,
+    CORSConfiguration,
+    CORSRule,
+    CORSRules,
+)
 from localstack.aws.chain import Handler, HandlerChain
 
 # TODO: refactor those to expose the needed methods
@@ -15,7 +21,6 @@ from localstack.aws.protocol.op_router import RestServiceOperationRouter
 from localstack.aws.protocol.service_router import get_service_catalog
 from localstack.constants import S3_VIRTUAL_HOSTNAME
 from localstack.http import Request, Response
-from localstack.services.s3.models import BucketCorsIndex
 from localstack.services.s3.utils import S3_VIRTUAL_HOSTNAME_REGEX
 
 # TODO: add more logging statements
@@ -29,12 +34,22 @@ add_default_headers = CorsResponseEnricher.add_cors_headers
 is_origin_allowed_default = CorsEnforcer.is_cors_origin_allowed
 
 
+class BucketCorsIndex(Protocol):
+    @property
+    def cors(self) -> dict[str, CORSConfiguration]:
+        raise NotImplementedError
+
+    @property
+    def buckets(self) -> set[str]:
+        raise NotImplementedError
+
+
 class S3CorsHandler(Handler):
 
     bucket_cors_index: BucketCorsIndex
 
-    def __init__(self):
-        self.bucket_cors_index = BucketCorsIndex()
+    def __init__(self, bucket_cors_index: BucketCorsIndex):
+        self.bucket_cors_index = bucket_cors_index
         self._service = get_service_catalog().get("s3")
         self._s3_op_router = RestServiceOperationRouter(self._service)
 

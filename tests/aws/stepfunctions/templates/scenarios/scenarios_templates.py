@@ -25,6 +25,9 @@ class ScenariosTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/map_state_parameters_singletons_legacy.json5"
     )
     MAP_STATE_CATCH: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/map_state_catch.json5")
+    MAP_STATE_CATCH_EMPTY_FAIL: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_catch_empty_fail.json5"
+    )
     MAP_STATE_CATCH_LEGACY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_catch_legacy.json5"
     )

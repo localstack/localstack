@@ -1,6 +1,7 @@
 import pytest
 
 from localstack import config
+from localstack.config import HostAndPort
 
 
 class TestProviderConfig:
@@ -94,7 +95,7 @@ class TestEdgeVariablesDerivedCorrectly:
         ) = config.populate_legacy_edge_configuration(environment)
 
         assert ls_host == "localhost.localstack.cloud:4566"
-        assert gateway_listen == f"{default_ip}:4566"
+        assert gateway_listen == [HostAndPort(host=default_ip, port=4566)]
         assert edge_port == 4566
         assert edge_port_http == 0
         assert edge_bind_host == default_ip
@@ -109,7 +110,7 @@ class TestEdgeVariablesDerivedCorrectly:
             edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
-        assert gateway_listen == "192.168.0.1:4566"
+        assert gateway_listen == [HostAndPort(host="192.168.0.1", port=4566)]
         assert edge_port == 4566
         assert edge_port_http == 0
         assert edge_bind_host == "192.168.0.1"
@@ -124,7 +125,7 @@ class TestEdgeVariablesDerivedCorrectly:
             edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
-        assert gateway_listen == f"{default_ip}:9999"
+        assert gateway_listen == [HostAndPort(host=default_ip, port=9999)]
         assert edge_port == 9999
         assert edge_port_http == 0
         assert edge_bind_host == default_ip
@@ -139,7 +140,7 @@ class TestEdgeVariablesDerivedCorrectly:
             edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
-        assert gateway_listen == "192.168.0.1:9999"
+        assert gateway_listen == [HostAndPort(host="192.168.0.1", port=9999)]
         assert edge_port == 9999
         assert edge_port_http == 0
         assert edge_bind_host == "192.168.0.1"
@@ -154,8 +155,8 @@ class TestEdgeVariablesDerivedCorrectly:
             edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
-        assert ls_host == "hostname:9999"
-        assert gateway_listen == f"{default_ip}:9999"
+        assert ls_host == HostAndPort(host="hostname", port=9999)
+        assert gateway_listen == [HostAndPort(host=default_ip, port=9999)]
         assert edge_port == 9999
         assert edge_port_http == 0
         assert edge_bind_host == default_ip
@@ -170,8 +171,8 @@ class TestEdgeVariablesDerivedCorrectly:
             edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
-        assert ls_host == "foobar:4566"
-        assert gateway_listen == f"{default_ip}:4566"
+        assert ls_host == HostAndPort(host="foobar", port=4566)
+        assert gateway_listen == [HostAndPort(host=default_ip, port=4566)]
         assert edge_port == 4566
         assert edge_port_http == 0
         assert edge_bind_host == default_ip
@@ -186,37 +187,14 @@ class TestEdgeVariablesDerivedCorrectly:
             edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
-        assert gateway_listen == "0.0.0.0:9999,0.0.0.0:443"
+        assert gateway_listen == [
+            HostAndPort(host="0.0.0.0", port=9999),
+            HostAndPort(host="0.0.0.0", port=443),
+        ]
         # take the first value
         assert edge_port == 9999
         assert edge_port_http == 0
         assert edge_bind_host == "0.0.0.0"
-
-    @pytest.mark.parametrize(
-        "input,hosts_and_ports",
-        [
-            ("0.0.0.0:9999", [("0.0.0.0", 9999)]),
-            (
-                "0.0.0.0:9999,127.0.0.1:443",
-                [
-                    ("0.0.0.0", 9999),
-                    ("127.0.0.1", 443),
-                ],
-            ),
-            (
-                "0.0.0.0:9999,127.0.0.1:443",
-                [
-                    ("0.0.0.0", 9999),
-                    ("127.0.0.1", 443),
-                ],
-            ),
-        ],
-    )
-    def test_gateway_listen_parsed(self, input, hosts_and_ports):
-        res = config.get_gateway_listen(input)
-
-        expected = [config.HostAndPort(host=host, port=port) for (host, port) in hosts_and_ports]
-        assert res == expected
 
     def test_legacy_variables_override_if_given(self, default_ip):
         environment = {
@@ -232,7 +210,39 @@ class TestEdgeVariablesDerivedCorrectly:
             edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
-        assert gateway_listen == f"{default_ip}:4566"
+        assert gateway_listen == [
+            HostAndPort(host=default_ip, port=10101),
+            HostAndPort(host=default_ip, port=20202),
+        ]
         assert edge_bind_host == "192.168.0.1"
         assert edge_port == 10101
         assert edge_port_http == 20202
+
+
+class TestHostAndPort:
+    def test_parsing_hostname_and_ip(self):
+        h = config.HostAndPort.parse("0.0.0.0:1000", default_host="", default_port=0)
+        assert h == HostAndPort(host="0.0.0.0", port=1000)
+
+    def test_parsing_with_default_host(self):
+        h = config.HostAndPort.parse(":1000", default_host="192.168.0.1", default_port=0)
+        assert h == HostAndPort(host="192.168.0.1", port=1000)
+
+    def test_parsing_with_default_port(self):
+        h = config.HostAndPort.parse("1.2.3.4", default_host="", default_port=9876)
+        assert h == HostAndPort(host="1.2.3.4", port=9876)
+
+    def test_invalid_port(self):
+        with pytest.raises(ValueError) as exc_info:
+            config.HostAndPort.parse("0.0.0.0:not-a-port", default_host="127.0.0.1", default_port=0)
+
+        assert "specified port not-a-port not a number" in str(exc_info)
+
+    @pytest.mark.parametrize("port", [-1000, -1, 2**16, 100_000])
+    def test_port_out_of_range(self, port):
+        with pytest.raises(ValueError) as exc_info:
+            config.HostAndPort.parse(
+                f"localhost:{port}", default_host="localhost", default_port=1234
+            )
+
+        assert "port out of range" in str(exc_info)

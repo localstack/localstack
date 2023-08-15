@@ -110,6 +110,7 @@ def test_start_host(runner, monkeypatch):
 
 
 def test_status_services(runner, httpserver, monkeypatch):
+    # TODO: legacy API, switch to use GATEWAY_LISTEN in the next step
     monkeypatch.setattr(config, "EDGE_PORT_HTTP", httpserver.port)
     monkeypatch.setattr(config, "EDGE_PORT", httpserver.port)
 
