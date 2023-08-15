@@ -118,7 +118,9 @@ def render_velocity_template(template, context, variables=None, as_json=False):
 # TODO: contribute these patches upstream!
 
 
-airspeed.operators.MacroDefinition.RESERVED_NAMES = airspeed.operators.MacroDefinition.RESERVED_NAMES + ("return",)
+airspeed.operators.MacroDefinition.RESERVED_NAMES = (
+    airspeed.operators.MacroDefinition.RESERVED_NAMES + ("return",)
+)
 
 
 @patch(airspeed.operators.VariableExpression.calculate)
