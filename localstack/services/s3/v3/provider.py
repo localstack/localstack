@@ -3,6 +3,7 @@ import copy
 import datetime
 import json
 import logging
+import os.path
 from collections import defaultdict
 from operator import itemgetter
 from secrets import token_urlsafe
@@ -279,6 +280,7 @@ from localstack.services.s3.validation import (
     validate_website_configuration,
 )
 from localstack.services.s3.website_hosting import register_website_hosting_routes
+from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws.arns import s3_bucket_name
 from localstack.utils.strings import short_uid, to_str
 
@@ -291,11 +293,20 @@ OBJECT_OWNERSHIPS = get_class_attrs_from_spec_class(ObjectOwnership)
 # TODO: pre-signed URLS -> REMAP parameters from querystring to headers???
 #  create a handler which handle pre-signed and remap before parsing the request!
 
+DEFAULT_S3_TMP_DIR = "/tmp/localstack-s3-storage"
+
 
 class S3Provider(S3Api, ServiceLifecycleHook):
     def __init__(self) -> None:
         super().__init__()
-        self._storage_backend = EphemeralS3ObjectStore()
+
+        if config.PERSISTENCE:
+            _s3_storage_path = os.path.join(config.dirs.data, "s3")
+        else:
+            _s3_storage_path = DEFAULT_S3_TMP_DIR
+        LOG.info("Using %s as storage path for s3 assets", _s3_storage_path)
+        self._storage_backend = EphemeralS3ObjectStore(_s3_storage_path)
+
         self._notification_dispatcher = NotificationDispatcher()
         self._cors_handler = S3CorsHandler(BucketCorsIndex())
 
@@ -309,8 +320,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         modify_service_response.append(S3Provider.service, s3_presigned_url_response_handler)
         register_website_hosting_routes(router=ROUTER)
 
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(s3_stores)
+        visitor.visit(AssetDirectory(self._storage_backend.root_directory))
+
+    def on_before_state_save(self):
+        self._storage_backend.flush()
+
     def on_before_stop(self):
         self._notification_dispatcher.shutdown()
+        self._storage_backend.close()
 
     def _notify(
         self,
