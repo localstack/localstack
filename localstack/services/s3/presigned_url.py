@@ -32,6 +32,7 @@ from localstack.aws.protocol.op_router import RestServiceOperationRouter
 from localstack.aws.protocol.service_router import get_service_catalog
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Request, Response
+from localstack.http.request import get_raw_path
 from localstack.services.s3.constants import SIGNATURE_V2_PARAMS, SIGNATURE_V4_PARAMS
 from localstack.services.s3.utils import (
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
@@ -462,7 +463,7 @@ class S3SigV4SignatureContext:
         self._query_parameters = context.request.args
         self._headers = context.request.headers
         self._bucket, _ = extract_bucket_name_and_key_from_headers_and_path(
-            context.request.headers, context.request.path
+            context.request.headers, urlparse.unquote(get_raw_path(context.request))
         )
         self._request_method = context.request.method
 

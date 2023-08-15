@@ -415,7 +415,7 @@ def extract_bucket_name_and_key_from_headers_and_path(
                 object_key = split[1]
     else:
         path_without_params = path.partition("?")[0]
-        bucket_name = path_without_params.split("/", maxsplit=2)[1]
+        bucket_name = path_without_params.split("/", maxsplit=1)[1]
         split = path.split("/", maxsplit=2)
         if len(split) > 2:
             object_key = split[2]
