@@ -9663,13 +9663,17 @@ def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str =
             return f"https://{bucket_name}.s3.{region}.amazonaws.com"
 
     host_definition = get_localstack_host(use_localhost_cloud=True)
-    host = localstack_host or (
-        f"s3.{region}.{host_definition.host_and_port()}"
-        if region != "us-east-1"
-        else f"s3.{host_definition.host_and_port()}"
-    )
+    if localstack_host:
+        host_and_port = f"{localstack_host}:{config.get_edge_port_http()}"
+    else:
+        host_and_port = (
+            f"s3.{region}.{host_definition.host_and_port()}"
+            if region != "us-east-1"
+            else f"s3.{host_definition.host_and_port()}"
+        )
+
     # TODO might add the region here
-    return f"{config.get_protocol()}://{bucket_name}.{host}"
+    return f"{config.get_protocol()}://{bucket_name}.{host_and_port}"
 
 
 def _generate_presigned_url(
