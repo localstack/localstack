@@ -1824,6 +1824,21 @@ class InstanceType(str):
     c7gn_8xlarge = "c7gn.8xlarge"
     c7gn_12xlarge = "c7gn.12xlarge"
     c7gn_16xlarge = "c7gn.16xlarge"
+    p5_48xlarge = "p5.48xlarge"
+    m7i_large = "m7i.large"
+    m7i_xlarge = "m7i.xlarge"
+    m7i_2xlarge = "m7i.2xlarge"
+    m7i_4xlarge = "m7i.4xlarge"
+    m7i_8xlarge = "m7i.8xlarge"
+    m7i_12xlarge = "m7i.12xlarge"
+    m7i_16xlarge = "m7i.16xlarge"
+    m7i_24xlarge = "m7i.24xlarge"
+    m7i_48xlarge = "m7i.48xlarge"
+    m7i_flex_large = "m7i-flex.large"
+    m7i_flex_xlarge = "m7i-flex.xlarge"
+    m7i_flex_2xlarge = "m7i-flex.2xlarge"
+    m7i_flex_4xlarge = "m7i-flex.4xlarge"
+    m7i_flex_8xlarge = "m7i-flex.8xlarge"
 
 
 class InstanceTypeHypervisor(str):
