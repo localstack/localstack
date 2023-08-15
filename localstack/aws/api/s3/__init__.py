@@ -853,6 +853,14 @@ class ObjectLockConfigurationNotFoundError(ServiceException):
     BucketName: Optional[BucketName]
 
 
+class InvalidPartNumber(ServiceException):
+    code: str = "InvalidPartNumber"
+    sender_fault: bool = False
+    status_code: int = 416
+    PartNumberRequested: Optional[PartNumber]
+    ActualPartCount: Optional[PartNumber]
+
+
 AbortDate = datetime
 
 
@@ -2233,6 +2241,7 @@ class HeadObjectOutput(TypedDict, total=False):
     ObjectLockMode: Optional[ObjectLockMode]
     ObjectLockRetainUntilDate: Optional[ObjectLockRetainUntilDate]
     ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
+    StatusCode: Optional[GetObjectResponseStatusCode]
 
 
 class HeadObjectRequest(ServiceRequest):

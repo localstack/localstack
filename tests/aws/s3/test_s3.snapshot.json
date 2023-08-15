@@ -1486,7 +1486,7 @@
     }
   },
   "tests/aws/s3/test_s3.py::TestS3::test_s3_request_payer_exceptions": {
-    "recorded-date": "03-08-2023, 04:17:18",
+    "recorded-date": "10-08-2023, 02:34:43",
     "recorded-content": {
       "wrong-payer-type": {
         "Error": {
@@ -1496,6 +1496,17 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      },
+      "wrong-bucket-name": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
     }
@@ -1679,7 +1690,7 @@
     }
   },
   "tests/aws/s3/test_s3.py::TestS3::test_multipart_copy_object_etag": {
-    "recorded-date": "03-08-2023, 04:17:57",
+    "recorded-date": "10-08-2023, 01:22:44",
     "recorded-content": {
       "multipart-upload": {
         "Bucket": "<bucket:1>",
@@ -1693,6 +1704,17 @@
         }
       },
       "copy-object": {
+        "CopyObjectResult": {
+          "ETag": "\"eee506dd7ada7ded524c77e359a0e7c6\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object-in-place": {
         "CopyObjectResult": {
           "ETag": "\"eee506dd7ada7ded524c77e359a0e7c6\"",
           "LastModified": "datetime"
@@ -9478,6 +9500,267 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_get_object_preconditions[get_object]": {
+    "recorded-date": "10-08-2023, 01:14:32",
+    "recorded-content": {
+      "precondition-if-match": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "precondition-if-unmodified-since": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-Unmodified-Since",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "precondition-if-none-match": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
+      "copy-precondition-if-modified-since": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
+      "obj-ignore-future-modified-since": {
+        "AcceptRanges": "bytes",
+        "Body": "data",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "etag-missing-quotes": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
+      "obj-success": {
+        "AcceptRanges": "bytes",
+        "Body": "data",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_get_object_preconditions[head_object]": {
+    "recorded-date": "10-08-2023, 01:14:38",
+    "recorded-content": {
+      "precondition-if-match": {
+        "Error": {
+          "Code": "412",
+          "Message": "Precondition Failed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "precondition-if-unmodified-since": {
+        "Error": {
+          "Code": "412",
+          "Message": "Precondition Failed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "precondition-if-none-match": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
+      "copy-precondition-if-modified-since": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
+      "obj-ignore-future-modified-since": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "etag-missing-quotes": {
+        "Error": {
+          "Code": "304",
+          "Message": "Not Modified"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 304
+        }
+      },
+      "obj-success": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"8d777f385d3dfec8815d20f7496026dc\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3.py::TestS3::test_get_object_part": {
+    "recorded-date": "10-08-2023, 02:06:55",
+    "recorded-content": {
+      "multipart-upload": {
+        "Bucket": "<bucket:1>",
+        "ETag": "\"2848839dc84e13fa00a0944e760e233b-2\"",
+        "Key": "test.file",
+        "Location": "<location:1>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-part": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"2848839dc84e13fa00a0944e760e233b-2\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "PartsCount": 2,
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "get-object-part": {
+        "AcceptRanges": "bytes",
+        "Body": "test content 123",
+        "ContentLength": 16,
+        "ContentRange": "bytes 5242896-5242911/5242912",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"2848839dc84e13fa00a0944e760e233b-2\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "PartsCount": 2,
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      },
+      "part-doesnt-exist": {
+        "Error": {
+          "ActualPartCount": "2",
+          "Code": "InvalidPartNumber",
+          "Message": "The requested partnumber is not satisfiable",
+          "PartNumberRequested": "10"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 416
+        }
+      },
+      "part-with-range": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Cannot specify both Range header and partNumber query parameter"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "part-no-multipart": {
+        "Error": {
+          "ActualPartCount": "1",
+          "Code": "InvalidPartNumber",
+          "Message": "The requested partnumber is not satisfiable",
+          "PartNumberRequested": "2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 416
+        }
+      },
+      "get-obj-no-multipart": {
+        "AcceptRanges": "bytes",
+        "Body": "test-123",
+        "ContentLength": 8,
+        "ContentRange": "bytes 0-7/8",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"ca6d00e33edff0e9cb3782d31182de33\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
         }
       }
     }

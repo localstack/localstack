@@ -82,7 +82,7 @@ from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
 
-gmt_zone_info = ZoneInfo("GMT")
+_gmt_zone_info = ZoneInfo("GMT")
 
 
 # note: not really a need to use a dataclass here, as it has a lot of fields, but only a few are set at creation
@@ -133,7 +133,8 @@ class S3Bucket:
         self.object_ownership = object_ownership
         self.object_lock_enabled = object_lock_enabled_for_bucket
         self.encryption_rule = DEFAULT_BUCKET_ENCRYPTION
-        self.creation_date = datetime.now(tz=gmt_zone_info)
+        self.creation_date = datetime.now(tz=_gmt_zone_info)
+        self.payer = Payer.BucketOwner
         self.multiparts = {}
         self.notification_configuration = {}
         self.cors_rules = None
@@ -249,7 +250,7 @@ class S3Object:
     website_redirect_location: Optional[WebsiteRedirectLocation]
     acl: Optional[str]  # TODO: we need to change something here, how it's done?
     is_current: bool
-    parts: Optional[list[tuple[int, int]]]
+    parts: Optional[dict[int, tuple[int, int]]]
     restore: Optional[Restore]
 
     def __init__(
@@ -296,8 +297,8 @@ class S3Object:
         self.expiration = expiration
         self.website_redirect_location = website_redirect_location
         self.is_current = True
-        self.last_modified = datetime.now(tz=gmt_zone_info)
-        self.parts = []
+        self.last_modified = datetime.now(tz=_gmt_zone_info)
+        self.parts = {}
         self.restore = None
 
     def get_system_metadata_fields(self) -> dict:
@@ -349,7 +350,7 @@ class S3Object:
             return False
 
         if self.lock_until:
-            return self.lock_until > datetime.now(tz=gmt_zone_info)
+            return self.lock_until > datetime.now(tz=_gmt_zone_info)
 
         return False
 
@@ -364,7 +365,7 @@ class S3DeleteMarker:
     def __init__(self, key: ObjectKey, version_id: ObjectVersionId):
         self.key = key
         self.version_id = version_id
-        self.last_modified = datetime.now(tz=gmt_zone_info)
+        self.last_modified = datetime.now(tz=_gmt_zone_info)
         self.is_current = True
 
     @staticmethod
@@ -390,7 +391,7 @@ class S3Part:
         checksum_algorithm: Optional[ChecksumAlgorithm] = None,
         checksum_value: Optional[str] = None,
     ):
-        self.last_modified = datetime.now(tz=gmt_zone_info)
+        self.last_modified = datetime.now(tz=_gmt_zone_info)
         self.part_number = part_number
         self.size = size
         self.etag = etag
@@ -430,7 +431,7 @@ class S3Multipart:
         tagging: Optional[dict[str, str]] = None,
     ):
         self.id = token_urlsafe(96)  # MultipartUploadId is 128 characters long
-        self.initiated = datetime.now(tz=gmt_zone_info)
+        self.initiated = datetime.now(tz=_gmt_zone_info)
         self.parts = {}
         self.initiator = initiator
         self.tagging = tagging
@@ -488,8 +489,9 @@ class S3Multipart:
                 )
 
             object_etag.update(bytes.fromhex(s3_part.etag))
-            # TODO verify this, it seems wrong
-            self.object.parts.append((pos, s3_part.size))
+            # keep track of the parts size, as it can be queried afterward on the object as a Range
+            self.object.parts[part_number] = (pos, s3_part.size)
+            pos += s3_part.size
 
             multipart_etag = f"{object_etag.hexdigest()}-{len(parts)}"
             self.object.etag = multipart_etag

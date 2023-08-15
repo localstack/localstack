@@ -3,7 +3,7 @@ from io import RawIOBase
 from typing import IO, Iterable, Iterator, Optional
 
 from localstack.aws.api.s3 import BucketName, MultipartUploadId, PartNumber
-from localstack.services.s3.utils import ParsedRange
+from localstack.services.s3.utils import ObjectRange
 from localstack.services.s3.v3.models import S3Multipart, S3Object, S3Part
 
 
@@ -35,7 +35,7 @@ class LimitedStream(RawIOBase):
     This utility class allows to return a range from the underlying stream representing an S3 Object.
     """
 
-    def __init__(self, base_stream: IO[bytes] | "S3StoredObject", range_data: ParsedRange):
+    def __init__(self, base_stream: IO[bytes] | "S3StoredObject", range_data: ObjectRange):
         super().__init__()
         self.file = base_stream
         self._pos = range_data.begin
@@ -90,10 +90,16 @@ class S3StoredObject(abc.ABC, Iterable[bytes]):
     def seek(self, offset: int, whence: int = 0) -> int:
         pass
 
+    @property
     @abc.abstractmethod
     def checksum(self) -> Optional[str]:
         if not self.s3_object.checksum_algorithm:
             return None
+
+    @property
+    @abc.abstractmethod
+    def etag(self) -> str:
+        pass
 
     @abc.abstractmethod
     def __iter__(self) -> Iterator[bytes]:
@@ -138,7 +144,7 @@ class S3StoredMultipart(abc.ABC):
         s3_part: S3Part,
         src_bucket: BucketName,
         src_s3_object: S3Object,
-        range_data: ParsedRange,
+        range_data: ObjectRange,
     ) -> S3StoredObject:
         pass
 

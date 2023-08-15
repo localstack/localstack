@@ -2068,6 +2068,97 @@ class TestS3:
         snapshot.match("copy-success", copy_obj_all_positive)
 
     @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not validate properly",
+    )
+    @pytest.mark.parametrize("method", ("get_object", "head_object"))
+    def test_s3_get_object_preconditions(self, s3_bucket, snapshot, aws_client, method):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "test-object"
+        put_object = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body=b"data",
+        )
+
+        client_method = getattr(aws_client.s3, method)
+
+        # wait a bit for the `unmodified_since` value so that it's invalid.
+        # S3 compares it the last-modified field, but you can't set the value in the future otherwise it ignores it.
+        # It needs to be now or less, but the object needs to be a bit more recent than that.
+        time.sleep(3)
+
+        # we're testing the order of validation at the same time by validating all of them at once, by elimination
+        now = datetime.datetime.now().astimezone(tz=ZoneInfo("GMT"))
+        wrong_unmodified_since = now - datetime.timedelta(days=1)
+
+        with pytest.raises(ClientError) as e:
+            client_method(
+                Bucket=s3_bucket,
+                Key=object_key,
+                IfModifiedSince=now,
+                IfUnmodifiedSince=wrong_unmodified_since,
+                IfMatch="etag123",
+                IfNoneMatch=put_object["ETag"],
+            )
+        snapshot.match("precondition-if-match", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            client_method(
+                Bucket=s3_bucket,
+                Key=object_key,
+                IfModifiedSince=now,
+                IfUnmodifiedSince=wrong_unmodified_since,
+                IfNoneMatch=put_object["ETag"],
+            )
+        snapshot.match("precondition-if-unmodified-since", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            client_method(
+                Bucket=s3_bucket,
+                Key=object_key,
+                IfModifiedSince=now,
+                IfNoneMatch=put_object["ETag"],
+            )
+        snapshot.match("precondition-if-none-match", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            client_method(
+                Bucket=s3_bucket,
+                Key=object_key,
+                IfModifiedSince=now,
+            )
+        snapshot.match("copy-precondition-if-modified-since", e.value.response)
+
+        # AWS will ignore the value if it's in the future
+        get_obj = client_method(
+            Bucket=s3_bucket,
+            Key=object_key,
+            IfModifiedSince=now + datetime.timedelta(days=1),
+        )
+        snapshot.match("obj-ignore-future-modified-since", get_obj)
+        # # AWS will ignore the missing quotes around the ETag and still reject the request
+        with pytest.raises(ClientError) as e:
+            client_method(
+                Bucket=s3_bucket,
+                Key=object_key,
+                IfModifiedSince=now,
+                IfNoneMatch=put_object["ETag"].strip('"'),
+            )
+        snapshot.match("etag-missing-quotes", e.value.response)
+        # Positive tests with all conditions checked
+        get_obj_all_positive = client_method(
+            Bucket=s3_bucket,
+            Key=object_key,
+            IfMatch=put_object["ETag"].strip('"'),
+            IfNoneMatch="etag123",
+            IfModifiedSince=now - datetime.timedelta(days=1),
+            IfUnmodifiedSince=now,
+        )
+        snapshot.match("obj-success", get_obj_all_positive)
+
+    @markers.aws.validated
     # behaviour is wrong in Legacy, we inherit Bucket ACL
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
@@ -2948,18 +3039,19 @@ class TestS3:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_s3_request_payer_exceptions(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_request_payment(
                 Bucket=s3_bucket, RequestPaymentConfiguration={"Payer": "Random"}
             )
         snapshot.match("wrong-payer-type", e.value.response)
 
-        # TODO: check if no luck or AccessDenied is normal?
-        # with pytest.raises(ClientError) as e:
-        #     s3_client.put_bucket_request_payment(
-        #         Bucket="fake_bucket", RequestPaymentConfiguration={"Payer": "Requester"}
-        #     )
-        # snapshot.match("wrong-bucket-name", e.value.response)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_request_payment(
+                Bucket=f"fake-bucket-{long_uid()}",
+                RequestPaymentConfiguration={"Payer": "Requester"},
+            )
+        snapshot.match("wrong-bucket-name", e.value.response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -3153,6 +3245,64 @@ class TestS3:
         copy_etag = response["CopyObjectResult"]["ETag"]
         # etags should be different
         assert copy_etag != multipart_etag
+
+        # copy-in place to check
+        response = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=src_object_path,
+            Key=key,
+            MetadataDirective="REPLACE",
+        )
+        snapshot.match("copy-object-in-place", response)
+        copy_etag = response["CopyObjectResult"]["ETag"]
+        # etags should be different
+        assert copy_etag != multipart_etag
+
+    @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not validate properly",
+    )
+    def test_get_object_part(self, s3_bucket, s3_multipart_upload, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("Bucket"),
+            ]
+        )
+        key = "test.file"
+        content = "test content 123"
+
+        response = s3_multipart_upload(bucket=s3_bucket, key=key, data=content, parts=2)
+        snapshot.match("multipart-upload", response)
+
+        head_object_part = aws_client.s3.head_object(Bucket=s3_bucket, Key=key, PartNumber=2)
+        snapshot.match("head-object-part", head_object_part)
+
+        get_object_part = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, PartNumber=2)
+        snapshot.match("get-object-part", get_object_part)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key, PartNumber=10)
+        snapshot.match("part-doesnt-exist", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(
+                Bucket=s3_bucket,
+                Key=key,
+                PartNumber=2,
+                Range="bytes=0-8",
+            )
+        snapshot.match("part-with-range", e.value.response)
+
+        key_no_part = "key-no-part"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key_no_part, Body="test-123")
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key_no_part, PartNumber=2)
+        snapshot.match("part-no-multipart", e.value.response)
+
+        get_obj_no_part = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_no_part, PartNumber=1)
+        snapshot.match("get-obj-no-multipart", get_obj_no_part)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])

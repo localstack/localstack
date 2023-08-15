@@ -11,7 +11,7 @@ from readerwriterlock import rwlock
 
 from localstack.aws.api.s3 import BucketName, MultipartUploadId, PartNumber
 from localstack.services.s3.constants import S3_CHUNK_SIZE
-from localstack.services.s3.utils import ChecksumHash, ParsedRange, get_s3_checksum
+from localstack.services.s3.utils import ChecksumHash, ObjectRange, get_s3_checksum
 from localstack.services.s3.v3.models import S3Multipart, S3Object, S3Part
 
 from .core import LimitedStream, S3ObjectStore, S3StoredMultipart, S3StoredObject
@@ -58,7 +58,7 @@ class EphemeralS3StoredObject(S3StoredObject):
         super().__init__(s3_object=s3_object)
         self.file = file
         self.size = 0
-        self.etag = None
+        self._etag = None
         self.checksum_hash = None
         self._checksum = None
         self._pos = 0
@@ -131,7 +131,7 @@ class EphemeralS3StoredObject(S3StoredObject):
 
             etag = etag.hexdigest()
             self.size = self.s3_object.size = file.tell()
-            self.etag = self.s3_object.etag = etag
+            self._etag = self.s3_object.etag = etag
 
             file.seek(0)
             self._pos = 0
@@ -159,6 +159,7 @@ class EphemeralS3StoredObject(S3StoredObject):
         """Close the underlying fileobject, effectively deleting it"""
         return self.file.close()
 
+    @property
     def checksum(self) -> Optional[str]:
         """
         Return the object checksum base64 encoded, if the S3Object has a checksum algorithm.
@@ -181,6 +182,19 @@ class EphemeralS3StoredObject(S3StoredObject):
             self._checksum = base64.b64encode(self.checksum_hash.digest()).decode()
 
         return self._checksum
+
+    @property
+    def etag(self) -> str:
+        if not self._etag:
+            etag = hashlib.md5(usedforsecurity=False)
+            original_pos = self._pos
+            self._pos = 0
+            while data := self.read(S3_CHUNK_SIZE):
+                etag.update(data)
+            self._pos = original_pos
+            self._etag = etag.hexdigest()
+
+        return self._etag
 
     def __iter__(self) -> Iterator[bytes]:
         """
@@ -265,7 +279,7 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         s3_part: S3Part,
         src_bucket: BucketName,
         src_s3_object: S3Object,
-        range_data: ParsedRange,
+        range_data: ObjectRange,
     ) -> EphemeralS3StoredObject:
         """
         Create and add an EphemeralS3StoredObject to the Multipart collection, with an S3Object as input. This will

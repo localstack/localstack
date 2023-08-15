@@ -1356,6 +1356,7 @@ def test_restxml_headers_location():
             "ContentType": "application/octet-stream",
             # The content length should explicitly be tested here.
             "ContentLength": 159,
+            "StatusCode": 200,
         },
     )
 
