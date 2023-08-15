@@ -1,8 +1,10 @@
 import base64
 import hashlib
+import os.path
 import threading
 from collections import defaultdict
 from io import BytesIO
+from pathlib import Path
 from shutil import rmtree
 from tempfile import SpooledTemporaryFile, mkdtemp
 from threading import RLock
@@ -14,6 +16,8 @@ from localstack.aws.api.s3 import BucketName, MultipartUploadId, PartNumber
 from localstack.services.s3.constants import S3_CHUNK_SIZE
 from localstack.services.s3.utils import ChecksumHash, ObjectRange, get_s3_checksum
 from localstack.services.s3.v3.models import S3Multipart, S3Object, S3Part
+from localstack.utils.files import mkdir
+from localstack.utils.strings import md5
 
 from .core import LimitedStream, S3ObjectStore, S3StoredMultipart, S3StoredObject
 
@@ -36,7 +40,75 @@ class LockedFileMixin:
         self.readwrite_lock = rwlock.RWLockWrite()
 
 
-class LockedSpooledTemporaryFile(LockedFileMixin, SpooledTemporaryFile):
+class SpooledFile(SpooledTemporaryFile):
+    def __init__(
+        self,
+        file: str,
+        max_size=0,
+        mode="r+b",
+        buffering=-1,
+        encoding=None,
+        newline=None,
+        *,
+        errors=None,
+        **kwargs,
+    ):
+        super().__init__(
+            max_size=max_size,
+            mode=mode,
+            buffering=buffering,
+            encoding=encoding,
+            newline=newline,
+            errors=errors,
+        )
+        self._path = Path(file)
+        self._init_existing()
+
+    def _init_existing(self):
+        if self._path.exists():
+            self._file = self._open()
+            self._rolled = True
+
+    @property
+    def name(self):
+        return str(self._path)
+
+    def close(self) -> None:
+        self.rollover()
+        super().close()
+
+    def _open(self):
+        kwargs = dict(self._TemporaryFileArgs)
+        kwargs.pop("suffix", None)
+        kwargs.pop("prefix", None)
+        kwargs.pop("dir", None)
+
+        try:
+            return self._path.open(**kwargs)
+        except FileNotFoundError:
+            self._path.touch()
+            return self._path.open(**kwargs)
+
+    def rollover(self) -> None:
+        if self._rolled:
+            return
+
+        file = self._file
+        newfile = self._file = self._open()
+
+        pos = file.tell()
+        if hasattr(newfile, "buffer"):
+            newfile.buffer.write(file.detach().getvalue())
+        else:
+            newfile.write(file.getvalue())
+        newfile.seek(pos, 0)
+
+        newfile.flush()
+
+        self._rolled = True
+
+
+class LockedSpooledTemporaryFile(LockedFileMixin, SpooledFile):
     """Creates a SpooledTemporaryFile with locks"""
 
     def seekable(self) -> bool:
@@ -275,6 +347,10 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
 
         self.parts.clear()
 
+    def rollover(self):
+        for part in self.parts.values():
+            part.file.rollover()
+
     def copy_from_object(
         self,
         s3_part: S3Part,
@@ -348,7 +424,8 @@ class EphemeralS3ObjectStore(S3ObjectStore):
             if not (bucket_tmp_dir := self._directory_mapping.get(bucket)):
                 bucket_tmp_dir = self._create_bucket_directory(bucket)
 
-            file = LockedSpooledTemporaryFile(dir=bucket_tmp_dir, max_size=S3_MAX_FILE_SIZE_BYTES)
+            file_name = os.path.join(bucket_tmp_dir, key)
+            file = LockedSpooledTemporaryFile(file=file_name, max_size=S3_MAX_FILE_SIZE_BYTES)
             self._filesystem[bucket]["keys"][key] = file
 
         return EphemeralS3StoredObject(s3_object=s3_object, file=file)
@@ -438,9 +515,26 @@ class EphemeralS3ObjectStore(S3ObjectStore):
                     multipart.close()
                 multiparts.clear()
 
+    def flush(self):
+        # rollover all files to disk
+        for bucket in self._filesystem.values():
+            if keys := bucket.get("keys"):
+                for file in keys.values():
+                    file.rollover()
+
+            if multiparts := bucket.get("multiparts"):
+                for multipart in multiparts.values():
+                    multipart.rollover()
+
     @staticmethod
     def _key_from_s3_object(s3_object: S3Object) -> str:
-        return str(hash(f"{s3_object.key}?{s3_object.version_id or 'null'}"))
+        # flatten the file
+        name = s3_object.key.replace("/", "_")
+        # since the file has now been flattened, foo/bar.txt would collide with foo_bar.txt, we add a
+        # hash to avoid collisions
+        name_hash = md5(name)[:8]
+        version_id = s3_object.version_id or "null"
+        return f"{name}_{name_hash}_{version_id}"
 
     def _get_object_file(self, bucket: BucketName, key: str) -> LockedSpooledTemporaryFile | None:
         return self._filesystem.get(bucket, {}).get("keys", {}).get(key)
@@ -457,7 +551,8 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         Create a temporary directory representing a bucket
         :param bucket_name
         """
-        tmp_dir = mkdtemp(dir=self.root_directory)
+        tmp_dir = os.path.join(self.root_directory, bucket_name)
+        mkdir(tmp_dir)
         self._directory_mapping[bucket_name] = tmp_dir
         return tmp_dir
 
