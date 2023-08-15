@@ -94,6 +94,9 @@ class KinesisMockServer(Server):
             env_vars["PERSIST_FILE_NAME"] = self._data_filename
             env_vars["PERSIST_INTERVAL"] = config.KINESIS_MOCK_PERSIST_INTERVAL
 
+        if self._initialize_streams:
+            env_vars["INITIALIZE_STREAMS"] = self._initialize_streams
+
         env_vars["LOG_LEVEL"] = self._log_level
         cmd = ["node", self._js_path]
         return cmd, env_vars
