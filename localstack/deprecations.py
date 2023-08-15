@@ -256,6 +256,11 @@ DEPRECATIONS = [
         "0.14.0",
         "This option is marked for removal. Please use OPENSEARCH_ENDPOINT_STRATEGY instead.",
     ),
+    EnvVarDeprecation(
+        "SERVICES",
+        "",
+        "TODO",
+    ),
 ]
 
 

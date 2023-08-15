@@ -368,7 +368,7 @@ except ImportError:
     # dotenv may not be available in lambdas or other environments where config is loaded
     LOADED_PROFILE = None
 
-# default AWS region
+# default AWS region (DEPRECATED!)
 DEFAULT_REGION = (
     os.environ.get("DEFAULT_REGION") or os.environ.get("AWS_DEFAULT_REGION") or AWS_REGION_US_EAST_1
 )
@@ -401,7 +401,7 @@ VOLUME_DIR = os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip() or TMP_FOLDER
 if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_FOLDER):
     TMP_FOLDER = "/private%s" % TMP_FOLDER
 
-# temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set
+# temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set. (DEPRECATED!)
 HOST_TMP_FOLDER = os.environ.get("HOST_TMP_FOLDER", TMP_FOLDER)
 
 # whether to enable verbose debug logging
@@ -436,7 +436,7 @@ NATIVE_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "v3"
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
 
-# whether to use the legacy single-region mode, defined via DEFAULT_REGION
+# whether to use the legacy single-region mode, defined via DEFAULT_REGION (DEPRECATED!)
 USE_SINGLE_REGION = is_env_true("USE_SINGLE_REGION")
 
 # whether to run in TF compatibility mode for TF integration tests
@@ -1132,7 +1132,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_INIT_BOOTSTRAP_PATH",
     "LAMBDA_INIT_DELVE_PATH",
     "LAMBDA_INIT_DELVE_PORT",
-    "LAMBDA_INIT_POST_INVOKE_WAIT",
+    "LAMBDA_INIT_POST_INVOKE_WAIT_MS",
     "LAMBDA_INIT_USER",
     "LAMBDA_INIT_RELEASE_VERSION",
     "LAMBDA_KEEPALIVE_MS",
@@ -1175,7 +1175,6 @@ CONFIG_ENV_VARS = [
     "REQUESTS_CA_BUNDLE",
     "S3_SKIP_SIGNATURE_VALIDATION",
     "S3_SKIP_KMS_KEY_VALIDATION",
-    "SERVICES",
     "SKIP_INFRA_DOWNLOADS",
     "SKIP_SSL_CERT_DOWNLOAD",
     "SNAPSHOT_LOAD_STRATEGY",
@@ -1191,8 +1190,6 @@ CONFIG_ENV_VARS = [
     "SYNCHRONOUS_KINESIS_EVENTS",
     "SYNCHRONOUS_SNS_EVENTS",
     "TEST_AWS_ACCOUNT_ID",
-    "TEST_IAM_USER_ID",
-    "TEST_IAM_USER_NAME",
     "TF_COMPAT_MODE",
     "USE_SINGLE_REGION",
     "USE_SSL",
