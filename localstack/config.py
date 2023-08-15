@@ -1024,6 +1024,7 @@ KMS_PROVIDER = (os.environ.get("KMS_PROVIDER") or "").strip() or "moto"
 
 # URL to a custom OpenSearch/Elasticsearch backend cluster. If this is set to a valid URL, then localstack will not
 # create OpenSearch/Elasticsearch cluster instances, but instead forward all domains to the given backend.
+# `ES_CUSTOM_BACKEND` is DEPRECATED!
 OPENSEARCH_CUSTOM_BACKEND = (
     os.environ.get("OPENSEARCH_CUSTOM_BACKEND", "").strip()
     or os.environ.get("ES_CUSTOM_BACKEND", "").strip()
@@ -1031,6 +1032,7 @@ OPENSEARCH_CUSTOM_BACKEND = (
 
 # Strategy used when creating OpenSearch/Elasticsearch domain endpoints routed through the edge proxy
 # valid values: domain | path | port (off)
+# `ES_ENDPOINT_STRATEGY` is DEPRECATED!
 OPENSEARCH_ENDPOINT_STRATEGY = (
     os.environ.get("OPENSEARCH_ENDPOINT_STRATEGY", "").strip()
     or os.environ.get("ES_ENDPOINT_STRATEGY", "").strip()
@@ -1040,6 +1042,7 @@ if OPENSEARCH_ENDPOINT_STRATEGY == "off":
     OPENSEARCH_ENDPOINT_STRATEGY = "port"
 
 # Whether to start one cluster per domain (default), or multiplex opensearch domains to a single clusters
+# `ES_MULTI_CLUSTER` is DEPRECATED!
 OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER") or is_env_true(
     "ES_MULTI_CLUSTER"
 )
