@@ -2212,6 +2212,211 @@ class TestS3:
         snapshot.match("put-bucket-two-type-acl-acp", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..Grants..Grantee.DisplayName", "$..Grants..Grantee.ID"]
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
+        paths=["$..ServerSideEncryption"],
+    )
+    def test_s3_object_acl(self, s3_bucket, allow_bucket_acl, snapshot, aws_client):
+        # loosely based on
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketAcl.html
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("DisplayName"),
+                snapshot.transform.key_value("ID", value_replacement="owner-id"),
+            ]
+        )
+        list_bucket_output = aws_client.s3.list_buckets()
+        owner = list_bucket_output["Owner"]
+        object_key = "object-key-acl"
+        put_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("put-object-default-acl", put_object)
+
+        response = aws_client.s3.get_object_acl(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-acl-default", response)
+
+        put_object_acl = aws_client.s3.put_object_acl(
+            Bucket=s3_bucket, Key=object_key, ACL="public-read"
+        )
+        snapshot.match("put-object-acl", put_object_acl)
+
+        response = aws_client.s3.get_object_acl(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-acl", response)
+
+        # this a bucket URI?
+        aws_client.s3.put_object_acl(
+            Bucket=s3_bucket,
+            Key=object_key,
+            GrantRead='uri="http://acs.amazonaws.com/groups/s3/LogDelivery"',
+        )
+
+        response = aws_client.s3.get_object_acl(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-grant-acl", response)
+
+        # Owner is mandatory, otherwise raise MalformedXML
+        acp = {
+            "Owner": owner,
+            "Grants": [
+                {
+                    "Grantee": {"ID": owner["ID"], "Type": "CanonicalUser"},
+                    "Permission": "FULL_CONTROL",
+                },
+                {
+                    "Grantee": {
+                        "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                        "Type": "Group",
+                    },
+                    "Permission": "WRITE",
+                },
+            ],
+        }
+        aws_client.s3.put_object_acl(Bucket=s3_bucket, Key=object_key, AccessControlPolicy=acp)
+
+        response = aws_client.s3.get_object_acl(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-acp-acl", response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(LEGACY_S3_PROVIDER, reason="Behaviour not implemented in legacy provider")
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not validate properly",
+    )
+    def test_s3_object_acl_exceptions(self, s3_bucket, snapshot, aws_client):
+        list_bucket_output = aws_client.s3.list_buckets()
+        owner = list_bucket_output["Owner"]
+        object_key = "object-key-acl"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, ACL="fake-acl")
+        snapshot.match("put-object-canned-acl", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_acl(Bucket=s3_bucket, Key=object_key, ACL="fake-acl")
+        snapshot.match("put-object-acl-canned-acl", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_acl(
+                Bucket=s3_bucket,
+                Key=object_key,
+                GrantWrite='uri="http://acs.amazonaws.com/groups/s3/FakeGroup"',
+            )
+        snapshot.match("put-object-grant-acl-fake-uri", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_acl(
+                Bucket=s3_bucket, Key=object_key, GrantWrite='fakekey="1234"'
+            )
+        snapshot.match("put-object-grant-acl-fake-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_acl(
+                Bucket=s3_bucket, Key=object_key, GrantWrite='id="wrong-id"'
+            )
+
+        snapshot.match("put-object-grant-acl-wrong-id", e.value.response)
+
+        acp = {
+            "Grants": [
+                {
+                    "Grantee": {
+                        "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                        "Type": "Group",
+                    },
+                    "Permission": "WRITE",
+                }
+            ]
+        }
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_acl(Bucket=s3_bucket, Key=object_key, AccessControlPolicy=acp)
+        snapshot.match("put-object-acp-acl-1", e.value.response)
+
+        # add Owner, but modify the permission
+        acp["Owner"] = owner
+        acp["Grants"][0]["Permission"] = "WRONG-PERMISSION"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_acl(Bucket=s3_bucket, Key=object_key, AccessControlPolicy=acp)
+        snapshot.match("put-object-acp-acl-2", e.value.response)
+
+        # restore good permission, but put bad format Owner ID
+        acp["Owner"] = {"ID": "wrong-id"}
+        acp["Grants"][0]["Permission"] = "FULL_CONTROL"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_acl(Bucket=s3_bucket, Key=object_key, AccessControlPolicy=acp)
+        snapshot.match("put-object-acp-acl-3", e.value.response)
+
+        # restore owner, but wrong URI
+        acp["Owner"] = owner
+        acp["Grants"][0]["Grantee"]["URI"] = "http://acs.amazonaws.com/groups/s3/FakeGroup"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_acl(Bucket=s3_bucket, Key=object_key, AccessControlPolicy=acp)
+        snapshot.match("put-object-acp-acl-4", e.value.response)
+
+        # different type of failing grantee (CanonicalUser/ID)
+        acp["Grants"][0]["Grantee"]["Type"] = "CanonicalUser"
+        acp["Grants"][0]["Grantee"]["ID"] = "wrong-id"
+        acp["Grants"][0]["Grantee"].pop("URI")
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_acl(Bucket=s3_bucket, Key=object_key, AccessControlPolicy=acp)
+        snapshot.match("put-object-acp-acl-5", e.value.response)
+
+        # different type of failing grantee (Wrong type)
+        acp["Grants"][0]["Grantee"]["Type"] = "BadType"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_acl(Bucket=s3_bucket, Key=object_key, AccessControlPolicy=acp)
+        snapshot.match("put-object-acp-acl-6", e.value.response)
+
+        # test setting empty ACP
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_acl(Bucket=s3_bucket, Key=object_key, AccessControlPolicy={})
+
+        snapshot.match("put-object-empty-acp", e.value.response)
+
+        # test setting nothing
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_acl(Bucket=s3_bucket, Key=object_key)
+
+        snapshot.match("put-object-acl-empty", e.value.response)
+
+        # test setting two different kind of valid ACL
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_acl(
+                Bucket=s3_bucket,
+                Key=object_key,
+                ACL="private",
+                GrantRead='uri="http://acs.amazonaws.com/groups/s3/LogDelivery"',
+            )
+
+        snapshot.match("put-object-two-type-acl", e.value.response)
+
+        # test setting again two different kind of valid ACL
+        acp = {
+            "Owner": owner,
+            "Grants": [
+                {
+                    "Grantee": {"ID": owner["ID"], "Type": "CanonicalUser"},
+                    "Permission": "FULL_CONTROL",
+                },
+            ],
+        }
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_acl(
+                Bucket=s3_bucket,
+                Key=object_key,
+                ACL="private",
+                AccessControlPolicy=acp,
+            )
+
+        snapshot.match("put-object-two-type-acl-acp", e.value.response)
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Restore"])
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
@@ -2523,7 +2728,7 @@ class TestS3:
     @markers.aws.only_localstack
     @pytest.mark.xfail(
         reason="Not implemented in other providers than stream",
-        condition=not STREAM_S3_PROVIDER,
+        condition=not STREAM_S3_PROVIDER or not NATIVE_S3_PROVIDER,
     )
     def test_put_object_chunked_newlines_with_checksum(self, s3_bucket, aws_client):
         # Boto still does not support chunk encoding, which means we can't test with the client nor

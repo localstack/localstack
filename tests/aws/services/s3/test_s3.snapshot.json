@@ -9822,5 +9822,289 @@
         }
       }
     }
+  },
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_object_acl": {
+    "recorded-date": "15-08-2023, 23:41:05",
+    "recorded-content": {
+      "put-object-default-acl": {
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-acl-default": {
+        "Grants": [
+          {
+            "Grantee": {
+              "DisplayName": "<display-name:1>",
+              "ID": "<owner-id:1>",
+              "Type": "CanonicalUser"
+            },
+            "Permission": "FULL_CONTROL"
+          }
+        ],
+        "Owner": {
+          "DisplayName": "<display-name:1>",
+          "ID": "<owner-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-acl": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-acl": {
+        "Grants": [
+          {
+            "Grantee": {
+              "DisplayName": "<display-name:1>",
+              "ID": "<owner-id:1>",
+              "Type": "CanonicalUser"
+            },
+            "Permission": "FULL_CONTROL"
+          },
+          {
+            "Grantee": {
+              "Type": "Group",
+              "URI": "http://acs.amazonaws.com/groups/global/AllUsers"
+            },
+            "Permission": "READ"
+          }
+        ],
+        "Owner": {
+          "DisplayName": "<display-name:1>",
+          "ID": "<owner-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-grant-acl": {
+        "Grants": [
+          {
+            "Grantee": {
+              "Type": "Group",
+              "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery"
+            },
+            "Permission": "READ"
+          }
+        ],
+        "Owner": {
+          "DisplayName": "<display-name:1>",
+          "ID": "<owner-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-acp-acl": {
+        "Grants": [
+          {
+            "Grantee": {
+              "DisplayName": "<display-name:1>",
+              "ID": "<owner-id:1>",
+              "Type": "CanonicalUser"
+            },
+            "Permission": "FULL_CONTROL"
+          },
+          {
+            "Grantee": {
+              "Type": "Group",
+              "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery"
+            },
+            "Permission": "WRITE"
+          }
+        ],
+        "Owner": {
+          "DisplayName": "<display-name:1>",
+          "ID": "<owner-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3.py::TestS3::test_s3_object_acl_exceptions": {
+    "recorded-date": "15-08-2023, 23:47:00",
+    "recorded-content": {
+      "put-object-canned-acl": {
+        "Error": {
+          "ArgumentName": "x-amz-acl",
+          "ArgumentValue": "fake-acl",
+          "Code": "InvalidArgument",
+          "Message": null
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-acl-canned-acl": {
+        "Error": {
+          "ArgumentName": "x-amz-acl",
+          "ArgumentValue": "fake-acl",
+          "Code": "InvalidArgument",
+          "Message": null
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-grant-acl-fake-uri": {
+        "Error": {
+          "ArgumentName": "uri",
+          "ArgumentValue": "http://acs.amazonaws.com/groups/s3/FakeGroup",
+          "Code": "InvalidArgument",
+          "Message": "Invalid group uri"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-grant-acl-fake-key": {
+        "Error": {
+          "ArgumentName": "x-amz-grant-write",
+          "ArgumentValue": "fakekey=\"1234\"",
+          "Code": "InvalidArgument",
+          "Message": "Argument format not recognized"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-grant-acl-wrong-id": {
+        "Error": {
+          "ArgumentName": "id",
+          "ArgumentValue": "wrong-id",
+          "Code": "InvalidArgument",
+          "Message": "Invalid id"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-acp-acl-1": {
+        "Error": {
+          "Code": "MalformedACLError",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-acp-acl-2": {
+        "Error": {
+          "Code": "MalformedACLError",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-acp-acl-3": {
+        "Error": {
+          "ArgumentName": "CanonicalUser/ID",
+          "ArgumentValue": "wrong-id",
+          "Code": "InvalidArgument",
+          "Message": "Invalid id"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-acp-acl-4": {
+        "Error": {
+          "ArgumentName": "Group/URI",
+          "ArgumentValue": "http://acs.amazonaws.com/groups/s3/FakeGroup",
+          "Code": "InvalidArgument",
+          "Message": "Invalid group uri"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-acp-acl-5": {
+        "Error": {
+          "ArgumentName": "CanonicalUser/ID",
+          "ArgumentValue": "wrong-id",
+          "Code": "InvalidArgument",
+          "Message": "Invalid id"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-acp-acl-6": {
+        "Error": {
+          "Code": "MalformedACLError",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-empty-acp": {
+        "Error": {
+          "Code": "MalformedACLError",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-acl-empty": {
+        "Error": {
+          "Code": "MissingSecurityHeader",
+          "Message": "Your request was missing a required header",
+          "MissingHeaderName": "x-amz-acl"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-two-type-acl": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Specifying both Canned ACLs and Header Grants is not allowed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-object-two-type-acl-acp": {
+        "Error": {
+          "Code": "UnexpectedContent",
+          "Message": "This request does not support content"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
