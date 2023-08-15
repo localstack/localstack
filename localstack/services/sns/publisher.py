@@ -207,6 +207,7 @@ class LambdaTopicPublisher(TopicPublisher):
         external_url = external_service_url("sns")
         unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
         message_attributes = prepare_message_attributes(message_context.message_attributes)
+        region_name = extract_region_from_arn(subscriber["SubscriptionArn"])
         event = {
             "Records": [
                 {
@@ -224,7 +225,7 @@ class LambdaTopicPublisher(TopicPublisher):
                         # TODO Add a more sophisticated solution with an actual signature
                         # Hardcoded
                         "Signature": "EXAMPLEpH+..",
-                        "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
+                        "SigningCertUrl": f"https://sns.{region_name}.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
                         "UnsubscribeUrl": unsubscribe_url,
                         "MessageAttributes": message_attributes,
                     },
@@ -773,6 +774,7 @@ def create_sns_message_body(message_context: SnsMessage, subscriber: SnsSubscrip
     }
     # FIFO topics do not add the signature in the message
     if not subscriber.get("TopicArn", "").endswith(".fifo"):
+        region_name = extract_region_from_arn(subscriber["SubscriptionArn"])
         data.update(
             {
                 "SignatureVersion": "1",
@@ -780,7 +782,7 @@ def create_sns_message_body(message_context: SnsMessage, subscriber: SnsSubscrip
                 #  check KMS for providing real cert and how to serve them
                 # Hardcoded
                 "Signature": "EXAMPLEpH+..",
-                "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
+                "SigningCertURL": f"https://sns.{region_name}.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
             }
         )
     else:
