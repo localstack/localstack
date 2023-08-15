@@ -7,6 +7,7 @@ from collections import defaultdict
 from operator import itemgetter
 from secrets import token_urlsafe
 from typing import IO, Union
+from urllib import parse as urlparse
 
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -1273,16 +1274,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         is_truncated = False
         next_key_marker = None
         max_keys = max_keys or 1000
-        prefix = prefix or ""
+        prefix = urlparse.quote(prefix or "")
+        delimiter = urlparse.quote(delimiter or "")
 
         s3_objects: list[Object] = []
 
         all_objects = s3_bucket.objects.values()
         # sort by key
         all_objects.sort(key=lambda r: r.key)
-
         for s3_object in all_objects:
-            key = s3_object.key
+            key = urlparse.quote(s3_object.key)
             # skip all keys that alphabetically come before key_marker
             if marker:
                 if key <= marker:
@@ -1318,7 +1319,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             s3_objects.append(object_data)
 
             count += 1
-            if count >= max_keys:
+            if count > max_keys:
                 is_truncated = True
                 next_key_marker = s3_object.key
                 break
@@ -1373,7 +1374,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         is_truncated = False
         next_continuation_token = None
         max_keys = max_keys or 1000
-        prefix = prefix or ""
+        prefix = urlparse.quote(prefix or "")
+        delimiter = urlparse.quote(delimiter or "")
         decoded_continuation_token = (
             to_str(base64.urlsafe_b64decode(continuation_token.encode()))
             if continuation_token
@@ -1387,7 +1389,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         all_objects.sort(key=lambda r: r.key)
 
         for s3_object in all_objects:
-            key = s3_object.key
+            key = urlparse.quote(s3_object.key)
             # skip all keys that alphabetically come before key_marker
             # TODO: what if there's StartAfter AND ContinuationToken
             if continuation_token:
@@ -1486,7 +1488,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         next_key_marker = None
         next_version_id_marker = None
         max_keys = max_keys or 1000
-        prefix = prefix or ""
+        prefix = urlparse.quote(prefix or "")
+        delimiter = urlparse.quote(delimiter or "")
 
         object_versions: list[ObjectVersion] = []
         delete_markers: list[DeleteMarkerEntry] = []
@@ -1496,7 +1499,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         all_versions.sort(key=lambda r: (r.key, -r.last_modified.timestamp()))
 
         for version in all_versions:
-            key = version.key
+            key = urlparse.quote(version.key)
             # skip all keys that alphabetically come before key_marker
             if key_marker:
                 if key < key_marker:
