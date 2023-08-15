@@ -1083,16 +1083,16 @@ class TestS3TemporaryStorageBackend:
         fake_multipart = S3Multipart(key="test-multipart")
 
         s3_stored_multipart = temp_storage_backend.get_multipart("test-bucket", fake_multipart)
-        parts_numbers = []
+        parts = []
         stored_parts = []
         for i in range(1, 6):
             fake_s3_part = S3Part(part_number=i)
             stored_part = s3_stored_multipart.open(fake_s3_part)
             stored_part.write(BytesIO(b"abc"))
-            parts_numbers.append(i)
+            parts.append(fake_s3_part)
             stored_parts.append(stored_part)
 
-        s3_stored_object = s3_stored_multipart.complete_multipart(parts=parts_numbers)
+        s3_stored_object = s3_stored_multipart.complete_multipart(parts=parts)
         temp_storage_backend.remove_multipart("test-bucket", fake_multipart)
 
         assert s3_stored_object.read() == b"abc" * 5

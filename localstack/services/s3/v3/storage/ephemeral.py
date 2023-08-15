@@ -108,8 +108,8 @@ class SpooledFile(SpooledTemporaryFile):
         self._rolled = True
 
 
-class LockedSpooledTemporaryFile(LockedFileMixin, SpooledFile):
-    """Creates a SpooledTemporaryFile with locks"""
+class LockedSpooledFile(LockedFileMixin, SpooledFile):
+    """Creates a SpooledFile with locks"""
 
     def seekable(self) -> bool:
         return True
@@ -120,14 +120,14 @@ class EphemeralS3StoredObject(S3StoredObject):
     An Ephemeral S3StoredObject, using LockedSpooledTemporaryFile as its underlying file object.
     """
 
-    file: LockedSpooledTemporaryFile
+    file: LockedSpooledFile
     size: int
     _pos: int
     etag: Optional[str]
     checksum_hash: Optional[ChecksumHash]
     _checksum: Optional[str]
 
-    def __init__(self, s3_object: S3Object | S3Part, file: LockedSpooledTemporaryFile):
+    def __init__(self, s3_object: S3Object | S3Part, file: LockedSpooledFile):
         super().__init__(s3_object=s3_object)
         self.file = file
         self.size = 0
@@ -286,7 +286,7 @@ class EphemeralS3StoredObject(S3StoredObject):
 class EphemeralS3StoredMultipart(S3StoredMultipart):
     upload_dir: str
     _s3_store: "EphemeralS3ObjectStore"
-    parts: dict[PartNumber, EphemeralS3StoredObject]
+    parts: dict[PartNumber, LockedSpooledFile]
 
     def __init__(
         self,
@@ -306,12 +306,12 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         :param s3_part: S3Part object
         :return: EphemeralS3StoredObject, most often to directly `write` into it.
         """
-        if not (stored_part := self.parts.get(s3_part.part_number)):
-            file = LockedSpooledTemporaryFile(dir=self.upload_dir, max_size=S3_MAX_FILE_SIZE_BYTES)
-            stored_part = EphemeralS3StoredObject(s3_part, file)
-            self.parts[s3_part.part_number] = stored_part
+        if not (file := self.parts.get(s3_part.part_number)):
+            file_name = os.path.join(self.upload_dir, str(s3_part.part_number))
+            file = LockedSpooledFile(file=file_name, max_size=S3_MAX_FILE_SIZE_BYTES)
+            self.parts[s3_part.part_number] = file
 
-        return stored_part
+        return EphemeralS3StoredObject(s3_part, file)
 
     def remove_part(self, s3_part: S3Part):
         """
@@ -319,11 +319,16 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         :param s3_part: S3Part
         :return:
         """
-        stored_part = self.parts.pop(s3_part.part_number, None)
-        if stored_part:
-            stored_part.close()
+        file = self.parts.pop(s3_part.part_number, None)
+        if file:
+            file.close()
+        else:
+            file_path = Path(self.upload_dir) / str(s3_part.part_number)
+            if file_path.exists():
+                # this means the file exists but hasn't been loaded yet
+                file_path.unlink()
 
-    def complete_multipart(self, parts: list[PartNumber]) -> EphemeralS3StoredObject:
+    def complete_multipart(self, parts: list[S3Part]) -> EphemeralS3StoredObject:
         """
         Takes a list of parts numbers, and will iterate over it to assemble all parts together into a single
         EphemeralS3StoredObject containing all those parts.
@@ -331,8 +336,8 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         :return: the resulting EphemeralS3StoredObject
         """
         s3_stored_object = self._s3_store.open(self.bucket, self.s3_multipart.object)
-        for part_number in parts:
-            stored_part = self.parts.get(part_number)
+        for s3_part in parts:
+            stored_part = self.open(s3_part)
             s3_stored_object.append(stored_part)
 
         return s3_stored_object
@@ -346,10 +351,11 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
             part.close()
 
         self.parts.clear()
+        rmtree(self.upload_dir)
 
     def rollover(self):
-        for part in self.parts.values():
-            part.file.rollover()
+        for file in self.parts.values():
+            file.rollover()
 
     def copy_from_object(
         self,
@@ -376,7 +382,7 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
 
 
 class BucketTemporaryFileSystem(TypedDict):
-    keys: dict[str, LockedSpooledTemporaryFile]
+    keys: dict[str, LockedSpooledFile]
     multiparts: dict[MultipartUploadId, EphemeralS3StoredMultipart]
 
 
@@ -425,7 +431,7 @@ class EphemeralS3ObjectStore(S3ObjectStore):
                 bucket_tmp_dir = self._create_bucket_directory(bucket)
 
             file_name = os.path.join(bucket_tmp_dir, key)
-            file = LockedSpooledTemporaryFile(file=file_name, max_size=S3_MAX_FILE_SIZE_BYTES)
+            file = LockedSpooledFile(file=file_name, max_size=S3_MAX_FILE_SIZE_BYTES)
             self._filesystem[bucket]["keys"][key] = file
 
         return EphemeralS3StoredObject(s3_object=s3_object, file=file)
@@ -440,13 +446,18 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         if not isinstance(s3_object, list):
             s3_object = [s3_object]
 
-        if keys := self._filesystem.get(bucket, {}).get("keys", {}):
-            for obj in s3_object:
-                key = self._key_from_s3_object(obj)
-                file = keys.pop(key, None)
-                if file:
-                    file.close()
+        keys = self._filesystem.get(bucket, {}).get("keys", {})
+        for obj in s3_object:
+            key = self._key_from_s3_object(obj)
+            file = keys.pop(key, None)
+            if file:
+                file.close()
+            else:
+                file_path = Path(self.root_directory) / bucket / key
+                if file_path.exists():
+                    file_path.unlink()
 
+        # TODO: if we restored from persistence, "keys" can empty?
         # if the bucket is now empty after removing, we can delete the directory
         if not keys and not self._filesystem.get(bucket, {}).get("multiparts"):
             self._delete_bucket_directory(bucket)
@@ -493,14 +504,21 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         return multipart
 
     def remove_multipart(self, bucket: BucketName, s3_multipart: S3Multipart):
+        # TODO: if we restored from persistence, "multiparts" can empty, so we should directly check for the
+        #  folder existence instead, and also check in _filesystem after
+
         if multiparts := self._filesystem.get(bucket, {}).get("multiparts", {}):
             upload_key = self._resolve_upload_directory(bucket, s3_multipart.id)
             if multipart := multiparts.pop(upload_key, None):
                 multipart.close()
 
+        upload_dir = Path(self.root_directory) / bucket / s3_multipart.id
+        if upload_dir.exists():
+            rmtree(upload_dir)
+
     def close(self):
         """
-        Close the Store and clean up all underlying objecs. This will effectively remove all data from the filesystem
+        Close the Store and clean up all underlying objects. This will effectively remove all data from the filesystem
         and memory.
         :return:
         """
@@ -514,6 +532,8 @@ class EphemeralS3ObjectStore(S3ObjectStore):
                 for multipart in multiparts.values():
                     multipart.close()
                 multiparts.clear()
+
+        rmtree(self.root_directory)
 
     def flush(self):
         # rollover all files to disk
@@ -536,7 +556,7 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         version_id = s3_object.version_id or "null"
         return f"{name}_{name_hash}_{version_id}"
 
-    def _get_object_file(self, bucket: BucketName, key: str) -> LockedSpooledTemporaryFile | None:
+    def _get_object_file(self, bucket: BucketName, key: str) -> LockedSpooledFile | None:
         return self._filesystem.get(bucket, {}).get("keys", {}).get(key)
 
     def _get_multipart(self, bucket: BucketName, upload_key: str) -> S3StoredMultipart | None:
@@ -576,10 +596,11 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         """
         bucket_tmp_dir = self._directory_mapping.get(bucket_name)
         if not bucket_tmp_dir:
-            self._create_bucket_directory(bucket_name)
-            bucket_tmp_dir = self._directory_mapping.get(bucket_name)
+            bucket_tmp_dir = self._create_bucket_directory(bucket_name)
 
-        upload_tmp_dir = mkdtemp(dir=bucket_tmp_dir)
+        upload_tmp_path = Path(bucket_tmp_dir) / upload_id
+        upload_tmp_path.mkdir(parents=True)
+        upload_tmp_dir = str(upload_tmp_path)
         self._directory_mapping[f"{bucket_name}/{upload_id}"] = upload_tmp_dir
         return upload_tmp_dir
 

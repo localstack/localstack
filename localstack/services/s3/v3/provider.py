@@ -2004,7 +2004,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_multipart.complete_multipart(parts)
 
         stored_multipart = self._storage_backend.get_multipart(bucket, s3_multipart)
-        stored_multipart.complete_multipart(parts_numbers)
+        stored_multipart.complete_multipart(
+            [s3_multipart.parts.get(part_number) for part_number in parts_numbers]
+        )
 
         s3_object = s3_multipart.object
 
