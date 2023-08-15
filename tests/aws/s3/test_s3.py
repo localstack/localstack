@@ -3330,7 +3330,7 @@ class TestS3:
         presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
 
         response = requests.put(presigned_url, verify=False)
-        assert 200 == response.status_code
+        assert response.status_code == 200
 
         response = aws_client.s3.head_object(Bucket=function_name, Key="key.png")
         snapshot.match("head_object", response)
@@ -3878,7 +3878,7 @@ class TestS3:
         snapshot.match("multi-delete-with-requests", response)
 
         response = aws_client.s3.list_objects(Bucket=s3_bucket)
-        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert len(response["Contents"]) == 1
         snapshot.match("list-remaining-objects", response)
 
@@ -7397,10 +7397,10 @@ class TestS3StaticWebsiteHosting:
         # actual key
         url = f"{website_url}/actual/key.html"
         response = requests.get(url, verify=False)
-        assert 200 == response.status_code
-        assert "key" == response.text
+        assert response.status_code == 200
+        assert response.text == "key"
         assert "content-type" in response.headers
-        assert "text/html" == response.headers["content-type"]
+        assert response.headers["content-type"] == "text/html"
         assert "etag" in response.headers
         assert actual_key_obj["ETag"] in response.headers["etag"]
 
@@ -7408,52 +7408,52 @@ class TestS3StaticWebsiteHosting:
         response = requests.get(
             url, headers={"If-None-Match": actual_key_obj["ETag"]}, verify=False
         )
-        assert 304 == response.status_code
+        assert response.status_code == 304
 
         # key with specified content-type
         url = f"{website_url}/with-content-type/key.js"
         response = requests.get(url, verify=False)
-        assert 200 == response.status_code
-        assert "some js" == response.text
+        assert response.status_code == 200
+        assert response.text == "some js"
         assert "content-type" in response.headers
-        assert "application/javascript; charset=utf-8" == response.headers["content-type"]
+        assert response.headers["content-type"] == "application/javascript; charset=utf-8"
         assert "etag" in response.headers
-        assert with_content_type_obj["ETag"] == response.headers["etag"]
+        assert response.headers["etag"] == with_content_type_obj["ETag"]
 
         # index document
         url = f"{website_url}/test"
         response = requests.get(url, verify=False)
-        assert 200 == response.status_code
-        assert "index" == response.text
+        assert response.status_code == 200
+        assert response.text == "index"
         assert "content-type" in response.headers
         assert "text/html" in response.headers["content-type"]
         assert "etag" in response.headers
-        assert index_obj["ETag"] == response.headers["etag"]
+        assert response.headers["etag"] == index_obj["ETag"]
 
         # root path test
         url = f"{website_url}/"
         response = requests.get(url, verify=False)
-        assert 404 == response.status_code
-        assert "error" == response.text
+        assert response.status_code == 404
+        assert response.text == "error"
         assert "content-type" in response.headers
         assert "text/html" in response.headers["content-type"]
         assert "etag" in response.headers
-        assert error_obj["ETag"] == response.headers["etag"]
+        assert response.headers["etag"] == error_obj["ETag"]
 
         # error document
         url = f"{website_url}/something"
         response = requests.get(url, verify=False)
-        assert 404 == response.status_code
-        assert "error" == response.text
+        assert response.status_code == 404
+        assert response.text == "error"
         assert "content-type" in response.headers
         assert "text/html" in response.headers["content-type"]
         assert "etag" in response.headers
-        assert error_obj["ETag"] == response.headers["etag"]
+        assert response.headers["etag"] == error_obj["ETag"]
 
         # redirect object
         url = f"{website_url}/to-be-redirected.html"
         response = requests.get(url, verify=False, allow_redirects=False)
-        assert 301 == response.status_code
+        assert response.status_code == 301
         assert "location" in response.headers
         assert "actual/key.html" in response.headers["location"]
 
