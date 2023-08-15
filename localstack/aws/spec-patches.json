@@ -1031,6 +1031,23 @@
         "documentation": "<p>The tag provided was not a valid tag. This error can occur if the tag did not pass input validation.</p>",
         "exception": true
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ObjectLockConfigurationNotFoundError",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>Object Lock configuration does not exist for this bucket</p>",
+        "exception": true
+      }
     }
   ]
 }

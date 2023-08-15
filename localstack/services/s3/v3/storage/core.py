@@ -24,7 +24,7 @@ class LimitedIterableStream(Iterable[bytes]):
                 self.max_length -= read
                 yield chunk
             else:
-                yield chunk[: self.max_length + 1]
+                yield chunk[: self.max_length]
                 break
 
         return

@@ -6,7 +6,7 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import long_uid, short_uid
 
 
 def is_native_provider():
@@ -1039,3 +1039,164 @@ class TestS3BucketObjectTagging:
                 Tagging={"TagSet": [{"Key": "aws:prefixed", "Value": "Val1"}]},
             )
         snapshot.match("put-object-tags-aws-prefixed", e.value.response)
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3ObjectLock:
+    @markers.aws.validated
+    def test_put_object_lock_configuration_on_existing_bucket(
+        self, s3_bucket, aws_client, snapshot
+    ):
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={
+                    "ObjectLockEnabled": "Enabled",
+                },
+            )
+        snapshot.match("put-object-lock-existing-bucket-enabled", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={
+                    "Rule": {
+                        "DefaultRetention": {
+                            "Mode": "GOVERNANCE",
+                            "Days": 1,
+                        }
+                    }
+                },
+            )
+        snapshot.match("put-object-lock-existing-bucket-rule", e.value.response)
+
+    @markers.aws.validated
+    def test_get_put_object_lock_configuration(self, s3_create_bucket, aws_client, snapshot):
+        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+
+        get_lock_config = aws_client.s3.get_object_lock_configuration(Bucket=s3_bucket)
+        snapshot.match("get-lock-config-start", get_lock_config)
+
+        put_lock_config = aws_client.s3.put_object_lock_configuration(
+            Bucket=s3_bucket,
+            ObjectLockConfiguration={
+                "ObjectLockEnabled": "Enabled",
+                "Rule": {
+                    "DefaultRetention": {
+                        "Mode": "GOVERNANCE",
+                        "Days": 1,
+                    }
+                },
+            },
+        )
+        snapshot.match("put-lock-config", put_lock_config)
+
+        get_lock_config = aws_client.s3.get_object_lock_configuration(Bucket=s3_bucket)
+        snapshot.match("get-lock-config", get_lock_config)
+
+        put_lock_config_enabled = aws_client.s3.put_object_lock_configuration(
+            Bucket=s3_bucket,
+            ObjectLockConfiguration={
+                "ObjectLockEnabled": "Enabled",
+            },
+        )
+        snapshot.match("put-lock-config-enabled", put_lock_config_enabled)
+
+        get_lock_config = aws_client.s3.get_object_lock_configuration(Bucket=s3_bucket)
+        snapshot.match("get-lock-config-only-enabled", get_lock_config)
+
+    @markers.aws.validated
+    def test_put_object_lock_configuration_exc(self, s3_create_bucket, aws_client, snapshot):
+        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={
+                    "Rule": {
+                        "DefaultRetention": {
+                            "Mode": "GOVERNANCE",
+                            "Days": 1,
+                        }
+                    }
+                },
+            )
+        snapshot.match("put-lock-config-no-enabled", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket, ObjectLockConfiguration={}
+            )
+        snapshot.match("put-lock-config-empty", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={"ObjectLockEnabled": "Enabled", "Rule": {}},
+            )
+        snapshot.match("put-lock-config-empty-rule", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={
+                    "ObjectLockEnabled": "Enabled",
+                    "Rule": {"DefaultRetention": {}},
+                },
+            )
+        snapshot.match("put-lock-config-empty-retention", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={
+                    "ObjectLockEnabled": "Enabled",
+                    "Rule": {
+                        "DefaultRetention": {
+                            "Mode": "GOVERNANCE",
+                        }
+                    },
+                },
+            )
+        snapshot.match("put-lock-config-no-days", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={
+                    "ObjectLockEnabled": "Enabled",
+                    "Rule": {
+                        "DefaultRetention": {
+                            "Mode": "GOVERNANCE",
+                            "Days": 1,
+                            "Years": 1,
+                        }
+                    },
+                },
+            )
+        snapshot.match("put-lock-config-both-days-years", e.value.response)
+
+    @markers.aws.validated
+    def test_get_object_lock_configuration_exc(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_lock_configuration(Bucket=s3_bucket)
+        snapshot.match("get-lock-config-no-enabled", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_lock_configuration(Bucket=f"fake-bucket-ls-{long_uid()}")
+        snapshot.match("get-lock-config-bucket-not-exists", e.value.response)
+
+    @markers.aws.validated
+    def test_disable_versioning_on_locked_bucket(self, s3_create_bucket, aws_client, snapshot):
+        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_versioning(
+                Bucket=s3_bucket,
+                VersioningConfiguration={
+                    "Status": "Suspended",
+                },
+            )
+        snapshot.match("disable-versioning-on-locked-bucket", e.value.response)

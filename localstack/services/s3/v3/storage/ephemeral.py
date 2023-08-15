@@ -151,6 +151,8 @@ class EphemeralS3StoredObject(S3StoredObject):
                 self.file.write(data)
                 read += len(data)
 
+        self.size += read
+        self.s3_object.size = self.size
         return read
 
     def close(self):
@@ -401,10 +403,6 @@ class EphemeralS3ObjectStore(S3ObjectStore):
             upload_key = self._resolve_upload_directory(bucket, s3_multipart.id)
             if multipart := multiparts.pop(upload_key, None):
                 multipart.close()
-
-        # if the bucket is now empty after removing, we can delete the directory
-        if not multiparts and not self._filesystem.get(bucket, {}).get("keys"):
-            self._delete_bucket_directory(bucket)
 
     def close(self):
         """

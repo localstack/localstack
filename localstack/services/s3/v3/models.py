@@ -4,8 +4,10 @@ from collections import defaultdict
 from datetime import datetime
 from secrets import token_urlsafe
 from typing import Literal, NamedTuple, Optional, Union
+from zoneinfo import ZoneInfo
 
 from localstack import config
+from localstack.aws.api import CommonServiceException
 from localstack.aws.api.s3 import (
     AccountId,
     AnalyticsConfiguration,
@@ -18,6 +20,7 @@ from localstack.aws.api.s3 import (
     ChecksumAlgorithm,
     CompletedPartList,
     CORSConfiguration,
+    DefaultRetention,
     EntityTooSmall,
     ETag,
     Expiration,
@@ -36,9 +39,10 @@ from localstack.aws.api.s3 import (
     NoSuchVersion,
     NotificationConfiguration,
     ObjectKey,
-    ObjectLockConfiguration,
     ObjectLockLegalHoldStatus,
     ObjectLockMode,
+    ObjectLockRetainUntilDate,
+    ObjectLockRetentionMode,
     ObjectOwnership,
     ObjectStorageClass,
     ObjectVersionId,
@@ -78,6 +82,8 @@ from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
 
+gmt_zone_info = ZoneInfo("GMT")
+
 
 # note: not really a need to use a dataclass here, as it has a lot of fields, but only a few are set at creation
 class S3Bucket:
@@ -90,7 +96,7 @@ class S3Bucket:
     versioning_status: BucketVersioningStatus | None
     lifecycle_rules: Optional[LifecycleRules]
     policy: Optional[Policy]
-    website_configuration: WebsiteConfiguration
+    website_configuration: Optional[WebsiteConfiguration]
     acl: str  # TODO: change this
     cors_rules: Optional[CORSConfiguration]
     logging: LoggingEnabled
@@ -99,12 +105,12 @@ class S3Bucket:
     encryption_rule: Optional[ServerSideEncryptionRule]
     public_access_block: PublicAccessBlockConfiguration
     accelerate_status: BucketAccelerateStatus
-    object_ownership: ObjectOwnership
-    object_lock_configuration: Optional[ObjectLockConfiguration]
     object_lock_enabled: bool
+    object_ownership: ObjectOwnership
     intelligent_tiering_configurations: dict[IntelligentTieringId, IntelligentTieringConfiguration]
     analytics_configurations: dict[AnalyticsId, AnalyticsConfiguration]
     inventory_configurations: dict[InventoryId, InventoryConfiguration]
+    object_lock_default_retention: Optional[DefaultRetention]
     replication: ReplicationConfiguration
     owner: Owner
 
@@ -121,13 +127,14 @@ class S3Bucket:
         self.name = name
         self.bucket_account_id = account_id
         self.bucket_region = bucket_region
-        self.objects = KeyStore()
+        # If ObjectLock is enabled, it forces the bucket to be versioned as well
+        self.versioning_status = None if not object_lock_enabled_for_bucket else "Enabled"
+        self.objects = KeyStore() if not object_lock_enabled_for_bucket else VersionedKeyStore()
         self.object_ownership = object_ownership
         self.object_lock_enabled = object_lock_enabled_for_bucket
         self.encryption_rule = DEFAULT_BUCKET_ENCRYPTION
-        self.creation_date = datetime.utcnow()
+        self.creation_date = datetime.now(tz=gmt_zone_info)
         self.multiparts = {}
-        self.versioning_status = None
         self.notification_configuration = {}
         self.cors_rules = None
         self.lifecycle_rules = None
@@ -135,6 +142,7 @@ class S3Bucket:
         self.intelligent_tiering_configurations = {}
         self.analytics_configurations = {}
         self.inventory_configurations = {}
+        self.object_lock_default_retention = {}
 
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
         self.owner = get_owner_for_account_id(account_id)
@@ -184,6 +192,13 @@ class S3Bucket:
                         VersionId=version_id,
                     )
                 elif raise_for_delete_marker and isinstance(s3_object_version, S3DeleteMarker):
+                    if http_method == "HEAD":
+                        raise CommonServiceException(
+                            code="405",
+                            message="Method Not Allowed",
+                            status_code=405,
+                        )
+
                     raise MethodNotAllowed(
                         "The specified method is not allowed against this resource.",
                         Method=http_method,
@@ -228,7 +243,7 @@ class S3Object:
     bucket_key_enabled: Optional[bool]  # inherit bucket
     checksum_algorithm: ChecksumAlgorithm
     checksum_value: str
-    lock_mode: Optional[ObjectLockMode]
+    lock_mode: Optional[ObjectLockMode | ObjectLockRetentionMode]
     lock_legal_status: Optional[ObjectLockLegalHoldStatus]
     lock_until: Optional[datetime]
     website_redirect_location: Optional[WebsiteRedirectLocation]
@@ -253,7 +268,7 @@ class S3Object:
         encryption: Optional[ServerSideEncryption] = None,
         kms_key_id: Optional[SSEKMSKeyId] = None,
         bucket_key_enabled: bool = False,
-        lock_mode: Optional[ObjectLockMode] = None,
+        lock_mode: Optional[ObjectLockMode | ObjectLockRetentionMode] = None,
         lock_legal_status: Optional[ObjectLockLegalHoldStatus] = None,
         lock_until: Optional[datetime] = None,
         website_redirect_location: Optional[WebsiteRedirectLocation] = None,
@@ -281,7 +296,7 @@ class S3Object:
         self.expiration = expiration
         self.website_redirect_location = website_redirect_location
         self.is_current = True
-        self.last_modified = datetime.utcnow()
+        self.last_modified = datetime.now(tz=gmt_zone_info)
         self.parts = []
         self.restore = None
 
@@ -300,6 +315,9 @@ class S3Object:
         # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
         if "ContentEncoding" not in headers and self.checksum_algorithm:
             headers["ContentEncoding"] = ""
+
+        if self.storage_class != StorageClass.STANDARD:
+            headers["StorageClass"] = self.storage_class
 
         return headers
 
@@ -323,6 +341,18 @@ class S3Object:
     def quoted_etag(self) -> str:
         return f'"{self.etag}"'
 
+    def is_locked(self, bypass_governance: bool = False) -> bool:
+        if self.lock_legal_status == "ON":
+            return True
+
+        if bypass_governance and self.lock_mode == ObjectLockMode.GOVERNANCE:
+            return False
+
+        if self.lock_until:
+            return self.lock_until > datetime.now(tz=gmt_zone_info)
+
+        return False
+
 
 # TODO: could use dataclass, validate after models are set
 class S3DeleteMarker:
@@ -334,8 +364,13 @@ class S3DeleteMarker:
     def __init__(self, key: ObjectKey, version_id: ObjectVersionId):
         self.key = key
         self.version_id = version_id
-        self.last_modified = datetime.utcnow()
+        self.last_modified = datetime.now(tz=gmt_zone_info)
         self.is_current = True
+
+    @staticmethod
+    def is_locked(*args, **kwargs) -> bool:
+        # an S3DeleteMarker cannot be lock protected
+        return False
 
 
 # TODO: could use dataclass, validate after models are set
@@ -355,7 +390,7 @@ class S3Part:
         checksum_algorithm: Optional[ChecksumAlgorithm] = None,
         checksum_value: Optional[str] = None,
     ):
-        self.last_modified = datetime.utcnow()
+        self.last_modified = datetime.now(tz=gmt_zone_info)
         self.part_number = part_number
         self.size = size
         self.etag = etag
@@ -395,7 +430,7 @@ class S3Multipart:
         tagging: Optional[dict[str, str]] = None,
     ):
         self.id = token_urlsafe(96)  # MultipartUploadId is 128 characters long
-        self.initiated = datetime.utcnow()
+        self.initiated = datetime.now(tz=gmt_zone_info)
         self.parts = {}
         self.initiator = initiator
         self.tagging = tagging
@@ -635,6 +670,12 @@ class EncryptionParameters(NamedTuple):
     encryption: ServerSideEncryption
     kms_key_id: SSEKMSKeyId
     bucket_key_enabled: BucketKeyEnabled
+
+
+class ObjectLockParameters(NamedTuple):
+    lock_until: ObjectLockRetainUntilDate
+    lock_legal_status: ObjectLockLegalHoldStatus
+    lock_mode: ObjectLockMode | ObjectLockRetentionMode
 
 
 s3_stores = AccountRegionBundle[S3Store]("s3", S3Store)
