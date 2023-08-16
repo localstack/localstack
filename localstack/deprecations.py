@@ -258,8 +258,9 @@ DEPRECATIONS = [
     ),
     EnvVarDeprecation(
         "SERVICES",
-        "",
-        "TODO",
+        "1.0.0",
+        "This option is marked for removal. LocalStack lazy loads services by default. "
+        "You may use EAGER_SERVICE_LOADING to load all services at startup.",
     ),
 ]
 
