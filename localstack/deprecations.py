@@ -256,12 +256,6 @@ DEPRECATIONS = [
         "0.14.0",
         "This option is marked for removal. Please use OPENSEARCH_ENDPOINT_STRATEGY instead.",
     ),
-    EnvVarDeprecation(
-        "SERVICES",
-        "1.0.0",
-        "This option is marked for removal. LocalStack lazy loads services by default. "
-        "You may use EAGER_SERVICE_LOADING to load all services at startup.",
-    ),
 ]
 
 
