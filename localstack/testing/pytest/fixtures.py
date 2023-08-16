@@ -224,7 +224,9 @@ def s3_empty_bucket(aws_client):
         response = aws_client.s3.list_objects_v2(Bucket=bucket_name)
         objects = [{"Key": obj["Key"]} for obj in response.get("Contents", [])]
         if objects:
-            aws_client.s3.delete_objects(Bucket=bucket_name, Delete={"Objects": objects})
+            aws_client.s3.delete_objects(
+                Bucket=bucket_name, Delete={"Objects": objects}, BypassGovernanceRetention=True
+            )
 
         response = aws_client.s3.list_object_versions(Bucket=bucket_name)
         versions = response.get("Versions", [])
@@ -232,7 +234,11 @@ def s3_empty_bucket(aws_client):
 
         object_versions = [{"Key": obj["Key"], "VersionId": obj["VersionId"]} for obj in versions]
         if object_versions:
-            aws_client.s3.delete_objects(Bucket=bucket_name, Delete={"Objects": object_versions})
+            aws_client.s3.delete_objects(
+                Bucket=bucket_name,
+                Delete={"Objects": object_versions},
+                BypassGovernanceRetention=True,
+            )
 
     yield factory
 

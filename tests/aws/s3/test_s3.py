@@ -1866,82 +1866,6 @@ class TestS3:
         condition=lambda: not is_native_provider(),
         paths=["$..ServerSideEncryption"],
     )
-    def test_s3_copy_object_legal_hold(self, s3_create_bucket, snapshot, aws_client):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        object_key = "source-object"
-        dest_key = "dest-key"
-        # creating a bucket with ObjectLockEnabledForBucket enables versioning by default, as it's not allowed otherwise
-        # write test for this
-        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
-
-        resp = aws_client.s3.put_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            Body='{"key": "value"}',
-            ObjectLockLegalHoldStatus="ON",
-        )
-        snapshot.match("put_object", resp)
-
-        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
-        snapshot.match("head_object", head_object)
-
-        resp = aws_client.s3.copy_object(
-            Bucket=bucket_name,
-            CopySource=f"{bucket_name}/{object_key}",
-            Key=dest_key,
-        )
-        snapshot.match("copy-legal-hold", resp)
-        # the destination key did not keep the legal hold from the source key
-        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=dest_key)
-        snapshot.match("head-dest-key", head_object)
-
-        # disabled the Legal Hold so that the fixture can clean up
-        for key in (object_key, dest_key):
-            with contextlib.suppress(ClientError):
-                aws_client.s3.put_object_legal_hold(
-                    Bucket=bucket_name, Key=key, LegalHold={"Status": "OFF"}
-                )
-
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not is_native_provider(),
-        paths=["$..ServerSideEncryption"],
-    )
-    def test_s3_copy_object_lock(self, s3_create_bucket, snapshot, aws_client):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        object_key = "source-object"
-        dest_key = "dest-key"
-        # creating a bucket with ObjectLockEnabledForBucket enables versioning by default, as it's not allowed otherwise
-        # see https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock-overview.html
-        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
-
-        resp = aws_client.s3.put_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            Body='{"key": "value"}',
-            ObjectLockMode="GOVERNANCE",  # allows the root user to delete it
-            ObjectLockRetainUntilDate=datetime.datetime.now() + datetime.timedelta(milliseconds=1),
-        )
-        snapshot.match("put-source-object", resp)
-
-        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
-        snapshot.match("head-source-object", head_object)
-
-        resp = aws_client.s3.copy_object(
-            Bucket=bucket_name,
-            CopySource=f"{bucket_name}/{object_key}",
-            Key=dest_key,
-        )
-        snapshot.match("copy-lock", resp)
-        # the destination key did not keep the lock nor lock until from the source key
-        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=dest_key)
-        snapshot.match("head-dest-key", head_object)
-
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not is_native_provider(),
-        paths=["$..ServerSideEncryption"],
-    )
     def test_s3_copy_object_storage_class(self, s3_bucket, snapshot, aws_client):
         # this test will validate that setting StorageClass (even the same as source) allows a copy in place
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -2142,6 +2066,97 @@ class TestS3:
             CopySourceIfUnmodifiedSince=now,
         )
         snapshot.match("copy-success", copy_obj_all_positive)
+
+    @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not validate properly",
+    )
+    @pytest.mark.parametrize("method", ("get_object", "head_object"))
+    def test_s3_get_object_preconditions(self, s3_bucket, snapshot, aws_client, method):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "test-object"
+        put_object = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body=b"data",
+        )
+
+        client_method = getattr(aws_client.s3, method)
+
+        # wait a bit for the `unmodified_since` value so that it's invalid.
+        # S3 compares it the last-modified field, but you can't set the value in the future otherwise it ignores it.
+        # It needs to be now or less, but the object needs to be a bit more recent than that.
+        time.sleep(3)
+
+        # we're testing the order of validation at the same time by validating all of them at once, by elimination
+        now = datetime.datetime.now().astimezone(tz=ZoneInfo("GMT"))
+        wrong_unmodified_since = now - datetime.timedelta(days=1)
+
+        with pytest.raises(ClientError) as e:
+            client_method(
+                Bucket=s3_bucket,
+                Key=object_key,
+                IfModifiedSince=now,
+                IfUnmodifiedSince=wrong_unmodified_since,
+                IfMatch="etag123",
+                IfNoneMatch=put_object["ETag"],
+            )
+        snapshot.match("precondition-if-match", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            client_method(
+                Bucket=s3_bucket,
+                Key=object_key,
+                IfModifiedSince=now,
+                IfUnmodifiedSince=wrong_unmodified_since,
+                IfNoneMatch=put_object["ETag"],
+            )
+        snapshot.match("precondition-if-unmodified-since", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            client_method(
+                Bucket=s3_bucket,
+                Key=object_key,
+                IfModifiedSince=now,
+                IfNoneMatch=put_object["ETag"],
+            )
+        snapshot.match("precondition-if-none-match", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            client_method(
+                Bucket=s3_bucket,
+                Key=object_key,
+                IfModifiedSince=now,
+            )
+        snapshot.match("copy-precondition-if-modified-since", e.value.response)
+
+        # AWS will ignore the value if it's in the future
+        get_obj = client_method(
+            Bucket=s3_bucket,
+            Key=object_key,
+            IfModifiedSince=now + datetime.timedelta(days=1),
+        )
+        snapshot.match("obj-ignore-future-modified-since", get_obj)
+        # # AWS will ignore the missing quotes around the ETag and still reject the request
+        with pytest.raises(ClientError) as e:
+            client_method(
+                Bucket=s3_bucket,
+                Key=object_key,
+                IfModifiedSince=now,
+                IfNoneMatch=put_object["ETag"].strip('"'),
+            )
+        snapshot.match("etag-missing-quotes", e.value.response)
+        # Positive tests with all conditions checked
+        get_obj_all_positive = client_method(
+            Bucket=s3_bucket,
+            Key=object_key,
+            IfMatch=put_object["ETag"].strip('"'),
+            IfNoneMatch="etag123",
+            IfModifiedSince=now - datetime.timedelta(days=1),
+            IfUnmodifiedSince=now,
+        )
+        snapshot.match("obj-success", get_obj_all_positive)
 
     @markers.aws.validated
     # behaviour is wrong in Legacy, we inherit Bucket ACL
@@ -3024,18 +3039,19 @@ class TestS3:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_s3_request_payer_exceptions(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_request_payment(
                 Bucket=s3_bucket, RequestPaymentConfiguration={"Payer": "Random"}
             )
         snapshot.match("wrong-payer-type", e.value.response)
 
-        # TODO: check if no luck or AccessDenied is normal?
-        # with pytest.raises(ClientError) as e:
-        #     s3_client.put_bucket_request_payment(
-        #         Bucket="fake_bucket", RequestPaymentConfiguration={"Payer": "Requester"}
-        #     )
-        # snapshot.match("wrong-bucket-name", e.value.response)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_request_payment(
+                Bucket=f"fake-bucket-{long_uid()}",
+                RequestPaymentConfiguration={"Payer": "Requester"},
+            )
+        snapshot.match("wrong-bucket-name", e.value.response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -3230,6 +3246,64 @@ class TestS3:
         # etags should be different
         assert copy_etag != multipart_etag
 
+        # copy-in place to check
+        response = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=src_object_path,
+            Key=key,
+            MetadataDirective="REPLACE",
+        )
+        snapshot.match("copy-object-in-place", response)
+        copy_etag = response["CopyObjectResult"]["ETag"]
+        # etags should be different
+        assert copy_etag != multipart_etag
+
+    @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not validate properly",
+    )
+    def test_get_object_part(self, s3_bucket, s3_multipart_upload, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("Bucket"),
+            ]
+        )
+        key = "test.file"
+        content = "test content 123"
+
+        response = s3_multipart_upload(bucket=s3_bucket, key=key, data=content, parts=2)
+        snapshot.match("multipart-upload", response)
+
+        head_object_part = aws_client.s3.head_object(Bucket=s3_bucket, Key=key, PartNumber=2)
+        snapshot.match("head-object-part", head_object_part)
+
+        get_object_part = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, PartNumber=2)
+        snapshot.match("get-object-part", get_object_part)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key, PartNumber=10)
+        snapshot.match("part-doesnt-exist", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(
+                Bucket=s3_bucket,
+                Key=key,
+                PartNumber=2,
+                Range="bytes=0-8",
+            )
+        snapshot.match("part-with-range", e.value.response)
+
+        key_no_part = "key-no-part"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key_no_part, Body="test-123")
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=key_no_part, PartNumber=2)
+        snapshot.match("part-no-multipart", e.value.response)
+
+        get_obj_no_part = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_no_part, PartNumber=1)
+        snapshot.match("get-obj-no-multipart", get_obj_no_part)
+
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
     @markers.snapshot.skip_snapshot_verify(
@@ -3330,7 +3404,7 @@ class TestS3:
         presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
 
         response = requests.put(presigned_url, verify=False)
-        assert 200 == response.status_code
+        assert response.status_code == 200
 
         response = aws_client.s3.head_object(Bucket=function_name, Key="key.png")
         snapshot.match("head_object", response)
@@ -3878,7 +3952,7 @@ class TestS3:
         snapshot.match("multi-delete-with-requests", response)
 
         response = aws_client.s3.list_objects(Bucket=s3_bucket)
-        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert len(response["Contents"]) == 1
         snapshot.match("list-remaining-objects", response)
 
@@ -4654,11 +4728,12 @@ class TestS3:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
+        condition=lambda: not is_native_provider(),
         paths=[
             "$..ServerSideEncryption",
             "$..NextKeyMarker",
             "$..NextUploadIdMarker",
-        ]
+        ],
     )
     def test_list_multipart_uploads_parameters(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
@@ -4998,92 +5073,6 @@ class TestS3:
         snapshot.match("list_config_with_storage_analysis_2", response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=lambda: not is_native_provider(),
-        paths=["$..ServerSideEncryption"],
-    )
-    def test_s3_legal_hold_lock_versioned(self, aws_client, s3_create_bucket, snapshot):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        object_key = "locked-object"
-        # creating a bucket with ObjectLockEnabledForBucket enables versioning by default, as it's not allowed otherwise
-        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
-
-        # create an object, get version1
-        resp = aws_client.s3.put_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            Body='{"key": "value"}',
-        )
-        snapshot.match("put-object", resp)
-        version_id = resp["VersionId"]
-
-        # put a legal hold on the object with version1
-        resp = aws_client.s3.put_object_legal_hold(
-            Bucket=bucket_name,
-            Key=object_key,
-            VersionId=version_id,
-            LegalHold={"Status": "ON"},
-        )
-        snapshot.match("put-object-legal-hold-ver1", resp)
-
-        head_object = aws_client.s3.head_object(
-            Bucket=bucket_name, Key=object_key, VersionId=version_id
-        )
-        snapshot.match("head-object-ver1", head_object)
-
-        resp = aws_client.s3.put_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            Body='{"key": "value"}',
-        )
-        snapshot.match("put-object-2", resp)
-        version_id_2 = resp["VersionId"]
-
-        # put a legal hold on the object with version2
-        resp = aws_client.s3.put_object_legal_hold(
-            Bucket=bucket_name,
-            Key=object_key,
-            VersionId=version_id_2,
-            LegalHold={"Status": "ON"},
-        )
-        snapshot.match("put-object-legal-hold-ver2", resp)
-
-        head_object = aws_client.s3.head_object(
-            Bucket=bucket_name, Key=object_key, VersionId=version_id_2
-        )
-        snapshot.match("head-object-ver2", head_object)
-
-        # remove the legal hold from the version1
-        resp = aws_client.s3.put_object_legal_hold(
-            Bucket=bucket_name,
-            Key=object_key,
-            VersionId=version_id,
-            LegalHold={"Status": "OFF"},
-        )
-        snapshot.match("remove-object-legal-hold-ver1", resp)
-
-        head_object = aws_client.s3.head_object(
-            Bucket=bucket_name, Key=object_key, VersionId=version_id
-        )
-        snapshot.match("head-object-ver1-no-lock", head_object)
-
-        # now delete the object with version1, the legal hold should be off
-        resp = aws_client.s3.delete_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            VersionId=version_id,
-        )
-        snapshot.match("delete-object-ver1", resp)
-
-        # disabled the Legal Hold so that the fixture can clean up
-        aws_client.s3.put_object_legal_hold(
-            Bucket=bucket_name,
-            Key=object_key,
-            LegalHold={"Status": "OFF"},
-            VersionId=version_id_2,
-        )
-
-    @markers.aws.validated
     def test_s3_intelligent_tier_config(self, aws_client, s3_create_bucket, snapshot):
         bucket = s3_create_bucket()
         intelligent_tier_configuration = {
@@ -5209,107 +5198,6 @@ class TestS3:
         with pytest.raises(ClientError) as e:
             aws_client.s3.get_object(Bucket=bucket, Key=key, IfMatch="etag")
         snapshot.match("if_match_err_1", e.value.response["Error"])
-
-    @markers.aws.validated
-    def test_s3_object_hold(self, aws_client, s3_create_bucket, snapshot):
-        bucket_name_with_lock = f"bucket-with-lock-{short_uid()}"
-        bucket_name_without_lock = f"bucket-without-lock-{short_uid()}"
-        key_1 = "test1.txt"
-        key_2 = "test2.txt"
-
-        s3_create_bucket(Bucket=bucket_name_with_lock, ObjectLockEnabledForBucket=True)
-        aws_client.s3.put_object(Bucket=bucket_name_with_lock, Key=key_1, Body="test")
-        key_1_version_id = aws_client.s3.get_object(Bucket=bucket_name_with_lock, Key=key_1)[
-            "VersionId"
-        ]
-        key_2_version_id = aws_client.s3.put_object(Bucket=bucket_name_with_lock, Key=key_2)[
-            "VersionId"
-        ]
-
-        s3_create_bucket(Bucket=bucket_name_without_lock, ObjectLockEnabledForBucket=False)
-        aws_client.s3.put_object(Bucket=bucket_name_without_lock, Key=key_1, Body="test")
-
-        # non-existing bucket
-        with pytest.raises(ClientError) as exc:
-            aws_client.s3.put_object_retention(
-                Bucket="non-existing-bucket",
-                Key=key_1,
-                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
-            )
-        snapshot.match("put_object_retention_1", exc.value.response["Error"])
-
-        # non-existing key
-        with pytest.raises(ClientError) as exc:
-            aws_client.s3.put_object_retention(
-                Bucket=bucket_name_with_lock,
-                Key="non-existing-key",
-                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
-            )
-        snapshot.match("put_object_retention_2", exc.value.response["Error"])
-
-        # no lock on bucket
-        with pytest.raises(ClientError) as exc:
-            aws_client.s3.get_object_retention(Bucket=bucket_name_without_lock, Key=key_1)
-        snapshot.match("get_object_retention_1", exc.value.response["Error"])
-
-        response = aws_client.s3.put_object_retention(
-            Bucket=bucket_name_with_lock,
-            Key=key_1,
-            Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
-        )
-        snapshot.match("put_object_retention_4", response["ResponseMetadata"]["HTTPStatusCode"])
-
-        response = aws_client.s3.get_object_retention(Bucket=bucket_name_with_lock, Key=key_1)
-        snapshot.match("get_object_retention_2", response)
-
-        # delete object with lock without bypass
-        with pytest.raises(ClientError) as exc:
-            aws_client.s3.delete_object(
-                Bucket=bucket_name_with_lock, Key=key_1, VersionId=key_1_version_id
-            )
-        snapshot.match("delete_object_1", exc.value.response["Error"])
-
-        # delete object with lock with bypass
-        response = aws_client.s3.delete_object(
-            Bucket=bucket_name_with_lock,
-            Key=key_1,
-            VersionId=key_1_version_id,
-            BypassGovernanceRetention=True,
-        )
-        snapshot.match("delete_object_2", response["ResponseMetadata"]["HTTPStatusCode"])
-
-        # add object retention to key_2 with 5 seconds retention
-        aws_client.s3.put_object_retention(
-            Bucket=bucket_name_with_lock,
-            Key=key_2,
-            Retention={
-                "Mode": "GOVERNANCE",
-                "RetainUntilDate": datetime.datetime.utcnow() + datetime.timedelta(seconds=5),
-            },
-        )
-
-        # delete object with lock without bypass before 5 seconds
-        with pytest.raises(ClientError):
-            aws_client.s3.delete_object(
-                Bucket=bucket_name_with_lock, Key=key_2, VersionId=key_2_version_id
-            )
-
-        # delete object with lock without bypass after 5 seconds
-        time.sleep(6)
-        aws_client.s3.delete_object(
-            Bucket=bucket_name_with_lock,
-            Key=key_2,
-            VersionId=key_2_version_id,
-        )
-
-        # put object retention on bucket without lock configured
-        with pytest.raises(ClientError) as exc:
-            aws_client.s3.put_object_retention(
-                Bucket=bucket_name_without_lock,
-                Key=key_1,
-                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
-            )
-        snapshot.match("put_object_retention_5", exc.value.response["Error"])
 
     @markers.aws.validated
     def test_put_bucket_logging(self, aws_client, s3_create_bucket, snapshot):
@@ -7397,10 +7285,10 @@ class TestS3StaticWebsiteHosting:
         # actual key
         url = f"{website_url}/actual/key.html"
         response = requests.get(url, verify=False)
-        assert 200 == response.status_code
-        assert "key" == response.text
+        assert response.status_code == 200
+        assert response.text == "key"
         assert "content-type" in response.headers
-        assert "text/html" == response.headers["content-type"]
+        assert response.headers["content-type"] == "text/html"
         assert "etag" in response.headers
         assert actual_key_obj["ETag"] in response.headers["etag"]
 
@@ -7408,52 +7296,52 @@ class TestS3StaticWebsiteHosting:
         response = requests.get(
             url, headers={"If-None-Match": actual_key_obj["ETag"]}, verify=False
         )
-        assert 304 == response.status_code
+        assert response.status_code == 304
 
         # key with specified content-type
         url = f"{website_url}/with-content-type/key.js"
         response = requests.get(url, verify=False)
-        assert 200 == response.status_code
-        assert "some js" == response.text
+        assert response.status_code == 200
+        assert response.text == "some js"
         assert "content-type" in response.headers
-        assert "application/javascript; charset=utf-8" == response.headers["content-type"]
+        assert response.headers["content-type"] == "application/javascript; charset=utf-8"
         assert "etag" in response.headers
-        assert with_content_type_obj["ETag"] == response.headers["etag"]
+        assert response.headers["etag"] == with_content_type_obj["ETag"]
 
         # index document
         url = f"{website_url}/test"
         response = requests.get(url, verify=False)
-        assert 200 == response.status_code
-        assert "index" == response.text
+        assert response.status_code == 200
+        assert response.text == "index"
         assert "content-type" in response.headers
         assert "text/html" in response.headers["content-type"]
         assert "etag" in response.headers
-        assert index_obj["ETag"] == response.headers["etag"]
+        assert response.headers["etag"] == index_obj["ETag"]
 
         # root path test
         url = f"{website_url}/"
         response = requests.get(url, verify=False)
-        assert 404 == response.status_code
-        assert "error" == response.text
+        assert response.status_code == 404
+        assert response.text == "error"
         assert "content-type" in response.headers
         assert "text/html" in response.headers["content-type"]
         assert "etag" in response.headers
-        assert error_obj["ETag"] == response.headers["etag"]
+        assert response.headers["etag"] == error_obj["ETag"]
 
         # error document
         url = f"{website_url}/something"
         response = requests.get(url, verify=False)
-        assert 404 == response.status_code
-        assert "error" == response.text
+        assert response.status_code == 404
+        assert response.text == "error"
         assert "content-type" in response.headers
         assert "text/html" in response.headers["content-type"]
         assert "etag" in response.headers
-        assert error_obj["ETag"] == response.headers["etag"]
+        assert response.headers["etag"] == error_obj["ETag"]
 
         # redirect object
         url = f"{website_url}/to-be-redirected.html"
         response = requests.get(url, verify=False, allow_redirects=False)
-        assert 301 == response.status_code
+        assert response.status_code == 301
         assert "location" in response.headers
         assert "actual/key.html" in response.headers["location"]
 
@@ -8887,6 +8775,650 @@ class TestS3BucketLifecycle:
 
         response = aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
         snapshot.match("head-object", response)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    condition=lambda: not is_native_provider(),
+    paths=["$..ServerSideEncryption"],
+)
+class TestS3ObjectLockRetention:
+    @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not validate properly",
+    )
+    def test_s3_object_retention_exc(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        s3_bucket_locked = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        # non-existing bucket
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_retention(
+                Bucket=f"non-existing-bucket-{long_uid()}",
+                Key="fake-key",
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+            )
+        snapshot.match("put-object-retention-no-bucket", e.value.response)
+
+        # non-existing key
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_retention(
+                Bucket=s3_bucket_locked,
+                Key="non-existing-key",
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+            )
+        snapshot.match("put-object-retention-no-key", e.value.response)
+
+        object_key = "test-key"
+        put_obj_locked = aws_client.s3.put_object(
+            Bucket=s3_bucket_locked, Key=object_key, Body="test"
+        )
+        version_id = put_obj_locked["VersionId"]
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_retention(
+                Bucket=s3_bucket_locked, Key=object_key, VersionId=version_id
+            )
+        snapshot.match("get-object-retention-never-set", e.value.response)
+
+        # missing fields
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_retention(
+                Bucket=s3_bucket_locked,
+                Key=object_key,
+                Retention={"Mode": "GOVERNANCE"},
+                BypassGovernanceRetention=True,
+            )
+        snapshot.match("put-object-missing-retention-fields", e.value.response)
+
+        # set a retention
+        aws_client.s3.put_object_retention(
+            Bucket=s3_bucket_locked,
+            Key=object_key,
+            Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+        )
+        # update a retention without bypass
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_retention(
+                Bucket=s3_bucket_locked,
+                Key=object_key,
+                VersionId=version_id,
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2025, 1, 1)},
+            )
+        snapshot.match("update-retention-no-bypass", e.value.response)
+
+        s3_bucket_basic = s3_create_bucket(ObjectLockEnabledForBucket=False)  # same as default
+        aws_client.s3.put_object(Bucket=s3_bucket_basic, Key=object_key, Body="test")
+        # put object retention in a object in bucket without lock configured
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_retention(
+                Bucket=s3_bucket_basic,
+                Key=object_key,
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+            )
+        snapshot.match("put-object-retention-regular-bucket", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_retention(
+                Bucket=s3_bucket_basic,
+                Key=object_key,
+            )
+        snapshot.match("get-object-retention-regular-bucket", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not validate properly",
+    )
+    def test_s3_object_retention(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
+        object_key = "test-retention-locked-object"
+
+        s3_bucket_lock = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        put_obj_1 = aws_client.s3.put_object(Bucket=s3_bucket_lock, Key=object_key, Body="test")
+        snapshot.match("put-obj-locked-1", put_obj_1)
+
+        version_id = put_obj_1["VersionId"]
+
+        response = aws_client.s3.put_object_retention(
+            Bucket=s3_bucket_lock,
+            Key=object_key,
+            Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+        )
+        snapshot.match("put-object-retention-on-key-1", response)
+
+        response = aws_client.s3.get_object_retention(Bucket=s3_bucket_lock, Key=object_key)
+        snapshot.match("get-object-retention-on-key-1", response)
+
+        head_object_locked = aws_client.s3.head_object(Bucket=s3_bucket_lock, Key=object_key)
+        snapshot.match("head-object-locked", head_object_locked)
+
+        # delete object with retention lock without bypass
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket_lock, Key=object_key, VersionId=version_id)
+        snapshot.match("delete-obj-locked", e.value.response)
+
+        # delete object with retention lock with bypass
+        response = aws_client.s3.delete_object(
+            Bucket=s3_bucket_lock,
+            Key=object_key,
+            VersionId=version_id,
+            BypassGovernanceRetention=True,
+        )
+        snapshot.match("delete-obj-locked-bypass", response)
+        # TODO: add retention on delete marker? todo add delete marker on locked object?
+
+        put_obj_2 = aws_client.s3.put_object(
+            Bucket=s3_bucket_lock,
+            Key=object_key,
+            Body="test",
+            ObjectLockMode="GOVERNANCE",
+            ObjectLockRetainUntilDate=datetime.datetime(2030, 1, 1),
+        )
+        snapshot.match("put-obj-locked-2", put_obj_2)
+        version_id = put_obj_2["VersionId"]
+
+        # update object retention with 5 seconds retention, no bypass
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_retention(
+                Bucket=s3_bucket_lock,
+                Key=object_key,
+                Retention={
+                    "Mode": "GOVERNANCE",
+                    "RetainUntilDate": datetime.datetime.utcnow() + datetime.timedelta(seconds=5),
+                },
+            )
+        snapshot.match("update-retention-locked-object", e.value.response)
+
+        # update with empty retention
+        empty_retention = aws_client.s3.put_object_retention(
+            Bucket=s3_bucket_lock,
+            Key=object_key,
+            Retention={},
+            BypassGovernanceRetention=True,
+        )
+        snapshot.match("put-object-empty-retention", empty_retention)
+
+        update_retention = aws_client.s3.put_object_retention(
+            Bucket=s3_bucket_lock,
+            Key=object_key,
+            Retention={
+                "Mode": "GOVERNANCE",
+                "RetainUntilDate": datetime.datetime.utcnow() + datetime.timedelta(seconds=5),
+            },
+        )
+        snapshot.match("update-retention-object", update_retention)
+
+        # delete object with retention lock without bypass before 5 seconds
+        with pytest.raises(ClientError):
+            aws_client.s3.delete_object(Bucket=s3_bucket_lock, Key=object_key, VersionId=version_id)
+
+        # delete object with lock without bypass after 5 seconds
+        sleep = 10 if is_aws_cloud() else 6
+        time.sleep(sleep)
+
+        aws_client.s3.delete_object(
+            Bucket=s3_bucket_lock,
+            Key=object_key,
+            VersionId=version_id,
+        )
+
+    @markers.aws.validated
+    def test_s3_copy_object_retention_lock(self, s3_create_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "source-object"
+        dest_key = "dest-key"
+        # creating a bucket with ObjectLockEnabledForBucket enables versioning by default, as it's not allowed otherwise
+        # see https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock-overview.html
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
+
+        put_locked_objected = aws_client.s3.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='{"key": "value"}',
+            ObjectLockMode="GOVERNANCE",  # allows the root user to delete it
+            ObjectLockRetainUntilDate=datetime.datetime.now() + datetime.timedelta(minutes=10),
+        )
+        snapshot.match("put-source-object", put_locked_objected)
+
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
+        snapshot.match("head-source-object", head_object)
+
+        resp = aws_client.s3.copy_object(
+            Bucket=bucket_name,
+            CopySource=f"{bucket_name}/{object_key}",
+            Key=dest_key,
+        )
+        snapshot.match("copy-lock", resp)
+        # the destination key did not keep the lock nor lock until from the source key
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=dest_key)
+        snapshot.match("head-dest-key", head_object)
+
+    @markers.aws.validated
+    def test_bucket_config_default_retention(self, s3_create_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
+        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        object_key = "default-object"
+        put_lock_config = aws_client.s3.put_object_lock_configuration(
+            Bucket=s3_bucket,
+            ObjectLockConfiguration={
+                "ObjectLockEnabled": "Enabled",
+                "Rule": {
+                    "DefaultRetention": {
+                        "Mode": "GOVERNANCE",
+                        "Days": 1,
+                    }
+                },
+            },
+        )
+        snapshot.match("put-lock-config", put_lock_config)
+
+        put_locked_object_default = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body="test-default-lock",
+        )
+        snapshot.match("put-object-default", put_locked_object_default)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object-default", head_object)
+
+        # add one day to LastModified to validate the Retain date is precise or rounding (it is precise, exactly 1 day
+        # after the LastModified (created date)
+        last_modified_and_one_day = head_object["LastModified"] + datetime.timedelta(days=1)
+        delta_2_min = datetime.timedelta(minutes=2)  # to add a bit of margin
+        assert (
+            last_modified_and_one_day - delta_2_min
+            <= head_object["ObjectLockRetainUntilDate"]
+            <= last_modified_and_one_day + delta_2_min
+        )
+
+        put_locked_object = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body="test-put-object-lock",
+            ObjectLockMode="GOVERNANCE",
+            ObjectLockRetainUntilDate=datetime.datetime.now() + datetime.timedelta(minutes=10),
+        )
+        snapshot.match("put-object-with-lock", put_locked_object)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object-with-lock", head_object)
+
+    @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not validate properly",
+    )
+    def test_object_lock_delete_markers(self, s3_create_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
+        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        object_key = "default-object"
+
+        put_locked_object = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body="test-put-object-lock",
+            ObjectLockMode="GOVERNANCE",
+            ObjectLockRetainUntilDate=datetime.datetime.now() + datetime.timedelta(minutes=10),
+        )
+        snapshot.match("put-object-with-lock", put_locked_object)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object-with-lock", head_object)
+
+        put_delete_marker = aws_client.s3.delete_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("put-delete-marker", put_delete_marker)
+        delete_marker_version = put_delete_marker["VersionId"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_retention(
+                Bucket=s3_bucket,
+                Key=object_key,
+                VersionId=delete_marker_version,
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
+            )
+        snapshot.match("put-object-retention-delete-marker", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_retention(
+                Bucket=s3_bucket, Key=object_key, VersionId=delete_marker_version
+            )
+        snapshot.match("get-object-retention-delete-marker", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.head_object(
+                Bucket=s3_bucket, Key=object_key, VersionId=delete_marker_version
+            )
+        snapshot.match("head-object-locked-delete-marker", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not implemented",
+    )
+    def test_object_lock_extend_duration(self, s3_create_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
+        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        object_key = "default-object"
+
+        put_locked_object = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body="test-put-object-lock",
+            ObjectLockMode="GOVERNANCE",
+            ObjectLockRetainUntilDate=datetime.datetime.now() + datetime.timedelta(minutes=10),
+        )
+        snapshot.match("put-object-with-lock", put_locked_object)
+        version_id = put_locked_object["VersionId"]
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object-with-lock", head_object)
+
+        # not putting BypassGovernanceRetention=True on purpose, to see if you can extend the duration by default
+        put_locked_object_extend = aws_client.s3.put_object_retention(
+            Bucket=s3_bucket,
+            Key=object_key,
+            VersionId=version_id,
+            Retention={
+                "Mode": "GOVERNANCE",
+                "RetainUntilDate": datetime.datetime.now() + datetime.timedelta(minutes=20),
+            },
+        )
+        snapshot.match("put-object-retention-extend", put_locked_object_extend)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object-with-lock-extended", head_object)
+
+        # assert that reducing the duration again won't work
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_retention(
+                Bucket=s3_bucket,
+                Key=object_key,
+                VersionId=version_id,
+                Retention={
+                    "Mode": "GOVERNANCE",
+                    "RetainUntilDate": datetime.datetime.now() + datetime.timedelta(minutes=10),
+                },
+            )
+        snapshot.match("put-object-retention-reduce", e.value.response)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    condition=lambda: not is_native_provider(),
+    paths=["$..ServerSideEncryption"],
+)
+class TestS3ObjectLockLegalHold:
+    @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not implemented, does not validate",
+    )
+    def test_put_get_object_legal_hold(self, s3_create_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
+        object_key = "locked-object"
+        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="test")
+        snapshot.match("put-obj", put_obj)
+        version_id = put_obj["VersionId"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_legal_hold(
+                Bucket=s3_bucket, Key=object_key, VersionId=version_id
+            )
+        snapshot.match("get-legal-hold-unset", e.value.response)
+
+        put_legal_hold = aws_client.s3.put_object_legal_hold(
+            Bucket=s3_bucket,
+            Key=object_key,
+            VersionId=version_id,
+            LegalHold={"Status": "ON"},
+        )
+        snapshot.match("put-object-legal-hold", put_legal_hold)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object-with-legal-hold", head_object)
+
+        get_legal_hold = aws_client.s3.get_object_legal_hold(
+            Bucket=s3_bucket, Key=object_key, VersionId=version_id
+        )
+        snapshot.match("get-legal-hold-set", get_legal_hold)
+
+        # disable the LegalHold so that the fixture can clean up
+        put_legal_hold = aws_client.s3.put_object_legal_hold(
+            Bucket=s3_bucket,
+            Key=object_key,
+            VersionId=version_id,
+            LegalHold={"Status": "OFF"},
+        )
+        snapshot.match("put-object-legal-hold-off", put_legal_hold)
+
+    @markers.aws.validated
+    def test_put_object_with_legal_hold(self, s3_create_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
+        object_key = "locked-object"
+        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+
+        put_obj = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body="test",
+            ObjectLockLegalHoldStatus="ON",
+        )
+        snapshot.match("put-obj", put_obj)
+        version_id = put_obj["VersionId"]
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object-with-legal-hold", head_object)
+
+        # disable the LegalHold so that the fixture can clean up
+        put_legal_hold = aws_client.s3.put_object_legal_hold(
+            Bucket=s3_bucket,
+            Key=object_key,
+            VersionId=version_id,
+            LegalHold={"Status": "OFF"},
+        )
+        snapshot.match("put-object-legal-hold-off", put_legal_hold)
+
+    @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not implemented, does not validate",
+    )
+    def test_put_object_legal_hold_exc(self, s3_create_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        s3_bucket_locked = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        # non-existing bucket
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_legal_hold(
+                Bucket=f"non-existing-bucket-{long_uid()}",
+                Key="fake-key",
+                LegalHold={"Status": "ON"},
+            )
+        snapshot.match("put-object-legal-hold-no-bucket", e.value.response)
+
+        # non-existing key
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_legal_hold(
+                Bucket=s3_bucket_locked,
+                Key="non-existing-key",
+                LegalHold={"Status": "ON"},
+            )
+        snapshot.match("put-object-legal-hold-no-key", e.value.response)
+
+        object_key = "test-legal-hold"
+        s3_bucket_basic = s3_create_bucket(ObjectLockEnabledForBucket=False)  # same as default
+        aws_client.s3.put_object(Bucket=s3_bucket_basic, Key=object_key, Body="test")
+        # put object retention in a object in bucket without lock configured
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_legal_hold(
+                Bucket=s3_bucket_basic,
+                Key=object_key,
+                LegalHold={"Status": "ON"},
+            )
+        snapshot.match("put-object-retention-regular-bucket", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_legal_hold(
+                Bucket=s3_bucket_basic,
+                Key=object_key,
+            )
+        snapshot.match("put-object-retention-empty", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_legal_hold(
+                Bucket=s3_bucket_basic,
+                Key=object_key,
+            )
+        snapshot.match("get-object-retention-regular-bucket", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=not config.NATIVE_S3_PROVIDER,
+        reason="Behaviour is not implemented, does not validate",
+    )
+    def test_delete_locked_object(self, s3_create_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
+        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        object_key = "test-delete-locked"
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="test")
+        snapshot.match("put-obj", put_obj)
+        version_id = put_obj["VersionId"]
+
+        put_legal_hold = aws_client.s3.put_object_legal_hold(
+            Bucket=s3_bucket,
+            Key=object_key,
+            VersionId=version_id,
+            LegalHold={"Status": "ON"},
+        )
+        snapshot.match("put-object-legal-hold", put_legal_hold)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket, Key=object_key, VersionId=version_id)
+        snapshot.match("delete-object-locked", e.value.response)
+
+        delete_objects = aws_client.s3.delete_objects(
+            Bucket=s3_bucket, Delete={"Objects": [{"Key": object_key, "VersionId": version_id}]}
+        )
+        snapshot.match("delete-objects-locked", delete_objects)
+
+        # disable the LegalHold so that the fixture can clean up
+        put_legal_hold = aws_client.s3.put_object_legal_hold(
+            Bucket=s3_bucket,
+            Key=object_key,
+            VersionId=version_id,
+            LegalHold={"Status": "OFF"},
+        )
+        snapshot.match("put-object-legal-hold-off", put_legal_hold)
+
+    @markers.aws.validated
+    def test_s3_legal_hold_lock_versioned(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "locked-object"
+        # creating a bucket with ObjectLockEnabledForBucket enables versioning by default, as it's not allowed otherwise
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
+
+        # create an object, get version1
+        resp = aws_client.s3.put_object(Bucket=bucket_name, Key=object_key, Body="test")
+        snapshot.match("put-object", resp)
+        version_id = resp["VersionId"]
+
+        # put a legal hold on the object with version1
+        resp = aws_client.s3.put_object_legal_hold(
+            Bucket=bucket_name,
+            Key=object_key,
+            VersionId=version_id,
+            LegalHold={"Status": "ON"},
+        )
+        snapshot.match("put-object-legal-hold-ver1", resp)
+
+        head_object = aws_client.s3.head_object(
+            Bucket=bucket_name, Key=object_key, VersionId=version_id
+        )
+        snapshot.match("head-object-ver1", head_object)
+
+        resp = aws_client.s3.put_object(Bucket=bucket_name, Key=object_key, Body="test")
+        snapshot.match("put-object-2", resp)
+        version_id_2 = resp["VersionId"]
+
+        # put a legal hold on the object with version2
+        resp = aws_client.s3.put_object_legal_hold(
+            Bucket=bucket_name,
+            Key=object_key,
+            VersionId=version_id_2,
+            LegalHold={"Status": "ON"},
+        )
+        snapshot.match("put-object-legal-hold-ver2", resp)
+
+        head_object = aws_client.s3.head_object(
+            Bucket=bucket_name, Key=object_key, VersionId=version_id_2
+        )
+        snapshot.match("head-object-ver2", head_object)
+
+        # remove the legal hold from the version1
+        resp = aws_client.s3.put_object_legal_hold(
+            Bucket=bucket_name,
+            Key=object_key,
+            VersionId=version_id,
+            LegalHold={"Status": "OFF"},
+        )
+        snapshot.match("remove-object-legal-hold-ver1", resp)
+
+        head_object = aws_client.s3.head_object(
+            Bucket=bucket_name, Key=object_key, VersionId=version_id
+        )
+        snapshot.match("head-object-ver1-no-lock", head_object)
+
+        # now delete the object with version1, the legal hold should be off
+        resp = aws_client.s3.delete_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            VersionId=version_id,
+        )
+        snapshot.match("delete-object-ver1", resp)
+
+        # disabled the Legal Hold so that the fixture can clean up
+        aws_client.s3.put_object_legal_hold(
+            Bucket=bucket_name,
+            Key=object_key,
+            LegalHold={"Status": "OFF"},
+            VersionId=version_id_2,
+        )
+
+    @markers.aws.validated
+    def test_s3_copy_object_legal_hold(self, s3_create_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "source-object"
+        dest_key = "dest-key"
+        # creating a bucket with ObjectLockEnabledForBucket enables versioning by default
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
+
+        resp = aws_client.s3.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='{"key": "value"}',
+            ObjectLockLegalHoldStatus="ON",
+        )
+        snapshot.match("put-object", resp)
+
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
+        snapshot.match("head-object", head_object)
+
+        resp = aws_client.s3.copy_object(
+            Bucket=bucket_name,
+            CopySource=f"{bucket_name}/{object_key}",
+            Key=dest_key,
+        )
+        snapshot.match("copy-legal-hold", resp)
+        # the destination key did not keep the legal hold from the source key
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=dest_key)
+        snapshot.match("head-dest-key", head_object)
+
+        # disable the Legal Hold so that the fixture can clean up
+        for key in (object_key, dest_key):
+            with contextlib.suppress(ClientError):
+                aws_client.s3.put_object_legal_hold(
+                    Bucket=bucket_name, Key=key, LegalHold={"Status": "OFF"}
+                )
 
 
 def _s3_client_custom_config(conf: Config, endpoint_url: str = None):

@@ -1177,7 +1177,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_default_bucket_encryption": {
+  "tests/aws/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_default_bucket_encryption": {
     "recorded-date": "02-08-2023, 00:10:29",
     "recorded-content": {
       "default-bucket-encryption": {
@@ -1216,7 +1216,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_default_bucket_encryption_exc": {
+  "tests/aws/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_default_bucket_encryption_exc": {
     "recorded-date": "02-08-2023, 00:12:29",
     "recorded-content": {
       "get-bucket-enc-no-bucket": {
@@ -1285,7 +1285,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_s3": {
+  "tests/aws/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_s3": {
     "recorded-date": "02-08-2023, 01:37:10",
     "recorded-content": {
       "put-bucket-enc": {
@@ -1331,7 +1331,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_kms_aws_managed_key": {
+  "tests/aws/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_kms_aws_managed_key": {
     "recorded-date": "02-08-2023, 01:48:16",
     "recorded-content": {
       "put-bucket-enc": {
@@ -1423,7 +1423,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_kms": {
+  "tests/aws/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_kms": {
     "recorded-date": "02-08-2023, 02:06:21",
     "recorded-content": {
       "put-bucket-enc": {
@@ -1492,7 +1492,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_bucket_tagging_crud": {
+  "tests/aws/s3/test_s3_api.py::TestS3BucketObjectTagging::test_bucket_tagging_crud": {
     "recorded-date": "02-08-2023, 22:18:20",
     "recorded-content": {
       "get-bucket-tags-empty": {
@@ -1560,7 +1560,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_crud": {
+  "tests/aws/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_crud": {
     "recorded-date": "02-08-2023, 23:23:45",
     "recorded-content": {
       "put-object": {
@@ -1662,7 +1662,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_object_with_tags": {
+  "tests/aws/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_object_with_tags": {
     "recorded-date": "03-08-2023, 01:21:13",
     "recorded-content": {
       "put-object": {
@@ -1773,7 +1773,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_bucket_tagging_exc": {
+  "tests/aws/s3/test_s3_api.py::TestS3BucketObjectTagging::test_bucket_tagging_exc": {
     "recorded-date": "02-08-2023, 22:32:41",
     "recorded-content": {
       "get-no-bucket-tags": {
@@ -1811,7 +1811,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_versioned": {
+  "tests/aws/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_versioned": {
     "recorded-date": "02-08-2023, 23:14:16",
     "recorded-content": {
       "put-obj-0": {
@@ -1902,7 +1902,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_exc": {
+  "tests/aws/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_exc": {
     "recorded-date": "03-08-2023, 00:04:47",
     "recorded-content": {
       "get-no-bucket-tags": {
@@ -1997,7 +1997,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tags_delete_or_overwrite_object": {
+  "tests/aws/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tags_delete_or_overwrite_object": {
     "recorded-date": "02-08-2023, 23:52:10",
     "recorded-content": {
       "get-object-after-creation": {
@@ -2028,7 +2028,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3_api.py::TestS3BucketObjectTagging::test_tagging_validation": {
+  "tests/aws/s3/test_s3_api.py::TestS3BucketObjectTagging::test_tagging_validation": {
     "recorded-date": "03-08-2023, 01:07:47",
     "recorded-content": {
       "put-bucket-tags-duplicate-keys": {
@@ -2107,6 +2107,188 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectLock::test_put_object_lock_configuration_on_existing_bucket": {
+    "recorded-date": "09-08-2023, 01:27:32",
+    "recorded-content": {
+      "put-object-lock-existing-bucket-enabled": {
+        "Error": {
+          "Code": "InvalidBucketState",
+          "Message": "Object Lock configuration cannot be enabled on existing buckets"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "put-object-lock-existing-bucket-rule": {
+        "Error": {
+          "Code": "InvalidBucketState",
+          "Message": "Object Lock configuration cannot be enabled on existing buckets"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectLock::test_get_put_object_lock_configuration": {
+    "recorded-date": "09-08-2023, 01:40:49",
+    "recorded-content": {
+      "get-lock-config-start": {
+        "ObjectLockConfiguration": {
+          "ObjectLockEnabled": "Enabled"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-lock-config": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-lock-config": {
+        "ObjectLockConfiguration": {
+          "ObjectLockEnabled": "Enabled",
+          "Rule": {
+            "DefaultRetention": {
+              "Days": 1,
+              "Mode": "GOVERNANCE"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-lock-config-enabled": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-lock-config-only-enabled": {
+        "ObjectLockConfiguration": {
+          "ObjectLockEnabled": "Enabled"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectLock::test_put_object_lock_configuration_exc": {
+    "recorded-date": "10-08-2023, 14:13:45",
+    "recorded-content": {
+      "put-lock-config-no-enabled": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-lock-config-empty": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-lock-config-empty-rule": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-lock-config-empty-retention": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-lock-config-no-days": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-lock-config-both-days-years": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectLock::test_get_object_lock_configuration_exc": {
+    "recorded-date": "09-08-2023, 01:41:42",
+    "recorded-content": {
+      "get-lock-config-no-enabled": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "ObjectLockConfigurationNotFoundError",
+          "Message": "Object Lock configuration does not exist for this bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-lock-config-bucket-not-exists": {
+        "Error": {
+          "BucketName": "<bucket-name:2>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3ObjectLock::test_disable_versioning_on_locked_bucket": {
+    "recorded-date": "09-08-2023, 03:49:49",
+    "recorded-content": {
+      "disable-versioning-on-locked-bucket": {
+        "Error": {
+          "Code": "InvalidBucketState",
+          "Message": "An Object Lock configuration is present on this bucket, so the versioning state cannot be changed."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
         }
       }
     }
