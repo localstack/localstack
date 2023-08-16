@@ -118,17 +118,19 @@ def render_velocity_template(template, context, variables=None, as_json=False):
 # TODO: contribute these patches upstream!
 
 
-airspeed.MacroDefinition.RESERVED_NAMES = airspeed.MacroDefinition.RESERVED_NAMES + ("return",)
+airspeed.operators.MacroDefinition.RESERVED_NAMES = (
+    airspeed.operators.MacroDefinition.RESERVED_NAMES + ("return",)
+)
 
 
-@patch(airspeed.VariableExpression.calculate)
+@patch(airspeed.operators.VariableExpression.calculate)
 def calculate(fn, self, *args, **kwarg):
     result = fn(self, *args, **kwarg)
     result = "" if result is None else result
     return result
 
 
-class ExtAssignment(airspeed.Assignment):
+class ExtAssignment(airspeed.operators.Assignment):
     """
     Extends the airspeed Assignment class to support names with dashes, e.g., "X-Amz-Target"
     """
@@ -138,7 +140,7 @@ class ExtAssignment(airspeed.Assignment):
     )
 
 
-class ExtNameOrCall(airspeed.NameOrCall):
+class ExtNameOrCall(airspeed.operators.NameOrCall):
     """
     Extends the airspeed NameOrCall class to support names with dashes, e.g., "foo-bar"
     """
@@ -146,20 +148,20 @@ class ExtNameOrCall(airspeed.NameOrCall):
     NAME = re.compile(r"([a-zA-Z0-9_-]+)(.*)$", re.S)
 
 
-@patch(airspeed.VariableExpression.parse, pass_target=False)
+@patch(airspeed.operators.VariableExpression.parse, pass_target=False)
 def parse_expr(self):
     self.part = self.next_element(ExtNameOrCall)
-    with contextlib.suppress(airspeed.NoMatch):
-        self.subexpression = self.next_element(airspeed.SubExpression)
+    with contextlib.suppress(airspeed.operators.NoMatch):
+        self.subexpression = self.next_element(airspeed.operators.SubExpression)
 
 
-@patch(airspeed.SetDirective.parse, pass_target=False)
+@patch(airspeed.operators.SetDirective.parse, pass_target=False)
 def parse_setexpr(self):
     self.identity_match(self.START)
     self.assignment = self.require_next_element(ExtAssignment, "assignment")
 
 
-class ReturnDirective(airspeed.EvaluateDirective):
+class ReturnDirective(airspeed.operators.EvaluateDirective):
     """Defines an airspeed VTL directive that supports `#return(...)` expressions"""
 
     START = re.compile(r"#return\b(.*)")
@@ -178,7 +180,7 @@ class ReturnDirective(airspeed.EvaluateDirective):
         stream.write(str_value)
 
 
-@patch(airspeed.Block.parse, pass_target=False)
+@patch(airspeed.operators.Block.parse, pass_target=False)
 def parse(self):
     # need to copy the entire function body, no easier way to apply the patch here..
     self.children = []
@@ -187,26 +189,26 @@ def parse(self):
             self.children.append(
                 self.next_element(
                     (
-                        airspeed.Text,
-                        airspeed.FormalReference,
-                        airspeed.Comment,
-                        airspeed.IfDirective,
-                        airspeed.SetDirective,
-                        airspeed.ForeachDirective,
-                        airspeed.IncludeDirective,
-                        airspeed.ParseDirective,
-                        airspeed.MacroDefinition,
-                        airspeed.DefineDefinition,
-                        airspeed.StopDirective,
-                        airspeed.UserDefinedDirective,
-                        airspeed.EvaluateDirective,
+                        airspeed.operators.Text,
+                        airspeed.operators.FormalReference,
+                        airspeed.operators.Comment,
+                        airspeed.operators.IfDirective,
+                        airspeed.operators.SetDirective,
+                        airspeed.operators.ForeachDirective,
+                        airspeed.operators.IncludeDirective,
+                        airspeed.operators.ParseDirective,
+                        airspeed.operators.MacroDefinition,
+                        airspeed.operators.DefineDefinition,
+                        airspeed.operators.StopDirective,
+                        airspeed.operators.UserDefinedDirective,
+                        airspeed.operators.EvaluateDirective,
                         ReturnDirective,
-                        airspeed.MacroCall,
-                        airspeed.FallthroughHashText,
+                        airspeed.operators.MacroCall,
+                        airspeed.operators.FallthroughHashText,
                     )
                 )
             )
-        except airspeed.NoMatch:
+        except airspeed.operators.NoMatch:
             break
 
 
@@ -220,8 +222,8 @@ def dict_put_all(self, values):
     self.update(values)
 
 
-airspeed.__additional_methods__[dict]["put"] = dict_put
-airspeed.__additional_methods__[dict]["putAll"] = dict_put_all
+airspeed.operators.__additional_methods__[dict]["put"] = dict_put
+airspeed.operators.__additional_methods__[dict]["putAll"] = dict_put_all
 
 
 # END of patches for airspeed

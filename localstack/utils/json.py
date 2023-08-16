@@ -6,6 +6,8 @@ from datetime import date, datetime
 from json import JSONDecodeError
 from typing import Any, Union
 
+from localstack.config import HostAndPort
+
 from .numbers import is_number
 from .strings import to_str
 from .time import timestamp_millis
@@ -19,6 +21,8 @@ class CustomEncoder(json.JSONEncoder):
     def default(self, o):
         import yaml  # leave import here, to avoid breaking our Lambda tests!
 
+        if isinstance(o, HostAndPort):
+            return str(o)
         if isinstance(o, decimal.Decimal):
             if o % 1 > 0:
                 return float(o)

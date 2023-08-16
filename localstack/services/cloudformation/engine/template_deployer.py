@@ -98,7 +98,12 @@ def get_attr_from_model_instance(
             return attribute_candidate
         parts = attribute_name.split(".")
         attribute = properties
+        # TODO: the attribute fetching below is a temporary workaround for the dependency resolution.
+        #  It is caused by trying to access the resource attribute that has not been deployed yet.
+        #  This should be a hard error.“
         for part in parts:
+            if attribute is None:
+                return None
             attribute = attribute.get(part)
         return attribute
 

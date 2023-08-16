@@ -3,15 +3,14 @@ import hashlib
 import logging
 import re
 import zlib
-from dataclasses import dataclass
-from typing import IO, Any, Dict, Literal, Optional, Protocol, Tuple, Type, Union
+from typing import IO, Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Type, Union
 from urllib import parse as urlparser
 from zoneinfo import ZoneInfo
 
 import moto.s3.models as moto_s3_models
 from botocore.exceptions import ClientError
 from botocore.utils import InvalidArnException
-from moto.s3.exceptions import MissingBucket
+from moto.s3.exceptions import MalformedXML, MissingBucket
 from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 from moto.s3.utils import clean_key_name
 
@@ -20,9 +19,14 @@ from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.s3 import (
     BucketName,
     ChecksumAlgorithm,
+    CopyObjectRequest,
     CopySource,
+    ETag,
+    GetObjectRequest,
+    HeadObjectRequest,
     InvalidArgument,
     InvalidRange,
+    InvalidTag,
     LifecycleExpiration,
     LifecycleRule,
     LifecycleRules,
@@ -31,9 +35,13 @@ from localstack.aws.api.s3 import (
     NoSuchBucket,
     NoSuchKey,
     ObjectKey,
+    ObjectSize,
     ObjectVersionId,
     Owner,
+    PreconditionFailed,
     SSEKMSKeyId,
+    TaggingHeader,
+    TagSet,
 )
 from localstack.aws.connect import connect_to
 from localstack.services.s3.constants import (
@@ -62,6 +70,8 @@ BUCKET_NAME_REGEX = (
 REGION_REGEX = r"[a-z]{2}-[a-z]+-[0-9]{1,}"
 PORT_REGEX = r"(:[\d]{0,6})?"
 
+TAG_REGEX = re.compile(r"^[\w\s.:/=+\-@]*$")
+
 S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expression (separated by .) followed by .s3
     r"^(http(s)?://)?((?!s3\.)[^\./]+)\."  # the negative lookahead part is for considering buckets
     r"(((s3(-website)?\.({}\.)?)localhost(\.localstack\.cloud)?)|(localhost\.localstack\.cloud)|"
@@ -72,12 +82,9 @@ S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expr
 )
 _s3_virtual_host_regex = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
 
-PATTERN_UUID = re.compile(
-    r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
-)
-
 
 RFC1123 = "%a, %d %b %Y %H:%M:%S GMT"
+_gmt_zone_info = ZoneInfo("GMT")
 
 
 def get_owner_for_account_id(account_id: str):
@@ -163,10 +170,9 @@ class S3CRC32Checksum:
         return self.checksum.to_bytes(4, "big")
 
 
-@dataclass
-class ParsedRange:
+class ObjectRange(NamedTuple):
     """
-    Dataclass representing a parsed Range header with the requested S3 object size
+    NamedTuple representing a parsed Range header with the requested S3 object size
     https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range
     """
 
@@ -176,13 +182,13 @@ class ParsedRange:
     end: int  # the end of the end
 
 
-def parse_range_header(range_header: str, object_size: int) -> ParsedRange:
+def parse_range_header(range_header: str, object_size: int) -> ObjectRange:
     """
     Takes a Range header, and returns a dataclass containing the necessary information to return only a slice of an
     S3 object
     :param range_header: a Range header
     :param object_size: the requested S3 object total size
-    :return: ParsedRange
+    :return: ObjectRange
     """
     last = object_size - 1
     _, rspec = range_header.split("=")
@@ -206,7 +212,7 @@ def parse_range_header(range_header: str, object_size: int) -> ParsedRange:
             RangeRequested=range_header,
         )
 
-    return ParsedRange(
+    return ObjectRange(
         content_range=f"bytes {begin}-{end}/{object_size}",
         content_length=end - begin + 1,
         begin=begin,
@@ -585,7 +591,7 @@ def rfc_1123_datetime(src: datetime.datetime) -> str:
 
 
 def str_to_rfc_1123_datetime(value: str) -> datetime.datetime:
-    return datetime.datetime.strptime(value, RFC1123).replace(tzinfo=ZoneInfo("GMT"))
+    return datetime.datetime.strptime(value, RFC1123).replace(tzinfo=_gmt_zone_info)
 
 
 def iso_8601_datetime_without_milliseconds_s3(
@@ -621,7 +627,10 @@ def serialize_expiration_header(
 
 
 def get_lifecycle_rule_from_object(
-    lifecycle_conf_rules: LifecycleRules, moto_object: FakeKey, object_tags: dict[str, str]
+    lifecycle_conf_rules: LifecycleRules,
+    object_key: ObjectKey,
+    size: ObjectSize,
+    object_tags: dict[str, str],
 ) -> LifecycleRule:
     for rule in lifecycle_conf_rules:
         if not (expiration := rule.get("Expiration")) or "ExpiredObjectDeleteMarker" in expiration:
@@ -632,13 +641,13 @@ def get_lifecycle_rule_from_object(
 
         if and_rules := rule_filter.get("And"):
             if all(
-                _match_lifecycle_filter(key, value, moto_object, object_tags)
+                _match_lifecycle_filter(key, value, object_key, size, object_tags)
                 for key, value in and_rules.items()
             ):
                 return rule
 
         if any(
-            _match_lifecycle_filter(key, value, moto_object, object_tags)
+            _match_lifecycle_filter(key, value, object_key, size, object_tags)
             for key, value in rule_filter.items()
         ):
             # after validation, we can only one of `Prefix`, `Tag`, `ObjectSizeGreaterThan` or `ObjectSizeLessThan` in
@@ -647,17 +656,21 @@ def get_lifecycle_rule_from_object(
 
 
 def _match_lifecycle_filter(
-    filter_key: str, filter_value, moto_object: FakeKey, object_tags: dict[str, str]
+    filter_key: str,
+    filter_value: str | int | dict[str, str],
+    object_key: ObjectKey,
+    size: ObjectSize,
+    object_tags: dict[str, str],
 ):
     match filter_key:
         case "Prefix":
-            return moto_object.name.startswith(filter_value)
+            return object_key.startswith(filter_value)
         case "Tag":
             return object_tags.get(filter_value.get("Key")) == filter_value.get("Value")
         case "ObjectSizeGreaterThan":
-            return moto_object.size > filter_value
+            return size > filter_value
         case "ObjectSizeLessThan":
-            return moto_object.size < filter_value
+            return size < filter_value
         case "Tags":  # this is inside the `And` field
             return all(object_tags.get(tag.get("Key")) == tag.get("Value") for tag in filter_value)
 
@@ -676,7 +689,7 @@ def parse_expiration_header(
         return None, None
 
 
-def validate_dict_fields(data: dict, required_fields: set, optional_fields: set):
+def validate_dict_fields(data: dict, required_fields: set, optional_fields: set = None):
     """
     Validate whether the `data` dict contains at least the required fields and not more than the union of the required
     and optional fields
@@ -687,6 +700,163 @@ def validate_dict_fields(data: dict, required_fields: set, optional_fields: set)
     :param optional_fields: a set containing the optional fields
     :return: bool, whether the dict is valid or not
     """
+    if optional_fields is None:
+        optional_fields = set()
     return (set_fields := set(data)) >= required_fields and set_fields <= (
         required_fields | optional_fields
     )
+
+
+def parse_tagging_header(tagging_header: TaggingHeader) -> dict:
+    try:
+        parsed_tags = urlparser.parse_qs(tagging_header, keep_blank_values=True)
+        tags: dict[str, str] = {}
+        for key, val in parsed_tags.items():
+            if len(val) != 1 or not TAG_REGEX.match(key) or not TAG_REGEX.match(val[0]):
+                raise InvalidArgument(
+                    "The header 'x-amz-tagging' shall be encoded as UTF-8 then URLEncoded URL query parameters without tag name duplicates.",
+                    ArgumentName="x-amz-tagging",
+                    ArgumentValue=tagging_header,
+                )
+            elif key.startswith("aws:"):
+                raise
+            tags[key] = val[0]
+        return tags
+
+    except ValueError:
+        raise InvalidArgument(
+            "The header 'x-amz-tagging' shall be encoded as UTF-8 then URLEncoded URL query parameters without tag name duplicates.",
+            ArgumentName="x-amz-tagging",
+            ArgumentValue=tagging_header,
+        )
+
+
+def validate_tag_set(tag_set: TagSet, type_set: Literal["bucket", "object"] = "bucket"):
+    keys = set()
+    for tag in tag_set:
+        if set(tag) != {"Key", "Value"}:
+            raise MalformedXML()
+
+        key = tag["Key"]
+        if key in keys:
+            raise InvalidTag(
+                "Cannot provide multiple Tags with the same key",
+                TagKey=key,
+            )
+
+        if key.startswith("aws:"):
+            if type_set == "bucket":
+                message = "System tags cannot be added/updated by requester"
+            else:
+                message = "Your TagKey cannot be prefixed with aws:"
+            raise InvalidTag(
+                message,
+                TagKey=key,
+            )
+
+        if not TAG_REGEX.match(key):
+            raise InvalidTag(
+                "The TagKey you have provided is invalid",
+                TagKey=key,
+            )
+        elif not TAG_REGEX.match(tag["Value"]):
+            raise InvalidTag(
+                "The TagValue you have provided is invalid", TagKey=key, TagValue=tag["Value"]
+            )
+
+        keys.add(key)
+
+
+def get_unique_key_id(
+    bucket: BucketName, object_key: ObjectKey, version_id: ObjectVersionId
+) -> str:
+    return f"{bucket}/{object_key}/{version_id or 'null'}"
+
+
+def get_retention_from_now(days: int = None, years: int = None) -> datetime.datetime:
+    """
+    This calculates a retention date from now, adding days or years to it
+    :param days: provided days
+    :param years: provided years, exclusive with days
+    :return: return a datetime object
+    """
+    if not days and not years:
+        raise ValueError("Either 'days' or 'years' needs to be provided")
+    now = datetime.datetime.now(tz=_gmt_zone_info)
+    if days:
+        retention = now + datetime.timedelta(days=days)
+    else:
+        retention = now.replace(year=now.year + years)
+
+    return retention
+
+
+def get_failed_precondition_copy_source(
+    request: CopyObjectRequest, last_modified: datetime.datetime, etag: ETag
+) -> Optional[str]:
+    """
+    Validate if the source object LastModified and ETag matches a precondition, and if it does, return the failed
+    precondition
+    # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html
+    :param request: the CopyObjectRequest
+    :param last_modified: source object LastModified
+    :param etag: source object ETag
+    :return str: the failed precondition to raise
+    """
+    if (cs_if_match := request.get("CopySourceIfMatch")) and etag.strip('"') != cs_if_match.strip(
+        '"'
+    ):
+        return "x-amz-copy-source-If-Match"
+
+    elif (
+        cs_if_unmodified_since := request.get("CopySourceIfUnmodifiedSince")
+    ) and last_modified > cs_if_unmodified_since:
+        return "x-amz-copy-source-If-Unmodified-Since"
+
+    elif (cs_if_none_match := request.get("CopySourceIfNoneMatch")) and etag.strip(
+        '"'
+    ) == cs_if_none_match.strip('"'):
+        return "x-amz-copy-source-If-None-Match"
+
+    elif (
+        cs_if_modified_since := request.get("CopySourceIfModifiedSince")
+    ) and last_modified < cs_if_modified_since < datetime.datetime.now(tz=_gmt_zone_info):
+        return "x-amz-copy-source-If-Modified-Since"
+
+
+def validate_failed_precondition(
+    request: GetObjectRequest | HeadObjectRequest, last_modified: datetime.datetime, etag: ETag
+) -> None:
+    """
+    Validate if the object LastModified and ETag matches a precondition, and if it does, return the failed
+    precondition
+    :param request: the GetObjectRequest or HeadObjectRequest
+    :param last_modified: S3 object LastModified
+    :param etag: S3 object ETag
+    :raises PreconditionFailed
+    :raises NotModified, 304 with an empty body
+    """
+    precondition_failed = None
+    if (if_match := request.get("IfMatch")) and etag != if_match.strip('"'):
+        precondition_failed = "If-Match"
+
+    elif (
+        if_unmodified_since := request.get("IfUnmodifiedSince")
+    ) and last_modified > if_unmodified_since:
+        precondition_failed = "If-Unmodified-Since"
+
+    if precondition_failed:
+        raise PreconditionFailed(
+            "At least one of the pre-conditions you specified did not hold",
+            Condition=precondition_failed,
+        )
+
+    if ((if_none_match := request.get("IfNoneMatch")) and etag == if_none_match.strip('"')) or (
+        (if_modified_since := request.get("IfModifiedSince"))
+        and last_modified < if_modified_since < datetime.datetime.now(tz=_gmt_zone_info)
+    ):
+        raise CommonServiceException(
+            message="Not Modified",
+            code="NotModified",
+            status_code=304,
+        )

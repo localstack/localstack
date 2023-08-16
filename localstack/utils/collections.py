@@ -11,6 +11,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterable,
     Iterator,
     List,
     Optional,
@@ -503,3 +504,20 @@ def dict_multi_values(elements: Union[List, Dict]) -> Dict[str, List[Any]]:
         else:
             result_dict[elements[0]] = elements[1:]
     return result_dict
+
+
+ItemType = TypeVar("ItemType")
+
+
+def split_list_by(
+    lst: Iterable[ItemType], predicate: Callable[[ItemType], bool]
+) -> Tuple[List[ItemType], List[ItemType]]:
+    truthy, falsy = [], []
+
+    for item in lst:
+        if predicate(item):
+            truthy.append(item)
+        else:
+            falsy.append(item)
+
+    return truthy, falsy

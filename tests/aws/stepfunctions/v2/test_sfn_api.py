@@ -417,3 +417,239 @@ class TestSnfApi:
 
         exec_hist_resp = aws_client.stepfunctions.get_execution_history(executionArn=execution_arn)
         sfn_snapshot.match("exec_hist_resp", exec_hist_resp)
+
+    @markers.aws.validated
+    def test_create_update_state_machine_base_definition(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        definition_t0 = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str_t0 = json.dumps(definition_t0)
+        sm_name = f"statemachine_{short_uid()}"
+
+        creation_resp_t0 = create_state_machine(
+            name=sm_name, definition=definition_str_t0, roleArn=snf_role_arn
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_t0, 0))
+        sfn_snapshot.match("creation_resp_t0", creation_resp_t0)
+        state_machine_arn = creation_resp_t0["stateMachineArn"]
+
+        describe_resp_t0 = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("describe_resp_t0", describe_resp_t0)
+
+        definition_t1 = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_t1["States"]["State_1"]["Result"].update({"Arg1": "AfterUpdate1"})
+        definition_str_t1 = json.dumps(definition_t1)
+
+        update_state_machine_res = aws_client.stepfunctions.update_state_machine(
+            stateMachineArn=state_machine_arn, definition=definition_str_t1
+        )
+        sfn_snapshot.match("update_state_machine_res", update_state_machine_res)
+
+        describe_resp_t1 = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("describe_resp_t1", describe_resp_t1)
+
+        definition_t2 = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_t2["States"]["State_1"]["Result"].update({"Arg1": "AfterUpdate2"})
+        definition_str_t2 = json.dumps(definition_t2)
+
+        update_state_machine_res_t2 = aws_client.stepfunctions.update_state_machine(
+            stateMachineArn=state_machine_arn, definition=definition_str_t2
+        )
+        sfn_snapshot.match("update_state_machine_res_t2", update_state_machine_res_t2)
+
+        describe_resp_t2 = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("describe_resp_t2", describe_resp_t2)
+
+    @markers.aws.validated
+    def test_create_update_state_machine_base_role_arn(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn_t0 = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn_t0, "snf_role_arn_t0"))
+
+        definition_t0 = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str_t0 = json.dumps(definition_t0)
+        sm_name = f"statemachine_{short_uid()}"
+
+        creation_resp_t0 = create_state_machine(
+            name=sm_name, definition=definition_str_t0, roleArn=snf_role_arn_t0
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_t0, 0))
+        sfn_snapshot.match("creation_resp_t0", creation_resp_t0)
+        state_machine_arn = creation_resp_t0["stateMachineArn"]
+
+        describe_resp_t0 = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("describe_resp_t0", describe_resp_t0)
+
+        snf_role_arn_t1 = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn_t1, "snf_role_arn_t1"))
+
+        update_state_machine_res_t1 = aws_client.stepfunctions.update_state_machine(
+            stateMachineArn=state_machine_arn, roleArn=snf_role_arn_t1
+        )
+        sfn_snapshot.match("update_state_machine_res_t1", update_state_machine_res_t1)
+
+        describe_resp_t1 = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("describe_resp_t1", describe_resp_t1)
+
+        snf_role_arn_t2 = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn_t2, "snf_role_arn_t2"))
+
+        update_state_machine_res_t2 = aws_client.stepfunctions.update_state_machine(
+            stateMachineArn=state_machine_arn, roleArn=snf_role_arn_t2
+        )
+        sfn_snapshot.match("update_state_machine_res_t2", update_state_machine_res_t2)
+
+        describe_resp_t2 = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("describe_resp_t2", describe_resp_t2)
+
+    @markers.aws.validated
+    def test_create_update_state_machine_base_definition_and_role(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        definition_t0 = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str_t0 = json.dumps(definition_t0)
+        sm_name = f"statemachine_{short_uid()}"
+
+        creation_resp_t0 = create_state_machine(
+            name=sm_name, definition=definition_str_t0, roleArn=snf_role_arn
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_t0, 0))
+        sfn_snapshot.match("creation_resp_t0", creation_resp_t0)
+        state_machine_arn = creation_resp_t0["stateMachineArn"]
+
+        describe_resp_t0 = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("describe_resp_t0", describe_resp_t0)
+
+        definition_t1 = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_t1["States"]["State_1"]["Result"].update({"Arg1": "AfterUpdate1"})
+        definition_str_t1 = json.dumps(definition_t1)
+
+        snf_role_arn_t1 = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn_t1, "snf_role_arn_t1"))
+
+        update_state_machine_res_t1 = aws_client.stepfunctions.update_state_machine(
+            stateMachineArn=state_machine_arn, definition=definition_str_t1, roleArn=snf_role_arn_t1
+        )
+        sfn_snapshot.match("update_state_machine_res_t1", update_state_machine_res_t1)
+
+        describe_resp_t1 = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("describe_resp_t1", describe_resp_t1)
+
+        definition_t2 = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_t2["States"]["State_1"]["Result"].update({"Arg1": "AfterUpdate2"})
+        definition_str_t2 = json.dumps(definition_t2)
+
+        snf_role_arn_t2 = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn_t2, "snf_role_arn_t2"))
+
+        update_state_machine_res_t2 = aws_client.stepfunctions.update_state_machine(
+            stateMachineArn=state_machine_arn, definition=definition_str_t2, roleArn=snf_role_arn_t2
+        )
+        sfn_snapshot.match("update_state_machine_res_t2", update_state_machine_res_t2)
+
+        describe_resp_t2 = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("describe_resp_t2", describe_resp_t2)
+
+    @markers.aws.validated
+    def test_create_update_state_machine_base_update_none(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        definition_t0 = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str_t0 = json.dumps(definition_t0)
+        sm_name = f"statemachine_{short_uid()}"
+
+        creation_resp_t0 = create_state_machine(
+            name=sm_name, definition=definition_str_t0, roleArn=snf_role_arn
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_t0, 0))
+        sfn_snapshot.match("creation_resp_t0", creation_resp_t0)
+        state_machine_arn = creation_resp_t0["stateMachineArn"]
+
+        describe_resp_t0 = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("describe_resp_t0", describe_resp_t0)
+
+        with pytest.raises(Exception) as missing_required_parameter:
+            aws_client.stepfunctions.update_state_machine(stateMachineArn=state_machine_arn)
+        sfn_snapshot.match("missing_required_parameter", missing_required_parameter.value.response)
+
+        with pytest.raises(Exception) as null_required_parameter:
+            aws_client.stepfunctions.update_state_machine(
+                stateMachineArn=state_machine_arn, definition=None, roleArn=None
+            )
+        sfn_snapshot.match("null_required_parameter", null_required_parameter.value)
+
+    @markers.aws.validated
+    def test_create_update_state_machine_same_parameters(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn_t0 = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn_t0, "snf_role_arn_t0"))
+
+        definition_t0 = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str_t0 = json.dumps(definition_t0)
+        sm_name = f"statemachine_{short_uid()}"
+
+        creation_resp_t0 = create_state_machine(
+            name=sm_name, definition=definition_str_t0, roleArn=snf_role_arn_t0
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_t0, 0))
+        sfn_snapshot.match("creation_resp_t0", creation_resp_t0)
+        state_machine_arn = creation_resp_t0["stateMachineArn"]
+
+        describe_resp_t0 = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("describe_resp_t0", describe_resp_t0)
+
+        snf_role_arn_t1 = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn_t1, "snf_role_arn_t1"))
+
+        update_state_machine_res_t1 = aws_client.stepfunctions.update_state_machine(
+            stateMachineArn=state_machine_arn, roleArn=snf_role_arn_t1
+        )
+        sfn_snapshot.match("update_state_machine_res_t1", update_state_machine_res_t1)
+
+        describe_resp_t1 = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("describe_resp_t1", describe_resp_t1)
+
+        update_state_machine_res_t2 = aws_client.stepfunctions.update_state_machine(
+            stateMachineArn=state_machine_arn, definition=definition_str_t0, roleArn=snf_role_arn_t1
+        )
+        sfn_snapshot.match("update_state_machine_res_t2", update_state_machine_res_t2)
+
+        describe_resp_t2 = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machine_arn
+        )
+        sfn_snapshot.match("describe_resp_t2", describe_resp_t2)

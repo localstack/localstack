@@ -1,3 +1,4 @@
+import json
 from operator import itemgetter
 
 import pytest
@@ -6,7 +7,7 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import long_uid, short_uid
 
 
 def is_native_provider():
@@ -685,3 +686,751 @@ class TestS3BucketEncryption:
 
         get_object_encrypted = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
         snapshot.match("get-object-encrypted", get_object_encrypted)
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3BucketObjectTagging:
+    @markers.aws.validated
+    def test_bucket_tagging_crud(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_tagging(Bucket=s3_bucket)
+        snapshot.match("get-bucket-tags-empty", e.value.response)
+
+        tag_set = {"TagSet": [{"Key": "tag1", "Value": "tag1"}, {"Key": "tag2", "Value": ""}]}
+
+        put_bucket_tags = aws_client.s3.put_bucket_tagging(Bucket=s3_bucket, Tagging=tag_set)
+        snapshot.match("put-bucket-tags", put_bucket_tags)
+
+        get_bucket_tags = aws_client.s3.get_bucket_tagging(Bucket=s3_bucket)
+        snapshot.match("get-bucket-tags", get_bucket_tags)
+
+        tag_set_2 = {"TagSet": [{"Key": "tag3", "Value": "tag3"}]}
+
+        put_bucket_tags = aws_client.s3.put_bucket_tagging(Bucket=s3_bucket, Tagging=tag_set_2)
+        snapshot.match("put-bucket-tags-overwrite", put_bucket_tags)
+
+        get_bucket_tags = aws_client.s3.get_bucket_tagging(Bucket=s3_bucket)
+        snapshot.match("get-bucket-tags-overwritten", get_bucket_tags)
+
+        delete_bucket_tags = aws_client.s3.delete_bucket_tagging(Bucket=s3_bucket)
+        snapshot.match("delete-bucket-tags", delete_bucket_tags)
+
+        # test idempotency of delete
+        aws_client.s3.delete_bucket_tagging(Bucket=s3_bucket)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_tagging(Bucket=s3_bucket)
+        e.match("NoSuchTagSet")
+
+        # setting an empty tag set is the same as effectively deleting the TagSet
+        tag_set_empty = {"TagSet": []}
+
+        put_bucket_tags = aws_client.s3.put_bucket_tagging(Bucket=s3_bucket, Tagging=tag_set_empty)
+        snapshot.match("put-bucket-tags-empty", put_bucket_tags)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_tagging(Bucket=s3_bucket)
+        e.match("NoSuchTagSet")
+
+    @markers.aws.validated
+    def test_bucket_tagging_exc(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        fake_bucket = f"fake-bucket-{short_uid()}-{short_uid()}"
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_tagging(Bucket=fake_bucket)
+        snapshot.match("get-no-bucket-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_bucket_tagging(Bucket=fake_bucket)
+        snapshot.match("delete-no-bucket-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_tagging(Bucket=fake_bucket, Tagging={"TagSet": []})
+        snapshot.match("put-no-bucket-tags", e.value.response)
+
+    @markers.aws.validated
+    def test_object_tagging_crud(self, s3_bucket, aws_client, snapshot):
+        object_key = "test-object-tagging"
+        put_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="test-tagging")
+        snapshot.match("put-object", put_object)
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-empty", get_bucket_tags)
+
+        tag_set = {"TagSet": [{"Key": "tag1", "Value": "tag1"}, {"Key": "tag2", "Value": ""}]}
+
+        put_bucket_tags = aws_client.s3.put_object_tagging(
+            Bucket=s3_bucket, Key=object_key, Tagging=tag_set
+        )
+        snapshot.match("put-object-tags", put_bucket_tags)
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags", get_bucket_tags)
+
+        tag_set_2 = {"TagSet": [{"Key": "tag3", "Value": "tag3"}]}
+
+        put_bucket_tags = aws_client.s3.put_object_tagging(
+            Bucket=s3_bucket, Key=object_key, Tagging=tag_set_2
+        )
+        snapshot.match("put-object-tags-overwrite", put_bucket_tags)
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-overwritten", get_bucket_tags)
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-obj-after-tags", get_object)
+
+        delete_bucket_tags = aws_client.s3.delete_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("delete-object-tags", delete_bucket_tags)
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-deleted", get_bucket_tags)
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-obj-after-tags-deleted", get_object)
+
+    @markers.aws.validated
+    def test_object_tagging_exc(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        snapshot.add_transformer(snapshot.transform.regex(s3_bucket, replacement="<bucket:1>"))
+        fake_bucket = f"fake-bucket-{short_uid()}-{short_uid()}"
+        fake_key = "fake-key"
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_tagging(Bucket=fake_bucket, Key=fake_key)
+        snapshot.match("get-no-bucket-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object_tagging(Bucket=fake_bucket, Key=fake_key)
+        snapshot.match("delete-no-bucket-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_tagging(
+                Bucket=fake_bucket, Tagging={"TagSet": []}, Key=fake_key
+            )
+        snapshot.match("put-no-bucket-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=fake_key)
+        snapshot.match("get-no-key-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object_tagging(Bucket=s3_bucket, Key=fake_key)
+        snapshot.match("delete-no-key-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_tagging(Bucket=s3_bucket, Tagging={"TagSet": []}, Key=fake_key)
+        snapshot.match("put-no-key-tags", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            tagging = "key1=val1&key1=val2"
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=fake_key, Body="", Tagging=tagging)
+        snapshot.match("put-obj-duplicate-tagging", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            tagging = "key1=val1,key2=val2"
+            aws_client.s3.put_object(Bucket=s3_bucket, Key=fake_key, Body="", Tagging=tagging)
+        snapshot.match("put-obj-wrong-format", e.value.response)
+
+    @markers.aws.validated
+    def test_object_tagging_versioned(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        object_key = "test-version-tagging"
+        version_ids = []
+        for i in range(2):
+            put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body=f"test-{i}")
+            snapshot.match(f"put-obj-{i}", put_obj)
+            version_ids.append(put_obj["VersionId"])
+
+        version_id_1, version_id_2 = version_ids
+
+        tag_set_2 = {"TagSet": [{"Key": "tag3", "Value": "tag3"}]}
+
+        # test without specifying a VersionId
+        put_bucket_tags = aws_client.s3.put_object_tagging(
+            Bucket=s3_bucket, Key=object_key, Tagging=tag_set_2
+        )
+        snapshot.match("put-object-tags-current-version", put_bucket_tags)
+        assert put_bucket_tags["VersionId"] == version_id_2
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-current-version", get_bucket_tags)
+
+        tag_set_2 = {"TagSet": [{"Key": "tag1", "Value": "tag1"}]}
+        # test by specifying a VersionId to Version1
+        put_bucket_tags = aws_client.s3.put_object_tagging(
+            Bucket=s3_bucket, Key=object_key, VersionId=version_id_1, Tagging=tag_set_2
+        )
+        snapshot.match("put-object-tags-previous-version", put_bucket_tags)
+        assert put_bucket_tags["VersionId"] == version_id_1
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(
+            Bucket=s3_bucket, Key=object_key, VersionId=version_id_1
+        )
+        snapshot.match("get-object-tags-previous-version", get_bucket_tags)
+
+        # Put a DeleteMarker on top of the stack
+        delete_current = aws_client.s3.delete_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("put-delete-marker", delete_current)
+
+        # test to put/get tagging on a DeleteMarker
+        put_bucket_tags = aws_client.s3.put_object_tagging(
+            Bucket=s3_bucket, Key=object_key, VersionId=version_id_1, Tagging=tag_set_2
+        )
+        snapshot.match("put-object-tags-delete-marker", put_bucket_tags)
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(
+            Bucket=s3_bucket, Key=object_key, VersionId=version_id_1
+        )
+        snapshot.match("get-object-tags-delete-marker", get_bucket_tags)
+
+    @markers.aws.validated
+    def test_put_object_with_tags(self, s3_bucket, aws_client, snapshot):
+        object_key = "test-put-object-tagging"
+        # tagging must be a URL encoded string directly
+        tag_set = "tag1=tag1&tag2=tag2&tag="
+        put_object = aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=object_key, Body="test-tagging", Tagging=tag_set
+        )
+        snapshot.match("put-object", put_object)
+
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        # only TagSet set with the query string format are unordered, so not using the SortingTransformer
+        get_object_tags["TagSet"].sort(key=itemgetter("Key"))
+        snapshot.match("get-object-tags", get_object_tags)
+
+        tag_set_2 = {"TagSet": [{"Key": "tag3", "Value": "tag3"}]}
+        put_bucket_tags = aws_client.s3.put_object_tagging(
+            Bucket=s3_bucket, Key=object_key, Tagging=tag_set_2
+        )
+        snapshot.match("put-object-tags", put_bucket_tags)
+
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-override", get_object_tags)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-obj", head_object)
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-obj", get_object)
+
+        tagging = "wrongquery&wrongagain"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="", Tagging=tagging)
+
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        # only TagSet set with the query string format are unordered, so not using the SortingTransformer
+        get_object_tags["TagSet"].sort(key=itemgetter("Key"))
+        snapshot.match("get-object-tags-wrong-format-qs", get_object_tags)
+
+        tagging = "key1&&&key2"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="", Tagging=tagging)
+
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-wrong-format-qs-2", get_object_tags)
+
+    @markers.aws.validated
+    def test_object_tags_delete_or_overwrite_object(self, s3_bucket, aws_client, snapshot):
+        # verify that tags aren't kept after object deletion
+        object_key = "test-put-object-tagging-kept"
+        aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=object_key, Body="create", Tagging="tag1=val1"
+        )
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-after-creation", get_bucket_tags)
+
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="overwrite")
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-after-overwrite", get_bucket_tags)
+
+        # put some tags to verify they won't be kept
+        tag_set = {"TagSet": [{"Key": "tag3", "Value": "tag3"}]}
+        aws_client.s3.put_object_tagging(Bucket=s3_bucket, Key=object_key, Tagging=tag_set)
+
+        aws_client.s3.delete_object(Bucket=s3_bucket, Key=object_key)
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="recreate")
+
+        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-after-recreation", get_bucket_tags)
+
+    @markers.aws.validated
+    def test_tagging_validation(self, s3_bucket, aws_client, snapshot):
+        object_key = "tagging-validation"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body=b"")
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_tagging(
+                Bucket=s3_bucket,
+                Tagging={
+                    "TagSet": [
+                        {"Key": "Key1", "Value": "Val1"},
+                        {"Key": "Key1", "Value": "Val1"},
+                    ]
+                },
+            )
+        snapshot.match("put-bucket-tags-duplicate-keys", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_tagging(
+                Bucket=s3_bucket,
+                Tagging={
+                    "TagSet": [
+                        {"Key": "Key1,Key2", "Value": "Val1"},
+                    ]
+                },
+            )
+        snapshot.match("put-bucket-tags-invalid-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_tagging(
+                Bucket=s3_bucket,
+                Tagging={
+                    "TagSet": [
+                        {"Key": "Key1", "Value": "Val1,Val2"},
+                    ]
+                },
+            )
+        snapshot.match("put-bucket-tags-invalid-value", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_tagging(
+                Bucket=s3_bucket,
+                Tagging={
+                    "TagSet": [
+                        {"Key": "aws:prefixed", "Value": "Val1"},
+                    ]
+                },
+            )
+        snapshot.match("put-bucket-tags-aws-prefixed", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_tagging(
+                Bucket=s3_bucket,
+                Key=object_key,
+                Tagging={
+                    "TagSet": [
+                        {"Key": "Key1", "Value": "Val1"},
+                        {"Key": "Key1", "Value": "Val1"},
+                    ]
+                },
+            )
+
+        snapshot.match("put-object-tags-duplicate-keys", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_tagging(
+                Bucket=s3_bucket,
+                Key=object_key,
+                Tagging={"TagSet": [{"Key": "Key1,Key2", "Value": "Val1"}]},
+            )
+
+        snapshot.match("put-object-tags-invalid-field", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_tagging(
+                Bucket=s3_bucket,
+                Key=object_key,
+                Tagging={"TagSet": [{"Key": "aws:prefixed", "Value": "Val1"}]},
+            )
+        snapshot.match("put-object-tags-aws-prefixed", e.value.response)
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3ObjectLock:
+    @markers.aws.validated
+    def test_put_object_lock_configuration_on_existing_bucket(
+        self, s3_bucket, aws_client, snapshot
+    ):
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={
+                    "ObjectLockEnabled": "Enabled",
+                },
+            )
+        snapshot.match("put-object-lock-existing-bucket-enabled", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={
+                    "Rule": {
+                        "DefaultRetention": {
+                            "Mode": "GOVERNANCE",
+                            "Days": 1,
+                        }
+                    }
+                },
+            )
+        snapshot.match("put-object-lock-existing-bucket-rule", e.value.response)
+
+    @markers.aws.validated
+    def test_get_put_object_lock_configuration(self, s3_create_bucket, aws_client, snapshot):
+        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+
+        get_lock_config = aws_client.s3.get_object_lock_configuration(Bucket=s3_bucket)
+        snapshot.match("get-lock-config-start", get_lock_config)
+
+        put_lock_config = aws_client.s3.put_object_lock_configuration(
+            Bucket=s3_bucket,
+            ObjectLockConfiguration={
+                "ObjectLockEnabled": "Enabled",
+                "Rule": {
+                    "DefaultRetention": {
+                        "Mode": "GOVERNANCE",
+                        "Days": 1,
+                    }
+                },
+            },
+        )
+        snapshot.match("put-lock-config", put_lock_config)
+
+        get_lock_config = aws_client.s3.get_object_lock_configuration(Bucket=s3_bucket)
+        snapshot.match("get-lock-config", get_lock_config)
+
+        put_lock_config_enabled = aws_client.s3.put_object_lock_configuration(
+            Bucket=s3_bucket,
+            ObjectLockConfiguration={
+                "ObjectLockEnabled": "Enabled",
+            },
+        )
+        snapshot.match("put-lock-config-enabled", put_lock_config_enabled)
+
+        get_lock_config = aws_client.s3.get_object_lock_configuration(Bucket=s3_bucket)
+        snapshot.match("get-lock-config-only-enabled", get_lock_config)
+
+    @markers.aws.validated
+    def test_put_object_lock_configuration_exc(self, s3_create_bucket, aws_client, snapshot):
+        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={
+                    "Rule": {
+                        "DefaultRetention": {
+                            "Mode": "GOVERNANCE",
+                            "Days": 1,
+                        }
+                    }
+                },
+            )
+        snapshot.match("put-lock-config-no-enabled", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket, ObjectLockConfiguration={}
+            )
+        snapshot.match("put-lock-config-empty", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={"ObjectLockEnabled": "Enabled", "Rule": {}},
+            )
+        snapshot.match("put-lock-config-empty-rule", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={
+                    "ObjectLockEnabled": "Enabled",
+                    "Rule": {"DefaultRetention": {}},
+                },
+            )
+        snapshot.match("put-lock-config-empty-retention", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={
+                    "ObjectLockEnabled": "Enabled",
+                    "Rule": {
+                        "DefaultRetention": {
+                            "Mode": "GOVERNANCE",
+                        }
+                    },
+                },
+            )
+        snapshot.match("put-lock-config-no-days", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={
+                    "ObjectLockEnabled": "Enabled",
+                    "Rule": {
+                        "DefaultRetention": {
+                            "Mode": "GOVERNANCE",
+                            "Days": 1,
+                            "Years": 1,
+                        }
+                    },
+                },
+            )
+        snapshot.match("put-lock-config-both-days-years", e.value.response)
+
+    @markers.aws.validated
+    def test_get_object_lock_configuration_exc(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_lock_configuration(Bucket=s3_bucket)
+        snapshot.match("get-lock-config-no-enabled", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_lock_configuration(Bucket=f"fake-bucket-ls-{long_uid()}")
+        snapshot.match("get-lock-config-bucket-not-exists", e.value.response)
+
+    @markers.aws.validated
+    def test_disable_versioning_on_locked_bucket(self, s3_create_bucket, aws_client, snapshot):
+        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_versioning(
+                Bucket=s3_bucket,
+                VersioningConfiguration={
+                    "Status": "Suspended",
+                },
+            )
+        snapshot.match("disable-versioning-on-locked-bucket", e.value.response)
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3BucketOwnershipControls:
+    @markers.aws.validated
+    def test_crud_bucket_ownership_controls(self, s3_create_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        default_s3_bucket = s3_create_bucket()
+        get_default_ownership = aws_client.s3.get_bucket_ownership_controls(
+            Bucket=default_s3_bucket
+        )
+        snapshot.match("default-ownership", get_default_ownership)
+
+        put_ownership = aws_client.s3.put_bucket_ownership_controls(
+            Bucket=default_s3_bucket,
+            OwnershipControls={"Rules": [{"ObjectOwnership": "ObjectWriter"}]},
+        )
+        snapshot.match("put-ownership", put_ownership)
+
+        get_ownership = aws_client.s3.get_bucket_ownership_controls(Bucket=default_s3_bucket)
+        snapshot.match("get-ownership", get_ownership)
+
+        delete_ownership = aws_client.s3.delete_bucket_ownership_controls(Bucket=default_s3_bucket)
+        snapshot.match("delete-ownership", delete_ownership)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_ownership_controls(Bucket=default_s3_bucket)
+        snapshot.match("get-ownership-after-delete", e.value.response)
+
+        delete_idempotent = aws_client.s3.delete_bucket_ownership_controls(Bucket=default_s3_bucket)
+        snapshot.match("delete-ownership-after-delete", delete_idempotent)
+
+        s3_bucket = s3_create_bucket(ObjectOwnership="BucketOwnerPreferred")
+        get_ownership_at_creation = aws_client.s3.get_bucket_ownership_controls(Bucket=s3_bucket)
+        snapshot.match("get-ownership-at-creation", get_ownership_at_creation)
+
+    @markers.aws.validated
+    def test_bucket_ownership_controls_exc(self, s3_create_bucket, aws_client, snapshot):
+        default_s3_bucket = s3_create_bucket()
+        get_default_ownership = aws_client.s3.get_bucket_ownership_controls(
+            Bucket=default_s3_bucket
+        )
+        snapshot.match("default-ownership", get_default_ownership)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_ownership_controls(
+                Bucket=default_s3_bucket,
+                OwnershipControls={
+                    "Rules": [
+                        {"ObjectOwnership": "BucketOwnerPreferred"},
+                        {"ObjectOwnership": "ObjectWriter"},
+                    ]
+                },
+            )
+        snapshot.match("put-ownership-multiple-rules", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_ownership_controls(
+                Bucket=default_s3_bucket,
+                OwnershipControls={"Rules": [{"ObjectOwnership": "RandomValue"}]},
+            )
+        snapshot.match("put-ownership-wrong-value", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_ownership_controls(
+                Bucket=default_s3_bucket, OwnershipControls={"Rules": []}
+            )
+        snapshot.match("put-ownership-empty-rule", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket(ObjectOwnership="RandomValue")
+        snapshot.match("ownership-wrong-value-at-creation", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket(ObjectOwnership="")
+        snapshot.match("ownership-non-value-at-creation", e.value.response)
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3PublicAccessBlock:
+    @markers.aws.validated
+    def test_crud_public_access_block(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        get_public_access_block = aws_client.s3.get_public_access_block(Bucket=s3_bucket)
+        snapshot.match("get-default-public-access-block", get_public_access_block)
+
+        put_public_access_block = aws_client.s3.put_public_access_block(
+            Bucket=s3_bucket,
+            PublicAccessBlockConfiguration={
+                "BlockPublicAcls": False,
+                "IgnorePublicAcls": False,
+                "BlockPublicPolicy": False,
+            },
+        )
+        snapshot.match("put-public-access-block", put_public_access_block)
+
+        get_public_access_block = aws_client.s3.get_public_access_block(Bucket=s3_bucket)
+        snapshot.match("get-public-access-block", get_public_access_block)
+
+        delete_public_access_block = aws_client.s3.delete_public_access_block(Bucket=s3_bucket)
+        snapshot.match("delete-public-access-block", delete_public_access_block)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_public_access_block(Bucket=s3_bucket)
+        snapshot.match("get-public-access-block-after-delete", e.value.response)
+
+        delete_public_access_block = aws_client.s3.delete_public_access_block(Bucket=s3_bucket)
+        snapshot.match("idempotent-delete-public-access-block", delete_public_access_block)
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3BucketPolicy:
+    @markers.aws.validated
+    def test_bucket_policy_crud(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("Resource"))
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        # delete the OwnershipControls so that we can set a Policy
+        aws_client.s3.delete_bucket_ownership_controls(Bucket=s3_bucket)
+        aws_client.s3.delete_public_access_block(Bucket=s3_bucket)
+
+        # get the default Policy, should raise
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("get-bucket-default-policy", e.value.response)
+
+        # put bucket policy
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "s3:GetObject",
+                    "Effect": "Allow",
+                    "Resource": f"arn:aws:s3:::{s3_bucket}/*",
+                    "Principal": {"AWS": "*"},
+                }
+            ],
+        }
+        response = aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy=json.dumps(policy))
+        snapshot.match("put-bucket-policy", response)
+
+        # retrieve and check policy config
+        response = aws_client.s3.get_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("get-bucket-policy", response)
+        assert policy == json.loads(response["Policy"])
+
+        response = aws_client.s3.delete_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("delete-bucket-policy", response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("get-bucket-policy-after-delete", e.value.response)
+
+    @markers.aws.validated
+    def test_bucket_policy_exc(self, s3_bucket, snapshot, aws_client):
+        # delete the OwnershipControls so that we can set a Policy
+        aws_client.s3.delete_bucket_ownership_controls(Bucket=s3_bucket)
+        aws_client.s3.delete_public_access_block(Bucket=s3_bucket)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy="")
+        snapshot.match("put-empty-bucket-policy", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy="invalid json")
+        snapshot.match("put-bucket-policy-randomstring", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy="{}")
+        snapshot.match("put-bucket-policy-empty-json", e.value.response)
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3BucketAccelerateConfiguration:
+    @markers.aws.validated
+    def test_bucket_acceleration_configuration_crud(self, s3_bucket, snapshot, aws_client):
+        get_default_config = aws_client.s3.get_bucket_accelerate_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-default-accelerate-config", get_default_config)
+
+        response = aws_client.s3.put_bucket_accelerate_configuration(
+            Bucket=s3_bucket,
+            AccelerateConfiguration={"Status": "Enabled"},
+        )
+        snapshot.match("put-bucket-accelerate-config-enabled", response)
+
+        response = aws_client.s3.get_bucket_accelerate_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-accelerate-config-enabled", response)
+
+        response = aws_client.s3.put_bucket_accelerate_configuration(
+            Bucket=s3_bucket,
+            AccelerateConfiguration={"Status": "Suspended"},
+        )
+        snapshot.match("put-bucket-accelerate-config-disabled", response)
+
+        response = aws_client.s3.get_bucket_accelerate_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-accelerate-config-disabled", response)
+
+    @markers.aws.validated
+    def test_bucket_acceleration_configuration_exc(
+        self, s3_bucket, s3_create_bucket, snapshot, aws_client
+    ):
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_accelerate_configuration(
+                Bucket=s3_bucket,
+                AccelerateConfiguration={"Status": "enabled"},
+            )
+        snapshot.match("put-bucket-accelerate-config-lowercase", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_accelerate_configuration(
+                Bucket=s3_bucket,
+                AccelerateConfiguration={"Status": "random"},
+            )
+        snapshot.match("put-bucket-accelerate-config-random", e.value.response)
+
+        bucket_with_name = s3_create_bucket(Bucket=f"test.bucket.{long_uid()}")
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_accelerate_configuration(
+                Bucket=bucket_with_name,
+                AccelerateConfiguration={"Status": "random"},
+            )
+        snapshot.match("put-bucket-accelerate-config-dot-bucket", e.value.response)

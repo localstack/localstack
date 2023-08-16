@@ -105,6 +105,7 @@ class ContinueAsNewWorkflowExecutionFailedCause(str):
 
 class DecisionTaskTimeoutType(str):
     START_TO_CLOSE = "START_TO_CLOSE"
+    SCHEDULE_TO_START = "SCHEDULE_TO_START"
 
 
 class DecisionType(str):
@@ -891,6 +892,8 @@ class DecisionTaskCompletedEventAttributes(TypedDict, total=False):
     executionContext: Optional[Data]
     scheduledEventId: EventId
     startedEventId: EventId
+    taskList: Optional[TaskList]
+    taskListScheduleToStartTimeout: Optional[DurationInSecondsOptional]
 
 
 class DecisionTaskStartedEventAttributes(TypedDict, total=False):
@@ -902,6 +905,7 @@ class DecisionTaskScheduledEventAttributes(TypedDict, total=False):
     taskList: TaskList
     taskPriority: Optional[TaskPriority]
     startToCloseTimeout: Optional[DurationInSecondsOptional]
+    scheduleToStartTimeout: Optional[DurationInSecondsOptional]
 
 
 class WorkflowExecutionCancelRequestedEventAttributes(TypedDict, total=False):
@@ -1310,6 +1314,8 @@ class RespondDecisionTaskCompletedInput(ServiceRequest):
     taskToken: TaskToken
     decisions: Optional[DecisionList]
     executionContext: Optional[Data]
+    taskList: Optional[TaskList]
+    taskListScheduleToStartTimeout: Optional[DurationInSecondsOptional]
 
 
 class Run(TypedDict, total=False):
@@ -1733,6 +1739,8 @@ class SwfApi:
         task_token: TaskToken,
         decisions: DecisionList = None,
         execution_context: Data = None,
+        task_list: TaskList = None,
+        task_list_schedule_to_start_timeout: DurationInSecondsOptional = None,
     ) -> None:
         raise NotImplementedError
 
