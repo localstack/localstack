@@ -326,9 +326,6 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         self._filesystem: dict[BucketName, BucketTemporaryFileSystem] = defaultdict(
             lambda: {"keys": {}, "multiparts": {}}
         )
-        # this allows us to map bucket names to temporary directory name, to not have a flat structure inside the
-        # temporary directory used by SpooledTemporaryFile
-        self._directory_mapping: dict[str, str] = {}
         # namespace the EphemeralS3ObjectStore artifacts under a single root directory, under gettempdir() if not
         # provided
         if not root_directory:
@@ -348,9 +345,7 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         """
         key = self._key_from_s3_object(s3_object)
         if not (file := self._get_object_file(bucket, key)):
-            if not (bucket_tmp_dir := self._directory_mapping.get(bucket)):
-                bucket_tmp_dir = self._create_bucket_directory(bucket)
-
+            bucket_tmp_dir = os.path.join(self.root_directory, bucket)
             file = LockedSpooledTemporaryFile(dir=bucket_tmp_dir, max_size=S3_MAX_FILE_SIZE_BYTES)
             self._filesystem[bucket]["keys"][key] = file
 
@@ -403,22 +398,23 @@ class EphemeralS3ObjectStore(S3ObjectStore):
     def get_multipart(
         self, bucket: BucketName, s3_multipart: S3Multipart
     ) -> EphemeralS3StoredMultipart:
-        upload_key = self._resolve_upload_directory(bucket, s3_multipart.id)
         # We need to lock this block, because we could have concurrent requests trying to access the same multipart
         # and both creating it at the same time, returning 2 different entities and overriding one
         with self._lock_multipart_create:
-            if not (multipart := self._get_multipart(bucket, upload_key)):
+            if not (multipart := self._get_multipart(bucket, s3_multipart.id)):
                 upload_dir = self._create_upload_directory(bucket, s3_multipart.id)
                 multipart = EphemeralS3StoredMultipart(self, bucket, s3_multipart, upload_dir)
-                self._filesystem[bucket]["multiparts"][upload_key] = multipart
+                self._filesystem[bucket]["multiparts"][s3_multipart.id] = multipart
 
         return multipart
 
     def remove_multipart(self, bucket: BucketName, s3_multipart: S3Multipart):
         if multiparts := self._filesystem.get(bucket, {}).get("multiparts", {}):
-            upload_key = self._resolve_upload_directory(bucket, s3_multipart.id)
-            if multipart := multiparts.pop(upload_key, None):
+            if multipart := multiparts.pop(s3_multipart.id, None):
                 multipart.close()
+
+    def create_bucket(self, bucket: BucketName):
+        mkdir(os.path.join(self.root_directory, bucket))
 
     def delete_bucket(self, bucket: BucketName):
         if self._filesystem.pop(bucket, None):
@@ -451,29 +447,6 @@ class EphemeralS3ObjectStore(S3ObjectStore):
     def _get_multipart(self, bucket: BucketName, upload_key: str) -> S3StoredMultipart | None:
         return self._filesystem.get(bucket, {}).get("multiparts", {}).get(upload_key)
 
-    @staticmethod
-    def _resolve_upload_directory(bucket_name: BucketName, upload_id: MultipartUploadId) -> str:
-        return f"{bucket_name}/{upload_id}"
-
-    def _create_bucket_directory(self, bucket_name: BucketName) -> str:
-        """
-        Create a temporary directory representing a bucket
-        :param bucket_name
-        """
-        tmp_dir = os.path.join(self.root_directory, bucket_name)
-        mkdir(tmp_dir)
-        self._directory_mapping[bucket_name] = tmp_dir
-        return tmp_dir
-
-    def _delete_bucket_directory(self, bucket_name: BucketName):
-        """
-        Delete the temporary directory representing a bucket
-        :param bucket_name
-        """
-        tmp_dir = self._directory_mapping.pop(bucket_name, None)
-        if tmp_dir:
-            rmtree(tmp_dir, ignore_errors=True)
-
     def _create_upload_directory(
         self, bucket_name: BucketName, upload_id: MultipartUploadId
     ) -> str:
@@ -483,13 +456,8 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         :param upload_id: the multipart upload id
         :return: the full part of the upload, where the parts will live
         """
-        bucket_tmp_dir = self._directory_mapping.get(bucket_name)
-        if not bucket_tmp_dir:
-            bucket_tmp_dir = self._create_bucket_directory(bucket_name)
-
-        upload_tmp_dir = os.path.join(bucket_tmp_dir, upload_id)
+        upload_tmp_dir = os.path.join(self.root_directory, bucket_name, upload_id)
         mkdir(upload_tmp_dir)
-        self._directory_mapping[f"{bucket_name}/{upload_id}"] = upload_tmp_dir
         return upload_tmp_dir
 
     def _delete_upload_directory(self, bucket_name: BucketName, upload_id: MultipartUploadId):
@@ -499,6 +467,6 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         :param upload_id: the multipart upload id
         :return:
         """
-        tmp_dir = self._directory_mapping.pop(f"{bucket_name}/{upload_id}", None)
-        if tmp_dir:
-            rmtree(tmp_dir, ignore_errors=True)
+        upload_tmp_dir = os.path.join(self.root_directory, bucket_name, upload_id)
+        if upload_tmp_dir:
+            rmtree(upload_tmp_dir, ignore_errors=True)

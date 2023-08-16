@@ -1083,16 +1083,16 @@ class TestS3TemporaryStorageBackend:
         fake_multipart = S3Multipart(key="test-multipart")
 
         s3_stored_multipart = temp_storage_backend.get_multipart("test-bucket", fake_multipart)
-        parts_numbers = []
+        parts = []
         stored_parts = []
         for i in range(1, 6):
             fake_s3_part = S3Part(part_number=i)
             stored_part = s3_stored_multipart.open(fake_s3_part)
             stored_part.write(BytesIO(b"abc"))
-            parts_numbers.append(i)
+            parts.append(fake_s3_part)
             stored_parts.append(stored_part)
 
-        s3_stored_object = s3_stored_multipart.complete_multipart(parts=parts_numbers)
+        s3_stored_object = s3_stored_multipart.complete_multipart(parts=parts)
         temp_storage_backend.remove_multipart("test-bucket", fake_multipart)
 
         assert s3_stored_object.read() == b"abc" * 5
@@ -1101,3 +1101,28 @@ class TestS3TemporaryStorageBackend:
 
         temp_storage_backend.close()
         assert s3_stored_object.file.closed
+
+    def test_concurrent_file_access(self, tmpdir):
+        temp_storage_backend = EphemeralS3ObjectStore(root_directory=tmpdir)
+        fake_object = S3Object(key="test-key")
+        s3_stored_object_1 = temp_storage_backend.open("test-bucket", fake_object)
+        s3_stored_object_2 = temp_storage_backend.open("test-bucket", fake_object)
+
+        s3_stored_object_1.write(BytesIO(b"abc"))
+
+        assert s3_stored_object_1.read() == b"abc"
+
+        # assert that another StoredObject moving the position does not influence the other object
+        s3_stored_object_1.seek(1)
+        s3_stored_object_2.seek(2)
+        assert s3_stored_object_1.read() == b"bc"
+        assert s3_stored_object_2.read() == b"c"
+
+        s3_stored_object_1.seek(0)
+        assert s3_stored_object_1.read(1) == b"a"
+
+        temp_storage_backend.remove("test-bucket", fake_object)
+        assert s3_stored_object_1.file.closed
+        assert s3_stored_object_2.file.closed
+
+        temp_storage_backend.close()
