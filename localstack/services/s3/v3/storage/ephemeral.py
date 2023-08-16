@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import os
 import threading
 from collections import defaultdict
 from io import BytesIO
@@ -14,6 +15,7 @@ from localstack.aws.api.s3 import BucketName, MultipartUploadId, PartNumber
 from localstack.services.s3.constants import S3_CHUNK_SIZE
 from localstack.services.s3.utils import ChecksumHash, ObjectRange, get_s3_checksum
 from localstack.services.s3.v3.models import S3Multipart, S3Object, S3Part
+from localstack.utils.files import mkdir
 
 from .core import LimitedStream, S3ObjectStore, S3StoredMultipart, S3StoredObject
 
@@ -251,7 +253,7 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         if stored_part:
             stored_part.close()
 
-    def complete_multipart(self, parts: list[PartNumber]) -> EphemeralS3StoredObject:
+    def complete_multipart(self, parts: list[S3Part]) -> EphemeralS3StoredObject:
         """
         Takes a list of parts numbers, and will iterate over it to assemble all parts together into a single
         EphemeralS3StoredObject containing all those parts.
@@ -259,8 +261,8 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         :return: the resulting EphemeralS3StoredObject
         """
         s3_stored_object = self._s3_store.open(self.bucket, self.s3_multipart.object)
-        for part_number in parts:
-            stored_part = self.parts.get(part_number)
+        for s3_part in parts:
+            stored_part = self.parts.get(s3_part.part_number)
             s3_stored_object.append(stored_part)
 
         return s3_stored_object
@@ -331,6 +333,7 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         # provided
         if not root_directory:
             root_directory = mkdtemp()
+
         self.root_directory = root_directory
         self._lock_multipart_create = threading.RLock()
 
@@ -369,10 +372,6 @@ class EphemeralS3ObjectStore(S3ObjectStore):
                 file = keys.pop(key, None)
                 if file:
                     file.close()
-
-        # if the bucket is now empty after removing, we can delete the directory
-        if not keys and not self._filesystem.get(bucket, {}).get("multiparts"):
-            self._delete_bucket_directory(bucket)
 
     def copy(
         self,
@@ -421,6 +420,10 @@ class EphemeralS3ObjectStore(S3ObjectStore):
             if multipart := multiparts.pop(upload_key, None):
                 multipart.close()
 
+    def delete_bucket(self, bucket: BucketName):
+        if self._filesystem.pop(bucket, None):
+            rmtree(os.path.join(self.root_directory, bucket))
+
     def close(self):
         """
         Close the Store and clean up all underlying objecs. This will effectively remove all data from the filesystem
@@ -457,7 +460,8 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         Create a temporary directory representing a bucket
         :param bucket_name
         """
-        tmp_dir = mkdtemp(dir=self.root_directory)
+        tmp_dir = os.path.join(self.root_directory, bucket_name)
+        mkdir(tmp_dir)
         self._directory_mapping[bucket_name] = tmp_dir
         return tmp_dir
 
@@ -466,7 +470,7 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         Delete the temporary directory representing a bucket
         :param bucket_name
         """
-        tmp_dir = self._directory_mapping.get(bucket_name)
+        tmp_dir = self._directory_mapping.pop(bucket_name, None)
         if tmp_dir:
             rmtree(tmp_dir, ignore_errors=True)
 
@@ -481,10 +485,10 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         """
         bucket_tmp_dir = self._directory_mapping.get(bucket_name)
         if not bucket_tmp_dir:
-            self._create_bucket_directory(bucket_name)
-            bucket_tmp_dir = self._directory_mapping.get(bucket_name)
+            bucket_tmp_dir = self._create_bucket_directory(bucket_name)
 
-        upload_tmp_dir = mkdtemp(dir=bucket_tmp_dir)
+        upload_tmp_dir = os.path.join(bucket_tmp_dir, upload_id)
+        mkdir(upload_tmp_dir)
         self._directory_mapping[f"{bucket_name}/{upload_id}"] = upload_tmp_dir
         return upload_tmp_dir
 
@@ -495,6 +499,6 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         :param upload_id: the multipart upload id
         :return:
         """
-        tmp_dir = self._directory_mapping.get(f"{bucket_name}/{upload_id}")
+        tmp_dir = self._directory_mapping.pop(f"{bucket_name}/{upload_id}", None)
         if tmp_dir:
             rmtree(tmp_dir, ignore_errors=True)

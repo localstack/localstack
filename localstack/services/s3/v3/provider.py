@@ -279,6 +279,7 @@ from localstack.services.s3.validation import (
     validate_website_configuration,
 )
 from localstack.services.s3.website_hosting import register_website_hosting_routes
+from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws.arns import s3_bucket_name
 from localstack.utils.strings import short_uid, to_str
 
@@ -288,14 +289,13 @@ STORAGE_CLASSES = get_class_attrs_from_spec_class(StorageClass)
 SSE_ALGORITHMS = get_class_attrs_from_spec_class(ServerSideEncryption)
 OBJECT_OWNERSHIPS = get_class_attrs_from_spec_class(ObjectOwnership)
 
-# TODO: pre-signed URLS -> REMAP parameters from querystring to headers???
-#  create a handler which handle pre-signed and remap before parsing the request!
+DEFAULT_S3_TMP_DIR = "/tmp/localstack-s3-storage"
 
 
 class S3Provider(S3Api, ServiceLifecycleHook):
     def __init__(self) -> None:
         super().__init__()
-        self._storage_backend = EphemeralS3ObjectStore()
+        self._storage_backend = EphemeralS3ObjectStore(DEFAULT_S3_TMP_DIR)
         self._notification_dispatcher = NotificationDispatcher()
         self._cors_handler = S3CorsHandler(BucketCorsIndex())
 
@@ -309,8 +309,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         modify_service_response.append(S3Provider.service, s3_presigned_url_response_handler)
         register_website_hosting_routes(router=ROUTER)
 
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(s3_stores)
+        visitor.visit(AssetDirectory(self._storage_backend.root_directory))
+
+    def on_before_state_save(self):
+        self._storage_backend.flush()
+
     def on_before_stop(self):
         self._notification_dispatcher.shutdown()
+        self._storage_backend.close()
 
     def _notify(
         self,
@@ -459,6 +467,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store.buckets[bucket_name] = s3_bucket
         store.global_bucket_map[bucket_name] = s3_bucket.bucket_account_id
         self._cors_handler.invalidate_cache()
+        self._storage_backend.create_bucket(bucket_name)
 
         # Location is always contained in response -> full url for LocationConstraint outside us-east-1
         location = (
@@ -490,6 +499,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store.global_bucket_map.pop(bucket)
         self._cors_handler.invalidate_cache()
         self._expiration_cache.pop(bucket, None)
+        # clean up the storage backend
+        self._storage_backend.delete_bucket(bucket)
 
     def list_buckets(
         self,
@@ -1987,7 +1998,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_multipart.complete_multipart(parts)
 
         stored_multipart = self._storage_backend.get_multipart(bucket, s3_multipart)
-        stored_multipart.complete_multipart(parts_numbers)
+        stored_multipart.complete_multipart(
+            [s3_multipart.parts.get(part_number) for part_number in parts_numbers]
+        )
 
         s3_object = s3_multipart.object
 

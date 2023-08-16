@@ -181,6 +181,15 @@ class S3ObjectStore(abc.ABC):
     def remove_multipart(self, bucket: BucketName, s3_multipart: S3Multipart):
         pass
 
+    def create_bucket(self, bucket: BucketName):
+        pass
+
+    def delete_bucket(self, bucket: BucketName):
+        pass
+
+    def flush(self):
+        pass
+
     @abc.abstractmethod
     def close(self):
         pass
