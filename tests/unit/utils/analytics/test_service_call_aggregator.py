@@ -5,6 +5,7 @@ from typing import List
 import dateutil.parser
 import pytest
 
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.utils import analytics
 from localstack.utils.analytics.events import Event
 from localstack.utils.analytics.service_request_aggregator import (
@@ -17,10 +18,20 @@ from localstack.utils.analytics.service_request_aggregator import (
 def test_whitebox_create_analytics_payload():
     agg = ServiceRequestAggregator()
 
-    agg.add_request(ServiceRequestInfo("test1", "test", 200, None))
-    agg.add_request(ServiceRequestInfo("test1", "test", 200, None))
-    agg.add_request(ServiceRequestInfo("test2", "test", 404, "ResourceNotFound"))
-    agg.add_request(ServiceRequestInfo("test3", "test", 200, None))
+    agg.add_request(
+        ServiceRequestInfo("test1", "test", 200, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, None)
+    )
+    agg.add_request(
+        ServiceRequestInfo("test1", "test", 200, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, None)
+    )
+    agg.add_request(
+        ServiceRequestInfo(
+            "test2", "test", 404, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, "ResourceNotFound"
+        )
+    )
+    agg.add_request(
+        ServiceRequestInfo("test3", "test", 200, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME, None)
+    )
 
     payload = agg._create_analytics_payload()
 
@@ -55,8 +66,12 @@ def test_whitebox_flush():
     agg = ServiceRequestAggregator(flush_interval=0.1)
     agg._emit_payload = mock_emit_payload
 
-    agg.add_request(ServiceRequestInfo("test1", "test", 200))
-    agg.add_request(ServiceRequestInfo("test1", "test", 200))
+    agg.add_request(
+        ServiceRequestInfo("test1", "test", 200, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+    )
+    agg.add_request(
+        ServiceRequestInfo("test1", "test", 200, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+    )
 
     assert len(agg.counter) == 1
 
@@ -80,19 +95,33 @@ def test_integration(monkeypatch):
 
     agg = ServiceRequestAggregator(flush_interval=1)
 
-    agg.add_request(ServiceRequestInfo("s3", "ListBuckets", 200))
-    agg.add_request(ServiceRequestInfo("s3", "CreateBucket", 200))
-    agg.add_request(ServiceRequestInfo("s3", "HeadBucket", 200))
-    agg.add_request(ServiceRequestInfo("s3", "HeadBucket", 200))
+    agg.add_request(
+        ServiceRequestInfo("s3", "ListBuckets", 200, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+    )
+    agg.add_request(
+        ServiceRequestInfo("s3", "CreateBucket", 200, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+    )
+    agg.add_request(
+        ServiceRequestInfo("s3", "HeadBucket", 200, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+    )
+    agg.add_request(
+        ServiceRequestInfo("s3", "HeadBucket", 200, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+    )
 
     agg.start()
     time.sleep(1.2)
 
     assert len(events) == 1, f"expected events to be flushed {events}"
 
-    agg.add_request(ServiceRequestInfo("s3", "HeadBucket", 404))
-    agg.add_request(ServiceRequestInfo("s3", "CreateBucket", 200))
-    agg.add_request(ServiceRequestInfo("s3", "HeadBucket", 200))
+    agg.add_request(
+        ServiceRequestInfo("s3", "HeadBucket", 404, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+    )
+    agg.add_request(
+        ServiceRequestInfo("s3", "CreateBucket", 200, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+    )
+    agg.add_request(
+        ServiceRequestInfo("s3", "HeadBucket", 200, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+    )
 
     assert len(events) == 1, f"did not expect events to be flushed {events}"
 

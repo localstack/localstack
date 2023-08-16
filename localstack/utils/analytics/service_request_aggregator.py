@@ -20,6 +20,8 @@ class ServiceRequestInfo(NamedTuple):
     service: str
     operation: str
     status_code: int
+    account_id: str
+    region_name: str
     err_type: Optional[str] = None
 
 

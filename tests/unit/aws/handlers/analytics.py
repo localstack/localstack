@@ -7,6 +7,7 @@ from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.aws.forwarder import create_aws_request_context
 from localstack.aws.handlers.analytics import ServiceRequestCounter
+from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.http import Response
 from localstack.utils.analytics.service_request_aggregator import ServiceRequestInfo
 
@@ -77,8 +78,16 @@ class TestServiceRequestCounter:
 
         aggregator.add_request.assert_has_calls(
             [
-                call(ServiceRequestInfo("s3", "ListBuckets", 200)),
-                call(ServiceRequestInfo("s3", "HeadBucket", 200)),
+                call(
+                    ServiceRequestInfo(
+                        "s3", "ListBuckets", 200, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+                    )
+                ),
+                call(
+                    ServiceRequestInfo(
+                        "s3", "HeadBucket", 200, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+                    )
+                ),
             ]
         )
 
@@ -99,7 +108,12 @@ class TestServiceRequestCounter:
             [
                 call(
                     ServiceRequestInfo(
-                        "opensearch", "DescribeDomain", 404, "ResourceNotFoundException"
+                        "opensearch",
+                        "DescribeDomain",
+                        404,
+                        TEST_AWS_ACCOUNT_ID,
+                        TEST_AWS_REGION_NAME,
+                        "ResourceNotFoundException",
                     )
                 ),
             ]
@@ -118,6 +132,15 @@ class TestServiceRequestCounter:
         # for some reason botocore returns the status as the error Code when it parses an invalid error response
         aggregator.add_request.assert_has_calls(
             [
-                call(ServiceRequestInfo("opensearch", "DescribeDomain", 404, "404")),
+                call(
+                    ServiceRequestInfo(
+                        "opensearch",
+                        "DescribeDomain",
+                        404,
+                        "404",
+                        TEST_AWS_ACCOUNT_ID,
+                        TEST_AWS_REGION_NAME,
+                    )
+                ),
             ]
         )

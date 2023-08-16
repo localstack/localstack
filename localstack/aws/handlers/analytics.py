@@ -49,6 +49,8 @@ class ServiceRequestCounter:
                 service_name,
                 operation_name,
                 response.status_code,
+                context.account_id,
+                context.region,
                 err_type=err_type,
             )
         )
