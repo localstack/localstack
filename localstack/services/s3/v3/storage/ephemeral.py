@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import threading
 from collections import defaultdict
 from io import BytesIO
 from shutil import rmtree
@@ -331,6 +332,7 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         if not root_directory:
             root_directory = mkdtemp()
         self.root_directory = root_directory
+        self._lock_multipart_create = threading.RLock()
 
     def open(self, bucket: BucketName, s3_object: S3Object) -> EphemeralS3StoredObject:
         """
@@ -403,12 +405,13 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         self, bucket: BucketName, s3_multipart: S3Multipart
     ) -> EphemeralS3StoredMultipart:
         upload_key = self._resolve_upload_directory(bucket, s3_multipart.id)
-        if not (multipart := self._get_multipart(bucket, upload_key)):
-
-            upload_dir = self._create_upload_directory(bucket, s3_multipart.id)
-
-            multipart = EphemeralS3StoredMultipart(self, bucket, s3_multipart, upload_dir)
-            self._filesystem[bucket]["multiparts"][upload_key] = multipart
+        # We need to lock this block, because we could have concurrent requests trying to access the same multipart
+        # and both creating it at the same time, returning 2 different entities and overriding one
+        with self._lock_multipart_create:
+            if not (multipart := self._get_multipart(bucket, upload_key)):
+                upload_dir = self._create_upload_directory(bucket, s3_multipart.id)
+                multipart = EphemeralS3StoredMultipart(self, bucket, s3_multipart, upload_dir)
+                self._filesystem[bucket]["multiparts"][upload_key] = multipart
 
         return multipart
 

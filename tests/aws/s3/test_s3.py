@@ -298,168 +298,6 @@ def _filter_header(param: dict) -> dict:
 
 class TestS3:
     @markers.aws.validated
-    @pytest.mark.xfail(
-        condition=LEGACY_S3_PROVIDER,
-        reason="exceptions not raised",
-    )
-    def test_replication_config_without_filter(
-        self, s3_create_bucket, create_iam_role_with_policy, snapshot, aws_client
-    ):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformer(
-            snapshot.transform.jsonpath(
-                "$..ReplicationConfiguration.Role", "role", reference_replacement=False
-            )
-        )
-        snapshot.add_transformer(
-            snapshot.transform.jsonpath(
-                "$..Destination.Bucket", "dest-bucket", reference_replacement=False
-            )
-        )
-        bucket_src = f"src-{short_uid()}"
-        bucket_dst = f"dst-{short_uid()}"
-        role_name = f"replication_role_{short_uid()}"
-        policy_name = f"replication_policy_{short_uid()}"
-
-        role_arn = create_iam_role_with_policy(
-            RoleName=role_name,
-            PolicyName=policy_name,
-            RoleDefinition=S3_ASSUME_ROLE_POLICY,
-            PolicyDefinition=S3_POLICY,
-        )
-        s3_create_bucket(Bucket=bucket_src)
-        # enable versioning on src
-        aws_client.s3.put_bucket_versioning(
-            Bucket=bucket_src, VersioningConfiguration={"Status": "Enabled"}
-        )
-
-        s3_create_bucket(Bucket=bucket_dst)
-
-        replication_config = {
-            "Role": role_arn,
-            "Rules": [
-                {
-                    "ID": "rtc",
-                    "Priority": 0,
-                    "Filter": {},
-                    "Status": "Disabled",
-                    "Destination": {
-                        "Bucket": "arn:aws:s3:::does-not-exist",
-                        "StorageClass": "STANDARD",
-                        "ReplicationTime": {"Status": "Enabled", "Time": {"Minutes": 15}},
-                        "Metrics": {"Status": "Enabled", "EventThreshold": {"Minutes": 15}},
-                    },
-                    "DeleteMarkerReplication": {"Status": "Disabled"},
-                }
-            ],
-        }
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.put_bucket_replication(
-                ReplicationConfiguration=replication_config, Bucket=bucket_src
-            )
-        snapshot.match("expected_error_dest_does_not_exist", e.value.response)
-
-        # set correct destination
-        replication_config["Rules"][0]["Destination"]["Bucket"] = f"arn:aws:s3:::{bucket_dst}"
-
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.put_bucket_replication(
-                ReplicationConfiguration=replication_config, Bucket=bucket_src
-            )
-        snapshot.match("expected_error_dest_versioning_disabled", e.value.response)
-
-        # enable versioning on destination bucket
-        aws_client.s3.put_bucket_versioning(
-            Bucket=bucket_dst, VersioningConfiguration={"Status": "Enabled"}
-        )
-
-        response = aws_client.s3.put_bucket_replication(
-            ReplicationConfiguration=replication_config, Bucket=bucket_src
-        )
-        snapshot.match("put-bucket-replication", response)
-
-        response = aws_client.s3.get_bucket_replication(Bucket=bucket_src)
-        snapshot.match("get-bucket-replication", response)
-
-    @markers.aws.validated
-    @pytest.mark.xfail(
-        condition=LEGACY_S3_PROVIDER,
-        reason="exceptions not raised",
-    )
-    def test_replication_config(
-        self, s3_create_bucket, create_iam_role_with_policy, snapshot, aws_client
-    ):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformer(
-            snapshot.transform.jsonpath(
-                "$..ReplicationConfiguration.Role", "role", reference_replacement=False
-            )
-        )
-        snapshot.add_transformer(
-            snapshot.transform.jsonpath(
-                "$..Destination.Bucket", "dest-bucket", reference_replacement=False
-            )
-        )
-        snapshot.add_transformer(
-            snapshot.transform.key_value("ID", "id", reference_replacement=False)
-        )
-        bucket_src = f"src-{short_uid()}"
-        bucket_dst = f"dst-{short_uid()}"
-        role_name = f"replication_role_{short_uid()}"
-        policy_name = f"replication_policy_{short_uid()}"
-
-        role_arn = create_iam_role_with_policy(
-            RoleName=role_name,
-            PolicyName=policy_name,
-            RoleDefinition=S3_ASSUME_ROLE_POLICY,
-            PolicyDefinition=S3_POLICY,
-        )
-        s3_create_bucket(Bucket=bucket_src)
-
-        s3_create_bucket(
-            Bucket=bucket_dst, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
-        )
-        aws_client.s3.put_bucket_versioning(
-            Bucket=bucket_dst, VersioningConfiguration={"Status": "Enabled"}
-        )
-
-        # expect error if versioning is disabled on src-bucket
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.get_bucket_replication(Bucket=bucket_src)
-        snapshot.match("expected_error_no_replication_set", e.value.response)
-
-        replication_config = {
-            "Role": role_arn,
-            "Rules": [
-                {
-                    "Status": "Enabled",
-                    "Priority": 1,
-                    "DeleteMarkerReplication": {"Status": "Disabled"},
-                    "Filter": {"Prefix": "Tax"},
-                    "Destination": {"Bucket": f"arn:aws:s3:::{bucket_dst}"},
-                }
-            ],
-        }
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.put_bucket_replication(
-                ReplicationConfiguration=replication_config, Bucket=bucket_src
-            )
-        snapshot.match("expected_error_versioning_not_enabled", e.value.response)
-
-        # enable versioning
-        aws_client.s3.put_bucket_versioning(
-            Bucket=bucket_src, VersioningConfiguration={"Status": "Enabled"}
-        )
-
-        response = aws_client.s3.put_bucket_replication(
-            ReplicationConfiguration=replication_config, Bucket=bucket_src
-        )
-        snapshot.match("put-bucket-replication", response)
-
-        response = aws_client.s3.get_bucket_replication(Bucket=bucket_src)
-        snapshot.match("get-bucket-replication", response)
-
-    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=["$..VersionId", "$..ContentLanguage", "$..BucketKeyEnabled"],
@@ -5200,120 +5038,6 @@ class TestS3:
         snapshot.match("if_match_err_1", e.value.response["Error"])
 
     @markers.aws.validated
-    def test_put_bucket_logging(self, aws_client, s3_create_bucket, snapshot):
-        snapshot.add_transformer(
-            [
-                snapshot.transform.key_value("TargetBucket"),
-                snapshot.transform.key_value("DisplayName", reference_replacement=False),
-                snapshot.transform.key_value(
-                    "ID", value_replacement="owner-id", reference_replacement=False
-                ),
-            ]
-        )
-
-        bucket_name = s3_create_bucket()
-        target_bucket = s3_create_bucket()
-        bucket_logging_status = {
-            "LoggingEnabled": {
-                "TargetBucket": target_bucket,
-                "TargetPrefix": "log",
-            },
-        }
-        resp = aws_client.s3.get_bucket_acl(Bucket=target_bucket)
-        snapshot.match("get-bucket-default-acl", resp)
-
-        # this might have been failing in the past, as the target bucket does not give access to LogDelivery to
-        # write/read_acp. however, AWS accepts it, because you can also set it with Permissions
-        resp = aws_client.s3.put_bucket_logging(
-            Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
-        )
-        snapshot.match("put-bucket-logging", resp)
-
-        resp = aws_client.s3.get_bucket_logging(Bucket=bucket_name)
-        snapshot.match("get-bucket-logging", resp)
-
-        # delete BucketLogging
-        resp = aws_client.s3.put_bucket_logging(Bucket=bucket_name, BucketLoggingStatus={})
-        snapshot.match("put-bucket-logging-delete", resp)
-
-    @markers.aws.validated
-    def test_put_bucket_logging_accept_wrong_grants(self, aws_client, s3_create_bucket, snapshot):
-        snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
-
-        bucket_name = s3_create_bucket()
-
-        target_bucket = s3_create_bucket()
-        # We need to delete the ObjectOwnership from the bucket, because you otherwise can't set TargetGrants on it
-        # TODO: have the same default as AWS and have ObjectOwnership set
-        aws_client.s3.delete_bucket_ownership_controls(Bucket=target_bucket)
-
-        bucket_logging_status = {
-            "LoggingEnabled": {
-                "TargetBucket": target_bucket,
-                "TargetPrefix": "log",
-                "TargetGrants": [
-                    {
-                        "Grantee": {
-                            "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
-                            "Type": "Group",
-                        },
-                        "Permission": "WRITE",
-                    },
-                    {
-                        "Grantee": {
-                            "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
-                            "Type": "Group",
-                        },
-                        "Permission": "READ_ACP",
-                    },
-                ],
-            },
-        }
-
-        # from the documentation, only WRITE | READ | FULL_CONTROL are allowed, but AWS let READ_ACP pass
-        resp = aws_client.s3.put_bucket_logging(
-            Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
-        )
-        snapshot.match("put-bucket-logging", resp)
-
-        resp = aws_client.s3.get_bucket_logging(Bucket=bucket_name)
-        snapshot.match("get-bucket-logging", resp)
-
-    @markers.aws.validated
-    def test_put_bucket_logging_wrong_target(self, aws_client, s3_create_bucket, snapshot):
-        snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
-        bucket_name = s3_create_bucket()
-        target_bucket = s3_create_bucket(
-            CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
-        )
-
-        with pytest.raises(ClientError) as e:
-            bucket_logging_status = {
-                "LoggingEnabled": {
-                    "TargetBucket": target_bucket,
-                    "TargetPrefix": "log",
-                },
-            }
-            aws_client.s3.put_bucket_logging(
-                Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
-            )
-        snapshot.match("put-bucket-logging-different-regions", e.value.response)
-
-        nonexistent_target_bucket = f"target-bucket-{long_uid()}"
-        with pytest.raises(ClientError) as e:
-            bucket_logging_status = {
-                "LoggingEnabled": {
-                    "TargetBucket": nonexistent_target_bucket,
-                    "TargetPrefix": "log",
-                },
-            }
-            aws_client.s3.put_bucket_logging(
-                Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
-            )
-        snapshot.match("put-bucket-logging-non-existent-bucket", e.value.response)
-        assert e.value.response["Error"]["TargetBucket"] == nonexistent_target_bucket
-
-    @markers.aws.validated
     def test_s3_inventory_report_crud(self, aws_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.resource_name())
         src_bucket = s3_create_bucket()
@@ -9419,6 +9143,306 @@ class TestS3ObjectLockLegalHold:
                 aws_client.s3.put_object_legal_hold(
                     Bucket=bucket_name, Key=key, LegalHold={"Status": "OFF"}
                 )
+
+
+class TestS3BucketLogging:
+    @markers.aws.validated
+    def test_put_bucket_logging(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("TargetBucket"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value(
+                    "ID", value_replacement="owner-id", reference_replacement=False
+                ),
+            ]
+        )
+
+        bucket_name = s3_create_bucket()
+        target_bucket = s3_create_bucket()
+
+        resp = aws_client.s3.get_bucket_logging(Bucket=bucket_name)
+        snapshot.match("get-bucket-logging-default", resp)
+
+        bucket_logging_status = {
+            "LoggingEnabled": {
+                "TargetBucket": target_bucket,
+                "TargetPrefix": "log",
+            },
+        }
+        resp = aws_client.s3.get_bucket_acl(Bucket=target_bucket)
+        snapshot.match("get-bucket-default-acl", resp)
+
+        # this might have been failing in the past, as the target bucket does not give access to LogDelivery to
+        # write/read_acp. however, AWS accepts it, because you can also set it with Permissions
+        resp = aws_client.s3.put_bucket_logging(
+            Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
+        )
+        snapshot.match("put-bucket-logging", resp)
+
+        resp = aws_client.s3.get_bucket_logging(Bucket=bucket_name)
+        snapshot.match("get-bucket-logging", resp)
+
+        # delete BucketLogging
+        resp = aws_client.s3.put_bucket_logging(Bucket=bucket_name, BucketLoggingStatus={})
+        snapshot.match("put-bucket-logging-delete", resp)
+
+    @markers.aws.validated
+    def test_put_bucket_logging_accept_wrong_grants(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
+
+        bucket_name = s3_create_bucket()
+
+        target_bucket = s3_create_bucket()
+        # We need to delete the ObjectOwnership from the bucket, because you otherwise can't set TargetGrants on it
+        # TODO: have the same default as AWS and have ObjectOwnership set
+        aws_client.s3.delete_bucket_ownership_controls(Bucket=target_bucket)
+
+        bucket_logging_status = {
+            "LoggingEnabled": {
+                "TargetBucket": target_bucket,
+                "TargetPrefix": "log",
+                "TargetGrants": [
+                    {
+                        "Grantee": {
+                            "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                            "Type": "Group",
+                        },
+                        "Permission": "WRITE",
+                    },
+                    {
+                        "Grantee": {
+                            "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                            "Type": "Group",
+                        },
+                        "Permission": "READ_ACP",
+                    },
+                ],
+            },
+        }
+
+        # from the documentation, only WRITE | READ | FULL_CONTROL are allowed, but AWS let READ_ACP pass
+        resp = aws_client.s3.put_bucket_logging(
+            Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
+        )
+        snapshot.match("put-bucket-logging", resp)
+
+        resp = aws_client.s3.get_bucket_logging(Bucket=bucket_name)
+        snapshot.match("get-bucket-logging", resp)
+
+    @markers.aws.validated
+    def test_put_bucket_logging_wrong_target(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("TargetBucket"))
+        bucket_name = s3_create_bucket()
+        target_bucket = s3_create_bucket(
+            CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
+        )
+
+        with pytest.raises(ClientError) as e:
+            bucket_logging_status = {
+                "LoggingEnabled": {
+                    "TargetBucket": target_bucket,
+                    "TargetPrefix": "log",
+                },
+            }
+            aws_client.s3.put_bucket_logging(
+                Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
+            )
+        snapshot.match("put-bucket-logging-different-regions", e.value.response)
+
+        nonexistent_target_bucket = f"target-bucket-{long_uid()}"
+        with pytest.raises(ClientError) as e:
+            bucket_logging_status = {
+                "LoggingEnabled": {
+                    "TargetBucket": nonexistent_target_bucket,
+                    "TargetPrefix": "log",
+                },
+            }
+            aws_client.s3.put_bucket_logging(
+                Bucket=bucket_name, BucketLoggingStatus=bucket_logging_status
+            )
+        snapshot.match("put-bucket-logging-non-existent-bucket", e.value.response)
+        assert e.value.response["Error"]["TargetBucket"] == nonexistent_target_bucket
+
+
+class TestS3BucketReplication:
+    @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER,
+        reason="exceptions not raised",
+    )
+    def test_replication_config_without_filter(
+        self, s3_create_bucket, create_iam_role_with_policy, snapshot, aws_client
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..ReplicationConfiguration.Role", "role", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..Destination.Bucket", "dest-bucket", reference_replacement=False
+            )
+        )
+        bucket_src = f"src-{short_uid()}"
+        bucket_dst = f"dst-{short_uid()}"
+        role_name = f"replication_role_{short_uid()}"
+        policy_name = f"replication_policy_{short_uid()}"
+
+        role_arn = create_iam_role_with_policy(
+            RoleName=role_name,
+            PolicyName=policy_name,
+            RoleDefinition=S3_ASSUME_ROLE_POLICY,
+            PolicyDefinition=S3_POLICY,
+        )
+        s3_create_bucket(Bucket=bucket_src)
+        # enable versioning on src
+        aws_client.s3.put_bucket_versioning(
+            Bucket=bucket_src, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        s3_create_bucket(Bucket=bucket_dst)
+
+        replication_config = {
+            "Role": role_arn,
+            "Rules": [
+                {
+                    "ID": "rtc",
+                    "Priority": 0,
+                    "Filter": {},
+                    "Status": "Disabled",
+                    "Destination": {
+                        "Bucket": "arn:aws:s3:::does-not-exist",
+                        "StorageClass": "STANDARD",
+                        "ReplicationTime": {"Status": "Enabled", "Time": {"Minutes": 15}},
+                        "Metrics": {"Status": "Enabled", "EventThreshold": {"Minutes": 15}},
+                    },
+                    "DeleteMarkerReplication": {"Status": "Disabled"},
+                }
+            ],
+        }
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_replication(
+                ReplicationConfiguration=replication_config, Bucket=bucket_src
+            )
+        snapshot.match("expected_error_dest_does_not_exist", e.value.response)
+
+        # set correct destination
+        replication_config["Rules"][0]["Destination"]["Bucket"] = f"arn:aws:s3:::{bucket_dst}"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_replication(
+                ReplicationConfiguration=replication_config, Bucket=bucket_src
+            )
+        snapshot.match("expected_error_dest_versioning_disabled", e.value.response)
+
+        # enable versioning on destination bucket
+        aws_client.s3.put_bucket_versioning(
+            Bucket=bucket_dst, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        response = aws_client.s3.put_bucket_replication(
+            ReplicationConfiguration=replication_config, Bucket=bucket_src
+        )
+        snapshot.match("put-bucket-replication", response)
+
+        response = aws_client.s3.get_bucket_replication(Bucket=bucket_src)
+        snapshot.match("get-bucket-replication", response)
+
+    @markers.aws.validated
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER,
+        reason="exceptions not raised",
+    )
+    def test_replication_config(
+        self, s3_create_bucket, create_iam_role_with_policy, snapshot, aws_client
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..ReplicationConfiguration.Role", "role", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..Destination.Bucket", "dest-bucket", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("ID", "id", reference_replacement=False)
+        )
+        bucket_src = f"src-{short_uid()}"
+        bucket_dst = f"dst-{short_uid()}"
+        role_name = f"replication_role_{short_uid()}"
+        policy_name = f"replication_policy_{short_uid()}"
+
+        role_arn = create_iam_role_with_policy(
+            RoleName=role_name,
+            PolicyName=policy_name,
+            RoleDefinition=S3_ASSUME_ROLE_POLICY,
+            PolicyDefinition=S3_POLICY,
+        )
+        s3_create_bucket(Bucket=bucket_src)
+
+        s3_create_bucket(
+            Bucket=bucket_dst, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
+        )
+        aws_client.s3.put_bucket_versioning(
+            Bucket=bucket_dst, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        # expect error if versioning is disabled on src-bucket
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_replication(Bucket=bucket_src)
+        snapshot.match("expected_error_no_replication_set", e.value.response)
+
+        replication_config = {
+            "Role": role_arn,
+            "Rules": [
+                {
+                    "Status": "Enabled",
+                    "Priority": 1,
+                    "DeleteMarkerReplication": {"Status": "Disabled"},
+                    "Filter": {"Prefix": "Tax"},
+                    "Destination": {"Bucket": f"arn:aws:s3:::{bucket_dst}"},
+                }
+            ],
+        }
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_replication(
+                ReplicationConfiguration=replication_config, Bucket=bucket_src
+            )
+        snapshot.match("expected_error_versioning_not_enabled", e.value.response)
+
+        # enable versioning
+        aws_client.s3.put_bucket_versioning(
+            Bucket=bucket_src, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        response = aws_client.s3.put_bucket_replication(
+            ReplicationConfiguration=replication_config, Bucket=bucket_src
+        )
+        snapshot.match("put-bucket-replication", response)
+
+        response = aws_client.s3.get_bucket_replication(Bucket=bucket_src)
+        snapshot.match("get-bucket-replication", response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_replication(
+                Bucket=bucket_src,
+                ReplicationConfiguration={
+                    "Role": role_arn,
+                    "Rules": [],
+                },
+            )
+        snapshot.match("put-empty-bucket-replication-rules", e.value.response)
+
+        delete_replication = aws_client.s3.delete_bucket_replication(Bucket=bucket_src)
+        snapshot.match("delete-bucket-replication", delete_replication)
+
+        delete_replication = aws_client.s3.delete_bucket_replication(Bucket=bucket_src)
+        snapshot.match("delete-bucket-replication-idempotent", delete_replication)
 
 
 def _s3_client_custom_config(conf: Config, endpoint_url: str = None):

@@ -4098,8 +4098,8 @@
       }
     }
   },
-  "tests/aws/s3/test_s3.py::TestS3::test_replication_config": {
-    "recorded-date": "03-08-2023, 04:13:08",
+  "tests/aws/s3/test_s3.py::TestS3BucketReplication::test_replication_config": {
+    "recorded-date": "12-08-2023, 20:11:46",
     "recorded-content": {
       "expected_error_no_replication_set": {
         "Error": {
@@ -4152,6 +4152,28 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "put-empty-bucket-replication-rules": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete-bucket-replication": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-bucket-replication-idempotent": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
       }
     }
   },
@@ -4166,7 +4188,7 @@
       }
     }
   },
-  "tests/aws/s3/test_s3.py::TestS3::test_replication_config_without_filter": {
+  "tests/aws/s3/test_s3.py::TestS3BucketReplication::test_replication_config_without_filter": {
     "recorded-date": "03-08-2023, 04:13:02",
     "recorded-content": {
       "expected_error_dest_does_not_exist": {
@@ -7573,9 +7595,15 @@
       }
     }
   },
-  "tests/aws/s3/test_s3.py::TestS3::test_put_bucket_logging": {
-    "recorded-date": "03-08-2023, 04:26:09",
+  "tests/aws/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging": {
+    "recorded-date": "12-08-2023, 19:54:07",
     "recorded-content": {
+      "get-bucket-logging-default": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "get-bucket-default-acl": {
         "Grants": [
           {
@@ -7620,7 +7648,7 @@
       }
     }
   },
-  "tests/aws/s3/test_s3.py::TestS3::test_put_bucket_logging_accept_wrong_grants": {
+  "tests/aws/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging_accept_wrong_grants": {
     "recorded-date": "03-08-2023, 04:26:11",
     "recorded-content": {
       "put-bucket-logging": {
@@ -7657,7 +7685,7 @@
       }
     }
   },
-  "tests/aws/s3/test_s3.py::TestS3::test_put_bucket_logging_wrong_target": {
+  "tests/aws/s3/test_s3.py::TestS3BucketLogging::test_put_bucket_logging_wrong_target": {
     "recorded-date": "03-08-2023, 04:26:14",
     "recorded-content": {
       "put-bucket-logging-different-regions": {

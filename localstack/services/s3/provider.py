@@ -933,12 +933,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 "Versioning must be 'Enabled' on the bucket to apply a replication configuration"
             )
 
-        for rule in replication_configuration.get("Rules", {}):
+        if not (rules := replication_configuration.get("Rules")):
+            raise MalformedXML()
+
+        for rule in rules:
             if "ID" not in rule:
                 rule["ID"] = short_uid()
 
-        store = self.get_store(context)
-        for rule in replication_configuration.get("Rules", []):
             dst = rule.get("Destination", {}).get("Bucket")
             dst_bucket_name = s3_bucket_name(dst)
             dst_bucket = None
@@ -951,6 +952,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 raise InvalidRequest("Destination bucket must have versioning enabled.")
 
         # TODO more validation on input
+        store = self.get_store(context)
         store.bucket_replication[bucket] = replication_configuration
 
     def get_bucket_replication(
