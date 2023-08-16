@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-source .venv/bin/activate
+source ${VENV_DIR=.venv}/bin/activate
 
 export LOCALSTACK_VOLUME_DIR=$(pwd)/.filesystem/var/lib/localstack
 export DOCKER_FLAGS="${DOCKER_FLAGS}

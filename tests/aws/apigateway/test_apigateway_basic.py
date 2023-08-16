@@ -30,7 +30,7 @@ from localstack.services.lambda_.lambda_api import add_event_source, use_docker
 from localstack.services.lambda_.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
-from localstack.utils.aws import arns, aws_stack, queries
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws import resources as resource_util
 from localstack.utils.collections import select_attributes
 from localstack.utils.files import load_file
@@ -1917,35 +1917,6 @@ class TestIntegrations:
         body_md5 = result["MD5OfMessageBody"]
 
         assert "b639f52308afd65866c86f274c59033f" == body_md5
-
-    @markers.aws.unknown
-    def test_api_gateway_sqs_integration(self, aws_client):
-        # create target SQS stream
-        queue_name = f"queue-{short_uid()}"
-        resource_util.create_sqs_queue(queue_name)
-
-        # create API Gateway and connect it to the target queue
-        result = connect_api_gateway_to_sqs(
-            "test_gateway4",
-            stage_name=TEST_STAGE_NAME,
-            queue_arn=queue_name,
-            path="/data",
-        )
-
-        # generate test data
-        test_data = {"spam": "eggs"}
-
-        url = path_based_url(
-            api_id=result["id"],
-            stage_name=TEST_STAGE_NAME,
-            path="/data",
-        )
-        result = requests.post(url, data=json.dumps(test_data))
-        assert 200 == result.status_code
-
-        messages = queries.sqs_receive_message(queue_name)["Messages"]
-        assert 1 == len(messages)
-        assert test_data == json.loads(base64.b64decode(messages[0]["Body"]))
 
     # ==================
     # Helper methods
