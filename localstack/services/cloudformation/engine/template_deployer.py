@@ -1020,7 +1020,7 @@ class TemplateDeployer:
         # TODO: this is broken for default fields and result_handler property modifications when they're added to the properties in the model
         resource_id = resource_new["LogicalResourceId"]
         resource_old = self.resources[resource_id]
-        props_old = resource_old["SpecifiedProperties"]
+        props_old = resource_old.get("SpecifiedProperties", {})
         props_new = resource_new["Properties"]
         ignored_keys = ["LogicalResourceId", "PhysicalResourceId"]
         old_keys = set(props_old.keys()) - set(ignored_keys)

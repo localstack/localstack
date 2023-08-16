@@ -28,6 +28,9 @@ class SSMParameter(GenericBaseModel):
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
+        # TODO: a *bit* hacky but we want to get rid of update_resource now anyway
+        if "Name" not in props:
+            props["Name"] = new_resource["_last_deployed_state"]["Name"]
         parameters_to_select = [
             "AllowedPattern",
             "DataType",

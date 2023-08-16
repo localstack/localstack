@@ -407,6 +407,7 @@ class LegacyResourceProvider(ResourceProvider):
 
         resource_provider.update_resource(
             self.all_resources[request.logical_resource_id],
+            # resource_provider.props,  # TODO: this will break if update is mutating the properties :/
             stack_name=request.stack_name,
             resources=self.all_resources,
         )
@@ -648,8 +649,8 @@ class ResourceProviderExecutor:
                         )
 
                         resource["PhysicalResourceId"] = physical_resource_id
-                        resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
                         resource["Properties"] = event.resource_model
+                    resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
                     return event
 
                 # update the shared state
