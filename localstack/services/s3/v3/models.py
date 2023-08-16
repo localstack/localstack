@@ -145,6 +145,8 @@ class S3Bucket:
         self.cors_rules = None
         self.lifecycle_rules = None
         self.website_configuration = None
+        self.policy = None
+        self.accelerate_status = None
         self.intelligent_tiering_configurations = {}
         self.analytics_configurations = {}
         self.inventory_configurations = {}

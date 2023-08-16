@@ -1,6 +1,7 @@
 import base64
 import copy
 import datetime
+import json
 import logging
 from collections import defaultdict
 from operator import itemgetter
@@ -11,6 +12,7 @@ from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.s3 import (
     MFA,
     AbortMultipartUploadOutput,
+    AccelerateConfiguration,
     AccessControlPolicy,
     AccessDenied,
     AccountId,
@@ -32,6 +34,7 @@ from localstack.aws.api.s3 import (
     CommonPrefix,
     CompletedMultipartUpload,
     CompleteMultipartUploadOutput,
+    ConfirmRemoveSelfBucketAccess,
     ContentMD5,
     CopyObjectOutput,
     CopyObjectRequest,
@@ -53,6 +56,7 @@ from localstack.aws.api.s3 import (
     Error,
     Expiration,
     FetchOwner,
+    GetBucketAccelerateConfigurationOutput,
     GetBucketAnalyticsConfigurationOutput,
     GetBucketCorsOutput,
     GetBucketEncryptionOutput,
@@ -61,6 +65,7 @@ from localstack.aws.api.s3 import (
     GetBucketLifecycleConfigurationOutput,
     GetBucketLocationOutput,
     GetBucketOwnershipControlsOutput,
+    GetBucketPolicyOutput,
     GetBucketRequestPaymentOutput,
     GetBucketTaggingOutput,
     GetBucketVersioningOutput,
@@ -111,6 +116,7 @@ from localstack.aws.api.s3 import (
     MultipartUpload,
     MultipartUploadId,
     NoSuchBucket,
+    NoSuchBucketPolicy,
     NoSuchCORSConfiguration,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
@@ -139,6 +145,7 @@ from localstack.aws.api.s3 import (
     Part,
     PartNumber,
     PartNumberMarker,
+    Policy,
     PreconditionFailed,
     Prefix,
     PublicAccessBlockConfiguration,
@@ -186,6 +193,7 @@ from localstack.services.s3.exceptions import (
     InvalidBucketState,
     InvalidLocationConstraint,
     InvalidRequest,
+    MalformedPolicy,
     MalformedXML,
     NoSuchConfiguration,
     NoSuchObjectLockConfiguration,
@@ -3034,6 +3042,98 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
 
         s3_bucket.public_access_block = None
+
+    def get_bucket_policy(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketPolicyOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        if not s3_bucket.policy:
+            raise NoSuchBucketPolicy(
+                "The bucket policy does not exist",
+                BucketName=bucket,
+            )
+        return GetBucketPolicyOutput(Policy=s3_bucket.policy)
+
+    def put_bucket_policy(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        policy: Policy,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        confirm_remove_self_bucket_access: ConfirmRemoveSelfBucketAccess = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        # TODO: there is not validation of the policy at the moment, as there was none in moto
+        #  we store the JSON policy as is, as we do not need to decode it
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not policy or policy[0] != "{":
+            raise MalformedPolicy("Policies must be valid JSON and the first byte must be '{'")
+        try:
+            json_policy = json.loads(policy)
+            if not json_policy:
+                # TODO: add more validation around the policy?
+                raise MalformedPolicy("Missing required field Statement")
+        except ValueError:
+            raise MalformedPolicy("Policies must be valid JSON and the first byte must be '{'")
+
+        s3_bucket.policy = policy
+
+    def delete_bucket_policy(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        s3_bucket.policy = None
+
+    def get_bucket_accelerate_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
+    ) -> GetBucketAccelerateConfigurationOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        response = GetBucketAccelerateConfigurationOutput()
+        if s3_bucket.accelerate_status:
+            response["Status"] = s3_bucket.accelerate_status
+
+        return response
+
+    def put_bucket_accelerate_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        accelerate_configuration: AccelerateConfiguration,
+        expected_bucket_owner: AccountId = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if "." in bucket:
+            raise InvalidRequest(
+                "S3 Transfer Acceleration is not supported for buckets with periods (.) in their names"
+            )
+
+        if not (status := accelerate_configuration.get("Status")) or status not in (
+            "Enabled",
+            "Suspended",
+        ):
+            raise MalformedXML()
+
+        s3_bucket.accelerate_status = status
 
     # ###### THIS ARE UNIMPLEMENTED METHODS TO ALLOW TESTING, DO NOT COUNT THEM AS DONE ###### #
 

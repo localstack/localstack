@@ -1,3 +1,4 @@
+import json
 from operator import itemgetter
 
 import pytest
@@ -1314,3 +1315,122 @@ class TestS3PublicAccessBlock:
 
         delete_public_access_block = aws_client.s3.delete_public_access_block(Bucket=s3_bucket)
         snapshot.match("idempotent-delete-public-access-block", delete_public_access_block)
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3BucketPolicy:
+    @markers.aws.validated
+    def test_bucket_policy_crud(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("Resource"))
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        # delete the OwnershipControls so that we can set a Policy
+        aws_client.s3.delete_bucket_ownership_controls(Bucket=s3_bucket)
+        aws_client.s3.delete_public_access_block(Bucket=s3_bucket)
+
+        # get the default Policy, should raise
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("get-bucket-default-policy", e.value.response)
+
+        # put bucket policy
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "s3:GetObject",
+                    "Effect": "Allow",
+                    "Resource": f"arn:aws:s3:::{s3_bucket}/*",
+                    "Principal": {"AWS": "*"},
+                }
+            ],
+        }
+        response = aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy=json.dumps(policy))
+        snapshot.match("put-bucket-policy", response)
+
+        # retrieve and check policy config
+        response = aws_client.s3.get_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("get-bucket-policy", response)
+        assert policy == json.loads(response["Policy"])
+
+        response = aws_client.s3.delete_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("delete-bucket-policy", response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("get-bucket-policy-after-delete", e.value.response)
+
+    @markers.aws.validated
+    def test_bucket_policy_exc(self, s3_bucket, snapshot, aws_client):
+        # delete the OwnershipControls so that we can set a Policy
+        aws_client.s3.delete_bucket_ownership_controls(Bucket=s3_bucket)
+        aws_client.s3.delete_public_access_block(Bucket=s3_bucket)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy="")
+        snapshot.match("put-empty-bucket-policy", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy="invalid json")
+        snapshot.match("put-bucket-policy-randomstring", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy="{}")
+        snapshot.match("put-bucket-policy-empty-json", e.value.response)
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3BucketAccelerateConfiguration:
+    @markers.aws.validated
+    def test_bucket_acceleration_configuration_crud(self, s3_bucket, snapshot, aws_client):
+        get_default_config = aws_client.s3.get_bucket_accelerate_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-default-accelerate-config", get_default_config)
+
+        response = aws_client.s3.put_bucket_accelerate_configuration(
+            Bucket=s3_bucket,
+            AccelerateConfiguration={"Status": "Enabled"},
+        )
+        snapshot.match("put-bucket-accelerate-config-enabled", response)
+
+        response = aws_client.s3.get_bucket_accelerate_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-accelerate-config-enabled", response)
+
+        response = aws_client.s3.put_bucket_accelerate_configuration(
+            Bucket=s3_bucket,
+            AccelerateConfiguration={"Status": "Suspended"},
+        )
+        snapshot.match("put-bucket-accelerate-config-disabled", response)
+
+        response = aws_client.s3.get_bucket_accelerate_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-accelerate-config-disabled", response)
+
+    @markers.aws.validated
+    def test_bucket_acceleration_configuration_exc(
+        self, s3_bucket, s3_create_bucket, snapshot, aws_client
+    ):
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_accelerate_configuration(
+                Bucket=s3_bucket,
+                AccelerateConfiguration={"Status": "enabled"},
+            )
+        snapshot.match("put-bucket-accelerate-config-lowercase", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_accelerate_configuration(
+                Bucket=s3_bucket,
+                AccelerateConfiguration={"Status": "random"},
+            )
+        snapshot.match("put-bucket-accelerate-config-random", e.value.response)
+
+        bucket_with_name = s3_create_bucket(Bucket=f"test.bucket.{long_uid()}")
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_accelerate_configuration(
+                Bucket=bucket_with_name,
+                AccelerateConfiguration={"Status": "random"},
+            )
+        snapshot.match("put-bucket-accelerate-config-dot-bucket", e.value.response)
