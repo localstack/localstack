@@ -129,6 +129,7 @@ class SQSQueueProvider(ResourceProvider[SQSQueueProperties]):
         result = request.aws_client_factory.sqs.create_queue(
             QueueName=model["QueueName"],
             Attributes=attributes,
+            tags={t["Key"]: t["Value"] for t in model.get("Tags", [])},
         )
 
         # set read-only properties

@@ -242,32 +242,6 @@ Resources:
 """
 
 
-TEST_TEMPLATE_29 = """
-Parameters:
-  Qualifier:
-    Type: String
-    Default: q123
-Resources:
-  TestQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: %s
-      Tags:
-        - Key: test
-          Value: !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${CdkBootstrapVersion}"
-  CdkBootstrapVersion:
-    Type: "AWS::SSM::Parameter"
-    Properties:
-      Type: String
-      Name: !Sub "/cdk-bootstrap/${Qualifier}/version"
-      Value: "..."
-Outputs:
- QueueURL:
-  Value:
-   Ref: TestQueue
-"""
-
-
 # Note: Do not add new tests here !
 class TestCloudFormation:
     @markers.aws.unknown
@@ -868,17 +842,22 @@ class TestCloudFormation:
         assert len(new_function) == 1
         assert lambda_role_name_new in new_function[0].get("Role")
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_resolve_transitive_placeholders_in_strings(self, deploy_cfn_template, aws_client):
         queue_name = f"q-{short_uid()}"
+        parameter_ver = f"v{short_uid()}"
         stack_name = f"stack-{short_uid()}"
         stack = deploy_cfn_template(
-            stack_name=stack_name, template=TEST_TEMPLATE_29 % queue_name, max_wait=500
+            stack_name=stack_name,
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/legacy_transitive_ref.yaml"
+            ),
+            max_wait=500,
+            parameters={"QueueName": queue_name, "Qualifier": parameter_ver},
         )
-
         tags = aws_client.sqs.list_queue_tags(QueueUrl=stack.outputs["QueueURL"])
         test_tag = tags["Tags"]["test"]
-        assert test_tag == arns.ssm_parameter_arn("cdk-bootstrap/q123/version")
+        assert f"cdk-bootstrap/{parameter_ver}/version" in test_tag
 
 
 # Note: DO NOT ADD TEST CASES HERE
