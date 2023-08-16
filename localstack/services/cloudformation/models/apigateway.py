@@ -29,6 +29,9 @@ class GatewayResponse(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _handle_result(result: dict, logical_resource_id: str, resource: dict):
+            resource["PhysicalResourceId"] = logical_resource_id
+
         return {
             "create": {
                 "function": "put_gateway_response",
@@ -39,6 +42,7 @@ class GatewayResponse(GenericBaseModel):
                     "responseParameters": "ResponseParameters",
                     "responseTemplates": "ResponseTemplates",
                 },
+                "result_handler": _handle_result,
             }
         }
 
