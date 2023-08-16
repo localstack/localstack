@@ -48,6 +48,11 @@ class CloudFormationStack(GenericBaseModel):
                 "StackName": nested_stack_name,
                 "TemplateURL": properties.get("TemplateURL"),
                 "Parameters": stack_parameters,
+                "Capabilities": [
+                    "CAPABILITY_AUTO_EXPAND",
+                    "CAPABILITY_IAM",
+                    "CAPABILITY_NAMED_IAM",
+                ],
             }
             return result
 
