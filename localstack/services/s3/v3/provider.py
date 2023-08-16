@@ -443,6 +443,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     "Your previous request to create the named bucket succeeded and you already own it.",
                     BucketName=bucket_name,
                 )
+            else:
+                # CreateBucket is idempotent in us-east-1
+                return CreateBucketOutput(Location=f"/{bucket_name}")
 
         if (
             object_ownership := request.get("ObjectOwnership")
