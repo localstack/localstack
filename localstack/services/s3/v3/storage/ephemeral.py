@@ -412,6 +412,7 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         if multiparts := self._filesystem.get(bucket, {}).get("multiparts", {}):
             if multipart := multiparts.pop(s3_multipart.id, None):
                 multipart.close()
+        self._delete_upload_directory(bucket, s3_multipart.id)
 
     def create_bucket(self, bucket: BucketName):
         mkdir(os.path.join(self.root_directory, bucket))
