@@ -190,6 +190,8 @@ class S3ObjectStore(abc.ABC):
     def flush(self):
         pass
 
-    @abc.abstractmethod
     def close(self):
+        pass
+
+    def reset(self):
         pass

@@ -422,7 +422,7 @@ class EphemeralS3ObjectStore(S3ObjectStore):
 
     def close(self):
         """
-        Close the Store and clean up all underlying objecs. This will effectively remove all data from the filesystem
+        Close the Store and clean up all underlying objects. This will effectively remove all data from the filesystem
         and memory.
         :return:
         """
@@ -436,6 +436,9 @@ class EphemeralS3ObjectStore(S3ObjectStore):
                 for multipart in multiparts.values():
                     multipart.close()
                 multiparts.clear()
+
+    def reset(self):
+        self.close()
 
     @staticmethod
     def _key_from_s3_object(s3_object: S3Object) -> str:
