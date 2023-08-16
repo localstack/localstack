@@ -282,12 +282,17 @@ class ResponseTemplates(Templates):
 
         # we render the template with the context data and the response content
         variables = self.build_variables_mapping(api_context)
-        response._content = self._render_json_result(template, variables)
+        response._content = self._render_as_json(template, variables)
 
         LOG.debug("Endpoint response body after transformations:\n%s", response._content)
         return response._content
 
-    def _render_json_result(self, template: str, variables: dict[str, Any]) -> str:
+    def _render_as_json(self, template: str, variables: dict[str, Any]) -> str:
+        """
+        Render the given Velocity template string + variables into a JSON string.
+        :raise JSONDecodeError: if template result is not valid JSON
+        :return: the template rendering result as a valid JSON string
+        """
         rendered_tpl = self.render_vtl(template, variables=variables)
         rendered_value = rendered_tpl.strip()
         try:

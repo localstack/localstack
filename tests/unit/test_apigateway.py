@@ -566,15 +566,15 @@ class TestTemplates:
 
         # assert that boolean results of _render_json_result(..) are JSON-parseable
         tstring = '{"mybool": $boolTrue}'
-        result = template._render_json_result(tstring, {"boolTrue": "true"})
+        result = template._render_as_json(tstring, {"boolTrue": "true"})
         assert json.loads(result) == {"mybool": True}
-        result = template._render_json_result(tstring, {"boolTrue": True})
+        result = template._render_as_json(tstring, {"boolTrue": True})
         assert json.loads(result) == {"mybool": True}
 
         # older versions of `airspeed` were rendering booleans as False/True, which is no longer valid now
         tstring = '{"mybool": False}'
         with pytest.raises(JSONDecodeError):
-            template._render_json_result(tstring, {})
+            template._render_as_json(tstring, {})
 
 
 def test_openapi_resolver_given_unresolvable_references():
