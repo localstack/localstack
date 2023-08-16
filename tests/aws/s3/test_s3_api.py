@@ -1200,3 +1200,117 @@ class TestS3ObjectLock:
                 },
             )
         snapshot.match("disable-versioning-on-locked-bucket", e.value.response)
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3BucketOwnershipControls:
+    @markers.aws.validated
+    def test_crud_bucket_ownership_controls(self, s3_create_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        default_s3_bucket = s3_create_bucket()
+        get_default_ownership = aws_client.s3.get_bucket_ownership_controls(
+            Bucket=default_s3_bucket
+        )
+        snapshot.match("default-ownership", get_default_ownership)
+
+        put_ownership = aws_client.s3.put_bucket_ownership_controls(
+            Bucket=default_s3_bucket,
+            OwnershipControls={"Rules": [{"ObjectOwnership": "ObjectWriter"}]},
+        )
+        snapshot.match("put-ownership", put_ownership)
+
+        get_ownership = aws_client.s3.get_bucket_ownership_controls(Bucket=default_s3_bucket)
+        snapshot.match("get-ownership", get_ownership)
+
+        delete_ownership = aws_client.s3.delete_bucket_ownership_controls(Bucket=default_s3_bucket)
+        snapshot.match("delete-ownership", delete_ownership)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_bucket_ownership_controls(Bucket=default_s3_bucket)
+        snapshot.match("get-ownership-after-delete", e.value.response)
+
+        delete_idempotent = aws_client.s3.delete_bucket_ownership_controls(Bucket=default_s3_bucket)
+        snapshot.match("delete-ownership-after-delete", delete_idempotent)
+
+        s3_bucket = s3_create_bucket(ObjectOwnership="BucketOwnerPreferred")
+        get_ownership_at_creation = aws_client.s3.get_bucket_ownership_controls(Bucket=s3_bucket)
+        snapshot.match("get-ownership-at-creation", get_ownership_at_creation)
+
+    @markers.aws.validated
+    def test_bucket_ownership_controls_exc(self, s3_create_bucket, aws_client, snapshot):
+        default_s3_bucket = s3_create_bucket()
+        get_default_ownership = aws_client.s3.get_bucket_ownership_controls(
+            Bucket=default_s3_bucket
+        )
+        snapshot.match("default-ownership", get_default_ownership)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_ownership_controls(
+                Bucket=default_s3_bucket,
+                OwnershipControls={
+                    "Rules": [
+                        {"ObjectOwnership": "BucketOwnerPreferred"},
+                        {"ObjectOwnership": "ObjectWriter"},
+                    ]
+                },
+            )
+        snapshot.match("put-ownership-multiple-rules", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_ownership_controls(
+                Bucket=default_s3_bucket,
+                OwnershipControls={"Rules": [{"ObjectOwnership": "RandomValue"}]},
+            )
+        snapshot.match("put-ownership-wrong-value", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_ownership_controls(
+                Bucket=default_s3_bucket, OwnershipControls={"Rules": []}
+            )
+        snapshot.match("put-ownership-empty-rule", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket(ObjectOwnership="RandomValue")
+        snapshot.match("ownership-wrong-value-at-creation", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket(ObjectOwnership="")
+        snapshot.match("ownership-non-value-at-creation", e.value.response)
+
+
+@pytest.mark.skipif(
+    condition=not config.NATIVE_S3_PROVIDER,
+    reason="These are WIP tests for the new native S3 provider",
+)
+class TestS3PublicAccessBlock:
+    @markers.aws.validated
+    def test_crud_public_access_block(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        get_public_access_block = aws_client.s3.get_public_access_block(Bucket=s3_bucket)
+        snapshot.match("get-default-public-access-block", get_public_access_block)
+
+        put_public_access_block = aws_client.s3.put_public_access_block(
+            Bucket=s3_bucket,
+            PublicAccessBlockConfiguration={
+                "BlockPublicAcls": False,
+                "IgnorePublicAcls": False,
+                "BlockPublicPolicy": False,
+            },
+        )
+        snapshot.match("put-public-access-block", put_public_access_block)
+
+        get_public_access_block = aws_client.s3.get_public_access_block(Bucket=s3_bucket)
+        snapshot.match("get-public-access-block", get_public_access_block)
+
+        delete_public_access_block = aws_client.s3.delete_public_access_block(Bucket=s3_bucket)
+        snapshot.match("delete-public-access-block", delete_public_access_block)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_public_access_block(Bucket=s3_bucket)
+        snapshot.match("get-public-access-block-after-delete", e.value.response)
+
+        delete_public_access_block = aws_client.s3.delete_public_access_block(Bucket=s3_bucket)
+        snapshot.match("idempotent-delete-public-access-block", delete_public_access_block)

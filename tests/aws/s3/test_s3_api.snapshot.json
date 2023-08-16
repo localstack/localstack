@@ -2292,5 +2292,210 @@
         }
       }
     }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3BucketOwnershipControls::test_crud_bucket_ownership_controls": {
+    "recorded-date": "10-08-2023, 02:57:08",
+    "recorded-content": {
+      "default-ownership": {
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "BucketOwnerEnforced"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-ownership": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-ownership": {
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "ObjectWriter"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-ownership": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-ownership-after-delete": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "OwnershipControlsNotFoundError",
+          "Message": "The bucket ownership controls were not found"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-ownership-after-delete": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-ownership-at-creation": {
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "BucketOwnerPreferred"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3BucketOwnershipControls::test_bucket_ownership_controls_exc": {
+    "recorded-date": "10-08-2023, 03:08:54",
+    "recorded-content": {
+      "default-ownership": {
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "BucketOwnerEnforced"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-ownership-multiple-rules": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-ownership-wrong-value": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-ownership-empty-rule": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "ownership-wrong-value-at-creation": {
+        "Error": {
+          "ArgumentName": "x-amz-object-ownership",
+          "Code": "InvalidArgument",
+          "Message": "Invalid x-amz-object-ownership header: RandomValue"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "ownership-non-value-at-creation": {
+        "Error": {
+          "ArgumentName": "x-amz-object-ownership",
+          "Code": "InvalidArgument",
+          "Message": "Invalid x-amz-object-ownership header: "
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3PublicAccessBlock::test_crud_public_access_block": {
+    "recorded-date": "10-08-2023, 03:29:18",
+    "recorded-content": {
+      "get-default-public-access-block": {
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-public-access-block": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-public-access-block": {
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": false,
+          "BlockPublicPolicy": false,
+          "IgnorePublicAcls": false,
+          "RestrictPublicBuckets": false
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-public-access-block": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-public-access-block-after-delete": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchPublicAccessBlockConfiguration",
+          "Message": "The public access block configuration was not found"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "idempotent-delete-public-access-block": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/s3/test_s3_api.py::TestS3PublicAccessBlock::test_public_access_block_exc": {
+    "recorded-date": "10-08-2023, 03:30:54",
+    "recorded-content": {}
   }
 }
