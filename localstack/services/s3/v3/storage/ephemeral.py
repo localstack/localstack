@@ -283,7 +283,7 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         src_bucket: BucketName,
         src_s3_object: S3Object,
         range_data: ObjectRange,
-    ) -> EphemeralS3StoredObject:
+    ) -> None:
         """
         Create and add an EphemeralS3StoredObject to the Multipart collection, with an S3Object as input. This will
         take a slice of the S3Object to create a part.
@@ -298,7 +298,6 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
 
         object_slice = LimitedStream(src_stored_object, range_data=range_data)
         stored_part.write(object_slice)
-        return stored_part
 
 
 class BucketTemporaryFileSystem(TypedDict):

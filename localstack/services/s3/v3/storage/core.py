@@ -145,7 +145,7 @@ class S3StoredMultipart(abc.ABC):
         src_bucket: BucketName,
         src_s3_object: S3Object,
         range_data: ObjectRange,
-    ) -> S3StoredObject:
+    ) -> None:
         pass
 
 
