@@ -1,6 +1,9 @@
+from __future__ import annotations
+
+import abc
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Final, Optional
 
 from localstack.aws.api.stepfunctions import (
     Arn,
@@ -12,13 +15,14 @@ from localstack.aws.api.stepfunctions import (
     StateMachineListItem,
     StateMachineStatus,
     StateMachineType,
+    StateMachineVersionListItem,
     TagList,
     TracingConfiguration,
 )
 from localstack.utils.strings import long_uid
 
 
-class StateMachine:
+class StateMachineInstance:
     name: Name
     arn: Arn
     revision_id: Optional[RevisionId]
@@ -53,7 +57,57 @@ class StateMachine:
         self.tags = tags
         self.tracing_config = tracing_config
 
-    def add_revision(
+    def describe(self) -> DescribeStateMachineOutput:
+        describe_output = DescribeStateMachineOutput(
+            stateMachineArn=self.arn,
+            name=self.name,
+            status=StateMachineStatus.ACTIVE,
+            definition=self.definition,
+            roleArn=self.role_arn,
+            type=self.sm_type,
+            creationDate=self.create_date,
+            loggingConfiguration=self.logging_config,
+        )
+        if self.revision_id:
+            describe_output["revisionId"] = self.revision_id
+        return describe_output
+
+    @abc.abstractmethod
+    def itemise(self):
+        ...
+
+
+class StateMachineRevision(StateMachineInstance):
+    _next_version_number: int
+    versions: Final[dict[RevisionId, Arn]]
+
+    def __init__(
+        self,
+        name: Name,
+        arn: Arn,
+        definition: Definition,
+        role_arn: Arn,
+        create_date: Optional[datetime] = None,
+        sm_type: Optional[StateMachineType] = None,
+        logging_config: Optional[LoggingConfiguration] = None,
+        tags: Optional[TagList] = None,
+        tracing_config: Optional[TracingConfiguration] = None,
+    ):
+        super().__init__(
+            name,
+            arn,
+            definition,
+            role_arn,
+            create_date,
+            sm_type,
+            logging_config,
+            tags,
+            tracing_config,
+        )
+        self.versions = dict()
+        self._version_number = 0
+
+    def create_revision(
         self, definition: Optional[str], role_arn: Optional[Arn]
     ) -> Optional[RevisionId]:
         update_definition = definition and json.loads(definition) != json.loads(self.definition)
@@ -69,7 +123,26 @@ class StateMachine:
 
         return self.revision_id
 
-    def to_state_machine_list_item(self) -> StateMachineListItem:
+    def create_version(self, description: Optional[str]) -> Optional[StateMachineVersion]:
+        if self.revision_id not in self.versions:
+            self._version_number += 1
+            version = StateMachineVersion(
+                self, version=self._version_number, description=description
+            )
+            self.versions[self.revision_id] = version.arn
+
+            return version
+        return None
+
+    def delete_version(self, state_machine_version_arn: Arn) -> None:
+        source_revision_id = None
+        for revision_id, version_arn in self.versions.items():
+            if version_arn == state_machine_version_arn:
+                source_revision_id = revision_id
+                break
+        self.versions.pop(source_revision_id, None)
+
+    def itemise(self) -> StateMachineListItem:
         return StateMachineListItem(
             stateMachineArn=self.arn,
             name=self.name,
@@ -77,17 +150,39 @@ class StateMachine:
             creationDate=self.create_date,
         )
 
-    def to_describe_output(self) -> DescribeStateMachineOutput:
-        describe_output = DescribeStateMachineOutput(
-            stateMachineArn=self.arn,
-            name=self.name,
-            status=StateMachineStatus.ACTIVE,
-            definition=self.definition,
-            roleArn=self.role_arn,
-            type=self.sm_type,
-            creationDate=self.create_date,
-            loggingConfiguration=self.logging_config,
+
+class StateMachineVersion(StateMachineInstance):
+    source_arn: Arn
+    version: int
+    description: Optional[str]
+
+    def __init__(
+        self, state_machine_revision: StateMachineRevision, version: int, description: Optional[str]
+    ):
+        version_arn = f"{state_machine_revision.arn}:{version}"
+        super().__init__(
+            name=state_machine_revision.name,
+            arn=version_arn,
+            definition=state_machine_revision.definition,
+            role_arn=state_machine_revision.role_arn,
+            create_date=datetime.now(),
+            sm_type=state_machine_revision.sm_type,
+            logging_config=state_machine_revision.logging_config,
+            tags=state_machine_revision.tags,
+            tracing_config=state_machine_revision.tracing_config,
         )
-        if self.revision_id:
-            describe_output["revisionId"] = self.revision_id
+        self.source_arn = state_machine_revision.arn
+        self.revision_id = state_machine_revision.revision_id
+        self.version = version
+        self.description = description
+
+    def describe(self) -> DescribeStateMachineOutput:
+        describe_output: DescribeStateMachineOutput = super().describe()
+        if self.description:
+            describe_output["description"] = self.description
         return describe_output
+
+    def itemise(self) -> StateMachineVersionListItem:
+        return StateMachineVersionListItem(
+            stateMachineVersionArn=self.arn, creationDate=self.create_date
+        )

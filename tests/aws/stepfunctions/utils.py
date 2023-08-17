@@ -56,6 +56,17 @@ def _is_state_machine_listed(stepfunctions_client, state_machine_arn: str) -> bo
     return False
 
 
+def _is_state_machine_version_listed(
+    stepfunctions_client, state_machine_arn: str, state_machine_version_arn: str
+) -> bool:
+    lst_resp = stepfunctions_client.list_state_machine_versions(stateMachineArn=state_machine_arn)
+    versions = lst_resp["stateMachineVersions"]
+    for version in versions:
+        if version["stateMachineVersionArn"] == state_machine_version_arn:
+            return True
+    return False
+
+
 def await_state_machine_not_listed(stepfunctions_client, state_machine_arn: str):
     success = poll_condition(
         condition=lambda: not _is_state_machine_listed(stepfunctions_client, state_machine_arn),
@@ -74,6 +85,38 @@ def await_state_machine_listed(stepfunctions_client, state_machine_arn: str):
     )
     if not success:
         LOG.warning(f"Timed out whilst awaiting for listing to include '{state_machine_arn}'.")
+
+
+def await_state_machine_version_not_listed(
+    stepfunctions_client, state_machine_arn: str, state_machine_version_arn: str
+):
+    success = poll_condition(
+        condition=lambda: not _is_state_machine_version_listed(
+            stepfunctions_client, state_machine_arn, state_machine_version_arn
+        ),
+        timeout=_DELETION_TIMEOUT_SECS,
+        interval=1,
+    )
+    if not success:
+        LOG.warning(
+            f"Timed out whilst awaiting for version of {state_machine_arn} to exclude '{state_machine_version_arn}'."
+        )
+
+
+def await_state_machine_version_listed(
+    stepfunctions_client, state_machine_arn: str, state_machine_version_arn: str
+):
+    success = poll_condition(
+        condition=lambda: _is_state_machine_version_listed(
+            stepfunctions_client, state_machine_arn, state_machine_version_arn
+        ),
+        timeout=_DELETION_TIMEOUT_SECS,
+        interval=1,
+    )
+    if not success:
+        LOG.warning(
+            f"Timed out whilst awaiting for version of {state_machine_arn} to include '{state_machine_version_arn}'."
+        )
 
 
 def _await_on_execution_events(
@@ -126,6 +169,24 @@ def await_execution_terminated(stepfunctions_client, execution_arn: str):
         execution_arn=execution_arn,
         check_func=_check_last_is_terminal,
     )
+
+
+def await_execution_lists_terminated(
+    stepfunctions_client, state_machine_arn: str, execution_arn: str
+):
+    def _check_last_is_terminal() -> bool:
+        list_output = stepfunctions_client.list_executions(stateMachineArn=state_machine_arn)
+        executions = list_output["executions"]
+        for execution in executions:
+            if execution["executionArn"] == execution_arn:
+                return execution["status"] != ExecutionStatus.RUNNING
+        return False
+
+    success = poll_condition(condition=_check_last_is_terminal, timeout=120, interval=1)
+    if not success:
+        LOG.warning(
+            f"Timed out whilst awaiting for execution events to satisfy condition for execution '{execution_arn}'."
+        )
 
 
 def await_execution_started(stepfunctions_client, execution_arn: str):
