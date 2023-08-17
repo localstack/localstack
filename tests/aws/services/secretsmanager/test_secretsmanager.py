@@ -25,7 +25,7 @@ from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 from localstack.utils.time import today_no_time
-from tests.aws.services.lambda_ import TEST_LAMBDA_PYTHON_VERSION
+from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_VERSION
 from tests.aws.services.secretsmanager.functions import lambda_rotate_secret
 
 LOG = logging.getLogger(__name__)
