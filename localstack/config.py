@@ -570,7 +570,7 @@ def populate_legacy_edge_configuration(
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
 
-    # new for v2
+    # new for v3
     # populate LOCALSTACK_HOST first since GATEWAY_LISTEN may be derived from LOCALSTACK_HOST
     localstack_host = localstack_host_raw
     if localstack_host is None:
