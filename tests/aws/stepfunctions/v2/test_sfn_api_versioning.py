@@ -7,6 +7,7 @@ from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.aws.stepfunctions.templates.base.base_templates import BaseTemplate
 from tests.aws.stepfunctions.utils import (
+    await_execution_lists_terminated,
     await_execution_terminated,
     await_state_machine_version_listed,
     await_state_machine_version_not_listed,
@@ -366,10 +367,6 @@ class TestSnfApiVersioning:
             )
         sfn_snapshot.match("conflict_exception", conflict_exception.value)
 
-    @markers.snapshot.skip_snapshot_verify(
-        # TODO: status and output update flaky on aws when listing versions.
-        paths=["$..executions..status", "$..executions..stopDate"]
-    )
     @markers.aws.unknown
     def test_start_version_execution(
         self,
@@ -402,6 +399,12 @@ class TestSnfApiVersioning:
             stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
         )
 
+        await_execution_lists_terminated(
+            stepfunctions_client=aws_client.stepfunctions,
+            state_machine_arn=state_machine_arn,
+            execution_arn=execution_arn,
+        )
+
         exec_list_resp = aws_client.stepfunctions.list_executions(stateMachineArn=state_machine_arn)
         sfn_snapshot.match("exec_list_resp", exec_list_resp)
 
@@ -412,10 +415,16 @@ class TestSnfApiVersioning:
             sfn_snapshot.transform.sfn_sm_exec_arn(execution_version_resp, 1)
         )
         sfn_snapshot.match("execution_version_resp", execution_version_resp)
-        execution_version_arn = execution_version_resp["executionArn"]
+        version_execution_arn = execution_version_resp["executionArn"]
 
         await_execution_terminated(
-            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_version_arn
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=version_execution_arn
+        )
+
+        await_execution_lists_terminated(
+            stepfunctions_client=aws_client.stepfunctions,
+            state_machine_arn=state_machine_version_arn,
+            execution_arn=version_execution_arn,
         )
 
         exec_version_list_resp = aws_client.stepfunctions.list_executions(

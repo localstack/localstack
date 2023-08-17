@@ -171,6 +171,24 @@ def await_execution_terminated(stepfunctions_client, execution_arn: str):
     )
 
 
+def await_execution_lists_terminated(
+    stepfunctions_client, state_machine_arn: str, execution_arn: str
+):
+    def _check_last_is_terminal() -> bool:
+        list_output = stepfunctions_client.list_executions(stateMachineArn=state_machine_arn)
+        executions = list_output["executions"]
+        for execution in executions:
+            if execution["executionArn"] == execution_arn:
+                return execution["status"] != ExecutionStatus.RUNNING
+        return False
+
+    success = poll_condition(condition=_check_last_is_terminal, timeout=120, interval=1)
+    if not success:
+        LOG.warning(
+            f"Timed out whilst awaiting for execution events to satisfy condition for execution '{execution_arn}'."
+        )
+
+
 def await_execution_started(stepfunctions_client, execution_arn: str):
     def _check_stated_exists(events: HistoryEventList) -> bool:
         for event in events:

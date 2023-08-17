@@ -417,7 +417,7 @@
     }
   },
   "tests/aws/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_start_version_execution": {
-    "recorded-date": "11-08-2023, 18:21:27",
+    "recorded-date": "17-08-2023, 09:53:53",
     "recorded-content": {
       "creation_resp_1": {
         "creationDate": "datetime",
@@ -443,7 +443,8 @@
             "name": "<ExecArnPart_0idx>",
             "startDate": "datetime",
             "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
-            "status": "RUNNING"
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
           }
         ],
         "ResponseMetadata": {
@@ -467,7 +468,8 @@
             "startDate": "datetime",
             "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
             "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
-            "status": "RUNNING"
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
           }
         ],
         "ResponseMetadata": {
