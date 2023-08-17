@@ -1,12 +1,12 @@
-import boto3
-import botocore.session
+import logging
+
 import jsonpath_ng
-import mypy_boto3_sns
 import pytest
 from botocore.model import OperationModel
 
-from localstack.utils.strings import short_uid
+from localstack.testing.pytest import markers
 
+LOG = logging.getLogger("AUTOCLEANUP")
 
 def clear_bucket(client_factory, *, Bucket: str):
     # TODO: get list of all files, try to delete them
@@ -46,11 +46,15 @@ def resolve_jsonpath(jsonpath_item, result):
     return results[0].value
 
 
-def perform_cleanup(boto_session, cleanup_operations, parsed_result):
+def perform_cleanup(factory_factory, boto_session, cleanup_operations, parsed_result):
     """
     The actual core logic.
     Builds a client from the spec and calls the inverse/cleanup function with the dynamically resolved parameters
     """
+    LOG.info("Performing resource cleanup on AWS")
+    LOG.info("-----------------")
+    LOG.info(f"{parsed_result=}")
+    LOG.info("-----------------")
 
     for op in cleanup_operations:
         cleanup_fn_spec, cleanup_params = op
@@ -58,7 +62,8 @@ def perform_cleanup(boto_session, cleanup_operations, parsed_result):
         # resolve cleanup function
         if isinstance(cleanup_fn_spec, str):
             svc_name, operation_name = cleanup_fn_spec.split(".")
-            client = boto_session.client(svc_name)
+            factory = factory_factory(boto_session)
+            client = factory.get_client(service_name=svc_name)
             cleanup_fn = getattr(client, operation_name)
         elif callable(cleanup_fn_spec):
             cleanup_fn = cleanup_fn_spec
@@ -83,35 +88,41 @@ def perform_cleanup(boto_session, cleanup_operations, parsed_result):
         # TODO: retries
         # TODO: waiting for status checks before/after
         result = cleanup_fn(**params)
-        print(result)
+        LOG.info(f"result of cleanup: {result=}")
+        LOG.info("-----------------")
 
 
-@pytest.fixture(scope="function")
-def cleanup_session(cleanups):
-    session = botocore.session.get_session()
-    boto3_session = boto3.session.Session(botocore_session=session)
-    boto3.DEFAULT_SESSION = (
-        boto3_session  # this should hopefully also then work for the testutil calls
-    )
+TOPIC_NAME = "test-automatic-cleanup-topic"
 
-    def register_cleanup_handler(
-        http_response, parsed, model: OperationModel, context, event_name, **kwargs
-    ):
-        key = f"{model.service_model.service_name}.{model.name}"
-        cleanup_spec = mappings.get(key)
-        if cleanup_spec:
-            cleanups.append(lambda: perform_cleanup(boto3_session, cleanup_spec, parsed))
+class TestSnsResourceCleanup:
 
-    session.register("after-call.*", register_cleanup_handler)
-    return boto3_session
+    @pytest.fixture(scope="function")
+    def aws_cleanup_client(self, aws_session, cleanups):
+        """ this fixture returns a client factory that will perform automatic cleanups """
+        from localstack.testing.aws.util import base_aws_client_factory
+        boto3_session = aws_session
 
+        def register_cleanup_handler(
+                http_response, parsed, model: OperationModel, context, event_name, **kwargs
+        ):
+            key = f"{model.service_model.service_name}.{model.name}"
+            cleanup_spec = mappings.get(key)
+            if cleanup_spec:
+                cleanups.append(lambda: perform_cleanup(base_aws_client_factory, boto3_session, cleanup_spec, parsed))
 
-@pytest.fixture(scope="function")
-def sns_clientv2(cleanup_session) -> mypy_boto3_sns.SNSClient:
-    return cleanup_session.client("sns")
+        boto3_session._session.register("after-call.*", register_cleanup_handler)
+        factory = base_aws_client_factory(boto3_session)
+        return factory()
 
+    @markers.aws.validated
+    def test_create_topic(self, aws_cleanup_client):
+        """ create a topic and verify it exists """
+        aws_cleanup_client.sns.create_topic(Name=TOPIC_NAME)
+        topics = aws_cleanup_client.sns.get_paginator("list_topics").paginate().build_full_result()['Topics']
+        assert any([TOPIC_NAME in t['TopicArn'] for t in topics])
 
-def test_cleanup_sns(sns_clientv2):
-    sns_clientv2.create_topic(Name=f"test-cleanup-topic-{short_uid()}")
-    sns_clientv2.create_topic(Name=f"test-cleanup-topic-{short_uid()}")
-    print("done")
+    @markers.aws.validated
+    def test_topic_removed(self, aws_cleanup_client):
+        """ verify that the created SNS topic from above does not exist anymore """
+        topics = aws_cleanup_client.sns.get_paginator("list_topics").paginate().build_full_result()['Topics']
+        assert not any([TOPIC_NAME in t['TopicArn'] for t in topics])
