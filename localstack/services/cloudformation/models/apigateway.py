@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
+    generate_default_name_without_stack,
     lambda_keys_to_lower,
     params_list_to_dict,
 )
@@ -30,7 +31,9 @@ class GatewayResponse(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def _handle_result(result: dict, logical_resource_id: str, resource: dict):
-            resource["PhysicalResourceId"] = logical_resource_id
+            resource["PhysicalResourceId"] = generate_default_name_without_stack(
+                logical_resource_id
+            )
 
         return {
             "create": {
