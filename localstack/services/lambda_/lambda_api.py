@@ -1516,7 +1516,7 @@ def create_url_config(function):
     host_definition = localstack_host(
         use_localhost_cloud=True, custom_port=config.EDGE_PORT_HTTP or config.EDGE_PORT
     )
-    url = f"http://{custom_id}.lambda-url.{region_name}.{host_definition.host_and_port()}/"
+    url = f"http://{custom_id}.lambda-url.{region_name}.{host_definition}/"
     # TODO: HTTPS support
 
     data = json.loads(to_str(request.data))

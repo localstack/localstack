@@ -1779,7 +1779,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             function_name=function_name,
             cors=cors,
             url_id=url_id,
-            url=f"http://{url_id}.lambda-url.{context.region}.{host_definition.host_and_port()}/",  # TODO: https support
+            url=f"http://{url_id}.lambda-url.{context.region}.{host_definition}/",  # TODO: https support
             auth_type=auth_type,
             creation_time=api_utils.generate_lambda_date(),
             last_modified_time=api_utils.generate_lambda_date(),

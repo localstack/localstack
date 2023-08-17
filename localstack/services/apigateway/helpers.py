@@ -168,7 +168,9 @@ class OpenAPISpecificationResolver:
         self._cache = {}
         self._refpaths = ["#"]
         host_definition = localstack_host(use_localhost_cloud=True)
-        self._base_url = f"{config.get_protocol()}://apigateway.{host_definition.host_and_port()}/restapis/{rest_api_id}/models/"
+        self._base_url = (
+            f"{config.get_protocol()}://apigateway.{host_definition}/restapis/{rest_api_id}/models/"
+        )
 
     def _is_ref(self, item) -> bool:
         return isinstance(item, dict) and "$ref" in item

@@ -211,10 +211,10 @@ def get_full_default_bucket_location(bucket_name):
         host_definition = localstack_host(
             use_hostname_external=True, custom_port=config.get_edge_port_http()
         )
-        return f"{config.get_protocol()}://{host_definition.host_and_port()}/{bucket_name}/"
+        return f"{config.get_protocol()}://{host_definition}/{bucket_name}/"
     else:
         host_definition = localstack_host(use_localhost_cloud=True)
-        return f"{config.get_protocol()}://{bucket_name}.s3.{host_definition.host_and_port()}/"
+        return f"{config.get_protocol()}://{bucket_name}.s3.{host_definition}/"
 
 
 class S3Provider(S3Api, ServiceLifecycleHook):

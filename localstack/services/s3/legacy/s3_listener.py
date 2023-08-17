@@ -1369,7 +1369,7 @@ class ProxyListenerS3(ProxyListener):
         return re.sub(
             r"<Location>\s*([a-zA-Z0-9\-]+)://[^/]+/([^<]+)\s*</Location>",
             r"<Location>%s://%s/%s/\2</Location>"
-            % (get_service_protocol(), host_definition.host_and_port(), bucket_name),
+            % (get_service_protocol(), host_definition, bucket_name),
             content,
             flags=re.MULTILINE,
         )
