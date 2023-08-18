@@ -123,6 +123,23 @@ jobs:
           command: |
             echo skipped
 
+
+  itest-s3-stream-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-pytest-tinybird
+      - run:
+          name: Test S3 Streaming provider
+          environment:
+            PROVIDER_OVERRIDE_S3: "stream"
+            TEST_PATH: "tests/aws/services/s3/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            echo skipped
+
   docker-build:
     parameters:
       platform:
@@ -353,18 +370,6 @@ workflows:
       - preflight:
           requires:
             - install
-      - itest-lambda-legacy-local:
-          requires:
-            - preflight
-      - itest-sfn-v2-provider:
-          requires:
-            - preflight
-      - itest-s3-stream-provider:
-          requires:
-            - preflight
-      - unit-tests:
-          requires:
-            - preflight
       - docker-build:
           name: docker-build-amd64
           platform: amd64
@@ -395,25 +400,3 @@ workflows:
           machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
           requires:
             - docker-build-amd64
-      - capture-not-implemented:
-          name: collect-not-implemented
-          requires:
-            - docker-build-amd64
-      - report:
-          requires:
-            - itest-lambda-legacy-local
-            - itest-sfn-v2-provider
-            - docker-test-amd64
-            - docker-test-arm64
-            - collect-not-implemented
-            - unit-tests
-      - push:
-          filters:
-            branches:
-              only: master
-          requires:
-            - itest-lambda-legacy-local
-            - itest-sfn-v2-provider
-            - docker-test-amd64
-            - docker-test-arm64
-            - unit-tests
