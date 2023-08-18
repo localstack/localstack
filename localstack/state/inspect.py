@@ -97,7 +97,7 @@ class ReflectionStateLocator:
                 _visit_modules(modules)
             case "ce":
                 modules = [
-                    ("localstack_ext.services.costexplorer.models", "ce_stores"),
+                    ("localstack_ext.services.ce.models", "ce_stores"),
                     ("moto.ce.models", "ce_backends"),
                 ]
                 _visit_modules(modules)
