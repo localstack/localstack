@@ -380,7 +380,7 @@
       ]
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_ses_sns_topic_integration_send_raw_email: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_ses_sns_topic_integration_send_raw_email": {
     "recorded-date": "14-12-2022, 17:29:18",
     "recorded-content": {
       "messages": [
@@ -503,7 +503,7 @@
       ]
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_cannot_create_event_for_no_topic: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_cannot_create_event_for_no_topic": {
     "recorded-date": "23-11-2022, 21:30:20",
     "recorded-content": {
       "create-error": {
@@ -519,7 +519,7 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_deleting_non_existent_configuration_set: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_deleting_non_existent_configuration_set": {
     "recorded-date": "28-11-2022, 11:07:06",
     "recorded-content": {
       "delete-error": {
@@ -535,7 +535,7 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_deleting_non_existent_configuration_set_event_destination: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_deleting_non_existent_configuration_set_event_destination": {
     "recorded-date": "28-11-2022, 11:00:55",
     "recorded-content": {
       "delete-error": {
@@ -551,7 +551,7 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_sending_to_deleted_topic: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_sending_to_deleted_topic": {
     "recorded-date": "28-11-2022, 12:33:32",
     "recorded-content": {
       "messages": [
@@ -569,7 +569,7 @@
       ]
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_creating_event_destination_without_configuration_set: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_creating_event_destination_without_configuration_set": {
     "recorded-date": "28-11-2022, 16:12:48",
     "recorded-content": {
       "create-error": {
@@ -585,7 +585,7 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_trying_to_delete_event_destination_from_non_existent_configuration_set: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_trying_to_delete_event_destination_from_non_existent_configuration_set": {
     "recorded-date": "02-12-2022, 15:19:54",
     "recorded-content": {
       "delete-error": {
@@ -601,7 +601,7 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test]: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test]": {
     "recorded-date": "06-07-2023, 22:46:19",
     "recorded-content": {
       "response": {
@@ -617,7 +617,7 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-test_invalid_value:123]: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-test_invalid_value:123]": {
     "recorded-date": "06-07-2023, 22:46:20",
     "recorded-content": {
       "response": {
@@ -633,7 +633,7 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test_invalid_value:123]: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name:123-test_invalid_value:123]": {
     "recorded-date": "06-07-2023, 22:46:21",
     "recorded-content": {
       "response": {
@@ -649,7 +649,7 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name_len]: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_name_len]": {
     "recorded-date": "06-07-2023, 22:46:23",
     "recorded-content": {
       "response": {
@@ -665,7 +665,7 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_value_len]: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_invalid_value_len]": {
     "recorded-date": "06-07-2023, 22:46:24",
     "recorded-content": {
       "response": {
@@ -681,7 +681,7 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_priority_name_value]: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test_priority_name_value]": {
     "recorded-date": "06-07-2023, 22:46:26",
     "recorded-content": {
       "response": {
@@ -697,7 +697,7 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-]: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-]": {
     "recorded-date": "06-07-2023, 22:46:28",
     "recorded-content": {
       "response": {
@@ -713,7 +713,7 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-test]: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-test]": {
     "recorded-date": "06-07-2023, 22:46:29",
     "recorded-content": {
       "response": {
@@ -729,7 +729,7 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-]: {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[test-]": {
     "recorded-date": "06-07-2023, 22:46:32",
     "recorded-content": {
       "response": {
