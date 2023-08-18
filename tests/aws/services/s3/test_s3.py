@@ -5009,7 +5009,7 @@ class TestS3:
     def test_s3_get_object_headers(self, aws_client, s3_create_bucket, snapshot):
         bucket = s3_create_bucket()
         key = "en-gb.wav"
-        file_path = os.path.join(os.path.dirname(__file__), f"../files/{key}")
+        file_path = os.path.join(os.path.dirname(__file__), f"../../files/{key}")
 
         aws_client.s3.upload_file(file_path, bucket, key)
         objects = aws_client.s3.list_objects(Bucket=bucket)
@@ -5325,8 +5325,7 @@ class TestS3TerraformRawRequests:
         reqs = load_file(
             os.path.join(
                 os.path.dirname(__file__),
-                "../../../../../localstack-ext/tests/aws/files",
-                "s3.requests.txt",
+                "../../files/s3.requests.txt",
             )
         )
         reqs = reqs.split("---")

@@ -21,7 +21,7 @@ class TestCdkInit:
         deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__),
-                f"../../templates/cdk_bootstrap_v{bootstrap_version}.yaml",
+                f"../../../templates/cdk_bootstrap_v{bootstrap_version}.yaml",
             )
         )
         init_stack_result = deploy_cfn_template(

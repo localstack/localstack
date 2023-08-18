@@ -10,9 +10,7 @@ from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_IMPORT_PETSTORE_SWAGGER = os.path.join(
-    THIS_FOLDER, "../../../../../localstack-ext/tests/aws/files", "petstore-swagger.json"
-)
+TEST_IMPORT_PETSTORE_SWAGGER = os.path.join(THIS_FOLDER, "../../files/petstore-swagger.json")
 
 
 @markers.aws.unknown

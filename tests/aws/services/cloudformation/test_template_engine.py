@@ -409,7 +409,7 @@ class TestSecretsManagerParameters:
             parameters={"DynamicParameter": f"{parameter_key}"},
             template_path=os.path.join(
                 os.path.dirname(__file__),
-                "../../../../../localstack-ext/tests/aws/templates/",
+                "../../templates",
                 template_name,
             ),
         )

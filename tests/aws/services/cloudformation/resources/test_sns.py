@@ -30,8 +30,7 @@ def test_sns_topic_fifo_without_suffix_fails(deploy_cfn_template, aws_client):
     topic_name = f"topic-{short_uid()}"
     path = os.path.join(
         os.path.dirname(__file__),
-        "../../../../../../localstack-ext/tests/aws/templates",
-        "sns_topic_fifo_dedup.yaml",
+        "../../../templates/sns_topic_fifo_dedup.yaml",
     )
 
     with pytest.raises(Exception) as ex:

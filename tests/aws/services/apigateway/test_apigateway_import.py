@@ -25,28 +25,28 @@ from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
 LOG = logging.getLogger(__name__)
 
 # parent directory of this file
-PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OPENAPI_SPEC_PULUMI_JSON = os.path.join(PARENT_DIR, "files", "openapi.spec.pulumi.json")
-OPENAPI_SPEC_TF_JSON = os.path.join(PARENT_DIR, "files", "openapi.spec.tf.json")
-SWAGGER_MOCK_CORS_JSON = os.path.join(PARENT_DIR, "files", "swagger-mock-cors.json")
-PETSTORE_SWAGGER_JSON = os.path.join(PARENT_DIR, "files", "petstore-authorizer.swagger.json")
-TEST_SWAGGER_FILE_JSON = os.path.join(PARENT_DIR, "files", "swagger.json")
+PARENT_DIR = os.path.dirname(os.path.abspath(__file__))
+OPENAPI_SPEC_PULUMI_JSON = os.path.join(PARENT_DIR, "../../files/openapi.spec.pulumi.json")
+OPENAPI_SPEC_TF_JSON = os.path.join(PARENT_DIR, "../../files/openapi.spec.tf.json")
+SWAGGER_MOCK_CORS_JSON = os.path.join(PARENT_DIR, "../../files/swagger-mock-cors.json")
+PETSTORE_SWAGGER_JSON = os.path.join(PARENT_DIR, "../../files/petstore-authorizer.swagger.json")
+TEST_SWAGGER_FILE_JSON = os.path.join(PARENT_DIR, "../../files/swagger.json")
 TEST_OAS30_BASE_PATH_SERVER_VAR_FILE_YAML = os.path.join(
-    PARENT_DIR, "files", "openapi-basepath-server-variable.yaml"
+    PARENT_DIR, "../../files/openapi-basepath-server-variable.yaml"
 )
 TEST_OAS30_BASE_PATH_SERVER_URL_FILE_YAML = os.path.join(
-    PARENT_DIR, "files", "openapi-basepath-url.yaml"
+    PARENT_DIR, "../../files/openapi-basepath-url.yaml"
 )
-TEST_IMPORT_REST_API_FILE = os.path.join(PARENT_DIR, "files", "pets.json")
+TEST_IMPORT_REST_API_FILE = os.path.join(PARENT_DIR, "../../files/pets.json")
 TEST_IMPORT_OPEN_API_GLOBAL_API_KEY_AUTHORIZER = os.path.join(
-    PARENT_DIR, "files", "openapi.spec.global-auth.json"
+    PARENT_DIR, "../../files/openapi.spec.global-auth.json"
 )
-OAS_30_CIRCULAR_REF = os.path.join(PARENT_DIR, "files", "openapi.spec.circular-ref.json")
+OAS_30_CIRCULAR_REF = os.path.join(PARENT_DIR, "../../files/openapi.spec.circular-ref.json")
 OAS_30_CIRCULAR_REF_WITH_REQUEST_BODY = os.path.join(
-    PARENT_DIR, "files", "openapi.spec.circular-ref-with-request-body.json"
+    PARENT_DIR, "../../files/openapi.spec.circular-ref-with-request-body.json"
 )
-OAS_30_STAGE_VARIABLES = os.path.join(PARENT_DIR, "files", "openapi.spec.stage-variables.json")
-TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "lambda_/functions/lambda_echo.py")
+OAS_30_STAGE_VARIABLES = os.path.join(PARENT_DIR, "../../files/openapi.spec.stage-variables.json")
+TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "../lambda_/functions/lambda_echo.py")
 
 
 @pytest.fixture

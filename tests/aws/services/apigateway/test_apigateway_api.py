@@ -25,8 +25,8 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
 
 LOG = logging.getLogger(__name__)
 
-PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OAS_30_DOCUMENTATION_PARTS = os.path.join(PARENT_DIR, "files", "oas30_documentation_parts.json")
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+OAS_30_DOCUMENTATION_PARTS = os.path.join(THIS_DIR, "../../files/oas30_documentation_parts.json")
 
 
 @pytest.fixture(autouse=True)
