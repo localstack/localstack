@@ -262,7 +262,7 @@
       }
     }
   },
-  "tests/aws/test_iam.py::TestIAMIntegrations::test_user_attach_policy": {
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_user_attach_policy: {
     "recorded-date": "04-07-2023, 17:16:43",
     "recorded-content": {
       "create_policy_response": {

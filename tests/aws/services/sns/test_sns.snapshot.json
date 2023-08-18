@@ -342,7 +342,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_exists_filter_policy": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_exists_filter_policy: {
     "recorded-date": "13-02-2023, 16:49:47",
     "recorded-content": {
       "subscription-attributes-policy-1": {
@@ -531,7 +531,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_subscribe_sqs_queue": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_subscribe_sqs_queue: {
     "recorded-date": "13-02-2023, 16:50:28",
     "recorded-content": {
       "subscription-attributes": {
@@ -596,7 +596,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_unknown_topic_publish": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_unknown_topic_publish: {
     "recorded-date": "04-03-2023, 21:35:42",
     "recorded-content": {
       "success": {
@@ -619,7 +619,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_sqs_topic_subscription_confirmation": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_sqs_topic_subscription_confirmation: {
     "recorded-date": "09-08-2022, 11:30:18",
     "recorded-content": {
       "subscription-attrs": {
@@ -634,7 +634,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_sns_topic_as_lambda_dead_letter_queue": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_sns_topic_as_lambda_dead_letter_queue: {
     "recorded-date": "09-08-2022, 11:34:43",
     "recorded-content": {
       "lambda-response-dlq-config": {
@@ -703,7 +703,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_redrive_policy_lambda_subscription": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_redrive_policy_lambda_subscription: {
     "recorded-date": "11-08-2022, 14:36:27",
     "recorded-content": {
       "subscription-attributes": {
@@ -757,7 +757,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_publish_with_empty_subject": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_publish_with_empty_subject: {
     "recorded-date": "09-08-2022, 11:34:56",
     "recorded-content": {
       "response-without-subject": {
@@ -780,7 +780,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_create_topic_test_arn": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_create_topic_test_arn: {
     "recorded-date": "14-03-2023, 11:56:54",
     "recorded-content": {
       "create-topic": {
@@ -866,7 +866,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_publish_message_by_target_arn": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_publish_message_by_target_arn: {
     "recorded-date": "09-08-2022, 11:34:59",
     "recorded-content": {
       "receive-topic-arn": {
@@ -919,7 +919,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_publish_message_before_subscribe_topic": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_publish_message_before_subscribe_topic: {
     "recorded-date": "09-08-2022, 11:35:08",
     "recorded-content": {
       "publish-before-subscribing": {
@@ -963,7 +963,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_create_duplicate_topic_with_more_tags": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_create_duplicate_topic_with_more_tags: {
     "recorded-date": "09-08-2022, 11:35:08",
     "recorded-content": {
       "exception-duplicate": {
@@ -979,7 +979,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_create_duplicate_topic_check_idempotency": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_create_duplicate_topic_check_idempotency: {
     "recorded-date": "09-08-2022, 11:35:09",
     "recorded-content": {
       "response-created": {
@@ -1012,7 +1012,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_publish_by_path_parameters": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_publish_by_path_parameters: {
     "recorded-date": "09-08-2022, 11:35:12",
     "recorded-content": {
       "post-request": {
@@ -1052,7 +1052,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_publish_sqs_from_sns": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_publish_sqs_from_sns: {
     "recorded-date": "09-08-2022, 11:35:22",
     "recorded-content": {
       "sub-attrs-raw-true": {
@@ -1140,7 +1140,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_sns_to_sqs": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_sns_to_sqs: {
     "recorded-date": "12-06-2023, 18:15:59",
     "recorded-content": {
       "sub-attrs-raw-true": {
@@ -1273,7 +1273,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_publish_batch_exceptions": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_publish_batch_exceptions: {
     "recorded-date": "12-06-2023, 18:22:01",
     "recorded-content": {
       "no-group-id": {
@@ -1333,7 +1333,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_create_topic_after_delete_with_new_tags": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_create_topic_after_delete_with_new_tags: {
     "recorded-date": "09-08-2022, 11:35:47",
     "recorded-content": {
       "topic-0": {
