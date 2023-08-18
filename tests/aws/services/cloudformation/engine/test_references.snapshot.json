@@ -1,5 +1,5 @@
 {
-  "tests/aws/cloudformation/engine/test_references.py::TestDependsOn::test_depends_on_with_missing_reference": {
+  "tests/aws/services/cloudformation/engine/test_references.py::TestDependsOn::test_depends_on_with_missing_reference": {
     "recorded-date": "10-07-2023, 15:22:26",
     "recorded-content": {
       "depends_on_nonexisting_exception": {
@@ -15,7 +15,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/engine/test_references.py::TestFnSub::test_fn_sub_cases": {
+  "tests/aws/services/cloudformation/engine/test_references.py::TestFnSub::test_fn_sub_cases": {
     "recorded-date": "10-07-2023, 17:00:03",
     "recorded-content": {
       "outputs": {

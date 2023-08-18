@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_json_manipulation.py::TestJsonManipulation::test_string_to_json": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_json_manipulation.py::TestJsonManipulation::test_string_to_json": {
     "recorded-date": "09-02-2023, 10:21:46",
     "recorded-content": {
       "exec_hist_resp_0": {
@@ -688,7 +688,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_json_manipulation.py::TestJsonManipulation::test_json_to_string": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_json_manipulation.py::TestJsonManipulation::test_json_to_string": {
     "recorded-date": "09-02-2023, 10:21:51",
     "recorded-content": {
       "exec_hist_resp_0": {
@@ -1243,7 +1243,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_json_manipulation.py::TestJsonManipulation::test_json_merge": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_json_manipulation.py::TestJsonManipulation::test_json_merge": {
     "recorded-date": "13-02-2023, 12:49:30",
     "recorded-content": {
       "exec_hist_resp_0": {

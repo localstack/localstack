@@ -1,5 +1,5 @@
 {
-  "tests/aws/cloudformation/api/test_update_stack.py::test_update_with_resource_types": {
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_update_with_resource_types": {
     "recorded-date": "19-11-2022, 14:34:18",
     "recorded-content": {
       "invalid_type_error": {
@@ -26,7 +26,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/api/test_update_stack.py::test_basic_update": {
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_basic_update": {
     "recorded-date": "21-11-2022, 08:27:37",
     "recorded-content": {
       "update_response": {
@@ -38,7 +38,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/api/test_update_stack.py::test_no_template_error": {
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_no_template_error": {
     "recorded-date": "21-11-2022, 08:57:45",
     "recorded-content": {
       "error": {
@@ -54,15 +54,15 @@
       }
     }
   },
-  "tests/aws/cloudformation/api/test_update_stack.py::test_no_parameters_error_update": {
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_no_parameters_error_update": {
     "recorded-date": "21-11-2022, 09:45:22",
     "recorded-content": {}
   },
-  "tests/aws/cloudformation/api/test_update_stack.py::test_update_with_previous_parameter_value": {
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_update_with_previous_parameter_value": {
     "recorded-date": "21-11-2022, 10:38:33",
     "recorded-content": {}
   },
-  "tests/aws/cloudformation/api/test_update_stack.py::test_update_with_role_without_permissions": {
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_update_with_role_without_permissions": {
     "recorded-date": "21-11-2022, 14:14:52",
     "recorded-content": {
       "error": {
@@ -78,7 +78,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/api/test_update_stack.py::test_update_with_invalid_rollback_configuration_errors": {
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_update_with_invalid_rollback_configuration_errors": {
     "recorded-date": "21-11-2022, 15:36:32",
     "recorded-content": {
       "type_error": {

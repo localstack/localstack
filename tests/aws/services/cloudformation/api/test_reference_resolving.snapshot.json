@@ -1,5 +1,5 @@
 {
-  "tests/aws/cloudformation/api/test_reference_resolving.py::test_nested_getatt_ref[TopicName]": {
+  "tests/aws/services/cloudformation/api/test_reference_resolving.py::test_nested_getatt_ref[TopicName]": {
     "recorded-date": "11-05-2023, 13:43:51",
     "recorded-content": {
       "outputs": {
@@ -10,7 +10,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/api/test_reference_resolving.py::test_nested_getatt_ref[TopicArn]": {
+  "tests/aws/services/cloudformation/api/test_reference_resolving.py::test_nested_getatt_ref[TopicArn]": {
     "recorded-date": "11-05-2023, 13:44:18",
     "recorded-content": {
       "outputs": {
@@ -21,7 +21,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/api/test_reference_resolving.py::test_sub_resolving": {
+  "tests/aws/services/cloudformation/api/test_reference_resolving.py::test_sub_resolving": {
     "recorded-date": "12-05-2023, 07:51:06",
     "recorded-content": {
       "outputs": {

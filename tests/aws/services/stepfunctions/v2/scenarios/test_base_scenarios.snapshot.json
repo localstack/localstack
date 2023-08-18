@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_parallel_state": {
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_parallel_state": {
     "recorded-date": "17-07-2023, 12:41:25",
     "recorded-content": {
       "get_execution_history": {
@@ -275,7 +275,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_break_condition": {
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_break_condition": {
     "recorded-date": "17-07-2023, 16:56:59",
     "recorded-content": {
       "get_execution_history": {
@@ -729,7 +729,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state": {
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state": {
     "recorded-date": "17-07-2023, 16:35:51",
     "recorded-content": {
       "get_execution_history": {
@@ -1294,7 +1294,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_catch": {
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_catch": {
     "recorded-date": "18-07-2023, 18:07:04",
     "recorded-content": {
       "get_execution_history": {
@@ -1478,7 +1478,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_retry": {
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_retry": {
     "recorded-date": "18-07-2023, 18:44:42",
     "recorded-content": {
       "get_execution_history": {
@@ -1693,7 +1693,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_item_selector": {
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_item_selector": {
     "recorded-date": "19-07-2023, 13:47:54",
     "recorded-content": {
       "get_execution_history": {
@@ -3438,7 +3438,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_item_selector_singleton": {
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_item_selector_singleton": {
     "recorded-date": "19-07-2023, 14:11:14",
     "recorded-content": {
       "get_execution_history": {
@@ -4015,7 +4015,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy": {
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy": {
     "recorded-date": "23-07-2023, 20:46:31",
     "recorded-content": {
       "get_execution_history": {
@@ -4580,7 +4580,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_break_condition_legacy": {
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_break_condition_legacy": {
     "recorded-date": "24-07-2023, 10:38:44",
     "recorded-content": {
       "get_execution_history": {
@@ -5037,7 +5037,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_parameters_legacy": {
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_parameters_legacy": {
     "recorded-date": "24-07-2023, 10:53:41",
     "recorded-content": {
       "get_execution_history": {
@@ -6782,7 +6782,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_parameters_singleton_legacy": {
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_parameters_singleton_legacy": {
     "recorded-date": "24-07-2023, 10:56:32",
     "recorded-content": {
       "get_execution_history": {
@@ -7359,7 +7359,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_catch_legacy": {
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_catch_legacy": {
     "recorded-date": "24-07-2023, 11:19:21",
     "recorded-content": {
       "get_execution_history": {
@@ -7543,7 +7543,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_retry_legacy": {
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_retry_legacy": {
     "recorded-date": "24-07-2023, 11:22:16",
     "recorded-content": {
       "get_execution_history": {
@@ -8143,7 +8143,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_catch_empty_fail": {
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_catch_empty_fail": {
     "recorded-date": "08-08-2023, 13:18:54",
     "recorded-content": {
       "get_execution_history": {
@@ -8271,7 +8271,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_retry_multiple_retriers": {
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_retry_multiple_retriers": {
     "recorded-date": "08-08-2023, 13:20:58",
     "recorded-content": {
       "get_execution_history": {

@@ -1,5 +1,5 @@
 {
-  "tests/aws/cloudformation/api/test_get_template_summary.py::test_get_template_summary": {
+  "tests/aws/services/cloudformation/api/test_get_template_summary.py::test_get_template_summary": {
     "recorded-date": "24-05-2023, 15:05:00",
     "recorded-content": {
       "template-summary": {

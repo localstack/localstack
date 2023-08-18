@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/base/test_base.py::TestSnfApi::test_state_fail": {
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfApi::test_state_fail": {
     "recorded-date": "05-07-2023, 12:21:19",
     "recorded-content": {
       "get_execution_history": {
@@ -48,7 +48,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/base/test_base.py::TestSnfApi::test_event_bridge_events_base": {
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfApi::test_event_bridge_events_base": {
     "recorded-date": "31-07-2023, 13:29:47",
     "recorded-content": {
       "stepfunctions_events": [
@@ -119,7 +119,7 @@
       ]
     }
   },
-  "tests/aws/stepfunctions/v2/base/test_base.py::TestSnfApi::test_event_bridge_events_failure": {
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfApi::test_event_bridge_events_failure": {
     "recorded-date": "31-07-2023, 14:05:25",
     "recorded-content": {
       "stepfunctions_events": [
@@ -232,7 +232,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/base/test_base.py::TestSnfApi::test_state_fail_empty": {
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfApi::test_state_fail_empty": {
     "recorded-date": "08-08-2023, 13:13:34",
     "recorded-content": {
       "get_execution_history": {

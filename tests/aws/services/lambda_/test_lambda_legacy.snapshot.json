@@ -1,5 +1,5 @@
 {
-  "tests/aws/lambda_/test_lambda_legacy.py::TestGolangRuntimes::test_golang_lambda": {
+  "tests/aws/services/lambda_/test_lambda_legacy.py::TestGolangRuntimes::test_golang_lambda": {
     "recorded-date": "09-09-2022, 20:11:39",
     "recorded-content": {
       "create-result": {
@@ -51,7 +51,7 @@
       }
     }
   },
-  "tests/aws/lambda_/test_lambda_legacy.py::TestRubyRuntimes::test_ruby_lambda_running_in_docker": {
+  "tests/aws/services/lambda_/test_lambda_legacy.py::TestRubyRuntimes::test_ruby_lambda_running_in_docker": {
     "recorded-date": "09-09-2022, 20:12:42",
     "recorded-content": {
       "create-result": {

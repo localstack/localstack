@@ -1,5 +1,5 @@
 {
-  "tests/aws/cloudformation/resources/test_kinesis.py::test_stream_creation": {
+  "tests/aws/services/cloudformation/resources/test_kinesis.py::test_stream_creation": {
     "recorded-date": "12-09-2022, 14:11:29",
     "recorded-content": {
       "stack_output": {
@@ -63,7 +63,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/resources/test_kinesis.py::test_describe_template": {
+  "tests/aws/services/cloudformation/resources/test_kinesis.py::test_describe_template": {
     "recorded-date": "22-05-2023, 09:25:32",
     "recorded-content": {
       "get_template_summary_by_url": {

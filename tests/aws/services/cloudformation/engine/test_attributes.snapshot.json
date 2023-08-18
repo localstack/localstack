@@ -1,5 +1,5 @@
 {
-  "tests/aws/cloudformation/engine/test_attributes.py::TestResourceAttributes::test_invalid_getatt_fails": {
+  "tests/aws/services/cloudformation/engine/test_attributes.py::TestResourceAttributes::test_invalid_getatt_fails": {
     "recorded-date": "01-08-2023, 11:54:31",
     "recorded-content": {
       "stack_events": {

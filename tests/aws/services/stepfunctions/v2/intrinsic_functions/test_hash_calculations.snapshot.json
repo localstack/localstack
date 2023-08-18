@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_hash_calculations.py::TestHashCalculations::test_hash": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_hash_calculations.py::TestHashCalculations::test_hash": {
     "recorded-date": "14-02-2023, 21:48:01",
     "recorded-content": {
       "exec_hist_resp_0": {

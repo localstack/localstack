@@ -1,5 +1,5 @@
 {
-  "tests/aws/cloudformation/api/test_nested_stacks.py::test_nested_output_in_params": {
+  "tests/aws/services/cloudformation/api/test_nested_stacks.py::test_nested_output_in_params": {
     "recorded-date": "07-02-2023, 10:57:47",
     "recorded-content": {
       "get_role_response": {

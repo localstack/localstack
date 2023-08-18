@@ -1,5 +1,5 @@
 {
-  "tests/aws/apigateway/test_apigateway_dynamodb.py::test_error_aws_proxy_not_supported": {
+  "tests/aws/services/apigateway/test_apigateway_dynamodb.py::test_error_aws_proxy_not_supported": {
     "recorded-date": "26-02-2023, 12:45:17",
     "recorded-content": {
       "create-integration-error": {
@@ -15,7 +15,7 @@
       }
     }
   },
-  "tests/aws/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[PutItem]": {
+  "tests/aws/services/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[PutItem]": {
     "recorded-date": "13-07-2023, 17:42:32",
     "recorded-content": {
       "result-put-item": {
@@ -63,7 +63,7 @@
       }
     }
   },
-  "tests/aws/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[Query]": {
+  "tests/aws/services/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[Query]": {
     "recorded-date": "13-07-2023, 17:42:55",
     "recorded-content": {
       "result-test": {
@@ -154,7 +154,7 @@
       }
     }
   },
-  "tests/aws/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[Scan]": {
+  "tests/aws/services/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[Scan]": {
     "recorded-date": "13-07-2023, 17:43:27",
     "recorded-content": {
       "result-scan": {

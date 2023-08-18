@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_list_secrets": {
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_list_secrets": {
     "recorded-date": "22-06-2023, 13:59:49",
     "recorded-content": {
       "get_execution_history": {
@@ -141,7 +141,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_dynamodb_put_get_item": {
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_dynamodb_put_get_item": {
     "recorded-date": "16-05-2023, 22:27:38",
     "recorded-content": {
       "get_execution_history": {
@@ -443,7 +443,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_dynamodb_put_delete_item": {
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_dynamodb_put_delete_item": {
     "recorded-date": "16-05-2023, 22:28:05",
     "recorded-content": {
       "get_execution_history": {
@@ -718,7 +718,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_dynamodb_put_update_get_item": {
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_dynamodb_put_update_get_item": {
     "recorded-date": "16-05-2023, 22:28:28",
     "recorded-content": {
       "get_execution_history": {

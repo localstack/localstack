@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_math_operations.py::TestMathOperations::test_math_random": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_math_operations.py::TestMathOperations::test_math_random": {
     "recorded-date": "13-02-2023, 14:35:48",
     "recorded-content": {
       "exec_hist_resp_0": {
@@ -223,7 +223,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_math_operations.py::TestMathOperations::test_math_random_seeded": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_math_operations.py::TestMathOperations::test_math_random_seeded": {
     "recorded-date": "13-02-2023, 14:35:50",
     "recorded-content": {
       "exec_hist_resp": {
@@ -303,7 +303,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_math_operations.py::TestMathOperations::test_math_add": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_math_operations.py::TestMathOperations::test_math_add": {
     "recorded-date": "13-02-2023, 14:51:11",
     "recorded-content": {
       "exec_hist_resp_0": {

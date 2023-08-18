@@ -1,5 +1,5 @@
 {
-  "tests/aws/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put": {
+  "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put": {
     "recorded-date": "05-08-2023, 00:41:37",
     "recorded-content": {
       "object_deleted": {
@@ -59,7 +59,7 @@
       }
     }
   },
-  "tests/aws/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_put_acl": {
+  "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_put_acl": {
     "recorded-date": "05-08-2023, 01:08:43",
     "recorded-content": {
       "messages": {
@@ -171,7 +171,7 @@
       }
     }
   },
-  "tests/aws/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_restore_object": {
+  "tests/aws/services/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_restore_object": {
     "recorded-date": "13-07-2023, 02:00:37",
     "recorded-content": {
       "messages": {

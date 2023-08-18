@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_encode_decode.py::TestEncodeDecode::test_base_64_encode": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_encode_decode.py::TestEncodeDecode::test_base_64_encode": {
     "recorded-date": "17-02-2023, 13:07:48",
     "recorded-content": {
       "exec_hist_resp_0": {
@@ -138,7 +138,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_encode_decode.py::TestEncodeDecode::test_base_64_decode": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_encode_decode.py::TestEncodeDecode::test_base_64_decode": {
     "recorded-date": "17-02-2023, 13:42:08",
     "recorded-content": {
       "exec_hist_resp_0": {

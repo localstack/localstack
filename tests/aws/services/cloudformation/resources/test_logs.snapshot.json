@@ -1,5 +1,5 @@
 {
-  "tests/aws/cloudformation/resources/test_logs.py::test_logstream": {
+  "tests/aws/services/cloudformation/resources/test_logs.py::test_logstream": {
     "recorded-date": "29-07-2022, 13:22:53",
     "recorded-content": {
       "outputs": {

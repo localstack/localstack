@@ -1,5 +1,5 @@
 {
-  "tests/aws/cloudformation/api/test_drift_detection.py::test_drift_detection_on_lambda": {
+  "tests/aws/services/cloudformation/api/test_drift_detection.py::test_drift_detection_on_lambda": {
     "recorded-date": "11-11-2022, 08:44:20",
     "recorded-content": {
       "drift_detection": {

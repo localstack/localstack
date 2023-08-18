@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token": {
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token": {
     "recorded-date": "25-06-2023, 14:30:26",
     "recorded-content": {
       "get_execution_history": {
@@ -152,7 +152,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token_timeout": {
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token_timeout": {
     "recorded-date": "25-06-2023, 14:30:43",
     "recorded-content": {
       "get_execution_history": {
@@ -287,7 +287,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_failure_in_wait_for_task_token": {
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_failure_in_wait_for_task_token": {
     "recorded-date": "25-06-2023, 14:31:14",
     "recorded-content": {
       "get_execution_history": {
@@ -423,7 +423,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_tok_with_heartbeat": {
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_tok_with_heartbeat": {
     "recorded-date": "25-06-2023, 14:34:21",
     "recorded-content": {
       "get_execution_history": {
@@ -578,7 +578,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/callback/test_callback.py::TestCallback::test_start_execution_sync": {
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_start_execution_sync": {
     "recorded-date": "30-06-2023, 14:42:19",
     "recorded-content": {
       "get_execution_history": {
@@ -780,7 +780,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/callback/test_callback.py::TestCallback::test_start_execution_sync_delegate_failure": {
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_start_execution_sync_delegate_failure": {
     "recorded-date": "05-07-2023, 15:55:56",
     "recorded-content": {
       "get_execution_history": {
@@ -946,7 +946,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/callback/test_callback.py::TestCallback::test_start_execution_sync_delegate_timeout": {
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_start_execution_sync_delegate_timeout": {
     "recorded-date": "05-07-2023, 16:16:56",
     "recorded-content": {
       "get_execution_history": {
@@ -1116,7 +1116,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/callback/test_callback.py::TestCallback::test_start_execution_sync2": {
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_start_execution_sync2": {
     "recorded-date": "12-08-2023, 16:45:39",
     "recorded-content": {
       "get_execution_history": {

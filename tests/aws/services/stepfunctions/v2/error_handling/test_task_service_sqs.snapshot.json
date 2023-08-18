@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_no_such_queue": {
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_no_such_queue": {
     "recorded-date": "22-06-2023, 13:31:36",
     "recorded-content": {
       "get_execution_history": {
@@ -152,7 +152,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_empty_body": {
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_empty_body": {
     "recorded-date": "22-06-2023, 13:32:07",
     "recorded-content": {
       "get_execution_history": {
@@ -305,7 +305,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_no_such_queue_no_catch": {
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_send_message_no_such_queue_no_catch": {
     "recorded-date": "22-06-2023, 13:31:50",
     "recorded-content": {
       "get_execution_history": {
@@ -397,7 +397,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_sqs_failure_in_wait_for_task_tok": {
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_sqs_failure_in_wait_for_task_tok": {
     "recorded-date": "29-05-2023, 11:21:47",
     "recorded-content": {
       "get_execution_history": {

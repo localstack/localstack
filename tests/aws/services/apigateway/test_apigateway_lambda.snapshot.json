@@ -1,5 +1,5 @@
 {
-  "tests/aws/apigateway/test_apigateway_lambda.py::test_lambda_aws_proxy_integration": {
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_proxy_integration": {
     "recorded-date": "26-04-2023, 20:03:23",
     "recorded-content": {
       "invocation-payload-without-trailing-slash": {
@@ -894,7 +894,7 @@
       }
     }
   },
-  "tests/aws/apigateway/test_apigateway_lambda.py::test_lambda_aws_integration": {
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_integration": {
     "recorded-date": "31-05-2023, 23:11:42",
     "recorded-content": {
       "put-method": {
@@ -939,7 +939,7 @@
       }
     }
   },
-  "tests/aws/apigateway/test_apigateway_lambda.py::test_lambda_aws_integration_with_request_template": {
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_integration_with_request_template": {
     "recorded-date": "31-05-2023, 23:09:38",
     "recorded-content": {
       "put-method": {

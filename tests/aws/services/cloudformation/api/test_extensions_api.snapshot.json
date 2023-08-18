@@ -1,5 +1,5 @@
 {
-  "tests/aws/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_extension[RESOURCE-LocalStack::Testing::TestResource-resourcetypes/localstack-testing-testresource.zip]": {
+  "tests/aws/services/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_extension[RESOURCE-LocalStack::Testing::TestResource-resourcetypes/localstack-testing-testresource.zip]": {
     "recorded-date": "02-03-2023, 16:11:19",
     "recorded-content": {
       "register_response": {
@@ -90,7 +90,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_extension[MODULE-LocalStack::Testing::TestModule::MODULE-modules/localstack-testing-testmodule-module.zip]": {
+  "tests/aws/services/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_extension[MODULE-LocalStack::Testing::TestModule::MODULE-modules/localstack-testing-testmodule-module.zip]": {
     "recorded-date": "02-03-2023, 16:11:53",
     "recorded-content": {
       "register_response": {
@@ -186,7 +186,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_extension[HOOK-LocalStack::Testing::TestHook-hooks/localstack-testing-testhook.zip]": {
+  "tests/aws/services/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_extension[HOOK-LocalStack::Testing::TestHook-hooks/localstack-testing-testhook.zip]": {
     "recorded-date": "02-03-2023, 16:12:56",
     "recorded-content": {
       "register_response": {
@@ -556,7 +556,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_extension_versioning": {
+  "tests/aws/services/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_extension_versioning": {
     "recorded-date": "02-03-2023, 16:14:12",
     "recorded-content": {
       "versions": {
@@ -641,13 +641,13 @@
       }
     }
   },
-  "tests/aws/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_extension_not_complete": {
+  "tests/aws/services/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_extension_not_complete": {
     "recorded-date": "02-03-2023, 16:15:26",
     "recorded-content": {
       "not_found_error": "An error occurred (TypeNotFoundException) when calling the DescribeType operation: The type 'LocalStack::Testing::TestHook' cannot be found."
     }
   },
-  "tests/aws/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_extension_type_configuration": {
+  "tests/aws/services/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_extension_type_configuration": {
     "recorded-date": "06-03-2023, 15:33:33",
     "recorded-content": {
       "set_type_configuration_response": {

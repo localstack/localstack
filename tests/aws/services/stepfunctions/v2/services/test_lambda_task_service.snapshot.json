@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke": {
     "recorded-date": "22-06-2023, 13:39:30",
     "recorded-content": {
       "get_execution_history": {
@@ -430,7 +430,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_unsupported_param": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_unsupported_param": {
     "recorded-date": "22-06-2023, 14:15:28",
     "recorded-content": {
       "get_execution_history": {
@@ -899,11 +899,11 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_list_functions": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_list_functions": {
     "recorded-date": "11-05-2023, 11:29:56",
     "recorded-content": {}
   },
-  "tests/aws/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_bytes_payload": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_bytes_payload": {
     "recorded-date": "04-08-2023, 10:48:27",
     "recorded-content": {
       "get_execution_history": {
@@ -1334,7 +1334,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[None]": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[None]": {
     "recorded-date": "04-08-2023, 15:38:08",
     "recorded-content": {
       "get_execution_history": {
@@ -1765,7 +1765,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[HelloWorld]": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[HelloWorld]": {
     "recorded-date": "04-08-2023, 16:04:28",
     "recorded-content": {
       "get_execution_history": {
@@ -2196,7 +2196,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[0.0]": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[0.0]": {
     "recorded-date": "04-08-2023, 16:04:46",
     "recorded-content": {
       "get_execution_history": {
@@ -2627,7 +2627,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[00]": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[00]": {
     "recorded-date": "04-08-2023, 16:05:04",
     "recorded-content": {
       "get_execution_history": {
@@ -3058,7 +3058,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[01]": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[01]": {
     "recorded-date": "04-08-2023, 16:05:23",
     "recorded-content": {
       "get_execution_history": {
@@ -3489,7 +3489,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[True]": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[True]": {
     "recorded-date": "04-08-2023, 16:05:41",
     "recorded-content": {
       "get_execution_history": {
@@ -3920,7 +3920,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[json_value6]": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[json_value6]": {
     "recorded-date": "04-08-2023, 16:06:16",
     "recorded-content": {
       "get_execution_history": {
@@ -4351,7 +4351,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[json_value7]": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[json_value7]": {
     "recorded-date": "04-08-2023, 15:40:12",
     "recorded-content": {
       "get_execution_history": {
@@ -4782,7 +4782,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[json_value5]": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[json_value5]": {
     "recorded-date": "04-08-2023, 16:05:59",
     "recorded-content": {
       "get_execution_history": {

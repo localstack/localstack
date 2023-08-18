@@ -1,5 +1,5 @@
 {
-  "tests/aws/cloudformation/api/test_transformers.py::test_duplicate_resources": {
+  "tests/aws/services/cloudformation/api/test_transformers.py::test_duplicate_resources": {
     "recorded-date": "21-02-2023, 09:45:29",
     "recorded-content": {
       "api-details": {

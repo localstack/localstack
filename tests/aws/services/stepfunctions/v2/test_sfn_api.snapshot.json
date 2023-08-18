@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_delete_valid_sm": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_delete_valid_sm": {
     "recorded-date": "22-06-2023, 13:47:21",
     "recorded-content": {
       "creation_resp_1": {
@@ -18,7 +18,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_delete_invalid_sm": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_delete_invalid_sm": {
     "recorded-date": "04-08-2023, 16:47:10",
     "recorded-content": {
       "invalid_definition_1": {
@@ -34,7 +34,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_delete_nonexistent_sm": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_delete_nonexistent_sm": {
     "recorded-date": "22-06-2023, 13:47:36",
     "recorded-content": {
       "deletion_resp_1": {
@@ -45,7 +45,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_exact_duplicate_sm": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_exact_duplicate_sm": {
     "recorded-date": "22-06-2023, 13:48:01",
     "recorded-content": {
       "creation_resp_1": {
@@ -162,7 +162,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_duplicate_definition_format_sm": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_duplicate_definition_format_sm": {
     "recorded-date": "22-06-2023, 13:48:15",
     "recorded-content": {
       "creation_resp_1": {
@@ -218,7 +218,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_duplicate_sm_name": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_duplicate_sm_name": {
     "recorded-date": "22-06-2023, 13:48:28",
     "recorded-content": {
       "creation_resp_1": {
@@ -274,7 +274,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_start_execution": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_start_execution": {
     "recorded-date": "22-06-2023, 13:52:39",
     "recorded-content": {
       "creation_resp": {
@@ -374,7 +374,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_invalid_start_execution_arn": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_invalid_start_execution_arn": {
     "recorded-date": "22-06-2023, 13:52:53",
     "recorded-content": {
       "creation_resp": {
@@ -398,7 +398,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_invalid_start_execution_input": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_invalid_start_execution_input": {
     "recorded-date": "22-06-2023, 13:53:08",
     "recorded-content": {
       "creation_resp": {
@@ -468,7 +468,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_stop_execution": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_stop_execution": {
     "recorded-date": "22-06-2023, 13:53:24",
     "recorded-content": {
       "creation_resp": {
@@ -537,7 +537,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_sms": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_sms": {
     "recorded-date": "22-06-2023, 13:52:24",
     "recorded-content": {
       "lst_resp_init": {
@@ -699,7 +699,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_base_definition": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_base_definition": {
     "recorded-date": "08-08-2023, 12:43:56",
     "recorded-content": {
       "creation_resp_t0": {
@@ -826,7 +826,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_base_role_arn": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_base_role_arn": {
     "recorded-date": "08-08-2023, 12:44:40",
     "recorded-content": {
       "creation_resp_t0": {
@@ -953,7 +953,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_base_definition_and_role": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_base_definition_and_role": {
     "recorded-date": "08-08-2023, 12:45:23",
     "recorded-content": {
       "creation_resp_t0": {
@@ -1080,7 +1080,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_base_update_none": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_base_update_none": {
     "recorded-date": "08-08-2023, 12:45:45",
     "recorded-content": {
       "creation_resp_t0": {
@@ -1137,7 +1137,7 @@
       "null_required_parameter": "Parameter validation failed:\nInvalid type for parameter definition, value: None, type: <class 'NoneType'>, valid types: <class 'str'>\nInvalid type for parameter roleArn, value: None, type: <class 'NoneType'>, valid types: <class 'str'>"
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_same_parameters": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_update_state_machine_same_parameters": {
     "recorded-date": "08-08-2023, 12:46:16",
     "recorded-content": {
       "creation_resp_t0": {

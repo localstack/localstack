@@ -1,5 +1,5 @@
 {
-  "tests/aws/cloudformation/resources/test_ssm.py::test_deploy_patch_baseline": {
+  "tests/aws/services/cloudformation/resources/test_ssm.py::test_deploy_patch_baseline": {
     "recorded-date": "05-07-2023, 10:13:24",
     "recorded-content": {
       "patch_baseline": {
@@ -17,7 +17,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/resources/test_ssm.py::test_maintenance_window": {
+  "tests/aws/services/cloudformation/resources/test_ssm.py::test_maintenance_window": {
     "recorded-date": "14-07-2023, 14:06:23",
     "recorded-content": {
       "MaintenanceWindow": [

@@ -1,5 +1,5 @@
 {
-  "tests/aws/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping": {
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping": {
     "recorded-date": "26-04-2023, 10:48:20",
     "recorded-content": {
       "create-table-result": {
@@ -98,7 +98,7 @@
       ]
     }
   },
-  "tests/aws/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_disabled_dynamodb_event_source_mapping": {
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_disabled_dynamodb_event_source_mapping": {
     "recorded-date": "27-02-2023, 18:34:59",
     "recorded-content": {
       "dynamodb_create_table_result": {
@@ -194,7 +194,7 @@
       }
     }
   },
-  "tests/aws/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_deletion_event_source_mapping_with_dynamodb": {
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_deletion_event_source_mapping_with_dynamodb": {
     "recorded-date": "27-02-2023, 18:35:29",
     "recorded-content": {
       "create_dynamodb_table_response": {
@@ -294,7 +294,7 @@
       }
     }
   },
-  "tests/aws/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_on_failure_destination_config": {
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_on_failure_destination_config": {
     "recorded-date": "27-02-2023, 18:36:42",
     "recorded-content": {
       "update_table_response": {
@@ -405,7 +405,7 @@
       }
     }
   },
-  "tests/aws/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put10-None-filter0-1]": {
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put10-None-filter0-1]": {
     "recorded-date": "27-02-2023, 18:37:56",
     "recorded-content": {
       "table_creation_response": {
@@ -547,7 +547,7 @@
       ]
     }
   },
-  "tests/aws/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put11-item_to_put21-filter1-2]": {
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put11-item_to_put21-filter1-2]": {
     "recorded-date": "27-02-2023, 18:39:17",
     "recorded-content": {
       "table_creation_response": {
@@ -720,7 +720,7 @@
       ]
     }
   },
-  "tests/aws/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put12-item_to_put22-filter2-1]": {
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put12-item_to_put22-filter2-1]": {
     "recorded-date": "27-02-2023, 18:40:56",
     "recorded-content": {
       "table_creation_response": {
@@ -859,7 +859,7 @@
       ]
     }
   },
-  "tests/aws/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put13-item_to_put23-filter3-1]": {
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put13-item_to_put23-filter3-1]": {
     "recorded-date": "27-02-2023, 18:42:11",
     "recorded-content": {
       "table_creation_response": {
@@ -1001,7 +1001,7 @@
       ]
     }
   },
-  "tests/aws/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put14-item_to_put24-filter4-0]": {
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put14-item_to_put24-filter4-0]": {
     "recorded-date": "27-02-2023, 18:42:34",
     "recorded-content": {
       "table_creation_response": {
@@ -1090,7 +1090,7 @@
       "lambda-multiple-log-events": []
     }
   },
-  "tests/aws/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put15-item_to_put25-filter5-0]": {
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put15-item_to_put25-filter5-0]": {
     "recorded-date": "27-02-2023, 18:42:58",
     "recorded-content": {
       "table_creation_response": {
@@ -1181,7 +1181,7 @@
       "lambda-multiple-log-events": []
     }
   },
-  "tests/aws/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put16-item_to_put26-filter6-1]": {
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put16-item_to_put26-filter6-1]": {
     "recorded-date": "27-02-2023, 18:43:59",
     "recorded-content": {
       "table_creation_response": {
@@ -1331,7 +1331,7 @@
       ]
     }
   },
-  "tests/aws/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[single-string]": {
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[single-string]": {
     "recorded-date": "27-02-2023, 18:44:12",
     "recorded-content": {
       "exception_event_source_creation": {
@@ -1348,7 +1348,7 @@
       }
     }
   },
-  "tests/aws/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[[{\"eventName\": [\"INSERT\"=123}]]": {
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[[{\"eventName\": [\"INSERT\"=123}]]": {
     "recorded-date": "27-02-2023, 18:44:25",
     "recorded-content": {
       "exception_event_source_creation": {

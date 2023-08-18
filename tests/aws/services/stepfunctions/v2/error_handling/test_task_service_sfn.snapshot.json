@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/error_handling/test_task_service_sfn.py::TestTaskServiceSfn::test_start_execution_no_such_arn": {
+  "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sfn.py::TestTaskServiceSfn::test_start_execution_no_such_arn": {
     "recorded-date": "30-06-2023, 09:50:17",
     "recorded-content": {
       "get_execution_history": {

@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than": {
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than": {
     "recorded-date": "22-06-2023, 13:16:03",
     "recorded-content": {
       "cases": [
@@ -42,7 +42,7 @@
       ]
     }
   },
-  "tests/aws/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_equals": {
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_equals": {
     "recorded-date": "22-06-2023, 13:15:27",
     "recorded-content": {
       "cases": [
@@ -197,7 +197,7 @@
       ]
     }
   },
-  "tests/aws/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_equals_path": {
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_equals_path": {
     "recorded-date": "22-06-2023, 13:15:46",
     "recorded-content": {
       "cases": [
@@ -231,7 +231,7 @@
       ]
     }
   },
-  "tests/aws/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than_path": {
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than_path": {
     "recorded-date": "22-06-2023, 13:16:20",
     "recorded-content": {
       "cases": [
@@ -274,7 +274,7 @@
       ]
     }
   },
-  "tests/aws/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than_equals": {
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than_equals": {
     "recorded-date": "22-06-2023, 13:16:37",
     "recorded-content": {
       "cases": [
@@ -308,7 +308,7 @@
       ]
     }
   },
-  "tests/aws/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than_equals_path": {
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_greater_than_equals_path": {
     "recorded-date": "22-06-2023, 13:16:54",
     "recorded-content": {
       "cases": [
@@ -342,7 +342,7 @@
       ]
     }
   },
-  "tests/aws/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than": {
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than": {
     "recorded-date": "22-06-2023, 13:17:10",
     "recorded-content": {
       "cases": [
@@ -376,7 +376,7 @@
       ]
     }
   },
-  "tests/aws/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than_path": {
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than_path": {
     "recorded-date": "22-06-2023, 13:17:26",
     "recorded-content": {
       "cases": [
@@ -410,7 +410,7 @@
       ]
     }
   },
-  "tests/aws/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than_equals": {
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than_equals": {
     "recorded-date": "22-06-2023, 13:17:43",
     "recorded-content": {
       "cases": [
@@ -444,7 +444,7 @@
       ]
     }
   },
-  "tests/aws/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than_equals_path": {
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_string_operators.py::TestStrings::test_string_less_than_equals_path": {
     "recorded-date": "22-06-2023, 13:17:59",
     "recorded-content": {
       "cases": [

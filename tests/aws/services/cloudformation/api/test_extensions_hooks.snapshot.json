@@ -1,5 +1,5 @@
 {
-  "tests/aws/cloudformation/api/test_extensions_hooks.py::TestExtensionsHooks::test_hook_deployment[FAIL]": {
+  "tests/aws/services/cloudformation/api/test_extensions_hooks.py::TestExtensionsHooks::test_hook_deployment[FAIL]": {
     "recorded-date": "06-03-2023, 15:00:08",
     "recorded-content": {
       "event_error": {
@@ -19,7 +19,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/api/test_extensions_hooks.py::TestExtensionsHooks::test_hook_deployment[WARN]": {
+  "tests/aws/services/cloudformation/api/test_extensions_hooks.py::TestExtensionsHooks::test_hook_deployment[WARN]": {
     "recorded-date": "06-03-2023, 15:01:59",
     "recorded-content": {
       "event_error": {

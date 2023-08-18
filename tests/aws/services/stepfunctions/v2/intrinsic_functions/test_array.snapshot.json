@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_array.py::TestSfnIntrinsicFunctionsArray::test_array_get_item": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_array.py::TestSfnIntrinsicFunctionsArray::test_array_get_item": {
     "recorded-date": "09-02-2023, 09:58:24",
     "recorded-content": {
       "exec_hist_resp_0": {
@@ -97,7 +97,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_array.py::TestSfnIntrinsicFunctionsArray::test_array_length": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_array.py::TestSfnIntrinsicFunctionsArray::test_array_length": {
     "recorded-date": "09-02-2023, 10:04:55",
     "recorded-content": {
       "exec_hist_resp_0": {
@@ -189,7 +189,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_array.py::TestSfnIntrinsicFunctionsArray::test_array_unique": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_array.py::TestSfnIntrinsicFunctionsArray::test_array_unique": {
     "recorded-date": "09-02-2023, 10:19:29",
     "recorded-content": {
       "exec_hist_resp_0": {
@@ -329,7 +329,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_0": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_0": {
     "recorded-date": "09-02-2023, 10:20:14",
     "recorded-content": {
       "exec_hist_resp_0": {
@@ -401,7 +401,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_2": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_2": {
     "recorded-date": "31-03-2023, 23:29:25",
     "recorded-content": {
       "exec_hist_resp_0": {
@@ -1062,7 +1062,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_partition": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_partition": {
     "recorded-date": "09-02-2023, 10:20:32",
     "recorded-content": {
       "exec_hist_resp_0": {
@@ -3288,7 +3288,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_contains": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_contains": {
     "recorded-date": "09-02-2023, 10:20:37",
     "recorded-content": {
       "exec_hist_resp_0": {
@@ -4024,7 +4024,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_range": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_range": {
     "recorded-date": "09-02-2023, 10:20:40",
     "recorded-content": {
       "exec_hist_resp_0": {
@@ -4365,7 +4365,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_get_item": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_get_item": {
     "recorded-date": "09-02-2023, 10:20:42",
     "recorded-content": {
       "exec_hist_resp_0": {
@@ -4463,7 +4463,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_length": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_length": {
     "recorded-date": "09-02-2023, 10:20:43",
     "recorded-content": {
       "exec_hist_resp_0": {
@@ -4555,7 +4555,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_unique": {
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_unique": {
     "recorded-date": "09-02-2023, 10:20:45",
     "recorded-content": {
       "exec_hist_resp_0": {

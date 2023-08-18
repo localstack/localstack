@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message": {
+  "tests/aws/services/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message": {
     "recorded-date": "22-06-2023, 13:41:17",
     "recorded-content": {
       "get_execution_history": {
@@ -189,7 +189,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message_unsupported_parameters": {
+  "tests/aws/services/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message_unsupported_parameters": {
     "recorded-date": "22-06-2023, 13:41:34",
     "recorded-content": {
       "get_execution_history": {

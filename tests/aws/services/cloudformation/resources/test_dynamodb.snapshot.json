@@ -1,5 +1,5 @@
 {
-  "tests/aws/cloudformation/resources/test_dynamodb.py::test_default_name_for_table": {
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_default_name_for_table": {
     "recorded-date": "21-10-2022, 11:11:09",
     "recorded-content": {
       "table_description": {
@@ -36,7 +36,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/resources/test_dynamodb.py::test_billing_mode_as_conditional[PROVISIONED]": {
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_billing_mode_as_conditional[PROVISIONED]": {
     "recorded-date": "18-04-2023, 10:44:47",
     "recorded-content": {
       "table_description": {
@@ -80,7 +80,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/resources/test_dynamodb.py::test_billing_mode_as_conditional[PAY_PER_REQUEST]": {
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_billing_mode_as_conditional[PAY_PER_REQUEST]": {
     "recorded-date": "18-04-2023, 10:45:28",
     "recorded-content": {
       "table_description": {

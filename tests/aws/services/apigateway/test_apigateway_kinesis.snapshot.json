@@ -1,5 +1,5 @@
 {
-  "tests/aws/apigateway/test_apigateway_kinesis.py::test_apigateway_to_kinesis": {
+  "tests/aws/services/apigateway/test_apigateway_kinesis.py::test_apigateway_to_kinesis": {
     "recorded-date": "26-01-2023, 09:45:49",
     "recorded-content": {
       "apigateway_response": {

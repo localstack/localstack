@@ -1,5 +1,5 @@
 {
-  "tests/aws/apigateway/test_apigateway_integrations.py::test_create_execute_api_vpc_endpoint": {
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_create_execute_api_vpc_endpoint": {
     "recorded-date": "18-03-2023, 22:01:10",
     "recorded-content": {
       "endpoint-details": {
@@ -74,7 +74,7 @@
       }
     }
   },
-  "tests/aws/apigateway/test_apigateway_integrations.py::test_put_integration_responses": {
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_put_integration_responses": {
     "recorded-date": "26-05-2023, 19:44:45",
     "recorded-content": {
       "put-method-get": {

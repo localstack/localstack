@@ -1,5 +1,5 @@
 {
-  "tests/aws/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[test-nobucket-nopolicy]": {
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[test-nobucket-nopolicy]": {
     "recorded-date": "26-06-2023, 14:20:49",
     "recorded-content": {
       "create_cs_result": {
@@ -121,7 +121,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[test-bucket-nopolicy]": {
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[test-bucket-nopolicy]": {
     "recorded-date": "26-06-2023, 14:21:54",
     "recorded-content": {
       "create_cs_result": {
@@ -307,7 +307,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[prod-nobucket-nopolicy]": {
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[prod-nobucket-nopolicy]": {
     "recorded-date": "26-06-2023, 14:22:58",
     "recorded-content": {
       "create_cs_result": {
@@ -429,7 +429,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[prod-bucket-policy]": {
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[prod-bucket-policy]": {
     "recorded-date": "26-06-2023, 14:24:03",
     "recorded-content": {
       "create_cs_result": {
@@ -728,7 +728,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_dependent_ref": {
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_dependent_ref": {
     "recorded-date": "26-06-2023, 14:18:26",
     "recorded-content": {
       "dependent_ref_exc": {
@@ -744,7 +744,7 @@
       }
     }
   },
-  "tests/aws/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_output_reference_to_skipped_resource": {
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_output_reference_to_skipped_resource": {
     "recorded-date": "27-06-2023, 00:43:18",
     "recorded-content": {
       "unresolved_resource_reference_exception": {

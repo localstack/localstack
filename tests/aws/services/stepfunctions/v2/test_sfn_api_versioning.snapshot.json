@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_create_with_publish": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_create_with_publish": {
     "recorded-date": "11-08-2023, 12:09:12",
     "recorded-content": {
       "creation_resp_1": {
@@ -13,7 +13,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_create_with_version_description_no_publish": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_create_with_version_description_no_publish": {
     "recorded-date": "11-08-2023, 12:09:25",
     "recorded-content": {
       "validation_exception": {
@@ -29,7 +29,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_create_publish_describe_no_version_description": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_create_publish_describe_no_version_description": {
     "recorded-date": "11-08-2023, 12:09:39",
     "recorded-content": {
       "creation_resp_1": {
@@ -107,7 +107,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_create_publish_describe_with_version_description": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_create_publish_describe_with_version_description": {
     "recorded-date": "11-08-2023, 12:09:54",
     "recorded-content": {
       "creation_resp_1": {
@@ -186,7 +186,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_update_state_machine": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_update_state_machine": {
     "recorded-date": "11-08-2023, 18:02:02",
     "recorded-content": {
       "creation_resp_1": {
@@ -267,7 +267,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_publish_state_machine_version": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_publish_state_machine_version": {
     "recorded-date": "11-08-2023, 12:10:42",
     "recorded-content": {
       "creation_resp_1": {
@@ -416,7 +416,7 @@
       "conflict_exception": "An error occurred (ConflictException) when calling the PublishStateMachineVersion operation: Failed to publish the State Machine version for revision <uuid:2>. The current State Machine revision is <uuid:3>."
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_start_version_execution": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_start_version_execution": {
     "recorded-date": "17-08-2023, 09:53:53",
     "recorded-content": {
       "creation_resp_1": {
@@ -479,7 +479,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_list_delete_version": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_list_delete_version": {
     "recorded-date": "11-08-2023, 12:10:11",
     "recorded-content": {
       "creation_resp_1": {
@@ -556,7 +556,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_version_ids_between_deletions": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_version_ids_between_deletions": {
     "recorded-date": "11-08-2023, 15:46:39",
     "recorded-content": {
       "creation_resp_1": {
@@ -578,7 +578,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_idempotent_publish": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_idempotent_publish": {
     "recorded-date": "11-08-2023, 15:57:54",
     "recorded-content": {
       "creation_resp_1": {
@@ -619,7 +619,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_empty_revision_with_publish_and_no_publish_on_creation": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_empty_revision_with_publish_and_no_publish_on_creation": {
     "recorded-date": "11-08-2023, 16:53:59",
     "recorded-content": {
       "creation_resp_1": {
@@ -648,7 +648,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_empty_revision_with_publish_and_publish_on_creation": {
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_empty_revision_with_publish_and_publish_on_creation": {
     "recorded-date": "11-08-2023, 16:55:57",
     "recorded-content": {
       "creation_resp_1": {

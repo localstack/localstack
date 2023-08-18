@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_invalid_secret_name": {
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_invalid_secret_name": {
     "recorded-date": "22-06-2023, 13:25:51",
     "recorded-content": {
       "get_execution_history": {
@@ -160,7 +160,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_no_such_bucket": {
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_no_such_bucket": {
     "recorded-date": "22-06-2023, 13:26:06",
     "recorded-content": {
       "get_execution_history": {
@@ -314,7 +314,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_dynamodb_invalid_param": {
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_dynamodb_invalid_param": {
     "recorded-date": "27-07-2023, 19:06:50",
     "recorded-content": {
       "get_execution_history": {
@@ -408,7 +408,7 @@
       }
     }
   },
-  "tests/aws/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_dynamodb_put_item_no_such_table": {
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_dynamodb_put_item_no_such_table": {
     "recorded-date": "27-07-2023, 19:06:06",
     "recorded-content": {
       "get_execution_history": {

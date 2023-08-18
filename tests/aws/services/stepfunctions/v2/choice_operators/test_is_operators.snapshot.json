@@ -1,5 +1,5 @@
 {
-  "tests/aws/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_boolean": {
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_boolean": {
     "recorded-date": "22-06-2023, 13:08:16",
     "recorded-content": {
       "cases": [
@@ -338,7 +338,7 @@
       ]
     }
   },
-  "tests/aws/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_null": {
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_null": {
     "recorded-date": "22-06-2023, 13:09:08",
     "recorded-content": {
       "cases": [
@@ -677,7 +677,7 @@
       ]
     }
   },
-  "tests/aws/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_numeric": {
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_numeric": {
     "recorded-date": "22-06-2023, 13:09:58",
     "recorded-content": {
       "cases": [
@@ -1016,7 +1016,7 @@
       ]
     }
   },
-  "tests/aws/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_present": {
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_present": {
     "recorded-date": "22-06-2023, 13:11:07",
     "recorded-content": {
       "cases": [
@@ -1355,7 +1355,7 @@
       ]
     }
   },
-  "tests/aws/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_string": {
+  "tests/aws/services/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_string": {
     "recorded-date": "22-06-2023, 13:12:11",
     "recorded-content": {
       "cases": [
