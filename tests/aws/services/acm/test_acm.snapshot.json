@@ -1,5 +1,5 @@
 {
-  "tests/aws/test_acm.py::TestACM::test_certificate_for_subdomain_wildcard": {
+  "tests/aws/services/acm/test_acm.py::TestACM::test_certificate_for_subdomain_wildcard": {
     "recorded-date": "18-04-2023, 19:01:27",
     "recorded-content": {
       "request-cert": {

@@ -1,5 +1,5 @@
 {
-  "tests/aws/test_logs.py::TestCloudWatchLogs::test_put_subscription_filter_lambda": {
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_put_subscription_filter_lambda": {
     "recorded-date": "17-03-2023, 13:55:00",
     "recorded-content": {
       "add_permission": {
@@ -61,7 +61,7 @@
       ]
     }
   },
-  "tests/aws/test_logs.py::TestCloudWatchLogs::test_list_tags_log_group": {
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_list_tags_log_group": {
     "recorded-date": "22-12-2022, 17:46:54",
     "recorded-content": {
       "list_tags_after_create_log_group": {
@@ -139,7 +139,7 @@
       }
     }
   },
-  "tests/aws/test_logs.py::TestCloudWatchLogs::test_create_and_delete_log_stream": {
+  "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_create_and_delete_log_stream": {
     "recorded-date": "06-04-2023, 11:42:42",
     "recorded-content": {
       "describe-log-groups-prefix": {

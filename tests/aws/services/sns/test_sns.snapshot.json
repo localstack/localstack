@@ -1,5 +1,5 @@
 {
-  "tests/aws/test_sns.py::TestSNSProvider::test_tags": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_tags": {
     "recorded-date": "09-08-2022, 11:30:16",
     "recorded-content": {
       "duplicate-key-error": {
@@ -55,7 +55,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_redrive_policy_sqs_queue_subscription[True]": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_redrive_policy_sqs_queue_subscription[True]": {
     "recorded-date": "10-08-2022, 11:36:11",
     "recorded-content": {
       "messages": {
@@ -91,7 +91,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_redrive_policy_sqs_queue_subscription[False]": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_redrive_policy_sqs_queue_subscription[False]": {
     "recorded-date": "10-08-2022, 11:36:14",
     "recorded-content": {
       "messages": {
@@ -136,7 +136,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_publish_unicode_chars": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_publish_unicode_chars": {
     "recorded-date": "09-08-2022, 11:30:03",
     "recorded-content": {
       "received-message": {
@@ -165,7 +165,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSSubscription::test_python_lambda_subscribe_sns_topic": {
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscription::test_python_lambda_subscribe_sns_topic": {
     "recorded-date": "09-08-2022, 11:30:00",
     "recorded-content": {
       "notification": {
@@ -183,7 +183,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_attribute_raw_subscribe": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_attribute_raw_subscribe": {
     "recorded-date": "09-08-2022, 11:30:06",
     "recorded-content": {
       "subscription-attributes": {
@@ -225,7 +225,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_subscribe_with_invalid_protocol": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_subscribe_with_invalid_protocol": {
     "recorded-date": "09-08-2022, 11:30:03",
     "recorded-content": {
       "exception": {
@@ -241,7 +241,7 @@
       }
     }
   },
-  "tests/aws/test_sns.py::TestSNSProvider::test_filter_policy": {
+  "tests/aws/services/sns/test_sns.py::TestSNSProvider::test_filter_policy": {
     "recorded-date": "13-02-2023, 16:48:57",
     "recorded-content": {
       "subscription-attributes": {

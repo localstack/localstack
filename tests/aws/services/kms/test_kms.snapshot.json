@@ -1,5 +1,5 @@
 {
-  "tests/aws/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[None]": {
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[None]": {
     "recorded-date": "13-04-2023, 11:29:52",
     "recorded-content": {
       "generate-random-exc": {
@@ -14,7 +14,7 @@
       }
     }
   },
-  "tests/aws/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[0]": {
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[0]": {
     "recorded-date": "13-04-2023, 11:29:53",
     "recorded-content": {
       "generate-random-exc": {
@@ -29,7 +29,7 @@
       }
     }
   },
-  "tests/aws/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[1025]": {
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[1025]": {
     "recorded-date": "13-04-2023, 11:29:54",
     "recorded-content": {
       "generate-random-exc": {
@@ -44,7 +44,7 @@
       }
     }
   },
-  "tests/aws/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_1]": {
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_1]": {
     "recorded-date": "13-04-2023, 11:30:27",
     "recorded-content": {
       "generate-random-exc": {
@@ -59,7 +59,7 @@
       }
     }
   },
-  "tests/aws/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_256]": {
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_256]": {
     "recorded-date": "13-04-2023, 11:30:28",
     "recorded-content": {
       "generate-random-exc": {
@@ -74,7 +74,7 @@
       }
     }
   },
-  "tests/aws/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_3072-RSAES_OAEP_SHA_1]": {
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_3072-RSAES_OAEP_SHA_1]": {
     "recorded-date": "13-04-2023, 11:30:29",
     "recorded-content": {
       "generate-random-exc": {
@@ -89,7 +89,7 @@
       }
     }
   },
-  "tests/aws/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_3072-RSAES_OAEP_SHA_256]": {
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_3072-RSAES_OAEP_SHA_256]": {
     "recorded-date": "13-04-2023, 11:30:30",
     "recorded-content": {
       "generate-random-exc": {
@@ -104,7 +104,7 @@
       }
     }
   },
-  "tests/aws/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_4096-RSAES_OAEP_SHA_1]": {
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_4096-RSAES_OAEP_SHA_1]": {
     "recorded-date": "13-04-2023, 11:30:31",
     "recorded-content": {
       "generate-random-exc": {
@@ -119,7 +119,7 @@
       }
     }
   },
-  "tests/aws/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_4096-RSAES_OAEP_SHA_256]": {
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_4096-RSAES_OAEP_SHA_256]": {
     "recorded-date": "13-04-2023, 11:30:32",
     "recorded-content": {
       "generate-random-exc": {
@@ -134,13 +134,13 @@
       }
     }
   },
-  "tests/aws/test_kms.py::TestKMS::test_generate_random[12]": {
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[12]": {
     "recorded-date": "13-04-2023, 11:29:50",
     "recorded-content": {
       "result_length": 12
     }
   },
-  "tests/aws/test_kms.py::TestKMS::test_generate_random[44]": {
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[44]": {
     "recorded-date": "13-04-2023, 11:29:50",
     "recorded-content": {
       "result_length": 44

@@ -1,5 +1,5 @@
 {
-  "tests/aws/test_events.py::TestEvents::test_put_events_to_default_eventbus_for_custom_eventbus": {
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_to_default_eventbus_for_custom_eventbus": {
     "recorded-date": "22-12-2022, 01:50:01",
     "recorded-content": {
       "create-custom-event-bus": {
@@ -78,7 +78,7 @@
       }
     }
   },
-  "tests/aws/test_events.py::TestEvents::test_put_target_id_validation": {
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_target_id_validation": {
     "recorded-date": "24-02-2023, 14:57:23",
     "recorded-content": {
       "error": {
@@ -103,7 +103,7 @@
       }
     }
   },
-  "tests/aws/test_events.py::TestEvents::test_put_events_nonexistent_event_bus": {
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_nonexistent_event_bus": {
     "recorded-date": "05-05-2023, 12:00:22",
     "recorded-content": {
       "put-events": {
@@ -153,7 +153,7 @@
       }
     }
   },
-  "tests/aws/test_events.py::TestEvents::test_test_event_pattern": {
+  "tests/aws/services/events/test_events.py::TestEvents::test_test_event_pattern": {
     "recorded-date": "05-07-2023, 19:41:16",
     "recorded-content": {
       "eventbridge-test-event-pattern-response": {
@@ -172,7 +172,7 @@
       }
     }
   },
-  "tests/aws/test_events.py::TestEvents::test_put_events_time": {
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_time": {
     "recorded-date": "13-07-2023, 02:49:20",
     "recorded-content": {
       "put-events": {

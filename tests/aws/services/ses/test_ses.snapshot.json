@@ -1,5 +1,5 @@
 {
-  "tests/aws/test_ses.py::TestSES::test_ses_sns_topic_integration_send_email": {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_ses_sns_topic_integration_send_email": {
     "recorded-date": "14-12-2022, 17:29:13",
     "recorded-content": {
       "messages": [
@@ -192,7 +192,7 @@
       ]
     }
   },
-  "tests/aws/test_ses.py::TestSES::test_ses_sns_topic_integration_send_templated_email": {
+  "tests/aws/services/ses/test_ses.py::TestSES::test_ses_sns_topic_integration_send_templated_email": {
     "recorded-date": "14-12-2022, 17:29:16",
     "recorded-content": {
       "messages": [

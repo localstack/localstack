@@ -1,5 +1,5 @@
 {
-  "tests/aws/test_sqs.py::TestSqsProvider::test_receive_message_message_attribute_names_filters": {
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_message_attribute_names_filters": {
     "recorded-date": "06-07-2023, 11:20:02",
     "recorded-content": {
       "send_message_response": {
@@ -179,7 +179,7 @@
       }
     }
   },
-  "tests/aws/test_sqs.py::TestSqsProvider::test_receive_message_attribute_names_filters": {
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_attribute_names_filters": {
     "recorded-date": "31-05-2022, 12:18:44",
     "recorded-content": {
       "all_attributes": {
@@ -265,7 +265,7 @@
       }
     }
   },
-  "tests/aws/test_sqs.py::TestSqsProvider::test_create_queue_with_attributes": {
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_with_attributes": {
     "recorded-date": "01-08-2022, 20:33:31",
     "recorded-content": {
       "get_queue_attributes": {
@@ -290,7 +290,7 @@
       }
     }
   },
-  "tests/aws/test_sqs.py::TestSqsProvider::test_create_and_update_queue_attributes": {
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_and_update_queue_attributes": {
     "recorded-date": "01-08-2022, 20:51:00",
     "recorded-content": {
       "get_queue_attributes": {
