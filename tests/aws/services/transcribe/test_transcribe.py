@@ -87,12 +87,12 @@ class TestTranscribe:
     @pytest.mark.parametrize(
         "media_file",
         [
-            "files/en-gb.amr",
-            "files/en-gb.flac",
-            "files/en-gb.mp3",
-            "files/en-gb.mp4",
-            "files/en-gb.ogg",
-            "files/en-gb.webm",
+            "../../files/en-gb.amr",
+            "../../files/en-gb.flac",
+            "../../files/en-gb.mp3",
+            "../../files/en-gb.mp4",
+            "../../files/en-gb.ogg",
+            "../../files/en-gb.webm",
         ],
     )
     @markers.aws.unknown
