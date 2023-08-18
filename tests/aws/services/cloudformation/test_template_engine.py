@@ -642,7 +642,7 @@ class TestMacros:
         stack = deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__),
-                "../../../../../localstack-ext/tests/aws/templates/",
+                "../../templates",
                 template_to_transform,
             ),
             parameters={"TopicName": topic_name},

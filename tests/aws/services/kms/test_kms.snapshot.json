@@ -1455,7 +1455,7 @@
       }
     }
   },
-  "tests/aws/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_without_plaintext": {
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_without_plaintext: {
     "recorded-date": "11-05-2023, 14:40:24",
     "recorded-content": {
       "generate-data-key-without-plaintext": {
@@ -1468,7 +1468,7 @@
       }
     }
   },
-  "tests/aws/test_kms.py::TestKMS::test_encrypt_decrypt_encryption_context": {
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_decrypt_encryption_context: {
     "recorded-date": "11-05-2023, 22:46:49",
     "recorded-content": {
       "encrypt_response": {
@@ -1501,7 +1501,7 @@
       }
     }
   },
-  "tests/aws/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key": {
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key: {
     "recorded-date": "16-06-2023, 12:47:28",
     "recorded-content": {
       "decrypt-without-encryption-context": {
@@ -1516,7 +1516,7 @@
       }
     }
   },
-  "tests/aws/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_without_plaintext": {
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_without_plaintext: {
     "recorded-date": "16-06-2023, 12:47:45",
     "recorded-content": {
       "decrypt-without-encryption-context": {
@@ -1531,7 +1531,7 @@
       }
     }
   },
-  "tests/aws/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_pair": {
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_pair: {
     "recorded-date": "16-06-2023, 17:51:27",
     "recorded-content": {
       "decrypt-without-encryption-context": {
@@ -1546,7 +1546,7 @@
       }
     }
   },
-  "tests/aws/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_pair_without_plaintext": {
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_pair_without_plaintext: {
     "recorded-date": "16-06-2023, 17:51:43",
     "recorded-content": {
       "decrypt-without-encryption-context": {
