@@ -138,7 +138,7 @@ jobs:
           name: Test SFN V2 provider
           environment:
             PROVIDER_OVERRIDE_STEPFUNCTIONS: "v2"
-            TEST_PATH: "tests/aws/stepfunctions/v2/"
+            TEST_PATH: "tests/aws/services/stepfunctions/v2/"
             COVERAGE_ARGS: "-p"
           command: |
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_v2.xml -o junit_suite_name='sfn_v2'" make test-coverage
