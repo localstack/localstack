@@ -19,6 +19,7 @@ pytest_plugins = [
     "localstack.testing.pytest.fixture_conflicts",
     "localstack.testing.pytest.detect_thread_leakage",
     "localstack.testing.pytest.marking",
+    "localstack.testing.pytest.marker_report",
 ]
 
 
