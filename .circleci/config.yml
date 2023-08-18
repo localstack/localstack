@@ -75,6 +75,54 @@ jobs:
           name: Checking AWS compatibility markers
           command: make check-aws-markers
 
+  unit-tests:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-pytest-tinybird
+      - run:
+          name: Unit tests
+          environment:
+            TEST_PATH: "tests/unit"
+            COVERAGE_ARGS: "-p"
+          command: |
+            echo skipped
+
+  itest-lambda-legacy-local:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-pytest-tinybird
+      - run:
+          name: Test 'local' Lambda executor
+          environment:
+            LAMBDA_EXECUTOR: "local"
+            PROVIDER_OVERRIDE_LAMBDA: "legacy"
+            TEST_PATH: "tests/aws/services/lambda_/ tests/aws/test_integration.py tests/aws/services/apigateway/test_apigateway_basic.py tests/aws/services/cloudformation/resources/test_lambda.py"
+            COVERAGE_ARGS: "-p"
+          command: |
+            echo "skipped"
+
+  itest-sfn-v2-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-pytest-tinybird
+      - run:
+          name: Test SFN V2 provider
+          environment:
+            PROVIDER_OVERRIDE_STEPFUNCTIONS: "v2"
+            TEST_PATH: "tests/aws/services/stepfunctions/v2/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            echo skipped
+
   docker-build:
     parameters:
       platform:
