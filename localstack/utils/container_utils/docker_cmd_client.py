@@ -660,6 +660,11 @@ class CmdDockerClient(ContainerClient):
         LOG.debug("Start container with cmd: %s", cmd)
         return self._run_async_cmd(cmd, stdin, container_name_or_id)
 
+    def attach_to_container(self, container_name_or_id: str):
+        cmd = self._docker_cmd() + ["attach", container_name_or_id]
+        LOG.debug(f"Attaching to container {container_name_or_id}")
+        run(cmd)
+
     def _run_async_cmd(
         self, cmd: List[str], stdin: bytes, container_name: str, image_name=None
     ) -> Tuple[bytes, bytes]:

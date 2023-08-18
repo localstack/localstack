@@ -920,6 +920,12 @@ class ContainerClient(metaclass=ABCMeta):
         """
 
     @abstractmethod
+    def attach_to_container(self, container_name_or_id: str):
+        """
+        Attach local standard input, output, and error streams to a running container
+        """
+
+    @abstractmethod
     def login(self, username: str, password: str, registry: Optional[str] = None) -> None:
         """
         Login into an OCI registry
