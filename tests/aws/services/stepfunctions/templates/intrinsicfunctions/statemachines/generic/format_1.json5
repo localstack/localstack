@@ -1,0 +1,13 @@
+{
+    "Comment": "FORMAT_1",
+    "StartAt": "State_0",
+    "States": {
+        "State_0": {
+            "Type": "Pass",
+            "Parameters": {
+                "FunctionResult.$": "States.Format('Formatting argument {}.', $.FunctionInput)",
+            },
+            "End": true,
+        },
+    },
+}

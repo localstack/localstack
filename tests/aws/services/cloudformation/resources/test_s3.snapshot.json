@@ -1,0 +1,76 @@
+{
+  "tests/aws/services/cloudformation/resources/test_s3.py::test_cors_configuration": {
+    "recorded-date": "20-04-2023, 20:17:17",
+    "recorded-content": {
+      "cors-info-optional": {
+        "CORSRules": [
+          {
+            "AllowedHeaders": [
+              "*",
+              "x-amz-*"
+            ],
+            "AllowedMethods": [
+              "GET"
+            ],
+            "AllowedOrigins": [
+              "*"
+            ],
+            "ExposeHeaders": [
+              "Date"
+            ],
+            "ID": "test-cors-id",
+            "MaxAgeSeconds": 3600
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "cors-info-only-required": {
+        "CORSRules": [
+          {
+            "AllowedMethods": [
+              "GET"
+            ],
+            "AllowedOrigins": [
+              "*"
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_s3.py::test_website_configuration": {
+    "recorded-date": "02-06-2023, 18:24:39",
+    "recorded-content": {
+      "get_bucket_website": {
+        "ErrorDocument": {
+          "Key": "error.html"
+        },
+        "IndexDocument": {
+          "Suffix": "index.html"
+        },
+        "RoutingRules": [
+          {
+            "Condition": {
+              "HttpErrorCodeReturnedEquals": "404",
+              "KeyPrefixEquals": "out1/"
+            },
+            "Redirect": {
+              "ReplaceKeyWith": "redirected.html"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+    "Comment": "BASE_64_DECODE",
+    "StartAt": "State_0",
+    "States": {
+        "State_0": {
+            "Type": "Pass",
+            "Parameters": {
+                "FunctionResult.$": "States.Base64Decode($.FunctionInput)",
+            },
+            "End": true,
+        },
+    },
+}

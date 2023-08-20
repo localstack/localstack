@@ -163,7 +163,7 @@ jobs:
       - name: Install OS packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y --allow-downgrades libsasl2-dev jq postgresql-14=14.8-0ubuntu0* postgresql-client postgresql-plpython3
+          sudo apt-get install -y --allow-downgrades libsasl2-dev jq postgresql-14=14.9-0ubuntu0* postgresql-client postgresql-plpython3
 
       - name: Cache Ext Dependencies (venv)
         if: inputs.disableCaching != true
@@ -181,19 +181,19 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: |
-            localstack/tests/aws/lambda_/functions/common
-          key: community-it-${{ runner.os }}-lambda-common-${{ hashFiles('localstack/tests/aws/lambda_/functions/common/**/src/*') }}
+            localstack/tests/aws/services/lambda_/functions/common
+          key: community-it-${{ runner.os }}-lambda-common-${{ hashFiles('localstack/tests/aws/services/lambda_/functions/common/**/src/*') }}
 
       - name: Prebuild lambda common packages
         working-directory: localstack
-        run: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/lambda_/functions/common
+        run: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/services/lambda_/functions/common
 
       - name: Save Lambda common runtime packages
         if: inputs.disableCaching != true
         uses: actions/cache/save@v3
         with:
           path: |
-            localstack/tests/aws/lambda_/functions/common
+            localstack/tests/aws/services/lambda_/functions/common
           key: ${{ steps.cached-lambda-common-restore.outputs.cache-primary-key }}
 
       - name: Install Python Dependencies for Pro

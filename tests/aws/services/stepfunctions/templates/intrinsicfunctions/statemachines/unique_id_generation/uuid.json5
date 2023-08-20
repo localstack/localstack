@@ -1,0 +1,13 @@
+{
+    "Comment": "UUID",
+    "StartAt": "State_0",
+    "States": {
+        "State_0": {
+            "Type": "Pass",
+            "Parameters": {
+                "FunctionResult.$": "States.UUID()"
+            },
+            "End": true,
+        },
+    },
+}

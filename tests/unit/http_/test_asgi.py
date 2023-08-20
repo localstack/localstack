@@ -7,6 +7,7 @@ from queue import Queue
 from threading import Thread
 from typing import List
 
+import pytest
 import requests
 import websocket
 from werkzeug import Request, Response
@@ -167,6 +168,41 @@ def test_chunked_transfer_encoding_request(serve_asgi_adapter):
     assert response.text == "foobar\nbaz"
 
     assert request_list[0].headers["Transfer-Encoding"].lower() == "chunked"
+
+
+def test_close_iterable_response(serve_asgi_adapter):
+    class IterableResponse:
+        def __init__(self, data: list[bytes]):
+            self.data = data
+            self.closed = False
+
+        def __iter__(self):
+            for packet in self.data:
+                yield packet
+
+        def close(self):
+            # should be called through the werkzeug layers
+            self.closed = True
+
+    iterable = IterableResponse([b"foo", b"bar"])
+
+    @Request.application
+    def app(request: Request) -> Response:
+        return Response(iterable, 200)
+
+    server = serve_asgi_adapter(app)
+
+    response = requests.get(server.url, stream=True)
+
+    gen = response.iter_content(chunk_size=3)
+    assert next(gen) == b"foo"
+    assert next(gen) == b"bar"
+    assert not iterable.closed
+
+    with pytest.raises(StopIteration):
+        next(gen)
+
+    assert iterable.closed
 
 
 def test_input_stream_methods(serve_asgi_adapter):

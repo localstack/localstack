@@ -17,8 +17,8 @@ from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.runtime import events
 from localstack.services import infra
 from localstack.utils.common import safe_requests
-from tests.aws.test_es import install_async as es_install_async
-from tests.aws.test_opensearch import install_async as opensearch_install_async
+from tests.aws.services.es.test_es import install_async as es_install_async
+from tests.aws.services.opensearch.test_opensearch import install_async as opensearch_install_async
 from tests.aws.test_terraform import TestTerraform
 
 logger = logging.getLogger(__name__)
