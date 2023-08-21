@@ -783,7 +783,6 @@ class ContainerClient(metaclass=ABCMeta):
             security_opt=container_config.security_opt,
             network=container_config.network,
             dns=container_config.dns,
-            additional_flags=container_config.additional_flags,
             workdir=container_config.workdir,
             privileged=container_config.privileged,
             platform=container_config.platform,

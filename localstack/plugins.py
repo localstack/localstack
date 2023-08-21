@@ -2,17 +2,18 @@ import logging
 
 from localstack import config
 from localstack.runtime import hooks
+from localstack.utils.container_utils.container_client import ContainerConfiguration
 
 LOG = logging.getLogger(__name__)
 
 
 @hooks.configure_localstack_container()
-def configure_edge_port(container):
+def configure_edge_port(container_config: ContainerConfiguration):
     ports = [config.EDGE_PORT, config.EDGE_PORT_HTTP]
     LOG.debug("configuring container with edge ports: %s", ports)
     for port in ports:
         if port:
-            container.ports.add(port)
+            container_config.ports.add(port)
 
 
 # Register the ArnPartitionRewriteListener only if the feature flag is enabled

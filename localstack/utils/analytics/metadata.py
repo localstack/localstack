@@ -6,6 +6,7 @@ from typing import Optional
 
 from localstack import config, constants
 from localstack.runtime import hooks
+from localstack.utils.container_utils.container_client import ContainerConfiguration
 from localstack.utils.functions import call_safe
 from localstack.utils.json import FileMappedDocument
 from localstack.utils.objects import singleton_factory
@@ -177,7 +178,7 @@ def prepare_host_machine_id():
 
 
 @hooks.configure_localstack_container()
-def _mount_machine_file(container):
+def _mount_machine_file(container_config: ContainerConfiguration):
     from localstack.utils.container_utils.container_client import VolumeBind
 
     # mount tha machine file from the host's CLI cache directory into the appropriate location in the
@@ -185,4 +186,4 @@ def _mount_machine_file(container):
     machine_file = os.path.join(config.dirs.cache, "machine.json")
     if os.path.isfile(machine_file):
         target = os.path.join(config.dirs.for_container().cache, "machine.json")
-        container.volumes.add(VolumeBind(machine_file, target, read_only=True))
+        container_config.volumes.add(VolumeBind(machine_file, target, read_only=True))

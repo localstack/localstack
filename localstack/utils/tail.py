@@ -43,6 +43,10 @@ class FileListener:
         self.started.clear()
         self.thread = None
 
+    def truncate_log(self):
+        with open(self.file_path, "wb") as outfile:
+            outfile.write(b"")
+
     def _do_start_thread(self) -> FuncThread:
         if self.use_tail_command:
             thread = self._create_tail_command_thread()

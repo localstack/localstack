@@ -1,16 +1,19 @@
 from __future__ import annotations
 
-import logging
 from typing import Generator
+import logging
+import os
+import shlex
 
 import pytest
 
 from localstack import config
+from localstack.utils.bootstrap import Container, get_docker_image_to_start
 from localstack.utils.container_utils.container_client import (
+    ContainerConfiguration,
     PortMappings,
+    VolumeMappings,
 )
-from localstack.utils.bootstrap import LocalstackContainer
-from localstack.utils.container_utils.container_client import PortMappings
 
 LOG = logging.getLogger(__name__)
 
@@ -24,7 +27,7 @@ def _setup_cli_environment(monkeypatch):
 
 class ContainerFactory:
     def __init__(self):
-        self._containers: list[LocalstackContainer] = []
+        self._containers: list[Container] = []
 
     def __call__(
         self,
@@ -33,28 +36,36 @@ class ContainerFactory:
         publish: list[int] | None = None,
         # ContainerConfig properties
         **kwargs,
-    ) -> LocalstackContainer:
-        container = LocalstackContainer()
+    ) -> Container:
+        port_configuration = PortMappings()
+        if publish:
+            for port in publish:
+                port_configuration.add(port)
 
-        # override some default configuration
-        container.config.ports = PortMappings()
+        container_configuration = ContainerConfiguration(
+            image_name=get_docker_image_to_start(),
+            name=config.MAIN_CONTAINER_NAME,
+            volumes=VolumeMappings(),
+            remove=True,
+            ports=port_configuration,
+            entrypoint=os.environ.get("ENTRYPOINT"),
+            command=shlex.split(os.environ.get("CMD", "")) or None,
+            env_vars={},
+        )
 
         # allow for randomised container names
-        container.config.name = None
-
-        for key, value in kwargs.items():
-            setattr(container.config, key, value)
+        container_configuration.name = None
 
         # handle the convenience options
         if pro:
-            container.config.env_vars["GATEWAY_LISTEN"] = "0.0.0.0:4566,0.0.0.0:443"
-            container.config.env_vars["LOCALSTACK_API_KEY"] = "test"
+            container_configuration.env_vars["GATEWAY_LISTEN"] = "0.0.0.0:4566,0.0.0.0:443"
+            container_configuration.env_vars["LOCALSTACK_API_KEY"] = "test"
 
-        port_mappings = PortMappings()
-        if publish:
-            for port in publish:
-                port_mappings.add(port)
-        container.config.ports = port_mappings
+        # override values from kwargs
+        for key, value in kwargs.items():
+            setattr(container_configuration, key, value)
+
+        container = Container(container_configuration)
 
         # track the container so we can remove it later
         self._containers.append(container)
