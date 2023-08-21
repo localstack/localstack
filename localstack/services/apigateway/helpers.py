@@ -625,7 +625,7 @@ def get_cors_response(headers):
     return response
 
 
-def get_rest_api_paths(account_id: str, region_name: str, rest_api_id):
+def get_rest_api_paths(account_id: str, region_name: str, rest_api_id: str):
     apigateway = connect_to(aws_access_key_id=account_id, region_name=region_name).apigateway
     resources = apigateway.get_resources(restApiId=rest_api_id, limit=100)
     resource_map = {}
