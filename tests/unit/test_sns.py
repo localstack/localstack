@@ -19,7 +19,7 @@ from localstack.services.sns.publisher import SubscriptionFilter, create_sns_mes
 @pytest.fixture
 def subscriber():
     return {
-        "SubscriptionArn": "arn",
+        "SubscriptionArn": "arn:aws:sns:jupiter-south-1:123456789012:MyTopic:6b0e71bd-7e97-4d97-80ce-4a0994e55286",
         "Protocol": "sqs",
         "RawMessageDelivery": "false",
         "TopicArn": "arn",
@@ -62,10 +62,10 @@ class TestSns:
             "Message": "msg",
             "Signature": "EXAMPLEpH+..",
             "SignatureVersion": "1",
-            "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
+            "SigningCertURL": "https://sns.jupiter-south-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
             "TopicArn": "arn",
             "Type": "Notification",
-            "UnsubscribeURL": "http://localhost:4566/?Action=Unsubscribe&SubscriptionArn=arn",
+            "UnsubscribeURL": f"http://localhost:4566/?Action=Unsubscribe&SubscriptionArn={subscriber['SubscriptionArn']}",
         }
         assert expected_sns_body == result
 
@@ -95,10 +95,10 @@ class TestSns:
             "Subject": "subject",
             "Signature": "EXAMPLEpH+..",
             "SignatureVersion": "1",
-            "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
+            "SigningCertURL": "https://sns.jupiter-south-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
             "TopicArn": "arn",
             "Type": "Notification",
-            "UnsubscribeURL": "http://localhost:4566/?Action=Unsubscribe&SubscriptionArn=arn",
+            "UnsubscribeURL": f"http://localhost:4566/?Action=Unsubscribe&SubscriptionArn={subscriber['SubscriptionArn']}",
             "MessageAttributes": {
                 "attr1": {
                     "Type": "String",
