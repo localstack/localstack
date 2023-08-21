@@ -8,15 +8,21 @@ from localstack.aws.api.s3 import (
     AccessControlPolicy,
     AnalyticsConfiguration,
     AnalyticsId,
+    BucketCannedACL,
     BucketLifecycleConfiguration,
     BucketName,
     CORSConfiguration,
+    Grant,
+    Grantee,
+    Grants,
     IntelligentTieringConfiguration,
     IntelligentTieringId,
     InvalidArgument,
     InvalidBucketName,
     InventoryConfiguration,
     InventoryId,
+    ObjectCannedACL,
+    Permission,
 )
 from localstack.aws.api.s3 import Type as GranteeType
 from localstack.aws.api.s3 import WebsiteConfiguration
@@ -24,13 +30,19 @@ from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3.exceptions import InvalidRequest, MalformedACLError, MalformedXML
 from localstack.services.s3.utils import (
     _create_invalid_argument_exc,
-    get_header_name,
+    get_class_attrs_from_spec_class,
+    get_permission_header_name,
     is_bucket_name_valid,
-    is_canned_acl_bucket_valid,
     is_valid_canonical_id,
     validate_dict_fields,
 )
 from localstack.utils.aws import arns
+
+# https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
+# bucket-owner-read + bucket-owner-full-control are allowed, but ignored for buckets
+VALID_CANNED_ACLS = get_class_attrs_from_spec_class(
+    BucketCannedACL
+) | get_class_attrs_from_spec_class(ObjectCannedACL)
 
 
 def validate_bucket_analytics_configuration(
@@ -64,30 +76,52 @@ def validate_canned_acl(canned_acl: str) -> None:
     """
     Validate the canned ACL value, or raise an Exception
     """
-    if canned_acl and not is_canned_acl_bucket_valid(canned_acl):
+    if canned_acl and canned_acl not in VALID_CANNED_ACLS:
         ex = _create_invalid_argument_exc(None, "x-amz-acl", canned_acl)
         raise ex
 
 
-def validate_grantee_in_headers(grant: str, grantees: str) -> None:
+def parse_grants_in_headers(permission: Permission, grantees: str) -> Grants:
     splitted_grantees = [grantee.strip() for grantee in grantees.split(",")]
-    for grantee in splitted_grantees:
-        grantee_type, grantee_id = grantee.split("=")
+    grants = []
+    for seralized_grantee in splitted_grantees:
+        grantee_type, grantee_id = seralized_grantee.split("=")
         grantee_id = grantee_id.strip('"')
         if grantee_type not in ("uri", "id", "emailAddress"):
             ex = _create_invalid_argument_exc(
-                "Argument format not recognized", get_header_name(grant), grantee
+                "Argument format not recognized",
+                get_permission_header_name(permission),
+                seralized_grantee,
             )
             raise ex
-        elif grantee_type == "uri" and grantee_id not in s3_constants.VALID_ACL_PREDEFINED_GROUPS:
-            ex = _create_invalid_argument_exc("Invalid group uri", "uri", grantee_id)
-            raise ex
-        elif grantee_type == "id" and not is_valid_canonical_id(grantee_id):
-            ex = _create_invalid_argument_exc("Invalid id", "id", grantee_id)
-            raise ex
-        elif grantee_type == "emailAddress":
+        elif grantee_type == "uri":
+            if grantee_id not in s3_constants.VALID_ACL_PREDEFINED_GROUPS:
+                ex = _create_invalid_argument_exc("Invalid group uri", "uri", grantee_id)
+                raise ex
+            grantee = Grantee(
+                Type=GranteeType.Group,
+                URI=grantee_id,
+            )
+
+        elif grantee_type == "id":
+            if not is_valid_canonical_id(grantee_id):
+                ex = _create_invalid_argument_exc("Invalid id", "id", grantee_id)
+                raise ex
+            grantee = Grantee(
+                Type=GranteeType.CanonicalUser,
+                ID=grantee_id,
+                DisplayName="webfile",  # TODO: only in certain regions
+            )
+
+        else:
             # TODO: check validation here
-            continue
+            grantee = Grantee(
+                Type=GranteeType.AmazonCustomerByEmail,
+                EmailAddress=grantee_id,
+            )
+        grants.append(Grant(Permission=permission, Grantee=grantee))
+
+    return grants
 
 
 def validate_acl_acp(acp: AccessControlPolicy) -> None:
