@@ -22,9 +22,8 @@ from localstack.utils.common import (
 )
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.sync import poll_condition
-
-from .lambda_.functions import lambda_integration
-from .lambda_.test_lambda import (
+from tests.aws.services.lambda_.functions import lambda_integration
+from tests.aws.services.lambda_.test_lambda import (
     PYTHON_TEST_RUNTIMES,
     TEST_LAMBDA_PUT_ITEM_FILE,
     TEST_LAMBDA_PYTHON,

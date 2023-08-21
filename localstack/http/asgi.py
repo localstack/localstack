@@ -115,35 +115,41 @@ def populate_wsgi_environment(
     environ["asgi.headers"] = headers
 
 
-async def to_async_generator(
-    it: t.Iterator,
-    loop: t.Optional[AbstractEventLoop] = None,
-    executor: t.Optional[Executor] = None,
-) -> t.AsyncGenerator:
-    """
-    Wraps a given synchronous Iterator as an async generator, where each invocation to ``next(it)``
-    will be wrapped in a coroutine execution.
+class _AsyncGeneratorWrapper:
+    def __init__(
+        self,
+        it: t.Iterator,
+        loop: t.Optional[AbstractEventLoop] = None,
+        executor: t.Optional[Executor] = None,
+    ):
+        """
+        Wraps a given synchronous Iterator as an async generator, where each invocation to ``next(it)``
+        will be wrapped in a coroutine execution.
 
-    :param it: the iterator to wrap
-    :param loop: the event loop to run the next invocations
-    :param executor: the executor to run the synchronous code
-    :return: an async generator
-    """
-    loop = loop or asyncio.get_event_loop()
-    stop = object()
+        :param it: the iterator to wrap
+        :param loop: the event loop to run the next invocations
+        :param executor: the executor to run the synchronous code
+        """
+        self.it = it
+        self.loop = loop or asyncio.get_event_loop()
+        self.executor = executor
 
-    def _next_sync():
+    def _next_sync(self):
         try:
-            # this call may potentially call blocking IO, which is why we call it in an executor
-            return next(it)
+            return next(self.it)
         except StopIteration:
-            return stop
+            raise StopAsyncIteration
 
-    while True:
-        val = await loop.run_in_executor(executor, _next_sync)
-        if val is stop:
-            return
-        yield val
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        val = await self.loop.run_in_executor(self.executor, self._next_sync)
+        return val
+
+    async def aclose(self):
+        if close := getattr(self.it, "close", None):
+            return await self.loop.run_in_executor(self.executor, close)
 
 
 def create_wsgi_input(
@@ -533,7 +539,7 @@ class ASGIAdapter:
             if iterable:
                 # Generators are also Iterators
                 if isinstance(iterable, t.Iterator):
-                    iterable = to_async_generator(iterable)
+                    iterable = _AsyncGeneratorWrapper(iterable)
 
                 if isinstance(iterable, (t.AsyncIterator, t.AsyncIterable)):
                     async for packet in iterable:

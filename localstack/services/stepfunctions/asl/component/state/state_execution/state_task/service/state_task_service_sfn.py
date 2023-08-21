@@ -1,3 +1,4 @@
+import json
 from typing import Any, Final, Optional
 
 from botocore.config import Config
@@ -151,6 +152,18 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
 
         return normalised_parameters
 
+    @staticmethod
+    def _sync2_api_output_of(typ: type, value: json) -> None:
+        def _replace_with_json_if_str(key: str) -> None:
+            inner_value = value.get(key)
+            if isinstance(inner_value, str):
+                value[key] = json.loads(inner_value)
+
+        match typ:
+            case DescribeExecutionOutput:  # noqa
+                _replace_with_json_if_str("input")
+                _replace_with_json_if_str("output")
+
     def _eval_service_task(self, env: Environment, parameters: dict) -> None:
         api_action = camel_to_snake_case(self.resource.api_action)
         sfn_client = self._get_sfn_client()
@@ -159,7 +172,7 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
         self._normalise_botocore_response(self.resource.api_action, response)
         env.stack.append(response)
 
-    def _sync_to_start_machine(self, env: Environment) -> None:
+    def _sync_to_start_machine(self, env: Environment, sync2_response: bool) -> None:
         sfn_client = self._get_sfn_client()
 
         submission_output: dict = env.stack.pop()
@@ -173,6 +186,10 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
             execution_status: ExecutionStatus = describe_execution_output["status"]
 
             if execution_status != ExecutionStatus.RUNNING:
+                if sync2_response:
+                    self._sync2_api_output_of(
+                        typ=DescribeExecutionOutput, value=describe_execution_output
+                    )
                 self._normalise_botocore_response("describeexecution", describe_execution_output)
                 if execution_status == ExecutionStatus.SUCCEEDED:
                     return describe_execution_output
@@ -202,6 +219,13 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
     def _sync(self, env: Environment) -> None:
         match self.resource.api_action.lower():
             case "startexecution":
-                self._sync_to_start_machine(env=env)
+                self._sync_to_start_machine(env=env, sync2_response=False)
             case _:
                 super()._sync(env=env)
+
+    def _sync2(self, env: Environment) -> None:
+        match self.resource.api_action.lower():
+            case "startexecution":
+                self._sync_to_start_machine(env=env, sync2_response=True)
+            case _:
+                super()._sync2(env=env)

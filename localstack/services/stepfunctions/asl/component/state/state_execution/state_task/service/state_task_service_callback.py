@@ -84,6 +84,11 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
             f"Unsupported .sync callback procedure in resource {self.resource.resource_arn}"
         )
 
+    def _sync2(self, env: Environment) -> None:
+        raise RuntimeError(
+            f"Unsupported .sync:2 callback procedure in resource {self.resource.resource_arn}"
+        )
+
     def _is_condition(self):
         return self.resource.condition is not None
 
@@ -127,6 +132,8 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
                     self._wait_for_task_token(env=env)
                 case ResourceCondition.Sync:
                     self._sync(env=env)
+                case ResourceCondition.Sync2:
+                    self._sync2(env=env)
                 case unsupported:
                     raise NotImplementedError(f"Unsupported callback type '{unsupported}'.")
 

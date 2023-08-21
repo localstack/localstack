@@ -1,5 +1,6 @@
 import json
 import unittest
+from json import JSONDecodeError
 from typing import Any, Dict
 from unittest.mock import MagicMock, Mock
 
@@ -559,6 +560,21 @@ class TestTemplates:
             "stageVariable1": "value1",
             "stageVariable2": "value2",
         }
+
+    def test_render_valid_booleans_in_json(self):
+        template = ResponseTemplates()
+
+        # assert that boolean results of _render_json_result(..) are JSON-parseable
+        tstring = '{"mybool": $boolTrue}'
+        result = template._render_as_json(tstring, {"boolTrue": "true"})
+        assert json.loads(result) == {"mybool": True}
+        result = template._render_as_json(tstring, {"boolTrue": True})
+        assert json.loads(result) == {"mybool": True}
+
+        # older versions of `airspeed` were rendering booleans as False/True, which is no longer valid now
+        tstring = '{"mybool": False}'
+        with pytest.raises(JSONDecodeError):
+            template._render_as_json(tstring, {})
 
 
 def test_openapi_resolver_given_unresolvable_references():

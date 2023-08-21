@@ -1,0 +1,15 @@
+{
+  "Comment": "TASK_SERVICE_DYNAMODB_PUT_ITEM",
+  "StartAt": "PutItem",
+  "States": {
+    "PutItem": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:putItem",
+      "Parameters": {
+        "TableName.$": "$.TableName",
+        "Item.$": "$.Item"
+      },
+      "End": true
+    }
+  }
+}

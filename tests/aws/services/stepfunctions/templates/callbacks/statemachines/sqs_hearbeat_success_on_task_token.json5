@@ -1,0 +1,98 @@
+{
+  "Comment": "SQS_HEARTBEAT_SUCCESS_ON_TASK_TOKEN",
+  "StartAt": "Iterate",
+  "States": {
+    "Iterate": {
+      "Type": "Pass",
+      "Parameters": {
+        "Count.$": "States.MathAdd($.Iterator.Count, -1)"
+      },
+      "ResultPath": "$.Iterator",
+      "Next": "IterateStep"
+    },
+    "IterateStep": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.Iterator.Count",
+          "NumericLessThanEquals": 0,
+          "Next": "NoMoreCycles"
+        }
+      ],
+      "Default": "WaitAndReceive",
+    },
+    "WaitAndReceive": {
+      "Type": "Wait",
+      "Seconds": 1,
+      "Next": "Receive"
+    },
+    "Receive": {
+      "Type": "Task",
+      "Parameters": {
+        "QueueUrl.$": "$.QueueUrl"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:sqs:receiveMessage",
+      "ResultPath": "$.SQSOutput",
+      "Next": "CheckMessages",
+    },
+    "CheckMessages": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.SQSOutput.Messages",
+          "IsPresent": true,
+          "Next": "SendSuccesses"
+        }
+      ],
+      "Default": "Iterate"
+    },
+    "SendSuccesses": {
+      "Type": "Map",
+      "InputPath": "$.SQSOutput.Messages",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "ParseBody",
+        "States": {
+          "ParseBody": {
+            "Type": "Pass",
+            "Parameters": {
+              "Body.$": "States.StringToJson($.Body)"
+            },
+            "Next": "WaitBeforeHeartbeat"
+          },
+          "WaitBeforeHeartbeat": {
+            "Type": "Wait",
+            "Seconds": 5,
+            "Next": "SendHeartbeat"
+          },
+          "SendHeartbeat": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskHeartbeat",
+            "Parameters": {
+              "TaskToken.$": "$.Body.TaskToken"
+            },
+            "ResultPath": null,
+            "Next": "SendSuccess"
+          },
+          "SendSuccess": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskSuccess",
+            "Parameters": {
+              "Output.$": "States.JsonToString($.Body.Message)",
+              "TaskToken.$": "$.Body.TaskToken"
+            },
+            "End": true
+          }
+        },
+      },
+      "ResultPath": null,
+      "Next": "Iterate"
+    },
+    "NoMoreCycles": {
+      "Type": "Pass",
+      "End": true
+    }
+  },
+}

@@ -846,6 +846,42 @@ class InvalidTag(ServiceException):
     TagValue: Optional[Value]
 
 
+class ObjectLockConfigurationNotFoundError(ServiceException):
+    code: str = "ObjectLockConfigurationNotFoundError"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
+class InvalidPartNumber(ServiceException):
+    code: str = "InvalidPartNumber"
+    sender_fault: bool = False
+    status_code: int = 416
+    PartNumberRequested: Optional[PartNumber]
+    ActualPartCount: Optional[PartNumber]
+
+
+class OwnershipControlsNotFoundError(ServiceException):
+    code: str = "OwnershipControlsNotFoundError"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
+class NoSuchPublicAccessBlockConfiguration(ServiceException):
+    code: str = "NoSuchPublicAccessBlockConfiguration"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
+class NoSuchBucketPolicy(ServiceException):
+    code: str = "NoSuchBucketPolicy"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
 AbortDate = datetime
 
 
@@ -2226,6 +2262,7 @@ class HeadObjectOutput(TypedDict, total=False):
     ObjectLockMode: Optional[ObjectLockMode]
     ObjectLockRetainUntilDate: Optional[ObjectLockRetainUntilDate]
     ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
+    StatusCode: Optional[GetObjectResponseStatusCode]
 
 
 class HeadObjectRequest(ServiceRequest):

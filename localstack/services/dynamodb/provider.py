@@ -852,13 +852,18 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     "type is not ALL",
                 )
 
-        result = self.forward_request(context)
+        table_name = query_input["TableName"]
+        global_table_region = self.get_global_table_region(context, table_name)
+        result = self._forward_request(context=context, region=global_table_region)
         self.fix_consumed_capacity(query_input, result)
         return result
 
     @handler("Scan", expand=False)
     def scan(self, context: RequestContext, scan_input: ScanInput) -> ScanOutput:
-        return self.forward_request(context)
+        table_name = scan_input["TableName"]
+        global_table_region = self.get_global_table_region(context, table_name)
+        result = self._forward_request(context=context, region=global_table_region)
+        return result
 
     #
     # Batch ops
