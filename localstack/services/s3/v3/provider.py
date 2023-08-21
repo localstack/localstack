@@ -1,6 +1,7 @@
 import base64
 import copy
 import datetime
+import json
 import logging
 from collections import defaultdict
 from operator import itemgetter
@@ -11,6 +12,7 @@ from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.s3 import (
     MFA,
     AbortMultipartUploadOutput,
+    AccelerateConfiguration,
     AccessControlPolicy,
     AccessDenied,
     AccountId,
@@ -21,8 +23,10 @@ from localstack.aws.api.s3 import (
     BucketAlreadyOwnedByYou,
     BucketCannedACL,
     BucketLifecycleConfiguration,
+    BucketLoggingStatus,
     BucketName,
     BucketNotEmpty,
+    BucketVersioningStatus,
     BypassGovernanceRetention,
     ChecksumAlgorithm,
     ChecksumCRC32,
@@ -32,6 +36,7 @@ from localstack.aws.api.s3 import (
     CommonPrefix,
     CompletedMultipartUpload,
     CompleteMultipartUploadOutput,
+    ConfirmRemoveSelfBucketAccess,
     ContentMD5,
     CopyObjectOutput,
     CopyObjectRequest,
@@ -42,6 +47,7 @@ from localstack.aws.api.s3 import (
     CreateBucketRequest,
     CreateMultipartUploadOutput,
     CreateMultipartUploadRequest,
+    CrossLocationLoggingProhibitted,
     Delete,
     DeletedObject,
     DeleteMarkerEntry,
@@ -53,6 +59,7 @@ from localstack.aws.api.s3 import (
     Error,
     Expiration,
     FetchOwner,
+    GetBucketAccelerateConfigurationOutput,
     GetBucketAnalyticsConfigurationOutput,
     GetBucketCorsOutput,
     GetBucketEncryptionOutput,
@@ -60,6 +67,10 @@ from localstack.aws.api.s3 import (
     GetBucketInventoryConfigurationOutput,
     GetBucketLifecycleConfigurationOutput,
     GetBucketLocationOutput,
+    GetBucketLoggingOutput,
+    GetBucketOwnershipControlsOutput,
+    GetBucketPolicyOutput,
+    GetBucketReplicationOutput,
     GetBucketRequestPaymentOutput,
     GetBucketTaggingOutput,
     GetBucketVersioningOutput,
@@ -73,6 +84,7 @@ from localstack.aws.api.s3 import (
     GetObjectRequest,
     GetObjectRetentionOutput,
     GetObjectTaggingOutput,
+    GetPublicAccessBlockOutput,
     GrantFullControl,
     GrantRead,
     GrantReadACP,
@@ -89,6 +101,7 @@ from localstack.aws.api.s3 import (
     InvalidPartNumber,
     InvalidPartOrder,
     InvalidStorageClass,
+    InvalidTargetBucketForLogging,
     InventoryConfiguration,
     InventoryId,
     KeyMarker,
@@ -109,9 +122,11 @@ from localstack.aws.api.s3 import (
     MultipartUpload,
     MultipartUploadId,
     NoSuchBucket,
+    NoSuchBucketPolicy,
     NoSuchCORSConfiguration,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
+    NoSuchPublicAccessBlockConfiguration,
     NoSuchTagSet,
     NoSuchUpload,
     NoSuchWebsiteConfiguration,
@@ -126,21 +141,28 @@ from localstack.aws.api.s3 import (
     ObjectLockMode,
     ObjectLockRetention,
     ObjectLockToken,
+    ObjectOwnership,
     ObjectVersion,
     ObjectVersionId,
     ObjectVersionStorageClass,
     OptionalObjectAttributesList,
+    OwnershipControls,
+    OwnershipControlsNotFoundError,
     Part,
     PartNumber,
     PartNumberMarker,
+    Policy,
     PreconditionFailed,
     Prefix,
+    PublicAccessBlockConfiguration,
     PutObjectLegalHoldOutput,
     PutObjectLockConfigurationOutput,
     PutObjectOutput,
     PutObjectRequest,
     PutObjectRetentionOutput,
     PutObjectTaggingOutput,
+    ReplicationConfiguration,
+    ReplicationConfigurationNotFoundError,
     RequestPayer,
     RequestPaymentConfiguration,
     RestoreObjectOutput,
@@ -179,6 +201,7 @@ from localstack.services.s3.exceptions import (
     InvalidBucketState,
     InvalidLocationConstraint,
     InvalidRequest,
+    MalformedPolicy,
     MalformedXML,
     NoSuchConfiguration,
     NoSuchObjectLockConfiguration,
@@ -231,12 +254,14 @@ from localstack.services.s3.validation import (
     validate_website_configuration,
 )
 from localstack.services.s3.website_hosting import register_website_hosting_routes
-from localstack.utils.strings import to_str
+from localstack.utils.aws.arns import s3_bucket_name
+from localstack.utils.strings import short_uid, to_str
 
 LOG = logging.getLogger(__name__)
 
 STORAGE_CLASSES = get_class_attrs_from_spec_class(StorageClass)
 SSE_ALGORITHMS = get_class_attrs_from_spec_class(ServerSideEncryption)
+OBJECT_OWNERSHIPS = get_class_attrs_from_spec_class(ObjectOwnership)
 
 # TODO: pre-signed URLS -> REMAP parameters from querystring to headers???
 #  create a handler which handle pre-signed and remap before parsing the request!
@@ -384,6 +409,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                     "Your previous request to create the named bucket succeeded and you already own it.",
                     BucketName=bucket_name,
                 )
+
+        if (
+            object_ownership := request.get("ObjectOwnership")
+        ) is not None and object_ownership not in OBJECT_OWNERSHIPS:
+            raise InvalidArgument(
+                f"Invalid x-amz-object-ownership header: {object_ownership}",
+                ArgumentName="x-amz-object-ownership",
+            )
 
         s3_bucket = S3Bucket(
             name=bucket_name,
@@ -2910,19 +2943,322 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         return GetBucketRequestPaymentOutput(Payer=s3_bucket.payer)
 
-    # ###### THIS ARE UNIMPLEMENTED METHODS TO ALLOW TESTING, DO NOT COUNT THEM AS DONE ###### #
+    def get_bucket_ownership_controls(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketOwnershipControlsOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not s3_bucket.object_ownership:
+            raise OwnershipControlsNotFoundError(
+                "The bucket ownership controls were not found",
+                BucketName=bucket,
+            )
+
+        return GetBucketOwnershipControlsOutput(
+            OwnershipControls={"Rules": [{"ObjectOwnership": s3_bucket.object_ownership}]}
+        )
+
+    def put_bucket_ownership_controls(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        ownership_controls: OwnershipControls,
+        content_md5: ContentMD5 = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        # TODO: this currently only mock the operation, but its actual effect is not emulated
+        #  it for example almost forbid ACL usage when set to BucketOwnerEnforced
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not (rules := ownership_controls.get("Rules")) or len(rules) > 1:
+            raise MalformedXML()
+
+        rule = rules[0]
+        if (object_ownership := rule.get("ObjectOwnership")) not in OBJECT_OWNERSHIPS:
+            raise MalformedXML()
+
+        s3_bucket.object_ownership = object_ownership
 
     def delete_bucket_ownership_controls(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
     ) -> None:
-        # TODO: implement, this is just for CORS tests to be able to run
-        pass
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        s3_bucket.object_ownership = None
+
+    def get_public_access_block(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetPublicAccessBlockOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not s3_bucket.public_access_block:
+            raise NoSuchPublicAccessBlockConfiguration(
+                "The public access block configuration was not found", BucketName=bucket
+            )
+
+        return GetPublicAccessBlockOutput(
+            PublicAccessBlockConfiguration=s3_bucket.public_access_block
+        )
+
+    def put_public_access_block(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        public_access_block_configuration: PublicAccessBlockConfiguration,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        # TODO: this currently only mock the operation, but its actual effect is not emulated
+        #  as we do not enforce ACL directly. Also, this should take the most restrictive between S3Control and the
+        #  bucket configuration. See s3control
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        public_access_block_fields = {
+            "BlockPublicAcls",
+            "BlockPublicPolicy",
+            "IgnorePublicAcls",
+            "RestrictPublicBuckets",
+        }
+        if not validate_dict_fields(
+            public_access_block_configuration,
+            required_fields=set(),
+            optional_fields=public_access_block_fields,
+        ):
+            raise MalformedXML()
+
+        for field in public_access_block_fields:
+            if public_access_block_configuration.get(field) is None:
+                public_access_block_configuration[field] = False
+
+        s3_bucket.public_access_block = public_access_block_configuration
 
     def delete_public_access_block(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
     ) -> None:
-        # TODO: implement, this is just for CORS tests to be able to run
-        pass
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        s3_bucket.public_access_block = None
+
+    def get_bucket_policy(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketPolicyOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        if not s3_bucket.policy:
+            raise NoSuchBucketPolicy(
+                "The bucket policy does not exist",
+                BucketName=bucket,
+            )
+        return GetBucketPolicyOutput(Policy=s3_bucket.policy)
+
+    def put_bucket_policy(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        policy: Policy,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        confirm_remove_self_bucket_access: ConfirmRemoveSelfBucketAccess = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        # TODO: there is not validation of the policy at the moment, as there was none in moto
+        #  we store the JSON policy as is, as we do not need to decode it
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not policy or policy[0] != "{":
+            raise MalformedPolicy("Policies must be valid JSON and the first byte must be '{'")
+        try:
+            json_policy = json.loads(policy)
+            if not json_policy:
+                # TODO: add more validation around the policy?
+                raise MalformedPolicy("Missing required field Statement")
+        except ValueError:
+            raise MalformedPolicy("Policies must be valid JSON and the first byte must be '{'")
+
+        s3_bucket.policy = policy
+
+    def delete_bucket_policy(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        s3_bucket.policy = None
+
+    def get_bucket_accelerate_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
+    ) -> GetBucketAccelerateConfigurationOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        response = GetBucketAccelerateConfigurationOutput()
+        if s3_bucket.accelerate_status:
+            response["Status"] = s3_bucket.accelerate_status
+
+        return response
+
+    def put_bucket_accelerate_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        accelerate_configuration: AccelerateConfiguration,
+        expected_bucket_owner: AccountId = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if "." in bucket:
+            raise InvalidRequest(
+                "S3 Transfer Acceleration is not supported for buckets with periods (.) in their names"
+            )
+
+        if not (status := accelerate_configuration.get("Status")) or status not in (
+            "Enabled",
+            "Suspended",
+        ):
+            raise MalformedXML()
+
+        s3_bucket.accelerate_status = status
+
+    def put_bucket_logging(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        bucket_logging_status: BucketLoggingStatus,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not (logging_config := bucket_logging_status.get("LoggingEnabled")):
+            s3_bucket.logging = {}
+            return
+
+        # the target bucket must be in the same account
+        if not (target_bucket_name := logging_config.get("TargetBucket")):
+            raise MalformedXML()
+
+        if not logging_config.get("TargetPrefix"):
+            logging_config["TargetPrefix"] = ""
+
+        # TODO: validate Grants
+
+        if not (target_s3_bucket := store.buckets.get(bucket)):
+            raise InvalidTargetBucketForLogging(
+                "The target bucket for logging does not exist",
+                TargetBucket=target_bucket_name,
+            )
+
+        if target_s3_bucket.bucket_region != s3_bucket.bucket_region:
+            raise CrossLocationLoggingProhibitted(
+                "Cross S3 location logging not allowed. ",
+                TargetBucketLocation=target_s3_bucket.bucket_region,
+            )
+
+        s3_bucket.logging = logging_config
+
+    def get_bucket_logging(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketLoggingOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not s3_bucket.logging:
+            return GetBucketLoggingOutput()
+
+        return GetBucketLoggingOutput(LoggingEnabled=s3_bucket.logging)
+
+    def put_bucket_replication(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        replication_configuration: ReplicationConfiguration,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        token: ObjectLockToken = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+        if not s3_bucket.versioning_status == BucketVersioningStatus.Enabled:
+            raise InvalidRequest(
+                "Versioning must be 'Enabled' on the bucket to apply a replication configuration"
+            )
+
+        if not (rules := replication_configuration.get("Rules")):
+            raise MalformedXML()
+
+        for rule in rules:
+            if "ID" not in rule:
+                rule["ID"] = short_uid()
+
+            dest_bucket_arn = rule.get("Destination", {}).get("Bucket")
+            dest_bucket_name = s3_bucket_name(dest_bucket_arn)
+            if (
+                not (dest_s3_bucket := store.buckets.get(dest_bucket_name))
+                or not dest_s3_bucket.versioning_status == BucketVersioningStatus.Enabled
+            ):
+                # according to AWS testing the same exception is raised if the bucket does not exist
+                # or if versioning was disabled
+                raise InvalidRequest("Destination bucket must have versioning enabled.")
+
+        # TODO more validation on input
+        s3_bucket.replication = replication_configuration
+
+    def get_bucket_replication(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketReplicationOutput:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        if not s3_bucket.replication:
+            raise ReplicationConfigurationNotFoundError(
+                "The replication configuration was not found",
+                BucketName=bucket,
+            )
+
+        return GetBucketReplicationOutput(ReplicationConfiguration=s3_bucket.replication)
+
+    def delete_bucket_replication(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        if not (s3_bucket := store.buckets.get(bucket)):
+            raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
+
+        s3_bucket.replication = None
+
+    # ###### THIS ARE UNIMPLEMENTED METHODS TO ALLOW TESTING, DO NOT COUNT THEM AS DONE ###### #
 
     def put_bucket_acl(
         self,

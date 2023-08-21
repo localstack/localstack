@@ -1,0 +1,13 @@
+{
+    "Comment": "ARRAY_CONTAINS",
+    "StartAt": "State_0",
+    "States": {
+        "State_0": {
+            "Type": "Pass",
+            "Parameters": {
+                "FunctionResult.$": "States.ArrayContains($.FunctionInput.fst, $.FunctionInput.snd)"
+            },
+            "End": true,
+        },
+    },
+}

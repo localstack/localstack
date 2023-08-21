@@ -29,7 +29,11 @@ class EnvVarDeprecation:
         return os.environ.get(self.env_var) is not None
 
 
+#
 # List of deprecations
+#
+# Please make sure this is in-sync with https://docs.localstack.cloud/references/configuration/
+#
 DEPRECATIONS = [
     # Since 0.11.3 - HTTP / HTTPS multiplexing
     EnvVarDeprecation(
@@ -231,6 +235,26 @@ DEPRECATIONS = [
         "2.0.0",
         "The X-Ray daemon is always initialized in the new lambda provider "
         "https://docs.localstack.cloud/user-guide/aws/lambda/#migrating-to-lambda-v2",
+    ),
+    EnvVarDeprecation(
+        "KINESIS_INITIALIZE_STREAMS",
+        "1.4.0",
+        "This feature is marked for removal. Please use AWS client API to seed Kinesis streams.",
+    ),
+    EnvVarDeprecation(
+        "ES_CUSTOM_BACKEND",
+        "0.14.0",
+        "This option is marked for removal. Please use OPENSEARCH_CUSTOM_BACKEND instead.",
+    ),
+    EnvVarDeprecation(
+        "ES_MULTI_CLUSTER",
+        "0.14.0",
+        "This option is marked for removal. Please use OPENSEARCH_MULTI_CLUSTER instead.",
+    ),
+    EnvVarDeprecation(
+        "ES_ENDPOINT_STRATEGY",
+        "0.14.0",
+        "This option is marked for removal. Please use OPENSEARCH_ENDPOINT_STRATEGY instead.",
     ),
 ]
 

@@ -61,7 +61,11 @@ from localstack.aws.api.s3 import (
     WebsiteConfiguration,
     WebsiteRedirectLocation,
 )
-from localstack.services.s3.constants import DEFAULT_BUCKET_ENCRYPTION, S3_UPLOAD_PART_MIN_SIZE
+from localstack.services.s3.constants import (
+    DEFAULT_BUCKET_ENCRYPTION,
+    DEFAULT_PUBLIC_BLOCK_ACCESS,
+    S3_UPLOAD_PART_MIN_SIZE,
+)
 from localstack.services.s3.utils import (
     get_owner_for_account_id,
     iso_8601_datetime_without_milliseconds_s3,
@@ -103,8 +107,8 @@ class S3Bucket:
     notification_configuration: NotificationConfiguration
     payer: Payer
     encryption_rule: Optional[ServerSideEncryptionRule]
-    public_access_block: PublicAccessBlockConfiguration
-    accelerate_status: BucketAccelerateStatus
+    public_access_block: Optional[PublicAccessBlockConfiguration]
+    accelerate_status: Optional[BucketAccelerateStatus]
     object_lock_enabled: bool
     object_ownership: ObjectOwnership
     intelligent_tiering_configurations: dict[IntelligentTieringId, IntelligentTieringConfiguration]
@@ -130,20 +134,25 @@ class S3Bucket:
         # If ObjectLock is enabled, it forces the bucket to be versioned as well
         self.versioning_status = None if not object_lock_enabled_for_bucket else "Enabled"
         self.objects = KeyStore() if not object_lock_enabled_for_bucket else VersionedKeyStore()
-        self.object_ownership = object_ownership
+        self.object_ownership = object_ownership or ObjectOwnership.BucketOwnerEnforced
         self.object_lock_enabled = object_lock_enabled_for_bucket
         self.encryption_rule = DEFAULT_BUCKET_ENCRYPTION
         self.creation_date = datetime.now(tz=_gmt_zone_info)
         self.payer = Payer.BucketOwner
+        self.public_access_block = DEFAULT_PUBLIC_BLOCK_ACCESS
         self.multiparts = {}
         self.notification_configuration = {}
+        self.logging = {}
         self.cors_rules = None
         self.lifecycle_rules = None
         self.website_configuration = None
+        self.policy = None
+        self.accelerate_status = None
         self.intelligent_tiering_configurations = {}
         self.analytics_configurations = {}
         self.inventory_configurations = {}
         self.object_lock_default_retention = {}
+        self.replication = None
 
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_Owner.html
         self.owner = get_owner_for_account_id(account_id)

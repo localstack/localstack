@@ -696,8 +696,12 @@ class SQSIntegration(BackendIntegration):
         )
 
         url = urljoin(config.service_url("sqs"), f"{get_aws_account_id()}/{queue}")
-        result = common.make_http_request(url, method="POST", headers=headers, data=new_request)
-        return result
+        response = common.make_http_request(url, method="POST", headers=headers, data=new_request)
+
+        # apply response template
+        invocation_context.response = response
+        response._content = self.response_templates.render(invocation_context)
+        return response
 
 
 class SNSIntegration(BackendIntegration):

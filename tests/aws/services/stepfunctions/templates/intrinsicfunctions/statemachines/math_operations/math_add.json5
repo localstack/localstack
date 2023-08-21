@@ -1,0 +1,13 @@
+{
+    "Comment": "MATH_ADD",
+    "StartAt": "State_0",
+    "States": {
+        "State_0": {
+            "Type": "Pass",
+            "Parameters": {
+                "FunctionResult.$": "States.MathAdd($.FunctionInput.fst, $.FunctionInput.snd)"
+            },
+            "End": true,
+        },
+    },
+}

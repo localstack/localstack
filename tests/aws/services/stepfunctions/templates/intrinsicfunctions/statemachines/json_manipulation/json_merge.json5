@@ -1,0 +1,13 @@
+{
+    "Comment": "JSON_MERGE",
+    "StartAt": "State_0",
+    "States": {
+        "State_0": {
+            "Type": "Pass",
+            "Parameters": {
+                "FunctionResult.$": "States.JsonMerge($.FunctionInput.fst, $.FunctionInput.snd, false)",
+            },
+            "End": true,
+        },
+    },
+}

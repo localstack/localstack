@@ -1,0 +1,16 @@
+{
+  "Comment": "TIMEOUT_ON_TASK_SERVICE_LAMBDA_INVOKE_WITH_PATH",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Task",
+      "TimeoutSecondsPath": "$.TimeoutSecondsValue",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName.$": "$.FunctionName",
+        "Payload.$": "$.Payload"
+      },
+      "End": true
+    }
+  }
+}

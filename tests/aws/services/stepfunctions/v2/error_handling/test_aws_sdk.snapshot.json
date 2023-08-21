@@ -1,0 +1,524 @@
+{
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_invalid_secret_name": {
+    "recorded-date": "22-06-2023, 13:25:51",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Name": "Invalid Name",
+                "SecretString": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Name": "Invalid Name",
+                "SecretString": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "CreateSecret"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "SecretString": "HelloWorld",
+                "Name": "Invalid Name"
+              },
+              "region": "<region>",
+              "resource": "createSecret",
+              "resourceType": "aws-sdk:secretsmanager"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "createSecret",
+              "resourceType": "aws-sdk:secretsmanager"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "Invalid name. Must be a valid name containing alphanumeric characters, or any of the following: -/_+=.@! (Service: SecretsManager, Status Code: 400, Request ID: <request_id>)",
+              "error": "SecretsManager.SecretsManagerException",
+              "resource": "createSecret",
+              "resourceType": "aws-sdk:secretsmanager"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "CreateSecret",
+              "output": {
+                "Name": "Invalid Name",
+                "SecretString": "HelloWorld",
+                "TaskFailedError": {
+                  "Error": "SecretsManager.SecretsManagerException",
+                  "Cause": "Invalid name. Must be a valid name containing alphanumeric characters, or any of the following: -/_+=.@! (Service: SecretsManager, Status Code: 400, Request ID: <request_id>)"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Name": "Invalid Name",
+                "SecretString": "HelloWorld",
+                "TaskFailedError": {
+                  "Error": "SecretsManager.SecretsManagerException",
+                  "Cause": "Invalid name. Must be a valid name containing alphanumeric characters, or any of the following: -/_+=.@! (Service: SecretsManager, Status Code: 400, Request ID: <request_id>)"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "TaskFailedHandler"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "TaskFailedHandler",
+              "output": {
+                "Name": "Invalid Name",
+                "SecretString": "HelloWorld",
+                "TaskFailedError": {
+                  "Error": "SecretsManager.SecretsManagerException",
+                  "Cause": "Invalid name. Must be a valid name containing alphanumeric characters, or any of the following: -/_+=.@! (Service: SecretsManager, Status Code: 400, Request ID: <request_id>)"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Name": "Invalid Name",
+                "SecretString": "HelloWorld",
+                "TaskFailedError": {
+                  "Error": "SecretsManager.SecretsManagerException",
+                  "Cause": "Invalid name. Must be a valid name containing alphanumeric characters, or any of the following: -/_+=.@! (Service: SecretsManager, Status Code: 400, Request ID: <request_id>)"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_no_such_bucket": {
+    "recorded-date": "22-06-2023, 13:26:06",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "someNonexistentBucketName"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "someNonexistentBucketName"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "CreateSecret"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Bucket": "someNonexistentBucketName"
+              },
+              "region": "<region>",
+              "resource": "listObjects",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "listObjects",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "The specified bucket does not exist (Service: S3, Status Code: 404, Request ID: <request_id>, Extended Request ID: <extended_request_id>)",
+              "error": "S3.NoSuchBucketException",
+              "resource": "listObjects",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "CreateSecret",
+              "output": {
+                "Bucket": "someNonexistentBucketName",
+                "TaskFailedError": {
+                  "Error": "S3.NoSuchBucketException",
+                  "Cause": "The specified bucket does not exist (Service: S3, Status Code: 404, Request ID: <request_id>, Extended Request ID: <extended_request_id>)"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "someNonexistentBucketName",
+                "TaskFailedError": {
+                  "Error": "S3.NoSuchBucketException",
+                  "Cause": "The specified bucket does not exist (Service: S3, Status Code: 404, Request ID: <request_id>, Extended Request ID: <extended_request_id>)"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "TaskFailedHandler"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "TaskFailedHandler",
+              "output": {
+                "Bucket": "someNonexistentBucketName",
+                "TaskFailedError": {
+                  "Error": "S3.NoSuchBucketException",
+                  "Cause": "The specified bucket does not exist (Service: S3, Status Code: 404, Request ID: <request_id>, Extended Request ID: <extended_request_id>)"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Bucket": "someNonexistentBucketName",
+                "TaskFailedError": {
+                  "Error": "S3.NoSuchBucketException",
+                  "Cause": "The specified bucket does not exist (Service: S3, Status Code: 404, Request ID: <request_id>, Extended Request ID: <extended_request_id>)"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_dynamodb_invalid_param": {
+    "recorded-date": "27-07-2023, 19:06:50",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Key": null,
+                "Item": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Key": null,
+                "Item": null
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "PutItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TableName": "<test-table>",
+                "Item": null
+              },
+              "region": "<region>",
+              "resource": "putItem",
+              "resourceType": "aws-sdk:dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "putItem",
+              "resourceType": "aws-sdk:dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "1 validation error detected: Value null at 'item' failed to satisfy constraint: Member must not be null (Service: DynamoDb, Status Code: 400, Request ID: <request_id>)",
+              "error": "DynamoDb.DynamoDbException",
+              "resource": "putItem",
+              "resourceType": "aws-sdk:dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "1 validation error detected: Value null at 'item' failed to satisfy constraint: Member must not be null (Service: DynamoDb, Status Code: 400, Request ID: <request_id>)",
+              "error": "DynamoDb.DynamoDbException"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_dynamodb_put_item_no_such_table": {
+    "recorded-date": "27-07-2023, 19:06:06",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "PutItem"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "TableName": "<test-table>",
+                "Item": {
+                  "data": {
+                    "S": "HelloWorld"
+                  },
+                  "id": {
+                    "S": "id1"
+                  }
+                }
+              },
+              "region": "<region>",
+              "resource": "putItem",
+              "resourceType": "aws-sdk:dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "putItem",
+              "resourceType": "aws-sdk:dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskFailedEventDetails": {
+              "cause": "Requested resource not found (Service: DynamoDb, Status Code: 400, Request ID: <request_id>)",
+              "error": "DynamoDb.ResourceNotFoundException",
+              "resource": "putItem",
+              "resourceType": "aws-sdk:dynamodb"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "Requested resource not found (Service: DynamoDb, Status Code: 400, Request ID: <request_id>)",
+              "error": "DynamoDb.ResourceNotFoundException"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

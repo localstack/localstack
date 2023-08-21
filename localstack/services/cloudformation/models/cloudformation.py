@@ -48,6 +48,12 @@ class CloudFormationStack(GenericBaseModel):
                 "StackName": nested_stack_name,
                 "TemplateURL": properties.get("TemplateURL"),
                 "Parameters": stack_parameters,
+                # TODO: when migrating to resource provider check parity here
+                "Capabilities": [
+                    "CAPABILITY_AUTO_EXPAND",
+                    "CAPABILITY_IAM",
+                    "CAPABILITY_NAMED_IAM",
+                ],
             }
             return result
 
